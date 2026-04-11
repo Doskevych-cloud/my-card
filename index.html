@@ -80,6 +80,32 @@ th:nth-child(3),td:nth-child(3){left:315px;min-width:170px}
 .summary th{background:#E0E0E0;font-weight:600}
 .summary td{padding:8px 14px}
 #results{display:none}
+/* ─── History Panel ─── */
+.history-panel{max-width:1000px;margin:0 auto 20px;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.1);padding:20px 32px}
+.history-panel h2{font-size:15px;color:#455A64;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.history-panel h2 .h-count{font-size:12px;color:#999;font-weight:400}
+.history-list{display:flex;flex-direction:column;gap:8px}
+.history-item{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#FAFAFA;border:1px solid #e0e0e0;border-radius:8px;cursor:pointer;transition:all .15s}
+.history-item:hover{background:#ECEFF1;border-color:#90A4AE}
+.history-item.active{background:#E8F5E9;border-color:#66BB6A}
+.h-info{flex:1}
+.h-date{font-weight:600;font-size:13px;color:#333}
+.h-meta{font-size:11px;color:#888;margin-top:2px}
+.h-suppliers{display:flex;gap:6px;margin-top:4px}
+.h-tag{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:500}
+.h-tag-gen{background:#ECEFF1;color:#546E7A}
+.h-tag-hel{background:#EFEBE9;color:#8D6E63}
+.h-tag-dol{background:#F1F8E9;color:#5C6B3D}
+.h-tag-se{background:#EDE7F6;color:#7E57C2}
+.h-tag-atm{background:#FFFDE7;color:#F57F17}
+.h-actions{display:flex;gap:8px;align-items:center}
+.h-btn{background:none;border:none;cursor:pointer;font-size:16px;color:#999;padding:4px;transition:color .15s}
+.h-btn:hover{color:#C62828}
+.h-btn-open{font-size:13px;color:#455A64;font-weight:600;padding:6px 14px;background:#E0E0E0;border-radius:6px;border:none;cursor:pointer;transition:all .15s}
+.h-btn-open:hover{background:#455A64;color:#fff}
+.h-empty{text-align:center;color:#bbb;font-size:13px;padding:16px}
+.h-clear{font-size:12px;color:#C62828;cursor:pointer;background:none;border:none;font-weight:500}
+.h-clear:hover{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -138,6 +164,11 @@ th:nth-child(3),td:nth-child(3){left:315px;min-width:170px}
     <div class="bar"><div class="fill" id="progressBar" style="width:0"></div></div>
   </div>
   <button class="btn-run" id="btnRun" onclick="runComparison()" disabled>Порівняти ціни</button>
+</div>
+
+<div class="history-panel" id="historyPanel" style="display:none">
+  <h2>Історія порівнянь <span class="h-count" id="hCount"></span> <button class="h-clear" id="hClearAll" onclick="clearAllHistory()">Очистити все</button></h2>
+  <div class="history-list" id="historyList"></div>
 </div>
 
 <div id="results">
@@ -721,6 +752,14 @@ async function runComparison() {
     progBar.style.width = '100%';
     progText.textContent = `Готово! ${rows.length} товарів, ${rows.filter(r=>r.hNV||r.dNV||r.sNV||r.aNV).length} зі збігами`;
 
+    // Save to history
+    const supplierFiles = [{key:'gen',name:'Генерація'}];
+    if (files.hel) supplierFiles.push({key:'hel',name:'Helius'});
+    if (files.dol) supplierFiles.push({key:'dol',name:'Dolya Solar'});
+    if (files.se) supplierFiles.push({key:'se',name:'SE'});
+    if (files.atm) supplierFiles.push({key:'atm',name:'Атмосфера'});
+    saveComparison(rows, {hel:helProds.length,dol:dolProds.length,se:seProds.length,atm:atmProds.length}, supplierFiles);
+
     // Scroll to results
     setTimeout(() => {
       const el = document.getElementById('results');
@@ -734,8 +773,110 @@ async function runComparison() {
   btn.disabled = false;
 }
 
-// Init date
+// ═══════════════════════════════════════════════
+// HISTORY (localStorage)
+// ═══════════════════════════════════════════════
+const HISTORY_KEY = 'price_compare_history';
+const MAX_HISTORY = 20;
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+  catch { return []; }
+}
+
+function saveHistory(list) {
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+}
+
+function saveComparison(rows, counts, supplierFiles) {
+  const history = getHistory();
+  const entry = {
+    id: Date.now(),
+    date: new Date().toLocaleString('uk-UA'),
+    totalItems: rows.length,
+    matches: rows.filter(r => r.hNV || r.dNV || r.sNV || r.aNV).length,
+    suppliers: supplierFiles,
+    counts,
+    rows
+  };
+  history.unshift(entry);
+  if (history.length > MAX_HISTORY) history.pop();
+  saveHistory(history);
+  renderHistory();
+}
+
+function renderHistory() {
+  const history = getHistory();
+  const panel = document.getElementById('historyPanel');
+  const list = document.getElementById('historyList');
+  const count = document.getElementById('hCount');
+
+  if (!history.length) {
+    panel.style.display = 'none';
+    return;
+  }
+
+  panel.style.display = '';
+  count.textContent = `(${history.length})`;
+  list.innerHTML = history.map((h, i) => {
+    const tags = (h.suppliers || []).map(s => {
+      const cls = {gen:'gen',hel:'hel',dol:'dol',se:'se',atm:'atm'}[s.key] || 'gen';
+      return `<span class="h-tag h-tag-${cls}">${s.name}</span>`;
+    }).join('');
+    return `<div class="history-item" onclick="loadHistory(${h.id})">
+      <div class="h-info">
+        <div class="h-date">${h.date}</div>
+        <div class="h-meta">${h.totalItems} товарів, ${h.matches} збігів</div>
+        <div class="h-suppliers">${tags}</div>
+      </div>
+      <div class="h-actions">
+        <button class="h-btn-open" onclick="event.stopPropagation();loadHistory(${h.id})">Відкрити</button>
+        <button class="h-btn" onclick="event.stopPropagation();deleteHistory(${h.id})" title="Видалити">&times;</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function loadHistory(id) {
+  const history = getHistory();
+  const entry = history.find(h => h.id === id);
+  if (!entry) return;
+
+  renderTable(entry.rows);
+  renderSummary(entry.rows, entry.counts);
+  document.getElementById('dateLabel').textContent = 'Порівняння від ' + entry.date;
+  document.getElementById('results').style.display = 'block';
+
+  // Mark active
+  document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
+  const items = document.querySelectorAll('.history-item');
+  const idx = history.findIndex(h => h.id === id);
+  if (items[idx]) items[idx].classList.add('active');
+
+  setTimeout(() => {
+    const el = document.getElementById('results');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 200);
+}
+
+function deleteHistory(id) {
+  const history = getHistory().filter(h => h.id !== id);
+  saveHistory(history);
+  renderHistory();
+  // Hide results if viewing deleted entry
+  document.getElementById('results').style.display = 'none';
+}
+
+function clearAllHistory() {
+  if (!confirm('Видалити всю історію порівнянь?')) return;
+  localStorage.removeItem(HISTORY_KEY);
+  renderHistory();
+  document.getElementById('results').style.display = 'none';
+}
+
+// Init
 document.getElementById('dateLabel').textContent = new Date().toLocaleDateString('uk-UA');
+renderHistory();
 </script>
 </body>
 </html>
