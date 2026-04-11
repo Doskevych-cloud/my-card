@@ -78,13 +78,6 @@ thead tr:last-child th:nth-child(2){left:35px}
 thead tr:first-child th:first-child{left:0}
 .cat td{background:#E8E8E8}
 .cat-label{position:sticky;left:0;display:inline-block}
-.legend{margin:20px auto;max-width:600px;padding:16px 24px;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);font-size:13px}
-.legend h3{margin-bottom:8px;color:#555}
-.summary{margin:20px auto;max-width:800px;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);padding:20px 24px}
-.summary h3{color:#555;margin-bottom:12px}
-.summary table{min-width:auto;font-size:13px}
-.summary th{background:#E0E0E0;font-weight:600}
-.summary td{padding:8px 14px}
 #results{display:none}
 /* ─── History Panel ─── */
 .history-panel{max-width:1000px;margin:0 auto 20px;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.1);padding:20px 32px}
@@ -208,18 +201,6 @@ thead tr:first-child th:first-child{left:0}
         </tr>
       </thead>
       <tbody id="data"></tbody>
-    </table>
-  </div>
-  <div class="legend">
-    <h3>Легенда &Delta;%</h3>
-    <span class="up">+5.2%</span> — постачальник дорожче за Генерацію<br>
-    <span class="dn">&minus;3.8%</span> — постачальник дешевше за Генерацію
-  </div>
-  <div class="summary" id="summaryBlock">
-    <h3>Зведення</h3>
-    <table>
-      <thead><tr><th>Постачальник</th><th>Товарів</th><th>Спільних</th><th>Дешевше</th><th>Дорожче</th><th>Однаково</th></tr></thead>
-      <tbody id="summaryBody"></tbody>
     </table>
   </div>
 </div>
@@ -668,27 +649,6 @@ function renderTable(rows) {
   }
 }
 
-function renderSummary(rows, counts) {
-  const sb = document.getElementById('summaryBody');
-  sb.innerHTML = '';
-  const suppliers = [
-    { name: 'Helius', key: 'hNV', total: counts.hel },
-    { name: 'Dolya Solar', key: 'dNV', total: counts.dol },
-    { name: 'SE (se.net.ua)', key: 'sNV', total: counts.se },
-    { name: 'Атмосфера', key: 'aNV', total: counts.atm },
-  ];
-  for (const s of suppliers) {
-    if (s.total === 0) continue;
-    const matched = rows.filter(r => r[s.key] != null).length;
-    const cheaper = rows.filter(r => r[s.key] != null && r.gNV != null && r[s.key] < r.gNV).length;
-    const moreExp = rows.filter(r => r[s.key] != null && r.gNV != null && r[s.key] > r.gNV).length;
-    const equal = rows.filter(r => r[s.key] != null && r.gNV != null && r[s.key] === r.gNV).length;
-    sb.innerHTML += `<tr>
-      <td>${s.name}</td><td>${s.total}</td><td>${matched}</td>
-      <td class="dn">${cheaper}</td><td class="up">${moreExp}</td><td class="eq">${equal}</td>
-    </tr>`;
-  }
-}
 
 // ═══════════════════════════════════════════════
 // MAIN RUN
@@ -749,12 +709,6 @@ async function runComparison() {
     progText.textContent = 'Побудова таблиці...';
     progBar.style.width = '95%';
     renderTable(rows);
-    renderSummary(rows, {
-      hel: helProds.length,
-      dol: dolProds.length,
-      se: seProds.length,
-      atm: atmProds.length,
-    });
 
     // Show
     const today = new Date();
@@ -916,7 +870,6 @@ function openHistoryEntry(id) {
   const entry = historyCache.find(h => h.id === id);
   if (!entry || !entry.rows) return;
   renderTable(entry.rows);
-  renderSummary(entry.rows, entry.counts || {hel:0,dol:0,se:0,atm:0});
   document.getElementById('dateLabel').textContent = 'Порівняння від ' + entry.date;
   document.getElementById('results').style.display = 'block';
 
@@ -964,7 +917,6 @@ function loadFromHash() {
     if (!json) return false;
     const data = JSON.parse(json);
     renderTable(data.r);
-    renderSummary(data.r, data.c);
     document.getElementById('dateLabel').textContent = 'Порівняння від ' + data.d;
     document.getElementById('results').style.display = 'block';
     document.getElementById('uploadPanel').style.display = 'none';
