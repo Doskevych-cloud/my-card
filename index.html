@@ -717,14 +717,15 @@ async function runComparison() {
     const today = new Date();
     document.getElementById('dateLabel').textContent =
       'Оновлено: ' + today.toLocaleDateString('uk-UA');
-    document.getElementById('results').style.display = '';
+    document.getElementById('results').style.display = 'block';
     progBar.style.width = '100%';
     progText.textContent = `Готово! ${rows.length} товарів, ${rows.filter(r=>r.hNV||r.dNV||r.sNV||r.aNV).length} зі збігами`;
 
     // Scroll to results
     setTimeout(() => {
-      document.querySelector('.wrap').scrollIntoView({ behavior: 'smooth' });
-    }, 300);
+      const el = document.getElementById('results');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 400);
 
   } catch (err) {
     progText.textContent = 'Помилка: ' + err.message;
