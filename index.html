@@ -73,9 +73,9 @@ thead tr:last-child th{top:33px}
 table td:nth-child(-n+2){position:sticky;z-index:3}
 thead tr:last-child th:nth-child(-n+2),thead tr:first-child th:first-child{position:sticky;z-index:60}
 td:nth-child(1){left:0;min-width:35px}
-td:nth-child(2){left:35px}
+td:nth-child(2){left:35px;box-shadow:3px 0 3px -1px rgba(0,0,0,.15)}
 thead tr:last-child th:nth-child(1){left:0;min-width:35px}
-thead tr:last-child th:nth-child(2){left:35px}
+thead tr:last-child th:nth-child(2){left:35px;box-shadow:3px 0 3px -1px rgba(0,0,0,.15)}
 thead tr:first-child th:first-child{left:0}
 .cat td{background:#E8E8E8}
 .cat-label{position:sticky;left:0;display:inline-block;z-index:3}
@@ -152,10 +152,10 @@ thead tr:first-child th:first-child{left:0}
     <div class="supplier-slot slot-se" data-supplier="se" onclick="triggerUpload(this)">
       <div class="icon">📋</div>
       <div class="label">SE (se.net.ua)</div>
-      <div class="hint">TSV або XLSX файл<br>se_products.tsv або xlsx</div>
+      <div class="hint">Збережи сторінку se.net.ua як HTML<br>Ctrl+S → Веб-сторінка повністю</div>
       <div class="file-name"></div>
       <button class="remove-btn" onclick="removeFile(event,'se')" style="display:none">&times;</button>
-      <input type="file" accept=".xlsx,.xls,.tsv,.txt" onchange="fileSelected(this,'se')">
+      <input type="file" accept=".html,.htm,.xlsx,.xls" onchange="fileSelected(this,'se')">
     </div>
     <div class="supplier-slot slot-atm" data-supplier="atm" onclick="triggerUpload(this)">
       <div class="icon">📋</div>
@@ -506,21 +506,60 @@ async function parseDolya(file) {
 async function parseSE(file) {
   const products = [];
   const text = await readFileAsText(file);
-  for (const line of text.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    const parts = trimmed.split('|');
-    const name = parts[0] ? parts[0].trim() : '';
-    const p1 = parts[1] ? parts[1].trim() : '';
-    const p2 = parts[2] ? parts[2].trim() : '';
-    const avail = parts[3] ? parts[3].trim() : '';
-    const currency = (p1.includes('\u20ac') || p2.includes('\u20ac')) ? 'EUR' : 'USD';
-    products.push({
-      name, model: extractModel(name),
-      status: avail || null,
-      price_no_vat: parsePrice(p1), price_vat: parsePrice(p2),
-      currency,
-    });
+
+  if (text.includes('table-row') || text.includes('cell-title')) {
+    // HTML format from se.net.ua
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, 'text/html');
+    const rows = doc.querySelectorAll('.table-row');
+    const skipNames = new Set(['Ціна без ПДВ','Ціна з ПДВ','Наявність','Техпаспорт']);
+
+    for (const row of rows) {
+      const titleEl = row.querySelector('.cell-title h2');
+      if (!titleEl) continue;
+      const name = titleEl.textContent.trim();
+      if (!name || skipNames.has(name)) continue;
+
+      const cells = row.querySelectorAll('.cell-value');
+      if (cells.length < 2) continue;
+
+      let priceNoVat = null, priceVat = null, avail = '';
+      if (cells.length >= 3) {
+        priceNoVat = parsePrice(cells[0].textContent);
+        priceVat = parsePrice(cells[1].textContent);
+        avail = cells[2].textContent.trim().replace(/\s+/g, ' ');
+      } else {
+        priceNoVat = parsePrice(cells[0].textContent);
+        avail = cells[1].textContent.trim().replace(/\s+/g, ' ');
+      }
+
+      if (!priceNoVat && !priceVat) continue;
+
+      products.push({
+        name, model: extractModel(name),
+        status: avail || null,
+        price_no_vat: priceNoVat,
+        price_vat: priceVat,
+        currency: 'USD',
+      });
+    }
+  } else {
+    // Fallback: TSV/text format
+    for (const line of text.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      const parts = trimmed.split('|');
+      const name = parts[0] ? parts[0].trim() : '';
+      const p1 = parts[1] ? parts[1].trim() : '';
+      const p2 = parts[2] ? parts[2].trim() : '';
+      const avail = parts[3] ? parts[3].trim() : '';
+      products.push({
+        name, model: extractModel(name),
+        status: avail || null,
+        price_no_vat: parsePrice(p1), price_vat: parsePrice(p2),
+        currency: 'USD',
+      });
+    }
   }
   return products;
 }
