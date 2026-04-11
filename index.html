@@ -35,6 +35,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f5f5;color:#333}
 .btn-run{display:block;margin:0 auto;padding:14px 48px;background:#455A64;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;transition:background .2s}
 .btn-run:hover{background:#37474F}
 .btn-run:disabled{background:#bbb;cursor:not-allowed}
+.btn-fetch-se{padding:8px 18px;background:#7E57C2;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;transition:background .2s}
+.btn-fetch-se:hover{background:#5E35B1}
+.btn-fetch-se:disabled{background:#bbb;cursor:not-allowed}
+.btn-fetch-se.done{background:#4CAF50}
 .progress{text-align:center;margin:12px 0;font-size:13px;color:#666}
 .progress .bar{width:100%;max-width:400px;height:6px;background:#e0e0e0;border-radius:3px;margin:8px auto;overflow:hidden}
 .progress .fill{height:100%;background:#455A64;border-radius:3px;transition:width .3s}
@@ -149,13 +153,13 @@ thead tr:first-child th:first-child{left:0}
       <button class="remove-btn" onclick="removeFile(event,'dol')" style="display:none">&times;</button>
       <input type="file" accept=".xlsx,.xls" onchange="fileSelected(this,'dol')">
     </div>
-    <div class="supplier-slot slot-se" data-supplier="se" onclick="triggerUpload(this)">
-      <div class="icon">📋</div>
+    <div class="supplier-slot slot-se" data-supplier="se" id="seSlot">
+      <div class="icon">🌐</div>
       <div class="label">SE (se.net.ua)</div>
-      <div class="hint">Збережи сторінку se.net.ua як HTML<br>Ctrl+S → Веб-сторінка повністю</div>
-      <div class="file-name"></div>
-      <button class="remove-btn" onclick="removeFile(event,'se')" style="display:none">&times;</button>
-      <input type="file" accept=".html,.htm,.xlsx,.xls" onchange="fileSelected(this,'se')">
+      <div class="hint">Дані з сайту se.net.ua</div>
+      <button class="btn-fetch-se" id="btnFetchSE" onclick="event.stopPropagation();fetchSE()">Завантажити прайс</button>
+      <div class="file-name" id="seStatus"></div>
+      <button class="remove-btn" onclick="event.stopPropagation();clearSE()" style="display:none" id="seRemove">&times;</button>
     </div>
     <div class="supplier-slot slot-atm" data-supplier="atm" onclick="triggerUpload(this)">
       <div class="icon">📋</div>
@@ -246,6 +250,45 @@ function removeFile(e, key) {
 
 function updateBtn() {
   document.getElementById('btnRun').disabled = !files.gen;
+}
+
+let seProducts = null;
+
+async function fetchSE() {
+  const btn = document.getElementById('btnFetchSE');
+  const status = document.getElementById('seStatus');
+  const slot = document.getElementById('seSlot');
+  btn.disabled = true;
+  btn.textContent = 'Завантаження...';
+  status.textContent = '';
+  try {
+    const res = await fetch(API_URL + '?action=se_proxy');
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    seProducts = data.products;
+    btn.textContent = 'Готово!';
+    btn.classList.add('done');
+    status.textContent = seProducts.length + ' товарів';
+    slot.classList.add('has-file');
+    document.getElementById('seRemove').style.display = '';
+  } catch(e) {
+    btn.textContent = 'Помилка. Спробувати ще';
+    btn.disabled = false;
+    status.textContent = e.message;
+    console.error('SE fetch error', e);
+  }
+}
+
+function clearSE() {
+  seProducts = null;
+  const btn = document.getElementById('btnFetchSE');
+  const slot = document.getElementById('seSlot');
+  btn.textContent = 'Завантажити прайс';
+  btn.disabled = false;
+  btn.classList.remove('done');
+  document.getElementById('seStatus').textContent = '';
+  document.getElementById('seRemove').style.display = 'none';
+  slot.classList.remove('has-file');
 }
 
 // ═══════════════════════════════════════════════
@@ -724,13 +767,8 @@ async function runComparison() {
       dolProds = await parseDolya(files.dol);
     }
 
-    // Parse SE
-    let seProds = [];
-    if (files.se) {
-      progText.textContent = 'Парсинг: SE...';
-      progBar.style.width = '55%';
-      seProds = await parseSE(files.se);
-    }
+    // SE — already fetched via button
+    let seProds = seProducts || [];
 
     // Parse Атмосфера
     let atmProds = [];
@@ -762,7 +800,7 @@ async function runComparison() {
     const supplierFiles = [{key:'gen',name:'Генерація'}];
     if (files.hel) supplierFiles.push({key:'hel',name:'Helius'});
     if (files.dol) supplierFiles.push({key:'dol',name:'Dolya Solar'});
-    if (files.se) supplierFiles.push({key:'se',name:'SE'});
+    if (seProducts && seProducts.length) supplierFiles.push({key:'se',name:'SE'});
     if (files.atm) supplierFiles.push({key:'atm',name:'Атмосфера'});
     saveComparison(rows, {hel:helProds.length,dol:dolProds.length,se:seProds.length,atm:atmProds.length}, supplierFiles);
 
