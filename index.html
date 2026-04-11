@@ -678,10 +678,14 @@ function guessCategory(name) {
   if (!name) return null;
   const u = String(name).toUpperCase();
   const cu = cyr(u);
-  if (u.includes('ІНВЕРТОР') || cu.includes('IHBEPTOP') || /SUN-?\d+K/i.test(u) || /SUN2000/i.test(u) || /SE-[GF]\d/i.test(u) || /DEYE/i.test(u) || /HUAWEI/i.test(u)) return 'ІНВЕРТОРИ';
-  if (['АКУМУЛЯТ', 'BOS-', 'PYLONTECH', 'BMS ', 'RW-M', 'RW-F', 'AI-W', 'US2000', 'US3000', 'US5000', 'HVB', 'DYNESS', 'LUNA', 'БАТАРЕЯ', 'BATTERY'].some(w => u.includes(w))) return 'АКУМУЛЯТОРИ';
-  if (['ПАНЕЛ', 'SOLAR', 'МОДУЛЬ', 'DHN-', 'LONGI', 'TRINA', 'LR7-', 'LR8-', 'JAM', 'TSM-', 'HSM-', 'CS6', 'CS7', 'AIKO', 'ФОТОМОД', 'ФОТОЕЛЕКТ'].some(w => u.includes(w))) return 'МОДУЛІ';
+  // Кабелі
   if (['КАБЕЛ', 'KBE'].some(w => u.includes(w))) return 'КАБЕЛІ';
+  // Акумулятори — перевіряємо першими бо BOS/PYLONTECH/LUNA однозначно акуми
+  if (['АКУМУЛЯТ', 'BOS-', 'PYLONTECH', 'BMS ', 'RW-M', 'RW-F', 'AI-W', 'US2000', 'US3000', 'US5000', 'HVB', 'DYNESS', 'LUNA', 'БАТАРЕЯ', 'BATTERY', 'БАТАРЕЙ'].some(w => u.includes(w))) return 'АКУМУЛЯТОРИ';
+  // Інвертори — тільки якщо в назві є слово "інвертор" або модель SUN-xxK
+  if (u.includes('ІНВЕРТОР') || cu.includes('IHBEPTOP') || /SUN-?\d+K-SG/i.test(u) || /SUN2000/i.test(u)) return 'ІНВЕРТОРИ';
+  // Модулі
+  if (['ПАНЕЛ', 'SOLAR', 'МОДУЛЬ', 'DHN-', 'LONGI', 'TRINA', 'LR7-', 'LR8-', 'JAM', 'TSM-', 'HSM-', 'CS6', 'CS7', 'AIKO', 'ФОТОМОД', 'ФОТОЕЛЕКТ'].some(w => u.includes(w))) return 'МОДУЛІ';
   return null;
 }
 
