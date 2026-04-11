@@ -786,9 +786,14 @@ async function runComparison() {
 // ═══════════════════════════════════════════════
 // HISTORY (Google Apps Script — shared for everyone)
 // ═══════════════════════════════════════════════
-const API_URL = 'https://script.google.com/macros/s/AKfycbyM5FfdeNPQAlHYoSs-fcjHyQdzCekYKe2MW-39XK5InZ3pOhsfbgWdVhFdKeG6ZDcE/exec';
+// ═══════════════════════════════════════════════
+// HISTORY (Google Apps Script — shared for everyone)
+// ═══════════════════════════════════════════════
+const API_URL = 'https://script.google.com/macros/s/AKfycbxte6Ry9qFZj1Jz-Gh5BWt2yJrWjfQaL5b5aBy3CSF2d26UT4Xu_dEvTm5A4azfj-dq/exec';
 const MAX_HISTORY = 30;
 let historyCache = [];
+// Keep rows in memory for current session
+let rowsStore = {};
 
 async function fetchHistory() {
   try {
@@ -797,44 +802,57 @@ async function fetchHistory() {
     const data = await res.json();
     historyCache = data.history || [];
     return historyCache;
-  } catch(e) { console.warn('Failed to fetch history', e); return []; }
+  } catch(e) { console.warn('Fetch history error', e); return []; }
 }
 
 async function pushHistory(list) {
   historyCache = list;
   try {
-    // Only save metadata (no rows) — small enough for GET URL
-    const meta = list.map(h => ({id:h.id,date:h.date,totalItems:h.totalItems,matches:h.matches,suppliers:h.suppliers,url:h.url}));
+    // Save only small metadata — no urls, no rows
+    const meta = list.map(h => ({id:h.id,date:h.date,totalItems:h.totalItems,matches:h.matches,suppliers:h.suppliers}));
     const encoded = encodeURIComponent(JSON.stringify(meta));
-    await fetch(API_URL + '?action=save&data=' + encoded);
-  } catch(e) { console.warn('Failed to save history', e); }
+    // Check URL length — must be under 8000 chars
+    const fullUrl = API_URL + '?action=save&data=' + encoded;
+    if (fullUrl.length < 8000) {
+      await fetch(fullUrl);
+    } else {
+      // Trim old entries until it fits
+      while (meta.length > 1 && (API_URL + '?action=save&data=' + encodeURIComponent(JSON.stringify(meta))).length >= 8000) {
+        meta.pop();
+        list.pop();
+      }
+      await fetch(API_URL + '?action=save&data=' + encodeURIComponent(JSON.stringify(meta)));
+    }
+  } catch(e) { console.warn('Save history error', e); }
 }
 
 async function saveComparison(rows, counts, supplierFiles) {
   const history = await fetchHistory();
-
-  // Generate shareable URL first
-  let url = null;
-  try {
-    const compact = JSON.stringify({d:new Date().toLocaleString('uk-UA'),r:rows,c:counts,s:supplierFiles});
-    const compressed = LZString.compressToEncodedURIComponent(compact);
-    url = location.origin + location.pathname + '#d=' + compressed;
-  } catch(e) { console.warn('URL generation failed', e); }
+  const id = Date.now();
 
   const entry = {
-    id: Date.now(),
+    id,
     date: new Date().toLocaleString('uk-UA'),
     totalItems: rows.length,
     matches: rows.filter(r => r.hNV || r.dNV || r.sNV || r.aNV).length,
-    suppliers: supplierFiles,
-    url: url
+    suppliers: supplierFiles
   };
+
+  // Store rows in memory for this session
+  rowsStore[id] = {rows, counts, suppliers: supplierFiles, date: entry.date};
 
   history.unshift(entry);
   if (history.length > MAX_HISTORY) history.pop();
   await pushHistory(history);
   renderHistoryUI(history);
-  if (url) showShareLink(url);
+
+  // Generate and show share link
+  try {
+    const compact = JSON.stringify({d:entry.date,r:rows,c:counts,s:supplierFiles});
+    const compressed = LZString.compressToEncodedURIComponent(compact);
+    const url = location.origin + location.pathname + '#d=' + compressed;
+    showShareLink(url);
+  } catch(e) {}
 }
 
 function showShareLink(url) {
@@ -875,61 +893,50 @@ function renderHistoryUI(history) {
       const cls = {gen:'gen',hel:'hel',dol:'dol',se:'se',atm:'atm'}[s.key] || 'gen';
       return `<span class="h-tag h-tag-${cls}">${s.name}</span>`;
     }).join('');
-    const hasUrl = !!h.url;
-    return `<div class="history-item" onclick="openHistoryUrl(${h.id})">
+    const hasData = !!rowsStore[h.id];
+    return `<div class="history-item${hasData ? '' : ' no-data'}" onclick="openHistoryEntry(${h.id})">
       <div class="h-info">
         <div class="h-date">${h.date}</div>
         <div class="h-meta">${h.totalItems} товарів, ${h.matches} збігів</div>
         <div class="h-suppliers">${tags}</div>
       </div>
       <div class="h-actions">
-        ${hasUrl ? `<button class="h-btn-link" onclick="event.stopPropagation();copyHistoryLink(this,${h.id})" title="Копіювати посилання">🔗</button>` : ''}
-        <button class="h-btn-open" onclick="event.stopPropagation();openHistoryUrl(${h.id})">Відкрити</button>
+        ${hasData ? `<button class="h-btn-open" onclick="event.stopPropagation();openHistoryEntry(${h.id})">Відкрити</button>` : '<span style="font-size:11px;color:#999">Перезавантажте файли</span>'}
         <button class="h-btn" onclick="event.stopPropagation();deleteHistoryItem(${h.id})" title="Видалити">&times;</button>
       </div>
     </div>`;
   }).join('');
 }
 
-function openHistoryUrl(id) {
-  const entry = historyCache.find(h => h.id === id);
-  if (!entry || !entry.url) return;
-  // Load data from URL hash
-  const hashPart = entry.url.split('#d=')[1];
-  if (!hashPart) return;
+function openHistoryEntry(id) {
+  const stored = rowsStore[id];
+  if (!stored) return;
+  renderTable(stored.rows);
+  renderSummary(stored.rows, stored.counts);
+  document.getElementById('dateLabel').textContent = 'Порівняння від ' + stored.date;
+  document.getElementById('results').style.display = 'block';
+
+  // Generate share link
   try {
-    const json = LZString.decompressFromEncodedURIComponent(hashPart);
-    if (!json) return;
-    const data = JSON.parse(json);
-    renderTable(data.r);
-    renderSummary(data.r, data.c);
-    document.getElementById('dateLabel').textContent = 'Порівняння від ' + entry.date;
-    document.getElementById('results').style.display = 'block';
-    showShareLink(entry.url);
+    const compact = JSON.stringify({d:stored.date,r:stored.rows,c:stored.counts,s:stored.suppliers});
+    const compressed = LZString.compressToEncodedURIComponent(compact);
+    showShareLink(location.origin + location.pathname + '#d=' + compressed);
+  } catch(e) {}
 
-    document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
-    const items = document.querySelectorAll('.history-item');
-    const idx = historyCache.findIndex(h => h.id === id);
-    if (items[idx]) items[idx].classList.add('active');
+  document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
+  const items = document.querySelectorAll('.history-item');
+  const idx = historyCache.findIndex(h => h.id === id);
+  if (items[idx]) items[idx].classList.add('active');
 
-    setTimeout(() => {
-      const el = document.getElementById('results');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 200);
-  } catch(e) { console.warn('Failed to load history entry', e); }
-}
-
-function copyHistoryLink(btn, id) {
-  const entry = historyCache.find(h => h.id === id);
-  if (!entry || !entry.url) return;
-  navigator.clipboard.writeText(entry.url).then(() => {
-    btn.textContent = 'Скопійовано!';
-    setTimeout(() => { btn.textContent = '🔗'; }, 1500);
-  });
+  setTimeout(() => {
+    const el = document.getElementById('results');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 200);
 }
 
 async function deleteHistoryItem(id) {
   const history = historyCache.filter(h => h.id !== id);
+  delete rowsStore[id];
   await pushHistory(history);
   renderHistoryUI(history);
   document.getElementById('results').style.display = 'none';
@@ -937,13 +944,14 @@ async function deleteHistoryItem(id) {
 
 async function clearAllHistory() {
   if (!confirm('Видалити всю історію порівнянь?')) return;
+  rowsStore = {};
   await pushHistory([]);
   renderHistoryUI([]);
   document.getElementById('results').style.display = 'none';
 }
 
 // ═══════════════════════════════════════════════
-// LOAD FROM URL HASH
+// LOAD FROM URL HASH (shared links still work)
 // ═══════════════════════════════════════════════
 function loadFromHash() {
   const hash = location.hash;
