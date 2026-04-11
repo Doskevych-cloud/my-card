@@ -77,7 +77,7 @@ thead tr:last-child th:nth-child(1){left:0;min-width:35px}
 thead tr:last-child th:nth-child(2){left:35px}
 thead tr:first-child th:first-child{left:0}
 .cat td{background:#E8E8E8}
-.cat .cat-name{position:sticky;left:0;z-index:55;background:#E8E8E8;white-space:nowrap}
+.cat-label{position:sticky;left:0;display:inline-block}
 .legend{margin:20px auto;max-width:600px;padding:16px 24px;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);font-size:13px}
 .legend h3{margin-bottom:8px;color:#555}
 .summary{margin:20px auto;max-width:800px;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);padding:20px 24px}
@@ -115,12 +115,10 @@ thead tr:first-child th:first-child{left:0}
 .h-btn-link{background:none;border:none;cursor:pointer;font-size:16px;padding:6px 10px;border-radius:6px;transition:background .15s}
 .h-btn-link:hover{background:#E0E0E0}
 /* ─── Share Box ─── */
-.share-box{background:#E8F5E9;border:1px solid #A5D6A7;border-radius:8px;padding:12px 20px;margin:16px 16px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.share-box span{font-size:13px;font-weight:600;color:#2E7D32;white-space:nowrap}
-.share-box input{flex:1;min-width:200px;padding:8px 12px;border:1px solid #C8E6C9;border-radius:6px;font-size:12px;background:#fff;color:#333;outline:none}
-.share-box input:focus{border-color:#66BB6A}
-.share-box button{padding:8px 16px;background:#455A64;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .15s}
+.share-box{margin:12px 16px 0;display:inline-flex;align-items:center;gap:6px}
+.share-box button{padding:6px 14px;background:#455A64;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .15s}
 .share-box button:hover{background:#37474F}
+.share-box .share-ok{color:#2E7D32;font-size:12px;font-weight:600}
 </style>
 </head>
 <body>
@@ -623,7 +621,7 @@ function renderTable(rows) {
   for (const rd of rows) {
     if (rd.cat !== currentCat) {
       currentCat = rd.cat;
-      tb.innerHTML += `<tr class="cat"><td class="cat-name">${currentCat}</td><td colspan="30"></td></tr>`;
+      tb.innerHTML += `<tr class="cat"><td colspan="31"><span class="cat-label">${currentCat}</span></td></tr>`;
     }
     n++;
     const e = n % 2 === 0 ? 'even' : '';
@@ -869,16 +867,16 @@ function showShareLink(url) {
     box.className = 'share-box';
     document.getElementById('results').prepend(box);
   }
-  box.innerHTML = `<span>Посилання на це порівняння:</span>
-    <input type="text" value="${url}" readonly onclick="this.select()">
-    <button onclick="copyShareUrl(this)">Копіювати</button>`;
+  box.dataset.url = url;
+  box.innerHTML = `<button onclick="copyShareUrl(this)">&#128279; Копіювати посилання</button><span class="share-ok" id="shareOk"></span>`;
 }
 
 function copyShareUrl(btn) {
-  const input = btn.previousElementSibling;
-  navigator.clipboard.writeText(input.value).then(() => {
-    btn.textContent = 'Скопійовано!';
-    setTimeout(() => { btn.textContent = 'Копіювати'; }, 1500);
+  const url = btn.parentElement.dataset.url;
+  navigator.clipboard.writeText(url).then(() => {
+    const ok = document.getElementById('shareOk');
+    ok.textContent = 'Скопійовано!';
+    setTimeout(() => { ok.textContent = ''; }, 2000);
   });
 }
 
