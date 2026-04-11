@@ -481,11 +481,8 @@ async function parseGeneracia(file) {
     if (status) status = String(status).trim();
     const model = extractModel(nameStr);
     const nameUp = nameStr.toUpperCase();
-    let cat = 'ІНШЕ';
-    if (['КАБЕЛ', 'KBE'].some(w => nameUp.includes(w))) cat = 'КАБЕЛІ';
-    else if (nameUp.includes('ІНВЕРТОР') || cyr(nameUp).includes('IHBEPTOP')) cat = 'ІНВЕРТОРИ ГІБРИДНІ';
-    else if (['АКУМУЛЯТ', 'BOS-', 'PYLONTECH', 'BMS '].some(w => nameUp.includes(w))) cat = 'АКУМУЛЯТОРИ';
-    else if (['ПАНЕЛ', 'SOLAR', 'МОДУЛЬ', 'DHN-', 'LONGI', 'TRINA'].some(w => nameUp.includes(w))) cat = 'СОНЯЧНІ ПАНЕЛІ';
+    let cat = guessCategory(nameStr);
+    if (!cat) continue;
     products.push({ name: nameStr, model, category: cat, status, price_no_vat: pnv, price_vat: pv, currency });
   }
   return products;
@@ -675,38 +672,77 @@ async function parseAtmosfera(file) {
 // COMPARISON ENGINE
 // ═══════════════════════════════════════════════
 function guessCategory(name) {
-  if (!name) return 'ІНШЕ';
+  if (!name) return null;
   const u = String(name).toUpperCase();
   const cu = cyr(u);
+  // Інвертори — тільки Deye та Huawei
+  if (/SUN-?\d+K/i.test(u) || /DEYE/i.test(u)) return 'ІНВЕРТОРИ DEYE';
+  if (/SUN2000/i.test(u) || /HUAWEI/i.test(u)) return 'ІНВЕРТОРИ HUAWEI';
+  // Акумулятори — всі
+  if (['АКУМУЛЯТ', 'BOS-', 'PYLONTECH', 'BMS ', 'RW-M', 'RW-F', 'AI-W', 'US2000', 'US3000', 'US5000', 'HVB', 'DYNESS', 'LUNA', 'БАТАРЕЯ', 'BATTERY'].some(w => u.includes(w))) return 'АКУМУЛЯТОРИ';
+  // Панелі — всі
+  if (['ПАНЕЛ', 'SOLAR', 'МОДУЛЬ', 'DHN-', 'LONGI', 'TRINA', 'LR7-', 'LR8-', 'JAM', 'TSM-', 'HSM-', 'CS6', 'CS7', 'AIKO', 'ФОТОМОД', 'ФОТОЕЛЕКТ'].some(w => u.includes(w))) return 'СОНЯЧНІ ПАНЕЛІ';
+  // Кабелі
   if (['КАБЕЛ', 'KBE'].some(w => u.includes(w))) return 'КАБЕЛІ';
-  if (u.includes('ІНВЕРТОР') || cu.includes('IHBEPTOP') || /SUN-?\d+K/i.test(u) || /SE-[GF]\d/i.test(u)) return 'ІНВЕРТОРИ ГІБРИДНІ';
-  if (['АКУМУЛЯТ', 'BOS-', 'PYLONTECH', 'BMS ', 'RW-M', 'RW-F', 'AI-W', 'US2000', 'US3000', 'US5000', 'HVB'].some(w => u.includes(w))) return 'АКУМУЛЯТОРИ';
-  if (['ПАНЕЛ', 'SOLAR', 'МОДУЛЬ', 'DHN-', 'LONGI', 'TRINA', 'LR7-', 'LR8-', 'JAM', 'TSM-', 'HSM-', 'CS6', 'CS7', 'AIKO'].some(w => u.includes(w))) return 'СОНЯЧНІ ПАНЕЛІ';
-  return 'ІНШЕ';
+  return null;
 }
 
 function buildComparison(genProds, helProds, dolProds, seProds, atmProds) {
-  const categories = ['ІНВЕРТОРИ ГІБРИДНІ', 'АКУМУЛЯТОРИ', 'КАБЕЛІ', 'СОНЯЧНІ ПАНЕЛІ'];
+  const categories = ['ІНВЕРТОРИ DEYE', 'ІНВЕРТОРИ HUAWEI', 'АКУМУЛЯТОРИ', 'СОНЯЧНІ ПАНЕЛІ', 'КАБЕЛІ'];
+
+  // Collect all products from all sources with their origin
+  const all = [];
+  for (const p of genProds) { const c = p.category || guessCategory(p.name); if (c) all.push({...p, src: 'g', cat: c}); }
+  for (const p of helProds) { const c = guessCategory(p.name); if (c) all.push({...p, src: 'h', cat: c}); }
+  for (const p of dolProds) { const c = guessCategory(p.name); if (c) all.push({...p, src: 'd', cat: c}); }
+  for (const p of seProds) { const c = guessCategory(p.name); if (c) all.push({...p, src: 's', cat: c}); }
+  for (const p of atmProds) { const c = guessCategory(p.name); if (c) all.push({...p, src: 'a', cat: c}); }
+
+  // Group by model: merge products with matching models into groups
+  const groups = []; // each: {cat, name, g, h, d, s, a}
+  const used = new Set();
+
+  for (let i = 0; i < all.length; i++) {
+    if (used.has(i)) continue;
+    const p = all[i];
+    const group = {cat: p.cat, name: p.name, model: p.model, g: null, h: null, d: null, s: null, a: null};
+    group[p.src] = p;
+    used.add(i);
+
+    if (p.model) {
+      const isPanel = p.cat === 'СОНЯЧНІ ПАНЕЛІ';
+      for (let j = i + 1; j < all.length; j++) {
+        if (used.has(j)) continue;
+        const q = all[j];
+        if (group[q.src]) continue; // already have this supplier
+        if (!fuzzyMatch(p.model, q.model)) continue;
+        if (isPanel) {
+          const w1 = extractWattage(p.name), w2 = extractWattage(q.name);
+          if (w1 && w2 && Math.abs(w1 - w2) > 10) continue;
+        }
+        // Price sanity check
+        const refPrice = p.price_no_vat || (group.g && group.g.price_no_vat);
+        if (refPrice && q.price_no_vat && refPrice > 0) {
+          const ratio = q.price_no_vat / refPrice;
+          if (ratio > 5 || ratio < 0.2) continue;
+        }
+        group[q.src] = q;
+        used.add(j);
+      }
+    }
+    groups.push(group);
+  }
+
+  // Convert groups to rows, sorted by category
   const rows = [];
-  const usedH = new Set(), usedD = new Set(), usedS = new Set(), usedA = new Set();
-
-  // Pass 1: start from Генерація products
   for (const cat of categories) {
-    const items = genProds.filter(p => p.category === cat);
-    for (const gp of items) {
-      const isPanel = cat === 'СОНЯЧНІ ПАНЕЛІ';
-      const gpPrice = gp.price_no_vat;
-      const hm = findMatch(gp.model, gp.name, gpPrice, helProds, isPanel);
-      const dm = findMatch(gp.model, gp.name, gpPrice, dolProds, isPanel);
-      const sm = findMatch(gp.model, gp.name, gpPrice, seProds, isPanel);
-      const am = findMatch(gp.model, gp.name, gpPrice, atmProds, isPanel);
-      if (hm) usedH.add(helProds.indexOf(hm));
-      if (dm) usedD.add(dolProds.indexOf(dm));
-      if (sm) usedS.add(seProds.indexOf(sm));
-      if (am) usedA.add(atmProds.indexOf(am));
+    const catGroups = groups.filter(g => g.cat === cat);
+    if (!catGroups.length) continue;
+    for (const gr of catGroups) {
+      const gp = gr.g, hm = gr.h, dm = gr.d, sm = gr.s, am = gr.a;
       rows.push({
-        cat, name: gp.name, model: gp.model,
-        gSt: gp.status, gNV: gp.price_no_vat, gV: gp.price_vat, gC: gp.currency || 'USD',
+        cat, name: gr.name, model: gr.model,
+        gSt: gp ? gp.status : null, gNV: gp ? gp.price_no_vat : null, gV: gp ? gp.price_vat : null, gC: gp ? (gp.currency || 'USD') : 'USD',
         hSt: hm ? hm.status : null, hNV: hm ? hm.price_no_vat : null,
         hV: hm ? hm.price_vat : null, hR: hm ? (hm.rrc || null) : null, hC: hm ? (hm.currency || 'USD') : 'USD',
         dSt: dm ? dm.status : null, dNV: dm ? dm.price_no_vat : null,
@@ -718,61 +754,6 @@ function buildComparison(genProds, helProds, dolProds, seProds, atmProds) {
       });
     }
   }
-
-  // Pass 2: collect unmatched products from all other suppliers
-  const otherSources = [
-    {prods: helProds, used: usedH, key: 'h'},
-    {prods: dolProds, used: usedD, key: 'd'},
-    {prods: seProds, used: usedS, key: 's'},
-    {prods: atmProds, used: usedA, key: 'a'},
-  ];
-  const extras = []; // {product, sourceKey, cat}
-  for (const src of otherSources) {
-    src.prods.forEach((p, i) => {
-      if (src.used.has(i)) return;
-      if (!p.model) return;
-      const cat = guessCategory(p.name);
-      if (cat === 'ІНШЕ') return;
-      extras.push({p, key: src.key, cat});
-    });
-  }
-
-  // Group extras by model and merge across suppliers
-  const extraMap = new Map();
-  for (const ex of extras) {
-    const nm = normModel(ex.p.model);
-    if (!nm) continue;
-    let entry = null;
-    for (const [k, v] of extraMap) {
-      if (fuzzyMatch(k, nm)) { entry = v; break; }
-    }
-    if (!entry) {
-      entry = {cat: ex.cat, model: nm, name: ex.p.name, h: null, d: null, s: null, a: null};
-      extraMap.set(nm, entry);
-    }
-    if (!entry[ex.key]) entry[ex.key] = ex.p;
-  }
-
-  // Convert extras to rows
-  for (const cat of categories) {
-    const catExtras = [...extraMap.values()].filter(e => e.cat === cat);
-    for (const ex of catExtras) {
-      const hm = ex.h, dm = ex.d, sm = ex.s, am = ex.a;
-      rows.push({
-        cat, name: ex.name, model: ex.model,
-        gSt: null, gNV: null, gV: null, gC: 'USD',
-        hSt: hm ? hm.status : null, hNV: hm ? hm.price_no_vat : null,
-        hV: hm ? hm.price_vat : null, hR: hm ? (hm.rrc || null) : null, hC: hm ? (hm.currency || 'USD') : 'USD',
-        dSt: dm ? dm.status : null, dNV: dm ? dm.price_no_vat : null,
-        dV: dm ? dm.price_vat : null, dC: dm ? (dm.currency || 'USD') : 'USD',
-        sSt: sm ? sm.status : null, sNV: sm ? sm.price_no_vat : null,
-        sV: sm ? sm.price_vat : null, sC: sm ? (sm.currency || 'USD') : 'USD',
-        aSt: am ? (am.status || null) : null, aNV: am ? am.price_no_vat : null,
-        aV: am ? (am.price_vat || null) : null, aC: am ? (am.currency || 'USD') : 'USD',
-      });
-    }
-  }
-
   return rows;
 }
 
