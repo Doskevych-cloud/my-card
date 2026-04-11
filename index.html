@@ -786,7 +786,7 @@ async function runComparison() {
 // ═══════════════════════════════════════════════
 // HISTORY (jsonblob.com — shared for everyone)
 // ═══════════════════════════════════════════════
-const API_URL = 'https://script.google.com/macros/s/AKfycbwIhhojFF7HCPCpOmj4H2Xxw1s6XKXzunJWQF7YhrTtrJNTUzs7NWZWA3R7BNXceIPn/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyG1oK3bepm00M7-8MqP5nJQ7_9ENhe1-DzkHx2-v0a84xcxtHWG9BBoo5WyGhIWAYGRQ/exec';
 const MAX_HISTORY = 30;
 let historyCache = [];
 
@@ -803,11 +803,8 @@ async function fetchHistory() {
 async function pushHistory(list) {
   historyCache = list;
   try {
-    await fetch(API_URL, {
-      method: 'POST',
-      headers: {'Content-Type':'text/plain'},
-      body: JSON.stringify({history: list})
-    });
+    const encoded = encodeURIComponent(JSON.stringify(list));
+    await fetch(API_URL + '?action=save&data=' + encoded);
   } catch(e) { console.warn('Failed to save history', e); }
 }
 
