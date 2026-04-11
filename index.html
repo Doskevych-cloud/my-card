@@ -784,7 +784,7 @@ async function runComparison() {
 }
 
 // ═══════════════════════════════════════════════
-// HISTORY (jsonblob.com — shared for everyone)
+// HISTORY (Google Apps Script — shared for everyone)
 // ═══════════════════════════════════════════════
 const API_URL = 'https://script.google.com/macros/s/AKfycbyG1oK3bepm00M7-8MqP5nJQ7_9ENhe1-DzkHx2-v0a84xcxtHWG9BBoo5WyGhIWAYGRQ/exec';
 const MAX_HISTORY = 30;
@@ -803,35 +803,38 @@ async function fetchHistory() {
 async function pushHistory(list) {
   historyCache = list;
   try {
-    const encoded = encodeURIComponent(JSON.stringify(list));
+    // Only save metadata (no rows) — small enough for GET URL
+    const meta = list.map(h => ({id:h.id,date:h.date,totalItems:h.totalItems,matches:h.matches,suppliers:h.suppliers,url:h.url}));
+    const encoded = encodeURIComponent(JSON.stringify(meta));
     await fetch(API_URL + '?action=save&data=' + encoded);
   } catch(e) { console.warn('Failed to save history', e); }
 }
 
 async function saveComparison(rows, counts, supplierFiles) {
   const history = await fetchHistory();
+
+  // Generate shareable URL first
+  let url = null;
+  try {
+    const compact = JSON.stringify({d:new Date().toLocaleString('uk-UA'),r:rows,c:counts,s:supplierFiles});
+    const compressed = LZString.compressToEncodedURIComponent(compact);
+    url = location.origin + location.pathname + '#d=' + compressed;
+  } catch(e) { console.warn('URL generation failed', e); }
+
   const entry = {
     id: Date.now(),
     date: new Date().toLocaleString('uk-UA'),
     totalItems: rows.length,
     matches: rows.filter(r => r.hNV || r.dNV || r.sNV || r.aNV).length,
     suppliers: supplierFiles,
-    counts,
-    rows
+    url: url
   };
-
-  // Generate shareable URL
-  try {
-    const compact = JSON.stringify({d:entry.date,r:rows,c:counts,s:supplierFiles});
-    const compressed = LZString.compressToEncodedURIComponent(compact);
-    entry.url = location.origin + location.pathname + '#d=' + compressed;
-  } catch(e) {}
 
   history.unshift(entry);
   if (history.length > MAX_HISTORY) history.pop();
   await pushHistory(history);
   renderHistoryUI(history);
-  if (entry.url) showShareLink(entry.url);
+  if (url) showShareLink(url);
 }
 
 function showShareLink(url) {
@@ -842,10 +845,17 @@ function showShareLink(url) {
     box.className = 'share-box';
     document.getElementById('results').prepend(box);
   }
-  const safeUrl = url.replace(/'/g, "\\'");
   box.innerHTML = `<span>Посилання на це порівняння:</span>
     <input type="text" value="${url}" readonly onclick="this.select()">
-    <button onclick="navigator.clipboard.writeText('${safeUrl}');this.textContent='Скопійовано!'">Копіювати</button>`;
+    <button onclick="copyShareUrl(this)">Копіювати</button>`;
+}
+
+function copyShareUrl(btn) {
+  const input = btn.previousElementSibling;
+  navigator.clipboard.writeText(input.value).then(() => {
+    btn.textContent = 'Скопійовано!';
+    setTimeout(() => { btn.textContent = 'Копіювати'; }, 1500);
+  });
 }
 
 function renderHistoryUI(history) {
@@ -865,43 +875,48 @@ function renderHistoryUI(history) {
       const cls = {gen:'gen',hel:'hel',dol:'dol',se:'se',atm:'atm'}[s.key] || 'gen';
       return `<span class="h-tag h-tag-${cls}">${s.name}</span>`;
     }).join('');
-    const linkBtn = h.url
-      ? `<button class="h-btn-link" onclick="event.stopPropagation();copyHistoryLink(this,${h.id})" title="Копіювати посилання">🔗</button>`
-      : '';
-    return `<div class="history-item" onclick="loadHistory(${h.id})">
+    const hasUrl = !!h.url;
+    return `<div class="history-item" onclick="openHistoryUrl(${h.id})">
       <div class="h-info">
         <div class="h-date">${h.date}</div>
         <div class="h-meta">${h.totalItems} товарів, ${h.matches} збігів</div>
         <div class="h-suppliers">${tags}</div>
       </div>
       <div class="h-actions">
-        ${linkBtn}
-        <button class="h-btn-open" onclick="event.stopPropagation();loadHistory(${h.id})">Відкрити</button>
+        ${hasUrl ? `<button class="h-btn-link" onclick="event.stopPropagation();copyHistoryLink(this,${h.id})" title="Копіювати посилання">🔗</button>` : ''}
+        <button class="h-btn-open" onclick="event.stopPropagation();openHistoryUrl(${h.id})">Відкрити</button>
         <button class="h-btn" onclick="event.stopPropagation();deleteHistoryItem(${h.id})" title="Видалити">&times;</button>
       </div>
     </div>`;
   }).join('');
 }
 
-function loadHistory(id) {
+function openHistoryUrl(id) {
   const entry = historyCache.find(h => h.id === id);
-  if (!entry) return;
+  if (!entry || !entry.url) return;
+  // Load data from URL hash
+  const hashPart = entry.url.split('#d=')[1];
+  if (!hashPart) return;
+  try {
+    const json = LZString.decompressFromEncodedURIComponent(hashPart);
+    if (!json) return;
+    const data = JSON.parse(json);
+    renderTable(data.r);
+    renderSummary(data.r, data.c);
+    document.getElementById('dateLabel').textContent = 'Порівняння від ' + entry.date;
+    document.getElementById('results').style.display = 'block';
+    showShareLink(entry.url);
 
-  renderTable(entry.rows);
-  renderSummary(entry.rows, entry.counts);
-  document.getElementById('dateLabel').textContent = 'Порівняння від ' + entry.date;
-  document.getElementById('results').style.display = 'block';
-  if (entry.url) showShareLink(entry.url);
+    document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
+    const items = document.querySelectorAll('.history-item');
+    const idx = historyCache.findIndex(h => h.id === id);
+    if (items[idx]) items[idx].classList.add('active');
 
-  document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
-  const items = document.querySelectorAll('.history-item');
-  const idx = historyCache.findIndex(h => h.id === id);
-  if (items[idx]) items[idx].classList.add('active');
-
-  setTimeout(() => {
-    const el = document.getElementById('results');
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 200);
+    setTimeout(() => {
+      const el = document.getElementById('results');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 200);
+  } catch(e) { console.warn('Failed to load history entry', e); }
 }
 
 function copyHistoryLink(btn, id) {
