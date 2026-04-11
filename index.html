@@ -42,11 +42,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f5f5;color:#333}
 .wrap{overflow:auto;max-height:calc(100vh - 70px);padding:0 16px 40px}
 table{border-collapse:collapse;margin:0 auto;font-size:13px;white-space:nowrap;min-width:1600px}
 th,td{padding:6px 10px;border:1px solid #e0e0e0;text-align:center;vertical-align:middle}
-thead th{position:sticky;z-index:50;left:auto}
+thead th{position:sticky;z-index:50}
 thead tr:first-child th{top:0}
 thead tr:last-child th{top:33px}
-thead tr:first-child th:first-child{left:0;z-index:60}
-thead tr:last-child th:nth-child(-n+3){z-index:60}
 .gh{color:#fff;font-weight:700;font-size:13px;letter-spacing:.3px}
 .gh-tovar{background:#455A64}.gh-gen{background:#546E7A}.gh-hel{background:#8D6E63}
 .gh-dol{background:#5C6B3D}.gh-se{background:#7E57C2}.gh-atm{background:#F57F17;color:#333}
@@ -69,15 +67,16 @@ thead tr:last-child th:nth-child(-n+3){z-index:60}
 .bl{border-left:2px solid #BDBDBD !important}
 .cat td{background:#E8E8E8;font-weight:700;font-size:13px;color:#37474F;text-align:left;border-top:2px solid #BDBDBD;border-bottom:2px solid #BDBDBD;padding:8px 12px}
 .up{color:#2E7D32;font-weight:700}.dn{color:#C62828;font-weight:700}.eq{color:#999}
-.name{text-align:left;white-space:normal;min-width:280px;max-width:350px;font-size:12px}
-.art{text-align:left;color:#777;font-size:11px}
+.art{text-align:left;font-size:12px;white-space:normal;min-width:200px;max-width:300px}
 .bold{font-weight:700}
 .status{font-size:11px;color:#666;max-width:120px;white-space:normal}
-table td:nth-child(-n+3){position:sticky;z-index:2}
-td:nth-child(1),thead tr:last-child th:nth-child(1){left:0;min-width:35px}
-td:nth-child(2),thead tr:last-child th:nth-child(2){left:35px;min-width:280px}
-td:nth-child(3),thead tr:last-child th:nth-child(3){left:315px;min-width:170px}
-.cat td{position:sticky;left:0;z-index:2}
+table td:nth-child(-n+2),thead tr:last-child th:nth-child(-n+2),thead tr:first-child th:first-child{position:sticky;z-index:55}
+td:nth-child(1){left:0;min-width:35px}
+td:nth-child(2){left:35px}
+thead tr:last-child th:nth-child(1){left:0;min-width:35px}
+thead tr:last-child th:nth-child(2){left:35px}
+thead tr:first-child th:first-child{left:0}
+.cat td{position:sticky;left:0;z-index:55;background:#E8E8E8}
 .legend{margin:20px auto;max-width:600px;padding:16px 24px;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);font-size:13px}
 .legend h3{margin-bottom:8px;color:#555}
 .summary{margin:20px auto;max-width:800px;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);padding:20px 24px}
@@ -191,7 +190,7 @@ td:nth-child(3),thead tr:last-child th:nth-child(3){left:315px;min-width:170px}
     <table>
       <thead>
         <tr>
-          <th class="gh gh-tovar bl" colspan="3">ТОВАР</th>
+          <th class="gh gh-tovar bl" colspan="2">ТОВАР</th>
           <th class="gh gh-gen bl" colspan="3">Генерація</th>
           <th class="gh gh-hel bl" colspan="6">Helius</th>
           <th class="gh gh-dol bl" colspan="6">Dolya Solar</th>
@@ -200,7 +199,7 @@ td:nth-child(3),thead tr:last-child th:nth-child(3){left:315px;min-width:170px}
           <th class="gh gh-best bl" colspan="2">НАЙКРАЩА</th>
         </tr>
         <tr>
-          <th class="sh sh-tovar bl">&#8470;</th><th class="sh sh-tovar">Назва товару</th><th class="sh sh-tovar">Артикул</th>
+          <th class="sh sh-tovar bl">&#8470;</th><th class="sh sh-tovar">Артикул</th>
           <th class="sh sh-gen bl">Статус</th><th class="sh sh-gen">Ціна без ПДВ</th><th class="sh sh-gen">Ціна з ПДВ</th>
           <th class="sh sh-hel bl">Статус</th><th class="sh sh-hel">Ціна без ПДВ</th><th class="sh sh-hel">&Delta;%</th><th class="sh sh-hel">Ціна з ПДВ</th><th class="sh sh-hel">&Delta;%</th><th class="sh sh-hel">РРЦ</th>
           <th class="sh sh-dol bl">Статус</th><th class="sh sh-dol">Ціна без ПДВ</th><th class="sh sh-dol">&Delta;%</th><th class="sh sh-dol">Ціна з ПДВ</th><th class="sh sh-dol">&Delta;%</th><th class="sh sh-dol">Ціна UAH</th>
@@ -623,7 +622,7 @@ function renderTable(rows) {
   for (const rd of rows) {
     if (rd.cat !== currentCat) {
       currentCat = rd.cat;
-      tb.innerHTML += `<tr class="cat"><td colspan="32">${currentCat}</td></tr>`;
+      tb.innerHTML += `<tr class="cat"><td colspan="31">${currentCat}</td></tr>`;
     }
     n++;
     const e = n % 2 === 0 ? 'even' : '';
@@ -636,8 +635,7 @@ function renderTable(rows) {
 
     tb.innerHTML += `<tr>
       <td class="t-tovar ${e} bl">${n}</td>
-      <td class="t-tovar ${e} name">${r.name}</td>
-      <td class="t-tovar ${e} art">${r.model||''}</td>
+      <td class="t-tovar ${e} art">${r.model||r.name}</td>
       <td class="t-gen ${e} bl status">${r.gSt||''}</td>
       <td class="t-gen ${e} bold">${fmt(r.gNV)}</td>
       <td class="t-gen ${e}">${fmt(r.gV)}</td>
