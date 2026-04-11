@@ -491,6 +491,8 @@ async function parseGeneracia(file) {
 async function parseHelius(file) {
   const ab = await readFileAsArrayBuffer(file);
   const wb = XLSX.read(ab, {type: 'array', cellNF: true});
+  const hasSheet = wb.SheetNames.some(s => s === 'ПРАЙС' || s === 'Price-List');
+  if (!hasSheet) throw new Error('Helius: не знайдено листів "ПРАЙС" або "Price-List" — структура прайсу змінилась');
   const products = [];
   const SKIP = new Set(['ІНВЕРТОРИ ГІБРИДНІ','ІНВЕРТОРИ МЕРЕЖЕВІ','АКУМУЛЯТОРНІ БАТАРЕЇ ',
     'СИСТЕМИ ЗБЕРІГАННЯ ЕНЕРГІЇ','КОМПЛЕКТУЮЧІ','СОНЯЧНІ ПАНЕЛІ']);
@@ -554,6 +556,7 @@ async function parseDolya(file) {
   const SKIP = new Set(['Інше обладнання','DYNESS','Серія SE','Серія RW','Серія AI',
     'Серія BOS-G','Серія BOS-B','Серія BOS-A','Балкона ESS','Deye','DEYE']);
   const sheets = wb.SheetNames.filter(s => ['Інвертори','Акумулятори','Фотомодулі','Кабел'].some(k => s.includes(k)));
+  if (!sheets.length) throw new Error('Dolya: не знайдено листів "Інвертори/Акумулятори/Фотомодулі/Кабел" — структура прайсу змінилась');
   for (const sn of sheets) {
     const ws = wb.Sheets[sn];
     const maxR = sheetRows(ws);
@@ -684,77 +687,21 @@ function guessCategory(name) {
 
 function buildComparison(genProds, helProds, dolProds, seProds, atmProds) {
   const categories = ['ІНВЕРТОРИ', 'АКУМУЛЯТОРИ', 'МОДУЛІ', 'КАБЕЛІ'];
-
-  // Collect all products from all sources
-  // Інвертори — тільки ті що є в Генерації, решта категорій — все від усіх
-  const all = [];
-  for (const p of genProds) { const c = p.category || guessCategory(p.name); if (c) all.push({...p, src: 'g', cat: c}); }
-  const otherLists = [{prods: helProds, src: 'h'}, {prods: dolProds, src: 'd'}, {prods: seProds, src: 's'}, {prods: atmProds, src: 'a'}];
-  for (const {prods, src} of otherLists) {
-    for (const p of prods) {
-      const c = guessCategory(p.name);
-      if (!c) continue;
-      if (c === 'ІНВЕРТОРИ') continue; // інвертори — тільки з Генерації
-      all.push({...p, src, cat: c});
-    }
-  }
-
-  // For inverters from other suppliers: only add if matched to Генерація
-  const genInverters = all.filter(p => p.cat === 'ІНВЕРТОРИ' && p.src === 'g');
-  for (const {prods, src} of otherLists) {
-    for (const p of prods) {
-      const c = guessCategory(p.name);
-      if (c !== 'ІНВЕРТОРИ') continue;
-      // Check if matches any Генерація inverter
-      const hasMatch = genInverters.some(gi => gi.model && fuzzyMatch(gi.model, p.model));
-      if (hasMatch) all.push({...p, src, cat: c});
-    }
-  }
-
-  // Group by model: merge products with matching models into groups
-  const groups = [];
-  const used = new Set();
-
-  for (let i = 0; i < all.length; i++) {
-    if (used.has(i)) continue;
-    const p = all[i];
-    const group = {cat: p.cat, name: p.name, model: p.model, g: null, h: null, d: null, s: null, a: null};
-    group[p.src] = p;
-    used.add(i);
-
-    if (p.model) {
-      const isPanel = p.cat === 'МОДУЛІ';
-      for (let j = i + 1; j < all.length; j++) {
-        if (used.has(j)) continue;
-        const q = all[j];
-        if (group[q.src]) continue;
-        if (!fuzzyMatch(p.model, q.model)) continue;
-        if (isPanel) {
-          const w1 = extractWattage(p.name), w2 = extractWattage(q.name);
-          if (w1 && w2 && Math.abs(w1 - w2) > 10) continue;
-        }
-        const refPrice = p.price_no_vat || (group.g && group.g.price_no_vat);
-        if (refPrice && q.price_no_vat && refPrice > 0) {
-          const ratio = q.price_no_vat / refPrice;
-          if (ratio > 5 || ratio < 0.2) continue;
-        }
-        group[q.src] = q;
-        used.add(j);
-      }
-    }
-    groups.push(group);
-  }
-
-  // Convert groups to rows, sorted by category
   const rows = [];
+
+  // Pass 1: all from Генерація — match in other suppliers
   for (const cat of categories) {
-    const catGroups = groups.filter(g => g.cat === cat);
-    if (!catGroups.length) continue;
-    for (const gr of catGroups) {
-      const gp = gr.g, hm = gr.h, dm = gr.d, sm = gr.s, am = gr.a;
+    const items = genProds.filter(p => (p.category || guessCategory(p.name)) === cat);
+    for (const gp of items) {
+      const isPanel = cat === 'МОДУЛІ';
+      const gpPrice = gp.price_no_vat;
+      const hm = findMatch(gp.model, gp.name, gpPrice, helProds, isPanel);
+      const dm = findMatch(gp.model, gp.name, gpPrice, dolProds, isPanel);
+      const sm = findMatch(gp.model, gp.name, gpPrice, seProds, isPanel);
+      const am = findMatch(gp.model, gp.name, gpPrice, atmProds, isPanel);
       rows.push({
-        cat, name: gr.name, model: gr.model,
-        gSt: gp ? gp.status : null, gNV: gp ? gp.price_no_vat : null, gV: gp ? gp.price_vat : null, gC: gp ? (gp.currency || 'USD') : 'USD',
+        cat, name: gp.name, model: gp.model,
+        gSt: gp.status, gNV: gp.price_no_vat, gV: gp.price_vat, gC: gp.currency || 'USD',
         hSt: hm ? hm.status : null, hNV: hm ? hm.price_no_vat : null,
         hV: hm ? hm.price_vat : null, hR: hm ? (hm.rrc || null) : null, hC: hm ? (hm.currency || 'USD') : 'USD',
         dSt: dm ? dm.status : null, dNV: dm ? dm.price_no_vat : null,
@@ -763,10 +710,61 @@ function buildComparison(genProds, helProds, dolProds, seProds, atmProds) {
         sV: sm ? sm.price_vat : null, sC: sm ? (sm.currency || 'USD') : 'USD',
         aSt: am ? (am.status || null) : null, aNV: am ? am.price_no_vat : null,
         aV: am ? (am.price_vat || null) : null, aC: am ? (am.currency || 'USD') : 'USD',
+        _hm: hm, _dm: dm, _sm: sm, _am: am,
       });
     }
   }
-  return rows;
+
+  // Pass 2: panels from other suppliers not yet matched
+  const usedH = new Set(rows.filter(r=>r._hm).map(r=>r._hm));
+  const usedD = new Set(rows.filter(r=>r._dm).map(r=>r._dm));
+  const usedS = new Set(rows.filter(r=>r._sm).map(r=>r._sm));
+  const usedA = new Set(rows.filter(r=>r._am).map(r=>r._am));
+  rows.forEach(r => { delete r._hm; delete r._dm; delete r._sm; delete r._am; });
+
+  const panelSources = [
+    {prods: helProds, used: usedH, key: 'h'},
+    {prods: dolProds, used: usedD, key: 'd'},
+    {prods: seProds, used: usedS, key: 's'},
+    {prods: atmProds, used: usedA, key: 'a'},
+  ];
+  const extraPanels = new Map();
+  for (const {prods, used, key} of panelSources) {
+    for (const p of prods) {
+      if (used.has(p)) continue;
+      const c = guessCategory(p.name);
+      if (c !== 'МОДУЛІ') continue;
+      if (!p.model) continue;
+      const nm = normModel(p.model);
+      if (!nm) continue;
+      let entry = null;
+      for (const [k, v] of extraPanels) { if (fuzzyMatch(k, nm)) { entry = v; break; } }
+      if (!entry) { entry = {name: p.name, model: nm, h:null, d:null, s:null, a:null}; extraPanels.set(nm, entry); }
+      if (!entry[key]) entry[key] = p;
+    }
+  }
+  for (const ex of extraPanels.values()) {
+    const hm = ex.h, dm = ex.d, sm = ex.s, am = ex.a;
+    rows.push({
+      cat: 'МОДУЛІ', name: ex.name, model: ex.model,
+      gSt: null, gNV: null, gV: null, gC: 'USD',
+      hSt: hm ? hm.status : null, hNV: hm ? hm.price_no_vat : null,
+      hV: hm ? hm.price_vat : null, hR: hm ? (hm.rrc || null) : null, hC: hm ? (hm.currency || 'USD') : 'USD',
+      dSt: dm ? dm.status : null, dNV: dm ? dm.price_no_vat : null,
+      dV: dm ? dm.price_vat : null, dC: dm ? (dm.currency || 'USD') : 'USD',
+      sSt: sm ? sm.status : null, sNV: sm ? sm.price_no_vat : null,
+      sV: sm ? sm.price_vat : null, sC: sm ? (sm.currency || 'USD') : 'USD',
+      aSt: am ? (am.status || null) : null, aNV: am ? am.price_no_vat : null,
+      aV: am ? (am.price_vat || null) : null, aC: am ? (am.currency || 'USD') : 'USD',
+    });
+  }
+
+  // Sort rows by category order
+  const sorted = [];
+  for (const cat of categories) {
+    sorted.push(...rows.filter(r => r.cat === cat));
+  }
+  return sorted;
 }
 
 // ═══════════════════════════════════════════════
@@ -848,10 +846,13 @@ async function runComparison() {
   document.getElementById('results').style.display = 'none';
 
   try {
+    const warnings = [];
+
     // Parse Генерація (required)
     progText.textContent = 'Парсинг: Генерація...';
     progBar.style.width = '10%';
     const genProds = await parseGeneracia(files.gen);
+    if (!genProds.length) warnings.push('Генерація: 0 товарів — можливо змінилась структура прайсу');
 
     // Parse Helius
     let helProds = [];
@@ -859,6 +860,7 @@ async function runComparison() {
       progText.textContent = 'Парсинг: Helius...';
       progBar.style.width = '25%';
       helProds = await parseHelius(files.hel);
+      if (!helProds.length) warnings.push('Helius: 0 товарів — можливо змінилась структура прайсу');
     }
 
     // Parse Dolya
@@ -867,6 +869,7 @@ async function runComparison() {
       progText.textContent = 'Парсинг: Dolya Solar...';
       progBar.style.width = '40%';
       dolProds = await parseDolya(files.dol);
+      if (!dolProds.length) warnings.push('Dolya Solar: 0 товарів — можливо змінилась структура прайсу');
     }
 
     // SE — auto-fetch from website
@@ -882,7 +885,8 @@ async function runComparison() {
         document.getElementById('seStatus').textContent = seProds.length + ' товарів';
         document.getElementById('seSlot').classList.add('has-file');
       }
-    } catch(e) { console.warn('SE auto-fetch error', e); }
+      if (!seProds.length) warnings.push('SE: 0 товарів — можливо змінився сайт se.net.ua');
+    } catch(e) { console.warn('SE auto-fetch error', e); warnings.push('SE: помилка завантаження — ' + e.message); }
 
     // Parse Атмосфера
     let atmProds = [];
@@ -890,7 +894,11 @@ async function runComparison() {
       progText.textContent = 'Парсинг: Атмосфера...';
       progBar.style.width = '70%';
       atmProds = await parseAtmosfera(files.atm);
+      if (!atmProds.length) warnings.push('Атмосфера: 0 товарів — можливо змінилась структура прайсу');
     }
+
+    // Show warnings
+    if (warnings.length) alert('Увага!\n\n' + warnings.join('\n'));
 
     // Match
     progText.textContent = 'Зіставлення моделей...';
