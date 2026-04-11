@@ -76,7 +76,8 @@ td:nth-child(2){left:35px}
 thead tr:last-child th:nth-child(1){left:0;min-width:35px}
 thead tr:last-child th:nth-child(2){left:35px}
 thead tr:first-child th:first-child{left:0}
-.cat td{position:sticky;left:0;z-index:55;background:#E8E8E8}
+.cat td{background:#E8E8E8}
+.cat .cat-name{position:sticky;left:0;z-index:55;background:#E8E8E8;white-space:nowrap}
 .legend{margin:20px auto;max-width:600px;padding:16px 24px;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);font-size:13px}
 .legend h3{margin-bottom:8px;color:#555}
 .summary{margin:20px auto;max-width:800px;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);padding:20px 24px}
@@ -622,7 +623,7 @@ function renderTable(rows) {
   for (const rd of rows) {
     if (rd.cat !== currentCat) {
       currentCat = rd.cat;
-      tb.innerHTML += `<tr class="cat"><td colspan="31">${currentCat}</td></tr>`;
+      tb.innerHTML += `<tr class="cat"><td class="cat-name">${currentCat}</td><td colspan="30"></td></tr>`;
     }
     n++;
     const e = n % 2 === 0 ? 'even' : '';
