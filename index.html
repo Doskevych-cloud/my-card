@@ -1,57 +1,345 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dmytro Doskevich</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        :root {
-            --orange: #ff8319;
-            --orange-light: #f79743;
-            --orange-glow: rgba(255, 131, 25, .15);
-            --dark: #2c2c2c;
-            --gray: #7e7e7e;
-            --light: #f3f3f3;
-            --white: #ffffff;
-        }
-        body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            min-height: 100vh;
-            display: flex; align-items: center; justify-content: center;
-            background: var(--white); color: var(--dark);
-        }
-        .card { max-width: 400px; width: 90%; text-align: center; padding: 60px 32px; animation: fadeUp .7s ease-out; }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
-        .avatar { width: 96px; height: 96px; border-radius: 50%; border: 4px solid var(--orange); display: flex; align-items: center; justify-content: center; margin: 0 auto 32px; position: relative; }
-        .avatar::after { content: ''; width: 28px; height: 28px; background: var(--orange); border-radius: 50%; position: absolute; }
-        h1 { font-size: 1.6rem; font-weight: 700; color: var(--dark); margin-bottom: 8px; letter-spacing: -.02em; }
-        .subtitle { font-size: .9rem; color: var(--gray); margin-bottom: 40px; }
-        .links { list-style: none; display: flex; flex-direction: column; gap: 12px; }
-        .links a { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px 24px; border-radius: 12px; background: var(--light); color: var(--dark); text-decoration: none; font-size: .9rem; font-weight: 500; transition: all .2s ease; border: 1px solid transparent; }
-        .links a:hover { background: var(--orange-glow); border-color: var(--orange-light); color: var(--orange); }
-        .links a svg { width: 18px; height: 18px; flex-shrink: 0; }
-        .divider { height: 1px; background: var(--light); margin: 32px 0; }
-        .cta { display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px; border-radius: 60px; background: var(--orange); color: var(--white); text-decoration: none; font-size: .9rem; font-weight: 600; transition: all .2s ease; border: none; cursor: pointer; }
-        .cta:hover { background: var(--orange-light); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255, 131, 25, .3); }
-        .cta svg { width: 16px; height: 16px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Звірка прайсів — Генерація</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0f1117;
+  --surface:#161922;
+  --surface2:#1c1f2e;
+  --border:#262940;
+  --border-light:#2d3152;
+  --text:#e1e4ed;
+  --text-muted:#787ea0;
+  --text-dim:#505576;
+  --green:#22c55e;
+  --green-bg:rgba(34,197,94,.08);
+  --red:#ef4444;
+  --red-bg:rgba(239,68,68,.08);
+  --accent:#6366f1;
+  --yellow:#eab308;
+  --yellow-bg:rgba(234,179,8,.06);
+  --frozen-bg:#161922;
+  --frozen-shadow:4px 0 12px rgba(0,0,0,.4);
+}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ── Auth Screen ── */
+#auth{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)}
+#auth-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:48px 40px;max-width:380px;width:100%;text-align:center}
+#auth-box h2{font-size:22px;font-weight:700;margin-bottom:4px;letter-spacing:-.3px}
+#auth-box p{color:var(--text-muted);font-size:13px;margin-bottom:28px}
+#auth-box input{width:100%;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-size:15px;color:var(--text);outline:none;text-align:center;letter-spacing:3px;transition:border .2s}
+#auth-box input:focus{border-color:var(--accent)}
+#auth-box input::placeholder{color:var(--text-dim);letter-spacing:1px}
+#auth-box button{margin-top:14px;width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s}
+#auth-box button:hover{opacity:.85}
+#auth-error{color:var(--red);font-size:12px;margin-top:10px;display:none}
+
+/* ── App Layout ── */
+#app{display:none;padding:24px 28px 48px}
+header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:20px}
+header h1{font-size:18px;font-weight:700;letter-spacing:-.3px}
+header .meta{color:var(--text-dim);font-size:11px}
+
+/* ── Summary Bar ── */
+.summary{display:flex;gap:10px;margin-bottom:20px;overflow-x:auto;padding-bottom:4px}
+.s-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;min-width:190px;flex-shrink:0}
+.s-card .s-name{font-weight:600;font-size:12px;color:var(--text);margin-bottom:6px}
+.s-card .s-row{display:flex;gap:14px;font-size:11px;color:var(--text-muted)}
+.s-card .s-row .s-g{color:var(--green)}
+.s-card .s-row .s-r{color:var(--red)}
+
+/* ── Table ── */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;position:relative}
+.table-scroll{overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 210px)}
+table{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%}
+
+/* Cells */
+th,td{padding:7px 12px;white-space:nowrap;text-align:left;font-size:12px;border-bottom:1px solid var(--border)}
+th{font-weight:500;color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+
+/* ── Frozen left columns ── */
+.frozen{position:sticky;z-index:5;background:var(--frozen-bg)}
+.col-num{left:0;width:36px;min-width:36px;text-align:center}
+.col-name{left:36px;min-width:280px;max-width:340px;overflow:hidden;text-overflow:ellipsis}
+.col-name-shadow{box-shadow:var(--frozen-shadow)}
+
+/* ── Sticky header ── */
+thead{position:sticky;top:0;z-index:20}
+thead th{background:var(--surface2);border-bottom:1px solid var(--border-light)}
+thead th.frozen{background:var(--surface2);z-index:25}
+
+/* ── Group header ── */
+tr.hdr-group th{padding:10px 12px;font-weight:700;font-size:11px;letter-spacing:.5px;color:var(--text);background:var(--bg)!important}
+tr.hdr-group th.frozen{background:var(--bg)!important}
+tr.hdr-group th.grp-best-h{}
+
+/* ── Column header (sortable) ── */
+tr.hdr-col th{cursor:pointer;user-select:none;transition:color .15s}
+tr.hdr-col th:hover{color:var(--text)}
+tr.hdr-col th .arr{font-size:9px;margin-left:2px;opacity:.3;transition:opacity .15s}
+tr.hdr-col th.sorted .arr{opacity:1;color:var(--accent)}
+
+/* ── Category separator ── */
+tr.cat td{background:var(--bg);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-dim);padding:12px;border-bottom:1px solid var(--border-light)}
+
+/* ── Data rows ── */
+tbody tr:not(.cat):hover td{background:var(--surface2)}
+tbody tr:not(.cat):hover td.frozen{background:var(--surface2)}
+
+/* ── Price cells ── */
+.price{font-variant-numeric:tabular-nums;font-weight:500}
+.delta{font-variant-numeric:tabular-nums;font-size:11px}
+.d-neg{color:var(--green);background:var(--green-bg);padding:2px 6px;border-radius:4px;display:inline-block}
+.d-pos{color:var(--red);background:var(--red-bg);padding:2px 6px;border-radius:4px;display:inline-block}
+.d-zero{color:var(--text-dim)}
+
+/* ── Status badges ── */
+.st{font-size:10px;padding:3px 8px;border-radius:5px;display:inline-block;font-weight:500;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st-ok{background:rgba(34,197,94,.1);color:#4ade80}
+.st-wait{background:rgba(234,179,8,.1);color:#facc15}
+.st-low{background:rgba(239,68,68,.1);color:#f87171}
+.st-road{background:rgba(99,102,241,.1);color:#a5b4fc}
+.st-other{background:rgba(120,126,160,.1);color:var(--text-muted)}
+
+/* ── Best price column — same style as others ── */
+.best{}
+.best-val{font-weight:600}
+
+/* ── Group dividers — subtle top border on first col of each group ── */
+.gdiv{border-left:1px solid var(--border-light)}
+
+/* ── Legend ── */
+.legend{margin-top:14px;display:flex;gap:16px;font-size:11px;color:var(--text-dim);flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:5px}
+.legend .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+</style>
 </head>
 <body>
-<div class="card">
-    <div class="avatar"></div>
-    <h1>Dmytro Doskevich</h1>
-    <p class="subtitle">Web Developer</p>
-    <a href="mailto:doskevich@gmail.com" class="cta">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-        Написати
-    </a>
-    <div class="divider"></div>
-    <ul class="links">
-        <li><a href="https://generacia.energy" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> generacia.energy</a></li>
-        <li><a href="https://github.com/doskevich" target="_blank"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.82-.26.82-.58v-2.02c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.08-.74.08-.73.08-.73 1.2.08 1.84 1.23 1.84 1.23 1.07 1.84 2.8 1.3 3.49 1 .1-.78.42-1.3.76-1.6-2.67-.31-5.47-1.34-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6.02 0c2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.25 2.88.12 3.18a4.65 4.65 0 0 1 1.24 3.22c0 4.61-2.8 5.62-5.48 5.92.43.37.82 1.1.82 2.22v3.29c0 .32.22.7.82.58A12 12 0 0 0 12 .3"/></svg> GitHub</a></li>
-        <li><a href="https://t.me/doskevich" target="_blank"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 0C5.37 0 0 5.37 0 12s5.37 12 11.99 12S24 18.63 24 12 18.62 0 11.99 0zm5.9 8.17s-.34 3.46-.48 4.59c-.14 1.13-.42 1.51-.7 1.55-.59.08-1.04-.39-1.62-.77-.9-.59-1.41-.96-2.28-1.53-1.01-.66-.35-1.02.22-1.62.15-.15 2.77-2.54 2.82-2.76.01-.03.01-.14-.05-.2s-.16-.04-.23-.02c-.1.02-1.63 1.03-4.6 3.04-.43.3-.83.45-1.18.44-.39-.01-1.14-.22-1.7-.4-.68-.23-1.23-.35-1.18-.73.02-.2.3-.41.82-.62 3.2-1.4 5.34-2.31 6.41-2.76 3.05-1.27 3.69-1.49 4.1-1.5.09 0 .3.02.43.13.11.09.14.21.16.3-.01.06.01.24 0 .36z"/></svg> Telegram</a></li>
-    </ul>
+
+<div id="auth">
+  <div id="auth-box">
+    <h2>Генерація</h2>
+    <p>Звірка прайсів постачальників</p>
+    <input type="password" id="pwd" placeholder="Пароль" autofocus>
+    <button onclick="checkPwd()">Увійти</button>
+    <div id="auth-error">Невірний пароль</div>
+  </div>
 </div>
+
+<div id="app">
+  <header>
+    <div>
+      <h1>Звірка прайсів постачальників</h1>
+      <div class="meta">Оновлено 11.04.2026 · Якір: Генерація · <span id="cnt"></span> позицій</div>
+    </div>
+  </header>
+  <div class="summary" id="sum"></div>
+  <div class="table-wrap">
+    <div class="table-scroll" id="scroll">
+      <table><thead id="thead"></thead><tbody id="tbody"></tbody></table>
+    </div>
+  </div>
+  <div class="legend">
+    <span><span class="dot" style="background:var(--green)"></span> Дешевше</span>
+    <span><span class="dot" style="background:var(--red)"></span> Дорожче</span>
+    <span><span class="dot" style="background:var(--yellow)"></span> Найкраща ціна</span>
+  </div>
+</div>
+
+<script>
+const PWD='063744';
+function checkPwd(){
+  if(document.getElementById('pwd').value===PWD){
+    document.getElementById('auth').style.display='none';
+    document.getElementById('app').style.display='block';
+    init();
+  } else {
+    document.getElementById('auth-error').style.display='block';
+    document.getElementById('pwd').value='';
+    document.getElementById('pwd').focus();
+  }
+}
+document.getElementById('pwd').addEventListener('keydown',e=>{if(e.key==='Enter')checkPwd()});
+
+const D=[
+{n:1,cat:"Інвертори",nm:"Гібридний інвертор DEYE SUN-6K-SG05LP1-EU-AM2-P",sku:"SUN-6K-SG05LP1-EU-AM2-P",gs:"в наявності",gp:780,gv:null,hs:"очікується",hp:810,hd:3.85,hv:915,hdv:null,hr:1112,ds:"є в наявності",dp:760,dd:-2.56,dv:912,ddv:null,du:33440,ss:"Дніпро:0 Київ:0",sp:760,sd:-2.56,sv:null,sdv:null,as:null,ap:null,ad:null,av:null,adv:null,ac:null,bs:"Dolya / SE",bp:760},
+{n:2,cat:"Інвертори",nm:"Інвертор гібридний Deye SUN-8K-SG05LP1-EU",sku:"SUN-8K-SG05LP1-EU",gs:"в наявності",gp:1080,gv:null,hs:"Предзамовлення 100%",hp:1080,hd:0,hv:1185,hdv:null,hr:null,ds:"є в наявності",dp:1080,dd:0,dv:null,ddv:null,du:null,ss:"Дніпро:0 Київ:0",sp:1100,sd:1.85,sv:null,sdv:null,as:null,ap:1736.47,ad:60.78,av:null,adv:null,ac:"USD",bs:"Генерація / Helius / Dolya",bp:1080},
+{n:3,cat:"Інвертори",nm:"Гібридний інвертор DEYE SUN-10K-SG02LP1-EU",sku:"SUN-10K-SG02LP1-EU",gs:"в наявності",gp:1500,gv:null,hs:"очікується",hp:1650,hd:10,hv:1920,hdv:null,hr:2220,ds:"є в наявності",dp:1450,dd:-3.33,dv:1740,ddv:null,du:63800,ss:"Дніпро:0 Київ:0 Очік.14.04",sp:1550,sd:3.33,sv:null,sdv:null,as:null,ap:null,ad:null,av:null,adv:null,ac:null,bs:"Dolya",bp:1450},
+{n:4,cat:"Інвертори",nm:"Гібридний інвертор DEYE SUN-10K-SG05LP3-EU-SM2",sku:"SUN-10K-SG05LP3-EU-SM2",gs:"в наявності",gp:1600,gv:null,hs:"очікується",hp:1540,hd:-3.75,hv:1930,hdv:null,hr:2250,ds:null,dp:null,dd:null,dv:null,ddv:null,du:null,ss:"Дніпро:0 Київ:0",sp:1650,sd:3.12,sv:null,sdv:null,as:null,ap:2329.41,ad:45.59,av:null,adv:null,ac:"USD",bs:"Helius",bp:1540},
+{n:5,cat:"Інвертори",nm:"Гібридний інвертор DEYE SUN-12K-SG01HP3-EU",sku:"SUN-12K-SG01HP3-EU",gs:"в наявності",gp:900,gv:null,hs:null,hp:null,hd:null,hv:null,hdv:null,hr:null,ds:null,dp:null,dd:null,dv:null,ddv:null,du:null,ss:null,sp:null,sd:null,sv:null,sdv:null,as:null,ap:null,ad:null,av:null,adv:null,ac:null,bs:"Генерація",bp:900},
+{n:6,cat:"Інвертори",nm:"Гібридний інвертор Deye SUN-12K-SG05LP3-EU-SM2",sku:"SUN-12K-SG05LP3-EU-SM2",gs:"в наявності",gp:1750,gv:null,hs:"очікується",hp:1770,hd:1.14,hv:2015,hdv:null,hr:2250,ds:"є в наявності",dp:1620,dd:-7.43,dv:1944,ddv:null,du:71280,ss:"Дніпро:0 Київ:0 Очік.14.04",sp:1750,sd:0,sv:null,sdv:null,as:null,ap:2442.35,ad:39.56,av:null,adv:null,ac:"USD",bs:"Dolya",bp:1620},
+{n:7,cat:"Інвертори",nm:"Гібридний інвертор DEYE SUN-15K-SG05LP3-EU-SM2",sku:"SUN-15K-SG05LP3-EU-SM2",gs:"в наявності",gp:1900,gv:null,hs:"очікується",hp:2060,hd:8.42,hv:2420,hdv:null,hr:3000,ds:"є в наявності",dp:1850,dd:-2.63,dv:2200,ddv:null,du:81400,ss:"Дніпро:0 Київ:16",sp:2000,sd:5.26,sv:null,sdv:null,as:null,ap:2823.53,ad:48.61,av:null,adv:null,ac:"USD",bs:"Dolya",bp:1850},
+{n:8,cat:"Інвертори",nm:"Гібридний інвертор DEYE SUN-15K-SG05HP3-EU",sku:"SUN-15K-SG05HP3-EU",gs:"в наявності",gp:1600,gv:null,hs:null,hp:null,hd:null,hv:null,hdv:null,hr:null,ds:null,dp:null,dd:null,dv:null,ddv:null,du:null,ss:null,sp:null,sd:null,sv:null,sdv:null,as:null,ap:null,ad:null,av:null,adv:null,ac:null,bs:"Генерація",bp:1600},
+{n:9,cat:"Інвертори",nm:"Гібридний інвертор DEYE SUN-20K-SG05HP3-EU-AM2",sku:"SUN-20K-SG05HP3-EU-AM2",gs:"в наявності",gp:1870,gv:null,hs:null,hp:null,hd:null,hv:null,hdv:null,hr:null,ds:null,dp:null,dd:null,dv:null,ddv:null,du:null,ss:null,sp:null,sd:null,sv:null,sdv:null,as:null,ap:null,ad:null,av:null,adv:null,ac:null,bs:"Генерація",bp:1870},
+{n:10,cat:"Інвертори",nm:"Гібридний інвертор Deye SUN-20K-SG05LP3-EU",sku:"SUN-20K-SG05LP3-EU",gs:"в наявності",gp:2550,gv:null,hs:"очікується",hp:2680,hd:5.1,hv:2980,hdv:null,hr:3500,ds:"є в наявності",dp:2480,dd:-2.75,dv:2976,ddv:null,du:109120,ss:"Дніпро:0 Київ:11",sp:2650,sd:3.92,sv:null,sdv:null,as:null,ap:3458.82,ad:35.64,av:null,adv:null,ac:"USD",bs:"Dolya",bp:2480},
+{n:11,cat:"Інвертори",nm:"Гібридний інвертор Deye SUN-30K-SG02HP3-EU",sku:"SUN-30K-SG02HP3-EU",gs:"в наявності",gp:3280,gv:3936,hs:"очікується",hp:2885,hd:-12.04,hv:null,hdv:null,hr:3300,ds:"є в наявності",dp:2800,dd:-14.63,dv:3360,ddv:-14.63,du:123200,ss:"Дніпро:0 Київ:10",sp:2900,sd:-11.59,sv:3450,sdv:-12.35,as:null,ap:3727.06,ad:13.63,av:null,adv:null,ac:"USD",bs:"Dolya",bp:2800},
+{n:12,cat:"Інвертори",nm:"Гібридний інвертор Deye SUN-50K-SG01HP3-EU-BM4",sku:"SUN-50K-SG01HP3-EU-BM4",gs:"в наявності",gp:4800,gv:5760,hs:"очікується",hp:4495,hd:-6.35,hv:5400,hdv:-6.25,hr:5900,ds:"Закінчуються",dp:4400,dd:-8.33,dv:5280,ddv:-8.33,du:193600,ss:"Дніпро:0 Київ:0 Очік.17.04",sp:4200,sd:-12.5,sv:5200,sdv:-9.72,as:null,ap:5576.47,ad:16.18,av:null,adv:null,ac:"USD",bs:"SE",bp:4200},
+{n:13,cat:"Інвертори",nm:"Гібридний інвертор Deye SUN-80K-SG02HP3-EU-EM6",sku:"SUN-80K-SG02HP3-EU-EM6",gs:"в наявності",gp:6250,gv:7500,hs:"очікується",hp:5930,hd:-5.12,hv:7120,hdv:-5.07,hr:9000,ds:"є в наявності",dp:5910,dd:-5.44,dv:7092,ddv:-5.44,du:260040,ss:"Дніпро:0 Київ:0 Очік.14.04",sp:5700,sd:-8.8,sv:6700,sdv:-10.67,as:null,ap:7934.12,ad:26.95,av:null,adv:null,ac:"USD",bs:"SE",bp:5700},
+{n:14,cat:"Акумулятори",nm:"АКБ Deye SE-G5.1Pro-B (LiFePO4 51,2V 100Ah)",sku:"SE-G5.1PRO-B",gs:"в наявності",gp:810,gv:null,hs:"під замовлення",hp:770,hd:-4.94,hv:830,hdv:null,hr:900,ds:"В дорозі",dp:null,dd:null,dv:null,ddv:null,du:null,ss:"Дніпро:0 Київ:75",sp:780,sd:-3.7,sv:null,sdv:null,as:null,ap:null,ad:null,av:null,adv:null,ac:null,bs:"Helius",bp:770},
+{n:15,cat:"Акумулятори",nm:"АКБ DEYE SE-F5 Pro LiFePO4 LV 51.2v 100Ah 5.12kwh",sku:"SE-F5PRO",gs:"в наявності",gp:790,gv:null,hs:"очікується",hp:730,hd:-7.59,hv:null,hdv:null,hr:870,ds:"є в наявності",dp:760,dd:-3.8,dv:900,ddv:null,du:33440,ss:"Дніпро:0 Київ:482",sp:760,sd:-3.8,sv:null,sdv:null,as:null,ap:1129.41,ad:42.96,av:null,adv:null,ac:"USD",bs:"Helius",bp:730},
+{n:16,cat:"Акумулятори",nm:"АКБ DAH DHN-LVWES05-G1 (LiFePO4 51,2V 100Ah)",sku:"DHN-LVWES05-G",gs:"в наявності",gp:695,gv:null,hs:null,hp:null,hd:null,hv:null,hdv:null,hr:null,ds:null,dp:null,dd:null,dv:null,ddv:null,du:null,ss:null,sp:null,sd:null,sv:null,sdv:null,as:null,ap:null,ad:null,av:null,adv:null,ac:null,bs:"Генерація",bp:695},
+{n:17,cat:"Акумулятори",nm:"АКБ DEYE BOS-G PRO LiFePO4 HV 51.2v 100AH 5.12kwh",sku:"BOS-GPRO",gs:"в наявності",gp:830,gv:996,hs:null,hp:null,hd:null,hv:null,hdv:null,hr:null,ds:"є в наявності",dp:800,dd:-3.61,dv:960,ddv:-3.61,du:35200,ss:"Дніпро:0 Київ:311",sp:770,sd:-7.23,sv:920,sdv:-7.63,as:null,ap:1087.06,ad:30.97,av:null,adv:null,ac:"USD",bs:"SE",bp:770},
+{n:18,cat:"Акумулятори",nm:"BMS DEYE BOS-G PRO 200-1000Vdc 120A (BOS-G-PDU-2)",sku:"BOS-G-PDU-2",gs:"в наявності",gp:770,gv:924,hs:"очікується",hp:725,hd:-5.84,hv:840,hdv:-9.09,hr:936,ds:"є в наявності",dp:800,dd:3.9,dv:960,ddv:3.9,du:35200,ss:"Дніпро:0 Київ:31",sp:760,sd:-1.3,sv:920,sdv:-0.43,as:null,ap:990.71,ad:28.66,av:null,adv:null,ac:"USD",bs:"Helius",bp:725},
+{n:19,cat:"Акумулятори",nm:"АКБ блок Deye HV BOS-B-Pack16-A3-Pro",sku:"BOS-B-PACK16-A3-PRO",gs:"в наявності",gp:1720,gv:null,hs:"в наявності",hp:1705,hd:-0.87,hv:2040,hdv:null,hr:2100,ds:null,dp:null,dd:null,dv:null,ddv:null,du:null,ss:null,sp:null,sd:null,sv:null,sdv:null,as:null,ap:null,ad:null,av:null,adv:null,ac:null,bs:"Helius",bp:1705},
+{n:20,cat:"Акумулятори",nm:"BMS DEYE BOS-B-Pro-Pack16.08 kWh (BOS-B-PDU-2-А)",sku:"BOS-B-PDU-2-A",gs:"в наявності",gp:1600,gv:null,hs:"в наявності",hp:1575,hd:-1.56,hv:1890,hdv:null,hr:null,ds:null,dp:null,dd:null,dv:null,ddv:null,du:null,ss:null,sp:null,sd:null,sv:null,sdv:null,as:null,ap:null,ad:null,av:null,adv:null,ac:null,bs:"Helius",bp:1575},
+{n:21,cat:"Акумулятори",nm:"АКБ Pylontech US5000 4,8 кВт*ч / 48 В",sku:"US5000",gs:"в наявності",gp:890,gv:null,hs:null,hp:null,hd:null,hv:null,hdv:null,hr:null,ds:null,dp:null,dd:null,dv:null,ddv:null,du:null,ss:null,sp:null,sd:null,sv:null,sdv:null,as:null,ap:636.4,ad:-28.49,av:null,adv:null,ac:"EUR",bs:"Атмосфера",bp:636.4},
+{n:22,cat:"Кабелі",nm:"Комплект кабелів для Pylontech (2м, акб+інвертор)",sku:null,gs:"в наявності",gp:35,gv:null,hs:null,hp:null,hd:null,hv:null,hdv:null,hr:null,ds:null,dp:null,dd:null,dv:null,ddv:null,du:null,ss:null,sp:null,sd:null,sv:null,sdv:null,as:null,ap:null,ad:null,av:null,adv:null,ac:null,bs:"Генерація",bp:35},
+{n:23,cat:"Кабелі",nm:"KBE 6 мм (червоний / чорний), 500 м",sku:null,gs:"в дорозі",gp:null,gv:null,hs:null,hp:null,hd:null,hv:null,hdv:null,hr:null,ds:null,dp:null,dd:null,dv:null,ddv:null,du:null,ss:null,sp:null,sd:null,sv:null,sdv:null,as:null,ap:null,ad:null,av:null,adv:null,ac:null,bs:null,bp:null}
+];
+
+const SUM=[
+{name:"Helius",total:181,common:15,cheaper:9,expensive:5,same:1},
+{name:"Dolya Solar",total:107,common:12,cheaper:10,expensive:1,same:1},
+{name:"SE (se.net.ua)",total:68,common:14,cheaper:8,expensive:5,same:1},
+{name:"Атмосфера",total:308,common:12,cheaper:1,expensive:11,same:0}
+];
+
+/* Column definitions:  key, label, group, type */
+const C=[
+{k:"n",l:"#",g:"item",t:"n",frozen:true,cls:"col-num"},
+{k:"nm",l:"Назва",g:"item",t:"s",frozen:true,cls:"col-name"},
+{k:"gs",l:"Статус",g:"gen",t:"st"},
+{k:"gp",l:"Ціна",g:"gen",t:"p"},
+{k:"gv",l:"з ПДВ",g:"gen",t:"p"},
+{k:"hs",l:"Статус",g:"hel",t:"st",gdiv:true},
+{k:"hp",l:"Ціна",g:"hel",t:"p"},
+{k:"hd",l:"Δ%",g:"hel",t:"d"},
+{k:"hv",l:"з ПДВ",g:"hel",t:"p"},
+{k:"hdv",l:"Δ%",g:"hel",t:"d"},
+{k:"ds",l:"Статус",g:"dol",t:"st",gdiv:true},
+{k:"dp",l:"Ціна",g:"dol",t:"p"},
+{k:"dd",l:"Δ%",g:"dol",t:"d"},
+{k:"dv",l:"з ПДВ",g:"dol",t:"p"},
+{k:"ddv",l:"Δ%",g:"dol",t:"d"},
+{k:"du",l:"UAH",g:"dol",t:"p"},
+{k:"ss",l:"Статус",g:"se",t:"st",gdiv:true},
+{k:"sp",l:"Ціна",g:"se",t:"p"},
+{k:"sd",l:"Δ%",g:"se",t:"d"},
+{k:"sv",l:"з ПДВ",g:"se",t:"p"},
+{k:"sdv",l:"Δ%",g:"se",t:"d"},
+{k:"as",l:"Статус",g:"atm",t:"st",gdiv:true},
+{k:"ap",l:"Ціна",g:"atm",t:"p"},
+{k:"ad",l:"Δ%",g:"atm",t:"d"},
+{k:"av",l:"з ПДВ",g:"atm",t:"p"},
+{k:"adv",l:"Δ%",g:"atm",t:"d"},
+{k:"ac",l:"Вал.",g:"atm",t:"s"},
+{k:"bs",l:"Постачальник",g:"best",t:"s",gdiv:true},
+{k:"bp",l:"Ціна",g:"best",t:"p"}
+];
+
+const GR=[
+{id:"item",l:"Товар",span:2},
+{id:"gen",l:"Генерація",span:3},
+{id:"hel",l:"Helius",span:5},
+{id:"dol",l:"Dolya Solar",span:6},
+{id:"se",l:"SE (se.net.ua)",span:5},
+{id:"atm",l:"Атмосфера",span:6},
+{id:"best",l:"Найкраща ціна",span:2}
+];
+
+let sortI=null,sortD=1;
+
+function stCls(s){if(!s)return'';const l=s.toLowerCase();if(l.includes('наявн'))return'st-ok';if(l.includes('очік')||l.includes('замовл'))return'st-wait';if(l.includes('закінч'))return'st-low';if(l.includes('дорозі')||l.includes('дорог'))return'st-road';return'st-other'}
+function fmtD(v){if(v==null)return'';if(v===0)return'<span class="delta d-zero">0%</span>';const s=v>0?'+':'';const c=v<0?'d-neg':'d-pos';return`<span class="delta ${c}">${s}${v.toFixed(1)}%</span>`}
+function fmtP(v){if(v==null)return'';return`<span class="price">${typeof v==='number'?v.toLocaleString('uk-UA'):v}</span>`}
+function fmtSt(v){if(!v)return'';return`<span class="st ${stCls(v)}" title="${v}">${v}</span>`}
+
+function init(){
+  document.getElementById('cnt').textContent=D.length;
+  // Summary
+  document.getElementById('sum').innerHTML=SUM.map(s=>`<div class="s-card"><div class="s-name">${s.name}</div><div class="s-row"><span>Спільних: ${s.common}</span><span class="s-g">Дешевше: ${s.cheaper}</span><span class="s-r">Дорожче: ${s.expensive}</span></div></div>`).join('');
+
+  // Header group row
+  let gh='<tr class="hdr-group">';
+  GR.forEach((g,gi)=>{
+    const fc=gi<1?'frozen col-num':'';
+    const fc2=gi===0?'frozen col-name':'';
+    const bc=g.id==='best'?'grp-best-h':'';
+    if(gi===0){
+      gh+=`<th class="frozen col-num">#</th><th class="frozen col-name col-name-shadow">${g.l}</th>`;
+    } else {
+      const dv=gi>1?'gdiv':'';
+      gh+=`<th colspan="${g.span}" class="${bc} ${dv}">${g.l}</th>`;
+    }
+  });
+  gh+='</tr>';
+
+  // Header column row
+  let ch='<tr class="hdr-col">';
+  C.forEach((c,i)=>{
+    let cls=[];
+    if(c.frozen)cls.push('frozen',c.cls);
+    if(c.cls==='col-name')cls.push('col-name-shadow');
+    if(c.gdiv)cls.push('gdiv');
+    ch+=`<th class="${cls.join(' ')}" data-i="${i}">${c.l}<span class="arr"></span></th>`;
+  });
+  ch+='</tr>';
+
+  document.getElementById('thead').innerHTML=gh+ch;
+
+  // Sort listeners
+  document.querySelectorAll('.hdr-col th').forEach(th=>{
+    th.addEventListener('click',()=>{
+      const i=+th.dataset.i;
+      if(sortI===i)sortD*=-1; else{sortI=i;sortD=1}
+      document.querySelectorAll('.hdr-col th').forEach(t=>{t.classList.remove('sorted');t.querySelector('.arr').textContent=''});
+      th.classList.add('sorted');
+      th.querySelector('.arr').textContent=sortD===1?' ↑':' ↓';
+      render();
+    });
+  });
+  render();
+}
+
+function render(){
+  let rows=[...D];
+  if(sortI!==null){
+    const c=C[sortI];
+    rows.sort((a,b)=>{
+      let va=a[c.k],vb=b[c.k];
+      if(va==null)va=c.t==='n'||c.t==='p'||c.t==='d'?Infinity:'zzz';
+      if(vb==null)vb=c.t==='n'||c.t==='p'||c.t==='d'?Infinity:'zzz';
+      if(c.t==='n'||c.t==='p'||c.t==='d'){
+        va=typeof va==='string'?parseFloat(va)||Infinity:va;
+        vb=typeof vb==='string'?parseFloat(vb)||Infinity:vb;
+        return(va-vb)*sortD;
+      }
+      return String(va).localeCompare(String(vb),'uk')*sortD;
+    });
+  }
+  const tb=document.getElementById('tbody');
+  let h='',lc='';
+  const catMap={'Інвертори':'ІНВЕРТОРИ ГІБРИДНІ','Акумулятори':'АКУМУЛЯТОРИ','Кабелі':'КАБЕЛІ'};
+  for(const r of rows){
+    if(sortI===null&&r.cat!==lc){
+      lc=r.cat;
+      h+=`<tr class="cat"><td colspan="${C.length}">${catMap[r.cat]||r.cat}</td></tr>`;
+    }
+    h+='<tr>';
+    C.forEach((c,i)=>{
+      let cls=[];
+      if(c.frozen){cls.push('frozen',c.cls);if(c.cls==='col-name')cls.push('col-name-shadow')}
+      if(c.gdiv)cls.push('gdiv');
+      if(c.g==='best')cls.push('best');
+      const v=r[c.k];
+      let content='';
+      if(c.t==='d')content=fmtD(v);
+      else if(c.t==='st')content=fmtSt(v);
+      else if(c.t==='p')content=fmtP(v);
+      else if(c.g==='best'&&c.k==='bp')content=v!=null?`<span class="best-val price">${typeof v==='number'?v.toLocaleString('uk-UA'):v}</span>`:'';
+      else content=v!=null?v:'';
+      h+=`<td class="${cls.join(' ')}">${content}</td>`;
+    });
+    h+='</tr>';
+  }
+  tb.innerHTML=h;
+}
+</script>
 </body>
 </html>
