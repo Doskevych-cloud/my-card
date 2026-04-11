@@ -266,6 +266,8 @@ async function fetchSE() {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     seProducts = data.products;
+    // Re-extract models with client-side patterns
+    for (const p of seProducts) { p.model = extractModel(p.name); }
     btn.textContent = 'Готово!';
     btn.classList.add('done');
     status.textContent = seProducts.length + ' товарів';
