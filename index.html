@@ -786,14 +786,9 @@ async function runComparison() {
 // ═══════════════════════════════════════════════
 // HISTORY (Google Apps Script — shared for everyone)
 // ═══════════════════════════════════════════════
-// ═══════════════════════════════════════════════
-// HISTORY (Google Apps Script — shared for everyone)
-// ═══════════════════════════════════════════════
 const API_URL = 'https://script.google.com/macros/s/AKfycbxte6Ry9qFZj1Jz-Gh5BWt2yJrWjfQaL5b5aBy3CSF2d26UT4Xu_dEvTm5A4azfj-dq/exec';
-const MAX_HISTORY = 30;
+const MAX_HISTORY = 15;
 let historyCache = [];
-// Keep rows in memory for current session
-let rowsStore = {};
 
 async function fetchHistory() {
   try {
@@ -805,24 +800,32 @@ async function fetchHistory() {
   } catch(e) { console.warn('Fetch history error', e); return []; }
 }
 
+function postToGAS(payload) {
+  return new Promise(resolve => {
+    const iframeName = 'pf' + Date.now();
+    const iframe = document.createElement('iframe');
+    iframe.name = iframeName;
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = API_URL;
+    form.target = iframeName;
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'data';
+    input.value = payload;
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+    setTimeout(() => { form.remove(); iframe.remove(); resolve(); }, 4000);
+  });
+}
+
 async function pushHistory(list) {
   historyCache = list;
   try {
-    // Save only small metadata — no urls, no rows
-    const meta = list.map(h => ({id:h.id,date:h.date,totalItems:h.totalItems,matches:h.matches,suppliers:h.suppliers}));
-    const encoded = encodeURIComponent(JSON.stringify(meta));
-    // Check URL length — must be under 8000 chars
-    const fullUrl = API_URL + '?action=save&data=' + encoded;
-    if (fullUrl.length < 8000) {
-      await fetch(fullUrl);
-    } else {
-      // Trim old entries until it fits
-      while (meta.length > 1 && (API_URL + '?action=save&data=' + encodeURIComponent(JSON.stringify(meta))).length >= 8000) {
-        meta.pop();
-        list.pop();
-      }
-      await fetch(API_URL + '?action=save&data=' + encodeURIComponent(JSON.stringify(meta)));
-    }
+    await postToGAS(JSON.stringify(list));
   } catch(e) { console.warn('Save history error', e); }
 }
 
@@ -835,11 +838,10 @@ async function saveComparison(rows, counts, supplierFiles) {
     date: new Date().toLocaleString('uk-UA'),
     totalItems: rows.length,
     matches: rows.filter(r => r.hNV || r.dNV || r.sNV || r.aNV).length,
-    suppliers: supplierFiles
+    suppliers: supplierFiles,
+    rows,
+    counts
   };
-
-  // Store rows in memory for this session
-  rowsStore[id] = {rows, counts, suppliers: supplierFiles, date: entry.date};
 
   history.unshift(entry);
   if (history.length > MAX_HISTORY) history.pop();
@@ -893,15 +895,15 @@ function renderHistoryUI(history) {
       const cls = {gen:'gen',hel:'hel',dol:'dol',se:'se',atm:'atm'}[s.key] || 'gen';
       return `<span class="h-tag h-tag-${cls}">${s.name}</span>`;
     }).join('');
-    const hasData = !!rowsStore[h.id];
-    return `<div class="history-item${hasData ? '' : ' no-data'}" onclick="openHistoryEntry(${h.id})">
+    const hasData = !!(h.rows && h.rows.length);
+    return `<div class="history-item" onclick="openHistoryEntry(${h.id})">
       <div class="h-info">
         <div class="h-date">${h.date}</div>
         <div class="h-meta">${h.totalItems} товарів, ${h.matches} збігів</div>
         <div class="h-suppliers">${tags}</div>
       </div>
       <div class="h-actions">
-        ${hasData ? `<button class="h-btn-open" onclick="event.stopPropagation();openHistoryEntry(${h.id})">Відкрити</button>` : '<span style="font-size:11px;color:#999">Перезавантажте файли</span>'}
+        <button class="h-btn-open" onclick="event.stopPropagation();openHistoryEntry(${h.id})">Відкрити</button>
         <button class="h-btn" onclick="event.stopPropagation();deleteHistoryItem(${h.id})" title="Видалити">&times;</button>
       </div>
     </div>`;
@@ -909,16 +911,16 @@ function renderHistoryUI(history) {
 }
 
 function openHistoryEntry(id) {
-  const stored = rowsStore[id];
-  if (!stored) return;
-  renderTable(stored.rows);
-  renderSummary(stored.rows, stored.counts);
-  document.getElementById('dateLabel').textContent = 'Порівняння від ' + stored.date;
+  const entry = historyCache.find(h => h.id === id);
+  if (!entry || !entry.rows) return;
+  renderTable(entry.rows);
+  renderSummary(entry.rows, entry.counts || {hel:0,dol:0,se:0,atm:0});
+  document.getElementById('dateLabel').textContent = 'Порівняння від ' + entry.date;
   document.getElementById('results').style.display = 'block';
 
   // Generate share link
   try {
-    const compact = JSON.stringify({d:stored.date,r:stored.rows,c:stored.counts,s:stored.suppliers});
+    const compact = JSON.stringify({d:entry.date,r:entry.rows,c:entry.counts,s:entry.suppliers});
     const compressed = LZString.compressToEncodedURIComponent(compact);
     showShareLink(location.origin + location.pathname + '#d=' + compressed);
   } catch(e) {}
@@ -936,7 +938,6 @@ function openHistoryEntry(id) {
 
 async function deleteHistoryItem(id) {
   const history = historyCache.filter(h => h.id !== id);
-  delete rowsStore[id];
   await pushHistory(history);
   renderHistoryUI(history);
   document.getElementById('results').style.display = 'none';
@@ -944,7 +945,6 @@ async function deleteHistoryItem(id) {
 
 async function clearAllHistory() {
   if (!confirm('Видалити всю історію порівнянь?')) return;
-  rowsStore = {};
   await pushHistory([]);
   renderHistoryUI([]);
   document.getElementById('results').style.display = 'none';
