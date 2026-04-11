@@ -675,31 +675,44 @@ function guessCategory(name) {
   if (!name) return null;
   const u = String(name).toUpperCase();
   const cu = cyr(u);
-  // Інвертори — тільки Deye та Huawei
-  if (/SUN-?\d+K/i.test(u) || /DEYE/i.test(u)) return 'ІНВЕРТОРИ DEYE';
-  if (/SUN2000/i.test(u) || /HUAWEI/i.test(u)) return 'ІНВЕРТОРИ HUAWEI';
-  // Акумулятори — всі
+  if (u.includes('ІНВЕРТОР') || cu.includes('IHBEPTOP') || /SUN-?\d+K/i.test(u) || /SUN2000/i.test(u) || /SE-[GF]\d/i.test(u) || /DEYE/i.test(u) || /HUAWEI/i.test(u)) return 'ІНВЕРТОРИ';
   if (['АКУМУЛЯТ', 'BOS-', 'PYLONTECH', 'BMS ', 'RW-M', 'RW-F', 'AI-W', 'US2000', 'US3000', 'US5000', 'HVB', 'DYNESS', 'LUNA', 'БАТАРЕЯ', 'BATTERY'].some(w => u.includes(w))) return 'АКУМУЛЯТОРИ';
-  // Панелі — всі
-  if (['ПАНЕЛ', 'SOLAR', 'МОДУЛЬ', 'DHN-', 'LONGI', 'TRINA', 'LR7-', 'LR8-', 'JAM', 'TSM-', 'HSM-', 'CS6', 'CS7', 'AIKO', 'ФОТОМОД', 'ФОТОЕЛЕКТ'].some(w => u.includes(w))) return 'СОНЯЧНІ ПАНЕЛІ';
-  // Кабелі
+  if (['ПАНЕЛ', 'SOLAR', 'МОДУЛЬ', 'DHN-', 'LONGI', 'TRINA', 'LR7-', 'LR8-', 'JAM', 'TSM-', 'HSM-', 'CS6', 'CS7', 'AIKO', 'ФОТОМОД', 'ФОТОЕЛЕКТ'].some(w => u.includes(w))) return 'МОДУЛІ';
   if (['КАБЕЛ', 'KBE'].some(w => u.includes(w))) return 'КАБЕЛІ';
   return null;
 }
 
 function buildComparison(genProds, helProds, dolProds, seProds, atmProds) {
-  const categories = ['ІНВЕРТОРИ DEYE', 'ІНВЕРТОРИ HUAWEI', 'АКУМУЛЯТОРИ', 'СОНЯЧНІ ПАНЕЛІ', 'КАБЕЛІ'];
+  const categories = ['ІНВЕРТОРИ', 'АКУМУЛЯТОРИ', 'МОДУЛІ', 'КАБЕЛІ'];
 
-  // Collect all products from all sources with their origin
+  // Collect all products from all sources
+  // Інвертори — тільки ті що є в Генерації, решта категорій — все від усіх
   const all = [];
   for (const p of genProds) { const c = p.category || guessCategory(p.name); if (c) all.push({...p, src: 'g', cat: c}); }
-  for (const p of helProds) { const c = guessCategory(p.name); if (c) all.push({...p, src: 'h', cat: c}); }
-  for (const p of dolProds) { const c = guessCategory(p.name); if (c) all.push({...p, src: 'd', cat: c}); }
-  for (const p of seProds) { const c = guessCategory(p.name); if (c) all.push({...p, src: 's', cat: c}); }
-  for (const p of atmProds) { const c = guessCategory(p.name); if (c) all.push({...p, src: 'a', cat: c}); }
+  const otherLists = [{prods: helProds, src: 'h'}, {prods: dolProds, src: 'd'}, {prods: seProds, src: 's'}, {prods: atmProds, src: 'a'}];
+  for (const {prods, src} of otherLists) {
+    for (const p of prods) {
+      const c = guessCategory(p.name);
+      if (!c) continue;
+      if (c === 'ІНВЕРТОРИ') continue; // інвертори — тільки з Генерації
+      all.push({...p, src, cat: c});
+    }
+  }
+
+  // For inverters from other suppliers: only add if matched to Генерація
+  const genInverters = all.filter(p => p.cat === 'ІНВЕРТОРИ' && p.src === 'g');
+  for (const {prods, src} of otherLists) {
+    for (const p of prods) {
+      const c = guessCategory(p.name);
+      if (c !== 'ІНВЕРТОРИ') continue;
+      // Check if matches any Генерація inverter
+      const hasMatch = genInverters.some(gi => gi.model && fuzzyMatch(gi.model, p.model));
+      if (hasMatch) all.push({...p, src, cat: c});
+    }
+  }
 
   // Group by model: merge products with matching models into groups
-  const groups = []; // each: {cat, name, g, h, d, s, a}
+  const groups = [];
   const used = new Set();
 
   for (let i = 0; i < all.length; i++) {
@@ -710,17 +723,16 @@ function buildComparison(genProds, helProds, dolProds, seProds, atmProds) {
     used.add(i);
 
     if (p.model) {
-      const isPanel = p.cat === 'СОНЯЧНІ ПАНЕЛІ';
+      const isPanel = p.cat === 'МОДУЛІ';
       for (let j = i + 1; j < all.length; j++) {
         if (used.has(j)) continue;
         const q = all[j];
-        if (group[q.src]) continue; // already have this supplier
+        if (group[q.src]) continue;
         if (!fuzzyMatch(p.model, q.model)) continue;
         if (isPanel) {
           const w1 = extractWattage(p.name), w2 = extractWattage(q.name);
           if (w1 && w2 && Math.abs(w1 - w2) > 10) continue;
         }
-        // Price sanity check
         const refPrice = p.price_no_vat || (group.g && group.g.price_no_vat);
         if (refPrice && q.price_no_vat && refPrice > 0) {
           const ratio = q.price_no_vat / refPrice;
