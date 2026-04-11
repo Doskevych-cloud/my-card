@@ -188,21 +188,21 @@ tr:hover td{background:var(--bg3) !important}
 <div class="upload-panel" id="uploadPanel">
   <div class="supplier-grid">
     <div class="supplier-slot slot-gen" data-supplier="gen" onclick="triggerUpload(this)">
-      <div class="icon">📎</div>
+      <div class="icon">📁</div>
       <div class="label">Генерація</div>
       <div class="file-name"></div>
       <button class="remove-btn" onclick="removeFile(event,'gen')" style="display:none">&times;</button>
       <input type="file" accept=".xlsx,.xls" onchange="fileSelected(this,'gen')">
     </div>
     <div class="supplier-slot slot-hel" data-supplier="hel" onclick="triggerUpload(this)">
-      <div class="icon">📎</div>
+      <div class="icon">📁</div>
       <div class="label">Helius</div>
       <div class="file-name"></div>
       <button class="remove-btn" onclick="removeFile(event,'hel')" style="display:none">&times;</button>
       <input type="file" accept=".xlsx,.xls" onchange="fileSelected(this,'hel')">
     </div>
     <div class="supplier-slot slot-dol" data-supplier="dol" onclick="triggerUpload(this)">
-      <div class="icon">📎</div>
+      <div class="icon">📁</div>
       <div class="label">Dolya Solar</div>
       <div class="file-name"></div>
       <button class="remove-btn" onclick="removeFile(event,'dol')" style="display:none">&times;</button>
@@ -215,7 +215,7 @@ tr:hover td{background:var(--bg3) !important}
       <div class="file-name" id="seStatus"></div>
     </div>
     <div class="supplier-slot slot-atm" data-supplier="atm" onclick="triggerUpload(this)">
-      <div class="icon">📎</div>
+      <div class="icon">📁</div>
       <div class="label">Атмосфера</div>
       <div class="file-name"></div>
       <button class="remove-btn" onclick="removeFile(event,'atm')" style="display:none">&times;</button>
@@ -674,12 +674,25 @@ async function parseAtmosfera(file) {
 // ═══════════════════════════════════════════════
 // COMPARISON ENGINE
 // ═══════════════════════════════════════════════
+function guessCategory(name) {
+  if (!name) return 'ІНШЕ';
+  const u = String(name).toUpperCase();
+  const cu = cyr(u);
+  if (['КАБЕЛ', 'KBE'].some(w => u.includes(w))) return 'КАБЕЛІ';
+  if (u.includes('ІНВЕРТОР') || cu.includes('IHBEPTOP') || /SUN-?\d+K/i.test(u) || /SE-[GF]\d/i.test(u)) return 'ІНВЕРТОРИ ГІБРИДНІ';
+  if (['АКУМУЛЯТ', 'BOS-', 'PYLONTECH', 'BMS ', 'RW-M', 'RW-F', 'AI-W', 'US2000', 'US3000', 'US5000', 'HVB'].some(w => u.includes(w))) return 'АКУМУЛЯТОРИ';
+  if (['ПАНЕЛ', 'SOLAR', 'МОДУЛЬ', 'DHN-', 'LONGI', 'TRINA', 'LR7-', 'LR8-', 'JAM', 'TSM-', 'HSM-', 'CS6', 'CS7', 'AIKO'].some(w => u.includes(w))) return 'СОНЯЧНІ ПАНЕЛІ';
+  return 'ІНШЕ';
+}
+
 function buildComparison(genProds, helProds, dolProds, seProds, atmProds) {
   const categories = ['ІНВЕРТОРИ ГІБРИДНІ', 'АКУМУЛЯТОРИ', 'КАБЕЛІ', 'СОНЯЧНІ ПАНЕЛІ'];
   const rows = [];
+  const usedH = new Set(), usedD = new Set(), usedS = new Set(), usedA = new Set();
+
+  // Pass 1: start from Генерація products
   for (const cat of categories) {
     const items = genProds.filter(p => p.category === cat);
-    if (!items.length) continue;
     for (const gp of items) {
       const isPanel = cat === 'СОНЯЧНІ ПАНЕЛІ';
       const gpPrice = gp.price_no_vat;
@@ -687,13 +700,17 @@ function buildComparison(genProds, helProds, dolProds, seProds, atmProds) {
       const dm = findMatch(gp.model, gp.name, gpPrice, dolProds, isPanel);
       const sm = findMatch(gp.model, gp.name, gpPrice, seProds, isPanel);
       const am = findMatch(gp.model, gp.name, gpPrice, atmProds, isPanel);
+      if (hm) usedH.add(helProds.indexOf(hm));
+      if (dm) usedD.add(dolProds.indexOf(dm));
+      if (sm) usedS.add(seProds.indexOf(sm));
+      if (am) usedA.add(atmProds.indexOf(am));
       rows.push({
         cat, name: gp.name, model: gp.model,
         gSt: gp.status, gNV: gp.price_no_vat, gV: gp.price_vat, gC: gp.currency || 'USD',
         hSt: hm ? hm.status : null, hNV: hm ? hm.price_no_vat : null,
         hV: hm ? hm.price_vat : null, hR: hm ? (hm.rrc || null) : null, hC: hm ? (hm.currency || 'USD') : 'USD',
         dSt: dm ? dm.status : null, dNV: dm ? dm.price_no_vat : null,
-        dV: dm ? dm.price_vat : null, dU: dm ? (dm.price_no_vat_uah || null) : null, dC: dm ? (dm.currency || 'USD') : 'USD',
+        dV: dm ? dm.price_vat : null, dC: dm ? (dm.currency || 'USD') : 'USD',
         sSt: sm ? sm.status : null, sNV: sm ? sm.price_no_vat : null,
         sV: sm ? sm.price_vat : null, sC: sm ? (sm.currency || 'USD') : 'USD',
         aSt: am ? (am.status || null) : null, aNV: am ? am.price_no_vat : null,
@@ -701,6 +718,61 @@ function buildComparison(genProds, helProds, dolProds, seProds, atmProds) {
       });
     }
   }
+
+  // Pass 2: collect unmatched products from all other suppliers
+  const otherSources = [
+    {prods: helProds, used: usedH, key: 'h'},
+    {prods: dolProds, used: usedD, key: 'd'},
+    {prods: seProds, used: usedS, key: 's'},
+    {prods: atmProds, used: usedA, key: 'a'},
+  ];
+  const extras = []; // {product, sourceKey, cat}
+  for (const src of otherSources) {
+    src.prods.forEach((p, i) => {
+      if (src.used.has(i)) return;
+      if (!p.model) return;
+      const cat = guessCategory(p.name);
+      if (cat === 'ІНШЕ') return;
+      extras.push({p, key: src.key, cat});
+    });
+  }
+
+  // Group extras by model and merge across suppliers
+  const extraMap = new Map();
+  for (const ex of extras) {
+    const nm = normModel(ex.p.model);
+    if (!nm) continue;
+    let entry = null;
+    for (const [k, v] of extraMap) {
+      if (fuzzyMatch(k, nm)) { entry = v; break; }
+    }
+    if (!entry) {
+      entry = {cat: ex.cat, model: nm, name: ex.p.name, h: null, d: null, s: null, a: null};
+      extraMap.set(nm, entry);
+    }
+    if (!entry[ex.key]) entry[ex.key] = ex.p;
+  }
+
+  // Convert extras to rows
+  for (const cat of categories) {
+    const catExtras = [...extraMap.values()].filter(e => e.cat === cat);
+    for (const ex of catExtras) {
+      const hm = ex.h, dm = ex.d, sm = ex.s, am = ex.a;
+      rows.push({
+        cat, name: ex.name, model: ex.model,
+        gSt: null, gNV: null, gV: null, gC: 'USD',
+        hSt: hm ? hm.status : null, hNV: hm ? hm.price_no_vat : null,
+        hV: hm ? hm.price_vat : null, hR: hm ? (hm.rrc || null) : null, hC: hm ? (hm.currency || 'USD') : 'USD',
+        dSt: dm ? dm.status : null, dNV: dm ? dm.price_no_vat : null,
+        dV: dm ? dm.price_vat : null, dC: dm ? (dm.currency || 'USD') : 'USD',
+        sSt: sm ? sm.status : null, sNV: sm ? sm.price_no_vat : null,
+        sV: sm ? sm.price_vat : null, sC: sm ? (sm.currency || 'USD') : 'USD',
+        aSt: am ? (am.status || null) : null, aNV: am ? am.price_no_vat : null,
+        aV: am ? (am.price_vat || null) : null, aC: am ? (am.currency || 'USD') : 'USD',
+      });
+    }
+  }
+
   return rows;
 }
 
