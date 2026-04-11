@@ -107,6 +107,8 @@ th:nth-child(3),td:nth-child(3){left:315px;min-width:170px}
 .h-empty{text-align:center;color:#bbb;font-size:13px;padding:16px}
 .h-clear{font-size:12px;color:#C62828;cursor:pointer;background:none;border:none;font-weight:500}
 .h-clear:hover{text-decoration:underline}
+.h-btn-link{background:none;border:none;cursor:pointer;font-size:16px;padding:6px 10px;border-radius:6px;transition:background .15s}
+.h-btn-link:hover{background:#E0E0E0}
 /* ─── Share Box ─── */
 .share-box{background:#E8F5E9;border:1px solid #A5D6A7;border-radius:8px;padding:12px 20px;margin:16px 16px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .share-box span{font-size:13px;font-weight:600;color:#2E7D32;white-space:nowrap}
@@ -855,6 +857,17 @@ function renderHistory() {
       const cls = {gen:'gen',hel:'hel',dol:'dol',se:'se',atm:'atm'}[s.key] || 'gen';
       return `<span class="h-tag h-tag-${cls}">${s.name}</span>`;
     }).join('');
+    // Generate URL if missing
+    if (!h.url && h.rows) {
+      try {
+        const compact = JSON.stringify({d:h.date,r:h.rows,c:h.counts,s:h.suppliers});
+        const compressed = LZString.compressToEncodedURIComponent(compact);
+        h.url = location.origin + location.pathname + '#d=' + compressed;
+      } catch(e) {}
+    }
+    const linkBtn = h.url
+      ? `<button class="h-btn-link" onclick="event.stopPropagation();copyHistoryLink(this,'${h.id}')" title="Копіювати посилання">🔗</button>`
+      : '';
     return `<div class="history-item" onclick="loadHistory(${h.id})">
       <div class="h-info">
         <div class="h-date">${h.date}</div>
@@ -862,11 +875,14 @@ function renderHistory() {
         <div class="h-suppliers">${tags}</div>
       </div>
       <div class="h-actions">
+        ${linkBtn}
         <button class="h-btn-open" onclick="event.stopPropagation();loadHistory(${h.id})">Відкрити</button>
         <button class="h-btn" onclick="event.stopPropagation();deleteHistory(${h.id})" title="Видалити">&times;</button>
       </div>
     </div>`;
   }).join('');
+  // Save back URLs that were generated
+  saveHistory(history);
 }
 
 function loadHistory(id) {
@@ -879,6 +895,9 @@ function loadHistory(id) {
   document.getElementById('dateLabel').textContent = 'Порівняння від ' + entry.date;
   document.getElementById('results').style.display = 'block';
 
+  // Show share link
+  if (entry.url) showShareLink(entry.url);
+
   // Mark active
   document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
   const items = document.querySelectorAll('.history-item');
@@ -889,6 +908,16 @@ function loadHistory(id) {
     const el = document.getElementById('results');
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 200);
+}
+
+function copyHistoryLink(btn, id) {
+  const history = getHistory();
+  const entry = history.find(h => h.id === Number(id));
+  if (!entry || !entry.url) return;
+  navigator.clipboard.writeText(entry.url).then(() => {
+    btn.textContent = 'Скопійовано!';
+    setTimeout(() => { btn.textContent = '🔗'; }, 1500);
+  });
 }
 
 function deleteHistory(id) {
