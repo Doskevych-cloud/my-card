@@ -345,7 +345,7 @@ function extractModel(nameRaw) {
     const m = name.match(pat);
     if (m) return m[0].replace(/\s+/g, '');
   }
-  const kbe = name.match(/KBE[\s\S]*?(\d+)\s*[MМмm]/);
+  const kbe = name.match(/KBE[\s\S]*?(\d+)[,.\d]*\s*[QMМмm]/);
   if (kbe) return 'KBE' + kbe[1];
   return null;
 }
