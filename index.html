@@ -191,8 +191,8 @@ thead tr:first-child th:first-child{left:0}
           <th class="gh gh-gen bl" colspan="3">Генерація</th>
           <th class="gh gh-hel bl" colspan="6">Helius</th>
           <th class="gh gh-dol bl" colspan="6">Dolya Solar</th>
-          <th class="gh gh-se bl" colspan="6">SE (se.net.ua)</th>
-          <th class="gh gh-atm bl" colspan="6">Атмосфера</th>
+          <th class="gh gh-se bl" colspan="5">SE (se.net.ua)</th>
+          <th class="gh gh-atm bl" colspan="5">Атмосфера</th>
           <th class="gh gh-best bl" colspan="2">НАЙКРАЩА</th>
         </tr>
         <tr>
@@ -200,8 +200,8 @@ thead tr:first-child th:first-child{left:0}
           <th class="sh sh-gen bl">Статус</th><th class="sh sh-gen">Ціна без ПДВ</th><th class="sh sh-gen">Ціна з ПДВ</th>
           <th class="sh sh-hel bl">Статус</th><th class="sh sh-hel">Ціна без ПДВ</th><th class="sh sh-hel">&Delta;%</th><th class="sh sh-hel">Ціна з ПДВ</th><th class="sh sh-hel">&Delta;%</th><th class="sh sh-hel">РРЦ</th>
           <th class="sh sh-dol bl">Статус</th><th class="sh sh-dol">Ціна без ПДВ</th><th class="sh sh-dol">&Delta;%</th><th class="sh sh-dol">Ціна з ПДВ</th><th class="sh sh-dol">&Delta;%</th><th class="sh sh-dol">Ціна UAH</th>
-          <th class="sh sh-se bl">Статус</th><th class="sh sh-se">Ціна без ПДВ</th><th class="sh sh-se">&Delta;%</th><th class="sh sh-se">Ціна з ПДВ</th><th class="sh sh-se">&Delta;%</th><th class="sh sh-se">Валюта</th>
-          <th class="sh sh-atm bl">Статус</th><th class="sh sh-atm">Ціна без ПДВ</th><th class="sh sh-atm">&Delta;%</th><th class="sh sh-atm">Ціна з ПДВ</th><th class="sh sh-atm">&Delta;%</th><th class="sh sh-atm">Валюта</th>
+          <th class="sh sh-se bl">Статус</th><th class="sh sh-se">Ціна без ПДВ</th><th class="sh sh-se">&Delta;%</th><th class="sh sh-se">Ціна з ПДВ</th><th class="sh sh-se">&Delta;%</th>
+          <th class="sh sh-atm bl">Статус</th><th class="sh sh-atm">Ціна без ПДВ</th><th class="sh sh-atm">&Delta;%</th><th class="sh sh-atm">Ціна з ПДВ</th><th class="sh sh-atm">&Delta;%</th>
           <th class="sh sh-best bl">Хто</th><th class="sh sh-best">Ціна</th>
         </tr>
       </thead>
@@ -473,7 +473,7 @@ async function parseHelius(file) {
   const wb = XLSX.read(ab, {type: 'array'});
   const products = [];
   const SKIP = new Set(['ІНВЕРТОРИ ГІБРИДНІ','ІНВЕРТОРИ МЕРЕЖЕВІ','АКУМУЛЯТОРНІ БАТАРЕЇ ',
-    'СИСТЕМИ ЗБЕРІГАННЯ ЕНЕРГІЇ','КОМПЛЕКТУЮЧІ','КАБЕЛІ ДЛЯ СОНЯЧНИХ ПАНЕЛЕЙ','СОНЯЧНІ ПАНЕЛІ']);
+    'СИСТЕМИ ЗБЕРІГАННЯ ЕНЕРГІЇ','КОМПЛЕКТУЮЧІ','СОНЯЧНІ ПАНЕЛІ']);
 
   for (const sn of wb.SheetNames) {
     const ws = wb.Sheets[sn];
@@ -524,8 +524,8 @@ async function parseDolya(file) {
   const wb = XLSX.read(ab, {type: 'array'});
   const products = [];
   const SKIP = new Set(['Інше обладнання','DYNESS','Серія SE','Серія RW','Серія AI',
-    'Серія BOS-G','Серія BOS-B','Серія BOS-A','Балкона ESS','Deye','DEYE','Кабелі']);
-  const sheets = wb.SheetNames.filter(s => ['Інвертори','Акумулятори','Фотомодулі'].some(k => s.includes(k)));
+    'Серія BOS-G','Серія BOS-B','Серія BOS-A','Балкона ESS','Deye','DEYE']);
+  const sheets = wb.SheetNames.filter(s => ['Інвертори','Акумулятори','Фотомодулі','Кабел'].some(k => s.includes(k)));
   for (const sn of sheets) {
     const ws = wb.Sheets[sn];
     const maxR = sheetRows(ws);
@@ -616,7 +616,7 @@ async function parseAtmosfera(file) {
   const maxR = sheetRows(ws);
   const products = [];
   const SKIP = new Set(['Фотоелектричні модулі','Інвертори','Акумуляторні батареї','ESS',
-    'Комплектуючі','Мережеві інвертори','Кабельна продукція']);
+    'Комплектуючі','Мережеві інвертори']);
   for (let r = 2; r < maxR; r++) {
     const name = cellVal(ws, r, 1);
     if (!name) continue;
@@ -670,7 +670,7 @@ function buildComparison(genProds, helProds, dolProds, seProds, atmProds) {
 // ═══════════════════════════════════════════════
 // RENDER TABLE
 // ═══════════════════════════════════════════════
-function fmt(v) { return v != null ? v.toLocaleString('uk-UA') : ''; }
+function fmt(v, cur) { if (v == null) return ''; const s = v.toLocaleString('uk-UA'); const c = cur === 'UAH' ? '₴' : cur === 'EUR' ? '€' : '$'; return c + s; }
 function delta(sup, gen) {
   if (sup == null || gen == null || gen === 0) return '';
   const d = (sup - gen) / gen;
@@ -687,7 +687,7 @@ function renderTable(rows) {
   for (const rd of rows) {
     if (rd.cat !== currentCat) {
       currentCat = rd.cat;
-      tb.innerHTML += `<tr class="cat"><td colspan="31"><span class="cat-label">${currentCat}</span></td></tr>`;
+      tb.innerHTML += `<tr class="cat"><td colspan="29"><span class="cat-label">${currentCat}</span></td></tr>`;
     }
     n++;
     const e = n % 2 === 0 ? 'even' : '';
@@ -715,19 +715,17 @@ function renderTable(rows) {
       <td class="d-dol ${e}">${delta(r.dNV,r.gNV)}</td>
       <td class="t-dol ${e}">${fmt(r.dV)}</td>
       <td class="d-dol ${e}">${delta(r.dV,r.gV)}</td>
-      <td class="t-dol ${e}">${fmt(r.dU)}</td>
+      <td class="t-dol ${e}">${fmt(r.dU,'UAH')}</td>
       <td class="t-se ${e} bl status">${r.sSt||''}</td>
-      <td class="t-se ${e}">${fmt(r.sNV)}</td>
+      <td class="t-se ${e}">${fmt(r.sNV,r.sC)}</td>
       <td class="d-se ${e}">${delta(r.sNV,r.gNV)}</td>
-      <td class="t-se ${e}">${fmt(r.sV)}</td>
+      <td class="t-se ${e}">${fmt(r.sV,r.sC)}</td>
       <td class="d-se ${e}">${delta(r.sV,r.gV)}</td>
-      <td class="t-se ${e}">${r.sC||''}</td>
       <td class="t-atm ${e} bl status">${r.aSt||''}</td>
-      <td class="t-atm ${e}">${fmt(r.aNV)}</td>
+      <td class="t-atm ${e}">${fmt(r.aNV,r.aC)}</td>
       <td class="d-atm ${e}">${delta(r.aNV,r.gNV)}</td>
-      <td class="t-atm ${e}">${fmt(r.aV)}</td>
+      <td class="t-atm ${e}">${fmt(r.aV,r.aC)}</td>
       <td class="d-atm ${e}">${delta(r.aV,r.gV)}</td>
-      <td class="t-atm ${e}">${r.aC||''}</td>
       <td class="t-best ${e} bl">${bestWho}</td>
       <td class="t-best ${e} bold">${fmt(bestP)}</td>
     </tr>`;
