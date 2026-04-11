@@ -784,22 +784,36 @@ async function runComparison() {
 }
 
 // ═══════════════════════════════════════════════
-// HISTORY (localStorage)
+// HISTORY (jsonblob.com — shared for everyone)
 // ═══════════════════════════════════════════════
-const HISTORY_KEY = 'price_compare_history';
-const MAX_HISTORY = 20;
+const BLOB_ID = '019d7d10-1c68-75c6-97bb-2e1345c85ea5';
+const BLOB_URL = 'https://jsonblob.com/api/jsonBlob/' + BLOB_ID;
+const MAX_HISTORY = 30;
+let historyCache = [];
 
-function getHistory() {
-  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
-  catch { return []; }
+async function fetchHistory() {
+  try {
+    const res = await fetch(BLOB_URL, {headers:{'Accept':'application/json'}});
+    if (!res.ok) return [];
+    const data = await res.json();
+    historyCache = data.history || [];
+    return historyCache;
+  } catch(e) { console.warn('Failed to fetch history', e); return []; }
 }
 
-function saveHistory(list) {
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+async function pushHistory(list) {
+  historyCache = list;
+  try {
+    await fetch(BLOB_URL, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json','Accept':'application/json'},
+      body: JSON.stringify({history: list})
+    });
+  } catch(e) { console.warn('Failed to save history', e); }
 }
 
-function saveComparison(rows, counts, supplierFiles) {
-  const history = getHistory();
+async function saveComparison(rows, counts, supplierFiles) {
+  const history = await fetchHistory();
   const entry = {
     id: Date.now(),
     date: new Date().toLocaleString('uk-UA'),
@@ -809,21 +823,19 @@ function saveComparison(rows, counts, supplierFiles) {
     counts,
     rows
   };
-  history.unshift(entry);
-  if (history.length > MAX_HISTORY) history.pop();
-  saveHistory(history);
-  renderHistory();
 
   // Generate shareable URL
   try {
     const compact = JSON.stringify({d:entry.date,r:rows,c:counts,s:supplierFiles});
     const compressed = LZString.compressToEncodedURIComponent(compact);
-    const url = location.origin + location.pathname + '#d=' + compressed;
-    history[0].url = url;
-    saveHistory(history);
-    renderHistory();
-    showShareLink(url);
-  } catch(e) { console.warn('URL generation failed', e); }
+    entry.url = location.origin + location.pathname + '#d=' + compressed;
+  } catch(e) {}
+
+  history.unshift(entry);
+  if (history.length > MAX_HISTORY) history.pop();
+  await pushHistory(history);
+  renderHistoryUI(history);
+  if (entry.url) showShareLink(entry.url);
 }
 
 function showShareLink(url) {
@@ -834,13 +846,13 @@ function showShareLink(url) {
     box.className = 'share-box';
     document.getElementById('results').prepend(box);
   }
+  const safeUrl = url.replace(/'/g, "\\'");
   box.innerHTML = `<span>Посилання на це порівняння:</span>
     <input type="text" value="${url}" readonly onclick="this.select()">
-    <button onclick="navigator.clipboard.writeText('${url}');this.textContent='Скопійовано!'">Копіювати</button>`;
+    <button onclick="navigator.clipboard.writeText('${safeUrl}');this.textContent='Скопійовано!'">Копіювати</button>`;
 }
 
-function renderHistory() {
-  const history = getHistory();
+function renderHistoryUI(history) {
   const panel = document.getElementById('historyPanel');
   const list = document.getElementById('historyList');
   const count = document.getElementById('hCount');
@@ -852,21 +864,13 @@ function renderHistory() {
 
   panel.style.display = '';
   count.textContent = `(${history.length})`;
-  list.innerHTML = history.map((h, i) => {
+  list.innerHTML = history.map(h => {
     const tags = (h.suppliers || []).map(s => {
       const cls = {gen:'gen',hel:'hel',dol:'dol',se:'se',atm:'atm'}[s.key] || 'gen';
       return `<span class="h-tag h-tag-${cls}">${s.name}</span>`;
     }).join('');
-    // Generate URL if missing
-    if (!h.url && h.rows) {
-      try {
-        const compact = JSON.stringify({d:h.date,r:h.rows,c:h.counts,s:h.suppliers});
-        const compressed = LZString.compressToEncodedURIComponent(compact);
-        h.url = location.origin + location.pathname + '#d=' + compressed;
-      } catch(e) {}
-    }
     const linkBtn = h.url
-      ? `<button class="h-btn-link" onclick="event.stopPropagation();copyHistoryLink(this,'${h.id}')" title="Копіювати посилання">🔗</button>`
+      ? `<button class="h-btn-link" onclick="event.stopPropagation();copyHistoryLink(this,${h.id})" title="Копіювати посилання">🔗</button>`
       : '';
     return `<div class="history-item" onclick="loadHistory(${h.id})">
       <div class="h-info">
@@ -877,31 +881,25 @@ function renderHistory() {
       <div class="h-actions">
         ${linkBtn}
         <button class="h-btn-open" onclick="event.stopPropagation();loadHistory(${h.id})">Відкрити</button>
-        <button class="h-btn" onclick="event.stopPropagation();deleteHistory(${h.id})" title="Видалити">&times;</button>
+        <button class="h-btn" onclick="event.stopPropagation();deleteHistoryItem(${h.id})" title="Видалити">&times;</button>
       </div>
     </div>`;
   }).join('');
-  // Save back URLs that were generated
-  saveHistory(history);
 }
 
 function loadHistory(id) {
-  const history = getHistory();
-  const entry = history.find(h => h.id === id);
+  const entry = historyCache.find(h => h.id === id);
   if (!entry) return;
 
   renderTable(entry.rows);
   renderSummary(entry.rows, entry.counts);
   document.getElementById('dateLabel').textContent = 'Порівняння від ' + entry.date;
   document.getElementById('results').style.display = 'block';
-
-  // Show share link
   if (entry.url) showShareLink(entry.url);
 
-  // Mark active
   document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
   const items = document.querySelectorAll('.history-item');
-  const idx = history.findIndex(h => h.id === id);
+  const idx = historyCache.findIndex(h => h.id === id);
   if (items[idx]) items[idx].classList.add('active');
 
   setTimeout(() => {
@@ -911,8 +909,7 @@ function loadHistory(id) {
 }
 
 function copyHistoryLink(btn, id) {
-  const history = getHistory();
-  const entry = history.find(h => h.id === Number(id));
+  const entry = historyCache.find(h => h.id === id);
   if (!entry || !entry.url) return;
   navigator.clipboard.writeText(entry.url).then(() => {
     btn.textContent = 'Скопійовано!';
@@ -920,18 +917,17 @@ function copyHistoryLink(btn, id) {
   });
 }
 
-function deleteHistory(id) {
-  const history = getHistory().filter(h => h.id !== id);
-  saveHistory(history);
-  renderHistory();
-  // Hide results if viewing deleted entry
+async function deleteHistoryItem(id) {
+  const history = historyCache.filter(h => h.id !== id);
+  await pushHistory(history);
+  renderHistoryUI(history);
   document.getElementById('results').style.display = 'none';
 }
 
-function clearAllHistory() {
+async function clearAllHistory() {
   if (!confirm('Видалити всю історію порівнянь?')) return;
-  localStorage.removeItem(HISTORY_KEY);
-  renderHistory();
+  await pushHistory([]);
+  renderHistoryUI([]);
   document.getElementById('results').style.display = 'none';
 }
 
@@ -951,8 +947,8 @@ function loadFromHash() {
     document.getElementById('dateLabel').textContent = 'Порівняння від ' + data.d;
     document.getElementById('results').style.display = 'block';
     document.getElementById('uploadPanel').style.display = 'none';
+    document.getElementById('historyPanel').style.display = 'none';
     showShareLink(location.href);
-    // Add "back" button
     let back = document.getElementById('backBtn');
     if (!back) {
       back = document.createElement('button');
@@ -967,6 +963,7 @@ function loadFromHash() {
         const sb = document.getElementById('shareBox');
         if (sb) sb.remove();
         back.remove();
+        initHistory();
       };
       document.getElementById('results').after(back);
     }
@@ -974,9 +971,16 @@ function loadFromHash() {
   } catch(e) { console.warn('Failed to load from URL', e); return false; }
 }
 
-// Init
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+async function initHistory() {
+  const history = await fetchHistory();
+  renderHistoryUI(history);
+}
+
 document.getElementById('dateLabel').textContent = new Date().toLocaleDateString('uk-UA');
-if (!loadFromHash()) renderHistory();
+if (!loadFromHash()) initHistory();
 window.addEventListener('hashchange', () => { if (location.hash.startsWith('#d=')) loadFromHash(); });
 </script>
 </body>
