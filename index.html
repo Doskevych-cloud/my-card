@@ -436,6 +436,12 @@ function cellVal(ws, r, c) {
   return cell ? cell.v : null;
 }
 
+function cellFmt(ws, r, c) {
+  const addr = XLSX.utils.encode_cell({r: r, c: c});
+  const cell = ws[addr];
+  return cell ? cell.z || '' : '';
+}
+
 function sheetRows(ws) {
   const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
   return range.e.r + 1;
@@ -443,7 +449,7 @@ function sheetRows(ws) {
 
 async function parseGeneracia(file) {
   const ab = await readFileAsArrayBuffer(file);
-  const wb = XLSX.read(ab, {type: 'array'});
+  const wb = XLSX.read(ab, {type: 'array', cellNF: true});
   const ws = wb.Sheets[wb.SheetNames[0]];
   const maxR = sheetRows(ws);
   const products = [];
@@ -454,6 +460,11 @@ async function parseGeneracia(file) {
     if (!nameStr) continue;
     const pnv = parsePrice(cellVal(ws, r, 2));
     const pv = parsePrice(cellVal(ws, r, 3));
+    // Detect currency from cell format
+    const fmtNV = cellFmt(ws, r, 2);
+    const fmtV = cellFmt(ws, r, 3);
+    let currency = 'USD';
+    if ((fmtNV && fmtNV.includes('€')) || (fmtV && fmtV.includes('€'))) currency = 'EUR';
     let status = cellVal(ws, r, 4);
     if (status) status = String(status).trim();
     const model = extractModel(nameStr);
@@ -463,14 +474,14 @@ async function parseGeneracia(file) {
     else if (nameUp.includes('ІНВЕРТОР') || cyr(nameUp).includes('IHBEPTOP')) cat = 'ІНВЕРТОРИ ГІБРИДНІ';
     else if (['АКУМУЛЯТ', 'BOS-', 'PYLONTECH', 'BMS '].some(w => nameUp.includes(w))) cat = 'АКУМУЛЯТОРИ';
     else if (['ПАНЕЛ', 'SOLAR', 'МОДУЛЬ', 'DHN-', 'LONGI', 'TRINA'].some(w => nameUp.includes(w))) cat = 'СОНЯЧНІ ПАНЕЛІ';
-    products.push({ name: nameStr, model, category: cat, status, price_no_vat: pnv, price_vat: pv });
+    products.push({ name: nameStr, model, category: cat, status, price_no_vat: pnv, price_vat: pv, currency });
   }
   return products;
 }
 
 async function parseHelius(file) {
   const ab = await readFileAsArrayBuffer(file);
-  const wb = XLSX.read(ab, {type: 'array'});
+  const wb = XLSX.read(ab, {type: 'array', cellNF: true});
   const products = [];
   const SKIP = new Set(['ІНВЕРТОРИ ГІБРИДНІ','ІНВЕРТОРИ МЕРЕЖЕВІ','АКУМУЛЯТОРНІ БАТАРЕЇ ',
     'СИСТЕМИ ЗБЕРІГАННЯ ЕНЕРГІЇ','КОМПЛЕКТУЮЧІ','СОНЯЧНІ ПАНЕЛІ']);
@@ -484,12 +495,16 @@ async function parseHelius(file) {
         if (!name) continue;
         const nameStr = String(name).trim();
         if (!nameStr || SKIP.has(nameStr)) continue;
+        const fH1 = cellFmt(ws, r, 1), fH2 = cellFmt(ws, r, 2);
+        let curH = 'USD';
+        if ((fH1 && fH1.includes('€')) || (fH2 && fH2.includes('€'))) curH = 'EUR';
         products.push({
           name: nameStr, model: extractModel(nameStr),
           status: cellVal(ws, r, 3) ? String(cellVal(ws, r, 3)).trim() : null,
           price_no_vat: parsePrice(cellVal(ws, r, 1)),
           price_vat: parsePrice(cellVal(ws, r, 2)),
           rrc: parsePrice(cellVal(ws, r, 4)),
+          currency: curH,
         });
       }
     } else if (sn === 'Price-List') {
@@ -505,11 +520,15 @@ async function parseHelius(file) {
         const pnv = parsePrice(cellVal(ws, r, 4));
         const pv = parsePrice(cellVal(ws, r, 5));
         if (pnv || pv) {
+          const fPL1 = cellFmt(ws, r, 4), fPL2 = cellFmt(ws, r, 5);
+          let curPL = 'USD';
+          if ((fPL1 && fPL1.includes('€')) || (fPL2 && fPL2.includes('€'))) curPL = 'EUR';
           products.push({
             name: nameStr, model,
             status: cellVal(ws, r, 2) ? String(cellVal(ws, r, 2)).trim() : null,
             price_no_vat: pnv, price_vat: pv,
             rrc: parsePrice(cellVal(ws, r, 6)),
+            currency: curPL,
           });
           if (nm) existing.add(nm);
         }
@@ -521,7 +540,7 @@ async function parseHelius(file) {
 
 async function parseDolya(file) {
   const ab = await readFileAsArrayBuffer(file);
-  const wb = XLSX.read(ab, {type: 'array'});
+  const wb = XLSX.read(ab, {type: 'array', cellNF: true});
   const products = [];
   const SKIP = new Set(['Інше обладнання','DYNESS','Серія SE','Серія RW','Серія AI',
     'Серія BOS-G','Серія BOS-B','Серія BOS-A','Балкона ESS','Deye','DEYE']);
@@ -536,12 +555,16 @@ async function parseDolya(file) {
       if (!nameStr || SKIP.has(nameStr)) continue;
       const art = cellVal(ws, r, 2);
       const model = extractModel(nameStr) || (art ? extractModel(String(art)) : null);
+      const fD1 = cellFmt(ws, r, 11), fD2 = cellFmt(ws, r, 9);
+      let curD = 'USD';
+      if ((fD1 && fD1.includes('€')) || (fD2 && fD2.includes('€'))) curD = 'EUR';
       products.push({
         name: nameStr, model,
         status: cellVal(ws, r, 13) ? String(cellVal(ws, r, 13)).trim() : null,
         price_no_vat: parsePrice(cellVal(ws, r, 11)),
         price_vat: parsePrice(cellVal(ws, r, 9)),
         price_no_vat_uah: parsePrice(cellVal(ws, r, 12)),
+        currency: curD,
       });
     }
   }
@@ -611,7 +634,7 @@ async function parseSE(file) {
 
 async function parseAtmosfera(file) {
   const ab = await readFileAsArrayBuffer(file);
-  const wb = XLSX.read(ab, {type: 'array'});
+  const wb = XLSX.read(ab, {type: 'array', cellNF: true});
   const ws = wb.Sheets[wb.SheetNames[0]];
   const maxR = sheetRows(ws);
   const products = [];
@@ -623,12 +646,14 @@ async function parseAtmosfera(file) {
     const nameStr = String(name).trim();
     if (!nameStr || SKIP.has(nameStr)) continue;
     const curr = cellVal(ws, r, 3);
+    let curA = curr ? String(curr).trim() : 'USD';
+    if (curA === 'USD') { const fA = cellFmt(ws, r, 2); if (fA && fA.includes('€')) curA = 'EUR'; }
     products.push({
       name: nameStr, model: extractModel(nameStr),
       status: null,
       price_no_vat: parsePrice(cellVal(ws, r, 2)),
       price_vat: null,
-      currency: curr ? String(curr).trim() : 'USD',
+      currency: curA,
     });
   }
   return products;
@@ -652,15 +677,15 @@ function buildComparison(genProds, helProds, dolProds, seProds, atmProds) {
       const am = findMatch(gp.model, gp.name, gpPrice, atmProds, isPanel);
       rows.push({
         cat, name: gp.name, model: gp.model,
-        gSt: gp.status, gNV: gp.price_no_vat, gV: gp.price_vat,
+        gSt: gp.status, gNV: gp.price_no_vat, gV: gp.price_vat, gC: gp.currency || 'USD',
         hSt: hm ? hm.status : null, hNV: hm ? hm.price_no_vat : null,
-        hV: hm ? hm.price_vat : null, hR: hm ? (hm.rrc || null) : null,
+        hV: hm ? hm.price_vat : null, hR: hm ? (hm.rrc || null) : null, hC: hm ? (hm.currency || 'USD') : 'USD',
         dSt: dm ? dm.status : null, dNV: dm ? dm.price_no_vat : null,
-        dV: dm ? dm.price_vat : null, dU: dm ? (dm.price_no_vat_uah || null) : null,
+        dV: dm ? dm.price_vat : null, dU: dm ? (dm.price_no_vat_uah || null) : null, dC: dm ? (dm.currency || 'USD') : 'USD',
         sSt: sm ? sm.status : null, sNV: sm ? sm.price_no_vat : null,
-        sV: sm ? sm.price_vat : null, sC: sm ? (sm.currency || 'USD') : null,
+        sV: sm ? sm.price_vat : null, sC: sm ? (sm.currency || 'USD') : 'USD',
         aSt: am ? (am.status || null) : null, aNV: am ? am.price_no_vat : null,
-        aV: am ? (am.price_vat || null) : null, aC: am ? (am.currency || 'USD') : null,
+        aV: am ? (am.price_vat || null) : null, aC: am ? (am.currency || 'USD') : 'USD',
       });
     }
   }
@@ -693,27 +718,28 @@ function renderTable(rows) {
     const e = n % 2 === 0 ? 'even' : '';
     const r = rd;
     // Best price
-    const prices = [['Генерація',r.gNV],['Helius',r.hNV],['Dolya',r.dNV],['SE',r.sNV],['Атмосфера',r.aNV]].filter(p=>p[1]!=null);
+    const prices = [['Генерація',r.gNV,r.gC],['Helius',r.hNV,r.hC],['Dolya',r.dNV,r.dC],['SE',r.sNV,r.sC],['Атмосфера',r.aNV,r.aC]].filter(p=>p[1]!=null);
     const best = prices.length ? prices.reduce((a,b) => b[1] < a[1] ? b : a) : null;
     const bestWho = best ? prices.filter(p => p[1] === best[1]).map(p => p[0]).join(' / ') : '';
     const bestP = best ? best[1] : null;
+    const bestC = best ? best[2] : 'USD';
 
     tb.innerHTML += `<tr>
       <td class="t-tovar ${e} bl">${n}</td>
       <td class="t-tovar ${e} art">${r.name}</td>
       <td class="t-gen ${e} bl status">${r.gSt||''}</td>
-      <td class="t-gen ${e}">${fmt(r.gNV)}</td>
-      <td class="t-gen ${e}">${fmt(r.gV)}</td>
+      <td class="t-gen ${e}">${fmt(r.gNV,r.gC)}</td>
+      <td class="t-gen ${e}">${fmt(r.gV,r.gC)}</td>
       <td class="t-hel ${e} bl status">${r.hSt||''}</td>
-      <td class="t-hel ${e}">${fmt(r.hNV)}</td>
+      <td class="t-hel ${e}">${fmt(r.hNV,r.hC)}</td>
       <td class="d-hel ${e}">${delta(r.hNV,r.gNV)}</td>
-      <td class="t-hel ${e}">${fmt(r.hV)}</td>
+      <td class="t-hel ${e}">${fmt(r.hV,r.hC)}</td>
       <td class="d-hel ${e}">${delta(r.hV,r.gV)}</td>
-      <td class="t-hel ${e}">${fmt(r.hR)}</td>
+      <td class="t-hel ${e}">${fmt(r.hR,r.hC)}</td>
       <td class="t-dol ${e} bl status">${r.dSt||''}</td>
-      <td class="t-dol ${e}">${fmt(r.dNV)}</td>
+      <td class="t-dol ${e}">${fmt(r.dNV,r.dC)}</td>
       <td class="d-dol ${e}">${delta(r.dNV,r.gNV)}</td>
-      <td class="t-dol ${e}">${fmt(r.dV)}</td>
+      <td class="t-dol ${e}">${fmt(r.dV,r.dC)}</td>
       <td class="d-dol ${e}">${delta(r.dV,r.gV)}</td>
       <td class="t-dol ${e}">${fmt(r.dU,'UAH')}</td>
       <td class="t-se ${e} bl status">${r.sSt||''}</td>
@@ -727,7 +753,7 @@ function renderTable(rows) {
       <td class="t-atm ${e}">${fmt(r.aV,r.aC)}</td>
       <td class="d-atm ${e}">${delta(r.aV,r.gV)}</td>
       <td class="t-best ${e} bl">${bestWho}</td>
-      <td class="t-best ${e} bold">${fmt(bestP)}</td>
+      <td class="t-best ${e} bold">${fmt(bestP,bestC)}</td>
     </tr>`;
   }
 }
