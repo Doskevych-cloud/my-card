@@ -261,7 +261,7 @@ tr:hover td{background:var(--bg3) !important}
         </tr>
         <tr>
           <th class="sh sh-tovar bl">&#8470;</th><th class="sh sh-tovar">Назва</th>
-          <th class="sh sh-gen bl">Статус</th><th class="sh sh-gen">Ціна без ПДВ</th><th class="sh sh-gen">Ціна з ПДВ</th><th class="sh sh-gen">Залишки</th>
+          <th class="sh sh-gen bl">Залишки</th><th class="sh sh-gen">Статус</th><th class="sh sh-gen">Ціна без ПДВ</th><th class="sh sh-gen">Ціна з ПДВ</th>
           <th class="sh sh-hel bl">Статус</th><th class="sh sh-hel">Ціна без ПДВ</th><th class="sh sh-hel">&Delta;%</th><th class="sh sh-hel">Ціна з ПДВ</th><th class="sh sh-hel">&Delta;%</th><th class="sh sh-hel">РРЦ</th>
           <th class="sh sh-dol bl">Статус</th><th class="sh sh-dol">Ціна без ПДВ</th><th class="sh sh-dol">&Delta;%</th><th class="sh sh-dol">Ціна з ПДВ</th><th class="sh sh-dol">&Delta;%</th>
           <th class="sh sh-se bl">Статус</th><th class="sh sh-se">Ціна без ПДВ</th><th class="sh sh-se">&Delta;%</th><th class="sh sh-se">Ціна з ПДВ</th><th class="sh sh-se">&Delta;%</th>
@@ -945,10 +945,10 @@ function renderTable(rows) {
     tb.innerHTML += `<tr>
       <td class="t-tovar ${e} bl">${n}</td>
       <td class="t-tovar ${e} art">${r.name}</td>
-      <td class="t-gen ${e} bl status">${r.gSt||''}</td>
+      <td class="t-gen ${e} bl stock">${r.gStock != null ? r.gStock : ''}</td>
+      <td class="t-gen ${e} status">${r.gSt||''}</td>
       <td class="t-gen ${e}">${fmt(r.gNV,r.gC)}</td>
       <td class="t-gen ${e}">${fmt(r.gV,r.gC)}</td>
-      <td class="t-gen ${e} stock">${r.gStock != null ? r.gStock : ''}</td>
       <td class="t-hel ${e} bl status">${r.hSt||''}</td>
       <td class="t-hel ${e}">${fmt(r.hNV,r.hC)}</td>
       <td class="d-hel ${e}">${delta(r.hNV,r.gNV)}</td>
