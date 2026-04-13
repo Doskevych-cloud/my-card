@@ -132,6 +132,7 @@ thead tr:last-child th{top:30px}
 .art{text-align:left;font-size:11px;white-space:normal;min-width:200px;max-width:300px;color:var(--text)}
 .bold{font-weight:700;color:var(--accent)}
 .status{font-size:10px;color:var(--text3);max-width:120px;white-space:normal}
+.stock{font-weight:600;font-size:11px}
 table td:nth-child(-n+2){position:sticky;z-index:3}
 thead tr:last-child th:nth-child(-n+2),thead tr:first-child th:first-child{position:sticky;z-index:60}
 td:nth-child(1){left:0;min-width:32px}
@@ -253,7 +254,7 @@ tr:hover td{background:var(--bg3) !important}
       <thead>
         <tr>
           <th class="gh gh-tovar bl" colspan="2">ТОВАР</th>
-          <th class="gh gh-gen bl" colspan="3">Генерація</th>
+          <th class="gh gh-gen bl" colspan="4">Генерація</th>
           <th class="gh gh-hel bl" colspan="6">Helius</th>
           <th class="gh gh-dol bl" colspan="5">Dolya Solar</th>
           <th class="gh gh-se bl" colspan="5">SE (se.net.ua)</th>
@@ -263,7 +264,7 @@ tr:hover td{background:var(--bg3) !important}
         </tr>
         <tr>
           <th class="sh sh-tovar bl">&#8470;</th><th class="sh sh-tovar">Назва</th>
-          <th class="sh sh-gen bl">Статус</th><th class="sh sh-gen">Ціна без ПДВ</th><th class="sh sh-gen">Ціна з ПДВ</th>
+          <th class="sh sh-gen bl">Статус</th><th class="sh sh-gen">Ціна без ПДВ</th><th class="sh sh-gen">Ціна з ПДВ</th><th class="sh sh-gen">Залишки</th>
           <th class="sh sh-hel bl">Статус</th><th class="sh sh-hel">Ціна без ПДВ</th><th class="sh sh-hel">&Delta;%</th><th class="sh sh-hel">Ціна з ПДВ</th><th class="sh sh-hel">&Delta;%</th><th class="sh sh-hel">РРЦ</th>
           <th class="sh sh-dol bl">Статус</th><th class="sh sh-dol">Ціна без ПДВ</th><th class="sh sh-dol">&Delta;%</th><th class="sh sh-dol">Ціна з ПДВ</th><th class="sh sh-dol">&Delta;%</th>
           <th class="sh sh-se bl">Статус</th><th class="sh sh-se">Ціна без ПДВ</th><th class="sh sh-se">&Delta;%</th><th class="sh sh-se">Ціна з ПДВ</th><th class="sh sh-se">&Delta;%</th>
@@ -804,7 +805,25 @@ function guessCategory(name) {
   return null;
 }
 
-function buildComparison(genProds, helProds, dolProds, seProds, peProds, atmProds) {
+function findStock(name, model, stockMap) {
+  if (!stockMap || !Object.keys(stockMap).length) return null;
+  // Try exact substring match first
+  const nameUp = String(name).toUpperCase();
+  for (const [sName, qty] of Object.entries(stockMap)) {
+    if (sName.toUpperCase().includes(nameUp) || nameUp.includes(sName.toUpperCase())) return qty;
+  }
+  // Try model match
+  if (model) {
+    const nm = normModel(model);
+    for (const [sName, qty] of Object.entries(stockMap)) {
+      const sModel = extractModel(sName);
+      if (sModel && normModel(sModel) === nm) return qty;
+    }
+  }
+  return null;
+}
+
+function buildComparison(genProds, helProds, dolProds, seProds, peProds, atmProds, stockMap) {
   const categories = ['ІНВЕРТОРИ', 'АКУМУЛЯТОРИ', 'МОДУЛІ', 'КАБЕЛІ'];
   const rows = [];
 
@@ -819,9 +838,10 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, atmProd
       const sm = findMatch(gp.model, gp.name, gpPrice, seProds, isPanel);
       const pm = findMatch(gp.model, gp.name, gpPrice, peProds, isPanel);
       const am = findMatch(gp.model, gp.name, gpPrice, atmProds, isPanel);
+      const stock = findStock(gp.name, gp.model, stockMap);
       rows.push({
         cat, name: gp.name, model: gp.model,
-        gSt: gp.status, gNV: gp.price_no_vat, gV: gp.price_vat, gC: gp.currency || 'USD',
+        gSt: gp.status, gNV: gp.price_no_vat, gV: gp.price_vat, gC: gp.currency || 'USD', gStock: stock,
         hSt: hm ? hm.status : null, hNV: hm ? hm.price_no_vat : null,
         hV: hm ? hm.price_vat : null, hR: hm ? (hm.rrc || null) : null, hC: hm ? (hm.currency || 'USD') : 'USD',
         dSt: dm ? dm.status : null, dNV: dm ? dm.price_no_vat : null,
@@ -871,7 +891,7 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, atmProd
     const hm = ex.h, dm = ex.d, sm = ex.s, pm = ex.p, am = ex.a;
     rows.push({
       cat: 'МОДУЛІ', name: ex.name, model: ex.model,
-      gSt: null, gNV: null, gV: null, gC: 'USD',
+      gSt: null, gNV: null, gV: null, gC: 'USD', gStock: null,
       hSt: hm ? hm.status : null, hNV: hm ? hm.price_no_vat : null,
       hV: hm ? hm.price_vat : null, hR: hm ? (hm.rrc || null) : null, hC: hm ? (hm.currency || 'USD') : 'USD',
       dSt: dm ? dm.status : null, dNV: dm ? dm.price_no_vat : null,
@@ -913,7 +933,7 @@ function renderTable(rows) {
   for (const rd of rows) {
     if (rd.cat !== currentCat) {
       currentCat = rd.cat;
-      tb.innerHTML += `<tr class="cat"><td colspan="33"><span class="cat-label">${currentCat}</span></td></tr>`;
+      tb.innerHTML += `<tr class="cat"><td colspan="34"><span class="cat-label">${currentCat}</span></td></tr>`;
     }
     n++;
     const e = n % 2 === 0 ? 'even' : '';
@@ -931,6 +951,7 @@ function renderTable(rows) {
       <td class="t-gen ${e} bl status">${r.gSt||''}</td>
       <td class="t-gen ${e}">${fmt(r.gNV,r.gC)}</td>
       <td class="t-gen ${e}">${fmt(r.gV,r.gC)}</td>
+      <td class="t-gen ${e} stock">${r.gStock != null ? r.gStock : ''}</td>
       <td class="t-hel ${e} bl status">${r.hSt||''}</td>
       <td class="t-hel ${e}">${fmt(r.hNV,r.hC)}</td>
       <td class="d-hel ${e}">${delta(r.hNV,r.gNV)}</td>
@@ -1048,13 +1069,23 @@ async function runComparison() {
       if (!atmProds.length) warnings.push('Атмосфера: 0 товарів — можливо змінилась структура прайсу');
     }
 
+    // Fetch stock from 1C OData
+    let stockMap = {};
+    progText.textContent = 'Завантаження залишків (1С)...';
+    progBar.style.width = '80%';
+    try {
+      const stockRes = await fetch(API_URL + '?action=odata_stock');
+      const stockData = await stockRes.json();
+      if (stockData.stock) stockMap = stockData.stock;
+    } catch(e) { console.warn('Stock fetch error', e); }
+
     // Show warnings
     if (warnings.length) alert('Увага!\n\n' + warnings.join('\n'));
 
     // Match
     progText.textContent = 'Зіставлення моделей...';
-    progBar.style.width = '85%';
-    const rows = buildComparison(genProds, helProds, dolProds, seProds, peProds, atmProds);
+    progBar.style.width = '90%';
+    const rows = buildComparison(genProds, helProds, dolProds, seProds, peProds, atmProds, stockMap);
 
     // Render
     progText.textContent = 'Побудова таблиці...';
