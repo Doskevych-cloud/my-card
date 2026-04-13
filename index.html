@@ -208,12 +208,11 @@ tr:hover td{background:var(--bg3) !important}
       <button class="remove-btn" onclick="removeFile(event,'hel')" style="display:none">&times;</button>
       <input type="file" accept=".xlsx,.xls" onchange="fileSelected(this,'hel')">
     </div>
-    <div class="supplier-slot slot-dol" data-supplier="dol" onclick="triggerUpload(this)">
-      <div class="icon">📁</div>
+    <div class="supplier-slot slot-dol" data-supplier="dol" id="dolSlot" style="cursor:default">
+      <div class="icon">🌐</div>
       <div class="label">Dolya Solar</div>
-      <div class="file-name"></div>
-      <button class="remove-btn" onclick="removeFile(event,'dol')" style="display:none">&times;</button>
-      <input type="file" accept=".xlsx,.xls" onchange="fileSelected(this,'dol')">
+      <div class="hint">Google Sheets (авто)</div>
+      <div class="file-name" id="dolStatus"></div>
     </div>
     <div class="supplier-slot slot-se" data-supplier="se" id="seSlot" style="cursor:default">
       <div class="icon">🌐</div>
@@ -380,15 +379,14 @@ function extractModel(nameRaw) {
 
 function normModel(code) {
   if (!code) return null;
-  let c = code.toUpperCase().replace(/\s/g, '');
-  c = c.replace(/SUN-0*(\d+K)/, 'SUN-$1');
-  c = c.replace(/-EU-?$/, '-EU');
-  c = c.replace(/-SM\d$/, '');
-  c = c.replace(/-AM\d-?P?$/, '');
-  c = c.replace(/-BM\d$/, '');
-  c = c.replace(/-EM\d$/, '');
-  c = c.replace(/-PLUS$/, '');
-  c = c.replace(/PDU(\d)/, 'PDU-$1');
+  // Strip all non-alphanumeric, keep only letters and digits
+  let c = code.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  // Remove common trailing suffixes
+  c = c.replace(/PLUS$/, '');
+  c = c.replace(/(AM|SM|BM|EM|GM)\d+$/, '');
+  c = c.replace(/EU$/, '');
+  // Normalize SUN prefix
+  c = c.replace(/SUN0*(\d+K)/, 'SUN$1');
   return c;
 }
 
@@ -428,10 +426,7 @@ function findMatch(genModel, genName, genPrice, products, isPanel) {
       const w1 = extractWattage(genName), w2 = extractWattage(sp.name);
       if (w1 && w2 && Math.abs(w1 - w2) > 10) continue;
     }
-    if (genPrice && sp.price_no_vat && genPrice > 0) {
-      const ratio = sp.price_no_vat / genPrice;
-      if (ratio > 5 || ratio < 0.2) continue;
-    }
+    // Ratio check removed — different suppliers use different units ($/Вт vs $/шт)
     if (!best || (sp.price_no_vat && !best.price_no_vat)) best = sp;
   }
   return best;
@@ -586,9 +581,10 @@ async function parseDolya(file) {
     const ws = wb.Sheets[sn];
     const maxR = sheetRows(ws);
     let sheetCat = null;
+    const isPanelSheet = sn.includes('Фотомодулі');
     if (sn.includes('Інвертори')) sheetCat = 'ІНВЕРТОРИ';
     else if (sn.includes('Акумулятори')) sheetCat = 'АКУМУЛЯТОРИ';
-    else if (sn.includes('Фотомодулі')) sheetCat = 'МОДУЛІ';
+    else if (isPanelSheet) sheetCat = 'МОДУЛІ';
     else if (sn.includes('Кабел')) sheetCat = 'КАБЕЛІ';
     for (let r = 6; r < maxR; r++) {
       const name = cellVal(ws, r, 3);
@@ -597,15 +593,35 @@ async function parseDolya(file) {
       if (!nameStr || SKIP.has(nameStr)) continue;
       const art = cellVal(ws, r, 2);
       const model = extractModel(nameStr) || (art ? extractModel(String(art)) : null);
-      const fD1 = cellFmt(ws, r, 11), fD2 = cellFmt(ws, r, 9);
+      let pnv, pv, st, cat = sheetCat;
+      const nameUp = nameStr.toUpperCase();
+      const isCable = nameUp.includes('КАБЕЛ') || nameUp.includes('KBE');
+      if (isPanelSheet) {
+        if (isCable) {
+          // Cables in panel sheet: C10=USD vat, C13=USD no_vat, C15=status
+          pv = parsePrice(cellVal(ws, r, 10));
+          pnv = parsePrice(cellVal(ws, r, 13));
+          st = cellVal(ws, r, 15);
+          cat = 'КАБЕЛІ';
+        } else {
+          // Panels: C9=$/Вт vat, C12=$/Вт no_vat, C15=status
+          pv = parsePrice(cellVal(ws, r, 9));
+          pnv = parsePrice(cellVal(ws, r, 12));
+          st = cellVal(ws, r, 15);
+        }
+      } else {
+        // Inverters/Batteries: C9=USD vat, C11=USD no_vat, C13=status
+        pv = parsePrice(cellVal(ws, r, 9));
+        pnv = parsePrice(cellVal(ws, r, 11));
+        st = cellVal(ws, r, 13);
+      }
+      if (!pnv && !pv) continue;
       let curD = 'USD';
-      if ((fD1 && fD1.includes('€')) || (fD2 && fD2.includes('€'))) curD = 'EUR';
       products.push({
-        name: nameStr, model, category: sheetCat,
-        status: cellVal(ws, r, 13) ? String(cellVal(ws, r, 13)).trim() : null,
-        price_no_vat: parsePrice(cellVal(ws, r, 11)),
-        price_vat: parsePrice(cellVal(ws, r, 9)),
-        price_no_vat_uah: parsePrice(cellVal(ws, r, 12)),
+        name: nameStr, model, category: cat,
+        status: st ? String(st).trim() : null,
+        price_no_vat: pnv,
+        price_vat: pv,
         currency: curD,
       });
     }
@@ -978,14 +994,25 @@ async function runComparison() {
       if (!helProds.length) warnings.push('Helius: 0 товарів — можливо змінилась структура прайсу');
     }
 
-    // Parse Dolya
+    // Parse Dolya — auto-fetch from Google Sheets
     let dolProds = [];
-    if (files.dol) {
-      progText.textContent = 'Парсинг: Dolya Solar...';
-      progBar.style.width = '40%';
-      dolProds = await parseDolya(files.dol);
-      if (!dolProds.length) warnings.push('Dolya Solar: 0 товарів — можливо змінилась структура прайсу');
-    }
+    progText.textContent = 'Завантаження: Dolya Solar (Google Sheets)...';
+    progBar.style.width = '40%';
+    try {
+      const dolSheetUrl = 'https://docs.google.com/spreadsheets/d/1Mt-FMjFO6p96hL_hJ-0SVuzupsf9wFeuN2OIo0oNq18/edit';
+      const dolRes = await fetch(API_URL + '?action=gsheet_proxy&url=' + encodeURIComponent(dolSheetUrl));
+      const dolData = await dolRes.json();
+      if (dolData.data) {
+        const binary = atob(dolData.data);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const blob = new Blob([bytes]);
+        dolProds = await parseDolya(blob);
+        document.getElementById('dolStatus').textContent = dolProds.length + ' товарів';
+        document.getElementById('dolSlot').classList.add('has-file');
+      }
+      if (!dolProds.length) warnings.push('Dolya Solar: 0 товарів — можливо змінилась структура Google Sheet');
+    } catch(e) { console.warn('Dolya auto-fetch error', e); warnings.push('Dolya Solar: помилка завантаження — ' + e.message); }
 
     // SE — auto-fetch from website
     let seProds = [];
@@ -1045,7 +1072,7 @@ async function runComparison() {
     // Save to history
     const supplierFiles = [{key:'gen',name:'Генерація'}];
     if (files.hel) supplierFiles.push({key:'hel',name:'Helius'});
-    if (files.dol) supplierFiles.push({key:'dol',name:'Dolya Solar'});
+    if (dolProds.length) supplierFiles.push({key:'dol',name:'Dolya Solar'});
     if (seProds.length) supplierFiles.push({key:'se',name:'SE'});
     if (files.pe) supplierFiles.push({key:'pe',name:'ПЕ'});
     if (files.atm) supplierFiles.push({key:'atm',name:'Атмосфера'});
