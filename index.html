@@ -23,8 +23,9 @@
   --sticky-shadow:3px 0 8px rgba(0,0,0,.5);
   --sup-gen:#5c6bc0;--sup-hel:#a1887f;--sup-dol:#66bb6a;--sup-se:#ce93d8;--sup-atm:#ffb74d;
   --sup-pe:#4db6ac;--sup-pe-bg:rgba(77,182,172,.12);
+  --sup-sv:#42a5f5;--sup-sv-bg:rgba(66,165,245,.12);
   --sup-gen-bg:rgba(92,107,192,.12);--sup-hel-bg:rgba(161,136,127,.12);--sup-dol-bg:rgba(102,187,106,.12);
-  --sup-se-bg:rgba(206,147,216,.12);--sup-atm-bg:rgba(255,183,77,.12);
+  --sup-se-bg:rgba(206,147,216,.12);--sup-sv-bg2:rgba(66,165,245,.07);--sup-atm-bg:rgba(255,183,77,.12);
   --delta-bg:rgba(255,255,255,.02);--delta-bg2:rgba(255,255,255,.04);
   --best-bg:rgba(255,131,25,.06);--best-bg2:rgba(255,131,25,.12);
   --slot-border:#2b2f36;--slot-hover:rgba(255,255,255,.03);
@@ -85,6 +86,7 @@ body{font-family:'Inter',-apple-system,'Segoe UI',sans-serif;background:var(--bg
 .slot-dol{border-color:rgba(102,187,106,.4)}.slot-dol.has-file{border-color:var(--sup-dol);background:var(--sup-dol-bg)}
 .slot-se{border-color:rgba(206,147,216,.4)}.slot-se.has-file{border-color:var(--sup-se);background:var(--sup-se-bg)}
 .slot-pe{border-color:rgba(77,182,172,.4)}.slot-pe.has-file{border-color:#4db6ac;background:rgba(77,182,172,.12)}
+.slot-sv{border-color:rgba(66,165,245,.4)}.slot-sv.has-file{border-color:var(--sup-sv);background:var(--sup-sv-bg)}
 .slot-atm{border-color:rgba(255,183,77,.4)}.slot-atm.has-file{border-color:var(--sup-atm);background:var(--sup-atm-bg)}
 .btn-run{display:block;margin:0 auto;padding:10px 40px;background:var(--btn-bg);color:var(--btn-text);border:none;border-radius:4px;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s}
 .btn-run:hover{background:var(--btn-hover)}
@@ -104,6 +106,7 @@ thead tr:last-child th{top:30px}
 .gh-gen{background:var(--sup-gen)}.gh-hel{background:var(--sup-hel)}.gh-dol{background:var(--sup-dol)}
 .gh-se{background:var(--sup-se)}.gh-atm{background:var(--sup-atm)}
 .gh-pe{background:#4db6ac}
+.gh-sv{background:#42a5f5}
 .gh-best{background:var(--accent);color:#0b0e11}
 [data-theme="light"] .gh-tovar{background:#f5f5f5;color:var(--text)}
 [data-theme="light"] .gh{color:#fff}
@@ -112,6 +115,7 @@ thead tr:last-child th{top:30px}
 .sh-tovar{background:var(--bg2)}.sh-gen{background:var(--sup-gen-bg)}.sh-hel{background:var(--sup-hel-bg)}
 .sh-dol{background:var(--sup-dol-bg)}.sh-se{background:var(--sup-se-bg)}.sh-atm{background:var(--sup-atm-bg)}
 .sh-pe{background:rgba(77,182,172,.1)}
+.sh-sv{background:rgba(66,165,245,.1)}
 .sh-best{background:var(--best-bg)}
 .t-tovar{background:var(--row-odd);color:var(--text)}.t-tovar.even{background:var(--row-even)}
 .t-gen{background:var(--row-odd)}.t-gen.even{background:var(--row-even)}
@@ -119,12 +123,14 @@ thead tr:last-child th{top:30px}
 .t-dol{background:var(--row-odd)}.t-dol.even{background:var(--row-even)}
 .t-se{background:var(--row-odd)}.t-se.even{background:var(--row-even)}
 .t-pe{background:var(--row-odd)}.t-pe.even{background:var(--row-even)}
+.t-sv{background:var(--row-odd)}.t-sv.even{background:var(--row-even)}
 .t-atm{background:var(--row-odd)}.t-atm.even{background:var(--row-even)}
 .t-best{background:var(--best-bg)}.t-best.even{background:var(--best-bg2)}
 .d-hel{background:var(--delta-bg)}.d-hel.even{background:var(--delta-bg2)}
 .d-dol{background:var(--delta-bg)}.d-dol.even{background:var(--delta-bg2)}
 .d-se{background:var(--delta-bg)}.d-se.even{background:var(--delta-bg2)}
 .d-pe{background:var(--delta-bg)}.d-pe.even{background:var(--delta-bg2)}
+.d-sv{background:var(--delta-bg)}.d-sv.even{background:var(--delta-bg2)}
 .d-atm{background:var(--delta-bg)}.d-atm.even{background:var(--delta-bg2)}
 .bl{border-left:1px solid var(--border2) !important}
 .cat td{background:var(--cat-bg);font-weight:600;font-size:11px;color:var(--cat-text);text-align:left;border-bottom:1px solid var(--cat-border);padding:7px 12px;text-transform:uppercase;letter-spacing:.6px}
@@ -162,6 +168,7 @@ tr:hover td{background:var(--bg3) !important}
 .h-tag-dol{background:var(--sup-dol-bg);color:var(--sup-dol)}
 .h-tag-se{background:var(--sup-se-bg);color:var(--sup-se)}
 .h-tag-pe{background:rgba(77,182,172,.12);color:#4db6ac}
+.h-tag-sv{background:rgba(66,165,245,.12);color:#42a5f5}
 .h-tag-atm{background:var(--sup-atm-bg);color:var(--sup-atm)}
 .h-actions{display:flex;gap:6px;align-items:center}
 .h-btn{background:none;border:none;cursor:pointer;font-size:14px;color:var(--text3);padding:4px;transition:color .15s}
@@ -225,6 +232,12 @@ tr:hover td{background:var(--bg3) !important}
       <div class="hint">Google Sheets (авто)</div>
       <div class="file-name" id="peStatus"></div>
     </div>
+    <div class="supplier-slot slot-sv" data-supplier="sv" id="svSlot" style="cursor:default">
+      <div class="icon">🌐</div>
+      <div class="label">Solar Verse</div>
+      <div class="hint">Google Sheets (авто)</div>
+      <div class="file-name" id="svStatus"></div>
+    </div>
     <div class="supplier-slot slot-atm" data-supplier="atm" onclick="triggerUpload(this)">
       <div class="icon">📁</div>
       <div class="label">Атмосфера</div>
@@ -256,6 +269,7 @@ tr:hover td{background:var(--bg3) !important}
           <th class="gh gh-dol bl" colspan="5">Dolya Solar</th>
           <th class="gh gh-se bl" colspan="5">SE (se.net.ua)</th>
           <th class="gh gh-pe bl" colspan="5">ПЕ</th>
+          <th class="gh gh-sv bl" colspan="5">Solar Verse</th>
           <th class="gh gh-atm bl" colspan="5">Атмосфера</th>
           <th class="gh gh-best bl" colspan="2">НАЙКРАЩА</th>
         </tr>
@@ -266,6 +280,7 @@ tr:hover td{background:var(--bg3) !important}
           <th class="sh sh-dol bl">Статус</th><th class="sh sh-dol">Ціна без ПДВ</th><th class="sh sh-dol">&Delta;%</th><th class="sh sh-dol">Ціна з ПДВ</th><th class="sh sh-dol">&Delta;%</th>
           <th class="sh sh-se bl">Статус</th><th class="sh sh-se">Ціна без ПДВ</th><th class="sh sh-se">&Delta;%</th><th class="sh sh-se">Ціна з ПДВ</th><th class="sh sh-se">&Delta;%</th>
           <th class="sh sh-pe bl">Статус</th><th class="sh sh-pe">Ціна без ПДВ</th><th class="sh sh-pe">&Delta;%</th><th class="sh sh-pe">Ціна з ПДВ</th><th class="sh sh-pe">&Delta;%</th>
+          <th class="sh sh-sv bl">Статус</th><th class="sh sh-sv">Ціна без ПДВ</th><th class="sh sh-sv">&Delta;%</th><th class="sh sh-sv">Ціна з ПДВ</th><th class="sh sh-sv">&Delta;%</th>
           <th class="sh sh-atm bl">Статус</th><th class="sh sh-atm">Ціна без ПДВ</th><th class="sh sh-atm">&Delta;%</th><th class="sh sh-atm">Ціна з ПДВ</th><th class="sh sh-atm">&Delta;%</th>
           <th class="sh sh-best bl">Хто</th><th class="sh sh-best">Ціна</th>
         </tr>
@@ -279,8 +294,8 @@ tr:hover td{background:var(--bg3) !important}
 // ═══════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════
-const files = { gen: null, hel: null, dol: null, se: null, pe: null, atm: null };
-const rawData = { gen: null, hel: null, dol: null, se: null, pe: null, atm: null };
+const files = { gen: null, hel: null, dol: null, se: null, pe: null, sv: null, atm: null };
+const rawData = { gen: null, hel: null, dol: null, se: null, pe: null, sv: null, atm: null };
 
 // ═══════════════════════════════════════════════
 // UPLOAD UI
@@ -820,7 +835,7 @@ function findStock(name, model, stockMap) {
   return null;
 }
 
-function buildComparison(genProds, helProds, dolProds, seProds, peProds, atmProds, stockMap) {
+function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds, atmProds, stockMap) {
   const categories = ['ІНВЕРТОРИ', 'АКУМУЛЯТОРИ', 'МОДУЛІ', 'КАБЕЛІ'];
   const rows = [];
 
@@ -834,6 +849,7 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, atmProd
       const dm = findMatch(gp.model, gp.name, gpPrice, dolProds, isPanel);
       const sm = findMatch(gp.model, gp.name, gpPrice, seProds, isPanel);
       const pm = findMatch(gp.model, gp.name, gpPrice, peProds, isPanel);
+      const vm = findMatch(gp.model, gp.name, gpPrice, svProds, isPanel);
       const am = findMatch(gp.model, gp.name, gpPrice, atmProds, isPanel);
       const stock = findStock(gp.name, gp.model, stockMap);
       rows.push({
@@ -847,9 +863,11 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, atmProd
         sV: sm ? sm.price_vat : null, sC: sm ? (sm.currency || 'USD') : 'USD',
         pSt: pm ? pm.status : null, pNV: pm ? pm.price_no_vat : null,
         pV: pm ? pm.price_vat : null, pC: pm ? (pm.currency || 'USD') : 'USD',
+        vSt: vm ? vm.status : null, vNV: vm ? vm.price_no_vat : null,
+        vV: vm ? vm.price_vat : null, vC: vm ? (vm.currency || 'USD') : 'USD',
         aSt: am ? (am.status || null) : null, aNV: am ? am.price_no_vat : null,
         aV: am ? (am.price_vat || null) : null, aC: am ? (am.currency || 'USD') : 'USD',
-        _hm: hm, _dm: dm, _sm: sm, _pm: pm, _am: am,
+        _hm: hm, _dm: dm, _sm: sm, _pm: pm, _vm: vm, _am: am,
       });
     }
   }
@@ -859,14 +877,16 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, atmProd
   const usedD = new Set(rows.filter(r=>r._dm).map(r=>r._dm));
   const usedS = new Set(rows.filter(r=>r._sm).map(r=>r._sm));
   const usedP = new Set(rows.filter(r=>r._pm).map(r=>r._pm));
+  const usedV = new Set(rows.filter(r=>r._vm).map(r=>r._vm));
   const usedA = new Set(rows.filter(r=>r._am).map(r=>r._am));
-  rows.forEach(r => { delete r._hm; delete r._dm; delete r._sm; delete r._pm; delete r._am; });
+  rows.forEach(r => { delete r._hm; delete r._dm; delete r._sm; delete r._pm; delete r._vm; delete r._am; });
 
   const panelSources = [
     {prods: helProds, used: usedH, key: 'h'},
     {prods: dolProds, used: usedD, key: 'd'},
     {prods: seProds, used: usedS, key: 's'},
     {prods: peProds, used: usedP, key: 'p'},
+    {prods: svProds, used: usedV, key: 'v'},
     {prods: atmProds, used: usedA, key: 'a'},
   ];
   const extraPanels = new Map();
@@ -880,12 +900,12 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, atmProd
       if (!nm) continue;
       let entry = null;
       for (const [k, v] of extraPanels) { if (fuzzyMatch(k, nm)) { entry = v; break; } }
-      if (!entry) { entry = {name: p.name, model: nm, h:null, d:null, s:null, p:null, a:null}; extraPanels.set(nm, entry); }
+      if (!entry) { entry = {name: p.name, model: nm, h:null, d:null, s:null, p:null, v:null, a:null}; extraPanels.set(nm, entry); }
       if (!entry[key]) entry[key] = p;
     }
   }
   for (const ex of extraPanels.values()) {
-    const hm = ex.h, dm = ex.d, sm = ex.s, pm = ex.p, am = ex.a;
+    const hm = ex.h, dm = ex.d, sm = ex.s, pm = ex.p, vm = ex.v, am = ex.a;
     rows.push({
       cat: 'МОДУЛІ', name: ex.name, model: ex.model,
       gSt: null, gNV: null, gV: null, gC: 'USD', gStock: null,
@@ -897,6 +917,8 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, atmProd
       sV: sm ? sm.price_vat : null, sC: sm ? (sm.currency || 'USD') : 'USD',
       pSt: pm ? pm.status : null, pNV: pm ? pm.price_no_vat : null,
       pV: pm ? pm.price_vat : null, pC: pm ? (pm.currency || 'USD') : 'USD',
+      vSt: vm ? vm.status : null, vNV: vm ? vm.price_no_vat : null,
+      vV: vm ? vm.price_vat : null, vC: vm ? (vm.currency || 'USD') : 'USD',
       aSt: am ? (am.status || null) : null, aNV: am ? am.price_no_vat : null,
       aV: am ? (am.price_vat || null) : null, aC: am ? (am.currency || 'USD') : 'USD',
     });
@@ -930,13 +952,13 @@ function renderTable(rows) {
   for (const rd of rows) {
     if (rd.cat !== currentCat) {
       currentCat = rd.cat;
-      tb.innerHTML += `<tr class="cat"><td colspan="34"><span class="cat-label">${currentCat}</span></td></tr>`;
+      tb.innerHTML += `<tr class="cat"><td colspan="39"><span class="cat-label">${currentCat}</span></td></tr>`;
     }
     n++;
     const e = n % 2 === 0 ? 'even' : '';
     const r = rd;
     // Best price
-    const prices = [['Генерація',r.gNV,r.gC],['Helius',r.hNV,r.hC],['Dolya',r.dNV,r.dC],['SE',r.sNV,r.sC],['ПЕ',r.pNV,r.pC],['Атмосфера',r.aNV,r.aC]].filter(p=>p[1]!=null);
+    const prices = [['Генерація',r.gNV,r.gC],['Helius',r.hNV,r.hC],['Dolya',r.dNV,r.dC],['SE',r.sNV,r.sC],['ПЕ',r.pNV,r.pC],['SV',r.vNV,r.vC],['Атмосфера',r.aNV,r.aC]].filter(p=>p[1]!=null);
     const best = prices.length ? prices.reduce((a,b) => b[1] < a[1] ? b : a) : null;
     const bestWho = best ? prices.filter(p => p[1] === best[1]).map(p => p[0]).join(' / ') : '';
     const bestP = best ? best[1] : null;
@@ -970,6 +992,11 @@ function renderTable(rows) {
       <td class="d-pe ${e}">${delta(r.pNV,r.gNV)}</td>
       <td class="t-pe ${e}">${fmt(r.pV,r.pC)}</td>
       <td class="d-pe ${e}">${delta(r.pV,r.gV)}</td>
+      <td class="t-sv ${e} bl status">${r.vSt||''}</td>
+      <td class="t-sv ${e}">${fmt(r.vNV,r.vC)}</td>
+      <td class="d-sv ${e}">${delta(r.vNV,r.gNV)}</td>
+      <td class="t-sv ${e}">${fmt(r.vV,r.vC)}</td>
+      <td class="d-sv ${e}">${delta(r.vV,r.gV)}</td>
       <td class="t-atm ${e} bl status">${r.aSt||''}</td>
       <td class="t-atm ${e}">${fmt(r.aNV,r.aC)}</td>
       <td class="d-atm ${e}">${delta(r.aNV,r.gNV)}</td>
@@ -1081,11 +1108,27 @@ async function runComparison() {
       if (!peProds.length) warnings.push('ПЕ: 0 товарів — перевірте Google Sheet або GAS');
     } catch(e) { console.warn('PE auto-fetch error', e); warnings.push('ПЕ: помилка завантаження — ' + e.message); }
 
+    // Auto-fetch Solar Verse from Google Sheets
+    let svProds = [];
+    progText.textContent = 'Завантаження: Solar Verse (Google Sheets)...';
+    progBar.style.width = '72%';
+    try {
+      const svRes = await fetch(API_URL + '?action=sv_data');
+      const svData = await svRes.json();
+      if (svData.error) throw new Error(svData.error);
+      svProds = (svData.products || []).map(p => ({...p, model: extractModel(p.name)}));
+      if (svProds.length) {
+        document.getElementById('svStatus').textContent = svProds.length + ' товарів';
+        document.getElementById('svSlot').classList.add('has-file');
+      }
+      if (!svProds.length) warnings.push('Solar Verse: 0 товарів — перевірте Google Sheet або GAS');
+    } catch(e) { console.warn('SV auto-fetch error', e); warnings.push('Solar Verse: помилка завантаження — ' + e.message); }
+
     // Parse Атмосфера (file upload)
     let atmProds = [];
     if (files.atm) {
       progText.textContent = 'Парсинг: Атмосфера...';
-      progBar.style.width = '75%';
+      progBar.style.width = '78%';
       atmProds = await parseAtmosfera(files.atm);
       if (!atmProds.length) warnings.push('Атмосфера: 0 товарів — можливо змінилась структура прайсу');
     }
@@ -1093,7 +1136,7 @@ async function runComparison() {
     // Fetch stock from 1C OData
     let stockMap = {};
     progText.textContent = 'Завантаження залишків (1С)...';
-    progBar.style.width = '80%';
+    progBar.style.width = '85%';
     try {
       const stockRes = await fetch(API_URL + '?action=odata_stock');
       const stockData = await stockRes.json();
@@ -1106,7 +1149,7 @@ async function runComparison() {
     // Match
     progText.textContent = 'Зіставлення моделей...';
     progBar.style.width = '90%';
-    const rows = buildComparison(genProds, helProds, dolProds, seProds, peProds, atmProds, stockMap);
+    const rows = buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds, atmProds, stockMap);
 
     // Render
     progText.textContent = 'Побудова таблиці...';
@@ -1119,16 +1162,17 @@ async function runComparison() {
       'Оновлено: ' + today.toLocaleDateString('uk-UA');
     document.getElementById('results').style.display = 'block';
     progBar.style.width = '100%';
-    progText.textContent = `Готово! ${rows.length} товарів, ${rows.filter(r=>r.hNV||r.dNV||r.sNV||r.pNV||r.aNV).length} зі збігами`;
+    progText.textContent = `Готово! ${rows.length} товарів, ${rows.filter(r=>r.hNV||r.dNV||r.sNV||r.pNV||r.vNV||r.aNV).length} зі збігами`;
 
     // Save to history
     const supplierFiles = [{key:'gen',name:'Генерація'}];
-    if (files.hel) supplierFiles.push({key:'hel',name:'Helius'});
+    if (helProds.length) supplierFiles.push({key:'hel',name:'Helius'});
     if (dolProds.length) supplierFiles.push({key:'dol',name:'Dolya Solar'});
     if (seProds.length) supplierFiles.push({key:'se',name:'SE'});
-    if (files.pe) supplierFiles.push({key:'pe',name:'ПЕ'});
+    if (peProds.length) supplierFiles.push({key:'pe',name:'ПЕ'});
+    if (svProds.length) supplierFiles.push({key:'sv',name:'Solar Verse'});
     if (files.atm) supplierFiles.push({key:'atm',name:'Атмосфера'});
-    saveComparison(rows, {hel:helProds.length,dol:dolProds.length,se:seProds.length,pe:peProds.length,atm:atmProds.length}, supplierFiles);
+    saveComparison(rows, {hel:helProds.length,dol:dolProds.length,se:seProds.length,pe:peProds.length,sv:svProds.length,atm:atmProds.length}, supplierFiles);
 
     // Scroll to results
     setTimeout(() => {
@@ -1146,7 +1190,7 @@ async function runComparison() {
 // ═══════════════════════════════════════════════
 // HISTORY (Google Apps Script — shared for everyone)
 // ═══════════════════════════════════════════════
-const API_URL = 'https://script.google.com/macros/s/AKfycbx14lkH-C7whfxFyjkBQQuQPWTUn1a81X8RUTpHLMqgBOFGir36EYffSZ2CqsaZdHDW/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxWBN0I3gJ2tNa3rmhp36-v_gSUjQEau3ykaTsr-pkunBclGlnqXvMGBhZhS9ARu70x/exec';
 const MAX_HISTORY = 15;
 let historyCache = [];
 
@@ -1197,7 +1241,7 @@ async function saveComparison(rows, counts, supplierFiles) {
     id,
     date: new Date().toLocaleString('uk-UA'),
     totalItems: rows.length,
-    matches: rows.filter(r => r.hNV || r.dNV || r.sNV || r.pNV || r.aNV).length,
+    matches: rows.filter(r => r.hNV || r.dNV || r.sNV || r.pNV || r.vNV || r.aNV).length,
     suppliers: supplierFiles,
     rows,
     counts
@@ -1252,7 +1296,7 @@ function renderHistoryUI(history) {
   count.textContent = `(${history.length})`;
   list.innerHTML = history.map(h => {
     const tags = (h.suppliers || []).map(s => {
-      const cls = {gen:'gen',hel:'hel',dol:'dol',se:'se',pe:'pe',atm:'atm'}[s.key] || 'gen';
+      const cls = {gen:'gen',hel:'hel',dol:'dol',se:'se',pe:'pe',sv:'sv',atm:'atm'}[s.key] || 'gen';
       return `<span class="h-tag h-tag-${cls}">${s.name}</span>`;
     }).join('');
     const hasData = !!(h.rows && h.rows.length);
