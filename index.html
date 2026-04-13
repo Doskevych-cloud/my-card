@@ -22,6 +22,7 @@
   --cat-bg:rgba(255,131,25,.08);--cat-border:rgba(255,131,25,.25);--cat-text:#f79743;
   --sticky-shadow:3px 0 8px rgba(0,0,0,.5);
   --sup-gen:#5c6bc0;--sup-hel:#a1887f;--sup-dol:#66bb6a;--sup-se:#ce93d8;--sup-atm:#ffb74d;
+  --sup-pe:#4db6ac;--sup-pe-bg:rgba(77,182,172,.12);
   --sup-gen-bg:rgba(92,107,192,.12);--sup-hel-bg:rgba(161,136,127,.12);--sup-dol-bg:rgba(102,187,106,.12);
   --sup-se-bg:rgba(206,147,216,.12);--sup-atm-bg:rgba(255,183,77,.12);
   --delta-bg:rgba(255,255,255,.02);--delta-bg2:rgba(255,255,255,.04);
@@ -83,6 +84,7 @@ body{font-family:'Inter',-apple-system,'Segoe UI',sans-serif;background:var(--bg
 .slot-hel{border-color:rgba(161,136,127,.4)}.slot-hel.has-file{border-color:var(--sup-hel);background:var(--sup-hel-bg)}
 .slot-dol{border-color:rgba(102,187,106,.4)}.slot-dol.has-file{border-color:var(--sup-dol);background:var(--sup-dol-bg)}
 .slot-se{border-color:rgba(206,147,216,.4)}.slot-se.has-file{border-color:var(--sup-se);background:var(--sup-se-bg)}
+.slot-pe{border-color:rgba(77,182,172,.4)}.slot-pe.has-file{border-color:#4db6ac;background:rgba(77,182,172,.12)}
 .slot-atm{border-color:rgba(255,183,77,.4)}.slot-atm.has-file{border-color:var(--sup-atm);background:var(--sup-atm-bg)}
 .btn-run{display:block;margin:0 auto;padding:10px 40px;background:var(--btn-bg);color:var(--btn-text);border:none;border-radius:4px;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s}
 .btn-run:hover{background:var(--btn-hover)}
@@ -101,6 +103,7 @@ thead tr:last-child th{top:30px}
 .gh-tovar{background:#1e2026}
 .gh-gen{background:var(--sup-gen)}.gh-hel{background:var(--sup-hel)}.gh-dol{background:var(--sup-dol)}
 .gh-se{background:var(--sup-se)}.gh-atm{background:var(--sup-atm)}
+.gh-pe{background:#4db6ac}
 .gh-best{background:var(--accent);color:#0b0e11}
 [data-theme="light"] .gh-tovar{background:#f5f5f5;color:var(--text)}
 [data-theme="light"] .gh{color:#fff}
@@ -108,17 +111,20 @@ thead tr:last-child th{top:30px}
 .sh{font-weight:500;font-size:10px;color:var(--text2);letter-spacing:.2px}
 .sh-tovar{background:var(--bg2)}.sh-gen{background:var(--sup-gen-bg)}.sh-hel{background:var(--sup-hel-bg)}
 .sh-dol{background:var(--sup-dol-bg)}.sh-se{background:var(--sup-se-bg)}.sh-atm{background:var(--sup-atm-bg)}
+.sh-pe{background:rgba(77,182,172,.1)}
 .sh-best{background:var(--best-bg)}
 .t-tovar{background:var(--row-odd);color:var(--text)}.t-tovar.even{background:var(--row-even)}
 .t-gen{background:var(--row-odd)}.t-gen.even{background:var(--row-even)}
 .t-hel{background:var(--row-odd)}.t-hel.even{background:var(--row-even)}
 .t-dol{background:var(--row-odd)}.t-dol.even{background:var(--row-even)}
 .t-se{background:var(--row-odd)}.t-se.even{background:var(--row-even)}
+.t-pe{background:var(--row-odd)}.t-pe.even{background:var(--row-even)}
 .t-atm{background:var(--row-odd)}.t-atm.even{background:var(--row-even)}
 .t-best{background:var(--best-bg)}.t-best.even{background:var(--best-bg2)}
 .d-hel{background:var(--delta-bg)}.d-hel.even{background:var(--delta-bg2)}
 .d-dol{background:var(--delta-bg)}.d-dol.even{background:var(--delta-bg2)}
 .d-se{background:var(--delta-bg)}.d-se.even{background:var(--delta-bg2)}
+.d-pe{background:var(--delta-bg)}.d-pe.even{background:var(--delta-bg2)}
 .d-atm{background:var(--delta-bg)}.d-atm.even{background:var(--delta-bg2)}
 .bl{border-left:1px solid var(--border2) !important}
 .cat td{background:var(--cat-bg);font-weight:600;font-size:11px;color:var(--cat-text);text-align:left;border-bottom:1px solid var(--cat-border);padding:7px 12px;text-transform:uppercase;letter-spacing:.6px}
@@ -154,6 +160,7 @@ tr:hover td{background:var(--bg3) !important}
 .h-tag-hel{background:var(--sup-hel-bg);color:var(--sup-hel)}
 .h-tag-dol{background:var(--sup-dol-bg);color:var(--sup-dol)}
 .h-tag-se{background:var(--sup-se-bg);color:var(--sup-se)}
+.h-tag-pe{background:rgba(77,182,172,.12);color:#4db6ac}
 .h-tag-atm{background:var(--sup-atm-bg);color:var(--sup-atm)}
 .h-actions{display:flex;gap:6px;align-items:center}
 .h-btn{background:none;border:none;cursor:pointer;font-size:14px;color:var(--text3);padding:4px;transition:color .15s}
@@ -214,6 +221,13 @@ tr:hover td{background:var(--bg3) !important}
       <div class="hint">Завантажується автоматично з сайту</div>
       <div class="file-name" id="seStatus"></div>
     </div>
+    <div class="supplier-slot slot-pe" data-supplier="pe" onclick="triggerUpload(this)">
+      <div class="icon">📁</div>
+      <div class="label">ПЕ</div>
+      <div class="file-name"></div>
+      <button class="remove-btn" onclick="removeFile(event,'pe')" style="display:none">&times;</button>
+      <input type="file" accept=".xlsx,.xls" onchange="fileSelected(this,'pe')">
+    </div>
     <div class="supplier-slot slot-atm" data-supplier="atm" onclick="triggerUpload(this)">
       <div class="icon">📁</div>
       <div class="label">Атмосфера</div>
@@ -244,6 +258,7 @@ tr:hover td{background:var(--bg3) !important}
           <th class="gh gh-hel bl" colspan="6">Helius</th>
           <th class="gh gh-dol bl" colspan="5">Dolya Solar</th>
           <th class="gh gh-se bl" colspan="5">SE (se.net.ua)</th>
+          <th class="gh gh-pe bl" colspan="5">ПЕ</th>
           <th class="gh gh-atm bl" colspan="5">Атмосфера</th>
           <th class="gh gh-best bl" colspan="2">НАЙКРАЩА</th>
         </tr>
@@ -253,6 +268,7 @@ tr:hover td{background:var(--bg3) !important}
           <th class="sh sh-hel bl">Статус</th><th class="sh sh-hel">Ціна без ПДВ</th><th class="sh sh-hel">&Delta;%</th><th class="sh sh-hel">Ціна з ПДВ</th><th class="sh sh-hel">&Delta;%</th><th class="sh sh-hel">РРЦ</th>
           <th class="sh sh-dol bl">Статус</th><th class="sh sh-dol">Ціна без ПДВ</th><th class="sh sh-dol">&Delta;%</th><th class="sh sh-dol">Ціна з ПДВ</th><th class="sh sh-dol">&Delta;%</th>
           <th class="sh sh-se bl">Статус</th><th class="sh sh-se">Ціна без ПДВ</th><th class="sh sh-se">&Delta;%</th><th class="sh sh-se">Ціна з ПДВ</th><th class="sh sh-se">&Delta;%</th>
+          <th class="sh sh-pe bl">Статус</th><th class="sh sh-pe">Ціна без ПДВ</th><th class="sh sh-pe">&Delta;%</th><th class="sh sh-pe">Ціна з ПДВ</th><th class="sh sh-pe">&Delta;%</th>
           <th class="sh sh-atm bl">Статус</th><th class="sh sh-atm">Ціна без ПДВ</th><th class="sh sh-atm">&Delta;%</th><th class="sh sh-atm">Ціна з ПДВ</th><th class="sh sh-atm">&Delta;%</th>
           <th class="sh sh-best bl">Хто</th><th class="sh sh-best">Ціна</th>
         </tr>
@@ -266,8 +282,8 @@ tr:hover td{background:var(--bg3) !important}
 // ═══════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════
-const files = { gen: null, hel: null, dol: null, se: null, atm: null };
-const rawData = { gen: null, hel: null, dol: null, se: null, atm: null };
+const files = { gen: null, hel: null, dol: null, se: null, pe: null, atm: null };
+const rawData = { gen: null, hel: null, dol: null, se: null, pe: null, atm: null };
 
 // ═══════════════════════════════════════════════
 // UPLOAD UI
@@ -494,23 +510,32 @@ async function parseHelius(file) {
   const hasSheet = wb.SheetNames.some(s => s === 'ПРАЙС' || s === 'Price-List');
   if (!hasSheet) throw new Error('Helius: не знайдено листів "ПРАЙС" або "Price-List" — структура прайсу змінилась');
   const products = [];
-  const SKIP = new Set(['ІНВЕРТОРИ ГІБРИДНІ','ІНВЕРТОРИ МЕРЕЖЕВІ','АКУМУЛЯТОРНІ БАТАРЕЇ ',
-    'СИСТЕМИ ЗБЕРІГАННЯ ЕНЕРГІЇ','КОМПЛЕКТУЮЧІ','СОНЯЧНІ ПАНЕЛІ']);
+  const CAT_MAP = {
+    'ІНВЕРТОРИ ГІБРИДНІ': 'ІНВЕРТОРИ', 'ІНВЕРТОРИ МЕРЕЖЕВІ': 'ІНВЕРТОРИ',
+    'АКУМУЛЯТОРНІ БАТАРЕЇ': 'АКУМУЛЯТОРИ', 'АКУМУЛЯТОРНІ БАТАРЕЇ ': 'АКУМУЛЯТОРИ',
+    'СИСТЕМИ ЗБЕРІГАННЯ ЕНЕРГІЇ': 'АКУМУЛЯТОРИ',
+    'СОНЯЧНІ ПАНЕЛІ': 'МОДУЛІ',
+    'КОМПЛЕКТУЮЧІ': null,
+  };
 
   for (const sn of wb.SheetNames) {
     const ws = wb.Sheets[sn];
     const maxR = sheetRows(ws);
     if (sn === 'ПРАЙС') {
+      let curCat = null;
       for (let r = 4; r < maxR; r++) {
         const name = cellVal(ws, r, 0);
         if (!name) continue;
         const nameStr = String(name).trim();
-        if (!nameStr || SKIP.has(nameStr)) continue;
+        if (!nameStr) continue;
+        // Check if this row is a category header
+        if (CAT_MAP.hasOwnProperty(nameStr)) { curCat = CAT_MAP[nameStr]; continue; }
+        if (!curCat) { curCat = guessCategory(nameStr); }
         const fH1 = cellFmt(ws, r, 1), fH2 = cellFmt(ws, r, 2);
         let curH = 'USD';
         if ((fH1 && fH1.includes('€')) || (fH2 && fH2.includes('€'))) curH = 'EUR';
         products.push({
-          name: nameStr, model: extractModel(nameStr),
+          name: nameStr, model: extractModel(nameStr), category: curCat,
           status: cellVal(ws, r, 3) ? String(cellVal(ws, r, 3)).trim() : null,
           price_no_vat: parsePrice(cellVal(ws, r, 1)),
           price_vat: parsePrice(cellVal(ws, r, 2)),
@@ -535,7 +560,7 @@ async function parseHelius(file) {
           let curPL = 'USD';
           if ((fPL1 && fPL1.includes('€')) || (fPL2 && fPL2.includes('€'))) curPL = 'EUR';
           products.push({
-            name: nameStr, model,
+            name: nameStr, model, category: guessCategory(nameStr),
             status: cellVal(ws, r, 2) ? String(cellVal(ws, r, 2)).trim() : null,
             price_no_vat: pnv, price_vat: pv,
             rrc: parsePrice(cellVal(ws, r, 6)),
@@ -560,6 +585,11 @@ async function parseDolya(file) {
   for (const sn of sheets) {
     const ws = wb.Sheets[sn];
     const maxR = sheetRows(ws);
+    let sheetCat = null;
+    if (sn.includes('Інвертори')) sheetCat = 'ІНВЕРТОРИ';
+    else if (sn.includes('Акумулятори')) sheetCat = 'АКУМУЛЯТОРИ';
+    else if (sn.includes('Фотомодулі')) sheetCat = 'МОДУЛІ';
+    else if (sn.includes('Кабел')) sheetCat = 'КАБЕЛІ';
     for (let r = 6; r < maxR; r++) {
       const name = cellVal(ws, r, 3);
       if (!name) continue;
@@ -571,7 +601,7 @@ async function parseDolya(file) {
       let curD = 'USD';
       if ((fD1 && fD1.includes('€')) || (fD2 && fD2.includes('€'))) curD = 'EUR';
       products.push({
-        name: nameStr, model,
+        name: nameStr, model, category: sheetCat,
         status: cellVal(ws, r, 13) ? String(cellVal(ws, r, 13)).trim() : null,
         price_no_vat: parsePrice(cellVal(ws, r, 11)),
         price_vat: parsePrice(cellVal(ws, r, 9)),
@@ -671,6 +701,75 @@ async function parseAtmosfera(file) {
   return products;
 }
 
+async function parsePE(file) {
+  const ab = await readFileAsArrayBuffer(file);
+  const wb = XLSX.read(ab, {type: 'array', cellNF: true});
+  const products = [];
+
+  // Сонячні батареї → МОДУЛІ: col1=Модель, col4=Ціна(до 30кВт), col9=Наявність
+  const wsPanels = wb.Sheets['Сонячні батареї'];
+  if (wsPanels) {
+    const maxR = sheetRows(wsPanels);
+    for (let r = 4; r < maxR; r++) {
+      const name = cellVal(wsPanels, r, 1);
+      if (!name) continue;
+      const nameStr = String(name).trim();
+      if (!nameStr) continue;
+      const price = parsePrice(cellVal(wsPanels, r, 4));
+      if (!price) continue;
+      const status = cellVal(wsPanels, r, 9);
+      products.push({
+        name: nameStr, model: extractModel(nameStr), category: 'МОДУЛІ',
+        status: status ? String(status).trim() : null,
+        price_no_vat: price, price_vat: null, currency: 'USD',
+      });
+    }
+  }
+
+  // Гібридні інвертори → ІНВЕРТОРИ: col1=Модель, col3=Готівка, col4=Ціна з ПДВ, col7=Коментарі(статус)
+  const wsInv = wb.Sheets['Гібридні інвертори'];
+  if (wsInv) {
+    const maxR = sheetRows(wsInv);
+    for (let r = 2; r < maxR; r++) {
+      const name = cellVal(wsInv, r, 1);
+      if (!name) continue;
+      const nameStr = String(name).trim();
+      if (!nameStr) continue;
+      const pnv = parsePrice(cellVal(wsInv, r, 3));
+      const pv = parsePrice(cellVal(wsInv, r, 4));
+      if (!pnv && !pv) continue;
+      const status = cellVal(wsInv, r, 7);
+      products.push({
+        name: nameStr, model: extractModel(nameStr), category: 'ІНВЕРТОРИ',
+        status: status ? String(status).trim() : null,
+        price_no_vat: pnv, price_vat: pv, currency: 'USD',
+      });
+    }
+  }
+
+  // АКБ → АКУМУЛЯТОРИ: col0=Назва, col1=Ціна, col10=Наявність
+  const wsAkb = wb.Sheets['АКБ'];
+  if (wsAkb) {
+    const maxR = sheetRows(wsAkb);
+    for (let r = 4; r < maxR; r++) {
+      const name = cellVal(wsAkb, r, 0);
+      if (!name) continue;
+      const nameStr = String(name).trim();
+      if (!nameStr) continue;
+      const price = parsePrice(cellVal(wsAkb, r, 1));
+      if (!price) continue;
+      const status = cellVal(wsAkb, r, 10);
+      products.push({
+        name: nameStr, model: extractModel(nameStr), category: 'АКУМУЛЯТОРИ',
+        status: status ? String(status).trim() : null,
+        price_no_vat: price, price_vat: null, currency: 'USD',
+      });
+    }
+  }
+
+  return products;
+}
+
 // ═══════════════════════════════════════════════
 // COMPARISON ENGINE
 // ═══════════════════════════════════════════════
@@ -689,7 +788,7 @@ function guessCategory(name) {
   return null;
 }
 
-function buildComparison(genProds, helProds, dolProds, seProds, atmProds) {
+function buildComparison(genProds, helProds, dolProds, seProds, peProds, atmProds) {
   const categories = ['ІНВЕРТОРИ', 'АКУМУЛЯТОРИ', 'МОДУЛІ', 'КАБЕЛІ'];
   const rows = [];
 
@@ -702,6 +801,7 @@ function buildComparison(genProds, helProds, dolProds, seProds, atmProds) {
       const hm = findMatch(gp.model, gp.name, gpPrice, helProds, isPanel);
       const dm = findMatch(gp.model, gp.name, gpPrice, dolProds, isPanel);
       const sm = findMatch(gp.model, gp.name, gpPrice, seProds, isPanel);
+      const pm = findMatch(gp.model, gp.name, gpPrice, peProds, isPanel);
       const am = findMatch(gp.model, gp.name, gpPrice, atmProds, isPanel);
       rows.push({
         cat, name: gp.name, model: gp.model,
@@ -712,9 +812,11 @@ function buildComparison(genProds, helProds, dolProds, seProds, atmProds) {
         dV: dm ? dm.price_vat : null, dC: dm ? (dm.currency || 'USD') : 'USD',
         sSt: sm ? sm.status : null, sNV: sm ? sm.price_no_vat : null,
         sV: sm ? sm.price_vat : null, sC: sm ? (sm.currency || 'USD') : 'USD',
+        pSt: pm ? pm.status : null, pNV: pm ? pm.price_no_vat : null,
+        pV: pm ? pm.price_vat : null, pC: pm ? (pm.currency || 'USD') : 'USD',
         aSt: am ? (am.status || null) : null, aNV: am ? am.price_no_vat : null,
         aV: am ? (am.price_vat || null) : null, aC: am ? (am.currency || 'USD') : 'USD',
-        _hm: hm, _dm: dm, _sm: sm, _am: am,
+        _hm: hm, _dm: dm, _sm: sm, _pm: pm, _am: am,
       });
     }
   }
@@ -723,32 +825,34 @@ function buildComparison(genProds, helProds, dolProds, seProds, atmProds) {
   const usedH = new Set(rows.filter(r=>r._hm).map(r=>r._hm));
   const usedD = new Set(rows.filter(r=>r._dm).map(r=>r._dm));
   const usedS = new Set(rows.filter(r=>r._sm).map(r=>r._sm));
+  const usedP = new Set(rows.filter(r=>r._pm).map(r=>r._pm));
   const usedA = new Set(rows.filter(r=>r._am).map(r=>r._am));
-  rows.forEach(r => { delete r._hm; delete r._dm; delete r._sm; delete r._am; });
+  rows.forEach(r => { delete r._hm; delete r._dm; delete r._sm; delete r._pm; delete r._am; });
 
   const panelSources = [
     {prods: helProds, used: usedH, key: 'h'},
     {prods: dolProds, used: usedD, key: 'd'},
     {prods: seProds, used: usedS, key: 's'},
+    {prods: peProds, used: usedP, key: 'p'},
     {prods: atmProds, used: usedA, key: 'a'},
   ];
   const extraPanels = new Map();
   for (const {prods, used, key} of panelSources) {
     for (const p of prods) {
       if (used.has(p)) continue;
-      const c = guessCategory(p.name);
+      const c = p.category || guessCategory(p.name);
       if (c !== 'МОДУЛІ') continue;
       if (!p.model) continue;
       const nm = normModel(p.model);
       if (!nm) continue;
       let entry = null;
       for (const [k, v] of extraPanels) { if (fuzzyMatch(k, nm)) { entry = v; break; } }
-      if (!entry) { entry = {name: p.name, model: nm, h:null, d:null, s:null, a:null}; extraPanels.set(nm, entry); }
+      if (!entry) { entry = {name: p.name, model: nm, h:null, d:null, s:null, p:null, a:null}; extraPanels.set(nm, entry); }
       if (!entry[key]) entry[key] = p;
     }
   }
   for (const ex of extraPanels.values()) {
-    const hm = ex.h, dm = ex.d, sm = ex.s, am = ex.a;
+    const hm = ex.h, dm = ex.d, sm = ex.s, pm = ex.p, am = ex.a;
     rows.push({
       cat: 'МОДУЛІ', name: ex.name, model: ex.model,
       gSt: null, gNV: null, gV: null, gC: 'USD',
@@ -758,6 +862,8 @@ function buildComparison(genProds, helProds, dolProds, seProds, atmProds) {
       dV: dm ? dm.price_vat : null, dC: dm ? (dm.currency || 'USD') : 'USD',
       sSt: sm ? sm.status : null, sNV: sm ? sm.price_no_vat : null,
       sV: sm ? sm.price_vat : null, sC: sm ? (sm.currency || 'USD') : 'USD',
+      pSt: pm ? pm.status : null, pNV: pm ? pm.price_no_vat : null,
+      pV: pm ? pm.price_vat : null, pC: pm ? (pm.currency || 'USD') : 'USD',
       aSt: am ? (am.status || null) : null, aNV: am ? am.price_no_vat : null,
       aV: am ? (am.price_vat || null) : null, aC: am ? (am.currency || 'USD') : 'USD',
     });
@@ -791,13 +897,13 @@ function renderTable(rows) {
   for (const rd of rows) {
     if (rd.cat !== currentCat) {
       currentCat = rd.cat;
-      tb.innerHTML += `<tr class="cat"><td colspan="28"><span class="cat-label">${currentCat}</span></td></tr>`;
+      tb.innerHTML += `<tr class="cat"><td colspan="33"><span class="cat-label">${currentCat}</span></td></tr>`;
     }
     n++;
     const e = n % 2 === 0 ? 'even' : '';
     const r = rd;
     // Best price
-    const prices = [['Генерація',r.gNV,r.gC],['Helius',r.hNV,r.hC],['Dolya',r.dNV,r.dC],['SE',r.sNV,r.sC],['Атмосфера',r.aNV,r.aC]].filter(p=>p[1]!=null);
+    const prices = [['Генерація',r.gNV,r.gC],['Helius',r.hNV,r.hC],['Dolya',r.dNV,r.dC],['SE',r.sNV,r.sC],['ПЕ',r.pNV,r.pC],['Атмосфера',r.aNV,r.aC]].filter(p=>p[1]!=null);
     const best = prices.length ? prices.reduce((a,b) => b[1] < a[1] ? b : a) : null;
     const bestWho = best ? prices.filter(p => p[1] === best[1]).map(p => p[0]).join(' / ') : '';
     const bestP = best ? best[1] : null;
@@ -825,6 +931,11 @@ function renderTable(rows) {
       <td class="d-se ${e}">${delta(r.sNV,r.gNV)}</td>
       <td class="t-se ${e}">${fmt(r.sV,r.sC)}</td>
       <td class="d-se ${e}">${delta(r.sV,r.gV)}</td>
+      <td class="t-pe ${e} bl status">${r.pSt||''}</td>
+      <td class="t-pe ${e}">${fmt(r.pNV,r.pC)}</td>
+      <td class="d-pe ${e}">${delta(r.pNV,r.gNV)}</td>
+      <td class="t-pe ${e}">${fmt(r.pV,r.pC)}</td>
+      <td class="d-pe ${e}">${delta(r.pV,r.gV)}</td>
       <td class="t-atm ${e} bl status">${r.aSt||''}</td>
       <td class="t-atm ${e}">${fmt(r.aNV,r.aC)}</td>
       <td class="d-atm ${e}">${delta(r.aNV,r.gNV)}</td>
@@ -892,11 +1003,20 @@ async function runComparison() {
       if (!seProds.length) warnings.push('SE: 0 товарів — можливо змінився сайт se.net.ua');
     } catch(e) { console.warn('SE auto-fetch error', e); warnings.push('SE: помилка завантаження — ' + e.message); }
 
+    // Parse ПЕ
+    let peProds = [];
+    if (files.pe) {
+      progText.textContent = 'Парсинг: ПЕ...';
+      progBar.style.width = '65%';
+      peProds = await parsePE(files.pe);
+      if (!peProds.length) warnings.push('ПЕ: 0 товарів — можливо змінилась структура прайсу');
+    }
+
     // Parse Атмосфера
     let atmProds = [];
     if (files.atm) {
       progText.textContent = 'Парсинг: Атмосфера...';
-      progBar.style.width = '70%';
+      progBar.style.width = '75%';
       atmProds = await parseAtmosfera(files.atm);
       if (!atmProds.length) warnings.push('Атмосфера: 0 товарів — можливо змінилась структура прайсу');
     }
@@ -907,7 +1027,7 @@ async function runComparison() {
     // Match
     progText.textContent = 'Зіставлення моделей...';
     progBar.style.width = '85%';
-    const rows = buildComparison(genProds, helProds, dolProds, seProds, atmProds);
+    const rows = buildComparison(genProds, helProds, dolProds, seProds, peProds, atmProds);
 
     // Render
     progText.textContent = 'Побудова таблиці...';
@@ -920,15 +1040,16 @@ async function runComparison() {
       'Оновлено: ' + today.toLocaleDateString('uk-UA');
     document.getElementById('results').style.display = 'block';
     progBar.style.width = '100%';
-    progText.textContent = `Готово! ${rows.length} товарів, ${rows.filter(r=>r.hNV||r.dNV||r.sNV||r.aNV).length} зі збігами`;
+    progText.textContent = `Готово! ${rows.length} товарів, ${rows.filter(r=>r.hNV||r.dNV||r.sNV||r.pNV||r.aNV).length} зі збігами`;
 
     // Save to history
     const supplierFiles = [{key:'gen',name:'Генерація'}];
     if (files.hel) supplierFiles.push({key:'hel',name:'Helius'});
     if (files.dol) supplierFiles.push({key:'dol',name:'Dolya Solar'});
     if (seProds.length) supplierFiles.push({key:'se',name:'SE'});
+    if (files.pe) supplierFiles.push({key:'pe',name:'ПЕ'});
     if (files.atm) supplierFiles.push({key:'atm',name:'Атмосфера'});
-    saveComparison(rows, {hel:helProds.length,dol:dolProds.length,se:seProds.length,atm:atmProds.length}, supplierFiles);
+    saveComparison(rows, {hel:helProds.length,dol:dolProds.length,se:seProds.length,pe:peProds.length,atm:atmProds.length}, supplierFiles);
 
     // Scroll to results
     setTimeout(() => {
@@ -997,7 +1118,7 @@ async function saveComparison(rows, counts, supplierFiles) {
     id,
     date: new Date().toLocaleString('uk-UA'),
     totalItems: rows.length,
-    matches: rows.filter(r => r.hNV || r.dNV || r.sNV || r.aNV).length,
+    matches: rows.filter(r => r.hNV || r.dNV || r.sNV || r.pNV || r.aNV).length,
     suppliers: supplierFiles,
     rows,
     counts
@@ -1052,7 +1173,7 @@ function renderHistoryUI(history) {
   count.textContent = `(${history.length})`;
   list.innerHTML = history.map(h => {
     const tags = (h.suppliers || []).map(s => {
-      const cls = {gen:'gen',hel:'hel',dol:'dol',se:'se',atm:'atm'}[s.key] || 'gen';
+      const cls = {gen:'gen',hel:'hel',dol:'dol',se:'se',pe:'pe',atm:'atm'}[s.key] || 'gen';
       return `<span class="h-tag h-tag-${cls}">${s.name}</span>`;
     }).join('');
     const hasData = !!(h.rows && h.rows.length);
