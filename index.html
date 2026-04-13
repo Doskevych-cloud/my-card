@@ -195,12 +195,11 @@ tr:hover td{background:var(--bg3) !important}
 
 <div class="upload-panel" id="uploadPanel">
   <div class="supplier-grid">
-    <div class="supplier-slot slot-gen" data-supplier="gen" onclick="triggerUpload(this)">
-      <div class="icon">📁</div>
+    <div class="supplier-slot slot-gen" data-supplier="gen" id="genSlot" style="cursor:default">
+      <div class="icon">🌐</div>
       <div class="label">Генерація</div>
-      <div class="file-name"></div>
-      <button class="remove-btn" onclick="removeFile(event,'gen')" style="display:none">&times;</button>
-      <input type="file" accept=".xlsx,.xls" onchange="fileSelected(this,'gen')">
+      <div class="hint">Google Sheets (авто)</div>
+      <div class="file-name" id="genStatus"></div>
     </div>
     <div class="supplier-slot slot-hel" data-supplier="hel" onclick="triggerUpload(this)">
       <div class="icon">📁</div>
@@ -240,7 +239,7 @@ tr:hover td{background:var(--bg3) !important}
     <div id="progressText">Парсинг файлів...</div>
     <div class="bar"><div class="fill" id="progressBar" style="width:0"></div></div>
   </div>
-  <button class="btn-run" id="btnRun" onclick="runComparison()" disabled>Порівняти ціни</button>
+  <button class="btn-run" id="btnRun" onclick="runComparison()">Порівняти ціни</button>
 </div>
 
 <div class="history-panel" id="historyPanel" style="display:none">
@@ -317,7 +316,7 @@ function removeFile(e, key) {
 }
 
 function updateBtn() {
-  document.getElementById('btnRun').disabled = !files.gen;
+  document.getElementById('btnRun').disabled = false;
 }
 
 
@@ -1000,11 +999,25 @@ async function runComparison() {
   try {
     const warnings = [];
 
-    // Parse Генерація (required)
-    progText.textContent = 'Парсинг: Генерація...';
+    // Генерація — auto-fetch from Google Sheets
+    progText.textContent = 'Завантаження: Генерація...';
     progBar.style.width = '10%';
-    const genProds = await parseGeneracia(files.gen);
-    if (!genProds.length) warnings.push('Генерація: 0 товарів — можливо змінилась структура прайсу');
+    let genProds = [];
+    try {
+      const genRes = await fetch(API_URL + '?action=gen_data');
+      const genData = await genRes.json();
+      if (!genData.error && genData.products) {
+        genProds = genData.products;
+        for (const p of genProds) {
+          p.model = extractModel(p.name);
+          p.category = guessCategory(p.name);
+        }
+        genProds = genProds.filter(p => p.category);
+        document.getElementById('genStatus').textContent = genProds.length + ' товарів';
+        document.getElementById('genSlot').classList.add('has-file');
+      }
+    } catch(e) { console.warn('Gen auto-fetch error', e); }
+    if (!genProds.length) warnings.push('Генерація: 0 товарів — перевірте Google Sheet або GAS');
 
     // Parse Helius
     let helProds = [];
@@ -1121,7 +1134,7 @@ async function runComparison() {
 // ═══════════════════════════════════════════════
 // HISTORY (Google Apps Script — shared for everyone)
 // ═══════════════════════════════════════════════
-const API_URL = 'https://script.google.com/macros/s/AKfycbxu23WpRadSssP0g6NLeXksYKdHN8wPp7ISth163kTYq5AjEO6dL90RpBJCUr_k8HZP/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbygVZ6NBj7Qe9S3yFh8GwwIew7ATSwUenoO1KKLZxVD2_ifukM6000QEfxit0Z-TIOy/exec';
 const MAX_HISTORY = 15;
 let historyCache = [];
 
