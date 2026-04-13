@@ -1015,20 +1015,16 @@ async function runComparison() {
       if (!helProds.length) warnings.push('Helius: 0 товарів — можливо змінилась структура прайсу');
     }
 
-    // Parse Dolya — auto-fetch from Google Sheets
+    // Parse Dolya — auto-fetch parsed data from GAS (no images, fast)
     let dolProds = [];
-    progText.textContent = 'Завантаження: Dolya Solar (Google Sheets)...';
+    progText.textContent = 'Завантаження: Dolya Solar...';
     progBar.style.width = '40%';
     try {
-      const dolSheetUrl = 'https://docs.google.com/spreadsheets/d/1Mt-FMjFO6p96hL_hJ-0SVuzupsf9wFeuN2OIo0oNq18/edit';
-      const dolRes = await fetch(API_URL + '?action=gsheet_proxy&url=' + encodeURIComponent(dolSheetUrl));
+      const dolRes = await fetch(API_URL + '?action=dolya_data');
       const dolData = await dolRes.json();
-      if (dolData.data) {
-        const binary = atob(dolData.data);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-        const blob = new Blob([bytes]);
-        dolProds = await parseDolya(blob);
+      if (!dolData.error && dolData.products) {
+        dolProds = dolData.products;
+        for (const p of dolProds) { p.model = extractModel(p.name); }
         document.getElementById('dolStatus').textContent = dolProds.length + ' товарів';
         document.getElementById('dolSlot').classList.add('has-file');
       }
