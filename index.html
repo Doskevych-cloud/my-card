@@ -129,18 +129,16 @@ thead tr:last-child th{top:30px}
 .bl{border-left:1px solid var(--border2) !important}
 .cat td{background:var(--cat-bg);font-weight:600;font-size:11px;color:var(--cat-text);text-align:left;border-bottom:1px solid var(--cat-border);padding:7px 12px;text-transform:uppercase;letter-spacing:.6px}
 .up{color:var(--green-text);font-weight:600}.dn{color:var(--red-text);font-weight:600}.eq{color:var(--text3)}
-.art{text-align:left;font-size:11px;white-space:normal;width:240px;min-width:240px;max-width:240px;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.art{text-align:left;font-size:11px;white-space:normal;min-width:200px;max-width:300px;color:var(--text)}
 .bold{font-weight:700;color:var(--accent)}
 .status{font-size:10px;color:var(--text3);max-width:120px;white-space:normal}
 .stock{font-weight:600;font-size:11px}
-table td:nth-child(-n+3){position:sticky;z-index:3}
-thead tr:last-child th:nth-child(-n+3),thead tr:first-child th:first-child{position:sticky;z-index:60}
-td:nth-child(1){left:0;width:32px;min-width:32px;max-width:32px}
-td:nth-child(2){left:32px;width:240px;min-width:240px;max-width:240px}
-td:nth-child(3){left:272px;width:55px;min-width:55px;max-width:55px;box-shadow:var(--sticky-shadow);text-align:center}
-thead tr:last-child th:nth-child(1){left:0;width:32px;min-width:32px;max-width:32px}
-thead tr:last-child th:nth-child(2){left:32px;width:240px;min-width:240px;max-width:240px}
-thead tr:last-child th:nth-child(3){left:272px;width:55px;min-width:55px;max-width:55px;box-shadow:var(--sticky-shadow)}
+table td:nth-child(-n+2){position:sticky;z-index:3}
+thead tr:last-child th:nth-child(-n+2),thead tr:first-child th:first-child{position:sticky;z-index:60}
+td:nth-child(1){left:0;min-width:32px}
+td:nth-child(2){left:32px;box-shadow:var(--sticky-shadow)}
+thead tr:last-child th:nth-child(1){left:0;min-width:32px}
+thead tr:last-child th:nth-child(2){left:32px;box-shadow:var(--sticky-shadow)}
 thead tr:first-child th:first-child{left:0}
 .cat td{background:var(--cat-bg)}
 .cat-label{position:sticky;left:0;display:inline-block;z-index:3}
@@ -203,12 +201,11 @@ tr:hover td{background:var(--bg3) !important}
       <div class="hint">Google Sheets (авто)</div>
       <div class="file-name" id="genStatus"></div>
     </div>
-    <div class="supplier-slot slot-hel" data-supplier="hel" onclick="triggerUpload(this)">
-      <div class="icon">📁</div>
+    <div class="supplier-slot slot-hel" data-supplier="hel" id="helSlot" style="cursor:default">
+      <div class="icon">🌐</div>
       <div class="label">Helius</div>
-      <div class="file-name"></div>
-      <button class="remove-btn" onclick="removeFile(event,'hel')" style="display:none">&times;</button>
-      <input type="file" accept=".xlsx,.xls" onchange="fileSelected(this,'hel')">
+      <div class="hint">Google Sheets (авто)</div>
+      <div class="file-name" id="helStatus"></div>
     </div>
     <div class="supplier-slot slot-dol" data-supplier="dol" id="dolSlot" style="cursor:default">
       <div class="icon">🌐</div>
@@ -222,12 +219,11 @@ tr:hover td{background:var(--bg3) !important}
       <div class="hint">Завантажується автоматично з сайту</div>
       <div class="file-name" id="seStatus"></div>
     </div>
-    <div class="supplier-slot slot-pe" data-supplier="pe" onclick="triggerUpload(this)">
-      <div class="icon">📁</div>
+    <div class="supplier-slot slot-pe" data-supplier="pe" id="peSlot" style="cursor:default">
+      <div class="icon">🌐</div>
       <div class="label">ПЕ</div>
-      <div class="file-name"></div>
-      <button class="remove-btn" onclick="removeFile(event,'pe')" style="display:none">&times;</button>
-      <input type="file" accept=".xlsx,.xls" onchange="fileSelected(this,'pe')">
+      <div class="hint">Google Sheets (авто)</div>
+      <div class="file-name" id="peStatus"></div>
     </div>
     <div class="supplier-slot slot-atm" data-supplier="atm" onclick="triggerUpload(this)">
       <div class="icon">📁</div>
@@ -254,8 +250,8 @@ tr:hover td{background:var(--bg3) !important}
     <table>
       <thead>
         <tr>
-          <th class="gh gh-tovar bl" colspan="3">ТОВАР</th>
-          <th class="gh gh-gen bl" colspan="3">Генерація</th>
+          <th class="gh gh-tovar bl" colspan="2">ТОВАР</th>
+          <th class="gh gh-gen bl" colspan="4">Генерація</th>
           <th class="gh gh-hel bl" colspan="6">Helius</th>
           <th class="gh gh-dol bl" colspan="5">Dolya Solar</th>
           <th class="gh gh-se bl" colspan="5">SE (se.net.ua)</th>
@@ -264,8 +260,8 @@ tr:hover td{background:var(--bg3) !important}
           <th class="gh gh-best bl" colspan="2">НАЙКРАЩА</th>
         </tr>
         <tr>
-          <th class="sh sh-tovar bl">&#8470;</th><th class="sh sh-tovar">Назва</th><th class="sh sh-tovar">Залишки</th>
-          <th class="sh sh-gen bl">Статус</th><th class="sh sh-gen">Ціна без ПДВ</th><th class="sh sh-gen">Ціна з ПДВ</th>
+          <th class="sh sh-tovar bl">&#8470;</th><th class="sh sh-tovar">Назва</th>
+          <th class="sh sh-gen bl">Статус</th><th class="sh sh-gen">Ціна без ПДВ</th><th class="sh sh-gen">Ціна з ПДВ</th><th class="sh sh-gen">Залишки</th>
           <th class="sh sh-hel bl">Статус</th><th class="sh sh-hel">Ціна без ПДВ</th><th class="sh sh-hel">&Delta;%</th><th class="sh sh-hel">Ціна з ПДВ</th><th class="sh sh-hel">&Delta;%</th><th class="sh sh-hel">РРЦ</th>
           <th class="sh sh-dol bl">Статус</th><th class="sh sh-dol">Ціна без ПДВ</th><th class="sh sh-dol">&Delta;%</th><th class="sh sh-dol">Ціна з ПДВ</th><th class="sh sh-dol">&Delta;%</th>
           <th class="sh sh-se bl">Статус</th><th class="sh sh-se">Ціна без ПДВ</th><th class="sh sh-se">&Delta;%</th><th class="sh sh-se">Ціна з ПДВ</th><th class="sh sh-se">&Delta;%</th>
@@ -949,10 +945,10 @@ function renderTable(rows) {
     tb.innerHTML += `<tr>
       <td class="t-tovar ${e} bl">${n}</td>
       <td class="t-tovar ${e} art">${r.name}</td>
-      <td class="t-tovar ${e} stock">${r.gStock != null ? r.gStock : ''}</td>
       <td class="t-gen ${e} bl status">${r.gSt||''}</td>
       <td class="t-gen ${e}">${fmt(r.gNV,r.gC)}</td>
       <td class="t-gen ${e}">${fmt(r.gV,r.gC)}</td>
+      <td class="t-gen ${e} stock">${r.gStock != null ? r.gStock : ''}</td>
       <td class="t-hel ${e} bl status">${r.hSt||''}</td>
       <td class="t-hel ${e}">${fmt(r.hNV,r.hC)}</td>
       <td class="d-hel ${e}">${delta(r.hNV,r.gNV)}</td>
@@ -1021,14 +1017,21 @@ async function runComparison() {
     } catch(e) { console.warn('Gen auto-fetch error', e); }
     if (!genProds.length) warnings.push('Генерація: 0 товарів — перевірте Google Sheet або GAS');
 
-    // Parse Helius
+    // Auto-fetch Helius from Google Sheets
     let helProds = [];
-    if (files.hel) {
-      progText.textContent = 'Парсинг: Helius...';
-      progBar.style.width = '25%';
-      helProds = await parseHelius(files.hel);
-      if (!helProds.length) warnings.push('Helius: 0 товарів — можливо змінилась структура прайсу');
-    }
+    progText.textContent = 'Завантаження: Helius (Google Sheets)...';
+    progBar.style.width = '25%';
+    try {
+      const helRes = await fetch(API_URL + '?action=hel_data');
+      const helData = await helRes.json();
+      if (helData.error) throw new Error(helData.error);
+      helProds = (helData.products || []).map(p => ({...p, model: extractModel(p.name)}));
+      if (helProds.length) {
+        document.getElementById('helStatus').textContent = helProds.length + ' товарів';
+        document.getElementById('helSlot').classList.add('has-file');
+      }
+      if (!helProds.length) warnings.push('Helius: 0 товарів — перевірте Google Sheet або GAS');
+    } catch(e) { console.warn('Helius auto-fetch error', e); warnings.push('Helius: помилка завантаження — ' + e.message); }
 
     // Parse Dolya — auto-fetch parsed data from GAS (no images, fast)
     let dolProds = [];
@@ -1062,16 +1065,23 @@ async function runComparison() {
       if (!seProds.length) warnings.push('SE: 0 товарів — можливо змінився сайт se.net.ua');
     } catch(e) { console.warn('SE auto-fetch error', e); warnings.push('SE: помилка завантаження — ' + e.message); }
 
-    // Parse ПЕ
+    // Auto-fetch ПЕ from Google Sheets
     let peProds = [];
-    if (files.pe) {
-      progText.textContent = 'Парсинг: ПЕ...';
-      progBar.style.width = '65%';
-      peProds = await parsePE(files.pe);
-      if (!peProds.length) warnings.push('ПЕ: 0 товарів — можливо змінилась структура прайсу');
-    }
+    progText.textContent = 'Завантаження: ПЕ (Google Sheets)...';
+    progBar.style.width = '65%';
+    try {
+      const peRes = await fetch(API_URL + '?action=pe_data');
+      const peData = await peRes.json();
+      if (peData.error) throw new Error(peData.error);
+      peProds = (peData.products || []).map(p => ({...p, model: extractModel(p.name)}));
+      if (peProds.length) {
+        document.getElementById('peStatus').textContent = peProds.length + ' товарів';
+        document.getElementById('peSlot').classList.add('has-file');
+      }
+      if (!peProds.length) warnings.push('ПЕ: 0 товарів — перевірте Google Sheet або GAS');
+    } catch(e) { console.warn('PE auto-fetch error', e); warnings.push('ПЕ: помилка завантаження — ' + e.message); }
 
-    // Parse Атмосфера
+    // Parse Атмосфера (file upload)
     let atmProds = [];
     if (files.atm) {
       progText.textContent = 'Парсинг: Атмосфера...';
@@ -1136,7 +1146,7 @@ async function runComparison() {
 // ═══════════════════════════════════════════════
 // HISTORY (Google Apps Script — shared for everyone)
 // ═══════════════════════════════════════════════
-const API_URL = 'https://script.google.com/macros/s/AKfycbyOLdYQ7RtkxpBeK8AIGAnC1vFMW3a96Hi71m-0vaNfCAlrX_n0-8g33edrDH-MxX-C/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbz0JphlNIRkdRlUYugVTbv3Jnd9cm1LImG_vv0H_xVMlUgEH0I2ZKifZ2Xzc-otGEaH/exec';
 const MAX_HISTORY = 15;
 let historyCache = [];
 
