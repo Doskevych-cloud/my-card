@@ -185,6 +185,26 @@ tr:hover td{background:var(--bg3) !important}
 .share-box button{padding:5px 14px;background:var(--accent);color:var(--btn-text);border:none;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .15s}
 .share-box button:hover{background:var(--btn-hover)}
 .share-box .share-ok{color:var(--green);font-size:11px;font-weight:600}
+/* ─── Settings ─── */
+.settings-wrap{position:relative}
+.settings-toggle{width:32px;height:32px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text2);display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0}
+.settings-toggle:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+.settings-toggle svg{width:16px;height:16px;fill:currentColor}
+.settings-dd{position:absolute;top:40px;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 18px;min-width:260px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:200;display:none}
+.settings-dd.open{display:block}
+.settings-dd h3{font-size:11px;color:var(--text2);margin-bottom:12px;font-weight:600;text-transform:uppercase;letter-spacing:.6px}
+.srow{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.srow label{font-size:12px;color:var(--text)}
+.srow select{background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:12px;cursor:pointer}
+.tog{position:relative;width:36px;height:20px;display:inline-block}
+.tog input{opacity:0;width:0;height:0;position:absolute}
+.tog-s{position:absolute;inset:0;background:var(--bg3);border-radius:10px;transition:.2s;cursor:pointer}
+.tog-s::before{content:'';position:absolute;width:16px;height:16px;left:2px;bottom:2px;background:var(--text3);border-radius:50%;transition:.2s}
+.tog input:checked+.tog-s{background:var(--green)}
+.tog input:checked+.tog-s::before{transform:translateX(16px);background:#fff}
+.settings-save{width:100%;padding:8px;background:var(--accent);color:var(--btn-text);border:none;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;margin-top:8px;transition:background .15s}
+.settings-save:hover{background:var(--accent-hover)}
+.settings-info{font-size:10px;color:var(--text3);margin-top:8px;text-align:center;line-height:1.4}
 </style>
 </head>
 <body>
@@ -193,6 +213,24 @@ tr:hover td{background:var(--bg3) !important}
   <h1>Порівняння цін постачальників сонячного обладнання</h1>
   <div class="header-right">
     <span class="date" id="dateLabel"></span>
+    <div class="settings-wrap">
+      <button class="settings-toggle" onclick="document.getElementById('settingsDd').classList.toggle('open');event.stopPropagation()">
+        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg>
+      </button>
+      <div class="settings-dd" id="settingsDd">
+        <h3>&#9200; Автозапуск</h3>
+        <div class="srow">
+          <label>Щоденне оновлення</label>
+          <label class="tog"><input type="checkbox" id="schedEnabled" checked><span class="tog-s"></span></label>
+        </div>
+        <div class="srow">
+          <label>Час запуску</label>
+          <div><select id="schedHour"></select><span style="color:var(--text2);font-size:12px"> : 00</span></div>
+        </div>
+        <button class="settings-save" onclick="saveSchedule()">Зберегти</button>
+        <div class="settings-info" id="schedInfo"></div>
+      </div>
+    </div>
     <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
       <svg id="iconSun" viewBox="0 0 24 24" style="display:none"><path d="M12 7a5 5 0 100 10 5 5 0 000-10zm0-4a1 1 0 011 1v1a1 1 0 01-2 0V4a1 1 0 011-1zm0 17a1 1 0 011 1v1a1 1 0 01-2 0v-1a1 1 0 011-1zm9-9a1 1 0 01-1 1h-1a1 1 0 010-2h1a1 1 0 011 1zM5 12a1 1 0 01-1 1H3a1 1 0 010-2h1a1 1 0 011 1zm13.07-5.07a1 1 0 010 1.41l-.71.71a1 1 0 01-1.41-1.41l.71-.71a1 1 0 011.41 0zM7.05 16.95a1 1 0 010 1.41l-.71.71a1 1 0 01-1.41-1.41l.71-.71a1 1 0 011.41 0zm11.9 0l.71.71a1 1 0 01-1.41 1.41l-.71-.71a1 1 0 011.41-1.41zM7.05 7.05l-.71.71a1 1 0 01-1.41-1.41l.71-.71a1 1 0 011.41 1.41z"/></svg>
       <svg id="iconMoon" viewBox="0 0 24 24"><path d="M12 3a9 9 0 109 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 01-4.4 2.26 5.4 5.4 0 01-3.14-9.8C13.06 3.04 12.54 3 12 3z"/></svg>
@@ -1354,6 +1392,44 @@ async function clearAllHistory() {
 }
 
 // ═══════════════════════════════════════════════
+// SETTINGS / SCHEDULE
+// ═══════════════════════════════════════════════
+(function(){
+  const sel=document.getElementById('schedHour');
+  for(let h=0;h<24;h++){const o=document.createElement('option');o.value=h;o.textContent=String(h).padStart(2,'0');if(h===9)o.selected=true;sel.appendChild(o);}
+})();
+document.addEventListener('click',function(e){
+  const dd=document.getElementById('settingsDd');
+  if(dd && dd.classList.contains('open') && !dd.contains(e.target)) dd.classList.remove('open');
+});
+
+async function loadSchedule(){
+  try{
+    const r=await fetch(API_URL+'?action=get_schedule');
+    const d=await r.json();
+    if(d.hour!==undefined) document.getElementById('schedHour').value=d.hour;
+    if(d.enabled!==undefined) document.getElementById('schedEnabled').checked=d.enabled;
+    const info=document.getElementById('schedInfo');
+    if(d.enabled) info.textContent='Наступний запуск: '+String(d.hour).padStart(2,'0')+':00';
+    else info.textContent='Автозапуск вимкнено';
+    if(d.lastRun) info.textContent+=' | Останній: '+d.lastRun;
+  }catch(e){console.warn('loadSchedule',e);}
+}
+
+async function saveSchedule(){
+  const hour=document.getElementById('schedHour').value;
+  const enabled=document.getElementById('schedEnabled').checked;
+  const info=document.getElementById('schedInfo');
+  info.textContent='Збереження...';
+  try{
+    const r=await fetch(API_URL+'?action=set_schedule&hour='+hour+'&enabled='+enabled);
+    const d=await r.json();
+    if(d.ok) info.textContent=enabled?'Збережено! Запуск щодня о '+String(hour).padStart(2,'0')+':00':'Автозапуск вимкнено';
+    else info.textContent='Помилка: '+(d.error||'невідома');
+  }catch(e){info.textContent='Помилка збереження';}
+}
+
+// ═══════════════════════════════════════════════
 // LOAD FROM URL HASH (shared links still work)
 // ═══════════════════════════════════════════════
 function loadFromHash() {
@@ -1417,6 +1493,7 @@ applyTheme(localStorage.getItem('theme') || 'dark');
 
 document.getElementById('dateLabel').textContent = new Date().toLocaleDateString('uk-UA');
 if (!loadFromHash()) initHistory();
+loadSchedule();
 window.addEventListener('hashchange', () => { if (location.hash.startsWith('#d=')) loadFromHash(); });
 </script>
 </body>
