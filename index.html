@@ -275,6 +275,7 @@ body.ip-check>*:not(#accessDenied):not(script){display:none!important}
 <div class="header">
   <h1>Порівняння цін постачальників сонячного обладнання</h1>
   <div class="header-right">
+    <a href="/warehouses.html" class="nav-link" onclick="return openWarehouses(event)">📦 Склад</a>
     <a href="/forecast.html" class="nav-link" onclick="return openForecast(event)">📋 Прогноз закупівель</a>
     <span class="date" id="dateLabel"></span>
     <div class="settings-wrap">
@@ -2276,6 +2277,23 @@ function openForecast(e){
   if (pwd === FORECAST_PWD) {
     localStorage.setItem(FORECAST_AUTH_KEY, String(Date.now()));
     window.location.href = '/forecast.html';
+  } else {
+    alert('❌ Невірний пароль');
+  }
+  return false;
+}
+function openWarehouses(e){
+  e.preventDefault();
+  const saved = localStorage.getItem(FORECAST_AUTH_KEY);
+  if (saved && (Date.now() - Number(saved)) < FORECAST_AUTH_TTL_MS) {
+    window.location.href = '/warehouses.html';
+    return false;
+  }
+  const pwd = prompt('🔒 Введіть пароль для доступу до складу:');
+  if (pwd === null) return false;
+  if (pwd === FORECAST_PWD) {
+    localStorage.setItem(FORECAST_AUTH_KEY, String(Date.now()));
+    window.location.href = '/warehouses.html';
   } else {
     alert('❌ Невірний пароль');
   }
