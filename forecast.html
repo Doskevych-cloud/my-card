@@ -298,6 +298,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
 .m-formula{padding:14px 16px;background:var(--accent-bg);border:1px solid var(--accent);border-left-width:3px;border-radius:10px;font-size:12px;line-height:1.6;margin-top:16px}
 .m-banner{margin:14px 0 6px;padding:12px 14px;background:rgba(255,193,7,.10);border:1px solid rgba(255,193,7,.45);border-left:3px solid #ffc107;border-radius:10px;font-size:12px;line-height:1.6;color:var(--text1)}
 .m-kept{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:10px;font-weight:600;letter-spacing:.3px}
+.m-kept.collapsed{background:rgba(255,107,107,.12);border-color:rgba(255,107,107,.35);color:#ff8b8b}
 .m-formula code{background:rgba(255,131,25,.15);padding:1px 6px;border-radius:3px;font-family:'SF Mono','Monaco',monospace;font-size:11px}
 .m-tbl{width:100%;border-collapse:collapse;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
 .m-tbl th,.m-tbl td{padding:10px 14px;text-align:right;font-variant-numeric:tabular-nums}
@@ -727,7 +728,7 @@ const KPI_META = {
   reserve: { ico: '🔒', cls: 'blue',   title: 'У резерві',          sub: 'Залишки, закріплені за замовленнями клієнтів' },
   transit: { ico: '🚛', cls: 'purple', title: 'Кабель в дорозі',    sub: 'Партії на складах «В дорозі» (виробництво + логістика)' },
   must:    { ico: '⚠️',  cls: 'red',    title: 'Має бути замовлено', sub: `WMA × ${LT_TOTAL} днів + резерв = покриття на повний L/T` },
-  wma:     { ico: '📈', cls: 'green',  title: 'WMA прогноз / день', sub: 'Weighted moving average = 0.7 × 14д + 0.3 × 30д' },
+  wma:     { ico: '📈', cls: 'green',  title: 'WMA прогноз / день', sub: 'Weighted moving average 14д/30д/60д з фільтром по низькому стоку' },
 };
 
 function openKpi(kind){
@@ -856,35 +857,46 @@ function modalTemplate(kind, f){
   if (kind === 'wma') {
     const b = ab.black || {}, r = ab.red || {};
     const thr = ab.threshold || 10000;
+    const lbk = ab.lookbackDays || 60;
+    const minK = ab.minKeptForValid || 3;
     const exclB = (f.dailyStats || []).filter(d => d.excludedBlack).length;
     const exclR = (f.dailyStats || []).filter(d => d.excludedRed).length;
-    const keptNote = (kept, total) => `<span class="m-kept">${kept}/${total} днів</span>`;
+    const keptNote = (kept, total) => {
+      const collapsed = (kept ?? 0) < minK;
+      return `<span class="m-kept ${collapsed ? 'collapsed' : ''}" title="${collapsed ? 'Вікно згорнуто: мало даних' : 'Достатньо даних'}">${kept}/${total}</span>`;
+    };
+    const wBase = ab.baseWeights || { w14: 0.6, w30: 0.3, w60: 0.1 };
+    const uwB = b.usedWeights || { w14: 0, w30: 0, w60: 0 };
+    const uwR = r.usedWeights || { w14: 0, w30: 0, w60: 0 };
+    const pct = (v) => (v * 100).toFixed(0) + '%';
+    const collapsedAny = b.collapsed || r.collapsed;
     return `
       <div class="m-big">${fmt(f.wma.total, 1)} м / день</div>
-      <div class="m-sub">Прогнозний добовий обсяг продажів кабелю (WMA)</div>
+      <div class="m-sub">Прогнозний добовий обсяг продажів кабелю (WMA, lookback ${lbk} днів)</div>
       <div class="m-split">
         <div class="m-col black"><div class="m-col-label">Чорний WMA</div><div class="m-col-val">${fmt(f.wma.black, 1)} м/д</div><div class="m-col-sub">На 1 міс ≈ ${fmt(f.wma.black * 30)} м</div></div>
         <div class="m-col red"><div class="m-col-label">Червоний WMA</div><div class="m-col-val">${fmt(f.wma.red, 1)} м/д</div><div class="m-col-sub">На 1 міс ≈ ${fmt(f.wma.red * 30)} м</div></div>
       </div>
       <div class="m-banner">
-        ⚠️ Дні, коли запас кабелю був менший за <b>${fmt(thr)} м</b>, виключаються з WMA —
-        такі дні обмежені наявністю, а не попитом.<br>
-        Виключено: чорний <b>${exclB}</b> дн. з 30, червоний <b>${exclR}</b> дн. з 30.
+        ⚠️ Дні з запасом &lt; <b>${fmt(thr)} м</b> виключаються — обмежені наявністю, не попитом.<br>
+        Виключено: чорний <b>${exclB}</b> з ${lbk} дн., червоний <b>${exclR}</b> з ${lbk} дн.
+        ${collapsedAny ? '<br>⚠️ Частина вікон згорнуті (менш ніж ' + minK + ' валідних днів) — їхня вага перерозподілена.' : ''}
       </div>
       <div class="m-section-title">Середні значення за періодами (відфільтровані)</div>
       <table class="m-tbl">
-        <thead><tr><th>Період</th><th>Чорний м/д</th><th>Червоний м/д</th><th>Вага</th></tr></thead>
+        <thead><tr><th>Період</th><th>Чорний м/д</th><th>Червоний м/д</th><th>База ваги</th><th>Фактична вага</th></tr></thead>
         <tbody>
-          <tr><td>Середнє 7 днів ${keptNote((b.kept7 ?? 0), 7)}</td><td>${fmt(b.avg7, 1)}</td><td>${fmt(r.avg7, 1)}</td><td>—</td></tr>
-          <tr><td>Середнє 14 днів ${keptNote((b.kept14 ?? 0), 14)}</td><td>${fmt(b.avg14, 1)}</td><td>${fmt(r.avg14, 1)}</td><td>70%</td></tr>
-          <tr><td>Середнє 30 днів ${keptNote((b.kept30 ?? 0), 30)}</td><td>${fmt(b.avg30, 1)}</td><td>${fmt(r.avg30, 1)}</td><td>30%</td></tr>
+          <tr><td>Середнє 7 днів ${keptNote(b.kept7, 7)}</td><td>${fmt(b.avg7, 1)}</td><td>${fmt(r.avg7, 1)}</td><td>—</td><td>—</td></tr>
+          <tr><td>Середнє 14 днів ${keptNote(b.kept14, 14)}</td><td>${fmt(b.avg14, 1)}</td><td>${fmt(r.avg14, 1)}</td><td>${pct(wBase.w14)}</td><td>${pct(uwB.w14)} / ${pct(uwR.w14)}</td></tr>
+          <tr><td>Середнє 30 днів ${keptNote(b.kept30, 30)}</td><td>${fmt(b.avg30, 1)}</td><td>${fmt(r.avg30, 1)}</td><td>${pct(wBase.w30)}</td><td>${pct(uwB.w30)} / ${pct(uwR.w30)}</td></tr>
+          <tr><td>Середнє 60 днів ${keptNote(b.kept60, 60)}</td><td>${fmt(b.avg60, 1)}</td><td>${fmt(r.avg60, 1)}</td><td>${pct(wBase.w60)}</td><td>${pct(uwB.w60)} / ${pct(uwR.w60)}</td></tr>
         </tbody>
-        <tfoot><tr><td>WMA</td><td>${fmt(f.wma.black, 1)}</td><td>${fmt(f.wma.red, 1)}</td><td>100%</td></tr></tfoot>
+        <tfoot><tr><td>WMA</td><td>${fmt(f.wma.black, 1)}</td><td>${fmt(f.wma.red, 1)}</td><td>100%</td><td>100%</td></tr></tfoot>
       </table>
       <div class="m-formula">
-        <code>WMA = 0.7 × avg14 + 0.3 × avg30</code> (з відкинутими днями, де запас &lt; ${fmt(thr)} м)<br>
-        14-денне середнє реагує швидше на зміни попиту, 30-денне згладжує сезонність.
-        Кількість днів показана як <i>залишено/всього</i>.
+        <code>WMA = (w14·avg14 + w30·avg30 + w60·avg60) / Σw</code><br>
+        Базові ваги: 14д=${pct(wBase.w14)}, 30д=${pct(wBase.w30)}, 60д=${pct(wBase.w60)}. Якщо у вікні &lt; ${minK} валідних днів — вага цього вікна = 0, ваги перерозподіляються.<br>
+        «Фактична вага» показана як <i>чорний / червоний</i> — вони можуть відрізнятися, якщо один колір має згорнуте вікно.
       </div>
     `;
   }
