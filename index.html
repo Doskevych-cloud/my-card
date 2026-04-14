@@ -148,6 +148,26 @@ thead tr:last-child th{top:30px}
 .sig-modal-actions button:first-child:hover{background:var(--accent-hover)}
 .sig-modal-actions .sig-cancel{background:var(--bg3);color:var(--text2)}
 .sig-modal-actions .sig-cancel:hover{background:var(--bg4)}
+.col-toggle{display:flex;gap:6px;flex-wrap:wrap;padding:8px 16px;align-items:center}
+.col-toggle .ct-label{font-size:11px;color:var(--text3);margin-right:4px}
+.ct-chip{padding:4px 12px;border-radius:12px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg2);color:var(--text2);transition:all .15s;user-select:none}
+.ct-chip.active{color:#fff}
+.ct-chip.ct-gen.active{background:var(--sup-gen);border-color:var(--sup-gen)}
+.ct-chip.ct-hel.active{background:var(--sup-hel);border-color:var(--sup-hel)}
+.ct-chip.ct-dol.active{background:var(--sup-dol);border-color:var(--sup-dol)}
+.ct-chip.ct-se.active{background:var(--sup-se);border-color:var(--sup-se)}
+.ct-chip.ct-pe.active{background:#4db6ac;border-color:#4db6ac}
+.ct-chip.ct-sv.active{background:#42a5f5;border-color:#42a5f5}
+.ct-chip.ct-atm.active{background:var(--sup-atm);border-color:var(--sup-atm)}
+.ct-chip.ct-sig.active{background:#8e24aa;border-color:#8e24aa}
+table.hide-gen .gh-gen,table.hide-gen .sh-gen,table.hide-gen .t-gen,table.hide-gen .d-gen{display:none}
+table.hide-hel .gh-hel,table.hide-hel .sh-hel,table.hide-hel .t-hel,table.hide-hel .d-hel{display:none}
+table.hide-dol .gh-dol,table.hide-dol .sh-dol,table.hide-dol .t-dol,table.hide-dol .d-dol{display:none}
+table.hide-se .gh-se,table.hide-se .sh-se,table.hide-se .t-se,table.hide-se .d-se{display:none}
+table.hide-pe .gh-pe,table.hide-pe .sh-pe,table.hide-pe .t-pe,table.hide-pe .d-pe{display:none}
+table.hide-sv .gh-sv,table.hide-sv .sh-sv,table.hide-sv .t-sv,table.hide-sv .d-sv{display:none}
+table.hide-atm .gh-atm,table.hide-atm .sh-atm,table.hide-atm .t-atm,table.hide-atm .d-atm{display:none}
+table.hide-sig .gh-sig,table.hide-sig .sh-sig,table.hide-sig .t-sig,table.hide-sig .d-sig{display:none}
 .bl{border-left:1px solid var(--border2) !important}
 .cat td{background:var(--cat-bg);font-weight:600;font-size:11px;color:var(--cat-text);text-align:left;border-bottom:1px solid var(--cat-border);padding:7px 12px;text-transform:uppercase;letter-spacing:.6px}
 .up{color:var(--green-text);font-weight:600}.dn{color:var(--red-text);font-weight:600}.eq{color:var(--text3)}
@@ -331,8 +351,19 @@ tr:hover td{background:var(--bg3) !important}
 </div>
 
 <div id="results">
+  <div class="col-toggle" id="colToggle">
+    <span class="ct-label">Показати:</span>
+    <span class="ct-chip ct-gen active" onclick="toggleCol('gen',this)">Генерація</span>
+    <span class="ct-chip ct-hel active" onclick="toggleCol('hel',this)">Helius</span>
+    <span class="ct-chip ct-dol active" onclick="toggleCol('dol',this)">Dolya</span>
+    <span class="ct-chip ct-se active" onclick="toggleCol('se',this)">SE</span>
+    <span class="ct-chip ct-pe active" onclick="toggleCol('pe',this)">ПЕ</span>
+    <span class="ct-chip ct-sv active" onclick="toggleCol('sv',this)">SV</span>
+    <span class="ct-chip ct-atm active" onclick="toggleCol('atm',this)">Атмосфера</span>
+    <span class="ct-chip ct-sig active" onclick="toggleCol('sig',this)">СІГ</span>
+  </div>
   <div class="wrap">
-    <table>
+    <table id="mainTable">
       <thead>
         <tr>
           <th class="gh gh-tovar bl" colspan="2">ТОВАР</th>
@@ -1340,6 +1371,12 @@ function delta(sup, gen) {
   const cls = d > 0.001 ? 'up' : d < -0.001 ? 'dn' : 'eq';
   const s = (d > 0 ? '+' : '') + (d * 100).toFixed(1) + '%';
   return `<span class="${cls}">${s}</span>`;
+}
+
+function toggleCol(sup, chip) {
+  const tbl = document.getElementById('mainTable');
+  chip.classList.toggle('active');
+  tbl.classList.toggle('hide-' + sup);
 }
 
 function renderTable(rows) {
