@@ -257,7 +257,7 @@ tr:hover td{background:var(--bg3) !important}
 #accessDenied p{color:var(--text2);font-size:14px}
 </style>
 </head>
-<body>
+<body style="visibility:hidden">
 
 <div id="accessDenied"><h2>⛔ Доступ заборонено</h2><p>Ваш IP не в білому списку</p><p id="deniedIP" style="font-family:monospace;color:var(--text3);margin-top:8px"></p></div>
 
@@ -1886,14 +1886,15 @@ async function checkAccess() {
     if (!res.allowed) {
       document.getElementById('deniedIP').textContent = myIP;
       document.getElementById('accessDenied').style.display = 'flex';
-      document.querySelector('.header').style.display = 'none';
-      document.getElementById('uploadPanel').style.display = 'none';
+      document.body.style.visibility = 'visible';
       return false;
     }
+    document.body.style.visibility = 'visible';
     return true;
   } catch(e) {
     console.warn('IP check failed, allowing access', e);
-    return true; // якщо перевірка впала — пускаємо
+    document.body.style.visibility = 'visible';
+    return true;
   }
 }
 
