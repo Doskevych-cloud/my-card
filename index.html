@@ -384,7 +384,123 @@ function cyr(s) {
 }
 
 // ═══════════════════════════════════════════════
-// MODEL MATCHING ENGINE (port from Python)
+// KNOWN BRANDS
+// ═══════════════════════════════════════════════
+const KNOWN_BRANDS = [
+  'DEYE','GROWATT','HUAWEI','VICTRON','MUST','SOFAR','GOODWE','SUNGROW','FRONIUS','SMA',
+  'SOLAX','FOXESS','AFORE','AZZURRO','SERMATEC','SACOLAR',
+  'LONGI','TRINA','JINKO','CANADIAN','JA SOLAR','JASOLAR','RISEN','AIKO','LEAPTON',
+  'PYLONTECH','DYNESS','BYD','LUNA','FORTRESS',
+  'KBE'
+];
+
+// ═══════════════════════════════════════════════
+// PRODUCT IDENTITY EXTRACTION
+// ═══════════════════════════════════════════════
+function extractBrand(name) {
+  if (!name) return null;
+  const u = cyr(String(name)).toUpperCase();
+  for (const b of KNOWN_BRANDS) {
+    if (u.includes(b)) return b;
+  }
+  if (u.includes('JA ') && u.includes('SOLAR')) return 'JA SOLAR';
+  if (/\bSUN[-\s]?\d+K/.test(u) || u.includes('SUN2000')) return 'DEYE';
+  if (/\bBOS-/.test(u)) return 'PYLONTECH';
+  if (/\bSE-[GF]\d/.test(u)) return 'DEYE';
+  if (/\bRW-[MF]\d/.test(u)) return 'DEYE';
+  if (/\bAI-W\d/.test(u)) return 'DEYE';
+  if (/\bUS\d{4}/.test(u)) return 'PYLONTECH';
+  if (/\bHVB\d/.test(u)) return 'PYLONTECH';
+  if (/\b3U-/.test(u)) return 'PYLONTECH';
+  if (/\bLR[78]-/.test(u)) return 'LONGI';
+  if (/\bJAM\d/.test(u)) return 'JA SOLAR';
+  if (/\bTSM-/.test(u)) return 'TRINA';
+  if (/\bHSM-/.test(u)) return 'LONGI';
+  if (/\bCS[67]\d/.test(u)) return 'CANADIAN';
+  if (/\bDHN-/.test(u)) return 'JINKO';
+  return null;
+}
+
+function extractPowerW(name) {
+  if (!name) return null;
+  const u = String(name).toUpperCase();
+  // "5kW", "5 кВт", "5KW", "5.5KW"
+  let m = u.match(/(\d+[.,]?\d*)\s*(?:КВТ|KWP?|KW)\b/);
+  if (m) return Math.round(parseFloat(m[1].replace(',','.')) * 1000);
+  // "5000W", "5000Вт"
+  m = u.match(/(\d{3,6})\s*(?:ВТ|WP?)\b/);
+  if (m) return parseInt(m[1]);
+  return null;
+}
+
+function extractCapacity(name) {
+  if (!name) return null;
+  const u = String(name).toUpperCase();
+  // "5.12kWh", "10.24KWH"
+  let m = u.match(/(\d+[.,]?\d*)\s*(?:КВТ[·\s]*Г|KWH)\b/);
+  if (m) return { value: parseFloat(m[1].replace(',','.')), unit: 'kWh' };
+  // "100Ah", "200AH"
+  m = u.match(/(\d+[.,]?\d*)\s*(?:А[·\s]*Г|AH)\b/);
+  if (m) return { value: parseFloat(m[1].replace(',','.')), unit: 'Ah' };
+  // "5120Wh"
+  m = u.match(/(\d{3,6})\s*(?:ВТ[·\s]*Г|WH)\b/);
+  if (m) return { value: parseFloat(m[1]) / 1000, unit: 'kWh' };
+  return null;
+}
+
+function extractVoltage(name) {
+  if (!name) return null;
+  const m = String(name).match(/(\d+[.,]?\d*)\s*[VВв]\b/i);
+  if (m) {
+    const v = parseFloat(m[1].replace(',','.'));
+    if (v >= 12 && v <= 1000) return v;
+  }
+  return null;
+}
+
+function extractPhase(name) {
+  if (!name) return null;
+  const u = String(name).toUpperCase();
+  if (/\b3[\s-]?(?:ФАЗ|PHASE|PH)\b/.test(u) || /\bTRIPHASE\b/.test(u) || /\b3P\b/.test(u)) return 3;
+  if (/\b1[\s-]?(?:ФАЗ|PHASE|PH)\b/.test(u) || /\bMONOPHASE\b/.test(u) || /\b1P\b/.test(u)) return 1;
+  if (/LP1/.test(u)) return 1;
+  if (/LP3/.test(u) || /MP2/.test(u)) return 3;
+  return null;
+}
+
+function extractProductKind(name, category) {
+  if (!name) return 'unknown';
+  const u = String(name).toUpperCase();
+  if (category === 'АКУМУЛЯТОРИ' || /БАТАР|BATTER|АКУМУЛ|BMS\b|ESS\b/.test(u)) return 'battery';
+  if (category === 'ІНВЕРТОРИ' || /ІНВЕРТОР|INVERTER/.test(u)) return 'inverter';
+  if (category === 'МОДУЛІ' || /ПАНЕЛ|SOLAR|МОДУЛ|ФОТОМОД/.test(u)) return 'panel';
+  if (category === 'КАБЕЛІ' || /КАБЕЛ|CABLE|KBE/.test(u)) return 'cable';
+  return 'unknown';
+}
+
+function buildIdentity(name, model, category) {
+  const brand = extractBrand(name);
+  const power = extractPowerW(name);
+  const cap = extractCapacity(name);
+  const voltage = extractVoltage(name);
+  const phase = extractPhase(name);
+  const kind = extractProductKind(name, category);
+  // Fingerprint: category|brand|model|power|capacity|voltage|phase|kind
+  const fp = [
+    category || '?',
+    brand || '?',
+    normModel(model) || '?',
+    power || '?',
+    cap ? cap.value + cap.unit : '?',
+    voltage || '?',
+    phase || '?',
+    kind
+  ].join('|');
+  return { brand, power, capacity: cap, voltage, phase, kind, fingerprint: fp };
+}
+
+// ═══════════════════════════════════════════════
+// MODEL MATCHING ENGINE
 // ═══════════════════════════════════════════════
 const MODEL_PATTERNS = [
   /SUN-\d+K-SG\d+[A-Z0-9\-]*/,
@@ -430,13 +546,10 @@ function extractModel(nameRaw) {
 
 function normModel(code) {
   if (!code) return null;
-  // Strip all non-alphanumeric, keep only letters and digits
   let c = code.toUpperCase().replace(/[^A-Z0-9]/g, '');
-  // Remove common trailing suffixes
   c = c.replace(/PLUS$/, '');
   c = c.replace(/(AM|SM|BM|EM|GM)\d+$/, '');
   c = c.replace(/EU$/, '');
-  // Normalize SUN prefix
   c = c.replace(/SUN0*(\d+K)/, 'SUN$1');
   return c;
 }
@@ -449,6 +562,39 @@ function fuzzyMatch(c1, c2) {
   if (n1.includes(n2) || n2.includes(n1)) {
     return Math.min(n1.length, n2.length) / Math.max(n1.length, n2.length) >= 0.65;
   }
+  return false;
+}
+
+// ═══════════════════════════════════════════════
+// HARD BLOCKS — prevent false matches
+// ═══════════════════════════════════════════════
+function isHardBlocked(id1, id2) {
+  // Different known brands → block
+  if (id1.brand && id2.brand && id1.brand !== id2.brand) return true;
+  // Different product kind (battery vs inverter vs panel) → block
+  if (id1.kind !== 'unknown' && id2.kind !== 'unknown' && id1.kind !== id2.kind) return true;
+  // Power mismatch >5%
+  if (id1.power && id2.power) {
+    const ratio = Math.min(id1.power, id2.power) / Math.max(id1.power, id2.power);
+    if (ratio < 0.95) return true;
+  }
+  // Capacity mismatch >5% (normalize to same unit)
+  if (id1.capacity && id2.capacity) {
+    let v1 = id1.capacity.value, v2 = id2.capacity.value;
+    if (id1.capacity.unit !== id2.capacity.unit) {
+      if (id1.capacity.unit === 'kWh' && id2.capacity.unit === 'Ah') v2 = v2 * 51.2 / 1000;
+      else if (id1.capacity.unit === 'Ah' && id2.capacity.unit === 'kWh') v1 = v1 * 51.2 / 1000;
+    }
+    const ratio = Math.min(v1, v2) / Math.max(v1, v2);
+    if (ratio < 0.95) return true;
+  }
+  // Voltage mismatch >3%
+  if (id1.voltage && id2.voltage) {
+    const ratio = Math.min(id1.voltage, id2.voltage) / Math.max(id1.voltage, id2.voltage);
+    if (ratio < 0.97) return true;
+  }
+  // Phase count mismatch
+  if (id1.phase && id2.phase && id1.phase !== id2.phase) return true;
   return false;
 }
 
@@ -468,17 +614,49 @@ function extractWattage(name) {
   return m ? parseInt(m[1]) : null;
 }
 
-function findMatch(genModel, genName, genPrice, products, isPanel) {
-  if (!genModel) return null;
+// ═══════════════════════════════════════════════
+// 3-TIER MATCHING: model → fingerprint → fuzzy
+// ═══════════════════════════════════════════════
+function findMatch(genModel, genName, genPrice, products, isPanel, genIdentity) {
+  if (!genModel && !genIdentity) return null;
   let best = null;
+  let bestTier = 99; // lower = better: 1=exact model, 2=fingerprint, 3=fuzzy
+
   for (const sp of products) {
-    if (!fuzzyMatch(genModel, sp.model)) continue;
+    const spId = sp._identity || buildIdentity(sp.name, sp.model, sp.category || guessCategory(sp.name));
+
+    // Hard block check
+    if (genIdentity && isHardBlocked(genIdentity, spId)) continue;
+
+    // Panel wattage guard
     if (isPanel) {
       const w1 = extractWattage(genName), w2 = extractWattage(sp.name);
       if (w1 && w2 && Math.abs(w1 - w2) > 10) continue;
     }
-    // Ratio check removed — different suppliers use different units ($/Вт vs $/шт)
-    if (!best || (sp.price_no_vat && !best.price_no_vat)) best = sp;
+
+    let tier = 99;
+
+    // Tier 1: exact normalized model match
+    if (genModel && sp.model) {
+      const n1 = normModel(genModel), n2 = normModel(sp.model);
+      if (n1 && n2 && n1 === n2) tier = 1;
+    }
+
+    // Tier 2: fingerprint match (all specs identical)
+    if (tier > 2 && genIdentity && genIdentity.fingerprint !== '?|?|?|?|?|?|?|unknown'
+        && genIdentity.fingerprint === spId.fingerprint) {
+      tier = 2;
+    }
+
+    // Tier 3: fuzzy model match (old behavior)
+    if (tier > 3 && genModel && sp.model && fuzzyMatch(genModel, sp.model)) {
+      tier = 3;
+    }
+
+    if (tier < 99 && (tier < bestTier || (tier === bestTier && sp.price_no_vat && (!best || !best.price_no_vat)))) {
+      best = sp;
+      bestTier = tier;
+    }
   }
   return best;
 }
@@ -877,18 +1055,26 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds
   const categories = ['ІНВЕРТОРИ', 'АКУМУЛЯТОРИ', 'МОДУЛІ', 'КАБЕЛІ'];
   const rows = [];
 
+  // Pre-compute identities for all supplier products
+  for (const list of [genProds, helProds, dolProds, seProds, peProds, svProds, atmProds]) {
+    for (const p of list) {
+      if (!p._identity) p._identity = buildIdentity(p.name, p.model, p.category || guessCategory(p.name));
+    }
+  }
+
   // Pass 1: all from Генерація — match in other suppliers
   for (const cat of categories) {
     const items = genProds.filter(p => (p.category || guessCategory(p.name)) === cat);
     for (const gp of items) {
       const isPanel = cat === 'МОДУЛІ';
       const gpPrice = gp.price_no_vat;
-      const hm = findMatch(gp.model, gp.name, gpPrice, helProds, isPanel);
-      const dm = findMatch(gp.model, gp.name, gpPrice, dolProds, isPanel);
-      const sm = findMatch(gp.model, gp.name, gpPrice, seProds, isPanel);
-      const pm = findMatch(gp.model, gp.name, gpPrice, peProds, isPanel);
-      const vm = findMatch(gp.model, gp.name, gpPrice, svProds, isPanel);
-      const am = findMatch(gp.model, gp.name, gpPrice, atmProds, isPanel);
+      const gId = gp._identity;
+      const hm = findMatch(gp.model, gp.name, gpPrice, helProds, isPanel, gId);
+      const dm = findMatch(gp.model, gp.name, gpPrice, dolProds, isPanel, gId);
+      const sm = findMatch(gp.model, gp.name, gpPrice, seProds, isPanel, gId);
+      const pm = findMatch(gp.model, gp.name, gpPrice, peProds, isPanel, gId);
+      const vm = findMatch(gp.model, gp.name, gpPrice, svProds, isPanel, gId);
+      const am = findMatch(gp.model, gp.name, gpPrice, atmProds, isPanel, gId);
       const stock = findStock(gp.name, gp.model, stockMap);
       rows.push({
         cat, name: gp.name, model: gp.model,
