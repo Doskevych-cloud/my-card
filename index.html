@@ -241,9 +241,25 @@ tr:hover td{background:var(--bg3) !important}
 .settings-save{width:100%;padding:8px;background:var(--accent);color:var(--btn-text);border:none;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;margin-top:8px;transition:background .15s}
 .settings-save:hover{background:var(--accent-hover)}
 .settings-info{font-size:10px;color:var(--text3);margin-top:8px;text-align:center;line-height:1.4}
+.ip-section{border-top:1px solid var(--border);margin-top:12px;padding-top:12px}
+.ip-section h3{font-size:13px;color:var(--text);margin-bottom:8px}
+.ip-list{max-height:120px;overflow-y:auto;margin-bottom:8px}
+.ip-row{display:flex;align-items:center;justify-content:space-between;padding:3px 0;font-size:11px;color:var(--text2)}
+.ip-row .ip-addr{font-family:monospace;color:var(--text);min-width:100px}
+.ip-row .ip-label{flex:1;margin:0 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ip-row .ip-del{background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 2px}
+.ip-add{display:flex;gap:4px;margin-top:4px}
+.ip-add input{flex:1;padding:4px 6px;font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text)}
+.ip-add button{padding:4px 8px;font-size:11px;background:var(--accent);color:var(--btn-text);border:none;border-radius:4px;cursor:pointer;white-space:nowrap}
+#ipMsg{font-size:10px;color:var(--red);margin-top:4px}
+#accessDenied{display:none;position:fixed;inset:0;background:var(--bg);z-index:9999;align-items:center;justify-content:center;flex-direction:column}
+#accessDenied h2{color:var(--red);font-size:24px;margin-bottom:8px}
+#accessDenied p{color:var(--text2);font-size:14px}
 </style>
 </head>
 <body>
+
+<div id="accessDenied"><h2>⛔ Доступ заборонено</h2><p>Ваш IP не в білому списку</p><p id="deniedIP" style="font-family:monospace;color:var(--text3);margin-top:8px"></p></div>
 
 <div class="header">
   <h1>Порівняння цін постачальників сонячного обладнання</h1>
@@ -265,6 +281,16 @@ tr:hover td{background:var(--bg3) !important}
         </div>
         <button class="settings-save" onclick="saveSchedule()">Зберегти</button>
         <div class="settings-info" id="schedInfo"></div>
+        <div class="ip-section">
+          <h3>🔒 Доступ по IP</h3>
+          <div class="ip-list" id="ipList"></div>
+          <div class="ip-add">
+            <input id="ipAddr" placeholder="IP адреса" style="width:110px;flex:none">
+            <input id="ipLabel" placeholder="Коментар (обов'язково)">
+            <button onclick="addIP()">+</button>
+          </div>
+          <div id="ipMsg"></div>
+        </div>
       </div>
     </div>
     <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
@@ -1654,7 +1680,7 @@ async function runComparison() {
 // ═══════════════════════════════════════════════
 // HISTORY (Google Apps Script — shared for everyone)
 // ═══════════════════════════════════════════════
-const API_URL = 'https://script.google.com/macros/s/AKfycbyhCwMLvFsVloM7J0ZY4mTjTEGGfaUrSQbCH2BYH32NE0MHmn4S50feKWzkZPpf7sJG/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxw8SdMeoHwmdjkaCaTM0LcFwMNwKNbNcvwjw3Y7OF5O-CqLUdZd4MNygZV9VdMvhMG/exec';
 const MAX_HISTORY = 15;
 let historyCache = [];
 
@@ -1847,6 +1873,74 @@ async function saveSchedule(){
 }
 
 // ═══════════════════════════════════════════════
+// IP ACCESS CONTROL
+// ═══════════════════════════════════════════════
+let myIP = '';
+async function checkAccess() {
+  try {
+    const r = await fetch('https://api.ipify.org?format=json');
+    const d = await r.json();
+    myIP = d.ip;
+    const c = await fetch(API_URL + '?action=check_ip&ip=' + encodeURIComponent(myIP));
+    const res = await c.json();
+    if (!res.allowed) {
+      document.getElementById('deniedIP').textContent = myIP;
+      document.getElementById('accessDenied').style.display = 'flex';
+      document.querySelector('.header').style.display = 'none';
+      document.getElementById('uploadPanel').style.display = 'none';
+      return false;
+    }
+    return true;
+  } catch(e) {
+    console.warn('IP check failed, allowing access', e);
+    return true; // якщо перевірка впала — пускаємо
+  }
+}
+
+async function loadIPs() {
+  try {
+    const r = await fetch(API_URL + '?action=get_ips');
+    const d = await r.json();
+    const list = document.getElementById('ipList');
+    list.innerHTML = '';
+    (d.ips || []).forEach(function(item) {
+      const row = document.createElement('div');
+      row.className = 'ip-row';
+      row.innerHTML = '<span class="ip-addr">' + item.ip + '</span>' +
+        '<span class="ip-label" title="' + (item.label||'') + '">' + (item.label||'') + '</span>' +
+        '<button class="ip-del" onclick="removeIP(\'' + item.ip + '\')" title="Видалити">×</button>';
+      list.appendChild(row);
+    });
+  } catch(e) { console.warn('loadIPs', e); }
+}
+
+async function addIP() {
+  const ip = document.getElementById('ipAddr').value.trim();
+  const label = document.getElementById('ipLabel').value.trim();
+  const msg = document.getElementById('ipMsg');
+  if (!ip) { msg.textContent = 'Вкажіть IP'; return; }
+  if (!label) { msg.textContent = 'Коментар обов\'язковий!'; return; }
+  msg.textContent = '';
+  try {
+    const r = await fetch(API_URL + '?action=add_ip&ip=' + encodeURIComponent(ip) + '&label=' + encodeURIComponent(label));
+    const d = await r.json();
+    if (d.ok) {
+      document.getElementById('ipAddr').value = '';
+      document.getElementById('ipLabel').value = '';
+      loadIPs();
+    } else { msg.textContent = d.error || 'Помилка'; }
+  } catch(e) { msg.textContent = 'Помилка мережі'; }
+}
+
+async function removeIP(ip) {
+  if (!confirm('Видалити IP ' + ip + '?')) return;
+  try {
+    await fetch(API_URL + '?action=remove_ip&ip=' + encodeURIComponent(ip));
+    loadIPs();
+  } catch(e) { console.warn('removeIP', e); }
+}
+
+// ═══════════════════════════════════════════════
 // LOAD FROM URL HASH (shared links)
 // ═══════════════════════════════════════════════
 function showSharedView(rows, dateLabel, shareUrl) {
@@ -1937,9 +2031,14 @@ function toggleTheme() {
 applyTheme(localStorage.getItem('theme') || 'dark');
 
 document.getElementById('dateLabel').textContent = new Date().toLocaleDateString('uk-UA');
-(async () => { if (!(await loadFromHash())) initHistory(); })();
-loadSchedule();
-initSigSlot();
+(async () => {
+  const allowed = await checkAccess();
+  if (!allowed) return;
+  if (!(await loadFromHash())) initHistory();
+  loadSchedule();
+  loadIPs();
+  initSigSlot();
+})();
 window.addEventListener('hashchange', () => { if (location.hash.startsWith('#h=') || location.hash.startsWith('#d=')) loadFromHash(); });
 </script>
 </body>
