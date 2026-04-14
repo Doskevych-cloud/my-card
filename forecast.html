@@ -244,6 +244,31 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
 .wh-tbl td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
 .wh-tbl td.neg{color:var(--red);font-weight:600}
 
+/* ─── Cable-only warehouse cards ─── */
+.wh-cable-section{margin-bottom:22px}
+.wh-cable-section-head{display:flex;align-items:baseline;gap:10px;margin:14px 0 10px;padding:0 2px}
+.wh-cable-section-head h3{font-size:13px;font-weight:700;color:var(--text);letter-spacing:-.2px}
+.wh-cable-section-head h3 span{color:var(--text3);font-weight:500;font-size:12px;margin-left:4px}
+.wh-cable-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.wh-cable-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;transition:transform .15s,box-shadow .15s}
+.wh-cable-card:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm, 0 2px 8px rgba(0,0,0,.12));border-color:var(--border2)}
+.wh-cable-card.in-transit{border-left:3px solid #9775fa}
+.wh-cable-card.on-hand{border-left:3px solid var(--accent)}
+.wh-cable-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.wh-cable-ico{font-size:18px;line-height:1;flex-shrink:0}
+.wh-cable-title{flex:1;font-size:12px;font-weight:600;color:var(--text);line-height:1.3}
+.wh-cable-total{font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap;font-variant-numeric:tabular-nums}
+.wh-cable-tbl{width:100%;border-collapse:collapse;font-size:11px}
+.wh-cable-tbl th{padding:6px 4px;color:var(--text3);font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.3px;text-align:right;border-bottom:1px solid var(--border)}
+.wh-cable-tbl th:first-child{text-align:left}
+.wh-cable-tbl td{padding:7px 4px;font-variant-numeric:tabular-nums;text-align:right;color:var(--text)}
+.wh-cable-tbl td:first-child{text-align:left;font-weight:500}
+.wh-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.wh-dot.black{background:#444}
+.wh-dot.red{background:var(--red, #e74c3c)}
+.wh-cable-grid .empty{grid-column:1/-1;padding:20px;text-align:center;color:var(--text3);font-size:12px}
+.section-hint{font-size:11px;color:var(--text3);margin-left:auto}
+
 /* ─── Section heads ─── */
 .section-head{display:flex;justify-content:space-between;align-items:center;margin:28px 0 14px;padding:0 2px}
 .section-head h2{font-size:16px;font-weight:700;letter-spacing:-.3px;display:flex;align-items:center;gap:10px}
@@ -407,12 +432,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
     </div>
   </div>
 
-  <!-- Warehouses -->
+  <!-- Warehouses (cable only) -->
   <div class="section-head">
-    <h2>🏭 Залишки по складах</h2>
-    <button class="pill-btn" onclick="expandAllWh()" id="btnExpandWh">Розгорнути всі</button>
+    <h2>🏭 Кабель по складах</h2>
+    <span class="section-hint">Тільки чорний 6мм + червоний 6мм. Для повного перегляду складів натисни «📦 Склад» у шапці.</span>
   </div>
-  <div id="whBody"><div class="loading">Завантаження складських залишків…</div></div>
+  <div id="whBody"><div class="loading">Завантаження…</div></div>
 
 </div>
 
@@ -706,9 +731,11 @@ async function loadForecast(){
     renderPlanning(f);
     renderShipments(f);
     renderTransitKpi(f);
+    renderCableWh(f);
   } catch (e) {
     document.getElementById('planBody').innerHTML = `<div class="error">${e.message}</div>`;
     document.getElementById('shipBody').innerHTML = `<div class="error">${e.message}</div>`;
+    document.getElementById('whBody').innerHTML = `<div class="error">${e.message}</div>`;
   }
 }
 
@@ -905,59 +932,74 @@ function modalTemplate(kind, f){
 }
 
 // ─── Warehouses ───
-function renderWhTable(items){
-  return `<table class="wh-tbl">
-    <thead><tr><th>Товар</th><th>Зал.</th><th>Рез.</th><th>Вільно</th></tr></thead>
-    <tbody>${items.map(it => `<tr><td>${it.name}</td><td>${fmt(it.total)}</td><td>${fmt(it.reserve)}</td><td class="${it.free < 0 ? 'neg' : ''}">${fmt(it.free)}</td></tr>`).join('')}</tbody>
-  </table>`;
-}
+function renderCableWh(f){
+  // On-hand warehouses (free+reserve, split black/red)
+  const onHand = (f.stockByWh || []).map(w => ({
+    name: w.name,
+    blackFree: w.black.free, blackRes: w.black.reserve,
+    redFree: w.red.free, redRes: w.red.reserve,
+    total: w.black.free + w.black.reserve + w.red.free + w.red.reserve,
+  })).filter(w => w.total > 0);
 
-function toggleWh(id){
-  document.getElementById('wh_h_' + id).classList.toggle('open');
-  document.getElementById('wh_b_' + id).classList.toggle('open');
-}
+  // In-transit warehouses (no free/reserve split in API, just totals)
+  const inTransit = (f.inTransit && f.inTransit.byWh || []).map(w => ({
+    name: w.name, black: w.black, red: w.red, total: w.black + w.red,
+  })).filter(w => w.total > 0);
 
-let whExpanded = false;
-function expandAllWh(){
-  whExpanded = !whExpanded;
-  document.querySelectorAll('.wh-card-head').forEach(h => { whExpanded ? h.classList.add('open') : h.classList.remove('open'); });
-  document.querySelectorAll('.wh-card-body').forEach(b => { whExpanded ? b.classList.add('open') : b.classList.remove('open'); });
-  document.getElementById('btnExpandWh').textContent = whExpanded ? 'Згорнути всі' : 'Розгорнути всі';
-}
+  const rowOnHand = w => `
+    <div class="wh-cable-card on-hand">
+      <div class="wh-cable-head">
+        <div class="wh-cable-ico">🏢</div>
+        <div class="wh-cable-title">${w.name}</div>
+        <div class="wh-cable-total">${fmt(w.total)} м</div>
+      </div>
+      <table class="wh-cable-tbl">
+        <thead><tr><th>Колір</th><th>Вільно</th><th>Резерв</th><th>Разом</th></tr></thead>
+        <tbody>
+          <tr><td><span class="wh-dot black"></span>Чорний</td><td>${fmt(w.blackFree)}</td><td>${fmt(w.blackRes)}</td><td><strong>${fmt(w.blackFree + w.blackRes)}</strong></td></tr>
+          <tr><td><span class="wh-dot red"></span>Червоний</td><td>${fmt(w.redFree)}</td><td>${fmt(w.redRes)}</td><td><strong>${fmt(w.redFree + w.redRes)}</strong></td></tr>
+        </tbody>
+      </table>
+    </div>`;
 
-async function loadWarehouses(){
-  try {
-    const res = await fetch(API_URL + '?action=warehouses_stock');
-    const w = await res.json();
-    if (w.error) throw new Error(w.error);
-    const whList = w.warehouses.map(wh => {
-      const subTotal = wh.items.reduce((a, it) => a + it.total, 0);
-      const reserveTotal = wh.items.reduce((a, it) => a + it.reserve, 0);
-      return `
-        <div class="wh-card">
-          <div class="wh-card-head" id="wh_h_${wh.id}" onclick="toggleWh('${wh.id}')">
-            <div class="wh-title-row">
-              <div class="wh-ico"><svg viewBox="0 0 24 24"><path d="M12 3L2 12h3v8h14v-8h3L12 3zm0 2.83L18.17 12H17v6h-4v-4h-2v4H7v-6H5.83L12 5.83z"/></svg></div>
-              <div>
-                <div class="wh-title">${wh.name}</div>
-                <div class="wh-meta">${wh.items.length} позицій · ${fmt(subTotal)} од · резерв ${fmt(reserveTotal)}</div>
-              </div>
-            </div>
-            <span class="wh-chev">▶</span>
-          </div>
-          <div class="wh-card-body" id="wh_b_${wh.id}">${renderWhTable(wh.items)}</div>
-        </div>
-      `;
-    }).join('');
-    document.getElementById('whBody').innerHTML = `<div class="wh-grid">${whList}</div>`;
-  } catch (e) {
-    document.getElementById('whBody').innerHTML = `<div class="error">${e.message}</div>`;
-  }
+  const rowTransit = w => `
+    <div class="wh-cable-card in-transit">
+      <div class="wh-cable-head">
+        <div class="wh-cable-ico">🚛</div>
+        <div class="wh-cable-title">${w.name}</div>
+        <div class="wh-cable-total">${fmt(w.total)} м</div>
+      </div>
+      <table class="wh-cable-tbl">
+        <thead><tr><th>Колір</th><th colspan="2">Кількість</th></tr></thead>
+        <tbody>
+          <tr><td><span class="wh-dot black"></span>Чорний</td><td colspan="2"><strong>${fmt(w.black)}</strong> м</td></tr>
+          <tr><td><span class="wh-dot red"></span>Червоний</td><td colspan="2"><strong>${fmt(w.red)}</strong> м</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+
+  const onHandSum = onHand.reduce((a, w) => a + w.total, 0);
+  const transitSum = inTransit.reduce((a, w) => a + w.total, 0);
+
+  const html = `
+    <div class="wh-cable-section">
+      <div class="wh-cable-section-head">
+        <h3>🏢 На складі <span>(${onHand.length} · ${fmt(onHandSum)} м)</span></h3>
+      </div>
+      <div class="wh-cable-grid">${onHand.map(rowOnHand).join('') || '<div class="empty">Немає</div>'}</div>
+    </div>
+    <div class="wh-cable-section">
+      <div class="wh-cable-section-head">
+        <h3>🚛 В дорозі <span>(${inTransit.length} партій · ${fmt(transitSum)} м)</span></h3>
+      </div>
+      <div class="wh-cable-grid">${inTransit.map(rowTransit).join('') || '<div class="empty">Партій у дорозі немає</div>'}</div>
+    </div>
+  `;
+  document.getElementById('whBody').innerHTML = html;
 }
 
 loadMarket();
 loadForecast();
-loadWarehouses();
 </script>
 </body>
 </html>
