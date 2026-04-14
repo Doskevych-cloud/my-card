@@ -112,16 +112,21 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
 .page-sub{font-size:13px;color:var(--text2)}
 
 /* ─── Hero KPIs ─── */
-.hero-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
-@media(max-width:980px){.hero-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:540px){.hero-grid{grid-template-columns:1fr}}
-.kpi{position:relative;padding:20px 22px;background:var(--grad-surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-md);transition:transform .25s,box-shadow .25s}
-.kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.hero-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px}
+@media(max-width:1280px){.hero-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:860px){.hero-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.hero-grid{grid-template-columns:1fr}}
+.kpi{position:relative;padding:20px 22px;background:var(--grad-surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-md);transition:transform .25s,box-shadow .25s,border-color .2s;cursor:pointer}
+.kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);border-color:var(--border2)}
+.kpi:active{transform:translateY(0)}
 .kpi::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%}
+.kpi::after{content:'›';position:absolute;top:14px;right:16px;font-size:18px;color:var(--text3);opacity:.6;transition:transform .2s,opacity .2s;line-height:1}
+.kpi:hover::after{opacity:1;transform:translateX(3px);color:var(--accent)}
 .kpi.accent::before{background:var(--grad-accent)}
 .kpi.red::before{background:var(--grad-red)}
 .kpi.green::before{background:var(--grad-green)}
 .kpi.blue::before{background:var(--grad-blue)}
+.kpi.purple::before{background:linear-gradient(135deg,#b794ff 0%,#7e5bdf 100%)}
 .kpi-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1.5px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .kpi-val{font-size:30px;font-weight:700;letter-spacing:-1px;line-height:1;font-variant-numeric:tabular-nums}
 .kpi-sub{font-size:11px;color:var(--text2);margin-top:8px;display:flex;align-items:center;gap:8px}
@@ -252,6 +257,57 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
 .skeleton{background:linear-gradient(90deg,var(--bg3) 0%,var(--surface2) 50%,var(--bg3) 100%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:8px;height:14px;margin:6px 0}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
+/* ─── Modal / Drawer ─── */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:200;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-backdrop.open{opacity:1;pointer-events:auto}
+.modal{position:fixed;top:50%;left:50%;transform:translate(-50%,calc(-50% + 20px));background:var(--surface);border:1px solid var(--border2);border-radius:18px;width:min(640px,calc(100% - 32px));max-height:85vh;overflow:hidden;z-index:201;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;box-shadow:var(--shadow-lg);display:flex;flex-direction:column}
+.modal.open{opacity:1;transform:translate(-50%,-50%);pointer-events:auto}
+.modal-head{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;flex-shrink:0}
+.modal-head .m-ico{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;flex-shrink:0}
+.modal-head .m-ico.accent{background:var(--grad-accent)}
+.modal-head .m-ico.red{background:var(--grad-red)}
+.modal-head .m-ico.green{background:var(--grad-green)}
+.modal-head .m-ico.blue{background:var(--grad-blue)}
+.modal-head .m-ico.purple{background:linear-gradient(135deg,#b794ff 0%,#7e5bdf 100%)}
+.modal-head .m-title{flex:1;min-width:0}
+.modal-head .m-title h3{font-size:15px;font-weight:700;letter-spacing:-.2px;margin-bottom:2px}
+.modal-head .m-title p{font-size:11px;color:var(--text2)}
+.modal-close{width:32px;height:32px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0;flex-shrink:0}
+.modal-close:hover{color:var(--red);border-color:var(--red)}
+.modal-close svg{width:14px;height:14px;fill:currentColor}
+.modal-body{padding:20px 24px;overflow-y:auto;flex:1}
+.modal-body::-webkit-scrollbar{width:6px}
+.modal-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.m-big{font-size:36px;font-weight:700;letter-spacing:-1.2px;line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums}
+.m-sub{font-size:12px;color:var(--text2);margin-bottom:18px}
+.m-split{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.m-split .m-col{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;position:relative;overflow:hidden}
+.m-split .m-col::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px}
+.m-split .m-col.black::before{background:var(--grad-dark)}
+.m-split .m-col.red::before{background:var(--grad-red)}
+.m-split .m-col .m-col-label{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;font-weight:700;margin-bottom:6px}
+.m-split .m-col .m-col-val{font-size:22px;font-weight:700;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.m-split .m-col .m-col-sub{font-size:11px;color:var(--text2);margin-top:4px}
+.m-list{display:flex;flex-direction:column;gap:6px}
+.m-row{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;font-size:12px}
+.m-row .m-row-main{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.m-row .m-row-main .nm{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.m-row .m-row-val{font-weight:700;font-variant-numeric:tabular-nums;flex-shrink:0;margin-left:10px}
+.m-section-title{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:20px 0 10px}
+.m-section-title:first-child{margin-top:0}
+.m-formula{padding:14px 16px;background:var(--accent-bg);border:1px solid var(--accent);border-left-width:3px;border-radius:10px;font-size:12px;line-height:1.6;margin-top:16px}
+.m-formula code{background:rgba(255,131,25,.15);padding:1px 6px;border-radius:3px;font-family:'SF Mono','Monaco',monospace;font-size:11px}
+.m-tbl{width:100%;border-collapse:collapse;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.m-tbl th,.m-tbl td{padding:10px 14px;text-align:right;font-variant-numeric:tabular-nums}
+.m-tbl th:first-child,.m-tbl td:first-child{text-align:left}
+.m-tbl thead th{background:var(--bg3);color:var(--text2);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+.m-tbl tbody tr{border-top:1px solid var(--border)}
+.m-tbl tbody tr:hover{background:var(--bg3)}
+.m-tbl tfoot td{border-top:2px solid var(--accent);font-weight:700;background:var(--accent-bg)}
+.m-badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.m-badge.black{background:var(--cable-black);color:#fff}
+.m-badge.red{background:var(--cable-red);color:#fff}
+
 /* ─── Info line ─── */
 .info-line{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--blue-bg);border:1px solid var(--blue);border-left-width:3px;border-radius:10px;font-size:12px;color:var(--text);margin-top:16px}
 .info-line svg{width:16px;height:16px;fill:var(--blue);flex-shrink:0}
@@ -296,10 +352,22 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
 
   <!-- Hero KPIs -->
   <div class="hero-grid" id="heroGrid">
-    <div class="kpi accent"><div class="kpi-label">Вільно на складах</div><div class="kpi-val" id="kpiFree">—</div><div class="kpi-sub">завантаження…</div></div>
-    <div class="kpi blue"><div class="kpi-label">У резерві</div><div class="kpi-val" id="kpiReserve">—</div><div class="kpi-sub">завантаження…</div></div>
-    <div class="kpi red"><div class="kpi-label">Має бути замовлено</div><div class="kpi-val" id="kpiMust">—</div><div class="kpi-sub">завантаження…</div></div>
-    <div class="kpi green"><div class="kpi-label">WMA прогноз / день</div><div class="kpi-val" id="kpiWma">—</div><div class="kpi-sub">завантаження…</div></div>
+    <div class="kpi accent" onclick="openKpi('free')"><div class="kpi-label">Вільно на складах</div><div class="kpi-val" id="kpiFree">—</div><div class="kpi-sub">завантаження…</div></div>
+    <div class="kpi blue" onclick="openKpi('reserve')"><div class="kpi-label">У резерві</div><div class="kpi-val" id="kpiReserve">—</div><div class="kpi-sub">завантаження…</div></div>
+    <div class="kpi purple" onclick="openKpi('transit')"><div class="kpi-label">Кабель в дорозі</div><div class="kpi-val" id="kpiTransit">—</div><div class="kpi-sub">завантаження…</div></div>
+    <div class="kpi red" onclick="openKpi('must')"><div class="kpi-label">Має бути замовлено</div><div class="kpi-val" id="kpiMust">—</div><div class="kpi-sub">завантаження…</div></div>
+    <div class="kpi green" onclick="openKpi('wma')"><div class="kpi-label">WMA прогноз / день</div><div class="kpi-val" id="kpiWma">—</div><div class="kpi-sub">завантаження…</div></div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-backdrop" id="modalBackdrop" onclick="closeKpi()"></div>
+  <div class="modal" id="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div class="m-ico" id="modalIco">📊</div>
+      <div class="m-title"><h3 id="modalTitle">—</h3><p id="modalSub">—</p></div>
+      <button class="modal-close" onclick="closeKpi()" aria-label="Закрити"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
   </div>
 
   <!-- Row 1: planning + market -->
@@ -623,17 +691,193 @@ function renderShipments(f){
   });
 }
 
+// Hold the latest forecast payload for modal drill-downs
+let forecastData = null;
+
 async function loadForecast(){
   try {
     const res = await fetch(API_URL + '?action=cable_forecast');
     const f = await res.json();
     if (f.error) throw new Error(f.error);
+    forecastData = f;
     renderPlanning(f);
     renderShipments(f);
+    renderTransitKpi(f);
   } catch (e) {
     document.getElementById('planBody').innerHTML = `<div class="error">${e.message}</div>`;
     document.getElementById('shipBody').innerHTML = `<div class="error">${e.message}</div>`;
   }
+}
+
+function renderTransitKpi(f){
+  const t = f.inTransit || { black: 0, red: 0, total: 0, byWh: [] };
+  document.getElementById('kpiTransit').textContent = fmt(t.total) + ' м';
+  const whs = t.byWh.length;
+  const next = t.byWh[0];
+  document.getElementById('kpiTransit').nextElementSibling.innerHTML =
+    whs ? `${whs} партія${whs === 1 ? '' : whs < 5 ? 'ї' : 'й'} · найближча: <strong style="color:var(--text)">${next.name.replace(/В дорозі\s*/, '')}</strong>`
+        : 'немає партій у дорозі';
+}
+
+// ─── KPI Drill-down modal ───
+const KPI_META = {
+  free:    { ico: '📦', cls: 'accent', title: 'Вільно на складах', sub: 'Поточні залишки, не в резерві' },
+  reserve: { ico: '🔒', cls: 'blue',   title: 'У резерві',          sub: 'Залишки, закріплені за замовленнями клієнтів' },
+  transit: { ico: '🚛', cls: 'purple', title: 'Кабель в дорозі',    sub: 'Партії на складах «В дорозі» (виробництво + логістика)' },
+  must:    { ico: '⚠️',  cls: 'red',    title: 'Має бути замовлено', sub: `WMA × ${LT_TOTAL} днів + резерв = покриття на повний L/T` },
+  wma:     { ico: '📈', cls: 'green',  title: 'WMA прогноз / день', sub: 'Weighted moving average = 0.7 × 14д + 0.3 × 30д' },
+};
+
+function openKpi(kind){
+  if (!forecastData) return;
+  const meta = KPI_META[kind]; if (!meta) return;
+  const ico = document.getElementById('modalIco');
+  ico.className = 'm-ico ' + meta.cls;
+  ico.textContent = meta.ico;
+  document.getElementById('modalTitle').textContent = meta.title;
+  document.getElementById('modalSub').textContent = meta.sub;
+  document.getElementById('modalBody').innerHTML = modalTemplate(kind, forecastData);
+  document.getElementById('modalBackdrop').classList.add('open');
+  document.getElementById('modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeKpi(){
+  document.getElementById('modalBackdrop').classList.remove('open');
+  document.getElementById('modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeKpi(); });
+
+function modalTemplate(kind, f){
+  const s = f.stock;
+  const ab = f.avgBreakdown || {};
+  const t = f.inTransit || { black: 0, red: 0, total: 0, byWh: [] };
+  const mustB = Math.round(f.wma.black * LT_TOTAL + s.black.reserve);
+  const mustR = Math.round(f.wma.red * LT_TOTAL + s.red.reserve);
+  const needB = mustB - s.black.reserve;
+  const needR = mustR - s.red.reserve;
+
+  if (kind === 'free') {
+    const totalFree = s.black.free + s.red.free;
+    const whRows = (f.stockByWh || []).map(w => `
+      <tr><td>${w.name}</td><td>${fmt(w.black.free)}</td><td>${fmt(w.red.free)}</td><td><strong>${fmt(w.black.free + w.red.free)}</strong></td></tr>
+    `).join('');
+    return `
+      <div class="m-big">${fmt(totalFree)} м</div>
+      <div class="m-sub">Вільний залишок — доступний до продажу або резерву прямо зараз</div>
+      <div class="m-split">
+        <div class="m-col black"><div class="m-col-label">Чорний кабель</div><div class="m-col-val">${fmt(s.black.free)} м</div><div class="m-col-sub">Загалом з резервом: ${fmt(s.black.free + s.black.reserve)}</div></div>
+        <div class="m-col red"><div class="m-col-label">Червоний кабель</div><div class="m-col-val">${fmt(s.red.free)} м</div><div class="m-col-sub">Загалом з резервом: ${fmt(s.red.free + s.red.reserve)}</div></div>
+      </div>
+      <div class="m-section-title">Розподіл по складах</div>
+      <table class="m-tbl">
+        <thead><tr><th>Склад</th><th>Чорний</th><th>Черв.</th><th>Разом</th></tr></thead>
+        <tbody>${whRows || '<tr><td colspan="4" style="text-align:center;color:var(--text3)">Немає даних</td></tr>'}</tbody>
+      </table>
+      <div class="m-formula">
+        <strong>Джерело:</strong> 1С UNF, регістр <code>Запасы/Balance</code><br>
+        <strong>Фільтр:</strong> організація РЕАКТ + склади <code>2 Одеса</code> та <code>Київ КЛАУД</code>, <code>ЗаказПокупателя = 0</code> (без резерву)
+      </div>
+    `;
+  }
+
+  if (kind === 'reserve') {
+    const black = f.reserveList.filter(r => r.type === 'black');
+    const red = f.reserveList.filter(r => r.type === 'red');
+    const list = f.reserveList.sort((a, b) => b.qty - a.qty);
+    return `
+      <div class="m-big">${fmt(s.black.reserve + s.red.reserve)} м</div>
+      <div class="m-sub">${f.reserveList.length} активних резервів по замовленнях клієнтів</div>
+      <div class="m-split">
+        <div class="m-col black"><div class="m-col-label">Чорний резерв</div><div class="m-col-val">${fmt(s.black.reserve)} м</div><div class="m-col-sub">${black.length} замовлень</div></div>
+        <div class="m-col red"><div class="m-col-label">Червоний резерв</div><div class="m-col-val">${fmt(s.red.reserve)} м</div><div class="m-col-sub">${red.length} замовлень</div></div>
+      </div>
+      <div class="m-section-title">Замовлення клієнтів</div>
+      <div class="m-list">
+        ${list.map(r => `<div class="m-row"><div class="m-row-main"><span class="m-badge ${r.type}">${r.type === 'black' ? 'ЧОРН' : 'ЧЕРВ'}</span><span class="nm">${r.client}</span></div><span class="m-row-val">${fmt(r.qty)} м</span></div>`).join('')}
+      </div>
+      <div class="m-formula"><strong>Джерело:</strong> позиції залишків де <code>ЗаказПокупателя_Key ≠ 0</code>, з підтягуванням контрагента з <code>Document_ЗаказПокупателя</code></div>
+    `;
+  }
+
+  if (kind === 'transit') {
+    const whRows = t.byWh.map(w => `
+      <tr><td>${w.name}</td><td>${fmt(w.black)}</td><td>${fmt(w.red)}</td><td><strong>${fmt(w.black + w.red)}</strong></td></tr>
+    `).join('');
+    return `
+      <div class="m-big">${fmt(t.total)} м</div>
+      <div class="m-sub">Кабель, який рухається до складів. Прийде — стане «Вільно на складах»</div>
+      <div class="m-split">
+        <div class="m-col black"><div class="m-col-label">Чорний в дорозі</div><div class="m-col-val">${fmt(t.black)} м</div><div class="m-col-sub">≈ ${fmt(t.black / (ab.black?.wma || 1), 0)} днів прогнозу</div></div>
+        <div class="m-col red"><div class="m-col-label">Червоний в дорозі</div><div class="m-col-val">${fmt(t.red)} м</div><div class="m-col-sub">≈ ${fmt(t.red / (ab.red?.wma || 1), 0)} днів прогнозу</div></div>
+      </div>
+      <div class="m-section-title">Розподіл по партіях</div>
+      <table class="m-tbl">
+        <thead><tr><th>Партія</th><th>Чорний</th><th>Черв.</th><th>Разом</th></tr></thead>
+        <tbody>${whRows || '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">Немає партій у дорозі</td></tr>'}</tbody>
+        ${t.byWh.length > 1 ? `<tfoot><tr><td>Разом</td><td>${fmt(t.black)}</td><td>${fmt(t.red)}</td><td>${fmt(t.total)}</td></tr></tfoot>` : ''}
+      </table>
+      <div class="m-formula">
+        <strong>Джерело:</strong> залишки на складах з назвою <code>"В дорозі *"</code> (січень–грудень) по організації РЕАКТ.<br>
+        Ці партії ще не прийшли фізично — вони стануть вільними при надходженні.
+      </div>
+    `;
+  }
+
+  if (kind === 'must') {
+    const ltB = Math.round(f.wma.black * LT_TOTAL);
+    const ltR = Math.round(f.wma.red * LT_TOTAL);
+    return `
+      <div class="m-big">${fmt(mustB + mustR)} м</div>
+      <div class="m-sub">Стільки має бути на складі, щоб покрити період виробництва + логістики (${LT_TOTAL} днів)</div>
+      <div class="m-split">
+        <div class="m-col black"><div class="m-col-label">Чорний</div><div class="m-col-val">${fmt(mustB)} м</div><div class="m-col-sub">Дефіцит: ${fmt(Math.max(0, needB - s.black.free))}</div></div>
+        <div class="m-col red"><div class="m-col-label">Червоний</div><div class="m-col-val">${fmt(mustR)} м</div><div class="m-col-sub">Дефіцит: ${fmt(Math.max(0, needR - s.red.free))}</div></div>
+      </div>
+      <div class="m-section-title">Формула</div>
+      <table class="m-tbl">
+        <thead><tr><th>Компонент</th><th>Чорний</th><th>Червоний</th></tr></thead>
+        <tbody>
+          <tr><td>WMA / день</td><td>${fmt(f.wma.black, 1)}</td><td>${fmt(f.wma.red, 1)}</td></tr>
+          <tr><td>× L/T (${LT_TOTAL} днів)</td><td>${fmt(ltB)}</td><td>${fmt(ltR)}</td></tr>
+          <tr><td>+ Резерв</td><td>${fmt(s.black.reserve)}</td><td>${fmt(s.red.reserve)}</td></tr>
+        </tbody>
+        <tfoot><tr><td>= Має бути</td><td>${fmt(mustB)}</td><td>${fmt(mustR)}</td></tr></tfoot>
+      </table>
+      <div class="m-formula">
+        <code>Має бути = WMA × L/T + Резерв</code><br>
+        <code>Замовити = Має бути − Вільно</code> (а ще краще мінус «В дорозі», якщо прийде до дедлайну)
+      </div>
+    `;
+  }
+
+  if (kind === 'wma') {
+    const b = ab.black || {}, r = ab.red || {};
+    return `
+      <div class="m-big">${fmt(f.wma.total, 1)} м / день</div>
+      <div class="m-sub">Прогнозний добовий обсяг продажів кабелю (WMA)</div>
+      <div class="m-split">
+        <div class="m-col black"><div class="m-col-label">Чорний WMA</div><div class="m-col-val">${fmt(f.wma.black, 1)} м/д</div><div class="m-col-sub">На 1 міс ≈ ${fmt(f.wma.black * 30)} м</div></div>
+        <div class="m-col red"><div class="m-col-label">Червоний WMA</div><div class="m-col-val">${fmt(f.wma.red, 1)} м/д</div><div class="m-col-sub">На 1 міс ≈ ${fmt(f.wma.red * 30)} м</div></div>
+      </div>
+      <div class="m-section-title">Середні значення за періодами</div>
+      <table class="m-tbl">
+        <thead><tr><th>Період</th><th>Чорний м/д</th><th>Червоний м/д</th><th>Вага</th></tr></thead>
+        <tbody>
+          <tr><td>Середнє 7 днів</td><td>${fmt(b.avg7, 1)}</td><td>${fmt(r.avg7, 1)}</td><td>—</td></tr>
+          <tr><td>Середнє 14 днів</td><td>${fmt(b.avg14, 1)}</td><td>${fmt(r.avg14, 1)}</td><td>70%</td></tr>
+          <tr><td>Середнє 30 днів</td><td>${fmt(b.avg30, 1)}</td><td>${fmt(r.avg30, 1)}</td><td>30%</td></tr>
+        </tbody>
+        <tfoot><tr><td>WMA</td><td>${fmt(f.wma.black, 1)}</td><td>${fmt(f.wma.red, 1)}</td><td>100%</td></tr></tfoot>
+      </table>
+      <div class="m-formula">
+        <code>WMA = 0.7 × (середнє за 14 днів) + 0.3 × (середнє за 30 днів)</code><br>
+        14-денне середнє реагує швидше на зміни попиту, 30-денне згладжує сезонність.
+      </div>
+    `;
+  }
+
+  return `<div class="error">Немає даних для цього показника</div>`;
 }
 
 // ─── Warehouses ───
