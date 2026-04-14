@@ -1327,24 +1327,23 @@ function removeSsj(e) {
 function parseSSJ(text) {
   if (!text) return [];
   const lines = text.split('\n');
-  const products = [];
+  const raw = [];
   let currentCat = null;
-  let subLabel = null; // Готівка / Безготівка
+  let payType = null; // 'cash' = Готівка (без ПДВ), 'noncash' = Безготівка (з ПДВ), null = auto
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
     if (!line) continue;
 
     // Section headers by emoji markers
-    if (/🟢/.test(line)) { currentCat = 'МОДУЛІ'; subLabel = null; continue; }
-    if (/🔴/.test(line) && /інвертор/i.test(line)) { currentCat = 'ІНВЕРТОРИ'; subLabel = null; continue; }
-    if ((/🔴/.test(line) || /⚠️/.test(line)) && /АКБ/i.test(line)) { currentCat = 'АКУМУЛЯТОРИ'; subLabel = null; continue; }
-    // Generic red/warning sections
+    if (/🟢/.test(line)) { currentCat = 'МОДУЛІ'; payType = null; continue; }
+    if (/🔴/.test(line) && /інвертор/i.test(line)) { currentCat = 'ІНВЕРТОРИ'; payType = null; continue; }
+    if ((/🔴/.test(line) || /⚠️/.test(line)) && /АКБ/i.test(line)) { currentCat = 'АКУМУЛЯТОРИ'; payType = null; continue; }
     if (/^[🔴⚠️⚡️\s]+$/.test(line)) continue;
 
-    // Sub-labels
-    if (/^Готівка\s*$/i.test(line)) { subLabel = 'Готівка'; continue; }
-    if (/^Безготівка\s*$/i.test(line)) { subLabel = 'Безготівка'; continue; }
+    // Payment type sub-headers
+    if (/^Готівка\s*$/i.test(line)) { payType = 'cash'; continue; }
+    if (/^Безготівка\s*$/i.test(line)) { payType = 'noncash'; continue; }
 
     if (!currentCat) continue;
 
@@ -1357,14 +1356,13 @@ function parseSSJ(text) {
     const noteMatch = cleaned.match(/\(([^)]+)\)/);
     if (noteMatch) { note = noteMatch[1].trim(); cleaned = cleaned.replace(/\([^)]+\)/, '').trim(); }
 
-    // Skip header-like lines without prices
+    // Skip lines without prices
     if (!/\d/.test(cleaned) || !/\$/.test(cleaned)) continue;
 
-    let name = null, priceNoVat = null, priceVat = null;
+    let name = null, price = null, priceNoVat = null, priceVat = null;
 
-    // Pattern A: name  -  price/price $ (slash = без ПДВ / з ПДВ)
-    // Pattern B: name  -  price $
-    // Pattern C: name  price$ (panels, no dash)
+    // Pattern A: name - price/price$ (slash = без ПДВ / з ПДВ)
+    // Pattern B: name - price$
     const dashMatch = cleaned.match(/^(.+?)\s*[-–]\s*([\d\s.,]+(?:\/[\d\s.,]+)?)\s*\$/);
     if (dashMatch) {
       name = dashMatch[1].trim();
@@ -1374,43 +1372,61 @@ function parseSSJ(text) {
         priceNoVat = parseFloat(parts[0].replace(',', '.'));
         priceVat = parseFloat(parts[1].replace(',', '.'));
       } else {
-        priceNoVat = parseFloat(priceStr.replace(',', '.'));
+        price = parseFloat(priceStr.replace(',', '.'));
       }
     } else {
-      // No dash — panels with per-watt pricing or absolute
+      // No dash — panels with per-watt pricing
       const pm = cleaned.match(/^(.+?)\s+([\d.,]+)\s*\$/);
       if (!pm) continue;
       name = pm[1].trim();
-      let pVal = parseFloat(pm[2].replace(',', '.'));
+      price = parseFloat(pm[2].replace(',', '.'));
       // Per-watt? If < 10 and panels → multiply by wattage
-      if (currentCat === 'МОДУЛІ' && pVal < 10) {
+      if (currentCat === 'МОДУЛІ' && price < 10) {
         const wm = name.match(/(\d{3,4})\s*[MWВмв]?\b/i);
         if (wm) {
           const watts = parseInt(wm[1]);
-          if (watts >= 100 && watts <= 900) pVal = Math.round(pVal * watts * 100) / 100;
+          if (watts >= 100 && watts <= 900) price = Math.round(price * watts * 100) / 100;
         }
       }
-      priceNoVat = pVal;
     }
 
     if (!name) continue;
+
+    // Assign price to correct field based on Готівка/Безготівка
+    if (priceNoVat == null && priceVat == null && price != null) {
+      if (payType === 'cash') priceNoVat = price;
+      else if (payType === 'noncash') priceVat = price;
+      else priceNoVat = price; // default
+    }
+
     if (priceNoVat !== null && isNaN(priceNoVat)) priceNoVat = null;
     if (priceVat !== null && isNaN(priceVat)) priceVat = null;
     if (priceNoVat == null && priceVat == null) continue;
 
-    const status = note || (subLabel ? subLabel : null);
-
-    products.push({
-      name: name,
-      model: extractModel(name),
-      category: currentCat,
-      price_no_vat: priceNoVat,
-      price_vat: priceVat,
-      currency: 'USD',
-      status: status,
+    raw.push({
+      name, model: extractModel(name), category: currentCat,
+      price_no_vat: priceNoVat, price_vat: priceVat,
+      currency: 'USD', status: note || null,
     });
   }
-  return products;
+
+  // Merge: same model+category → combine Готівка (без ПДВ) + Безготівка (з ПДВ)
+  const merged = [];
+  const map = new Map();
+  for (const p of raw) {
+    const key = (p.model || p.name) + '|' + p.category;
+    const existing = map.get(key);
+    if (existing) {
+      if (p.price_no_vat != null && existing.price_no_vat == null) existing.price_no_vat = p.price_no_vat;
+      if (p.price_vat != null && existing.price_vat == null) existing.price_vat = p.price_vat;
+      if (p.status && !existing.status) existing.status = p.status;
+    } else {
+      const entry = {...p};
+      map.set(key, entry);
+      merged.push(entry);
+    }
+  }
+  return merged;
 }
 
 // ═══════════════════════════════════════════════
@@ -1884,26 +1900,34 @@ async function fetchHistory() {
   } catch(e) { console.warn('Fetch history error', e); return []; }
 }
 
-function postToGAS(payload) {
-  return new Promise(resolve => {
-    const iframeName = 'pf' + Date.now();
-    const iframe = document.createElement('iframe');
-    iframe.name = iframeName;
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = API_URL;
-    form.target = iframeName;
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'data';
-    input.value = payload;
-    form.appendChild(input);
-    document.body.appendChild(form);
-    form.submit();
-    setTimeout(() => { form.remove(); iframe.remove(); resolve(); }, 4000);
-  });
+async function postToGAS(payload) {
+  try {
+    // Try fetch first (modern, reliable)
+    const fd = new URLSearchParams();
+    fd.append('data', payload);
+    await fetch(API_URL, { method: 'POST', body: fd, mode: 'no-cors' });
+  } catch(e) {
+    // Fallback: iframe form
+    await new Promise(resolve => {
+      const iframeName = 'pf' + Date.now();
+      const iframe = document.createElement('iframe');
+      iframe.name = iframeName;
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = API_URL;
+      form.target = iframeName;
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'data';
+      input.value = payload;
+      form.appendChild(input);
+      document.body.appendChild(form);
+      form.submit();
+      setTimeout(() => { form.remove(); iframe.remove(); resolve(); }, 4000);
+    });
+  }
 }
 
 async function pushHistory(list) {
@@ -1921,7 +1945,7 @@ async function saveComparison(rows, counts, supplierFiles) {
     id,
     date: new Date().toLocaleString('uk-UA'),
     totalItems: rows.length,
-    matches: rows.filter(r => r.hNV || r.dNV || r.sNV || r.pNV || r.vNV || r.aNV || r.iNV).length,
+    matches: rows.filter(r => r.hNV || r.dNV || r.sNV || r.pNV || r.vNV || r.aNV || r.iNV || r.jNV).length,
     suppliers: supplierFiles,
     rows,
     counts
