@@ -226,7 +226,7 @@ tr:hover td{background:var(--bg3) !important}
 .settings-toggle{width:32px;height:32px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text2);display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0}
 .settings-toggle:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
 .settings-toggle svg{width:16px;height:16px;fill:currentColor}
-.settings-dd{position:absolute;top:40px;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 18px;min-width:320px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:200;display:none}
+.settings-dd{position:absolute;top:40px;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 18px;min-width:260px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:200;display:none}
 .settings-dd.open{display:block}
 .settings-dd h3{font-size:11px;color:var(--text2);margin-bottom:12px;font-weight:600;text-transform:uppercase;letter-spacing:.6px}
 .srow{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
@@ -241,24 +241,6 @@ tr:hover td{background:var(--bg3) !important}
 .settings-save{width:100%;padding:8px;background:var(--accent);color:var(--btn-text);border:none;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;margin-top:8px;transition:background .15s}
 .settings-save:hover{background:var(--accent-hover)}
 .settings-info{font-size:10px;color:var(--text3);margin-top:8px;text-align:center;line-height:1.4}
-.settings-sep{border:none;border-top:1px solid var(--border);margin:14px 0}
-.ip-section h3{margin-top:0}
-.ip-my{font-size:11px;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.ip-my code{background:var(--bg3);padding:2px 8px;border-radius:4px;font-size:11px;color:var(--accent);font-weight:600}
-.ip-add{display:flex;gap:6px;margin-bottom:8px}
-.ip-add input{flex:1;padding:5px 8px;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:11px}
-.ip-add button{padding:5px 12px;background:var(--accent);color:var(--btn-text);border:none;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
-.ip-list{max-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:3px}
-.ip-item{display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:var(--bg2);border-radius:4px;font-size:11px}
-.ip-item .ip-addr{font-family:monospace;color:var(--text);font-weight:500}
-.ip-item .ip-label{color:var(--text3);margin-left:6px}
-.ip-item .ip-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 4px;line-height:1}
-.ip-item .ip-del:hover{color:var(--red-text)}
-.ip-info{font-size:10px;color:var(--text3);margin-top:6px}
-.blocked-overlay{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px}
-.blocked-overlay h2{color:var(--red-text);font-size:20px}
-.blocked-overlay p{color:var(--text2);font-size:13px}
-.blocked-overlay code{background:var(--bg3);padding:4px 12px;border-radius:4px;font-size:14px;color:var(--accent)}
 </style>
 </head>
 <body>
@@ -283,20 +265,6 @@ tr:hover td{background:var(--bg3) !important}
         </div>
         <button class="settings-save" onclick="saveSchedule()">Зберегти</button>
         <div class="settings-info" id="schedInfo"></div>
-        <hr class="settings-sep">
-        <div class="ip-section">
-          <h3>&#128272; Доступ по IP</h3>
-          <div class="ip-my">Ваш IP: <code id="myIpDisplay">...</code>
-            <button class="ip-add-me" onclick="addMyIp()" style="padding:2px 8px;background:var(--accent);color:var(--btn-text);border:none;border-radius:4px;font-size:10px;cursor:pointer">+ Додати мій</button>
-          </div>
-          <div class="ip-add">
-            <input id="ipInput" placeholder="IP адреса">
-            <input id="ipLabel" placeholder="Назва" style="max-width:80px">
-            <button onclick="addIp()">+</button>
-          </div>
-          <div class="ip-list" id="ipList"></div>
-          <div class="ip-info" id="ipInfo"></div>
-        </div>
       </div>
     </div>
     <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
@@ -425,12 +393,6 @@ tr:hover td{background:var(--bg3) !important}
       <tbody id="data"></tbody>
     </table>
   </div>
-</div>
-
-<div class="blocked-overlay" id="blockedOverlay">
-  <h2 id="blockedTitle">&#8987; Перевірка доступу...</h2>
-  <p id="blockedMsg"></p>
-  <code id="blockedIp"></code>
 </div>
 
 <script>
@@ -1692,7 +1654,7 @@ async function runComparison() {
 // ═══════════════════════════════════════════════
 // HISTORY (Google Apps Script — shared for everyone)
 // ═══════════════════════════════════════════════
-const API_URL = 'https://script.google.com/macros/s/AKfycbybD76gC-fESwBUvEjPuCxoC_7jUAMwYAplfDXvomK4E1T-mri6Y9dLvuSv7hE3KYFY/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbz_nVPcOCXkJCqYlNWDqbIm9ixMCRlhlMcjlb_lPLAE2TR097MTWTSRxjFkvrPb7mj1/exec';
 const MAX_HISTORY = 15;
 let historyCache = [];
 
@@ -1885,119 +1847,6 @@ async function saveSchedule(){
 }
 
 // ═══════════════════════════════════════════════
-// IP ACCESS CONTROL
-// ═══════════════════════════════════════════════
-let myIP = '';
-let allowedIPs = [];
-
-async function getMyIP() {
-  try {
-    const r = await fetch('https://api.ipify.org?format=json');
-    const d = await r.json();
-    myIP = d.ip || '';
-  } catch(e) {
-    try {
-      const r2 = await fetch('https://ipv4.icanhazip.com');
-      myIP = (await r2.text()).trim();
-    } catch(e2) { myIP = ''; }
-  }
-  return myIP;
-}
-
-async function loadAllowedIPs() {
-  try {
-    const r = await fetch(API_URL + '?action=get_ips');
-    const d = await r.json();
-    allowedIPs = d.ips || [];
-  } catch(e) { allowedIPs = []; }
-  return allowedIPs;
-}
-
-async function checkIPAccess() {
-  const overlay = document.getElementById('blockedOverlay');
-  try {
-    await Promise.all([getMyIP(), loadAllowedIPs()]);
-    document.getElementById('myIpDisplay').textContent = myIP || '?';
-
-    // If whitelist is empty — allow everyone (first setup)
-    if (!allowedIPs.length) {
-      overlay.style.display = 'none';
-      return true;
-    }
-
-    // Check if my IP is in the whitelist
-    if (allowedIPs.some(x => x.ip === myIP)) {
-      overlay.style.display = 'none';
-      return true;
-    }
-
-    // Blocked
-    document.getElementById('blockedTitle').innerHTML = '&#128683; Доступ заборонено';
-    document.getElementById('blockedMsg').textContent = 'Ваш IP не в списку дозволених';
-    document.getElementById('blockedIp').textContent = myIP;
-    return false;
-  } catch(e) {
-    // On error — allow access (don't block if API fails)
-    overlay.style.display = 'none';
-    return true;
-  }
-}
-
-function renderIPList() {
-  const list = document.getElementById('ipList');
-  if (!allowedIPs.length) {
-    list.innerHTML = '<div style="font-size:10px;color:var(--text3);padding:4px">Список порожній — доступ для всіх</div>';
-    return;
-  }
-  list.innerHTML = allowedIPs.map(x =>
-    `<div class="ip-item">
-      <span><span class="ip-addr">${x.ip}</span>${x.label ? '<span class="ip-label">(' + x.label + ')</span>' : ''}</span>
-      <button class="ip-del" onclick="removeIp('${x.ip}')" title="Видалити">&times;</button>
-    </div>`
-  ).join('');
-}
-
-async function addIp() {
-  const ip = document.getElementById('ipInput').value.trim();
-  const label = document.getElementById('ipLabel').value.trim();
-  if (!ip) return;
-  const info = document.getElementById('ipInfo');
-  info.textContent = 'Додаю...';
-  try {
-    const r = await fetch(API_URL + '?action=add_ip&ip=' + encodeURIComponent(ip) + '&label=' + encodeURIComponent(label));
-    const d = await r.json();
-    if (d.error) { info.textContent = 'Помилка: ' + d.error; return; }
-    allowedIPs = d.ips || [];
-    renderIPList();
-    document.getElementById('ipInput').value = '';
-    document.getElementById('ipLabel').value = '';
-    info.textContent = 'Додано!';
-    setTimeout(() => { info.textContent = ''; }, 2000);
-  } catch(e) { info.textContent = 'Помилка мережі'; }
-}
-
-async function addMyIp() {
-  if (!myIP) return;
-  document.getElementById('ipInput').value = myIP;
-  document.getElementById('ipLabel').value = 'Мій';
-  await addIp();
-}
-
-async function removeIp(ip) {
-  const info = document.getElementById('ipInfo');
-  info.textContent = 'Видаляю...';
-  try {
-    const r = await fetch(API_URL + '?action=remove_ip&ip=' + encodeURIComponent(ip));
-    const d = await r.json();
-    if (d.error) { info.textContent = 'Помилка: ' + d.error; return; }
-    allowedIPs = d.ips || [];
-    renderIPList();
-    info.textContent = 'Видалено';
-    setTimeout(() => { info.textContent = ''; }, 2000);
-  } catch(e) { info.textContent = 'Помилка мережі'; }
-}
-
-// ═══════════════════════════════════════════════
 // LOAD FROM URL HASH (shared links)
 // ═══════════════════════════════════════════════
 function showSharedView(rows, dateLabel, shareUrl) {
@@ -2088,14 +1937,9 @@ function toggleTheme() {
 applyTheme(localStorage.getItem('theme') || 'dark');
 
 document.getElementById('dateLabel').textContent = new Date().toLocaleDateString('uk-UA');
-(async () => {
-  const allowed = await checkIPAccess();
-  renderIPList();
-  if (!allowed) return;
-  if (!(await loadFromHash())) initHistory();
-  loadSchedule();
-  initSigSlot();
-})();
+(async () => { if (!(await loadFromHash())) initHistory(); })();
+loadSchedule();
+initSigSlot();
 window.addEventListener('hashchange', () => { if (location.hash.startsWith('#h=') || location.hash.startsWith('#d=')) loadFromHash(); });
 </script>
 </body>
