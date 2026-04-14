@@ -275,7 +275,7 @@ body.ip-check>*:not(#accessDenied):not(script){display:none!important}
 <div class="header">
   <h1>Порівняння цін постачальників сонячного обладнання</h1>
   <div class="header-right">
-    <a href="/forecast.html" class="nav-link">📋 Прогноз закупівель</a>
+    <a href="/forecast.html" class="nav-link" onclick="return openForecast(event)">📋 Прогноз закупівель</a>
     <span class="date" id="dateLabel"></span>
     <div class="settings-wrap">
       <button class="settings-toggle" onclick="document.getElementById('settingsDd').classList.toggle('open');event.stopPropagation()">
@@ -2259,6 +2259,28 @@ setTimeout(() => document.body.classList.remove('ip-check'), 5000);
   initSsjSlot();
 })();
 window.addEventListener('hashchange', () => { if (location.hash.startsWith('#h=') || location.hash.startsWith('#d=')) loadFromHash(); });
+
+// ─── Forecast password gate ───
+const FORECAST_PWD = '063744';
+const FORECAST_AUTH_KEY = 'forecastAuth';
+const FORECAST_AUTH_TTL_MS = 12 * 60 * 60 * 1000; // 12h session
+function openForecast(e){
+  e.preventDefault();
+  const saved = localStorage.getItem(FORECAST_AUTH_KEY);
+  if (saved && (Date.now() - Number(saved)) < FORECAST_AUTH_TTL_MS) {
+    window.location.href = '/forecast.html';
+    return false;
+  }
+  const pwd = prompt('🔒 Введіть пароль для доступу до прогнозу:');
+  if (pwd === null) return false;
+  if (pwd === FORECAST_PWD) {
+    localStorage.setItem(FORECAST_AUTH_KEY, String(Date.now()));
+    window.location.href = '/forecast.html';
+  } else {
+    alert('❌ Невірний пароль');
+  }
+  return false;
+}
 </script>
 </body>
 </html>
