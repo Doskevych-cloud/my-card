@@ -63,6 +63,8 @@ body{font-family:'Inter',-apple-system,'Segoe UI',sans-serif;background:var(--bg
 .header h1{font-size:15px;font-weight:600;letter-spacing:-.2px;display:flex;align-items:center;gap:8px}
 .header h1::before{content:'';display:inline-block;width:20px;height:20px;background:var(--accent);border-radius:4px}
 .header-right{display:flex;align-items:center;gap:12px}
+.nav-link{font-size:12px;color:var(--text2);text-decoration:none;padding:6px 10px;border:1px solid var(--border);border-radius:6px;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+.nav-link:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
 .header .date{font-size:12px;color:var(--text2)}
 .theme-toggle{width:32px;height:32px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text2);display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0}
 .theme-toggle:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
@@ -273,6 +275,7 @@ body.ip-check>*:not(#accessDenied):not(script){display:none!important}
 <div class="header">
   <h1>Порівняння цін постачальників сонячного обладнання</h1>
   <div class="header-right">
+    <a href="/forecast.html" class="nav-link">📋 Прогноз закупівель</a>
     <span class="date" id="dateLabel"></span>
     <div class="settings-wrap">
       <button class="settings-toggle" onclick="document.getElementById('settingsDd').classList.toggle('open');event.stopPropagation()">

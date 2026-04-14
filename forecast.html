@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Прогноз закупівель — кабель</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0b0e11;--bg2:#1e2026;--bg3:#2b2f36;--bg4:#363a45;
+  --surface:#181a20;--surface2:#1e2026;
+  --border:#2b2f36;--border2:#363a45;
+  --text:#eaecef;--text2:#848e9c;--text3:#5e6673;
+  --accent:#ff8319;--accent2:#f79743;--accent-hover:#e6720f;--accent-bg:rgba(255,131,25,.1);
+  --green:#0ecb81;--green-bg:rgba(14,203,129,.08);--green-text:#0ecb81;
+  --red:#f6465d;--red-bg:rgba(246,70,93,.08);--red-text:#f6465d;
+  --yellow:#f0b90b;--yellow-bg:rgba(240,185,11,.1);
+  --header-bg:#0b0e11;
+  --row-odd:#181a20;--row-even:#1e2026;
+  --panel-shadow:none;
+  --btn-bg:var(--accent);--btn-hover:var(--accent-hover);--btn-text:#0b0e11;
+}
+[data-theme="light"]{
+  --bg:#fafafa;--bg2:#fff;--bg3:#f5f5f5;--bg4:#eee;
+  --surface:#fff;--surface2:#f5f5f5;
+  --border:#eee;--border2:#e0e0e0;
+  --text:#1e2329;--text2:#707a8a;--text3:#aeb4bc;
+  --accent:#ff8319;--accent2:#f79743;--accent-hover:#e6720f;--accent-bg:rgba(255,131,25,.08);
+  --green:#03a66d;--green-bg:rgba(3,166,109,.06);--green-text:#03a66d;
+  --red:#cf304a;--red-bg:rgba(207,48,74,.06);--red-text:#cf304a;
+  --yellow:#d49a04;--yellow-bg:rgba(212,154,4,.08);
+  --header-bg:#fff;
+  --row-odd:#fff;--row-even:#fafafa;
+  --panel-shadow:0 1px 4px rgba(0,0,0,.06);
+  --btn-bg:var(--accent);--btn-hover:var(--accent-hover);--btn-text:#fff;
+}
+body{font-family:'Inter',-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);transition:background .25s,color .25s;-webkit-font-smoothing:antialiased;min-height:100vh}
+/* Header */
+.header{background:var(--header-bg);color:var(--text);padding:0 24px;height:48px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border)}
+.header h1{font-size:15px;font-weight:600;letter-spacing:-.2px;display:flex;align-items:center;gap:8px}
+.header h1::before{content:'';display:inline-block;width:20px;height:20px;background:var(--accent);border-radius:4px}
+.header-right{display:flex;align-items:center;gap:12px}
+.header .date{font-size:12px;color:var(--text2)}
+.nav-link{font-size:12px;color:var(--text2);text-decoration:none;padding:6px 12px;border:1px solid var(--border);border-radius:4px;transition:all .15s}
+.nav-link:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+.theme-toggle{width:32px;height:32px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text2);display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0}
+.theme-toggle:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+.theme-toggle svg{width:16px;height:16px;fill:currentColor}
+/* Container */
+.container{max-width:1400px;margin:20px auto;padding:0 24px}
+.section{background:var(--surface);border:1px solid var(--border);border-radius:4px;box-shadow:var(--panel-shadow);margin-bottom:16px;overflow:hidden}
+.section-header{padding:12px 20px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;justify-content:space-between;align-items:center}
+.section-header h2{font-size:13px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.5px}
+.section-body{padding:16px 20px}
+/* Market tiles */
+.market-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:768px){.market-grid{grid-template-columns:1fr}}
+.market-tile{padding:14px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:4px}
+.market-tile-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.market-tile-head .label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
+.market-tile-head .source{font-size:10px;color:var(--text3)}
+.market-tile-body{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.market-price{font-size:28px;font-weight:700;color:var(--text);line-height:1;font-variant-numeric:tabular-nums}
+.market-unit{font-size:11px;color:var(--text3);margin-left:4px}
+.trend{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600}
+.trend.up{background:var(--red-bg);color:var(--red-text)}
+.trend.down{background:var(--green-bg);color:var(--green-text)}
+.trend.stable{background:var(--bg3);color:var(--text2)}
+.market-stats{display:flex;gap:16px;font-size:11px;color:var(--text2);margin-top:4px}
+.market-stats span strong{color:var(--text);font-weight:600}
+.sparkline-wrap{height:60px;margin-top:10px;position:relative}
+/* Planning table */
+.plan-table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+.plan-table th{background:var(--bg2);color:var(--text2);font-weight:500;text-transform:uppercase;font-size:10px;letter-spacing:.3px;padding:10px 8px;text-align:center;border-bottom:1px solid var(--border)}
+.plan-table td{padding:12px 8px;text-align:center;border-bottom:1px solid var(--border)}
+.plan-table td.name{text-align:left;font-weight:600;color:var(--text)}
+.plan-table td.highlight{background:var(--accent-bg);font-weight:700;color:var(--accent)}
+.plan-table tr.total-row td{background:var(--bg2);font-weight:700;border-top:2px solid var(--accent)}
+.status-pill{padding:3px 10px;border-radius:3px;font-size:11px;font-weight:600;display:inline-block}
+.status-pill.urgent{background:var(--red-bg);color:var(--red-text)}
+.status-pill.warn{background:var(--yellow-bg);color:var(--yellow)}
+.status-pill.ok{background:var(--green-bg);color:var(--green-text)}
+/* Chart container */
+.chart-wrap{height:320px;position:relative}
+.ship-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.stat-card{padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:4px}
+.stat-card .stat-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}
+.stat-card .stat-value{font-size:18px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.stat-card.accent{border-color:var(--accent);background:var(--accent-bg)}
+.stat-card.accent .stat-value{color:var(--accent)}
+/* Warehouses accordion */
+.wh-item{border-bottom:1px solid var(--border)}
+.wh-item:last-child{border-bottom:none}
+.wh-header{padding:10px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;transition:background .15s}
+.wh-header:hover{background:var(--bg2)}
+.wh-header.open{background:var(--bg2)}
+.wh-title{font-size:12px;font-weight:600;color:var(--text)}
+.wh-chev{font-size:11px;color:var(--text3);transition:transform .15s}
+.wh-header.open .wh-chev{transform:rotate(90deg)}
+.wh-body{display:none;padding:0 16px 14px;background:var(--bg2)}
+.wh-body.open{display:block}
+.wh-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
+.wh-table th{padding:6px 8px;background:var(--bg3);color:var(--text2);font-weight:500;font-size:10px;text-transform:uppercase;text-align:left;border-bottom:1px solid var(--border)}
+.wh-table th:not(:first-child){text-align:right}
+.wh-table td{padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text)}
+.wh-table td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+.wh-table td.neg{color:var(--red-text);background:var(--red-bg)}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;padding:12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:4px}
+@media(max-width:768px){.summary-grid{grid-template-columns:1fr}}
+.summary-grid .label{font-size:11px;color:var(--text2)}
+.summary-grid .val{font-size:13px;font-weight:600;color:var(--text);text-align:right;font-variant-numeric:tabular-nums}
+/* Loading */
+.loading{padding:30px;text-align:center;color:var(--text2);font-size:12px}
+.loading::after{content:'';display:block;width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:10px auto 0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error{padding:20px;text-align:center;color:var(--red-text);font-size:12px;background:var(--red-bg);border-radius:4px}
+.reserve-list{margin-top:12px;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:4px}
+.reserve-list h4{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px}
+.reserve-list .r-row{display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px dashed var(--border)}
+.reserve-list .r-row:last-child{border-bottom:none}
+.reserve-list .r-type{display:inline-block;padding:1px 6px;border-radius:2px;font-size:9px;font-weight:600;margin-right:6px}
+.reserve-list .r-type.black{background:#333;color:#fff}
+.reserve-list .r-type.red{background:var(--red);color:#fff}
+.updated{font-size:10px;color:var(--text3);text-align:right;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Прогноз закупівель — кабель</h1>
+  <div class="header-right">
+    <a href="/" class="nav-link">&larr; Порівняння цін</a>
+    <span class="date" id="dateLabel"></span>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+      <svg id="iconSun" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2a1 1 0 100-2H2a1 1 0 100 2zm18 0h2a1 1 0 100-2h-2a1 1 0 100 2zM11 2v2a1 1 0 102 0V2a1 1 0 10-2 0zm0 18v2a1 1 0 102 0v-2a1 1 0 10-2 0zM5.99 4.58a1 1 0 00-1.41 1.41l1.06 1.06a1 1 0 101.41-1.41L5.99 4.58zm12.37 12.37a1 1 0 00-1.41 1.41l1.06 1.06a1 1 0 101.41-1.41l-1.06-1.06zm1.06-10.96a1 1 0 00-1.41-1.41l-1.06 1.06a1 1 0 101.41 1.41l1.06-1.06zM7.05 18.36a1 1 0 00-1.41-1.41l-1.06 1.06a1 1 0 101.41 1.41l1.06-1.06z"/></svg>
+      <svg id="iconMoon" viewBox="0 0 24 24" style="display:none"><path d="M9.37 5.51A7.35 7.35 0 009.1 7.5c0 4.08 3.32 7.4 7.4 7.4.68 0 1.35-.09 1.99-.27A7.014 7.014 0 0112 19c-3.86 0-7-3.14-7-7 0-2.93 1.81-5.45 4.37-6.49zM12 3a9 9 0 109 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 01-4.4 2.26 5.403 5.403 0 01-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Market trends -->
+  <div class="section">
+    <div class="section-header"><h2>📈 Ринкові тренди</h2></div>
+    <div class="section-body">
+      <div class="market-grid">
+        <div class="market-tile" id="tileCopper"><div class="loading">Завантаження даних міді…</div></div>
+        <div class="market-tile" id="tileEurUsd"><div class="loading">Завантаження курсу EUR/USD…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Planning -->
+  <div class="section">
+    <div class="section-header"><h2>📋 План закупівель кабелю</h2></div>
+    <div class="section-body" id="planBody"><div class="loading">Завантаження залишків та прогнозу…</div></div>
+  </div>
+
+  <!-- Shipments -->
+  <div class="section">
+    <div class="section-header"><h2>🚚 Відвантаження (30 днів)</h2></div>
+    <div class="section-body" id="shipBody"><div class="loading">Завантаження історії відвантажень…</div></div>
+  </div>
+
+  <!-- Warehouses -->
+  <div class="section">
+    <div class="section-header">
+      <h2>🏭 Залишки по складах</h2>
+      <button class="nav-link" onclick="expandAllWh()" id="btnExpandWh">Розгорнути всі</button>
+    </div>
+    <div id="whBody"><div class="loading" style="padding:20px">Завантаження складських залишків…</div></div>
+  </div>
+
+</div>
+
+<script>
+const API_URL = 'https://price-api.doskevich.workers.dev/';
+const LEAD_TIME_DAYS = 14; // hardcoded: production days
+const LT_TOTAL = LEAD_TIME_DAYS + 27; // total lead time (prod + logistics)
+
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('iconSun').style.display = theme === 'dark' ? 'none' : '';
+  document.getElementById('iconMoon').style.display = theme === 'dark' ? '' : 'none';
+  localStorage.setItem('theme', theme);
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(cur === 'dark' ? 'light' : 'dark');
+}
+applyTheme(localStorage.getItem('theme') || 'dark');
+document.getElementById('dateLabel').textContent = new Date().toLocaleDateString('uk-UA');
+
+function fmt(n, dec){ if (n == null) return '—'; return Number(n).toLocaleString('uk-UA', { minimumFractionDigits: dec || 0, maximumFractionDigits: dec || 0 }); }
+function fmtDate(iso){ const d = new Date(iso); return d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit' }); }
+
+function trendBadge(trend, diff){
+  const t = trend === 'UP' ? 'up' : trend === 'DOWN' ? 'down' : 'stable';
+  const arrow = trend === 'UP' ? '▲' : trend === 'DOWN' ? '▼' : '■';
+  const label = trend === 'UP' ? 'РІСТ' : trend === 'DOWN' ? 'ПАДІННЯ' : 'СТАБІЛЬНО';
+  return `<span class="trend ${t}">${arrow} ${label} (${diff})</span>`;
+}
+
+function renderMarketTile(container, d, unit, decimals, source){
+  const labelByContainer = { tileCopper: 'Мідь (Westmetall)', tileEurUsd: 'Курс EUR/USD' };
+  container.innerHTML = `
+    <div class="market-tile-head">
+      <span class="label">${labelByContainer[container.id]}</span>
+      <span class="source">${source}</span>
+    </div>
+    <div class="market-tile-body">
+      <div><span class="market-price">${fmt(d.current, decimals)}</span><span class="market-unit">${unit}</span></div>
+      ${trendBadge(d.trend, d.diff)}
+    </div>
+    <div class="market-stats">
+      <span>Середнє 7д: <strong>${fmt(d.avg7, decimals)}</strong></span>
+      <span>Середнє 30д: <strong>${fmt(d.avg30, decimals)}</strong></span>
+    </div>
+    <div class="sparkline-wrap"><canvas id="${container.id}_chart"></canvas></div>
+  `;
+  const ctx = document.getElementById(container.id + '_chart');
+  const reversed = d.data.slice().reverse(); // oldest → newest
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: reversed.map(x => fmtDate(x.date)),
+      datasets: [{
+        data: reversed.map(x => x.price),
+        borderColor: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
+        backgroundColor: 'rgba(255,131,25,0.1)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.3,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+      scales: { x: { display: false }, y: { display: false } }
+    }
+  });
+}
+
+async function loadMarket(){
+  try {
+    const [cuRes, erRes] = await Promise.all([
+      fetch(API_URL + '?action=copper_data').then(r => r.json()),
+      fetch(API_URL + '?action=eurusd_data').then(r => r.json()),
+    ]);
+    if (cuRes.error) throw new Error('Мідь: ' + cuRes.error);
+    if (erRes.error) throw new Error('EUR/USD: ' + erRes.error);
+    renderMarketTile(document.getElementById('tileCopper'), cuRes, 'EUR/100kg', 2, 'Westmetall');
+    renderMarketTile(document.getElementById('tileEurUsd'), erRes, '', 4, 'Yahoo Finance');
+  } catch (e) {
+    document.getElementById('tileCopper').innerHTML = `<div class="error">${e.message}</div>`;
+    document.getElementById('tileEurUsd').innerHTML = `<div class="error">${e.message}</div>`;
+  }
+}
+
+function statusPill(free, mustHave){
+  if (free < mustHave) return '<span class="status-pill urgent">● ТЕРМІНОВО</span>';
+  if (free < mustHave * 1.3) return '<span class="status-pill warn">○ УВАГА</span>';
+  return '<span class="status-pill ok">● В НОРМІ</span>';
+}
+
+function renderPlanning(f){
+  const s = f.stock;
+  const adsB = f.wma.black, adsR = f.wma.red;
+  const mustB = Math.round(adsB * LT_TOTAL + s.black.reserve);
+  const mustR = Math.round(adsR * LT_TOTAL + s.red.reserve);
+  const monthB = Math.round(adsB * 30);
+  const monthR = Math.round(adsR * 30);
+  const freeB = s.black.free, freeR = s.red.free;
+  const daysB = adsB > 0 ? Math.round(freeB / adsB) : '∞';
+  const daysR = adsR > 0 ? Math.round(freeR / adsR) : '∞';
+  const needB = mustB - s.black.reserve;
+  const needR = mustR - s.red.reserve;
+
+  const reserveHtml = f.reserveList.length
+    ? `<div class="reserve-list"><h4>Активні резерви (${f.reserveList.length})</h4>${f.reserveList.map(r => `<div class="r-row"><span><span class="r-type ${r.type}">${r.type === 'black' ? 'ЧОРНИЙ' : 'ЧЕРВОНИЙ'}</span>${r.client}</span><span><strong>${fmt(r.qty)} м</strong></span></div>`).join('')}</div>`
+    : '';
+
+  document.getElementById('planBody').innerHTML = `
+    <table class="plan-table">
+      <thead>
+        <tr>
+          <th style="text-align:left">Товар</th>
+          <th>Залишок</th>
+          <th>Резерв</th>
+          <th>Вільно</th>
+          <th>Прогноз/день</th>
+          <th>Запас, днів</th>
+          <th>L/T, днів</th>
+          <th>Має бути</th>
+          <th>На 1 міс</th>
+          <th>Статус</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="name">${f.items.black}</td>
+          <td>${fmt(freeB + s.black.reserve)}</td>
+          <td>${fmt(s.black.reserve)}</td>
+          <td>${fmt(freeB)}</td>
+          <td>${fmt(adsB, 1)}</td>
+          <td>${daysB}</td>
+          <td>${LT_TOTAL}</td>
+          <td class="highlight">${fmt(mustB)}</td>
+          <td>${fmt(monthB)}</td>
+          <td>${statusPill(freeB, needB)}</td>
+        </tr>
+        <tr>
+          <td class="name">${f.items.red}</td>
+          <td>${fmt(freeR + s.red.reserve)}</td>
+          <td>${fmt(s.red.reserve)}</td>
+          <td>${fmt(freeR)}</td>
+          <td>${fmt(adsR, 1)}</td>
+          <td>${daysR}</td>
+          <td>${LT_TOTAL}</td>
+          <td class="highlight">${fmt(mustR)}</td>
+          <td>${fmt(monthR)}</td>
+          <td>${statusPill(freeR, needR)}</td>
+        </tr>
+        <tr class="total-row">
+          <td class="name">РАЗОМ</td>
+          <td>${fmt((freeB + s.black.reserve) + (freeR + s.red.reserve))}</td>
+          <td>${fmt(s.black.reserve + s.red.reserve)}</td>
+          <td>${fmt(freeB + freeR)}</td>
+          <td>${fmt(adsB + adsR, 1)}</td>
+          <td>—</td>
+          <td>${LT_TOTAL}</td>
+          <td class="highlight">${fmt(mustB + mustR)}</td>
+          <td>${fmt(monthB + monthR)}</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="updated">Lead time: ${LEAD_TIME_DAYS} днів виробництва + 27 днів логістики = <strong>${LT_TOTAL} днів</strong>. WMA = 70% × 14-денного середнього + 30% × 30-денного.</div>
+    ${reserveHtml}
+  `;
+}
+
+function renderShipments(f){
+  const stats = f.dailyStats.slice().reverse(); // oldest → newest
+  const total = stats.reduce((a, b) => a + b.total, 0);
+  const avg7 = stats.slice(-7).reduce((a, b) => a + b.total, 0) / 7;
+  const avg30 = stats.reduce((a, b) => a + b.total, 0) / stats.length;
+  const diff = avg30 > 0 ? ((avg7 / avg30) - 1) * 100 : 0;
+  let trendStr = '➡ СТАБІЛЬНО', trendCls = 'stable';
+  if (diff > 5) { trendStr = '▲ РІСТ'; trendCls = 'up'; }
+  else if (diff < -5) { trendStr = '▼ ПАДІННЯ'; trendCls = 'down'; }
+
+  document.getElementById('shipBody').innerHTML = `
+    <div class="ship-stats">
+      <div class="stat-card"><div class="stat-label">Всього за 30 днів</div><div class="stat-value">${fmt(total)} м</div></div>
+      <div class="stat-card"><div class="stat-label">Середнє 7 днів</div><div class="stat-value">${fmt(avg7, 1)} м/д</div></div>
+      <div class="stat-card"><div class="stat-label">Середнє 30 днів</div><div class="stat-value">${fmt(avg30, 1)} м/д</div></div>
+      <div class="stat-card"><div class="stat-label">Тренд тижня</div><div class="stat-value"><span class="trend ${trendCls}">${trendStr}</span></div></div>
+      <div class="stat-card accent"><div class="stat-label">Прогноз WMA</div><div class="stat-value">${fmt(f.wma.total, 1)} м/д</div></div>
+    </div>
+    <div class="chart-wrap"><canvas id="shipChart"></canvas></div>
+  `;
+
+  new Chart(document.getElementById('shipChart'), {
+    type: 'bar',
+    data: {
+      labels: stats.map(s => fmtDate(s.date)),
+      datasets: [
+        { label: 'Чорний', data: stats.map(s => s.black), backgroundColor: '#444' },
+        { label: 'Червоний', data: stats.map(s => s.red), backgroundColor: '#d93025' },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--text').trim() } }, tooltip: { mode: 'index', intersect: false } },
+      scales: {
+        x: { stacked: true, ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--text2').trim(), font: { size: 10 } }, grid: { display: false } },
+        y: { stacked: true, ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--text2').trim() }, grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border').trim() } }
+      }
+    }
+  });
+}
+
+async function loadForecast(){
+  try {
+    const res = await fetch(API_URL + '?action=cable_forecast');
+    const f = await res.json();
+    if (f.error) throw new Error(f.error);
+    renderPlanning(f);
+    renderShipments(f);
+  } catch (e) {
+    document.getElementById('planBody').innerHTML = `<div class="error">${e.message}</div>`;
+    document.getElementById('shipBody').innerHTML = `<div class="error">${e.message}</div>`;
+  }
+}
+
+function renderWhTable(items){
+  return `<table class="wh-table">
+    <thead><tr><th>Товар</th><th>Загальний</th><th>Резерв</th><th>Вільно</th></tr></thead>
+    <tbody>${items.map(it => `<tr><td>${it.name}</td><td>${fmt(it.total)}</td><td>${fmt(it.reserve)}</td><td class="${it.free < 0 ? 'neg' : ''}">${fmt(it.free)}</td></tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function toggleWh(id){
+  const h = document.getElementById('wh_h_' + id);
+  const b = document.getElementById('wh_b_' + id);
+  h.classList.toggle('open');
+  b.classList.toggle('open');
+}
+
+let whExpanded = false;
+function expandAllWh(){
+  whExpanded = !whExpanded;
+  document.querySelectorAll('.wh-header').forEach(h => { whExpanded ? h.classList.add('open') : h.classList.remove('open'); });
+  document.querySelectorAll('.wh-body').forEach(b => { whExpanded ? b.classList.add('open') : b.classList.remove('open'); });
+  document.getElementById('btnExpandWh').textContent = whExpanded ? 'Згорнути всі' : 'Розгорнути всі';
+}
+
+async function loadWarehouses(){
+  try {
+    const res = await fetch(API_URL + '?action=warehouses_stock');
+    const w = await res.json();
+    if (w.error) throw new Error(w.error);
+    const totals = w.summary.reduce((a, it) => ({ total: a.total + it.total, reserve: a.reserve + it.reserve }), { total: 0, reserve: 0 });
+    const summaryHtml = `
+      <div class="summary-grid">
+        <span class="label">Загалом позицій (агреговано):</span><span class="val">${w.summary.length}</span>
+        <span class="label">Загальна кількість:</span><span class="val">${fmt(totals.total)}</span>
+        <span class="label">В резерві:</span><span class="val">${fmt(totals.reserve)}</span>
+        <span class="label">Вільно:</span><span class="val">${fmt(totals.total - totals.reserve)}</span>
+      </div>
+    `;
+    const whList = w.warehouses.map(wh => {
+      const subTotal = wh.items.reduce((a, it) => a + it.total, 0);
+      return `
+        <div class="wh-item">
+          <div class="wh-header" id="wh_h_${wh.id}" onclick="toggleWh('${wh.id}')">
+            <span class="wh-title">${wh.name} <span style="color:var(--text3);font-weight:400">(${wh.items.length} позицій, ${fmt(subTotal)})</span></span>
+            <span class="wh-chev">▶</span>
+          </div>
+          <div class="wh-body" id="wh_b_${wh.id}">${renderWhTable(wh.items)}</div>
+        </div>
+      `;
+    }).join('');
+    document.getElementById('whBody').innerHTML = `<div style="padding:16px 20px">${summaryHtml}</div>${whList}`;
+  } catch (e) {
+    document.getElementById('whBody').innerHTML = `<div class="error" style="margin:20px">${e.message}</div>`;
+  }
+}
+
+// Load all in parallel
+loadMarket();
+loadForecast();
+loadWarehouses();
+</script>
+</body>
+</html>
