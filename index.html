@@ -193,34 +193,6 @@ thead tr:first-child th:first-child{left:0}
 .cat td{background:var(--cat-bg)}
 .cat-label{position:sticky;left:0;display:inline-block;z-index:3}
 #results{display:none}
-/* ─── Analytics Panel ─── */
-.btn-analytics{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:16px;padding:4px 14px;font-size:11px;font-weight:600;cursor:pointer;margin-left:auto;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:5px}
-.btn-analytics:hover{opacity:.85;transform:translateY(-1px)}.btn-analytics:disabled{opacity:.5;cursor:wait;transform:none}
-.analytics-panel{margin:0 0 4px;background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden}
-.analytics-header{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;border-bottom:1px solid var(--border);background:var(--bg2)}
-.analytics-header h3{font-size:14px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:6px}
-.analytics-close{background:none;border:none;font-size:20px;color:var(--text3);cursor:pointer;padding:0 4px;line-height:1}.analytics-close:hover{color:var(--red)}
-.analytics-content{padding:20px 24px;font-size:13px;line-height:1.75;color:var(--text);max-height:70vh;overflow-y:auto}
-.analytics-content h1{font-size:18px;color:var(--accent);margin:24px 0 8px;font-weight:700}
-.analytics-content h2{font-size:15px;color:var(--accent);margin:20px 0 8px;font-weight:600;border-bottom:1px solid var(--border);padding-bottom:6px}
-.analytics-content h3{font-size:13px;color:var(--text);margin:16px 0 6px;font-weight:600}
-.analytics-content p{margin:6px 0}
-.analytics-content ul,.analytics-content ol{margin:6px 0;padding-left:24px}
-.analytics-content li{margin:3px 0}
-.analytics-content table{border-collapse:collapse;margin:12px 0;width:100%;font-size:12px}
-.analytics-content th,.analytics-content td{padding:6px 10px;border:1px solid var(--border);text-align:left}
-.analytics-content th{background:var(--bg3);font-weight:600;color:var(--accent2)}
-.analytics-content tr:nth-child(even) td{background:var(--bg2)}
-.analytics-content strong{color:var(--accent2)}
-.analytics-content em{color:var(--text2);font-style:italic}
-.analytics-content code{background:var(--bg3);padding:1px 5px;border-radius:3px;font-size:11px}
-.analytics-content pre{background:var(--bg3);padding:12px;border-radius:4px;overflow-x:auto;margin:8px 0}
-.analytics-content pre code{background:none;padding:0}
-.analytics-content blockquote{border-left:3px solid var(--accent);padding-left:12px;margin:8px 0;color:var(--text2)}
-.analytics-loading{text-align:center;padding:40px;color:var(--text2);font-size:13px}
-.analytics-loading .spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:12px auto 0}
-@keyframes spin{to{transform:rotate(360deg)}}
-.analytics-error{text-align:center;padding:24px;color:var(--red);font-size:13px}
 tr:hover td{background:var(--bg3) !important}
 /* ─── History Panel ─── */
 .history-panel{max-width:1000px;margin:0 auto 12px;background:var(--surface);border:1px solid var(--border);border-radius:4px;box-shadow:var(--panel-shadow);padding:16px 24px}
@@ -443,14 +415,6 @@ body.ip-check>*:not(#accessDenied):not(script){display:none!important}
     <span class="ct-chip ct-atm active" onclick="toggleCol('atm',this)">Атмосфера</span>
     <span class="ct-chip ct-sig active" onclick="toggleCol('sig',this)">СІГ</span>
     <span class="ct-chip ct-ssj active" onclick="toggleCol('ssj',this)">SSJ</span>
-    <button class="btn-analytics" id="btnAnalytics" onclick="runAnalytics()">&#128202; Аналітика ринку</button>
-  </div>
-  <div class="analytics-panel" id="analyticsPanel" style="display:none">
-    <div class="analytics-header">
-      <h3>&#128202; Аналітика ринку — Claude Opus</h3>
-      <button class="analytics-close" onclick="closeAnalytics()">&times;</button>
-    </div>
-    <div class="analytics-content" id="analyticsContent"></div>
   </div>
   <div class="wrap">
     <table id="mainTable">
@@ -493,7 +457,6 @@ body.ip-check>*:not(#accessDenied):not(script){display:none!important}
 // ═══════════════════════════════════════════════
 const files = { gen: null, hel: null, dol: null, se: null, pe: null, sv: null, atm: null };
 const rawData = { gen: null, hel: null, dol: null, se: null, pe: null, sv: null, atm: null };
-let currentRows = [];
 
 // ═══════════════════════════════════════════════
 // UPLOAD UI
@@ -1640,7 +1603,6 @@ function toggleCol(sup, chip) {
 }
 
 function renderTable(rows) {
-  currentRows = rows;
   const tb = document.getElementById('data');
   tb.innerHTML = '';
   let currentCat = null;
@@ -2190,160 +2152,6 @@ async function removeIP(ip) {
     await fetch(API_URL + '?action=remove_ip&ip=' + encodeURIComponent(ip));
     loadIPs();
   } catch(e) { console.warn('removeIP', e); }
-}
-
-// ═══════════════════════════════════════════════
-// ANALYTICS — Claude AI market report
-// ═══════════════════════════════════════════════
-function prepareAnalyticsSummary(rows) {
-  const supNames = ['Генерація','Helius','Dolya','SE','ПЕ','SV','Атмосфера','СІГ','SSJ'];
-  const nvKeys = ['gNV','hNV','dNV','sNV','pNV','vNV','aNV','iNV','jNV'];
-  const cKeys  = ['gC','hC','dC','sC','pC','vC','aC','iC','jC'];
-  const stKeys = ['gSt','hSt','dSt','sSt','pSt','vSt','aSt','iSt','jSt'];
-
-  let result = '';
-  let curCat = '';
-  for (const r of rows) {
-    if (r.cat !== curCat) {
-      curCat = r.cat;
-      const cnt = rows.filter(x => x.cat === curCat).length;
-      result += '\n=== ' + curCat + ' (' + cnt + ' товарів) ===\n';
-    }
-    const parts = [];
-    let sc = 0;
-    for (let i = 0; i < 9; i++) {
-      if (r[nvKeys[i]] != null) {
-        const cur = r[cKeys[i]] === 'UAH' ? '₴' : r[cKeys[i]] === 'EUR' ? '€' : '$';
-        const st = r[stKeys[i]] ? ' (' + r[stKeys[i]] + ')' : '';
-        parts.push(supNames[i] + ':' + cur + r[nvKeys[i]] + st);
-        sc++;
-      }
-    }
-    if (r.gStock != null) parts.unshift('Залишки:' + r.gStock);
-    result += r.name + ' | ' + parts.join(' | ') + ' [' + sc + ' пост.]\n';
-  }
-  return result;
-}
-
-function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-function renderMd(md) {
-  if (!md) return '';
-  const lines = md.split('\n');
-  let html = '', inTable = false, inUl = false, inOl = false, inCode = false, tableRow = 0;
-  for (let i = 0; i < lines.length; i++) {
-    let L = lines[i];
-    if (L.startsWith('```')) {
-      if (inCode) { html += '</code></pre>'; inCode = false; } else { html += '<pre><code>'; inCode = true; }
-      continue;
-    }
-    if (inCode) { html += escHtml(L) + '\n'; continue; }
-    // close open blocks if line doesn't continue them
-    if (inTable && !L.match(/^\|/)) { html += '</table>'; inTable = false; tableRow = 0; }
-    if (inUl && !L.match(/^[-*•] /)) { html += '</ul>'; inUl = false; }
-    if (inOl && !L.match(/^\d+\. /)) { html += '</ol>'; inOl = false; }
-    // inline formatting
-    L = escHtml(L);
-    L = L.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    L = L.replace(/\*(.+?)\*/g, '<em>$1</em>');
-    L = L.replace(/`([^`]+)`/g, '<code>$1</code>');
-    // table
-    if (L.match(/^\|/)) {
-      if (L.match(/^\|[\s\-:|\u2014]+\|?$/)) continue; // separator
-      if (!inTable) { html += '<table>'; inTable = true; tableRow = 0; }
-      const cells = L.split('|').filter((_,idx,arr) => idx > 0 && idx < arr.length - 1);
-      const tag = tableRow === 0 ? 'th' : 'td';
-      html += '<tr>' + cells.map(c => '<' + tag + '>' + c.trim() + '</' + tag + '>').join('') + '</tr>';
-      tableRow++;
-      continue;
-    }
-    // unordered list
-    if (L.match(/^[-*•] /)) {
-      if (!inUl) { html += '<ul>'; inUl = true; }
-      html += '<li>' + L.replace(/^[-*•] /, '') + '</li>';
-      continue;
-    }
-    // ordered list
-    if (L.match(/^\d+\. /)) {
-      if (!inOl) { html += '<ol>'; inOl = true; }
-      html += '<li>' + L.replace(/^\d+\. /, '') + '</li>';
-      continue;
-    }
-    // headers
-    if (L.startsWith('### ')) { html += '<h3>' + L.slice(4) + '</h3>'; continue; }
-    if (L.startsWith('## '))  { html += '<h2>' + L.slice(3) + '</h2>'; continue; }
-    if (L.startsWith('# '))   { html += '<h1>' + L.slice(2) + '</h1>'; continue; }
-    // blockquote
-    if (L.startsWith('&gt; ')) { html += '<blockquote>' + L.slice(5) + '</blockquote>'; continue; }
-    // empty line
-    if (!L.trim()) { continue; }
-    // paragraph
-    html += '<p>' + L + '</p>';
-  }
-  if (inTable) html += '</table>';
-  if (inUl) html += '</ul>';
-  if (inOl) html += '</ol>';
-  if (inCode) html += '</code></pre>';
-  return html;
-}
-
-async function runAnalytics() {
-  if (!currentRows.length) { alert('Спочатку запустіть порівняння'); return; }
-  const btn = document.getElementById('btnAnalytics');
-  const panel = document.getElementById('analyticsPanel');
-  const content = document.getElementById('analyticsContent');
-  btn.disabled = true;
-  panel.style.display = '';
-  content.innerHTML = '<div class="analytics-loading">Claude Opus аналізує ' + currentRows.length + ' товарів...<div class="spinner"></div></div>';
-  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-  try {
-    const summary = prepareAnalyticsSummary(currentRows);
-    const response = await fetch(API_URL + '?action=analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ summary }),
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({ error: response.statusText }));
-      throw new Error(err.error || 'HTTP ' + response.status);
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '', fullText = '';
-    content.innerHTML = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const parts = buffer.split('\n');
-      buffer = parts.pop();
-      for (const line of parts) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6);
-        if (data === '[DONE]') continue;
-        try {
-          const evt = JSON.parse(data);
-          if (evt.type === 'content_block_delta' && evt.delta && evt.delta.text) {
-            fullText += evt.delta.text;
-            content.innerHTML = renderMd(fullText);
-            content.scrollTop = content.scrollHeight;
-          }
-        } catch(e) {}
-      }
-    }
-    content.innerHTML = renderMd(fullText);
-  } catch (err) {
-    content.innerHTML = '<div class="analytics-error">Помилка: ' + escHtml(err.message) + '</div>';
-  }
-  btn.disabled = false;
-}
-
-function closeAnalytics() {
-  document.getElementById('analyticsPanel').style.display = 'none';
 }
 
 // ═══════════════════════════════════════════════
