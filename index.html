@@ -1716,13 +1716,8 @@ async function saveComparison(rows, counts, supplierFiles) {
   await pushHistory(history);
   renderHistoryUI(history);
 
-  // Generate and show share link
-  try {
-    const compact = JSON.stringify({d:entry.date,r:rows,c:counts,s:supplierFiles});
-    const compressed = LZString.compressToEncodedURIComponent(compact);
-    const url = location.origin + location.pathname + '#d=' + compressed;
-    showShareLink(url);
-  } catch(e) {}
+  // Generate short share link (by history ID)
+  showShareLink(location.origin + location.pathname + '#h=' + id);
 }
 
 function showShareLink(url) {
@@ -1785,12 +1780,8 @@ function openHistoryEntry(id) {
   document.getElementById('dateLabel').textContent = 'Порівняння від ' + entry.date;
   document.getElementById('results').style.display = 'block';
 
-  // Generate share link
-  try {
-    const compact = JSON.stringify({d:entry.date,r:entry.rows,c:entry.counts,s:entry.suppliers});
-    const compressed = LZString.compressToEncodedURIComponent(compact);
-    showShareLink(location.origin + location.pathname + '#d=' + compressed);
-  } catch(e) {}
+  // Generate short share link (by history ID)
+  showShareLink(location.origin + location.pathname + '#h=' + id);
 
   document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
   const items = document.querySelectorAll('.history-item');
@@ -1856,42 +1847,70 @@ async function saveSchedule(){
 }
 
 // ═══════════════════════════════════════════════
-// LOAD FROM URL HASH (shared links still work)
+// LOAD FROM URL HASH (shared links)
 // ═══════════════════════════════════════════════
-function loadFromHash() {
+function showSharedView(rows, dateLabel, shareUrl) {
+  renderTable(rows);
+  document.getElementById('dateLabel').textContent = dateLabel;
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('uploadPanel').style.display = 'none';
+  document.getElementById('historyPanel').style.display = 'none';
+  showShareLink(shareUrl);
+  let back = document.getElementById('backBtn');
+  if (!back) {
+    back = document.createElement('button');
+    back.id = 'backBtn';
+    back.textContent = 'Нове порівняння';
+    back.className = 'btn-run';
+    back.style.cssText = 'max-width:300px;margin:16px auto;display:block';
+    back.onclick = function() {
+      location.hash = '';
+      document.getElementById('uploadPanel').style.display = '';
+      document.getElementById('results').style.display = 'none';
+      const sb = document.getElementById('shareBox');
+      if (sb) sb.remove();
+      back.remove();
+      initHistory();
+    };
+    document.getElementById('results').after(back);
+  }
+}
+
+async function loadFromHash() {
   const hash = location.hash;
-  if (!hash || !hash.startsWith('#d=')) return false;
-  try {
-    const compressed = hash.slice(3);
-    const json = LZString.decompressFromEncodedURIComponent(compressed);
-    if (!json) return false;
-    const data = JSON.parse(json);
-    renderTable(data.r);
-    document.getElementById('dateLabel').textContent = 'Порівняння від ' + data.d;
-    document.getElementById('results').style.display = 'block';
-    document.getElementById('uploadPanel').style.display = 'none';
-    document.getElementById('historyPanel').style.display = 'none';
-    showShareLink(location.href);
-    let back = document.getElementById('backBtn');
-    if (!back) {
-      back = document.createElement('button');
-      back.id = 'backBtn';
-      back.textContent = 'Нове порівняння';
-      back.className = 'btn-run';
-      back.style.cssText = 'max-width:300px;margin:16px auto;display:block';
-      back.onclick = function() {
-        location.hash = '';
-        document.getElementById('uploadPanel').style.display = '';
-        document.getElementById('results').style.display = 'none';
-        const sb = document.getElementById('shareBox');
-        if (sb) sb.remove();
-        back.remove();
-        initHistory();
-      };
-      document.getElementById('results').after(back);
-    }
-    return true;
-  } catch(e) { console.warn('Failed to load from URL', e); return false; }
+  if (!hash) return false;
+
+  // New short format: #h=<history_id>
+  if (hash.startsWith('#h=')) {
+    try {
+      const hId = parseInt(hash.slice(3));
+      if (!hId) return false;
+      // Try local cache first
+      let entry = historyCache.find(h => h.id === hId);
+      if (!entry) {
+        // Fetch from GAS
+        const history = await fetchHistory();
+        entry = history.find(h => h.id === hId);
+      }
+      if (!entry || !entry.rows) return false;
+      showSharedView(entry.rows, 'Порівняння від ' + entry.date, location.href);
+      return true;
+    } catch(e) { console.warn('Failed to load from hash #h=', e); return false; }
+  }
+
+  // Legacy LZ-String format: #d=<compressed>
+  if (hash.startsWith('#d=')) {
+    try {
+      const compressed = hash.slice(3);
+      const json = LZString.decompressFromEncodedURIComponent(compressed);
+      if (!json) return false;
+      const data = JSON.parse(json);
+      showSharedView(data.r, 'Порівняння від ' + data.d, location.href);
+      return true;
+    } catch(e) { console.warn('Failed to load from hash #d=', e); return false; }
+  }
+
+  return false;
 }
 
 // ═══════════════════════════════════════════════
@@ -1918,10 +1937,10 @@ function toggleTheme() {
 applyTheme(localStorage.getItem('theme') || 'dark');
 
 document.getElementById('dateLabel').textContent = new Date().toLocaleDateString('uk-UA');
-if (!loadFromHash()) initHistory();
+(async () => { if (!(await loadFromHash())) initHistory(); })();
 loadSchedule();
 initSigSlot();
-window.addEventListener('hashchange', () => { if (location.hash.startsWith('#d=')) loadFromHash(); });
+window.addEventListener('hashchange', () => { if (location.hash.startsWith('#h=') || location.hash.startsWith('#d=')) loadFromHash(); });
 </script>
 </body>
 </html>
