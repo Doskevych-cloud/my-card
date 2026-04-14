@@ -1085,7 +1085,15 @@ async function parsePE(file) {
 // ═══════════════════════════════════════════════
 // СІГ — TELEGRAM TEXT PARSER & MODAL
 // ═══════════════════════════════════════════════
-let sigRawText = '';
+let sigRawText = localStorage.getItem('sigText') || '';
+function initSigSlot() {
+  if (!sigRawText) return;
+  const slot = document.querySelector('[data-supplier="sig"]');
+  const lines = sigRawText.split('\n').filter(l => l.trim());
+  slot.classList.add('has-file');
+  slot.querySelector('.file-name').textContent = lines.length + ' рядків';
+  slot.querySelector('.remove-btn').style.display = '';
+}
 function openSigModal() {
   document.getElementById('sigText').value = sigRawText;
   document.getElementById('sigModal').style.display = 'flex';
@@ -1095,6 +1103,7 @@ function closeSigModal() {
 }
 function applySigText() {
   sigRawText = document.getElementById('sigText').value.trim();
+  localStorage.setItem('sigText', sigRawText);
   closeSigModal();
   const slot = document.querySelector('[data-supplier="sig"]');
   if (sigRawText) {
@@ -1111,6 +1120,7 @@ function applySigText() {
 function removeSig(e) {
   e.stopPropagation();
   sigRawText = '';
+  localStorage.removeItem('sigText');
   const slot = document.querySelector('[data-supplier="sig"]');
   slot.classList.remove('has-file');
   slot.querySelector('.file-name').textContent = '';
@@ -1910,6 +1920,7 @@ applyTheme(localStorage.getItem('theme') || 'dark');
 document.getElementById('dateLabel').textContent = new Date().toLocaleDateString('uk-UA');
 if (!loadFromHash()) initHistory();
 loadSchedule();
+initSigSlot();
 window.addEventListener('hashchange', () => { if (location.hash.startsWith('#d=')) loadFromHash(); });
 </script>
 </body>
