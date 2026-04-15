@@ -72,6 +72,9 @@ a{color:inherit;text-decoration:none}
 .cur-summary-card .total-row{display:flex;justify-content:space-between;align-items:baseline}
 .cur-summary-card .total-row .k{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
 .cur-summary-card .total-row .v{font-size:20px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.cur-summary-card .usd-eq{font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums;letter-spacing:.2px}
+.cur-summary-card.usd-total-card{background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(34,197,94,.02));border-color:rgba(34,197,94,.25)}
+.cur-summary-card.usd-total-card .total-row .v{color:var(--green)}
 
 /* Tree table */
 .tree-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
@@ -96,6 +99,7 @@ a{color:inherit;text-decoration:none}
 .tree-tbl tr.mgr-row:hover td{background:linear-gradient(90deg,rgba(255,131,25,.18),transparent 70%)}
 .tree-tbl tr.mgr-row td:first-child{display:flex;align-items:center;gap:10px}
 .tree-tbl tr.mgr-row .sub{color:var(--text3);font-weight:500;font-size:11px}
+.tree-tbl tr.mgr-row .mgr-usd{font-weight:700;font-variant-numeric:tabular-nums;color:var(--text2);font-size:12px;letter-spacing:-.2px}
 
 .tree-tbl tr.cur-row{cursor:pointer;color:var(--text)}
 .tree-tbl tr.cur-row td{background:var(--blue-bg);font-weight:600}
@@ -213,7 +217,21 @@ const state = {
   openKeys: new Set(),
   loading: false,
   fetchedAt: null,
+  fx: null, // { source, markup, asOf, rates: { USD_UAH, EUR_UAH } }
 };
+
+// Convert any amount in `cur` → USD using the loaded FX snapshot.
+// Returns null if the rate is missing (e.g. unusual currency or FX fetch failed),
+// so callers can skip the USD line instead of showing garbage.
+function toUsd(amount, cur) {
+  if (!isFinite(amount)) return null;
+  if (cur === 'USD') return amount;
+  const fx = state.fx && state.fx.rates;
+  if (!fx) return null;
+  if (cur === 'UAH') return fx.USD_UAH > 0 ? amount / fx.USD_UAH : null;
+  if (cur === 'EUR') return (fx.EUR_UAH > 0 && fx.USD_UAH > 0) ? amount * fx.EUR_UAH / fx.USD_UAH : null;
+  return null;
+}
 
 function fmt(n, dec = 2) {
   if (n === null || n === undefined || isNaN(n)) return '—';
@@ -243,10 +261,15 @@ async function load() {
   renderBanner();
   try {
     const q = `?action=sales_report&from=${state.from}&to=${state.to}&org=${encodeURIComponent(state.org)}`;
-    const res = await fetch(API_URL + q);
-    const d = await res.json();
-    if (d.error) throw new Error(d.error);
-    state.data = d;
+    // Fetch sales + FX rates in parallel. FX is purely informative, so we
+    // don't fail the whole page if rates are unavailable.
+    const [salesRes, fxRes] = await Promise.all([
+      fetch(API_URL + q).then(r => r.json()),
+      fetch(API_URL + '?action=fx_rates').then(r => r.json()).catch(() => null),
+    ]);
+    if (salesRes.error) throw new Error(salesRes.error);
+    state.data = salesRes;
+    state.fx = (fxRes && fxRes.rates && fxRes.rates.USD_UAH) ? fxRes : null;
     state.fetchedAt = new Date();
     state.loading = false;
     renderBanner();
@@ -400,7 +423,14 @@ function renderCurrencySummary(managers) {
   const host = document.getElementById('curSummary');
   if (!managers.length) { host.innerHTML = ''; return; }
   const totals = getCurrencyTotals(managers);
-  host.innerHTML = `<div class="cur-summary">${totals.map(B => `
+
+  // Per-currency cards, with an optional "≈ $X" line for non-USD currencies.
+  const cards = totals.map(B => {
+    const usdEq = toUsd(B.total, B.currency);
+    const usdLine = (usdEq != null && B.currency !== 'USD')
+      ? `<div class="usd-eq">≈ $${fmt(usdEq)} USD</div>`
+      : '';
+    return `
       <div class="cur-summary-card">
         <div class="head">
           <span class="ico">💱</span>
@@ -411,7 +441,43 @@ function renderCurrencySummary(managers) {
           <span class="k">Сума</span>
           <span class="v">${fmt(B.total)}</span>
         </div>
-      </div>`).join('')}</div>`;
+        ${usdLine}
+      </div>`;
+  });
+
+  // Aggregate "всього в USD" card — sum of every currency converted to USD.
+  // Only makes sense when we actually have FX rates.
+  if (state.fx) {
+    let grand = 0, grandPaid = 0, ok = true;
+    totals.forEach(B => {
+      const t = toUsd(B.total, B.currency);
+      const p = toUsd(B.paid, B.currency);
+      if (t == null || p == null) { ok = false; return; }
+      grand += t; grandPaid += p;
+    });
+    if (ok && grand > 0) {
+      const rateInfo = `USD ${fmt(state.fx.rates.USD_UAH, 2)} / EUR ${fmt(state.fx.rates.EUR_UAH, 2)} (міжбанк +1%)`;
+      cards.unshift(`
+        <div class="cur-summary-card usd-total-card">
+          <div class="head">
+            <span class="ico">💵</span>
+            <span class="cur-pill" style="background:rgba(34,197,94,.15);color:var(--green)">ВСЬОГО ≈ USD</span>
+            <span class="cnt" title="${esc(rateInfo)}">інформативно</span>
+          </div>
+          <div class="total-row">
+            <span class="k">Сума</span>
+            <span class="v">$${fmt(grand)}</span>
+          </div>
+          <div class="total-row" style="margin-top:-2px">
+            <span class="k">Оплачено</span>
+            <span class="v" style="font-size:14px;color:var(--text2)">$${fmt(grandPaid)}</span>
+          </div>
+          <div class="usd-eq" style="opacity:.75">${rateInfo}</div>
+        </div>`);
+    }
+  }
+
+  host.innerHTML = `<div class="cur-summary">${cards.join('')}</div>`;
 }
 
 function renderByManager(managers) {
@@ -473,12 +539,27 @@ function sectionWrapManager(m, rowsHtml) {
 }
 
 function renderManagerHeaderRow(key, m, isOpen, curCount, clientCount) {
+  // Aggregate this manager's totals across currencies into USD — purely
+  // informative, rendered in otherwise-empty columns of the header row.
+  let usdTotal = 0, usdPaid = 0, usdRemain = 0, ok = !!state.fx;
+  if (ok) {
+    m.currencies.forEach(C => {
+      const t = toUsd(C.total, C.currency);
+      const p = toUsd(C.paid, C.currency);
+      const r = toUsd(C.remain, C.currency);
+      if (t == null || p == null || r == null) { ok = false; return; }
+      usdTotal += t; usdPaid += p; usdRemain += r;
+    });
+  }
+  const usdCells = ok
+    ? `<td><span class="mgr-usd">$${fmt(usdTotal)}</span></td>
+       <td><span class="mgr-usd">$${fmt(usdPaid)}</span></td>
+       <td><span class="mgr-usd ${valCls(usdRemain)}">$${fmt(usdRemain)}</span></td>`
+    : `<td></td><td></td><td></td>`;
   return `
     <tr class="mgr-row" data-key="${esc(key)}">
-      <td><span class="chev ${isOpen?'open':''}">▶</span><span>👤 ${esc(m.name)}</span><span class="sub">· ${curCount} валют · ${clientCount} клієнт.</span></td>
-      <td></td>
-      <td></td>
-      <td></td>
+      <td><span class="chev ${isOpen?'open':''}">▶</span><span>👤 ${esc(m.name)}</span><span class="sub">· ${curCount} валют · ${clientCount} клієнт.${ok ? ' · ≈ USD' : ''}</span></td>
+      ${usdCells}
     </tr>`;
 }
 
