@@ -1795,14 +1795,61 @@ function clearCustomSearch() {
   if (host) host.innerHTML = '';
 }
 
-function customSearch() {
+// Lightweight loader — без оновлення UI слотів, просто витягує продукти з API.
+// Використовується коли користувач робить пошук, а Порівняння ще не запускалось
+// (наприклад, відкрив історичне порівняння і одразу хоче пошукати товар).
+let __loadingSupProds = null;
+async function loadAllSupplierProds() {
+  if (window.__supProds) return window.__supProds;
+  if (__loadingSupProds) return __loadingSupProds;
+  __loadingSupProds = (async () => {
+    const fetchProds = async (action) => {
+      try {
+        const r = await fetch(API_URL + '?action=' + action);
+        const d = await r.json();
+        if (d.error) return [];
+        return d.products || [];
+      } catch (e) { console.warn('load ' + action, e); return []; }
+    };
+    const [genRaw, helRaw, dolRaw, seRaw, peRaw, svRaw] = await Promise.all([
+      fetchProds('gen_data'), fetchProds('hel_data'), fetchProds('dolya_data'),
+      fetchProds('se_proxy'), fetchProds('pe_data'),  fetchProds('sv_data'),
+    ]);
+    // Hydrate model + category
+    for (const p of genRaw) { p.model = extractModel(p.name); p.category = guessCategory(p.name); }
+    const gen = genRaw.filter(p => p.category);
+    for (const list of [helRaw, dolRaw, seRaw, peRaw, svRaw]) {
+      for (const p of list) { p.model = extractModel(p.name); }
+    }
+    // Local sources (file/text) — лише якщо користувач їх ввів у цій сесії
+    let atm = [];
+    if (files.atm) { try { atm = await parseAtmosfera(files.atm); } catch(e){} }
+    const sig = sigRawText ? parseSIG(sigRawText) : [];
+    const ssj = ssjRawText ? parseSSJ(ssjRawText) : [];
+    return { gen, hel: helRaw, dol: dolRaw, se: seRaw, pe: peRaw, sv: svRaw, atm, sig, ssj };
+  })();
+  try {
+    const out = await __loadingSupProds;
+    window.__supProds = out;
+    return out;
+  } finally {
+    __loadingSupProds = null;
+  }
+}
+
+async function customSearch() {
   const q = (document.getElementById('customQuery').value || '').trim();
   const host = document.getElementById('customResultsBox');
   if (!host) return;
   if (!q) { host.innerHTML = ''; return; }
   if (!window.__supProds) {
-    host.innerHTML = '<div class="cs-warning">Спочатку натисніть <b>«Порівняти ціни»</b> — потрібні дані постачальників.</div>';
-    return;
+    host.innerHTML = '<div class="cs-warning">⏳ Завантаження прайсів постачальників…</div>';
+    try {
+      await loadAllSupplierProds();
+    } catch (e) {
+      host.innerHTML = '<div class="cs-empty">Помилка завантаження прайсів: ' + escapeHtml(e.message || String(e)) + '</div>';
+      return;
+    }
   }
   const S = window.__supProds;
 
@@ -2414,8 +2461,8 @@ function showSharedView(rows, dateLabel, shareUrl) {
   document.getElementById('results').style.display = 'block';
   document.getElementById('uploadPanel').style.display = 'none';
   document.getElementById('historyPanel').style.display = 'none';
-  const cs = document.getElementById('customSearch');
-  if (cs) cs.style.display = 'none';
+  // Custom search panel залишається видимою — у shared/історичному перегляді
+  // вона завантажить актуальні прайси постачальників на льоту при першому запиті.
   showShareLink(shareUrl);
   let back = document.getElementById('backBtn');
   if (!back) {
@@ -2428,8 +2475,6 @@ function showSharedView(rows, dateLabel, shareUrl) {
       location.hash = '';
       document.getElementById('uploadPanel').style.display = '';
       document.getElementById('results').style.display = 'none';
-      const cs = document.getElementById('customSearch');
-      if (cs) cs.style.display = '';
       const sb = document.getElementById('shareBox');
       if (sb) sb.remove();
       back.remove();
