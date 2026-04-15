@@ -261,15 +261,6 @@ async function load() {
 }
 
 // ─── Filter helpers ───
-function filterSummaryByOrg(summary) {
-  const orgItems = new Set();
-  (state.data.warehouses || []).forEach(w => {
-    if (w.org !== state.org) return;
-    (w.items || []).forEach(it => orgItems.add(it.name));
-  });
-  return summary.filter(s => orgItems.has(s.name));
-}
-
 function matchesSearch(s, reserves) {
   if (!state.search) return true;
   const q = state.search;
@@ -361,7 +352,8 @@ function currentItemKeys() {
 
 // ─── Render ───
 function getCombinedItems() {
-  let summary = filterSummaryByOrg(state.data.summary || []);
+  // API returns per-org summaries — never sum across orgs.
+  let summary = ((state.data.summaryByOrg || {})[state.org] || []).slice();
   if (!state.showEmpty) summary = summary.filter(s => s.total > 0);
   if (state.search) summary = summary.filter(s => matchesSearch(s, s.reserves));
   return summary;
