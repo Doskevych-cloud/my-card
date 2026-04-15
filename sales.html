@@ -61,16 +61,17 @@ a{color:inherit;text-decoration:none}
 .toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
 .toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
 
-/* Grand total card */
-.cur-summary{margin-bottom:14px}
-.cur-summary-card{padding:14px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:6px}
-.cur-summary-card .total-row{display:flex;justify-content:space-between;align-items:baseline}
-.cur-summary-card .total-row .k{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
-.cur-summary-card .total-row .v{font-size:20px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.3px}
-.cur-summary-card.usd-total-card{background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(34,197,94,.02));border-color:rgba(34,197,94,.25)}
-.cur-summary-card .total-row .v.pos{color:var(--green)}
-.cur-summary-card .total-row .v.neg{color:var(--red)}
-.cur-summary-card .total-row .v.zero{color:var(--text3)}
+/* Summary grid — grand "Оплачено" card + per-manager cards. All values in USD. */
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}
+.summary-card{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:background .15s,border-color .15s;display:flex;flex-direction:column;gap:6px;user-select:none}
+.summary-card:hover{background:var(--bg3);border-color:var(--border2)}
+.summary-card.active{background:var(--accent-bg);border-color:var(--accent)}
+.summary-card.grand{grid-column:1/-1;background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(34,197,94,.02));border-color:rgba(34,197,94,.25);cursor:default}
+.summary-card.grand:hover{background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(34,197,94,.02));border-color:rgba(34,197,94,.25)}
+.summary-card .name{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600;display:flex;align-items:center;gap:6px}
+.summary-card .val{font-size:22px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.summary-card.grand .val{font-size:28px}
+.mgr-section-head{font-weight:700;font-size:13px;margin:14px 0 8px;padding:0 2px;color:var(--text);letter-spacing:-.2px}
 
 /* Tree table */
 .tree-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
@@ -88,13 +89,7 @@ a{color:inherit;text-decoration:none}
 .cur-section{margin-top:18px}
 .cur-section:first-child{margin-top:0}
 
-/* Rows: manager / currency / client / order */
-.tree-tbl tr.mgr-row td{background:linear-gradient(90deg,var(--accent-bg),transparent 70%);font-weight:700;color:var(--text);padding:10px 12px;letter-spacing:-.1px;cursor:pointer}
-.tree-tbl tr.mgr-row:hover td{background:linear-gradient(90deg,rgba(255,131,25,.18),transparent 70%)}
-.tree-tbl tr.mgr-row td:first-child{display:flex;align-items:center;gap:10px}
-.tree-tbl tr.mgr-row .sub{color:var(--text3);font-weight:500;font-size:11px}
-.tree-tbl tr.mgr-row .mgr-usd{font-weight:700;font-variant-numeric:tabular-nums;color:var(--text2);font-size:12px;letter-spacing:-.2px}
-
+/* Rows: currency / client / order (manager header is the clickable card above) */
 .tree-tbl tr.cur-row{cursor:pointer;color:var(--text)}
 .tree-tbl tr.cur-row td{background:var(--blue-bg);font-weight:600}
 .tree-tbl tr.cur-row:hover td{filter:brightness(1.1)}
@@ -131,7 +126,9 @@ a{color:inherit;text-decoration:none}
   .toolbar{padding:10px;gap:8px}
   .tree-tbl thead th,.tree-tbl tbody td{padding:8px 6px;font-size:11px}
   .tree-tbl thead th:nth-child(n+2){width:90px}
-  .cur-summary{grid-template-columns:1fr}
+  .summary-grid{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+  .summary-card .val{font-size:18px}
+  .summary-card.grand .val{font-size:22px}
 }
 </style>
 </head>
@@ -325,32 +322,17 @@ function collectKeys() {
   return keys;
 }
 
-// Aggregate per-currency totals across all managers (for the summary cards).
-// Keeps all three metrics — total (сума замовлень), paid (оплачено),
-// remain (залишилось) — so the top card can show everything in USD.
-function getCurrencyTotals(managers) {
-  const byCur = {};
-  managers.forEach(m => {
-    m.currencies.forEach(C => {
-      if (!byCur[C.currency]) {
-        byCur[C.currency] = { currency: C.currency, total: 0, paid: 0, clients: new Set(), orders: 0 };
-      }
-      const B = byCur[C.currency];
-      B.total += (C.total || 0);
-      B.paid += C.paid;
-      C.clients.forEach(c => {
-        B.clients.add(c.name);
-        B.orders += c.orders.length;
-      });
-    });
-  });
-  return Object.values(byCur)
-    .map(B => ({ ...B, remain: B.total - B.paid, clientCount: B.clients.size }))
-    .sort((a, b) => {
-      if (a.currency === 'UAH' && b.currency !== 'UAH') return -1;
-      if (b.currency === 'UAH' && a.currency !== 'UAH') return 1;
-      return b.paid - a.paid;
-    });
+// Sum one manager's `paid` across all their currencies → USD.
+// Returns { paid, ok } — ok=false if any currency lacks a rate.
+function managerPaidUsd(m) {
+  if (!state.fx) return { paid: 0, ok: false };
+  let paid = 0;
+  for (const C of m.currencies) {
+    const p = toUsd(C.paid, C.currency);
+    if (p == null) return { paid: 0, ok: false };
+    paid += p;
+  }
+  return { paid, ok: true };
 }
 
 // ─── Search ───
@@ -368,55 +350,51 @@ function render() {
   const orgData = (state.data.byOrg || {})[state.org];
   const managers = (orgData && orgData.managers) || [];
 
-  renderCurrencySummary(managers);
+  renderSummaryGrid(managers);
 
   if (!managers.length) {
     document.getElementById('body').innerHTML = '<div class="empty">Нічого не знайдено за цей період</div>';
     return;
   }
 
+  // Drill-down only appears for managers whose card the user clicked open.
   const html = renderByManager(managers);
-  document.getElementById('body').innerHTML = html || '<div class="empty">Нічого не знайдено</div>';
+  document.getElementById('body').innerHTML = html;
   bindRows();
 }
 
-function renderCurrencySummary(managers) {
+// Top: one wide "Оплачено за період" card (all currencies → USD) plus one
+// card per manager showing that manager's paid total in USD. Manager cards
+// are clickable — click toggles the drill-down table for that manager below.
+function renderSummaryGrid(managers) {
   const host = document.getElementById('curSummary');
   if (!managers.length) { host.innerHTML = ''; return; }
-  const totals = getCurrencyTotals(managers);
 
-  // Aggregate everything → USD so three metrics (сума замовлень / оплачено /
-  // залишилось) live on the same grand-total card. If FX rates are missing,
-  // fall back to a per-currency list so numbers are never lost.
-  let gTotal = 0, gPaid = 0, ok = !!state.fx;
-  if (ok) {
-    for (const B of totals) {
-      const t = toUsd(B.total, B.currency);
-      const p = toUsd(B.paid, B.currency);
-      if (t == null || p == null) { ok = false; break; }
-      gTotal += t; gPaid += p;
-    }
-  }
+  const perMgr = managers.map(m => ({ m, ...managerPaidUsd(m) }));
+  const allOk = perMgr.every(d => d.ok);
+  const gPaid = allOk ? perMgr.reduce((s, d) => s + d.paid, 0) : null;
 
-  let body;
-  if (ok && gPaid > 0) {
-    const gRemain = gTotal - gPaid;
-    const remCls = gRemain > 0.001 ? 'neg' : 'zero';
-    body = `
-      <div class="total-row"><span class="k">Сума замовлень</span><span class="v">$${fmt(gTotal)}</span></div>
-      <div class="total-row"><span class="k">Оплачено</span><span class="v pos">$${fmt(gPaid)}</span></div>
-      <div class="total-row"><span class="k">Залишилось</span><span class="v ${remCls}">$${fmt(gRemain)}</span></div>`;
-  } else {
-    body = totals.map(B => `
-      <div class="total-row"><span class="k">${esc(B.currency)} · оплачено</span><span class="v">${fmt(B.paid)}</span></div>`).join('');
-  }
-
-  host.innerHTML = `
-    <div class="cur-summary">
-      <div class="cur-summary-card usd-total-card">${body}</div>
+  const grandCard = `
+    <div class="summary-card grand">
+      <div class="name">💰 Оплачено за період</div>
+      <div class="val">${allOk ? '$' + fmt(gPaid) : '—'}</div>
     </div>`;
+
+  const mgrCards = perMgr.map(({ m, paid, ok }) => {
+    const isOpen = state.openKeys.has(`m:${m.name}`);
+    const val = ok ? '$' + fmt(paid) : '—';
+    return `
+      <div class="summary-card ${isOpen ? 'active' : ''}" data-key="m:${esc(m.name)}">
+        <div class="name">👤 ${esc(m.name)}</div>
+        <div class="val">${val}</div>
+      </div>`;
+  }).join('');
+
+  host.innerHTML = `<div class="summary-grid">${grandCard}${mgrCards}</div>`;
 }
 
+// Render drill-down sections only for managers whose summary card is open.
+// Search filter still applies — hidden managers' cards aren't shown at top either.
 function renderByManager(managers) {
   const q = state.search;
   const visibleMgrs = managers.filter(m => {
@@ -426,13 +404,11 @@ function renderByManager(managers) {
   });
   if (!visibleMgrs.length) return '';
 
-  return visibleMgrs.map(m => {
+  const openMgrs = visibleMgrs.filter(m => state.openKeys.has(`m:${m.name}`));
+  if (!openMgrs.length) return '';
+
+  return openMgrs.map(m => {
     const mk = `m:${m.name}`;
-    const isMOpen = state.openKeys.has(mk);
-
-    const mgrRow = renderManagerHeaderRow(mk, m, isMOpen);
-    if (!isMOpen) return sectionWrapManager(m, mgrRow);
-
     const curBlocks = m.currencies.map(C => {
       const ck = `${mk}|cur:${C.currency}`;
       const isCOpen = state.openKeys.has(ck);
@@ -452,17 +428,18 @@ function renderByManager(managers) {
       return rows.join('');
     }).join('');
 
-    return sectionWrapManager(m, mgrRow + curBlocks);
+    return sectionWrapManager(m, curBlocks);
   }).join('');
 }
 
 function sectionWrapManager(m, rowsHtml) {
   return `
     <div class="cur-section">
+      <div class="mgr-section-head">👤 ${esc(m.name)}</div>
       <div class="tree-wrap">
         <table class="tree-tbl">
           <thead><tr>
-            <th>Менеджер / Валюта / Клієнт / Замовлення</th>
+            <th>Валюта / Клієнт / Замовлення</th>
             <th>Сума замовлення</th>
             <th>Оплачено</th>
             <th>Залишилось</th>
@@ -478,28 +455,6 @@ function sectionWrapManager(m, rowsHtml) {
 function triCells(total, paid, remain) {
   const remCls = remain > 0.001 ? 'val-neg' : (remain < -0.001 ? 'val-pos' : 'val-zero');
   return `<td>${fmt(total)}</td><td class="val-pos">${fmt(paid)}</td><td class="${remCls}">${fmt(remain)}</td>`;
-}
-
-function renderManagerHeaderRow(key, m, isOpen) {
-  // Aggregate across currencies into USD — the only way to sum multi-currency
-  // rollups sensibly. Skip if FX rates are unavailable.
-  let usdTotal = 0, usdPaid = 0, ok = !!state.fx;
-  if (ok) {
-    m.currencies.forEach(C => {
-      const t = toUsd(C.total, C.currency);
-      const p = toUsd(C.paid, C.currency);
-      if (t == null || p == null) { ok = false; return; }
-      usdTotal += t; usdPaid += p;
-    });
-  }
-  const cells = ok
-    ? `<td><span class="mgr-usd">$${fmt(usdTotal)}</span></td><td class="val-pos"><span class="mgr-usd">$${fmt(usdPaid)}</span></td><td class="${(usdTotal-usdPaid)>0.001?'val-neg':'val-zero'}"><span class="mgr-usd">$${fmt(usdTotal - usdPaid)}</span></td>`
-    : `<td></td><td></td><td></td>`;
-  return `
-    <tr class="mgr-row" data-key="${esc(key)}">
-      <td><span class="chev ${isOpen?'open':''}">▶</span><span>👤 ${esc(m.name)}</span></td>
-      ${cells}
-    </tr>`;
 }
 
 function renderCurrencyRow(key, C, isOpen, clientCount) {
@@ -533,10 +488,12 @@ function renderOrderRow(o, cur) {
     </tr>`;
 }
 
+// Binds click toggling for all interactive elements with data-key —
+// both the summary cards (manager level) and drill-down rows (currency/client).
 function bindRows() {
-  document.querySelectorAll('tr[data-key]').forEach(tr => {
-    tr.addEventListener('click', () => {
-      const k = tr.dataset.key;
+  document.querySelectorAll('[data-key]').forEach(el => {
+    el.addEventListener('click', () => {
+      const k = el.dataset.key;
       if (state.openKeys.has(k)) state.openKeys.delete(k);
       else state.openKeys.add(k);
       render();
