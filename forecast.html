@@ -379,7 +379,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
     </div>
   </div>
   <div class="topbar-right">
-    <span class="live-badge">Live <span id="dateLabel"></span></span>
     <nav class="app-nav">
       <a href="/" class="nav-pill">🏠 Порівняння цін</a>
       <a href="/forecast.html" class="nav-pill active">📊 Закупівлі</a>
@@ -484,7 +483,6 @@ function toggleTheme(){
   applyTheme(cur === 'dark' ? 'light' : 'dark');
 }
 applyTheme(localStorage.getItem('theme') || 'dark');
-document.getElementById('dateLabel').textContent = new Date().toLocaleDateString('uk-UA');
 document.getElementById('ltBanner').textContent = LT_TOTAL;
 document.getElementById('ltInfo').textContent = `L/T = ${LEAD_TIME_DAYS} + 27 = ${LT_TOTAL} дн`;
 
