@@ -8,8 +8,8 @@
   // Apply saved theme BEFORE styles paint — avoids flash-of-wrong-theme
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
-<script src="auth.js?v=20260416"></script>
-<script src="header.js?v=20260416"></script>
+<script src="auth.js?v=20260417"></script>
+<script src="header.js?v=20260417"></script>
 <style>
 :root{
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -88,15 +88,21 @@ a{color:inherit;text-decoration:none}
 .tree-tbl tr.mgr-row td:first-child{display:flex;align-items:center;gap:10px}
 .tree-tbl tr.mgr-row .sub{color:var(--text3);font-weight:500;font-size:11px}
 
+.tree-tbl tr.cur-row{cursor:pointer;color:var(--text)}
+.tree-tbl tr.cur-row td{background:var(--blue-bg);font-weight:600}
+.tree-tbl tr.cur-row:hover td{filter:brightness(1.1)}
+.tree-tbl tr.cur-row td:first-child{padding-left:38px}
+.cur-badge-inline{font-size:11px;font-weight:700;letter-spacing:.3px;padding:2px 8px;border-radius:5px;background:var(--bg2);color:var(--blue);border:1px solid var(--blue);margin-right:6px}
+
 .tree-tbl tr.client-row{cursor:pointer;color:var(--text)}
 .tree-tbl tr.client-row td{background:rgba(255,255,255,.02);font-weight:600}
 :root[data-theme="light"] .tree-tbl tr.client-row td{background:rgba(0,0,0,.015)}
 .tree-tbl tr.client-row:hover td{background:var(--bg3)}
-.tree-tbl tr.client-row td:first-child{padding-left:38px}
+.tree-tbl tr.client-row td:first-child{padding-left:66px}
 
 .tree-tbl tr.order-row{cursor:pointer;color:var(--text2)}
 .tree-tbl tr.order-row:hover td{background:var(--bg3)}
-.tree-tbl tr.order-row td:first-child{padding-left:64px;font-size:11.5px}
+.tree-tbl tr.order-row td:first-child{padding-left:92px;font-size:11.5px}
 .tree-tbl tr.order-row .meta{color:var(--text3);font-size:10.5px;margin-left:8px}
 
 .tree-tbl tr.pay-row td{background:var(--bg3);padding:6px 12px;font-size:11px;color:var(--text3);border-bottom:1px solid var(--border)}
@@ -323,39 +329,47 @@ function collapseAll() {
 
 function collectKeys() {
   const keys = [];
-  const d = (state.data && state.data.byOrg && state.data.byOrg[state.org]) || {};
-  const currencies = d.currencies || {};
-  Object.keys(currencies).forEach(cur => {
-    const C = currencies[cur];
-    if (state.view === 'bymanager') {
-      C.managers.forEach(m => {
-        const mk = `m:${cur}|${m.name}`;
-        keys.push(mk);
-        m.clients.forEach(c => {
-          keys.push(`${mk}|c:${c.name}`);
-        });
+  const orgData = (state.data && state.data.byOrg && state.data.byOrg[state.org]) || {};
+  const managers = orgData.managers || [];
+  if (state.view === 'bymanager') {
+    managers.forEach(m => {
+      const mk = `m:${m.name}`;
+      keys.push(mk);
+      m.currencies.forEach(C => {
+        const ck = `${mk}|cur:${C.currency}`;
+        keys.push(ck);
+        C.clients.forEach(c => keys.push(`${ck}|c:${c.name}`));
       });
-    } else {
-      // combined: no manager level; flat clients list
-      getFlatClients(C).forEach(c => keys.push(`c:${cur}|${c.name}`));
-    }
-  });
+    });
+  } else {
+    // combined: group all clients across managers by currency
+    getCombinedByCurrency(managers).forEach(({ currency, clients }) => {
+      clients.forEach(c => keys.push(`cur:${currency}|c:${c.name}`));
+    });
+  }
   return keys;
 }
 
-// Flatten clients across all managers into one list per currency
-function getFlatClients(C) {
-  const bucket = {};  // name → {total, paid, remain, orders: []}
-  C.managers.forEach(m => {
-    m.clients.forEach(c => {
-      if (!bucket[c.name]) bucket[c.name] = { name: c.name, total: 0, paid: 0, remain: 0, orders: [] };
-      bucket[c.name].total += c.total;
-      bucket[c.name].paid += c.paid;
-      bucket[c.name].remain += c.remain;
-      bucket[c.name].orders = bucket[c.name].orders.concat(c.orders);
+// Combined view: roll up all managers into one currency-grouped list
+function getCombinedByCurrency(managers) {
+  const byCur = {};  // cur → {currency, total, paid, remain, clients: {name→bucket}}
+  managers.forEach(m => {
+    m.currencies.forEach(C => {
+      if (!byCur[C.currency]) byCur[C.currency] = { currency: C.currency, total: 0, paid: 0, remain: 0, clients: {} };
+      const B = byCur[C.currency];
+      B.total += C.total; B.paid += C.paid; B.remain += C.remain;
+      C.clients.forEach(c => {
+        if (!B.clients[c.name]) B.clients[c.name] = { name: c.name, total: 0, paid: 0, remain: 0, orders: [] };
+        B.clients[c.name].total += c.total;
+        B.clients[c.name].paid += c.paid;
+        B.clients[c.name].remain += c.remain;
+        B.clients[c.name].orders = B.clients[c.name].orders.concat(c.orders);
+      });
     });
   });
-  return Object.values(bucket).sort((a, b) => b.total - a.total);
+  return Object.values(byCur)
+    .map(B => ({ ...B, clients: Object.values(B.clients).sort((a,b) => b.total - a.total) }))
+    .sort((a, b) => b.total - a.total);
 }
 
 // ─── Search ───
@@ -366,90 +380,129 @@ function clientMatches(c) {
   if (c.orders.some(o => (o.number || '').toLowerCase().includes(q))) return true;
   return false;
 }
+function currencyMatches(C) {
+  if (!state.search) return true;
+  return C.clients.some(clientMatches);
+}
 function managerMatches(m) {
   if (!state.search) return true;
   const q = state.search;
   if (m.name.toLowerCase().includes(q)) return true;
-  return m.clients.some(clientMatches);
+  return m.currencies.some(currencyMatches);
 }
 
 // ─── Render ───
 function render() {
   if (!state.data) return;
   const orgData = (state.data.byOrg || {})[state.org];
-  if (!orgData || !orgData.currencies || !Object.keys(orgData.currencies).length) {
+  const managers = (orgData && orgData.managers) || [];
+  if (!managers.length) {
     document.getElementById('body').innerHTML = '<div class="empty">Нічого не знайдено за цей період</div>';
     return;
   }
-  const currencies = orgData.currencies;
-  // Sort currencies by total desc
-  const curList = Object.keys(currencies).sort((a, b) => currencies[b].total - currencies[a].total);
 
-  const html = curList.map(cur => {
-    const C = currencies[cur];
-    if (state.view === 'bymanager') return renderByManager(cur, C);
-    return renderCombined(cur, C);
-  }).filter(Boolean).join('');
+  const html = state.view === 'bymanager'
+    ? renderByManager(managers)
+    : renderCombined(managers);
 
   document.getElementById('body').innerHTML = html || '<div class="empty">Нічого не знайдено</div>';
   bindRows();
 }
 
-function renderByManager(cur, C) {
-  let managers = C.managers.filter(managerMatches);
-  if (!managers.length) return '';
-  const rows = managers.map(m => {
-    const mk = `m:${cur}|${m.name}`;
-    const isOpen = state.openKeys.has(mk);
-    let clients = m.clients.filter(clientMatches);
-    const out = [renderManagerRow(mk, m, cur, isOpen, clients.length)];
-    if (isOpen) {
-      clients.forEach(c => {
-        const ck = `${mk}|c:${c.name}`;
-        const isCOpen = state.openKeys.has(ck);
-        out.push(renderClientRow(ck, c, cur, isCOpen));
-        if (isCOpen) {
-          c.orders.forEach(o => out.push(renderOrderRow(o, cur)));
-        }
-      });
-    }
-    return out.join('');
+function renderByManager(managers) {
+  const q = state.search;
+  const visibleMgrs = managers.filter(m => {
+    if (!q) return true;
+    if (m.name.toLowerCase().includes(q)) return true;
+    return m.currencies.some(C => C.clients.some(clientMatches));
+  });
+  if (!visibleMgrs.length) return '';
+
+  return visibleMgrs.map(m => {
+    const mk = `m:${m.name}`;
+    const isMOpen = state.openKeys.has(mk);
+    // Totals across currencies are ill-defined; show currency count
+    const curCount = m.currencies.length;
+    const clientCount = m.currencies.reduce((a, c) => a + c.clients.filter(clientMatches).length, 0);
+
+    const mgrRow = renderManagerHeaderRow(mk, m, isMOpen, curCount, clientCount);
+    if (!isMOpen) return sectionWrapManager(m, mgrRow);
+
+    const curBlocks = m.currencies.map(C => {
+      const ck = `${mk}|cur:${C.currency}`;
+      const isCOpen = state.openKeys.has(ck);
+      const visibleClients = C.clients.filter(clientMatches);
+      if (q && !visibleClients.length) return '';
+      const rows = [renderCurrencyRow(ck, C, isCOpen, visibleClients.length)];
+      if (isCOpen) {
+        visibleClients.forEach(c => {
+          const clk = `${ck}|c:${c.name}`;
+          const isClOpen = state.openKeys.has(clk);
+          rows.push(renderClientRow(clk, c, C.currency, isClOpen));
+          if (isClOpen) {
+            c.orders.forEach(o => rows.push(renderOrderRow(o, C.currency)));
+          }
+        });
+      }
+      return rows.join('');
+    }).join('');
+
+    return sectionWrapManager(m, mgrRow + curBlocks);
   }).join('');
-  return sectionWrap(cur, C, rows, managers.length + ' менедж.');
 }
 
-function renderCombined(cur, C) {
-  const clients = getFlatClients(C).filter(clientMatches);
-  if (!clients.length) return '';
-  const rows = clients.map(c => {
-    const ck = `c:${cur}|${c.name}`;
-    const isOpen = state.openKeys.has(ck);
-    const out = [renderClientRow(ck, c, cur, isOpen, true)];
-    if (isOpen) {
-      c.orders.forEach(o => out.push(renderOrderRow(o, cur)));
-    }
-    return out.join('');
-  }).join('');
-  return sectionWrap(cur, C, rows, clients.length + ' клієнт.');
+function renderCombined(managers) {
+  const curGroups = getCombinedByCurrency(managers);
+  return curGroups.map(B => {
+    const visibleClients = B.clients.filter(clientMatches);
+    if (!visibleClients.length) return '';
+    const rows = visibleClients.map(c => {
+      const ck = `cur:${B.currency}|c:${c.name}`;
+      const isOpen = state.openKeys.has(ck);
+      const out = [renderClientRow(ck, c, B.currency, isOpen, true)];
+      if (isOpen) {
+        c.orders.forEach(o => out.push(renderOrderRow(o, B.currency)));
+      }
+      return out.join('');
+    }).join('');
+    return sectionWrapCurrency(B, rows, visibleClients.length + ' клієнт.');
+  }).filter(Boolean).join('');
 }
 
-function sectionWrap(cur, C, rows, countLabel) {
+function sectionWrapManager(m, rowsHtml) {
+  return `
+    <div class="cur-section">
+      <div class="tree-wrap">
+        <table class="tree-tbl">
+          <thead><tr>
+            <th>Менеджер / Валюта / Клієнт / Замовлення</th>
+            <th>Сума</th>
+            <th>Оплачено</th>
+            <th>Залишилось</th>
+          </tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function sectionWrapCurrency(B, rows, countLabel) {
   return `
     <div class="cur-section">
       <div class="cur-section-title">
         <span class="ico">💱</span>
         <span>Валюта:</span>
-        <span class="cur-badge">${esc(cur)}</span>
+        <span class="cur-badge">${esc(B.currency)}</span>
         <span class="tot">
-          ${countLabel} · Сума: <strong>${fmt(C.total)}</strong> ·
-          Оплачено: <strong>${fmt(C.paid)}</strong> ·
-          Залишилось: <strong>${fmt(C.remain)}</strong>
+          ${countLabel} · Сума: <strong>${fmt(B.total)}</strong> ·
+          Оплачено: <strong>${fmt(B.paid)}</strong> ·
+          Залишилось: <strong>${fmt(B.remain)}</strong>
         </span>
       </div>
       <div class="tree-wrap">
         <table class="tree-tbl">
           <thead><tr>
-            <th>Менеджер / Клієнт / Замовлення</th>
+            <th>Клієнт / Замовлення</th>
             <th>Сума</th>
             <th>Оплачено</th>
             <th>Залишилось</th>
@@ -460,13 +513,23 @@ function sectionWrap(cur, C, rows, countLabel) {
     </div>`;
 }
 
-function renderManagerRow(key, m, cur, isOpen, visibleClientCount) {
+function renderManagerHeaderRow(key, m, isOpen, curCount, clientCount) {
   return `
     <tr class="mgr-row" data-key="${esc(key)}">
-      <td><span class="chev ${isOpen?'open':''}">▶</span><span>${esc(m.name)}</span><span class="sub">· ${visibleClientCount} клієнт.</span></td>
-      <td>${fmt(m.total)}</td>
-      <td>${fmt(m.paid)}</td>
-      <td class="${valCls(m.remain)}">${fmt(m.remain)}</td>
+      <td><span class="chev ${isOpen?'open':''}">▶</span><span>👤 ${esc(m.name)}</span><span class="sub">· ${curCount} валют · ${clientCount} клієнт.</span></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>`;
+}
+
+function renderCurrencyRow(key, C, isOpen, clientCount) {
+  return `
+    <tr class="cur-row" data-key="${esc(key)}">
+      <td><span class="chev ${isOpen?'open':''}">▶</span><span class="cur-badge-inline">${esc(C.currency)}</span> <span style="color:var(--text3);font-weight:500;font-size:11px">· ${clientCount} клієнт.</span></td>
+      <td>${fmt(C.total)}</td>
+      <td>${fmt(C.paid)}</td>
+      <td class="${valCls(C.remain)}">${fmt(C.remain)}</td>
     </tr>`;
 }
 
