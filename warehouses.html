@@ -175,19 +175,9 @@ body.locked{overflow:hidden}
     <div class="stats" id="stats"></div>
 
     <div class="toolbar">
-      <span class="lbl">Залишок на</span>
+      <span class="lbl">На дату</span>
       <input type="date" id="asOfIn" title="Залишки на кінець обраної дати">
       <button class="btn" onclick="setToday()" title="Поточний залишок">Сьогодні</button>
-
-      <span class="sep"></span>
-
-      <span class="lbl">Період продажів</span>
-      <input type="date" id="fromIn" title="Початок періоду для продажів">
-      <span style="color:var(--text3);font-size:11px">→</span>
-      <input type="date" id="toIn" title="Кінець періоду для продажів">
-      <button class="btn" onclick="setPeriod(7)" title="Останні 7 днів">7 дн</button>
-      <button class="btn" onclick="setPeriod(30)" title="Останні 30 днів">30 дн</button>
-      <button class="btn" onclick="setPeriod(90)" title="Останні 90 днів">90 дн</button>
 
       <span class="sep"></span>
 
@@ -281,8 +271,6 @@ const state = {
   org: 'all',
   search: '',
   asOf: null,            // YYYY-MM-DD or null (today)
-  from: null,            // YYYY-MM-DD or null (default: 30d ago)
-  to: null,              // YYYY-MM-DD or null (default: today)
   showEmpty: false,
   openKeys: new Set(),   // expanded item keys
   loading: false,
@@ -314,11 +302,8 @@ async function load() {
   document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
   document.getElementById('asofBanner').innerHTML = '';
   try {
-    const params = new URLSearchParams({ action: 'warehouses_stock' });
-    if (state.asOf) params.set('date', state.asOf);
-    if (state.from) params.set('from', state.from);
-    if (state.to) params.set('to', state.to);
-    const res = await fetch(API_URL + '?' + params.toString());
+    const q = state.asOf ? `?action=warehouses_stock&date=${state.asOf}` : '?action=warehouses_stock';
+    const res = await fetch(API_URL + q);
     const d = await res.json();
     if (d.error) throw new Error(d.error);
     state.data = d;
@@ -335,27 +320,22 @@ async function load() {
 // ─── Filter helpers ───
 function filterSummaryByOrg(summary) {
   if (state.org === 'all') return summary;
+  // We need to figure out which items belong to selected org via warehouses
   const orgItems = new Set();
   (state.data.warehouses || []).forEach(w => {
     if (w.org !== state.org) return;
     (w.items || []).forEach(it => orgItems.add(it.name));
-    Object.keys(w.salesByItem || {}).forEach(n => orgItems.add(n));
-    Object.keys(w.reservesByItem || {}).forEach(n => orgItems.add(n));
   });
   return summary.filter(s => orgItems.has(s.name));
 }
 
-function matchesSearch(s, reserves, sales) {
+function matchesSearch(s, reserves) {
   if (!state.search) return true;
   const q = state.search;
   if (s.name.toLowerCase().includes(q)) return true;
   if ((reserves || []).some(r =>
     (r.client || '').toLowerCase().includes(q) ||
     (r.orderNumber || '').toLowerCase().includes(q)
-  )) return true;
-  if ((sales || []).some(r =>
-    (r.client || '').toLowerCase().includes(q) ||
-    (r.number || '').toLowerCase().includes(q)
   )) return true;
   return false;
 }
@@ -370,8 +350,6 @@ function renderStats() {
   const totalQty = summary.reduce((a, x) => a + x.total, 0);
   const totalReserve = summary.reduce((a, x) => a + x.reserve, 0);
   const freeQty = totalQty - totalReserve;
-  const totalSold = summary.reduce((a, x) => a + (x.sales || []).reduce((aa, s) => aa + s.qty, 0), 0);
-  const totalSalesCount = summary.reduce((a, x) => a + (x.sales || []).length, 0);
   const activeWh = warehouses.filter(w => state.org === 'all' || w.org === state.org);
   const onHand = activeWh.filter(w => !w.name.startsWith(IN_TRANSIT_MARKER)).length;
   const inTransit = activeWh.filter(w => w.name.startsWith(IN_TRANSIT_MARKER)).length;
@@ -384,26 +362,15 @@ function renderStats() {
     <div class="stat"><div class="l">Одиниць всього</div><div class="v">${fmt(totalQty)}</div></div>
     <div class="stat"><div class="l">У резерві</div><div class="v" style="color:var(--blue)">${fmt(totalReserve)}</div></div>
     <div class="stat"><div class="l">Вільно</div><div class="v" style="color:var(--green)">${fmt(freeQty)}</div></div>
-    <div class="stat"><div class="l">Продажі (період)</div><div class="v" style="color:var(--green)">${fmt(totalSold)}<span style="font-size:11px;color:var(--text3);font-weight:500"> / ${totalSalesCount}</span></div></div>
   `;
   document.getElementById('topCounter').textContent = `${activeWh.length} складів · ${totalItems} позицій`;
 }
 
 function renderBanner() {
   const el = document.getElementById('asofBanner');
-  const d = state.data || {};
-  const pf = d.periodFrom, pt = d.periodTo, asOf = d.asOfDate;
-  const fmtU = s => {
-    if (!s) return '';
-    const x = new Date(s + 'T00:00:00');
-    return x.toLocaleDateString('uk-UA',{day:'2-digit',month:'long',year:'numeric'});
-  };
-  let asOfTxt = asOf ? `історичний на <strong>${fmtU(asOf)}</strong>` : `поточний`;
-  let perTxt = pf && pt ? `продажі за <strong>${fmtU(pf)} — ${fmtU(pt)}</strong>` : '';
-  el.innerHTML = `<div class="asof">📅 Залишок ${asOfTxt} · ${perTxt}</div>`;
-  // Populate inputs to match backend-resolved defaults
-  if (pf && !document.getElementById('fromIn').value) document.getElementById('fromIn').value = pf;
-  if (pt && !document.getElementById('toIn').value) document.getElementById('toIn').value = pt;
+  if (!state.asOf) { el.innerHTML = ''; return; }
+  const d = new Date(state.asOf + 'T00:00:00');
+  el.innerHTML = `<div class="asof">📅 Залишки на <strong>${d.toLocaleDateString('uk-UA',{day:'2-digit',month:'long',year:'numeric'})}</strong> · історичний зріз з 1С</div>`;
 }
 
 // ─── Controls ───
@@ -424,26 +391,9 @@ function setToday() {
   document.getElementById('asOfIn').value = '';
   load();
 }
-function setPeriod(days) {
-  const to = todayISO();
-  const d = new Date(to + 'T00:00:00');
-  d.setDate(d.getDate() - days);
-  const from = d.toISOString().slice(0,10);
-  state.from = from; state.to = to;
-  document.getElementById('fromIn').value = from;
-  document.getElementById('toIn').value = to;
-  load();
-}
 document.getElementById('asOfIn').addEventListener('change', e => {
-  state.asOf = e.target.value || null;
-  load();
-});
-document.getElementById('fromIn').addEventListener('change', e => {
-  state.from = e.target.value || null;
-  load();
-});
-document.getElementById('toIn').addEventListener('change', e => {
-  state.to = e.target.value || null;
+  const v = e.target.value;
+  state.asOf = v || null;
   load();
 });
 document.getElementById('searchIn').addEventListener('input', e => {
@@ -470,16 +420,13 @@ function collapseAll() {
 function currentItemKeys() {
   const keys = [];
   if (state.view === 'combined') {
-    getCombinedItems().forEach(s => {
-      if ((s.reserves || []).length || (s.sales || []).length) keys.push('c:' + s.name);
-    });
+    getCombinedItems().forEach(s => { if ((s.reserves || []).length) keys.push('c:' + s.name); });
   } else {
     (state.data.warehouses || []).forEach(w => {
       if (state.org !== 'all' && w.org !== state.org) return;
       (w.items || []).forEach(it => {
         const rs = (w.reservesByItem && w.reservesByItem[it.name]) || [];
-        const ss = (w.salesByItem && w.salesByItem[it.name]) || [];
-        if (rs.length || ss.length) keys.push('w:' + w.id + '|' + it.name);
+        if (rs.length) keys.push('w:' + w.id + '|' + it.name);
       });
     });
   }
@@ -489,8 +436,8 @@ function currentItemKeys() {
 // ─── Render ───
 function getCombinedItems() {
   let summary = filterSummaryByOrg(state.data.summary || []);
-  if (!state.showEmpty) summary = summary.filter(s => s.total > 0 || (s.sales && s.sales.length));
-  if (state.search) summary = summary.filter(s => matchesSearch(s, s.reserves, s.sales));
+  if (!state.showEmpty) summary = summary.filter(s => s.total > 0);
+  if (state.search) summary = summary.filter(s => matchesSearch(s, s.reserves));
   return summary;
 }
 
@@ -506,7 +453,7 @@ function renderCombined() {
     document.getElementById('body').innerHTML = '<div class="empty">Нічого не знайдено</div>';
     return;
   }
-  const rows = items.map(s => renderItemRow('c:' + s.name, s.name, s, s.reserves || [], s.sales || [])).join('');
+  const rows = items.map(s => renderItemRow('c:' + s.name, s.name, s, s.reserves || [], null)).join('');
   document.getElementById('body').innerHTML = `
     <div class="tree-wrap combined">
       <table class="tree-tbl">
@@ -515,7 +462,6 @@ function renderCombined() {
           <th>Всього</th>
           <th>Резерв</th>
           <th>Вільно</th>
-          <th>Продано</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
@@ -532,17 +478,12 @@ function renderPerWh() {
   const sections = warehouses.map(w => {
     const isTransit = w.name.startsWith(IN_TRANSIT_MARKER);
     let items = w.items || [];
-    if (!state.showEmpty) items = items.filter(it => {
-      const ss = (w.salesByItem && w.salesByItem[it.name]) || [];
-      return it.total > 0 || ss.length;
-    });
+    if (!state.showEmpty) items = items.filter(it => it.total > 0);
     if (state.search) {
       items = items.filter(it => {
         const rs = (w.reservesByItem && w.reservesByItem[it.name]) || [];
-        const ss = (w.salesByItem && w.salesByItem[it.name]) || [];
         return it.name.toLowerCase().includes(state.search) ||
-               rs.some(r => (r.client||'').toLowerCase().includes(state.search) || (r.orderNumber||'').toLowerCase().includes(state.search)) ||
-               ss.some(r => (r.client||'').toLowerCase().includes(state.search) || (r.number||'').toLowerCase().includes(state.search));
+               rs.some(r => (r.client||'').toLowerCase().includes(state.search) || (r.orderNumber||'').toLowerCase().includes(state.search));
       });
     }
     if (!items.length) return '';
@@ -550,9 +491,8 @@ function renderPerWh() {
     const totalRes = items.reduce((a, it) => a + it.reserve, 0);
     const rows = items.map(it => {
       const reserves = (w.reservesByItem && w.reservesByItem[it.name]) || [];
-      const sales = (w.salesByItem && w.salesByItem[it.name]) || [];
       const key = 'w:' + w.id + '|' + it.name;
-      return renderItemRow(key, it.name, it, reserves, sales);
+      return renderItemRow(key, it.name, it, reserves, null);
     }).join('');
     return `
       <div class="wh-section">
@@ -569,7 +509,6 @@ function renderPerWh() {
               <th>Всього</th>
               <th>Резерв</th>
               <th>Вільно</th>
-              <th>Продано</th>
             </tr></thead>
             <tbody>${rows}</tbody>
           </table>
@@ -580,62 +519,37 @@ function renderPerWh() {
   bindItemRows();
 }
 
-function renderItemRow(key, name, stockObj, reserves, sales) {
-  reserves = reserves || [];
-  sales = sales || [];
-  const hasReserves = reserves.length > 0;
-  const hasSales = sales.length > 0;
-  const expandable = hasReserves || hasSales;
+function renderItemRow(key, name, stockObj, reserves, extra) {
+  const hasReserves = reserves && reserves.length > 0;
   const isOpen = state.openKeys.has(key);
-
-  const soldTotal = sales.reduce((a, r) => a + r.qty, 0);
   const freeCls = stockObj.free < 0 ? 'qty-neg' : (stockObj.free > 0 ? 'qty-pos' : 'qty-zero');
   const resCls = stockObj.reserve > 0 ? 'qty-res' : 'qty-zero';
   const totCls = stockObj.total === 0 ? 'qty-zero' : '';
-  const soldCls = soldTotal > 0 ? 'qty-pos' : 'qty-zero';
-  const rowCls = 'item-row' + (expandable ? '' : ' disabled') + (hasReserves ? ' reserved' : '') + (isOpen ? ' open' : '');
+  const rowCls = 'item-row' + (hasReserves ? ' reserved' : ' disabled') + (isOpen ? ' open' : '');
 
   let out = `<tr class="${rowCls}" data-key="${esc(key)}">
     <td><span class="chev">▶</span><span class="item-name">${esc(name)}</span></td>
     <td class="${totCls}">${fmt(stockObj.total)}</td>
     <td class="${resCls}">${fmt(stockObj.reserve)}</td>
     <td class="${freeCls}">${fmt(stockObj.free)}</td>
-    <td class="${soldCls}">${soldTotal > 0 ? fmt(soldTotal) : '—'}</td>
   </tr>`;
 
-  if (expandable && isOpen) {
-    if (hasReserves) {
-      out += `<tr class="reserve-row group-head"><td colspan="5" style="padding:8px 12px 6px 28px;font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--blue);font-weight:700;background:var(--bg3)">🔒 Резерви · ${reserves.length}</td></tr>`;
-      out += reserves.map(r => {
-        const whBreakdown = (r.warehouses && r.warehouses.length > 1)
-          ? r.warehouses.map(w => `<div style="padding-left:16px;font-size:10.5px;color:var(--text3);font-style:italic">└ ${esc(w.whName)} · ${fmt(w.qty)} од</div>`).join('')
-          : '';
-        return `<tr class="reserve-row">
-          <td>
-            <span class="client">${esc(r.client)}</span>
-            <span class="meta">${r.orderNumber ? esc(r.orderNumber) : '—'} · ${fmtDate(r.orderDate)}</span>
-            ${whBreakdown}
-          </td>
-          <td></td>
-          <td class="qty-res">${fmt(r.qty)}</td>
-          <td></td>
-          <td></td>
-        </tr>`;
-      }).join('');
-    }
-    if (hasSales) {
-      out += `<tr class="reserve-row group-head"><td colspan="5" style="padding:8px 12px 6px 28px;font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--green);font-weight:700;background:var(--bg3)">📦 Продажі за період · ${sales.length}</td></tr>`;
-      out += sales.map(r => `<tr class="reserve-row">
+  if (hasReserves && isOpen) {
+    out += reserves.map(r => {
+      const whBreakdown = (r.warehouses && r.warehouses.length > 1)
+        ? r.warehouses.map(w => `<div class="wh-break-inner" style="padding-left:16px;font-size:10.5px;color:var(--text3);font-style:italic">└ ${esc(w.whName)} · ${fmt(w.qty)} од</div>`).join('')
+        : '';
+      return `<tr class="reserve-row">
         <td>
           <span class="client">${esc(r.client)}</span>
-          <span class="meta">${r.number ? esc(r.number) : '—'} · ${fmtDate(r.date)}</span>
+          <span class="meta">${r.orderNumber ? esc(r.orderNumber) : '—'} · ${fmtDate(r.orderDate)}</span>
+          ${whBreakdown}
         </td>
         <td></td>
+        <td class="qty-res">${fmt(r.qty)}</td>
         <td></td>
-        <td></td>
-        <td class="qty-pos">${fmt(r.qty)}</td>
-      </tr>`).join('');
-    }
+      </tr>`;
+    }).join('');
   }
   return out;
 }
