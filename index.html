@@ -280,6 +280,37 @@ body.ip-check>*:not(#accessDenied):not(script){display:none!important}
 .page-head h1{font-size:18px;font-weight:600;letter-spacing:-.2px;display:flex;align-items:center;gap:8px;flex:1;margin:0}
 .page-head .date{font-size:12px;color:var(--text2)}
 .page-head .settings-wrap{position:relative}
+/* ─── Custom item search (for items missing from Gen's price list) ─── */
+.custom-search{max-width:1000px;margin:0 auto 12px;padding:14px 24px;background:var(--surface);border:1px solid var(--border);border-radius:4px;box-shadow:var(--panel-shadow)}
+.cs-head{margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.cs-title{font-size:12px;color:var(--text2);font-weight:600;letter-spacing:.2px}
+.cs-hint{font-size:10px;color:var(--text3)}
+.cs-row{display:flex;gap:6px;align-items:center}
+.cs-row input{flex:1;padding:7px 10px;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:inherit}
+.cs-row input:focus{outline:none;border-color:var(--accent)}
+.cs-btn{padding:7px 16px;background:var(--accent);color:var(--btn-text);border:none;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;transition:background .15s}
+.cs-btn:hover{background:var(--accent-hover)}
+.cs-btn.cs-ghost{background:var(--bg3);color:var(--text2);padding:7px 11px;font-size:14px}
+.cs-btn.cs-ghost:hover{background:var(--bg4);color:var(--red)}
+#customResultsBox{margin-top:10px}
+.cs-empty{padding:16px;text-align:center;color:var(--text3);font-size:12px;border:1px dashed var(--border);border-radius:4px}
+.cs-warning{padding:10px;color:var(--accent);font-size:12px;text-align:center;background:var(--accent-bg);border-radius:4px}
+.cs-mini-wrap{overflow:auto;max-height:260px;border:1px solid var(--border);border-radius:4px}
+.cs-mini-wrap table{min-width:1600px;margin:0;font-size:12px;border-collapse:collapse;white-space:nowrap;font-variant-numeric:tabular-nums;width:100%}
+.cs-mini-wrap th,.cs-mini-wrap td{padding:6px 10px;border-bottom:1px solid var(--border);text-align:center;vertical-align:middle}
+.cs-match-names{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;padding:8px 2px 0}
+.cs-match-names .cs-tag{display:inline-flex;align-items:baseline;gap:6px;padding:4px 9px;border-radius:3px;font-size:11px;line-height:1.35;max-width:100%}
+.cs-match-names .cs-tag .cs-tag-lbl{font-weight:700;letter-spacing:.2px}
+.cs-match-names .cs-tag .cs-tag-nm{color:var(--text);white-space:normal;word-break:break-word}
+.cs-tag-gen{background:var(--sup-gen-bg);color:var(--sup-gen)}
+.cs-tag-hel{background:var(--sup-hel-bg);color:var(--sup-hel)}
+.cs-tag-dol{background:var(--sup-dol-bg);color:var(--sup-dol)}
+.cs-tag-se{background:var(--sup-se-bg);color:var(--sup-se)}
+.cs-tag-pe{background:rgba(77,182,172,.15);color:#4db6ac}
+.cs-tag-sv{background:rgba(66,165,245,.15);color:#42a5f5}
+.cs-tag-atm{background:var(--sup-atm-bg);color:var(--sup-atm)}
+.cs-tag-sig{background:rgba(142,36,170,.15);color:#8e24aa}
+.cs-tag-ssj{background:rgba(0,137,123,.15);color:#00897b}
 </style>
 </head>
 <body class="ip-check">
@@ -413,6 +444,19 @@ body.ip-check>*:not(#accessDenied):not(script){display:none!important}
 <div class="history-panel" id="historyPanel" style="display:none">
   <h2>Історія порівнянь <span class="h-count" id="hCount"></span> <button class="h-clear" id="hClearAll" onclick="clearAllHistory()">Очистити все</button></h2>
   <div class="history-list" id="historyList"></div>
+</div>
+
+<div class="custom-search" id="customSearch">
+  <div class="cs-head">
+    <span class="cs-title">🔎 Пошук по назві товару</span>
+    <span class="cs-hint">— якщо товару нема в прайсі Генерації, введіть назву і отримайте окрему таблицю порівняння</span>
+  </div>
+  <div class="cs-row">
+    <input id="customQuery" placeholder="Наприклад: DEYE SUN-12K-SG04LP3, JAM72D40-580LB, Pylontech US5000…" autocomplete="off" onkeydown="if(event.key==='Enter')customSearch()">
+    <button class="cs-btn" onclick="customSearch()">Знайти</button>
+    <button class="cs-btn cs-ghost" onclick="clearCustomSearch()" title="Очистити">×</button>
+  </div>
+  <div id="customResultsBox"></div>
 </div>
 
 <div id="results">
@@ -1688,6 +1732,198 @@ function renderTable(rows) {
   }
 }
 
+// ═══════════════════════════════════════════════
+// CUSTOM ITEM SEARCH (when item is missing from Generation's price list)
+// ═══════════════════════════════════════════════
+window.__supProds = null;
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function findBestByQuery(query, prods) {
+  if (!prods || !prods.length) return null;
+  const qRaw = String(query || '').trim();
+  if (qRaw.length < 2) return null;
+  const qL = cyr(qRaw).toLowerCase();
+  const qModel = extractModel(qRaw);
+  const qN = qModel ? normModel(qModel) : null;
+  const qTokens = qL.split(/[\s\-\/.,()\[\]]+/).filter(t => t.length >= 2);
+
+  let best = null;
+  let bestScore = 0;
+  for (const p of prods) {
+    if (!p || !p.name) continue;
+    if (p.price_no_vat == null && p.price_vat == null) continue;
+    const nL = cyr(p.name).toLowerCase();
+    let score = 0;
+
+    // Full-phrase substring (either direction)
+    if (qL.length >= 4 && nL.includes(qL)) score += 200;
+    else if (nL.length >= 4 && qL.includes(nL)) score += 120;
+
+    // Model equality / fuzzy
+    if (qN && p.model) {
+      const pN = normModel(p.model);
+      if (pN && pN === qN) score += 150;
+      else if (fuzzyMatch(qModel, p.model)) score += 80;
+    }
+
+    // Token coverage
+    if (qTokens.length) {
+      let hits = 0;
+      for (const t of qTokens) if (nL.includes(t)) hits++;
+      const ratio = hits / qTokens.length;
+      if (ratio >= 0.5) score += Math.round(ratio * 60);
+    }
+
+    const prevBestPrice = best ? (best.price_no_vat ?? best.price_vat ?? Infinity) : Infinity;
+    const thisPrice = p.price_no_vat ?? p.price_vat ?? Infinity;
+    if (score > bestScore || (score === bestScore && thisPrice < prevBestPrice)) {
+      bestScore = score;
+      best = p;
+    }
+  }
+  // Threshold — avoid noise
+  return bestScore >= 30 ? best : null;
+}
+
+function clearCustomSearch() {
+  const input = document.getElementById('customQuery');
+  if (input) input.value = '';
+  const host = document.getElementById('customResultsBox');
+  if (host) host.innerHTML = '';
+}
+
+function customSearch() {
+  const q = (document.getElementById('customQuery').value || '').trim();
+  const host = document.getElementById('customResultsBox');
+  if (!host) return;
+  if (!q) { host.innerHTML = ''; return; }
+  if (!window.__supProds) {
+    host.innerHTML = '<div class="cs-warning">Спочатку натисніть <b>«Порівняти ціни»</b> — потрібні дані постачальників.</div>';
+    return;
+  }
+  const S = window.__supProds;
+
+  const gm = findBestByQuery(q, S.gen);
+  const hm = findBestByQuery(q, S.hel);
+  const dm = findBestByQuery(q, S.dol);
+  const sm = findBestByQuery(q, S.se);
+  const pm = findBestByQuery(q, S.pe);
+  const vm = findBestByQuery(q, S.sv);
+  const am = findBestByQuery(q, S.atm);
+  const im = findBestByQuery(q, S.sig);
+  const jm = findBestByQuery(q, S.ssj);
+
+  const anyMatch = gm || hm || dm || sm || pm || vm || am || im || jm;
+  if (!anyMatch) {
+    host.innerHTML = `<div class="cs-empty">Нічого не знайдено для «<b>${escapeHtml(q)}</b>» у жодного постачальника. Спробуйте змінити запит (модель або бренд + потужність).</div>`;
+    return;
+  }
+
+  const row = {
+    cat: guessCategory(q) || 'ПОШУК',
+    name: q,
+    model: extractModel(q),
+    gSt: gm ? gm.status : null, gNV: gm ? gm.price_no_vat : null, gV: gm ? gm.price_vat : null, gC: gm ? (gm.currency || 'USD') : 'USD', gStock: null,
+    hSt: hm ? hm.status : null, hNV: hm ? hm.price_no_vat : null, hV: hm ? hm.price_vat : null, hR: hm ? (hm.rrc || null) : null, hC: hm ? (hm.currency || 'USD') : 'USD',
+    dSt: dm ? dm.status : null, dNV: dm ? dm.price_no_vat : null, dV: dm ? dm.price_vat : null, dC: dm ? (dm.currency || 'USD') : 'USD',
+    sSt: sm ? sm.status : null, sNV: sm ? sm.price_no_vat : null, sV: sm ? sm.price_vat : null, sC: sm ? (sm.currency || 'USD') : 'USD',
+    pSt: pm ? pm.status : null, pNV: pm ? pm.price_no_vat : null, pV: pm ? pm.price_vat : null, pC: pm ? (pm.currency || 'USD') : 'USD',
+    vSt: vm ? vm.status : null, vNV: vm ? vm.price_no_vat : null, vV: vm ? vm.price_vat : null, vC: vm ? (vm.currency || 'USD') : 'USD',
+    aSt: am ? am.status : null, aNV: am ? am.price_no_vat : null, aV: am ? am.price_vat : null, aC: am ? (am.currency || 'USD') : 'USD',
+    iSt: im ? im.status : null, iNV: im ? im.price_no_vat : null, iV: im ? im.price_vat : null, iC: im ? (im.currency || 'USD') : 'USD',
+    jSt: jm ? jm.status : null, jNV: jm ? jm.price_no_vat : null, jV: jm ? jm.price_vat : null, jC: jm ? (jm.currency || 'USD') : 'USD',
+  };
+
+  // Best price
+  const prices = [['Генерація',row.gNV,row.gC],['Helius',row.hNV,row.hC],['Dolya',row.dNV,row.dC],['SE',row.sNV,row.sC],['ПЕ',row.pNV,row.pC],['SV',row.vNV,row.vC],['Атмосфера',row.aNV,row.aC],['СІГ',row.iNV,row.iC],['SSJ',row.jNV,row.jC]].filter(p => p[1] != null);
+  const best = prices.length ? prices.reduce((a, b) => b[1] < a[1] ? b : a) : null;
+  const bestWho = best ? prices.filter(p => p[1] === best[1]).map(p => p[0]).join(' / ') : '';
+  const bestP = best ? best[1] : null;
+  const bestC = best ? best[2] : 'USD';
+
+  // Matched names (for verification — what actually got picked per supplier)
+  const matches = [];
+  if (gm) matches.push({cls:'cs-tag-gen', lbl:'Генерація', name: gm.name});
+  if (hm) matches.push({cls:'cs-tag-hel', lbl:'Helius', name: hm.name});
+  if (dm) matches.push({cls:'cs-tag-dol', lbl:'Dolya', name: dm.name});
+  if (sm) matches.push({cls:'cs-tag-se', lbl:'SE', name: sm.name});
+  if (pm) matches.push({cls:'cs-tag-pe', lbl:'ПЕ', name: pm.name});
+  if (vm) matches.push({cls:'cs-tag-sv', lbl:'SV', name: vm.name});
+  if (am) matches.push({cls:'cs-tag-atm', lbl:'Атмосфера', name: am.name});
+  if (im) matches.push({cls:'cs-tag-sig', lbl:'СІГ', name: im.name});
+  if (jm) matches.push({cls:'cs-tag-ssj', lbl:'SSJ', name: jm.name});
+
+  // Reuse the same column structure as the main comparison table
+  const thead1 = document.querySelector('#mainTable thead tr:first-child').outerHTML;
+  const thead2 = document.querySelector('#mainTable thead tr:last-child').outerHTML;
+  const mainCls = document.getElementById('mainTable').className;
+  const r = row;
+  const rowHtml = `<tr>
+      <td class="t-tovar bl">1</td>
+      <td class="t-tovar art">${escapeHtml(r.name)}</td>
+      <td class="t-gen bl stock"></td>
+      <td class="t-gen status">${escapeHtml(r.gSt || '')}</td>
+      <td class="t-gen">${fmt(r.gNV, r.gC)}</td>
+      <td class="t-gen">${fmt(r.gV, r.gC)}</td>
+      <td class="t-hel bl status">${escapeHtml(r.hSt || '')}</td>
+      <td class="t-hel">${fmt(r.hNV, r.hC)}</td>
+      <td class="d-hel">${delta(r.hNV, r.gNV)}</td>
+      <td class="t-hel">${fmt(r.hV, r.hC)}</td>
+      <td class="d-hel">${delta(r.hV, r.gV)}</td>
+      <td class="t-hel">${fmt(r.hR, r.hC)}</td>
+      <td class="t-dol bl status">${escapeHtml(r.dSt || '')}</td>
+      <td class="t-dol">${fmt(r.dNV, r.dC)}</td>
+      <td class="d-dol">${delta(r.dNV, r.gNV)}</td>
+      <td class="t-dol">${fmt(r.dV, r.dC)}</td>
+      <td class="d-dol">${delta(r.dV, r.gV)}</td>
+      <td class="t-se bl status">${escapeHtml(r.sSt || '')}</td>
+      <td class="t-se">${fmt(r.sNV, r.sC)}</td>
+      <td class="d-se">${delta(r.sNV, r.gNV)}</td>
+      <td class="t-se">${fmt(r.sV, r.sC)}</td>
+      <td class="d-se">${delta(r.sV, r.gV)}</td>
+      <td class="t-pe bl status">${escapeHtml(r.pSt || '')}</td>
+      <td class="t-pe">${fmt(r.pNV, r.pC)}</td>
+      <td class="d-pe">${delta(r.pNV, r.gNV)}</td>
+      <td class="t-pe">${fmt(r.pV, r.pC)}</td>
+      <td class="d-pe">${delta(r.pV, r.gV)}</td>
+      <td class="t-sv bl status">${escapeHtml(r.vSt || '')}</td>
+      <td class="t-sv">${fmt(r.vNV, r.vC)}</td>
+      <td class="d-sv">${delta(r.vNV, r.gNV)}</td>
+      <td class="t-sv">${fmt(r.vV, r.vC)}</td>
+      <td class="d-sv">${delta(r.vV, r.gV)}</td>
+      <td class="t-atm bl status">${escapeHtml(r.aSt || '')}</td>
+      <td class="t-atm">${fmt(r.aNV, r.aC)}</td>
+      <td class="d-atm">${delta(r.aNV, r.gNV)}</td>
+      <td class="t-atm">${fmt(r.aV, r.aC)}</td>
+      <td class="d-atm">${delta(r.aV, r.gV)}</td>
+      <td class="t-sig bl status">${escapeHtml(r.iSt || '')}</td>
+      <td class="t-sig">${fmt(r.iNV, r.iC)}</td>
+      <td class="d-sig">${delta(r.iNV, r.gNV)}</td>
+      <td class="t-sig">${fmt(r.iV, r.iC)}</td>
+      <td class="d-sig">${delta(r.iV, r.gV)}</td>
+      <td class="t-ssj bl status">${escapeHtml(r.jSt || '')}</td>
+      <td class="t-ssj">${fmt(r.jNV, r.jC)}</td>
+      <td class="d-ssj">${delta(r.jNV, r.gNV)}</td>
+      <td class="t-ssj">${fmt(r.jV, r.jC)}</td>
+      <td class="d-ssj">${delta(r.jV, r.gV)}</td>
+      <td class="t-best bl">${escapeHtml(bestWho)}</td>
+      <td class="t-best bold">${fmt(bestP, bestC)}</td>
+    </tr>`;
+
+  const matchHtml = matches.length
+    ? `<div class="cs-match-names">${matches.map(m => `<span class="cs-tag ${m.cls}" title="${escapeHtml(m.name)}"><span class="cs-tag-lbl">${escapeHtml(m.lbl)}:</span><span class="cs-tag-nm">${escapeHtml(m.name)}</span></span>`).join('')}</div>`
+    : '';
+
+  host.innerHTML = `
+    <div class="cs-mini-wrap">
+      <table class="${mainCls}"><thead>${thead1}${thead2}</thead><tbody>${rowHtml}</tbody></table>
+    </div>
+    ${matchHtml}
+  `;
+}
 
 // ═══════════════════════════════════════════════
 // MAIN RUN
@@ -1851,6 +2087,9 @@ async function runComparison() {
 
     // Show warnings
     if (warnings.length) alert('Увага!\n\n' + warnings.join('\n'));
+
+    // Cache raw supplier lists for custom search (user typing arbitrary product names)
+    window.__supProds = { gen: genProds, hel: helProds, dol: dolProds, se: seProds, pe: peProds, sv: svProds, atm: atmProds, sig: sigProds, ssj: ssjProds };
 
     // Match
     progText.textContent = 'Зіставлення моделей...';
@@ -2175,6 +2414,8 @@ function showSharedView(rows, dateLabel, shareUrl) {
   document.getElementById('results').style.display = 'block';
   document.getElementById('uploadPanel').style.display = 'none';
   document.getElementById('historyPanel').style.display = 'none';
+  const cs = document.getElementById('customSearch');
+  if (cs) cs.style.display = 'none';
   showShareLink(shareUrl);
   let back = document.getElementById('backBtn');
   if (!back) {
@@ -2187,6 +2428,8 @@ function showSharedView(rows, dateLabel, shareUrl) {
       location.hash = '';
       document.getElementById('uploadPanel').style.display = '';
       document.getElementById('results').style.display = 'none';
+      const cs = document.getElementById('customSearch');
+      if (cs) cs.style.display = '';
       const sb = document.getElementById('shareBox');
       if (sb) sb.remove();
       back.remove();
