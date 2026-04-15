@@ -65,6 +65,11 @@ body{font-family:'Inter',-apple-system,'Segoe UI',sans-serif;background:var(--bg
 .header-right{display:flex;align-items:center;gap:12px}
 .nav-link{font-size:12px;color:var(--text2);text-decoration:none;padding:6px 10px;border:1px solid var(--border);border-radius:6px;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
 .nav-link:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+.app-nav{display:inline-flex;align-items:center;gap:3px;padding:2px;border:1px solid var(--border);border-radius:8px;background:var(--bg2)}
+.app-nav .nav-pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:var(--text2);text-decoration:none;padding:5px 10px;border-radius:5px;transition:all .15s;white-space:nowrap}
+.app-nav .nav-pill:hover{background:var(--bg3);color:var(--text)}
+.app-nav .nav-pill.active{background:var(--accent-bg);color:var(--accent);font-weight:600}
+@media (max-width:720px){.app-nav .nav-pill{padding:5px 8px;font-size:11px}}
 .header .date{font-size:12px;color:var(--text2)}
 .theme-toggle{width:32px;height:32px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text2);display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0}
 .theme-toggle:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
@@ -275,8 +280,11 @@ body.ip-check>*:not(#accessDenied):not(script){display:none!important}
 <div class="header">
   <h1>Порівняння цін постачальників сонячного обладнання</h1>
   <div class="header-right">
-    <a href="/warehouses.html" class="nav-link" onclick="return openWarehouses(event)">📦 Склад</a>
-    <a href="/forecast.html" class="nav-link" onclick="return openForecast(event)">📋 Прогноз закупівель</a>
+    <nav class="app-nav">
+      <a href="/" class="nav-pill active">🏠 Головна</a>
+      <a href="/forecast.html" class="nav-pill" onclick="return openForecast(event)">📊 Прогноз</a>
+      <a href="/warehouses.html" class="nav-pill" onclick="return openWarehouses(event)">📦 Склад</a>
+    </nav>
     <span class="date" id="dateLabel"></span>
     <div class="settings-wrap">
       <button class="settings-toggle" onclick="document.getElementById('settingsDd').classList.toggle('open');event.stopPropagation()">

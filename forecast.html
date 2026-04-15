@@ -97,6 +97,13 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
 .pill-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--text2);text-decoration:none;padding:8px 14px;border:1px solid var(--border2);border-radius:8px;background:var(--glass-bg);transition:all .2s;cursor:pointer}
 .pill-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg);transform:translateY(-1px)}
 .pill-btn svg{width:14px;height:14px;fill:currentColor}
+.app-nav{display:inline-flex;align-items:center;gap:4px;padding:3px;border:1px solid var(--border);border-radius:10px;background:var(--glass-bg)}
+.app-nav .nav-pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:var(--text2);text-decoration:none;padding:6px 11px;border-radius:7px;transition:all .15s;white-space:nowrap}
+.app-nav .nav-pill:hover{background:var(--bg3,rgba(255,255,255,.04));color:var(--text)}
+.app-nav .nav-pill.active{background:var(--accent-bg);color:var(--accent);font-weight:600}
+@media (max-width:720px){
+  .app-nav .nav-pill{padding:6px 8px;font-size:11px}
+}
 .live-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);padding:6px 10px;background:var(--glass-bg);border:1px solid var(--border);border-radius:20px}
 .live-badge::before{content:'';width:6px;height:6px;background:var(--green);border-radius:50%;box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
@@ -372,7 +379,11 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
   </div>
   <div class="topbar-right">
     <span class="live-badge">Live <span id="dateLabel"></span></span>
-    <a href="/" class="pill-btn"><svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>До порівняння</a>
+    <nav class="app-nav">
+      <a href="/" class="nav-pill">🏠 Головна</a>
+      <a href="/forecast.html" class="nav-pill active">📊 Прогноз</a>
+      <a href="/warehouses.html" class="nav-pill">📦 Склад</a>
+    </nav>
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
       <svg id="iconSun" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2a1 1 0 100-2H2a1 1 0 100 2zm18 0h2a1 1 0 100-2h-2a1 1 0 100 2zM11 2v2a1 1 0 102 0V2a1 1 0 10-2 0zm0 18v2a1 1 0 102 0v-2a1 1 0 10-2 0zM5.99 4.58a1 1 0 00-1.41 1.41l1.06 1.06a1 1 0 101.41-1.41L5.99 4.58zm12.37 12.37a1 1 0 00-1.41 1.41l1.06 1.06a1 1 0 101.41-1.41l-1.06-1.06zm1.06-10.96a1 1 0 00-1.41-1.41l-1.06 1.06a1 1 0 101.41 1.41l1.06-1.06zM7.05 18.36a1 1 0 00-1.41-1.41l-1.06 1.06a1 1 0 101.41 1.41l1.06-1.06z"/></svg>
       <svg id="iconMoon" viewBox="0 0 24 24" style="display:none"><path d="M9.37 5.51A7.35 7.35 0 009.1 7.5c0 4.08 3.32 7.4 7.4 7.4.68 0 1.35-.09 1.99-.27A7.014 7.014 0 0112 19c-3.86 0-7-3.14-7-7 0-2.93 1.81-5.45 4.37-6.49zM12 3a9 9 0 109 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 01-4.4 2.26 5.403 5.403 0 01-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>

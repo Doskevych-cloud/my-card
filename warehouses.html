@@ -19,7 +19,7 @@
   --purple-bg:rgba(151,117,250,.14);
   --purple-text:#b399ff;
 }
-body.light{
+:root[data-theme="light"]{
   --bg:#f5f5f7; --bg2:#ffffff; --bg3:#ececef;
   --surface:#ffffff; --surface2:#ffffff;
   --border:#e5e5ea; --border2:#d1d1d6;
@@ -41,6 +41,11 @@ a{color:inherit;text-decoration:none}
 .topbar{position:sticky;top:0;z-index:50;background:var(--topbar-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:18px}
 .theme-btn{background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:13px;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
 .theme-btn:hover{background:var(--bg3);color:var(--text);border-color:var(--border2)}
+.app-nav{display:inline-flex;align-items:center;gap:3px;padding:2px;border:1px solid var(--border);border-radius:8px;background:var(--bg2)}
+.app-nav .nav-pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:var(--text2);text-decoration:none;padding:5px 10px;border-radius:5px;transition:all .15s;white-space:nowrap}
+.app-nav .nav-pill:hover{background:var(--bg3);color:var(--text)}
+.app-nav .nav-pill.active{background:var(--accent-bg);color:var(--accent);font-weight:600}
+@media (max-width:720px){.app-nav .nav-pill{padding:5px 8px;font-size:11px}.topbar h1{display:none}}
 .topbar h1{font-size:16px;font-weight:700;letter-spacing:-.3px;flex:1}
 .topbar .back{color:var(--text2);font-size:12px;padding:6px 12px;border-radius:8px;transition:all .15s}
 .topbar .back:hover{background:var(--bg3);color:var(--text)}
@@ -54,7 +59,7 @@ a{color:inherit;text-decoration:none}
 .toolbar input[type=text]{flex:1;min-width:200px;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;transition:border .15s}
 .toolbar input:focus{border-color:var(--accent)}
 .toolbar input[type=date]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;color-scheme:dark;font-family:inherit}
-body.light .toolbar input[type=date]{color-scheme:light}
+:root[data-theme="light"] .toolbar input[type=date]{color-scheme:light}
 .toolbar input[type=date]:focus{border-color:var(--accent)}
 .toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
 .toolbar .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;display:inline-flex;align-items:center;gap:6px}
@@ -165,9 +170,13 @@ body.locked{overflow:hidden}
 
 <div id="app" style="display:none">
   <div class="topbar">
-    <a href="index.html" class="back">← Головна</a>
     <h1>📦 Склад · залишки</h1>
     <div class="counter" id="topCounter">—</div>
+    <nav class="app-nav">
+      <a href="/" class="nav-pill">🏠 Головна</a>
+      <a href="/forecast.html" class="nav-pill">📊 Прогноз</a>
+      <a href="/warehouses.html" class="nav-pill active">📦 Склад</a>
+    </nav>
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Переключити тему"><span id="themeIco">☀️</span><span id="themeLbl">Світла</span></button>
   </div>
 
@@ -217,27 +226,26 @@ const API_URL = 'https://price-api.doskevich.workers.dev';
 const PW = '063744';
 const AUTH_KEY = 'forecastAuth';
 const AUTH_TTL = 12 * 60 * 60 * 1000;
-const THEME_KEY = 'warehousesTheme'; // 'light' | 'dark'
+const THEME_KEY = 'theme'; // shared with index.html + forecast.html
 
 // ─── Theme ───
 (function initTheme() {
-  const saved = localStorage.getItem(THEME_KEY);
-  const isLight = saved === 'light';
-  applyTheme(isLight);
+  const saved = localStorage.getItem(THEME_KEY) || 'dark';
+  applyTheme(saved);
 })();
-function applyTheme(isLight) {
-  document.body.classList.toggle('light', isLight);
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
   const ico = document.getElementById('themeIco');
   const lbl = document.getElementById('themeLbl');
   if (ico && lbl) {
-    ico.textContent = isLight ? '🌙' : '☀️';
-    lbl.textContent = isLight ? 'Темна' : 'Світла';
+    ico.textContent = theme === 'light' ? '🌙' : '☀️';
+    lbl.textContent = theme === 'light' ? 'Темна' : 'Світла';
   }
+  localStorage.setItem(THEME_KEY, theme);
 }
 function toggleTheme() {
-  const isLight = !document.body.classList.contains('light');
-  localStorage.setItem(THEME_KEY, isLight ? 'light' : 'dark');
-  applyTheme(isLight);
+  const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(cur === 'dark' ? 'light' : 'dark');
 }
 
 // ─── Password gate ───
