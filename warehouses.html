@@ -73,9 +73,15 @@ a{color:inherit;text-decoration:none}
 /* Tree table (1C-style) */
 .tree-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
 .tree-wrap.combined{}
-.tree-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tree-tbl{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
 .tree-tbl thead th{padding:11px 12px;background:var(--bg2);color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1}
 .tree-tbl thead th:not(:first-child){text-align:right}
+/* Fixed numeric columns so sections align even when they have different content */
+.tree-tbl thead th:nth-child(1){width:auto}
+.tree-tbl thead th:nth-child(2),
+.tree-tbl thead th:nth-child(3),
+.tree-tbl thead th:nth-child(4){width:120px}
+.tree-tbl tbody td:first-child{overflow:hidden;text-overflow:ellipsis}
 .tree-tbl tbody tr{transition:background .1s}
 .tree-tbl tbody td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top}
 .tree-tbl tbody td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
