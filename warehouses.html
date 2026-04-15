@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Склад · Повний перелік</title>
+<title>Склад · Залишки</title>
 <style>
 :root{
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -12,16 +12,35 @@
   --text:#f5f5f5; --text2:#a3a3a3; --text3:#737373;
   --accent:#ff8319; --accent-bg:rgba(255,131,25,.12);
   --red:#e74c3c; --red-bg:rgba(231,76,60,.12);
-  --green:#22c55e; --blue:#3b82f6;
+  --green:#22c55e; --blue:#3b82f6; --blue-bg:rgba(59,130,246,.12);
   --purple:#9775fa;
   --shadow-md:0 4px 20px rgba(0,0,0,.4);
+  --topbar-bg:rgba(20,20,20,.85);
+  --purple-bg:rgba(151,117,250,.14);
+  --purple-text:#b399ff;
+}
+body.light{
+  --bg:#f5f5f7; --bg2:#ffffff; --bg3:#ececef;
+  --surface:#ffffff; --surface2:#ffffff;
+  --border:#e5e5ea; --border2:#d1d1d6;
+  --text:#1c1c1e; --text2:#48484a; --text3:#8e8e93;
+  --accent:#e07017; --accent-bg:rgba(224,112,23,.12);
+  --red:#d93025; --red-bg:rgba(217,48,37,.10);
+  --green:#15803d; --blue:#1d4ed8; --blue-bg:rgba(29,78,216,.10);
+  --purple:#6d28d9;
+  --shadow-md:0 4px 20px rgba(0,0,0,.08);
+  --topbar-bg:rgba(255,255,255,.85);
+  --purple-bg:rgba(109,40,217,.12);
+  --purple-text:#6d28d9;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
 a{color:inherit;text-decoration:none}
 
 /* Topbar */
-.topbar{position:sticky;top:0;z-index:50;background:rgba(20,20,20,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:18px}
+.topbar{position:sticky;top:0;z-index:50;background:var(--topbar-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:18px}
+.theme-btn{background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:13px;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.theme-btn:hover{background:var(--bg3);color:var(--text);border-color:var(--border2)}
 .topbar h1{font-size:16px;font-weight:700;letter-spacing:-.3px;flex:1}
 .topbar .back{color:var(--text2);font-size:12px;padding:6px 12px;border-radius:8px;transition:all .15s}
 .topbar .back:hover{background:var(--bg3);color:var(--text)}
@@ -30,78 +49,85 @@ a{color:inherit;text-decoration:none}
 /* Layout */
 .wrap{max-width:1400px;margin:0 auto;padding:20px}
 
-/* Filter bar */
-.filter{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:22px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
-.filter input{flex:1;min-width:200px;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;transition:border .15s}
-.filter input:focus{border-color:var(--accent)}
-.filter .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none}
-.filter .chip:hover{background:var(--bg3);color:var(--text)}
-.filter .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+/* Toolbar (filter + controls) */
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
+.toolbar input[type=text]{flex:1;min-width:200px;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;transition:border .15s}
+.toolbar input:focus{border-color:var(--accent)}
+.toolbar input[type=date]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;color-scheme:dark;font-family:inherit}
+body.light .toolbar input[type=date]{color-scheme:light}
+.toolbar input[type=date]:focus{border-color:var(--accent)}
+.toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.toolbar .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;display:inline-flex;align-items:center;gap:6px}
+.toolbar .chip:hover{background:var(--bg3);color:var(--text)}
+.toolbar .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.toolbar .btn{padding:7px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s}
+.toolbar .btn:hover{background:var(--bg3);color:var(--text);border-color:var(--border2)}
+.toolbar .check{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:11px;color:var(--text2);user-select:none}
+.toolbar .check:hover{background:var(--bg3);color:var(--text)}
+.toolbar .check input{accent-color:var(--accent);cursor:pointer}
+.toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 2px}
+.toolbar .group{display:inline-flex;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px}
+.toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
+.toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
 
-/* Summary strip */
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:22px}
-.stat{padding:14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
-.stat .l{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:6px}
-.stat .v{font-size:18px;font-weight:700;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+/* Stats row */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.stat{padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
+.stat .l{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:5px}
+.stat .v{font-size:17px;font-weight:700;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
 
-/* Warehouse grid */
-.wh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px}
-.wh-card{background:var(--surface2);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:border .15s,box-shadow .15s}
-.wh-card:hover{border-color:var(--border2);box-shadow:var(--shadow-md)}
-.wh-card.in-transit{border-left:3px solid var(--purple)}
-.wh-card.on-hand{border-left:3px solid var(--accent)}
-.wh-head{padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;user-select:none;border-bottom:1px solid transparent;transition:background .15s,border-color .15s}
-.wh-head:hover{background:var(--bg3)}
-.wh-head.open{border-bottom-color:var(--border)}
-.wh-ico{font-size:22px;line-height:1;flex-shrink:0}
-.wh-title{flex:1}
-.wh-title .n{font-size:13px;font-weight:600;color:var(--text);line-height:1.3;margin-bottom:2px}
-.wh-title .m{font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums}
-.wh-badge{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.4px}
-.wh-badge.REACT{background:var(--accent-bg);color:var(--accent)}
-.wh-badge.TRUF{background:rgba(151,117,250,.14);color:#b399ff}
-.wh-chev{font-size:12px;color:var(--text3);transition:transform .2s}
-.wh-head.open .wh-chev{transform:rotate(90deg)}
-.wh-body{max-height:0;overflow:hidden;transition:max-height .25s ease}
-.wh-head.open ~ .wh-body{max-height:1400px;overflow:auto}
-.wh-body table{width:100%;border-collapse:collapse;font-size:11px}
-.wh-body th{padding:9px 10px;color:var(--text3);font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.4px;text-align:left;background:var(--bg2);position:sticky;top:0;z-index:1}
-.wh-body th:not(:first-child){text-align:right}
-.wh-body td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text);cursor:pointer;transition:background .1s}
-.wh-body tr:hover td{background:var(--bg3)}
-.wh-body tr.reserved td:first-child::after{content:'🔒';margin-left:6px;font-size:10px}
-.wh-body td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
-.wh-body td.pos{color:var(--green);font-weight:600}
-.wh-body td.zero{color:var(--text3)}
+/* Tree table (1C-style) */
+.tree-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.tree-wrap.combined{}
+.tree-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tree-tbl thead th{padding:11px 12px;background:var(--bg2);color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1}
+.tree-tbl thead th:not(:first-child){text-align:right}
+.tree-tbl tbody tr{transition:background .1s}
+.tree-tbl tbody td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+.tree-tbl tbody td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+.tree-tbl tr.wh-row td{background:linear-gradient(90deg,var(--accent-bg),transparent 70%);font-weight:700;color:var(--text);padding:10px 12px;letter-spacing:-.1px}
+.tree-tbl tr.wh-row td:first-child{display:flex;align-items:center;gap:10px}
+.tree-tbl tr.wh-row .badge{font-size:10px;font-weight:700;letter-spacing:.4px;padding:2px 8px;border-radius:4px}
+.tree-tbl tr.wh-row .badge.REACT{background:var(--accent-bg);color:var(--accent)}
+.tree-tbl tr.wh-row .badge.TRUF{background:rgba(151,117,250,.14);color:#b399ff}
+.tree-tbl tr.item-row{cursor:pointer}
+.tree-tbl tr.item-row:hover td{background:var(--bg3)}
+.tree-tbl tr.item-row.reserved td:first-child{color:var(--text)}
+.tree-tbl tr.item-row.disabled{cursor:default;color:var(--text3)}
+.tree-tbl tr.item-row.disabled:hover td{background:transparent}
+.tree-tbl tr.item-row .chev{display:inline-block;width:14px;color:var(--text3);transition:transform .15s;font-size:10px;transform:translateY(-1px)}
+.tree-tbl tr.item-row.open .chev{transform:rotate(90deg) translateY(-1px)}
+.tree-tbl tr.item-row.disabled .chev{visibility:hidden}
+.tree-tbl tr.item-row .item-name{display:inline-block;vertical-align:middle}
+.tree-tbl tr.reserve-row td{background:var(--bg3);padding:7px 12px 7px 38px;font-size:11.5px;color:var(--text2);border-bottom:1px solid var(--border)}
+.tree-tbl tr.reserve-row td:first-child{padding-left:38px}
+.tree-tbl tr.reserve-row .client{color:var(--text)}
+.tree-tbl tr.reserve-row .meta{color:var(--text3);font-size:10.5px;margin-left:8px}
+.tree-tbl tr.reserve-row.wh-break td{padding-left:54px;color:var(--text3);font-style:italic;font-size:11px}
+.tree-tbl td.qty-pos{color:var(--green);font-weight:600}
+.tree-tbl td.qty-res{color:var(--blue);font-weight:600}
+.tree-tbl td.qty-zero{color:var(--text3)}
+.tree-tbl td.qty-neg{color:var(--red);font-weight:600}
+.tree-tbl .type-ico{margin-right:6px;opacity:.8}
+
+/* Per-wh view — section dividers */
+.wh-section{margin-top:18px}
+.wh-section:first-child{margin-top:0}
+.wh-section-title{padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:10px 10px 0 0;border-bottom:none}
+.wh-section-title .ico{font-size:16px}
+.wh-section-title .tot{margin-left:auto;color:var(--text3);font-weight:500;font-size:11px;font-variant-numeric:tabular-nums}
+.wh-section .tree-wrap{border-radius:0 0 10px 10px;border-top:1px solid var(--border)}
 
 /* Loading / empty */
 .loading{padding:60px 20px;text-align:center;color:var(--text2);font-size:13px}
 .loading::after{content:'';display:block;width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:14px auto 0}
 @keyframes spin{to{transform:rotate(360deg)}}
-.error{padding:20px;text-align:center;color:var(--red);background:var(--red-bg);border-radius:10px;font-size:12px}
+.error{padding:20px;text-align:center;color:var(--red);background:var(--red-bg);border-radius:10px;font-size:12px;margin-top:16px}
+.empty{padding:40px 20px;text-align:center;color:var(--text3);font-size:12px}
 
-/* Modal (drill-down) */
-.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:100}
-.modal-backdrop.open{display:block}
-.modal{display:none;position:fixed;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:min(92vw,720px);max-height:85vh;background:var(--surface);border:1px solid var(--border2);border-radius:18px;overflow:hidden;box-shadow:0 24px 72px rgba(0,0,0,.6);z-index:101;flex-direction:column}
-.modal.open{display:flex}
-.modal-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px}
-.modal-ico{width:44px;height:44px;border-radius:10px;background:var(--accent-bg);display:grid;place-items:center;font-size:22px;flex-shrink:0}
-.modal-title{flex:1}
-.modal-title h3{font-size:15px;font-weight:700;margin-bottom:3px}
-.modal-title p{font-size:11px;color:var(--text3)}
-.modal-close{width:32px;height:32px;border:none;background:transparent;color:var(--text2);cursor:pointer;border-radius:8px;display:grid;place-items:center;transition:all .15s}
-.modal-close:hover{background:var(--bg3);color:var(--text)}
-.modal-close svg{width:18px;height:18px;fill:currentColor}
-.modal-body{padding:20px 22px;overflow:auto;flex:1}
-.modal-body .big{font-size:28px;font-weight:800;letter-spacing:-.6px;margin-bottom:4px}
-.modal-body .sub{font-size:12px;color:var(--text2);margin-bottom:18px}
-.modal-body table{width:100%;border-collapse:collapse;font-size:12px;background:var(--surface2);border-radius:10px;overflow:hidden;border:1px solid var(--border)}
-.modal-body th{padding:10px 14px;background:var(--bg3);color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;text-align:left}
-.modal-body th:not(:first-child){text-align:right}
-.modal-body td{padding:10px 14px;border-top:1px solid var(--border);font-variant-numeric:tabular-nums}
-.modal-body td:not(:first-child){text-align:right}
-.modal-body .formula{padding:12px 14px;margin-top:16px;background:var(--accent-bg);border-left:3px solid var(--accent);border-radius:8px;font-size:11px;line-height:1.6;color:var(--text2)}
+/* As-of banner */
+.asof{font-size:11px;color:var(--text2);margin-bottom:12px;padding:8px 12px;background:var(--blue-bg);border-left:3px solid var(--blue);border-radius:6px}
+.asof strong{color:var(--text)}
 
 /* Password gate */
 .pg{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:200}
@@ -114,6 +140,14 @@ a{color:inherit;text-decoration:none}
 .pg .err{color:var(--red);font-size:11px;margin-top:10px;text-align:center;min-height:14px}
 
 body.locked{overflow:hidden}
+
+@media (max-width:720px){
+  .toolbar{padding:10px;gap:8px}
+  .toolbar input[type=text]{min-width:140px}
+  .tree-tbl thead th,.tree-tbl tbody td{padding:8px 8px}
+  .tree-tbl tr.reserve-row td{padding-left:24px}
+  .tree-tbl tr.reserve-row td:first-child{padding-left:24px}
+}
 </style>
 </head>
 <body class="locked">
@@ -132,36 +166,50 @@ body.locked{overflow:hidden}
 <div id="app" style="display:none">
   <div class="topbar">
     <a href="index.html" class="back">← Головна</a>
-    <h1>📦 Склад · повний перелік</h1>
+    <h1>📦 Склад · залишки</h1>
     <div class="counter" id="topCounter">—</div>
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Переключити тему"><span id="themeIco">☀️</span><span id="themeLbl">Світла</span></button>
   </div>
 
   <div class="wrap">
     <div class="stats" id="stats"></div>
 
-    <div class="filter">
-      <input type="text" id="searchIn" placeholder="🔎 Пошук по назві товару або складу…">
+    <div class="toolbar">
+      <span class="lbl">На дату</span>
+      <input type="date" id="asOfIn" title="Залишки на кінець обраної дати">
+      <button class="btn" onclick="setToday()" title="Поточний залишок">Сьогодні</button>
+
+      <span class="sep"></span>
+
+      <span class="lbl">Вигляд</span>
+      <span class="group">
+        <span class="chip active" data-view="combined" onclick="setView('combined')">🔗 Разом</span>
+        <span class="chip" data-view="perwh" onclick="setView('perwh')">🏢 За складами</span>
+      </span>
+
+      <span class="sep"></span>
+
       <span class="chip active" data-org="all" onclick="setOrg('all')">Всі</span>
       <span class="chip" data-org="REACT" onclick="setOrg('REACT')">REACT</span>
       <span class="chip" data-org="TRUF" onclick="setOrg('TRUF')">TRUF</span>
-      <span class="chip" data-type="all" onclick="setType('all')">Всі склади</span>
-      <span class="chip" data-type="on-hand" onclick="setType('on-hand')">На складі</span>
-      <span class="chip" data-type="in-transit" onclick="setType('in-transit')">В дорозі</span>
+
+      <span class="sep"></span>
+
+      <label class="check" title="Показувати товари з нульовим залишком (тільки в 1С, а не на складі)">
+        <input type="checkbox" id="showEmpty"> Виводити відсутні
+      </label>
+
+      <span class="sep"></span>
+
+      <button class="btn" onclick="expandAll()">⊞ Розгорнути</button>
+      <button class="btn" onclick="collapseAll()">⊟ Згорнути</button>
+
+      <input type="text" id="searchIn" placeholder="🔎 Пошук по товару чи клієнту…">
     </div>
 
-    <div id="body" class="wh-grid"><div class="loading">Завантаження…</div></div>
+    <div id="asofBanner"></div>
+    <div id="body"><div class="loading">Завантаження…</div></div>
   </div>
-</div>
-
-<!-- Modal -->
-<div class="modal-backdrop" id="mBackdrop" onclick="closeModal()"></div>
-<div class="modal" id="modal" role="dialog" aria-modal="true">
-  <div class="modal-head">
-    <div class="modal-ico" id="mIco">🔒</div>
-    <div class="modal-title"><h3 id="mTitle">—</h3><p id="mSub">—</p></div>
-    <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
-  </div>
-  <div class="modal-body" id="mBody"></div>
 </div>
 
 <script>
@@ -169,6 +217,28 @@ const API_URL = 'https://price-api.doskevich.workers.dev';
 const PW = '063744';
 const AUTH_KEY = 'forecastAuth';
 const AUTH_TTL = 12 * 60 * 60 * 1000;
+const THEME_KEY = 'warehousesTheme'; // 'light' | 'dark'
+
+// ─── Theme ───
+(function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY);
+  const isLight = saved === 'light';
+  applyTheme(isLight);
+})();
+function applyTheme(isLight) {
+  document.body.classList.toggle('light', isLight);
+  const ico = document.getElementById('themeIco');
+  const lbl = document.getElementById('themeLbl');
+  if (ico && lbl) {
+    ico.textContent = isLight ? '🌙' : '☀️';
+    lbl.textContent = isLight ? 'Темна' : 'Світла';
+  }
+}
+function toggleTheme() {
+  const isLight = !document.body.classList.contains('light');
+  localStorage.setItem(THEME_KEY, isLight ? 'light' : 'dark');
+  applyTheme(isLight);
+}
 
 // ─── Password gate ───
 (function () {
@@ -195,7 +265,16 @@ function openApp() {
 }
 
 // ─── State ───
-const state = { data: null, org: 'all', type: 'all', search: '' };
+const state = {
+  data: null,
+  view: 'combined',      // 'combined' | 'perwh'
+  org: 'all',
+  search: '',
+  asOf: null,            // YYYY-MM-DD or null (today)
+  showEmpty: false,
+  openKeys: new Set(),   // expanded item keys
+  loading: false,
+};
 const IN_TRANSIT_MARKER = 'В дорозі';
 
 function fmt(n, dec = 0) {
@@ -211,166 +290,280 @@ function fmtDate(iso) {
   if (isNaN(d)) return iso;
   return d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
+function todayISO() {
+  const d = new Date();
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
 
+// ─── Data loading ───
 async function load() {
+  state.loading = true;
+  document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
+  document.getElementById('asofBanner').innerHTML = '';
   try {
-    const res = await fetch(API_URL + '?action=warehouses_stock');
+    const q = state.asOf ? `?action=warehouses_stock&date=${state.asOf}` : '?action=warehouses_stock';
+    const res = await fetch(API_URL + q);
     const d = await res.json();
     if (d.error) throw new Error(d.error);
     state.data = d;
+    state.loading = false;
     renderStats();
+    renderBanner();
     render();
   } catch (e) {
+    state.loading = false;
     document.getElementById('body').innerHTML = `<div class="error">${esc(e.message)}</div>`;
   }
 }
 
+// ─── Filter helpers ───
+function filterSummaryByOrg(summary) {
+  if (state.org === 'all') return summary;
+  // We need to figure out which items belong to selected org via warehouses
+  const orgItems = new Set();
+  (state.data.warehouses || []).forEach(w => {
+    if (w.org !== state.org) return;
+    (w.items || []).forEach(it => orgItems.add(it.name));
+  });
+  return summary.filter(s => orgItems.has(s.name));
+}
+
+function matchesSearch(s, reserves) {
+  if (!state.search) return true;
+  const q = state.search;
+  if (s.name.toLowerCase().includes(q)) return true;
+  if ((reserves || []).some(r =>
+    (r.client || '').toLowerCase().includes(q) ||
+    (r.orderNumber || '').toLowerCase().includes(q)
+  )) return true;
+  return false;
+}
+
+// ─── Stats ───
 function renderStats() {
   const d = state.data;
   const warehouses = d.warehouses || [];
-  const totalItems = (d.summary || []).length;
-  const totalQty = (d.summary || []).reduce((a, x) => a + x.total, 0);
-  const totalReserve = (d.summary || []).reduce((a, x) => a + x.reserve, 0);
+  let summary = filterSummaryByOrg(d.summary || []);
+  if (!state.showEmpty) summary = summary.filter(s => s.total > 0);
+  const totalItems = summary.length;
+  const totalQty = summary.reduce((a, x) => a + x.total, 0);
+  const totalReserve = summary.reduce((a, x) => a + x.reserve, 0);
   const freeQty = totalQty - totalReserve;
-  const onHand = warehouses.filter(w => !w.name.startsWith(IN_TRANSIT_MARKER)).length;
-  const inTransit = warehouses.filter(w => w.name.startsWith(IN_TRANSIT_MARKER)).length;
+  const activeWh = warehouses.filter(w => state.org === 'all' || w.org === state.org);
+  const onHand = activeWh.filter(w => !w.name.startsWith(IN_TRANSIT_MARKER)).length;
+  const inTransit = activeWh.filter(w => w.name.startsWith(IN_TRANSIT_MARKER)).length;
 
   document.getElementById('stats').innerHTML = `
-    <div class="stat"><div class="l">Складів</div><div class="v">${warehouses.length}</div></div>
+    <div class="stat"><div class="l">Складів</div><div class="v">${activeWh.length}</div></div>
     <div class="stat"><div class="l">На складі</div><div class="v">${onHand}</div></div>
     <div class="stat"><div class="l">В дорозі</div><div class="v">${inTransit}</div></div>
-    <div class="stat"><div class="l">Унікальних позицій</div><div class="v">${totalItems}</div></div>
+    <div class="stat"><div class="l">Унік. позицій</div><div class="v">${totalItems}</div></div>
     <div class="stat"><div class="l">Одиниць всього</div><div class="v">${fmt(totalQty)}</div></div>
     <div class="stat"><div class="l">У резерві</div><div class="v" style="color:var(--blue)">${fmt(totalReserve)}</div></div>
     <div class="stat"><div class="l">Вільно</div><div class="v" style="color:var(--green)">${fmt(freeQty)}</div></div>
   `;
-  document.getElementById('topCounter').textContent = `${warehouses.length} складів · ${totalItems} позицій`;
+  document.getElementById('topCounter').textContent = `${activeWh.length} складів · ${totalItems} позицій`;
 }
 
-function setOrg(v) { state.org = v; syncChips('org', v); render(); }
-function setType(v) { state.type = v; syncChips('type', v); render(); }
-function syncChips(attr, v) {
-  document.querySelectorAll(`.chip[data-${attr}]`).forEach(c => {
-    c.classList.toggle('active', c.dataset[attr] === v);
-  });
+function renderBanner() {
+  const el = document.getElementById('asofBanner');
+  if (!state.asOf) { el.innerHTML = ''; return; }
+  const d = new Date(state.asOf + 'T00:00:00');
+  el.innerHTML = `<div class="asof">📅 Залишки на <strong>${d.toLocaleDateString('uk-UA',{day:'2-digit',month:'long',year:'numeric'})}</strong> · історичний зріз з 1С</div>`;
 }
 
+// ─── Controls ───
+function setView(v) {
+  state.view = v;
+  document.querySelectorAll('.chip[data-view]').forEach(c => c.classList.toggle('active', c.dataset.view === v));
+  state.openKeys.clear();
+  render();
+}
+function setOrg(v) {
+  state.org = v;
+  document.querySelectorAll('.chip[data-org]').forEach(c => c.classList.toggle('active', c.dataset.org === v));
+  renderStats();
+  render();
+}
+function setToday() {
+  state.asOf = null;
+  document.getElementById('asOfIn').value = '';
+  load();
+}
+document.getElementById('asOfIn').addEventListener('change', e => {
+  const v = e.target.value;
+  state.asOf = v || null;
+  load();
+});
 document.getElementById('searchIn').addEventListener('input', e => {
   state.search = e.target.value.toLowerCase().trim();
   render();
 });
+document.getElementById('showEmpty').addEventListener('change', e => {
+  state.showEmpty = e.target.checked;
+  renderStats();
+  render();
+});
 
-function matchesFilters(wh) {
-  if (state.org !== 'all' && wh.org !== state.org) return false;
-  const isTransit = wh.name.startsWith(IN_TRANSIT_MARKER);
-  if (state.type === 'on-hand' && isTransit) return false;
-  if (state.type === 'in-transit' && !isTransit) return false;
-  if (state.search) {
-    const inName = wh.name.toLowerCase().includes(state.search);
-    const inItem = wh.items.some(it => it.name.toLowerCase().includes(state.search));
-    if (!inName && !inItem) return false;
+function expandAll() {
+  state.openKeys.clear();
+  const keys = currentItemKeys();
+  keys.forEach(k => state.openKeys.add(k));
+  render();
+}
+function collapseAll() {
+  state.openKeys.clear();
+  render();
+}
+
+function currentItemKeys() {
+  const keys = [];
+  if (state.view === 'combined') {
+    getCombinedItems().forEach(s => { if ((s.reserves || []).length) keys.push('c:' + s.name); });
+  } else {
+    (state.data.warehouses || []).forEach(w => {
+      if (state.org !== 'all' && w.org !== state.org) return;
+      (w.items || []).forEach(it => {
+        const rs = (w.reservesByItem && w.reservesByItem[it.name]) || [];
+        if (rs.length) keys.push('w:' + w.id + '|' + it.name);
+      });
+    });
   }
-  return true;
+  return keys;
+}
+
+// ─── Render ───
+function getCombinedItems() {
+  let summary = filterSummaryByOrg(state.data.summary || []);
+  if (!state.showEmpty) summary = summary.filter(s => s.total > 0);
+  if (state.search) summary = summary.filter(s => matchesSearch(s, s.reserves));
+  return summary;
 }
 
 function render() {
-  const warehouses = (state.data.warehouses || []).filter(matchesFilters);
-  if (!warehouses.length) {
-    document.getElementById('body').innerHTML = `<div class="error">Нічого не знайдено</div>`;
+  if (!state.data) return;
+  if (state.view === 'combined') renderCombined();
+  else renderPerWh();
+}
+
+function renderCombined() {
+  const items = getCombinedItems();
+  if (!items.length) {
+    document.getElementById('body').innerHTML = '<div class="empty">Нічого не знайдено</div>';
     return;
   }
-  const html = warehouses.map(wh => {
-    const isTransit = wh.name.startsWith(IN_TRANSIT_MARKER);
-    const total = wh.items.reduce((a, it) => a + it.total, 0);
-    const reserve = wh.items.reduce((a, it) => a + it.reserve, 0);
-    const items = state.search
-      ? wh.items.filter(it => it.name.toLowerCase().includes(state.search) || wh.name.toLowerCase().includes(state.search))
-      : wh.items;
-    const rows = items.map(it => {
-      const hasReserves = (wh.reservesByItem && wh.reservesByItem[it.name] && wh.reservesByItem[it.name].length > 0);
-      const cls = hasReserves ? 'reserved' : '';
-      const clickAttr = hasReserves ? `onclick="openItemReserves('${wh.id}', ${JSON.stringify(it.name).replace(/"/g, '&quot;')})"` : '';
-      return `<tr class="${cls}" ${clickAttr}>
-        <td>${esc(it.name)}</td>
-        <td class="${it.total === 0 ? 'zero' : ''}">${fmt(it.total)}</td>
-        <td class="${it.reserve > 0 ? 'pos' : 'zero'}" style="${it.reserve > 0 ? 'color:var(--blue)' : ''}">${fmt(it.reserve)}</td>
-        <td class="${it.free < 0 ? 'pos' : ''}" style="${it.free < 0 ? 'color:var(--red)' : ''}">${fmt(it.free)}</td>
-      </tr>`;
-    }).join('');
+  const rows = items.map(s => renderItemRow('c:' + s.name, s.name, s, s.reserves || [], null)).join('');
+  document.getElementById('body').innerHTML = `
+    <div class="tree-wrap combined">
+      <table class="tree-tbl">
+        <thead><tr>
+          <th>Товар / Замовлення</th>
+          <th>Всього</th>
+          <th>Резерв</th>
+          <th>Вільно</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  bindItemRows();
+}
 
-    const cardCls = isTransit ? 'in-transit' : 'on-hand';
+function renderPerWh() {
+  let warehouses = (state.data.warehouses || []).filter(w => state.org === 'all' || w.org === state.org);
+  if (!warehouses.length) {
+    document.getElementById('body').innerHTML = '<div class="empty">Складів не знайдено</div>';
+    return;
+  }
+  const sections = warehouses.map(w => {
+    const isTransit = w.name.startsWith(IN_TRANSIT_MARKER);
+    let items = w.items || [];
+    if (!state.showEmpty) items = items.filter(it => it.total > 0);
+    if (state.search) {
+      items = items.filter(it => {
+        const rs = (w.reservesByItem && w.reservesByItem[it.name]) || [];
+        return it.name.toLowerCase().includes(state.search) ||
+               rs.some(r => (r.client||'').toLowerCase().includes(state.search) || (r.orderNumber||'').toLowerCase().includes(state.search));
+      });
+    }
+    if (!items.length) return '';
+    const totalTot = items.reduce((a, it) => a + it.total, 0);
+    const totalRes = items.reduce((a, it) => a + it.reserve, 0);
+    const rows = items.map(it => {
+      const reserves = (w.reservesByItem && w.reservesByItem[it.name]) || [];
+      const key = 'w:' + w.id + '|' + it.name;
+      return renderItemRow(key, it.name, it, reserves, null);
+    }).join('');
     return `
-      <div class="wh-card ${cardCls}">
-        <div class="wh-head" onclick="toggleWh(this)">
-          <div class="wh-ico">${isTransit ? '🚛' : '🏢'}</div>
-          <div class="wh-title">
-            <div class="n">${esc(wh.name)}</div>
-            <div class="m">${items.length} поз · ${fmt(total)} од · резерв ${fmt(reserve)}</div>
-          </div>
-          <div class="wh-badge ${wh.org}">${wh.org}</div>
-          <div class="wh-chev">▶</div>
+      <div class="wh-section">
+        <div class="wh-section-title">
+          <span class="ico">${isTransit ? '🚛' : '🏢'}</span>
+          <span>${esc(w.name)}</span>
+          <span class="badge ${w.org}" style="font-size:10px;font-weight:700;letter-spacing:.4px;padding:2px 8px;border-radius:4px;background:${w.org==='TRUF'?'var(--purple-bg)':'var(--accent-bg)'};color:${w.org==='TRUF'?'var(--purple-text)':'var(--accent)'}">${w.org}</span>
+          <span class="tot">${items.length} поз · ${fmt(totalTot)} од · резерв ${fmt(totalRes)}</span>
         </div>
-        <div class="wh-body">
-          <table>
-            <thead><tr><th>Товар</th><th>Всього</th><th>Резерв</th><th>Вільно</th></tr></thead>
-            <tbody>${rows || '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:16px">Немає позицій</td></tr>'}</tbody>
+        <div class="tree-wrap">
+          <table class="tree-tbl">
+            <thead><tr>
+              <th>Товар / Замовлення</th>
+              <th>Всього</th>
+              <th>Резерв</th>
+              <th>Вільно</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
           </table>
         </div>
       </div>`;
-  }).join('');
-  document.getElementById('body').innerHTML = html;
+  }).filter(Boolean).join('');
+  document.getElementById('body').innerHTML = sections || '<div class="empty">Нічого не знайдено</div>';
+  bindItemRows();
 }
 
-function toggleWh(el) {
-  el.classList.toggle('open');
+function renderItemRow(key, name, stockObj, reserves, extra) {
+  const hasReserves = reserves && reserves.length > 0;
+  const isOpen = state.openKeys.has(key);
+  const freeCls = stockObj.free < 0 ? 'qty-neg' : (stockObj.free > 0 ? 'qty-pos' : 'qty-zero');
+  const resCls = stockObj.reserve > 0 ? 'qty-res' : 'qty-zero';
+  const totCls = stockObj.total === 0 ? 'qty-zero' : '';
+  const rowCls = 'item-row' + (hasReserves ? ' reserved' : ' disabled') + (isOpen ? ' open' : '');
+
+  let out = `<tr class="${rowCls}" data-key="${esc(key)}">
+    <td><span class="chev">▶</span><span class="item-name">${esc(name)}</span></td>
+    <td class="${totCls}">${fmt(stockObj.total)}</td>
+    <td class="${resCls}">${fmt(stockObj.reserve)}</td>
+    <td class="${freeCls}">${fmt(stockObj.free)}</td>
+  </tr>`;
+
+  if (hasReserves && isOpen) {
+    out += reserves.map(r => {
+      const whBreakdown = (r.warehouses && r.warehouses.length > 1)
+        ? r.warehouses.map(w => `<div class="wh-break-inner" style="padding-left:16px;font-size:10.5px;color:var(--text3);font-style:italic">└ ${esc(w.whName)} · ${fmt(w.qty)} од</div>`).join('')
+        : '';
+      return `<tr class="reserve-row">
+        <td>
+          <span class="client">${esc(r.client)}</span>
+          <span class="meta">${r.orderNumber ? esc(r.orderNumber) : '—'} · ${fmtDate(r.orderDate)}</span>
+          ${whBreakdown}
+        </td>
+        <td></td>
+        <td class="qty-res">${fmt(r.qty)}</td>
+        <td></td>
+      </tr>`;
+    }).join('');
+  }
+  return out;
 }
 
-// ─── Drill-down: click an item row to see reservations ───
-function openItemReserves(whId, itemName) {
-  const wh = (state.data.warehouses || []).find(w => w.id === whId);
-  if (!wh) return;
-  const reserves = (wh.reservesByItem && wh.reservesByItem[itemName]) || [];
-  const item = wh.items.find(it => it.name === itemName);
-  if (!item) return;
-
-  document.getElementById('mIco').textContent = '🔒';
-  document.getElementById('mTitle').textContent = itemName;
-  document.getElementById('mSub').textContent = `${wh.name} · ${wh.org}`;
-
-  const rows = reserves.map(r => `
-    <tr>
-      <td>${esc(r.client)}</td>
-      <td>${r.orderNumber ? esc(r.orderNumber) : '—'}</td>
-      <td>${fmtDate(r.orderDate)}</td>
-      <td><strong>${fmt(r.qty)}</strong></td>
-    </tr>
-  `).join('');
-
-  const totalRes = reserves.reduce((a, r) => a + r.qty, 0);
-
-  document.getElementById('mBody').innerHTML = `
-    <div class="big">${fmt(item.reserve)} од</div>
-    <div class="sub">У резерві · вільно ${fmt(item.free)} · всього на складі ${fmt(item.total)}</div>
-    <table>
-      <thead><tr><th>Клієнт / Замовлення</th><th>№ документа</th><th>Дата</th><th>К-ть</th></tr></thead>
-      <tbody>${rows || '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">Деталей замовлень не знайдено</td></tr>'}</tbody>
-    </table>
-    <div class="formula">
-      Всього зарезервовано: <strong>${fmt(totalRes)}</strong> од по ${reserves.length} замовлен${reserves.length === 1 ? 'ню' : reserves.length < 5 ? 'нях' : 'нях'}.
-      Дані з 1С UNF, оновлюються раз на годину.
-    </div>
-  `;
-  document.getElementById('mBackdrop').classList.add('open');
-  document.getElementById('modal').classList.add('open');
-  document.body.style.overflow = 'hidden';
+function bindItemRows() {
+  document.querySelectorAll('tr.item-row:not(.disabled)').forEach(tr => {
+    tr.addEventListener('click', () => {
+      const k = tr.dataset.key;
+      if (state.openKeys.has(k)) state.openKeys.delete(k);
+      else state.openKeys.add(k);
+      render();
+    });
+  });
 }
-
-function closeModal() {
-  document.getElementById('mBackdrop').classList.remove('open');
-  document.getElementById('modal').classList.remove('open');
-  document.body.style.overflow = '';
-}
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 </script>
 </body>
 </html>
