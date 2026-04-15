@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Продажі · Менеджери</title>
+<title>Продажі</title>
 <script>
   // Apply saved theme BEFORE styles paint — avoids flash-of-wrong-theme
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
@@ -76,6 +76,12 @@ a{color:inherit;text-decoration:none}
 .summary-card .bonus b{color:var(--text2);font-weight:600}
 .mgr-section-head{font-weight:700;font-size:13px;margin:14px 0 8px;padding:0 2px;color:var(--text);letter-spacing:-.2px}
 
+/* View tabs: "Менеджери" / "Оплата та відвантаження" */
+.tabs{display:inline-flex;gap:4px;margin-bottom:12px;padding:4px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
+.tab-btn{padding:8px 16px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);border-radius:7px;transition:all .15s;user-select:none;border:none;background:transparent}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{background:var(--accent-bg);color:var(--accent)}
+
 /* Tree table */
 .tree-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
 .tree-tbl{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
@@ -110,6 +116,19 @@ a{color:inherit;text-decoration:none}
 .tree-tbl tr.order-row td:first-child{padding-left:92px;font-size:11.5px}
 .tree-tbl tr.order-row .meta{color:var(--text3);font-size:10.5px;margin-left:8px}
 
+/* Item-row: deepest level in OSP tree (nomenclature under order) */
+.tree-tbl tr.item-row{color:var(--text2)}
+.tree-tbl tr.item-row:hover td{background:var(--bg3)}
+.tree-tbl tr.item-row td:first-child{padding-left:120px;font-size:11px;color:var(--text2)}
+.tree-tbl tr.item-row td{font-size:11px}
+
+/* OSP table layout: 7 narrower columns (numeric qty/money) vs 4 in managers view */
+.tree-tbl.osp-tbl thead th:nth-child(n+2){width:112px}
+@media (max-width:720px){
+  .tree-tbl.osp-tbl thead th,.tree-tbl.osp-tbl tbody td{padding:6px 4px;font-size:10.5px}
+  .tree-tbl.osp-tbl thead th:nth-child(n+2){width:72px}
+}
+
 .chev{display:inline-block;width:14px;color:var(--text3);transition:transform .15s;font-size:10px;transform:translateY(-1px)}
 .chev.open{transform:rotate(90deg) translateY(-1px)}
 .chev.hidden{visibility:hidden}
@@ -141,7 +160,11 @@ a{color:inherit;text-decoration:none}
 <div id="app">
   <div class="wrap">
     <div class="page-head">
-      <h1>📈 Продажі менеджерів</h1>
+      <h1>📈 Продажі</h1>
+    </div>
+    <div class="tabs" id="viewTabs">
+      <button class="tab-btn active" data-view="managers" onclick="setView('managers')">👤 Менеджери</button>
+      <button class="tab-btn" data-view="osp" onclick="setView('osp')">📦 Оплата та відвантаження</button>
     </div>
     <div class="toolbar">
       <span class="lbl">Період</span>
@@ -165,7 +188,7 @@ a{color:inherit;text-decoration:none}
       <button class="btn" onclick="expandAll()">⊞ Розгорнути</button>
       <button class="btn" onclick="collapseAll()">⊟ Згорнути</button>
 
-      <input type="text" id="searchIn" placeholder="🔎 Пошук клієнта, менеджера, № замовлення…">
+      <input type="text" id="searchIn" placeholder="🔎 Пошук клієнта, менеджера, № замовлення, товару…">
     </div>
 
     <div id="curSummary"></div>
@@ -192,7 +215,9 @@ function _firstOfMonthISO() {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
 }
 const state = {
-  data: null,
+  view: 'managers', // 'managers' | 'osp'
+  data: null,       // sales_report (managers view)
+  osp: null,        // orders_shipment_payment (OSP view)
   org: 'Реакт',
   from: _firstOfMonthISO(),
   to: _todayISO(),
@@ -241,15 +266,17 @@ async function load() {
   document.getElementById('curSummary').innerHTML = '';
   document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
   try {
-    const q = `?action=sales_report&from=${state.from}&to=${state.to}&org=${encodeURIComponent(state.org)}`;
-    // Fetch sales + FX rates in parallel. FX is purely informative, so we
-    // don't fail the whole page if rates are unavailable.
-    const [salesRes, fxRes] = await Promise.all([
+    // Endpoint depends on current view. FX rates always in parallel — purely
+    // informative, don't block the page if unavailable.
+    const action = state.view === 'osp' ? 'orders_shipment_payment' : 'sales_report';
+    const q = `?action=${action}&from=${state.from}&to=${state.to}&org=${encodeURIComponent(state.org)}`;
+    const [mainRes, fxRes] = await Promise.all([
       fetch(API_URL + q).then(r => r.json()),
       fetch(API_URL + '?action=fx_rates').then(r => r.json()).catch(() => null),
     ]);
-    if (salesRes.error) throw new Error(salesRes.error);
-    state.data = salesRes;
+    if (mainRes.error) throw new Error(mainRes.error);
+    if (state.view === 'osp') state.osp = mainRes;
+    else state.data = mainRes;
     state.fx = (fxRes && fxRes.rates && fxRes.rates.USD_UAH) ? fxRes : null;
     state.loading = false;
     render();
@@ -257,6 +284,17 @@ async function load() {
     state.loading = false;
     document.getElementById('body').innerHTML = `<div class="error">${esc(e.message)}</div>`;
   }
+}
+
+// Tab switcher — clears open tree state + search so each view starts fresh.
+function setView(v) {
+  if (state.view === v) return;
+  state.view = v;
+  state.search = '';
+  state.openKeys.clear();
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+  const s = document.getElementById('searchIn'); if (s) s.value = '';
+  load();
 }
 
 // ─── Controls ───
@@ -311,17 +349,27 @@ function collapseAll() {
 
 function collectKeys() {
   const keys = [];
-  const orgData = (state.data && state.data.byOrg && state.data.byOrg[state.org]) || {};
-  const managers = orgData.managers || [];
-  managers.forEach(m => {
-    const mk = `m:${m.name}`;
-    keys.push(mk);
-    m.currencies.forEach(C => {
-      const ck = `${mk}|cur:${C.currency}`;
-      keys.push(ck);
-      C.clients.forEach(c => keys.push(`${ck}|c:${c.name}`));
+  if (state.view === 'managers') {
+    const orgData = (state.data && state.data.byOrg && state.data.byOrg[state.org]) || {};
+    const managers = orgData.managers || [];
+    managers.forEach(m => {
+      const mk = `m:${m.name}`;
+      keys.push(mk);
+      m.currencies.forEach(C => {
+        const ck = `${mk}|cur:${C.currency}`;
+        keys.push(ck);
+        C.clients.forEach(c => keys.push(`${ck}|c:${c.name}`));
+      });
     });
-  });
+  } else {
+    const orgData = (state.osp && state.osp.byOrg && state.osp.byOrg[state.org]) || {};
+    const clients = orgData.clients || [];
+    clients.forEach(c => {
+      const ck = `osp:c:${esc(c.name)}`;
+      keys.push(ck);
+      c.orders.forEach(o => keys.push(`${ck}|o:${o.ref}`));
+    });
+  }
   return keys;
 }
 
@@ -349,6 +397,11 @@ function clientMatches(c) {
 
 // ─── Render ───
 function render() {
+  if (state.view === 'osp') return renderOsp();
+  return renderManagers();
+}
+
+function renderManagers() {
   if (!state.data) return;
   const orgData = (state.data.byOrg || {})[state.org];
   const managers = (orgData && orgData.managers) || [];
@@ -494,6 +547,155 @@ function renderOrderRow(o, cur) {
       <td>${payDate} ${meta}</td>
       ${triCells(o.total, o.paid, o.remain)}
     </tr>`;
+}
+
+// ─── OSP view (Оплата та відвантаження) ───
+// Tree: Client → Order → Item. Columns mirror 1C xlsx report:
+//   Сума документа | Оплачено | Залишилось | Замовлено | Відвантажено | Залишилось відвантажити.
+// Money rows show native currency (per-order), summary cards aggregate to USD.
+// Qty is summed as-is (may mix units: pieces + meters + kg — treat as "одиниць").
+function _ospMatchesClient(c, q) {
+  if (!q) return true;
+  if (c.name.toLowerCase().includes(q)) return true;
+  return c.orders.some(o =>
+    (o.number || '').toLowerCase().includes(q) ||
+    o.items.some(it => (it.name || '').toLowerCase().includes(q))
+  );
+}
+
+function renderOsp() {
+  const orgData = (state.osp && state.osp.byOrg && state.osp.byOrg[state.org]) || null;
+  const clients = (orgData && orgData.clients) || [];
+  const visible = clients.filter(c => _ospMatchesClient(c, state.search));
+
+  // Summary cards (grand totals in USD + qty totals)
+  let gAmount = 0, gPaid = 0, gRem = 0, gOrdered = 0, gShipped = 0, gRemShip = 0;
+  let okCur = !!state.fx;
+  visible.forEach(c => {
+    c.orders.forEach(o => {
+      const a = toUsd(o.amount, o.currency);
+      const p = toUsd(o.paid, o.currency);
+      const r = toUsd(o.remainingPay, o.currency);
+      if (a == null || p == null || r == null) okCur = false;
+      else { gAmount += a; gPaid += p; gRem += r; }
+      gOrdered += (+o.ordered || 0);
+      gShipped += (+o.shipped || 0);
+      gRemShip += (+o.remainingShip || 0);
+    });
+  });
+
+  const host = document.getElementById('curSummary');
+  host.innerHTML = `
+    <div class="summary-grid">
+      <div class="summary-card grand">
+        <div class="name">💰 Оплачено</div>
+        <div class="val">${okCur ? '$' + fmt(gPaid) : '—'}</div>
+      </div>
+      <div class="summary-card">
+        <div class="name">📦 Сума замовлень</div>
+        <div class="val">${okCur ? '$' + fmt(gAmount) : '—'}</div>
+      </div>
+      <div class="summary-card">
+        <div class="name">⏳ Залишилось оплатити</div>
+        <div class="val">${okCur ? '$' + fmt(gRem) : '—'}</div>
+      </div>
+      <div class="summary-card">
+        <div class="name">📋 Замовлено, од.</div>
+        <div class="val">${fmt(gOrdered, 0)}</div>
+      </div>
+      <div class="summary-card">
+        <div class="name">🚚 Відвантажено, од.</div>
+        <div class="val">${fmt(gShipped, 0)}</div>
+      </div>
+      <div class="summary-card">
+        <div class="name">📭 Залишилось відвантажити, од.</div>
+        <div class="val">${fmt(gRemShip, 0)}</div>
+      </div>
+    </div>`;
+
+  if (!visible.length) {
+    document.getElementById('body').innerHTML = '<div class="empty">Немає замовлень за цей період</div>';
+    return;
+  }
+
+  // Tree rows
+  const rows = [];
+  visible.forEach(c => {
+    const ck = `osp:c:${esc(c.name)}`;
+    const isCOpen = state.openKeys.has(ck);
+
+    // Per-client USD aggregate (for money columns) — orders may be in different
+    // currencies, so we convert to USD to keep client-level numbers meaningful.
+    let cAmt = 0, cPaid = 0, cRem = 0, cOk = !!state.fx;
+    c.orders.forEach(o => {
+      const a = toUsd(o.amount, o.currency);
+      const p = toUsd(o.paid, o.currency);
+      const r = toUsd(o.remainingPay, o.currency);
+      if (a == null || p == null || r == null) cOk = false;
+      else { cAmt += a; cPaid += p; cRem += r; }
+    });
+    const cRemCls = cRem > 0.001 ? 'val-neg' : (cRem < -0.001 ? 'val-pos' : 'val-zero');
+    const cShipCls = c.remainingShip > 0 ? 'val-neg' : 'val-zero';
+
+    rows.push(`
+      <tr class="client-row" data-key="${esc(ck)}">
+        <td><span class="chev ${isCOpen?'open':''}">▶</span>${esc(c.name)} <span style="color:var(--text3);font-weight:400;font-size:11px">· ${c.orders.length} зам.</span></td>
+        <td>${cOk ? '$'+fmt(cAmt) : '—'}</td>
+        <td class="val-pos">${cOk ? '$'+fmt(cPaid) : '—'}</td>
+        <td class="${cRemCls}">${cOk ? '$'+fmt(cRem) : '—'}</td>
+        <td>${fmt(c.ordered, 0)}</td>
+        <td>${fmt(c.shipped, 0)}</td>
+        <td class="${cShipCls}">${fmt(c.remainingShip, 0)}</td>
+      </tr>`);
+
+    if (!isCOpen) return;
+    c.orders.forEach(o => {
+      const ok = `${ck}|o:${o.ref}`;
+      const isOOpen = state.openKeys.has(ok);
+      const oRemCls = o.remainingPay > 0.001 ? 'val-neg' : (o.remainingPay < -0.001 ? 'val-pos' : 'val-zero');
+      const oShipCls = o.remainingShip > 0 ? 'val-neg' : 'val-zero';
+      const hasItems = (o.items || []).length > 0;
+      rows.push(`
+        <tr class="order-row" data-key="${esc(ok)}">
+          <td><span class="chev ${isOOpen?'open':''} ${hasItems?'':'hidden'}">▶</span>№${esc(o.number || '?')} <span class="meta">· ${fmtDate(o.date)}</span></td>
+          <td>${fmt(o.amount)} <span style="color:var(--text3);font-size:10px">${esc(o.currency)}</span></td>
+          <td class="val-pos">${fmt(o.paid)} <span style="color:var(--text3);font-size:10px">${esc(o.currency)}</span></td>
+          <td class="${oRemCls}">${fmt(o.remainingPay)} <span style="color:var(--text3);font-size:10px">${esc(o.currency)}</span></td>
+          <td>${fmt(o.ordered, 0)}</td>
+          <td>${fmt(o.shipped, 0)}</td>
+          <td class="${oShipCls}">${fmt(o.remainingShip, 0)}</td>
+        </tr>`);
+      if (!isOOpen) return;
+      (o.items || []).forEach(it => {
+        const iShipCls = it.remainingShip > 0 ? 'val-neg' : 'val-zero';
+        rows.push(`
+          <tr class="item-row">
+            <td>${esc(it.name)}</td>
+            <td colspan="3" style="color:var(--text3)">—</td>
+            <td>${fmt(it.ordered, 0)}</td>
+            <td>${fmt(it.shipped, 0)}</td>
+            <td class="${iShipCls}">${fmt(it.remainingShip, 0)}</td>
+          </tr>`);
+      });
+    });
+  });
+
+  document.getElementById('body').innerHTML = `
+    <div class="tree-wrap">
+      <table class="tree-tbl osp-tbl">
+        <thead><tr>
+          <th>Клієнт / Замовлення / Товар</th>
+          <th>Сума документа</th>
+          <th>Оплачено</th>
+          <th>Залишилось</th>
+          <th>Замовлено</th>
+          <th>Відвантажено</th>
+          <th>Залишилось відвант.</th>
+        </tr></thead>
+        <tbody>${rows.join('')}</tbody>
+      </table>
+    </div>`;
+  bindRows();
 }
 
 // Binds click toggling for all interactive elements with data-key —
