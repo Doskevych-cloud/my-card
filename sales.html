@@ -61,20 +61,16 @@ a{color:inherit;text-decoration:none}
 .toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
 .toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
 
-/* Currency summary cards */
-.cur-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-bottom:14px}
-.cur-summary-card{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:8px;transition:border-color .15s, transform .15s}
-.cur-summary-card:hover{border-color:var(--border2)}
-.cur-summary-card .head{display:flex;align-items:center;gap:10px}
-.cur-summary-card .head .ico{font-size:18px}
-.cur-summary-card .head .cur-pill{font-size:11px;font-weight:700;letter-spacing:.4px;padding:3px 10px;border-radius:5px;background:var(--accent-bg);color:var(--accent)}
-.cur-summary-card .head .cnt{margin-left:auto;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+/* Grand total card */
+.cur-summary{margin-bottom:14px}
+.cur-summary-card{padding:14px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:6px}
 .cur-summary-card .total-row{display:flex;justify-content:space-between;align-items:baseline}
 .cur-summary-card .total-row .k{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
 .cur-summary-card .total-row .v{font-size:20px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.3px}
-.cur-summary-card .usd-eq{font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums;letter-spacing:.2px}
 .cur-summary-card.usd-total-card{background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(34,197,94,.02));border-color:rgba(34,197,94,.25)}
-.cur-summary-card.usd-total-card .total-row .v{color:var(--green)}
+.cur-summary-card .total-row .v.pos{color:var(--green)}
+.cur-summary-card .total-row .v.neg{color:var(--red)}
+.cur-summary-card .total-row .v.zero{color:var(--text3)}
 
 /* Tree table */
 .tree-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
@@ -82,7 +78,7 @@ a{color:inherit;text-decoration:none}
 .tree-tbl thead th{padding:11px 12px;background:var(--bg2);color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1}
 .tree-tbl thead th:not(:first-child){text-align:right}
 .tree-tbl thead th:nth-child(1){width:auto}
-.tree-tbl thead th:nth-child(2){width:180px}
+.tree-tbl thead th:nth-child(n+2){width:140px}
 .tree-tbl tbody tr{transition:background .1s}
 .tree-tbl tbody td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top}
 .tree-tbl tbody td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
@@ -133,8 +129,8 @@ a{color:inherit;text-decoration:none}
 
 @media (max-width:720px){
   .toolbar{padding:10px;gap:8px}
-  .tree-tbl thead th,.tree-tbl tbody td{padding:8px 8px}
-  .tree-tbl thead th:nth-child(2){width:120px}
+  .tree-tbl thead th,.tree-tbl tbody td{padding:8px 6px;font-size:11px}
+  .tree-tbl thead th:nth-child(n+2){width:90px}
   .cur-summary{grid-template-columns:1fr}
 }
 </style>
@@ -330,16 +326,17 @@ function collectKeys() {
 }
 
 // Aggregate per-currency totals across all managers (for the summary cards).
-// This is a PAYMENT register: each number = money received in the selected
-// period. No order totals, no "remaining" figures.
+// Keeps all three metrics — total (сума замовлень), paid (оплачено),
+// remain (залишилось) — so the top card can show everything in USD.
 function getCurrencyTotals(managers) {
-  const byCur = {};  // cur → { currency, paid, clients:Set, orders:n }
+  const byCur = {};
   managers.forEach(m => {
     m.currencies.forEach(C => {
       if (!byCur[C.currency]) {
-        byCur[C.currency] = { currency: C.currency, paid: 0, clients: new Set(), orders: 0 };
+        byCur[C.currency] = { currency: C.currency, total: 0, paid: 0, clients: new Set(), orders: 0 };
       }
       const B = byCur[C.currency];
+      B.total += (C.total || 0);
       B.paid += C.paid;
       C.clients.forEach(c => {
         B.clients.add(c.name);
@@ -347,9 +344,8 @@ function getCurrencyTotals(managers) {
       });
     });
   });
-  // Rank: UAH first, then by incoming payment amount desc
   return Object.values(byCur)
-    .map(B => ({ ...B, clientCount: B.clients.size }))
+    .map(B => ({ ...B, remain: B.total - B.paid, clientCount: B.clients.size }))
     .sort((a, b) => {
       if (a.currency === 'UAH' && b.currency !== 'UAH') return -1;
       if (b.currency === 'UAH' && a.currency !== 'UAH') return 1;
@@ -389,30 +385,30 @@ function renderCurrencySummary(managers) {
   if (!managers.length) { host.innerHTML = ''; return; }
   const totals = getCurrencyTotals(managers);
 
-  // One "загальна сума" card. If FX rates exist, aggregate everything into USD;
-  // otherwise fall back to per-currency lines so we never lose the numbers.
-  let grand = 0, ok = !!state.fx;
+  // Aggregate everything → USD so three metrics (сума замовлень / оплачено /
+  // залишилось) live on the same grand-total card. If FX rates are missing,
+  // fall back to a per-currency list so numbers are never lost.
+  let gTotal = 0, gPaid = 0, ok = !!state.fx;
   if (ok) {
     for (const B of totals) {
+      const t = toUsd(B.total, B.currency);
       const p = toUsd(B.paid, B.currency);
-      if (p == null) { ok = false; break; }
-      grand += p;
+      if (t == null || p == null) { ok = false; break; }
+      gTotal += t; gPaid += p;
     }
   }
 
   let body;
-  if (ok && grand > 0) {
+  if (ok && gPaid > 0) {
+    const gRemain = gTotal - gPaid;
+    const remCls = gRemain > 0.001 ? 'neg' : 'zero';
     body = `
-      <div class="total-row">
-        <span class="k">Всього надходжень за період</span>
-        <span class="v">$${fmt(grand)}</span>
-      </div>`;
+      <div class="total-row"><span class="k">Сума замовлень</span><span class="v">$${fmt(gTotal)}</span></div>
+      <div class="total-row"><span class="k">Оплачено</span><span class="v pos">$${fmt(gPaid)}</span></div>
+      <div class="total-row"><span class="k">Залишилось</span><span class="v ${remCls}">$${fmt(gRemain)}</span></div>`;
   } else {
     body = totals.map(B => `
-      <div class="total-row">
-        <span class="k">${esc(B.currency)}</span>
-        <span class="v">${fmt(B.paid)}</span>
-      </div>`).join('');
+      <div class="total-row"><span class="k">${esc(B.currency)} · оплачено</span><span class="v">${fmt(B.paid)}</span></div>`).join('');
   }
 
   host.innerHTML = `
@@ -467,7 +463,9 @@ function sectionWrapManager(m, rowsHtml) {
         <table class="tree-tbl">
           <thead><tr>
             <th>Менеджер / Валюта / Клієнт / Замовлення</th>
-            <th>Надходження</th>
+            <th>Сума замовлення</th>
+            <th>Оплачено</th>
+            <th>Залишилось</th>
           </tr></thead>
           <tbody>${rowsHtml}</tbody>
         </table>
@@ -475,24 +473,32 @@ function sectionWrapManager(m, rowsHtml) {
     </div>`;
 }
 
+// Render total/paid/remain cells. Uses val-pos/val-neg coloring on remain
+// so over- and under-payment are instantly visible.
+function triCells(total, paid, remain) {
+  const remCls = remain > 0.001 ? 'val-neg' : (remain < -0.001 ? 'val-pos' : 'val-zero');
+  return `<td>${fmt(total)}</td><td class="val-pos">${fmt(paid)}</td><td class="${remCls}">${fmt(remain)}</td>`;
+}
+
 function renderManagerHeaderRow(key, m, isOpen) {
-  // Aggregate this manager's payments across currencies into USD — rendered
-  // as the single "Надходження" number in the second column.
-  let usdPaid = 0, ok = !!state.fx;
+  // Aggregate across currencies into USD — the only way to sum multi-currency
+  // rollups sensibly. Skip if FX rates are unavailable.
+  let usdTotal = 0, usdPaid = 0, ok = !!state.fx;
   if (ok) {
     m.currencies.forEach(C => {
+      const t = toUsd(C.total, C.currency);
       const p = toUsd(C.paid, C.currency);
-      if (p == null) { ok = false; return; }
-      usdPaid += p;
+      if (t == null || p == null) { ok = false; return; }
+      usdTotal += t; usdPaid += p;
     });
   }
-  const usdCell = ok
-    ? `<td><span class="mgr-usd">$${fmt(usdPaid)}</span></td>`
-    : `<td></td>`;
+  const cells = ok
+    ? `<td><span class="mgr-usd">$${fmt(usdTotal)}</span></td><td class="val-pos"><span class="mgr-usd">$${fmt(usdPaid)}</span></td><td class="${(usdTotal-usdPaid)>0.001?'val-neg':'val-zero'}"><span class="mgr-usd">$${fmt(usdTotal - usdPaid)}</span></td>`
+    : `<td></td><td></td><td></td>`;
   return `
     <tr class="mgr-row" data-key="${esc(key)}">
       <td><span class="chev ${isOpen?'open':''}">▶</span><span>👤 ${esc(m.name)}</span></td>
-      ${usdCell}
+      ${cells}
     </tr>`;
 }
 
@@ -500,7 +506,7 @@ function renderCurrencyRow(key, C, isOpen, clientCount) {
   return `
     <tr class="cur-row" data-key="${esc(key)}">
       <td><span class="chev ${isOpen?'open':''}">▶</span><span class="cur-badge-inline">${esc(C.currency)}</span> <span style="color:var(--text3);font-weight:500;font-size:11px">· ${clientCount} клієнт.</span></td>
-      <td>${fmt(C.paid)}</td>
+      ${triCells(C.total, C.paid, C.remain)}
     </tr>`;
 }
 
@@ -509,22 +515,21 @@ function renderClientRow(key, c, cur, isOpen) {
   return `
     <tr class="client-row" data-key="${esc(key)}">
       <td><span class="chev ${isOpen?'open':''} ${ordersCount?'':'hidden'}">▶</span>${esc(c.name)} <span style="color:var(--text3);font-weight:400;font-size:11px">· ${ordersCount} зам.</span></td>
-      <td>${fmt(c.paid)}</td>
+      ${triCells(c.total, c.paid, c.remain)}
     </tr>`;
 }
 
 function renderOrderRow(o, cur) {
-  // Report is keyed by PAYMENT date — show it as primary. Keep the order
-  // № and total as smaller secondary info so нічого не втрачається, але
-  // головне число — надходження у вибраному періоді.
+  // Row is keyed by PAYMENT date in period — show that as primary, with order
+  // №/date as secondary meta. The three numeric columns do the heavy lifting.
   const payDate = o.payDate ? fmtDate(o.payDate) : (o.date ? fmtDate(o.date) : '—');
   const meta = o.advance
     ? '<span class="meta">аванс</span>'
-    : `<span class="meta">№${esc(o.number || '?')}${o.orderTotal ? ` · замовлення ${fmt(o.orderTotal)} ${esc(cur)}` : ''}</span>`;
+    : `<span class="meta">№${esc(o.number || '?')}${o.date ? ` · від ${fmtDate(o.date)}` : ''}</span>`;
   return `
     <tr class="order-row">
       <td>${payDate} ${meta}</td>
-      <td class="val-pos">${fmt(o.paid)}</td>
+      ${triCells(o.total, o.paid, o.remain)}
     </tr>`;
 }
 
