@@ -9,6 +9,7 @@
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="auth.js"></script>
+<script src="header.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -372,27 +373,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
 </head>
 <body>
 
-<!-- Top bar -->
-<div class="topbar">
-  <div class="brand">
-    <div class="dot"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
-    <div class="txt">
-      <div>Прогноз закупівель</div>
-      <div class="sub">Кабель 6мм</div>
-    </div>
-  </div>
-  <div class="topbar-right">
-    <nav class="app-nav">
-      <a href="/" class="nav-pill">🏠 Порівняння цін</a>
-      <a href="/forecast.html" class="nav-pill active">📊 Закупівлі</a>
-      <a href="/warehouses.html" class="nav-pill">📦 Склад</a>
-    </nav>
-    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
-      <svg id="iconSun" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2a1 1 0 100-2H2a1 1 0 100 2zm18 0h2a1 1 0 100-2h-2a1 1 0 100 2zM11 2v2a1 1 0 102 0V2a1 1 0 10-2 0zm0 18v2a1 1 0 102 0v-2a1 1 0 10-2 0zM5.99 4.58a1 1 0 00-1.41 1.41l1.06 1.06a1 1 0 101.41-1.41L5.99 4.58zm12.37 12.37a1 1 0 00-1.41 1.41l1.06 1.06a1 1 0 101.41-1.41l-1.06-1.06zm1.06-10.96a1 1 0 00-1.41-1.41l-1.06 1.06a1 1 0 101.41 1.41l1.06-1.06zM7.05 18.36a1 1 0 00-1.41-1.41l-1.06 1.06a1 1 0 101.41 1.41l1.06-1.06z"/></svg>
-      <svg id="iconMoon" viewBox="0 0 24 24" style="display:none"><path d="M9.37 5.51A7.35 7.35 0 009.1 7.5c0 4.08 3.32 7.4 7.4 7.4.68 0 1.35-.09 1.99-.27A7.014 7.014 0 0112 19c-3.86 0-7-3.14-7-7 0-2.93 1.81-5.45 4.37-6.49zM12 3a9 9 0 109 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 01-4.4 2.26 5.403 5.403 0 01-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
-    </button>
-  </div>
-</div>
+<div id="appHeader"></div>
 
 <div class="wrap">
 
@@ -465,27 +446,16 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
 </div>
 
 <script>
-// ─── Session gate (Google login + forecast role) ───
+// ─── Session gate (Google login + forecast role) + unified header ───
 Auth.require('forecast').then(user => {
   window.__user = user;
-  Auth.mountUserWidget(user, { selector: '.topbar-right' });
+  AppHeader.mount({ active: 'forecast', user });
 });
 
 const API_URL = 'https://price-api.doskevich.workers.dev/';
 const LEAD_TIME_DAYS = 14;
 const LT_TOTAL = LEAD_TIME_DAYS + 27;
 
-function applyTheme(theme){
-  document.documentElement.setAttribute('data-theme', theme);
-  document.getElementById('iconSun').style.display = theme === 'dark' ? 'none' : '';
-  document.getElementById('iconMoon').style.display = theme === 'dark' ? '' : 'none';
-  localStorage.setItem('theme', theme);
-}
-function toggleTheme(){
-  const cur = document.documentElement.getAttribute('data-theme') || 'dark';
-  applyTheme(cur === 'dark' ? 'light' : 'dark');
-}
-applyTheme(localStorage.getItem('theme') || 'dark');
 document.getElementById('ltBanner').textContent = LT_TOTAL;
 document.getElementById('ltInfo').textContent = `L/T = ${LEAD_TIME_DAYS} + 27 = ${LT_TOTAL} дн`;
 

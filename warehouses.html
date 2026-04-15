@@ -9,6 +9,7 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="auth.js"></script>
+<script src="header.js"></script>
 <style>
 :root{
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -42,22 +43,11 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
 a{color:inherit;text-decoration:none}
 
-/* Topbar */
-.topbar{position:sticky;top:0;z-index:50;background:var(--topbar-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:18px}
-.theme-btn{background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:13px;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
-.theme-btn:hover{background:var(--bg3);color:var(--text);border-color:var(--border2)}
-.app-nav{display:inline-flex;align-items:center;gap:3px;padding:2px;border:1px solid var(--border);border-radius:8px;background:var(--bg2)}
-.app-nav .nav-pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:var(--text2);text-decoration:none;padding:5px 10px;border-radius:5px;transition:all .15s;white-space:nowrap}
-.app-nav .nav-pill:hover{background:var(--bg3);color:var(--text)}
-.app-nav .nav-pill.active{background:var(--accent-bg);color:var(--accent);font-weight:600}
-@media (max-width:720px){.app-nav .nav-pill{padding:5px 8px;font-size:11px}.topbar h1{display:none}}
-.topbar h1{font-size:16px;font-weight:700;letter-spacing:-.3px;flex:1}
-.topbar .back{color:var(--text2);font-size:12px;padding:6px 12px;border-radius:8px;transition:all .15s}
-.topbar .back:hover{background:var(--bg3);color:var(--text)}
-.topbar .counter{font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums}
-
 /* Layout */
 .wrap{max-width:1400px;margin:0 auto;padding:20px}
+.page-head{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
+.page-head h1{font-size:20px;font-weight:700;letter-spacing:-.4px}
+.page-head .sub{font-size:12px;color:var(--text3)}
 
 /* Toolbar (filter + controls) */
 .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
@@ -145,18 +135,12 @@ a{color:inherit;text-decoration:none}
 </head>
 <body>
 
+<div id="appHeader"></div>
 <div id="app">
-  <div class="topbar">
-    <h1>📦 Склад · залишки</h1>
-    <nav class="app-nav">
-      <a href="/" class="nav-pill">🏠 Порівняння цін</a>
-      <a href="/forecast.html" class="nav-pill">📊 Закупівлі</a>
-      <a href="/warehouses.html" class="nav-pill active">📦 Склад</a>
-    </nav>
-    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Переключити тему"><span id="themeIco">☀️</span><span id="themeLbl">Світла</span></button>
-  </div>
-
   <div class="wrap">
+    <div class="page-head">
+      <h1>📦 Склад · залишки</h1>
+    </div>
     <div class="toolbar">
       <span class="lbl">На дату</span>
       <input type="date" id="asOfIn" title="Залишки на кінець обраної дати">
@@ -196,32 +180,11 @@ a{color:inherit;text-decoration:none}
 
 <script>
 const API_URL = 'https://price-api.doskevich.workers.dev';
-const THEME_KEY = 'theme'; // shared with index.html + forecast.html
 
-// ─── Theme ───
-(function initTheme() {
-  const saved = localStorage.getItem(THEME_KEY) || 'dark';
-  applyTheme(saved);
-})();
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  const ico = document.getElementById('themeIco');
-  const lbl = document.getElementById('themeLbl');
-  if (ico && lbl) {
-    ico.textContent = theme === 'light' ? '🌙' : '☀️';
-    lbl.textContent = theme === 'light' ? 'Темна' : 'Світла';
-  }
-  localStorage.setItem(THEME_KEY, theme);
-}
-function toggleTheme() {
-  const cur = document.documentElement.getAttribute('data-theme') || 'dark';
-  applyTheme(cur === 'dark' ? 'light' : 'dark');
-}
-
-// ─── Session gate (Google login + warehouses role) ───
+// ─── Session gate (Google login + warehouses role) + unified header ───
 Auth.require('warehouses').then(user => {
   window.__user = user;
-  Auth.mountUserWidget(user, { selector: '.topbar' });
+  AppHeader.mount({ active: 'warehouses', user });
   load();
 });
 

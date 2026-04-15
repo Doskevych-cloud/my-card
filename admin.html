@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <script src="auth.js"></script>
+<script src="header.js"></script>
 <style>
 :root {
   --bg:#0b0e11; --card:#161a20; --card2:#1e2329; --text:#eaecef; --text2:#9aa4b2; --text3:#6b7280;
@@ -24,14 +25,7 @@
 html, body { margin:0; padding:0 }
 body { font-family:'Inter',-apple-system,sans-serif; background: var(--bg); color: var(--text); min-height:100vh }
 
-/* Unified top bar (matches index/forecast/warehouses) */
-.topbar{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 80%,transparent);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:18px}
-.topbar h1{font-size:16px;font-weight:700;letter-spacing:-.3px;margin:0;flex:1}
-.app-nav{display:inline-flex;align-items:center;gap:3px;padding:2px;border:1px solid var(--border);border-radius:8px;background:var(--card)}
-.nav-pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:var(--text2);text-decoration:none;padding:5px 10px;border-radius:5px;transition:all .15s;white-space:nowrap;border:1px solid transparent}
-.nav-pill:hover{background:var(--card2);color:var(--text)}
-.nav-pill.active{background:rgba(255,131,25,.12);color:var(--accent);font-weight:600}
-@media (max-width:720px){.nav-pill{padding:5px 8px;font-size:11px}.topbar h1{display:none}}
+/* Shared top bar is provided by header.js (#appHeader) */
 
 .page { max-width: 1100px; margin: 28px auto; padding: 0 20px; }
 .page h1 { font-size: 22px; margin: 0 0 4px }
@@ -98,19 +92,7 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
 </head>
 <body>
 
-<div class="topbar">
-  <h1>⚙ Адмін · користувачі</h1>
-  <nav class="app-nav" id="appNav">
-    <a href="/" class="nav-pill">🏠 Порівняння цін</a>
-    <a href="/forecast.html" class="nav-pill">📊 Закупівлі</a>
-    <a href="/warehouses.html" class="nav-pill">📦 Склад</a>
-    <a href="/admin.html" class="nav-pill active">⚙ Адмін</a>
-  </nav>
-  <button class="theme-toggle" onclick="toggleTheme()" title="Тема">
-    <svg id="iconSun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-    <svg id="iconMoon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-  </button>
-</div>
+<div id="appHeader"></div>
 
 <div class="page">
   <h1>⚙ Користувачі та доступи</h1>
@@ -155,17 +137,7 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
 <div id="toastHost"></div>
 
 <script>
-function applyTheme(theme){
-  document.documentElement.setAttribute('data-theme', theme);
-  document.getElementById('iconSun').style.display = theme === 'dark' ? 'none' : '';
-  document.getElementById('iconMoon').style.display = theme === 'dark' ? '' : 'none';
-  localStorage.setItem('theme', theme);
-}
-function toggleTheme(){
-  const cur = document.documentElement.getAttribute('data-theme') || 'dark';
-  applyTheme(cur === 'dark' ? 'light' : 'dark');
-}
-applyTheme(localStorage.getItem('theme') || 'dark');
+// Theme handled by shared AppHeader (header.js)
 
 let currentUser = null;
 let users = [];
@@ -173,7 +145,7 @@ let inviteOpen = false;
 
 Auth.require('admin').then(user => {
   currentUser = user;
-  Auth.mountUserWidget(user, { selector: '.topbar' });
+  AppHeader.mount({ active: 'admin', user });
   loadUsers();
 });
 

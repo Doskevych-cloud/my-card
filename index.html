@@ -9,6 +9,8 @@
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+<script src="auth.js"></script>
+<script src="header.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -274,54 +276,48 @@ body.ip-check>*:not(#accessDenied):not(script){display:none!important}
 #accessDenied{display:none;position:fixed;inset:0;background:var(--bg);z-index:9999;align-items:center;justify-content:center;flex-direction:column}
 #accessDenied h2{color:var(--red);font-size:24px;margin-bottom:8px}
 #accessDenied p{color:var(--text2);font-size:14px}
+.page-head{display:flex;align-items:center;gap:16px;max-width:1000px;margin:16px auto 0;padding:0 24px;position:relative}
+.page-head h1{font-size:18px;font-weight:600;letter-spacing:-.2px;display:flex;align-items:center;gap:8px;flex:1;margin:0}
+.page-head .date{font-size:12px;color:var(--text2)}
+.page-head .settings-wrap{position:relative}
 </style>
-<script src="auth.js"></script>
 </head>
 <body class="ip-check">
 
 <div id="accessDenied"><h2>⛔ Доступ заборонено</h2><p>Ваш IP не в білому списку</p><p id="deniedIP" style="font-family:monospace;color:var(--text3);margin-top:8px"></p></div>
 
-<div class="header">
+<div id="appHeader"></div>
+
+<div class="page-head">
   <h1>Порівняння цін постачальників сонячного обладнання</h1>
-  <div class="header-right">
-    <nav class="app-nav">
-      <a href="/" class="nav-pill active">🏠 Порівняння цін</a>
-      <a href="/forecast.html" class="nav-pill" onclick="return openForecast(event)">📊 Закупівлі</a>
-      <a href="/warehouses.html" class="nav-pill" onclick="return openWarehouses(event)">📦 Склад</a>
-    </nav>
-    <span class="date" id="dateLabel"></span>
-    <div class="settings-wrap">
-      <button class="settings-toggle" onclick="document.getElementById('settingsDd').classList.toggle('open');event.stopPropagation()">
-        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg>
-      </button>
-      <div class="settings-dd" id="settingsDd">
-        <h3>&#9200; Автозапуск</h3>
-        <div class="srow">
-          <label>Щоденне оновлення</label>
-          <label class="tog"><input type="checkbox" id="schedEnabled" checked><span class="tog-s"></span></label>
+  <span class="date" id="dateLabel"></span>
+  <div class="settings-wrap">
+    <button class="settings-toggle" onclick="document.getElementById('settingsDd').classList.toggle('open');event.stopPropagation()" title="Налаштування">
+      <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg>
+    </button>
+    <div class="settings-dd" id="settingsDd">
+      <h3>&#9200; Автозапуск</h3>
+      <div class="srow">
+        <label>Щоденне оновлення</label>
+        <label class="tog"><input type="checkbox" id="schedEnabled" checked><span class="tog-s"></span></label>
+      </div>
+      <div class="srow">
+        <label>Час запуску</label>
+        <div><select id="schedHour"></select><span style="color:var(--text2);font-size:12px"> : 00</span></div>
+      </div>
+      <button class="settings-save" onclick="saveSchedule()">Зберегти</button>
+      <div class="settings-info" id="schedInfo"></div>
+      <div class="ip-section">
+        <h3>🔒 Доступ по IP</h3>
+        <div class="ip-list" id="ipList"></div>
+        <div class="ip-add">
+          <input id="ipAddr" placeholder="IP адреса" style="width:110px;flex:none">
+          <input id="ipLabel" placeholder="Коментар (обов'язково)">
+          <button onclick="addIP()">+</button>
         </div>
-        <div class="srow">
-          <label>Час запуску</label>
-          <div><select id="schedHour"></select><span style="color:var(--text2);font-size:12px"> : 00</span></div>
-        </div>
-        <button class="settings-save" onclick="saveSchedule()">Зберегти</button>
-        <div class="settings-info" id="schedInfo"></div>
-        <div class="ip-section">
-          <h3>🔒 Доступ по IP</h3>
-          <div class="ip-list" id="ipList"></div>
-          <div class="ip-add">
-            <input id="ipAddr" placeholder="IP адреса" style="width:110px;flex:none">
-            <input id="ipLabel" placeholder="Коментар (обов'язково)">
-            <button onclick="addIP()">+</button>
-          </div>
-          <div id="ipMsg"></div>
-        </div>
+        <div id="ipMsg"></div>
       </div>
     </div>
-    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
-      <svg id="iconSun" viewBox="0 0 24 24" style="display:none"><path d="M12 7a5 5 0 100 10 5 5 0 000-10zm0-4a1 1 0 011 1v1a1 1 0 01-2 0V4a1 1 0 011-1zm0 17a1 1 0 011 1v1a1 1 0 01-2 0v-1a1 1 0 011-1zm9-9a1 1 0 01-1 1h-1a1 1 0 010-2h1a1 1 0 011 1zM5 12a1 1 0 01-1 1H3a1 1 0 010-2h1a1 1 0 011 1zm13.07-5.07a1 1 0 010 1.41l-.71.71a1 1 0 01-1.41-1.41l.71-.71a1 1 0 011.41 0zM7.05 16.95a1 1 0 010 1.41l-.71.71a1 1 0 01-1.41-1.41l.71-.71a1 1 0 011.41 0zm11.9 0l.71.71a1 1 0 01-1.41 1.41l-.71-.71a1 1 0 011.41-1.41zM7.05 7.05l-.71.71a1 1 0 01-1.41-1.41l.71-.71a1 1 0 011.41 1.41z"/></svg>
-      <svg id="iconMoon" viewBox="0 0 24 24"><path d="M12 3a9 9 0 109 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 01-4.4 2.26 5.4 5.4 0 01-3.14-9.8C13.06 3.04 12.54 3 12 3z"/></svg>
-    </button>
   </div>
 </div>
 
@@ -2246,19 +2242,8 @@ async function initHistory() {
 }
 
 // ═══════════════════════════════════════════════
-// THEME
+// THEME — handled by shared AppHeader (header.js)
 // ═══════════════════════════════════════════════
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  document.getElementById('iconSun').style.display = theme === 'dark' ? 'none' : '';
-  document.getElementById('iconMoon').style.display = theme === 'dark' ? '' : 'none';
-  localStorage.setItem('theme', theme);
-}
-function toggleTheme() {
-  const cur = document.documentElement.getAttribute('data-theme') || 'dark';
-  applyTheme(cur === 'dark' ? 'light' : 'dark');
-}
-applyTheme(localStorage.getItem('theme') || 'dark');
 
 document.getElementById('dateLabel').textContent = new Date().toLocaleDateString('uk-UA');
 setTimeout(() => document.body.classList.remove('ip-check'), 5000);
@@ -2268,7 +2253,7 @@ setTimeout(() => document.body.classList.remove('ip-check'), 5000);
   // Google session + role gate (home module)
   const user = await Auth.require('home');
   window.__user = user;
-  Auth.mountUserWidget(user, { selector: '.header-right' });
+  AppHeader.mount({ active: 'home', user });
   if (!(await loadFromHash())) initHistory();
   loadSchedule();
   loadIPs();
