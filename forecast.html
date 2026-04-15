@@ -341,6 +341,9 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
 .m-badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
 .m-badge.black{background:var(--cable-black);color:#fff}
 .m-badge.red{background:var(--cable-red);color:#fff}
+.tr-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.3px;white-space:nowrap;flex-shrink:0}
+.tr-tag.transit{background:rgba(151,117,250,.18);color:#b399ff;border:1px solid rgba(151,117,250,.3)}
+.tr-tag.mixed{background:rgba(59,130,246,.14);color:#93bbff;border:1px solid rgba(59,130,246,.3);font-variant-numeric:tabular-nums}
 
 /* ─── Info line ─── */
 .info-line{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--blue-bg);border:1px solid var(--blue);border-left-width:3px;border-radius:10px;font-size:12px;color:var(--text);margin-top:16px}
@@ -978,19 +981,31 @@ function modalTemplate(kind, f){
   if (kind === 'reserve') {
     const black = f.reserveList.filter(r => r.type === 'black');
     const red = f.reserveList.filter(r => r.type === 'red');
-    const list = f.reserveList.sort((a, b) => b.qty - a.qty);
+    const list = [...f.reserveList].sort((a, b) => b.qty - a.qty);
+    const totalTransit = f.reserveList.reduce((a, r) => a + (r.fromTransit || 0), 0);
+    const totalOnHand = f.reserveList.reduce((a, r) => a + (r.fromOnHand || 0), 0);
     return `
       <div class="m-big">${fmt(s.black.reserve + s.red.reserve)} м</div>
-      <div class="m-sub">${f.reserveList.length} активних резервів по замовленнях клієнтів</div>
+      <div class="m-sub">${f.reserveList.length} активних резервів · на складі ${fmt(totalOnHand)} м · в дорозі ${fmt(totalTransit)} м</div>
       <div class="m-split">
         <div class="m-col black"><div class="m-col-label">Чорний резерв</div><div class="m-col-val">${fmt(s.black.reserve)} м</div><div class="m-col-sub">${black.length} замовлень</div></div>
         <div class="m-col red"><div class="m-col-label">Червоний резерв</div><div class="m-col-val">${fmt(s.red.reserve)} м</div><div class="m-col-sub">${red.length} замовлень</div></div>
       </div>
       <div class="m-section-title">Замовлення клієнтів</div>
       <div class="m-list">
-        ${list.map(r => `<div class="m-row"><div class="m-row-main"><span class="m-badge ${r.type}">${r.type === 'black' ? 'ЧОРН' : 'ЧЕРВ'}</span><span class="nm">${r.client}</span></div><span class="m-row-val">${fmt(r.qty)} м</span></div>`).join('')}
+        ${list.map(r => {
+          const onHand = r.fromOnHand || 0;
+          const transit = r.fromTransit || 0;
+          let tagHtml = '';
+          if (onHand && transit) {
+            tagHtml = `<span class="tr-tag mixed" title="Частина на складі, частина в дорозі">📦 ${fmt(onHand)} + 🚛 ${fmt(transit)}</span>`;
+          } else if (transit) {
+            tagHtml = `<span class="tr-tag transit" title="Резерв на складі «в дорозі»">🚛 в дорозі</span>`;
+          }
+          return `<div class="m-row"><div class="m-row-main"><span class="m-badge ${r.type}">${r.type === 'black' ? 'ЧОРН' : 'ЧЕРВ'}</span><span class="nm">${r.client}</span>${tagHtml}</div><span class="m-row-val">${fmt(r.qty)} м</span></div>`;
+        }).join('')}
       </div>
-      <div class="m-formula"><strong>Джерело:</strong> позиції залишків де <code>ЗаказПокупателя_Key ≠ 0</code>, з підтягуванням контрагента з <code>Document_ЗаказПокупателя</code></div>
+      <div class="m-formula"><strong>Джерело:</strong> позиції залишків де <code>ЗаказПокупателя_Key ≠ 0</code> — <strong>включно з резервами на складах «в дорозі»</strong>, з підтягуванням контрагента з <code>Document_ЗаказПокупателя</code></div>
     `;
   }
 
