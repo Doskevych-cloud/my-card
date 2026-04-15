@@ -406,7 +406,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
     <div class="kpi accent" onclick="openKpi('free')"><div class="kpi-label">Вільно на складах</div><div class="kpi-val" id="kpiFree">—</div><div class="kpi-sub">завантаження…</div></div>
     <div class="kpi blue" onclick="openKpi('reserve')"><div class="kpi-label">У резерві</div><div class="kpi-val" id="kpiReserve">—</div><div class="kpi-sub">завантаження…</div></div>
     <div class="kpi purple" onclick="openKpi('transit')"><div class="kpi-label">Кабель в дорозі</div><div class="kpi-val" id="kpiTransit">—</div><div class="kpi-sub">завантаження…</div></div>
-    <div class="kpi red" onclick="openKpi('must')"><div class="kpi-label">Має бути замовлено</div><div class="kpi-val" id="kpiMust">—</div><div class="kpi-sub">завантаження…</div></div>
+    <div class="kpi red" onclick="openKpi('must')"><div class="kpi-label">Замовити</div><div class="kpi-val" id="kpiMust">—</div><div class="kpi-sub">завантаження…</div></div>
     <div class="kpi green" onclick="openKpi('wma')"><div class="kpi-label">WMA прогноз / день</div><div class="kpi-val" id="kpiWma">—</div><div class="kpi-sub">завантаження…</div></div>
   </div>
 
@@ -695,10 +695,11 @@ function renderPlanning(f){
   document.getElementById('kpiReserve').textContent = fmt(totalReserve) + ' м';
   document.getElementById('kpiReserve').nextElementSibling.innerHTML = `${f.reserveList.length} активних замовлень`;
 
-  document.getElementById('kpiMust').textContent = fmt(totalMust) + ' м';
+  // «Замовити» — фактична кількість до замовлення. Якщо покриття вистачає — 0, без зайвого тексту.
+  document.getElementById('kpiMust').textContent = fmt(totalOrder) + ' м';
   document.getElementById('kpiMust').nextElementSibling.innerHTML = totalOrder > 0
-    ? `<span class="kpi-trend up">▲ Замовити ${fmt(totalOrder)}${totalTransitFree > 0 ? ` (мінус ${fmt(totalTransitFree)} в дорозі)` : ''}</span>`
-    : `<span class="kpi-trend down">▼ Покрито${totalTransitFree > 0 ? ` (враховуючи ${fmt(totalTransitFree)} в дорозі)` : ''}</span>`;
+    ? `ч: <strong style="color:var(--text)">${fmt(orderB)}</strong> · ч: <strong style="color:var(--text)">${fmt(orderR)}</strong>${totalTransitFree > 0 ? ` · <span style="color:var(--text3)">в дорозі ${fmt(totalTransitFree)}</span>` : ''}`
+    : `<span class="kpi-trend down">✓ покрито</span>`;
 
   document.getElementById('kpiWma').textContent = fmt(totalWma, 1) + ' м';
   document.getElementById('kpiWma').nextElementSibling.innerHTML = `На 1 міс ≈ <strong style="color:var(--text)">${fmt(totalWma * 30)}</strong> м`;
@@ -801,7 +802,7 @@ const KPI_META = {
   free:    { ico: '📦', cls: 'accent', title: 'Вільно на складах', sub: 'Поточні залишки, не в резерві' },
   reserve: { ico: '🔒', cls: 'blue',   title: 'У резерві',          sub: 'Залишки, закріплені за замовленнями клієнтів' },
   transit: { ico: '🚛', cls: 'purple', title: 'Кабель в дорозі',    sub: 'Партії на складах «В дорозі» (виробництво + логістика)' },
-  must:    { ico: '⚠️',  cls: 'red',    title: 'Має бути замовлено', sub: `WMA × ${LT_TOTAL} днів + Резерв − Вільно − В дорозі (вільне)` },
+  must:    { ico: '⚠️',  cls: 'red',    title: 'Замовити', sub: `max(0, WMA × ${LT_TOTAL} днів − Вільно − В дорозі (вільне))` },
   wma:     { ico: '📈', cls: 'green',  title: 'WMA прогноз / день', sub: 'Weighted moving average 14д/30д/60д з фільтром по низькому стоку' },
 };
 
