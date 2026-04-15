@@ -244,6 +244,31 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
 .wh-tbl td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
 .wh-tbl td.neg{color:var(--red);font-weight:600}
 
+/* ─── Cable-only warehouse cards ─── */
+.wh-cable-section{margin-bottom:22px}
+.wh-cable-section-head{display:flex;align-items:baseline;gap:10px;margin:14px 0 10px;padding:0 2px}
+.wh-cable-section-head h3{font-size:13px;font-weight:700;color:var(--text);letter-spacing:-.2px}
+.wh-cable-section-head h3 span{color:var(--text3);font-weight:500;font-size:12px;margin-left:4px}
+.wh-cable-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.wh-cable-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;transition:transform .15s,box-shadow .15s}
+.wh-cable-card:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm, 0 2px 8px rgba(0,0,0,.12));border-color:var(--border2)}
+.wh-cable-card.in-transit{border-left:3px solid #9775fa}
+.wh-cable-card.on-hand{border-left:3px solid var(--accent)}
+.wh-cable-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.wh-cable-ico{font-size:18px;line-height:1;flex-shrink:0}
+.wh-cable-title{flex:1;font-size:12px;font-weight:600;color:var(--text);line-height:1.3}
+.wh-cable-total{font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap;font-variant-numeric:tabular-nums}
+.wh-cable-tbl{width:100%;border-collapse:collapse;font-size:11px}
+.wh-cable-tbl th{padding:6px 4px;color:var(--text3);font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.3px;text-align:right;border-bottom:1px solid var(--border)}
+.wh-cable-tbl th:first-child{text-align:left}
+.wh-cable-tbl td{padding:7px 4px;font-variant-numeric:tabular-nums;text-align:right;color:var(--text)}
+.wh-cable-tbl td:first-child{text-align:left;font-weight:500}
+.wh-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.wh-dot.black{background:#444}
+.wh-dot.red{background:var(--red, #e74c3c)}
+.wh-cable-grid .empty{grid-column:1/-1;padding:20px;text-align:center;color:var(--text3);font-size:12px}
+.section-hint{font-size:11px;color:var(--text3);margin-left:auto}
+
 /* ─── Section heads ─── */
 .section-head{display:flex;justify-content:space-between;align-items:center;margin:28px 0 14px;padding:0 2px}
 .section-head h2{font-size:16px;font-weight:700;letter-spacing:-.3px;display:flex;align-items:center;gap:10px}
@@ -298,6 +323,13 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
 .m-formula{padding:14px 16px;background:var(--accent-bg);border:1px solid var(--accent);border-left-width:3px;border-radius:10px;font-size:12px;line-height:1.6;margin-top:16px}
 .m-banner{margin:14px 0 6px;padding:12px 14px;background:rgba(255,193,7,.10);border:1px solid rgba(255,193,7,.45);border-left:3px solid #ffc107;border-radius:10px;font-size:12px;line-height:1.6;color:var(--text1)}
 .m-kept{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:10px;font-weight:600;letter-spacing:.3px}
+.m-kept.collapsed{background:rgba(255,107,107,.12);border-color:rgba(255,107,107,.35);color:#ff8b8b}
+.m-tbl tr.focus{background:rgba(255,131,25,.18) !important;outline:2px solid var(--accent);outline-offset:-2px}
+.m-tbl tr.muted td{color:var(--text3)}
+.m-tbl td.up{color:#22c55e;font-weight:600}
+.m-tbl td.down{color:#ef4444;font-weight:600}
+.chart-wrap canvas{cursor:pointer}
+.mt-spark canvas{cursor:pointer}
 .m-formula code{background:rgba(255,131,25,.15);padding:1px 6px;border-radius:3px;font-family:'SF Mono','Monaco',monospace;font-size:11px}
 .m-tbl{width:100%;border-collapse:collapse;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
 .m-tbl th,.m-tbl td{padding:10px 14px;text-align:right;font-variant-numeric:tabular-nums}
@@ -406,12 +438,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
     </div>
   </div>
 
-  <!-- Warehouses -->
+  <!-- Warehouses (cable only) -->
   <div class="section-head">
-    <h2>🏭 Залишки по складах</h2>
-    <button class="pill-btn" onclick="expandAllWh()" id="btnExpandWh">Розгорнути всі</button>
+    <h2>🏭 Кабель по складах</h2>
+    <span class="section-hint">Тільки чорний 6мм + червоний 6мм. Для повного перегляду складів натисни «📦 Склад» у шапці.</span>
   </div>
-  <div id="whBody"><div class="loading">Завантаження складських залишків…</div></div>
+  <div id="whBody"><div class="loading">Завантаження…</div></div>
 
 </div>
 
@@ -504,7 +536,10 @@ function renderMarketTile(container, d, unit, decimals, source, label){
   `;
   const ctx = document.getElementById(container.id + '_chart');
   const reversed = d.data.slice().reverse();
-  new Chart(ctx, {
+  // Cache payload for modal drill-down
+  const kind = container.id === 'tileCopper' ? 'copper' : 'eurusd';
+  marketData[kind] = { d, unit, decimals, source, label, reversed };
+  const chart = new Chart(ctx, {
     type: 'line',
     data: {
       labels: reversed.map(x => fmtDate(x.date)),
@@ -519,10 +554,24 @@ function renderMarketTile(container, d, unit, decimals, source, label){
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
-      scales: { x: { display: false }, y: { display: false } }
+      scales: { x: { display: false }, y: { display: false } },
+      onClick: (event, elements) => {
+        const idx = elements.length ? elements[0].index : null;
+        openMarketDetail(kind, idx);
+      },
+      onHover: (evt, els) => { evt.native.target.style.cursor = els[0] ? 'pointer' : 'default'; }
     }
   });
+  // Also allow clicking the container area (not just the line)
+  container.style.cursor = 'pointer';
+  container.onclick = (e) => {
+    // Don't steal clicks from chart itself (Chart.js handles point hits)
+    if (e.target.tagName === 'CANVAS') return;
+    openMarketDetail(kind, null);
+  };
 }
+
+const marketData = { copper: null, eurusd: null };
 
 async function loadMarket(){
   try {
@@ -649,9 +698,14 @@ function renderPlanning(f){
   document.getElementById('kpiWma').nextElementSibling.innerHTML = `На 1 міс ≈ <strong style="color:var(--text)">${fmt(totalWma * 30)}</strong> м`;
 }
 
+// Shipments rendering — chart is clickable per bar, opens day detail modal
+let shipStatsForModal = null;
 function renderShipments(f){
-  const stats = f.dailyStats.slice().reverse();
-  const total = stats.reduce((a, b) => a + b.total, 0);
+  const all = f.dailyStats.slice().reverse(); // oldest → newest, up to 60 days
+  shipStatsForModal = all;
+  // Chart shows last 30 days for readability; modal drill-down shows all 60
+  const stats = all.slice(-30);
+  const total30 = stats.reduce((a, b) => a + b.total, 0);
   const avg7 = stats.slice(-7).reduce((a, b) => a + b.total, 0) / 7;
   const avg30 = stats.reduce((a, b) => a + b.total, 0) / stats.length;
   const diff = avg30 > 0 ? ((avg7 / avg30) - 1) * 100 : 0;
@@ -661,11 +715,12 @@ function renderShipments(f){
 
   document.getElementById('shipBody').innerHTML = `
     <div class="ship-stats">
-      <div class="ship-stat"><div class="lab">За 30 днів</div><div class="val">${fmt(total)} м</div></div>
+      <div class="ship-stat"><div class="lab">За 30 днів</div><div class="val">${fmt(total30)} м</div></div>
       <div class="ship-stat"><div class="lab">Середнє 7 днів</div><div class="val">${fmt(avg7, 1)} м/д</div></div>
       <div class="ship-stat"><div class="lab">Середнє 30 днів</div><div class="val">${fmt(avg30, 1)} м/д</div></div>
       <div class="ship-stat"><div class="lab">Тренд тижня</div><div class="val"><span class="kpi-trend ${trendCls}">${trendStr}</span></div></div>
       <div class="ship-stat accent"><div class="lab">Прогноз WMA</div><div class="val">${fmt(f.wma.total, 1)} м/д</div></div>
+      <div class="ship-stat"><div class="lab">Архів</div><div class="val"><button class="pill-btn" onclick="openShipDetail(null)" style="padding:6px 12px;font-size:11px">60 днів →</button></div></div>
     </div>
     <div class="chart-wrap"><canvas id="shipChart"></canvas></div>
   `;
@@ -688,7 +743,16 @@ function renderShipments(f){
       scales: {
         x: { stacked: true, ticks: { color: css('--text2'), font: { size: 10 } }, grid: { display: false } },
         y: { stacked: true, beginAtZero: true, ticks: { color: css('--text2'), font: { size: 10 } }, grid: { color: css('--border') } }
-      }
+      },
+      onClick: (event, elements) => {
+        if (!elements.length) return;
+        const chartIdx = elements[0].index;
+        // Chart shows last 30 of 60 days — map to full index in shipStatsForModal
+        const full = shipStatsForModal || [];
+        const offset = Math.max(0, full.length - 30);
+        openShipDetail(offset + chartIdx);
+      },
+      onHover: (evt, els) => { evt.native.target.style.cursor = els[0] ? 'pointer' : 'default'; }
     }
   });
 }
@@ -705,9 +769,11 @@ async function loadForecast(){
     renderPlanning(f);
     renderShipments(f);
     renderTransitKpi(f);
+    renderCableWh(f);
   } catch (e) {
     document.getElementById('planBody').innerHTML = `<div class="error">${e.message}</div>`;
     document.getElementById('shipBody').innerHTML = `<div class="error">${e.message}</div>`;
+    document.getElementById('whBody').innerHTML = `<div class="error">${e.message}</div>`;
   }
 }
 
@@ -727,7 +793,7 @@ const KPI_META = {
   reserve: { ico: '🔒', cls: 'blue',   title: 'У резерві',          sub: 'Залишки, закріплені за замовленнями клієнтів' },
   transit: { ico: '🚛', cls: 'purple', title: 'Кабель в дорозі',    sub: 'Партії на складах «В дорозі» (виробництво + логістика)' },
   must:    { ico: '⚠️',  cls: 'red',    title: 'Має бути замовлено', sub: `WMA × ${LT_TOTAL} днів + резерв = покриття на повний L/T` },
-  wma:     { ico: '📈', cls: 'green',  title: 'WMA прогноз / день', sub: 'Weighted moving average = 0.7 × 14д + 0.3 × 30д' },
+  wma:     { ico: '📈', cls: 'green',  title: 'WMA прогноз / день', sub: 'Weighted moving average 14д/30д/60д з фільтром по низькому стоку' },
 };
 
 function openKpi(kind){
@@ -749,6 +815,143 @@ function closeKpi(){
   document.body.style.overflow = '';
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeKpi(); });
+
+// ─── Chart drill-down modals (reuse same modal element) ───
+function openMarketDetail(kind, focusIdx){
+  const m = marketData[kind];
+  if (!m) return;
+  const { d, unit, decimals, source, label, reversed } = m;
+  const ico = document.getElementById('modalIco');
+  ico.className = 'm-ico accent';
+  ico.textContent = kind === 'copper' ? '🟠' : '💶';
+  document.getElementById('modalTitle').textContent = `${label} — історія 30 днів`;
+  document.getElementById('modalSub').textContent = `Поточна ціна ${fmt(d.current, decimals)}${unit} · джерело: ${source}`;
+
+  const rows = reversed.slice().reverse().map((x, i) => {
+    const prev = reversed.slice().reverse()[i + 1];
+    const chg = prev ? (x.price - prev.price) : 0;
+    const chgPct = prev && prev.price ? (chg / prev.price * 100) : 0;
+    const cls = chg > 0 ? 'up' : chg < 0 ? 'down' : '';
+    const sign = chg > 0 ? '+' : '';
+    const realIdx = reversed.length - 1 - i; // index in original reversed array
+    const isFocus = focusIdx !== null && realIdx === focusIdx;
+    return `<tr class="${isFocus ? 'focus' : ''}"><td>${fmtDate(x.date)}</td><td>${fmt(x.price, decimals)}${unit}</td><td class="${cls}">${chg ? sign + fmt(chg, decimals) : '—'}</td><td class="${cls}">${chg ? sign + chgPct.toFixed(2) + '%' : '—'}</td></tr>`;
+  }).join('');
+
+  document.getElementById('modalBody').innerHTML = `
+    <div class="m-big">${fmt(d.current, decimals)}${unit}</div>
+    <div class="m-sub">${d.trend === 'UP' ? '▲ Зростання' : d.trend === 'DOWN' ? '▼ Падіння' : '■ Стабільно'} · ${d.diff} відносно 7д середнього</div>
+    <div class="m-split">
+      <div class="m-col"><div class="m-col-label">Середнє 7 днів</div><div class="m-col-val">${fmt(d.avg7, decimals)}${unit}</div></div>
+      <div class="m-col"><div class="m-col-label">Середнє 30 днів</div><div class="m-col-val">${fmt(d.avg30, decimals)}${unit}</div></div>
+    </div>
+    <div class="m-section-title">Історія</div>
+    <table class="m-tbl">
+      <thead><tr><th>Дата</th><th>Ціна</th><th>Зміна</th><th>%</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="m-formula">
+      Джерело: <a href="${kind === 'copper' ? 'https://www.westmetall.com/en/markdaten.php?action=table&field=WM_Cu_low' : 'https://finance.yahoo.com/quote/EURUSD%3DX/history'}" target="_blank" rel="noopener" style="color:var(--accent)">${source}</a>.
+      Дані оновлюються раз на годину (KV cache).
+      ${focusIdx !== null ? '<br>Підсвічений рядок — точка, на яку ти натиснув на графіку.' : ''}
+    </div>
+  `;
+  document.getElementById('modalBackdrop').classList.add('open');
+  document.getElementById('modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  // Scroll focused row into view after DOM update
+  if (focusIdx !== null) {
+    requestAnimationFrame(() => {
+      const row = document.querySelector('#modal .m-tbl tr.focus');
+      if (row) row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    });
+  }
+}
+
+function openShipDetail(focusIdx){
+  if (!forecastData || !shipStatsForModal) return;
+  const f = forecastData;
+  const stats = shipStatsForModal; // already chronological (oldest→newest)
+
+  // Aggregate blackLog/redLog by date for quick lookup
+  // blackLog entries: [displayDate, docNumber, client, qty]
+  const byDate = {};
+  const addLog = (log, type) => {
+    (log || []).forEach(([displayDate, num, client, qty]) => {
+      // Convert uk-UA DD.MM.YYYY to YYYY-MM-DD
+      const m = (displayDate || '').match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+      if (!m) return;
+      const iso = `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+      if (!byDate[iso]) byDate[iso] = [];
+      byDate[iso].push({ type, num, client, qty });
+    });
+  };
+  addLog(f.blackLog, 'black');
+  addLog(f.redLog, 'red');
+
+  const ico = document.getElementById('modalIco');
+  ico.className = 'm-ico accent';
+  ico.textContent = '📦';
+
+  if (focusIdx !== null) {
+    const s = stats[focusIdx];
+    const docs = (byDate[s.date] || []).sort((a, b) => b.qty - a.qty);
+    document.getElementById('modalTitle').textContent = `Відвантаження за ${fmtDate(s.date)}`;
+    document.getElementById('modalSub').textContent = `Всього ${fmt(s.total)} м · чорний ${fmt(s.black)} · червоний ${fmt(s.red)}`;
+    const docRows = docs.length
+      ? docs.map(doc => `<tr><td><span class="wh-dot ${doc.type}"></span>${doc.type === 'black' ? 'Чорний' : 'Червоний'}</td><td>${doc.num}</td><td>${escapeHtml(doc.client)}</td><td>${fmt(doc.qty)} м</td></tr>`).join('')
+      : '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">Відвантажень цього дня не було</td></tr>';
+    const excl = s.excludedBlack || s.excludedRed;
+    document.getElementById('modalBody').innerHTML = `
+      <div class="m-big">${fmt(s.total)} м</div>
+      <div class="m-sub">Обсяг відвантажень за день</div>
+      <div class="m-split">
+        <div class="m-col black"><div class="m-col-label">Чорний</div><div class="m-col-val">${fmt(s.black)} м</div><div class="m-col-sub">Запас на початок дня: ${fmt(s.stockBlack)} м ${s.excludedBlack ? '⚠️' : ''}</div></div>
+        <div class="m-col red"><div class="m-col-label">Червоний</div><div class="m-col-val">${fmt(s.red)} м</div><div class="m-col-sub">Запас на початок дня: ${fmt(s.stockRed)} м ${s.excludedRed ? '⚠️' : ''}</div></div>
+      </div>
+      ${excl ? '<div class="m-banner">⚠️ Цей день виключений з WMA (запас був нижче 10 000 м — обмеження наявністю).</div>' : ''}
+      <div class="m-section-title">Документи</div>
+      <table class="m-tbl">
+        <thead><tr><th>Колір</th><th>№ документа</th><th>Клієнт</th><th>К-ть</th></tr></thead>
+        <tbody>${docRows}</tbody>
+      </table>
+    `;
+  } else {
+    // Full history
+    document.getElementById('modalTitle').textContent = 'Відвантаження — історія 60 днів';
+    document.getElementById('modalSub').textContent = `Натисни на рядок для деталей дня`;
+    const rows = stats.slice().reverse().map((s, i) => {
+      const excl = s.excludedBlack || s.excludedRed;
+      return `<tr class="${excl ? 'muted' : ''}" data-ship-idx="${stats.length - 1 - i}" onclick="openShipDetail(${stats.length - 1 - i})" style="cursor:pointer">
+        <td>${fmtDate(s.date)}</td>
+        <td>${fmt(s.black)}</td>
+        <td>${fmt(s.red)}</td>
+        <td><strong>${fmt(s.total)}</strong></td>
+        <td>${fmt(s.stockBlack)}</td>
+        <td>${fmt(s.stockRed)}</td>
+        <td>${excl ? '⚠️' : '✓'}</td>
+      </tr>`;
+    }).join('');
+    document.getElementById('modalBody').innerHTML = `
+      <div class="m-section-title">Історія відвантажень (60 днів)</div>
+      <table class="m-tbl">
+        <thead><tr><th>Дата</th><th>Чорний</th><th>Черв.</th><th>Разом</th><th>Стокч.</th><th>Стокчрв.</th><th>WMA</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="m-formula">
+        ⚠️ у колонці WMA = день виключений з прогнозу (запас був нижче 10 000 м). Натисни рядок для деталей.
+      </div>
+    `;
+  }
+
+  document.getElementById('modalBackdrop').classList.add('open');
+  document.getElementById('modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 
 function modalTemplate(kind, f){
   const s = f.stock;
@@ -856,35 +1059,46 @@ function modalTemplate(kind, f){
   if (kind === 'wma') {
     const b = ab.black || {}, r = ab.red || {};
     const thr = ab.threshold || 10000;
+    const lbk = ab.lookbackDays || 60;
+    const minK = ab.minKeptForValid || 3;
     const exclB = (f.dailyStats || []).filter(d => d.excludedBlack).length;
     const exclR = (f.dailyStats || []).filter(d => d.excludedRed).length;
-    const keptNote = (kept, total) => `<span class="m-kept">${kept}/${total} днів</span>`;
+    const keptNote = (kept, total) => {
+      const collapsed = (kept ?? 0) < minK;
+      return `<span class="m-kept ${collapsed ? 'collapsed' : ''}" title="${collapsed ? 'Вікно згорнуто: мало даних' : 'Достатньо даних'}">${kept}/${total}</span>`;
+    };
+    const wBase = ab.baseWeights || { w14: 0.6, w30: 0.3, w60: 0.1 };
+    const uwB = b.usedWeights || { w14: 0, w30: 0, w60: 0 };
+    const uwR = r.usedWeights || { w14: 0, w30: 0, w60: 0 };
+    const pct = (v) => (v * 100).toFixed(0) + '%';
+    const collapsedAny = b.collapsed || r.collapsed;
     return `
       <div class="m-big">${fmt(f.wma.total, 1)} м / день</div>
-      <div class="m-sub">Прогнозний добовий обсяг продажів кабелю (WMA)</div>
+      <div class="m-sub">Прогнозний добовий обсяг продажів кабелю (WMA, lookback ${lbk} днів)</div>
       <div class="m-split">
         <div class="m-col black"><div class="m-col-label">Чорний WMA</div><div class="m-col-val">${fmt(f.wma.black, 1)} м/д</div><div class="m-col-sub">На 1 міс ≈ ${fmt(f.wma.black * 30)} м</div></div>
         <div class="m-col red"><div class="m-col-label">Червоний WMA</div><div class="m-col-val">${fmt(f.wma.red, 1)} м/д</div><div class="m-col-sub">На 1 міс ≈ ${fmt(f.wma.red * 30)} м</div></div>
       </div>
       <div class="m-banner">
-        ⚠️ Дні, коли запас кабелю був менший за <b>${fmt(thr)} м</b>, виключаються з WMA —
-        такі дні обмежені наявністю, а не попитом.<br>
-        Виключено: чорний <b>${exclB}</b> дн. з 30, червоний <b>${exclR}</b> дн. з 30.
+        ⚠️ Дні з запасом &lt; <b>${fmt(thr)} м</b> виключаються — обмежені наявністю, не попитом.<br>
+        Виключено: чорний <b>${exclB}</b> з ${lbk} дн., червоний <b>${exclR}</b> з ${lbk} дн.
+        ${collapsedAny ? '<br>⚠️ Частина вікон згорнуті (менш ніж ' + minK + ' валідних днів) — їхня вага перерозподілена.' : ''}
       </div>
       <div class="m-section-title">Середні значення за періодами (відфільтровані)</div>
       <table class="m-tbl">
-        <thead><tr><th>Період</th><th>Чорний м/д</th><th>Червоний м/д</th><th>Вага</th></tr></thead>
+        <thead><tr><th>Період</th><th>Чорний м/д</th><th>Червоний м/д</th><th>База ваги</th><th>Фактична вага</th></tr></thead>
         <tbody>
-          <tr><td>Середнє 7 днів ${keptNote((b.kept7 ?? 0), 7)}</td><td>${fmt(b.avg7, 1)}</td><td>${fmt(r.avg7, 1)}</td><td>—</td></tr>
-          <tr><td>Середнє 14 днів ${keptNote((b.kept14 ?? 0), 14)}</td><td>${fmt(b.avg14, 1)}</td><td>${fmt(r.avg14, 1)}</td><td>70%</td></tr>
-          <tr><td>Середнє 30 днів ${keptNote((b.kept30 ?? 0), 30)}</td><td>${fmt(b.avg30, 1)}</td><td>${fmt(r.avg30, 1)}</td><td>30%</td></tr>
+          <tr><td>Середнє 7 днів ${keptNote(b.kept7, 7)}</td><td>${fmt(b.avg7, 1)}</td><td>${fmt(r.avg7, 1)}</td><td>—</td><td>—</td></tr>
+          <tr><td>Середнє 14 днів ${keptNote(b.kept14, 14)}</td><td>${fmt(b.avg14, 1)}</td><td>${fmt(r.avg14, 1)}</td><td>${pct(wBase.w14)}</td><td>${pct(uwB.w14)} / ${pct(uwR.w14)}</td></tr>
+          <tr><td>Середнє 30 днів ${keptNote(b.kept30, 30)}</td><td>${fmt(b.avg30, 1)}</td><td>${fmt(r.avg30, 1)}</td><td>${pct(wBase.w30)}</td><td>${pct(uwB.w30)} / ${pct(uwR.w30)}</td></tr>
+          <tr><td>Середнє 60 днів ${keptNote(b.kept60, 60)}</td><td>${fmt(b.avg60, 1)}</td><td>${fmt(r.avg60, 1)}</td><td>${pct(wBase.w60)}</td><td>${pct(uwB.w60)} / ${pct(uwR.w60)}</td></tr>
         </tbody>
-        <tfoot><tr><td>WMA</td><td>${fmt(f.wma.black, 1)}</td><td>${fmt(f.wma.red, 1)}</td><td>100%</td></tr></tfoot>
+        <tfoot><tr><td>WMA</td><td>${fmt(f.wma.black, 1)}</td><td>${fmt(f.wma.red, 1)}</td><td>100%</td><td>100%</td></tr></tfoot>
       </table>
       <div class="m-formula">
-        <code>WMA = 0.7 × avg14 + 0.3 × avg30</code> (з відкинутими днями, де запас &lt; ${fmt(thr)} м)<br>
-        14-денне середнє реагує швидше на зміни попиту, 30-денне згладжує сезонність.
-        Кількість днів показана як <i>залишено/всього</i>.
+        <code>WMA = (w14·avg14 + w30·avg30 + w60·avg60) / Σw</code><br>
+        Базові ваги: 14д=${pct(wBase.w14)}, 30д=${pct(wBase.w30)}, 60д=${pct(wBase.w60)}. Якщо у вікні &lt; ${minK} валідних днів — вага цього вікна = 0, ваги перерозподіляються.<br>
+        «Фактична вага» показана як <i>чорний / червоний</i> — вони можуть відрізнятися, якщо один колір має згорнуте вікно.
       </div>
     `;
   }
@@ -893,59 +1107,74 @@ function modalTemplate(kind, f){
 }
 
 // ─── Warehouses ───
-function renderWhTable(items){
-  return `<table class="wh-tbl">
-    <thead><tr><th>Товар</th><th>Зал.</th><th>Рез.</th><th>Вільно</th></tr></thead>
-    <tbody>${items.map(it => `<tr><td>${it.name}</td><td>${fmt(it.total)}</td><td>${fmt(it.reserve)}</td><td class="${it.free < 0 ? 'neg' : ''}">${fmt(it.free)}</td></tr>`).join('')}</tbody>
-  </table>`;
-}
+function renderCableWh(f){
+  // On-hand warehouses (free+reserve, split black/red)
+  const onHand = (f.stockByWh || []).map(w => ({
+    name: w.name,
+    blackFree: w.black.free, blackRes: w.black.reserve,
+    redFree: w.red.free, redRes: w.red.reserve,
+    total: w.black.free + w.black.reserve + w.red.free + w.red.reserve,
+  })).filter(w => w.total > 0);
 
-function toggleWh(id){
-  document.getElementById('wh_h_' + id).classList.toggle('open');
-  document.getElementById('wh_b_' + id).classList.toggle('open');
-}
+  // In-transit warehouses (no free/reserve split in API, just totals)
+  const inTransit = (f.inTransit && f.inTransit.byWh || []).map(w => ({
+    name: w.name, black: w.black, red: w.red, total: w.black + w.red,
+  })).filter(w => w.total > 0);
 
-let whExpanded = false;
-function expandAllWh(){
-  whExpanded = !whExpanded;
-  document.querySelectorAll('.wh-card-head').forEach(h => { whExpanded ? h.classList.add('open') : h.classList.remove('open'); });
-  document.querySelectorAll('.wh-card-body').forEach(b => { whExpanded ? b.classList.add('open') : b.classList.remove('open'); });
-  document.getElementById('btnExpandWh').textContent = whExpanded ? 'Згорнути всі' : 'Розгорнути всі';
-}
+  const rowOnHand = w => `
+    <div class="wh-cable-card on-hand">
+      <div class="wh-cable-head">
+        <div class="wh-cable-ico">🏢</div>
+        <div class="wh-cable-title">${w.name}</div>
+        <div class="wh-cable-total">${fmt(w.total)} м</div>
+      </div>
+      <table class="wh-cable-tbl">
+        <thead><tr><th>Колір</th><th>Вільно</th><th>Резерв</th><th>Разом</th></tr></thead>
+        <tbody>
+          <tr><td><span class="wh-dot black"></span>Чорний</td><td>${fmt(w.blackFree)}</td><td>${fmt(w.blackRes)}</td><td><strong>${fmt(w.blackFree + w.blackRes)}</strong></td></tr>
+          <tr><td><span class="wh-dot red"></span>Червоний</td><td>${fmt(w.redFree)}</td><td>${fmt(w.redRes)}</td><td><strong>${fmt(w.redFree + w.redRes)}</strong></td></tr>
+        </tbody>
+      </table>
+    </div>`;
 
-async function loadWarehouses(){
-  try {
-    const res = await fetch(API_URL + '?action=warehouses_stock');
-    const w = await res.json();
-    if (w.error) throw new Error(w.error);
-    const whList = w.warehouses.map(wh => {
-      const subTotal = wh.items.reduce((a, it) => a + it.total, 0);
-      const reserveTotal = wh.items.reduce((a, it) => a + it.reserve, 0);
-      return `
-        <div class="wh-card">
-          <div class="wh-card-head" id="wh_h_${wh.id}" onclick="toggleWh('${wh.id}')">
-            <div class="wh-title-row">
-              <div class="wh-ico"><svg viewBox="0 0 24 24"><path d="M12 3L2 12h3v8h14v-8h3L12 3zm0 2.83L18.17 12H17v6h-4v-4h-2v4H7v-6H5.83L12 5.83z"/></svg></div>
-              <div>
-                <div class="wh-title">${wh.name}</div>
-                <div class="wh-meta">${wh.items.length} позицій · ${fmt(subTotal)} од · резерв ${fmt(reserveTotal)}</div>
-              </div>
-            </div>
-            <span class="wh-chev">▶</span>
-          </div>
-          <div class="wh-card-body" id="wh_b_${wh.id}">${renderWhTable(wh.items)}</div>
-        </div>
-      `;
-    }).join('');
-    document.getElementById('whBody').innerHTML = `<div class="wh-grid">${whList}</div>`;
-  } catch (e) {
-    document.getElementById('whBody').innerHTML = `<div class="error">${e.message}</div>`;
-  }
+  const rowTransit = w => `
+    <div class="wh-cable-card in-transit">
+      <div class="wh-cable-head">
+        <div class="wh-cable-ico">🚛</div>
+        <div class="wh-cable-title">${w.name}</div>
+        <div class="wh-cable-total">${fmt(w.total)} м</div>
+      </div>
+      <table class="wh-cable-tbl">
+        <thead><tr><th>Колір</th><th colspan="2">Кількість</th></tr></thead>
+        <tbody>
+          <tr><td><span class="wh-dot black"></span>Чорний</td><td colspan="2"><strong>${fmt(w.black)}</strong> м</td></tr>
+          <tr><td><span class="wh-dot red"></span>Червоний</td><td colspan="2"><strong>${fmt(w.red)}</strong> м</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+
+  const onHandSum = onHand.reduce((a, w) => a + w.total, 0);
+  const transitSum = inTransit.reduce((a, w) => a + w.total, 0);
+
+  const html = `
+    <div class="wh-cable-section">
+      <div class="wh-cable-section-head">
+        <h3>🏢 На складі <span>(${onHand.length} · ${fmt(onHandSum)} м)</span></h3>
+      </div>
+      <div class="wh-cable-grid">${onHand.map(rowOnHand).join('') || '<div class="empty">Немає</div>'}</div>
+    </div>
+    <div class="wh-cable-section">
+      <div class="wh-cable-section-head">
+        <h3>🚛 В дорозі <span>(${inTransit.length} партій · ${fmt(transitSum)} м)</span></h3>
+      </div>
+      <div class="wh-cable-grid">${inTransit.map(rowTransit).join('') || '<div class="empty">Партій у дорозі немає</div>'}</div>
+    </div>
+  `;
+  document.getElementById('whBody').innerHTML = html;
 }
 
 loadMarket();
 loadForecast();
-loadWarehouses();
 </script>
 </body>
 </html>
