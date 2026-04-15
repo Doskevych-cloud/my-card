@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Склад · Залишки</title>
+<script src="auth.js"></script>
 <style>
 :root{
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -155,20 +156,9 @@ body.locked{overflow:hidden}
 }
 </style>
 </head>
-<body class="locked">
+<body>
 
-<!-- Password gate -->
-<div class="pg" id="pwGate">
-  <div class="box">
-    <h2>🔐 Склад</h2>
-    <p>Для доступу введіть пароль</p>
-    <input type="password" id="pwInput" maxlength="10" autocomplete="off" placeholder="——————">
-    <button onclick="checkPw()">Увійти</button>
-    <div class="err" id="pwErr"></div>
-  </div>
-</div>
-
-<div id="app" style="display:none">
+<div id="app">
   <div class="topbar">
     <h1>📦 Склад · залишки</h1>
     <div class="counter" id="topCounter">—</div>
@@ -223,9 +213,6 @@ body.locked{overflow:hidden}
 
 <script>
 const API_URL = 'https://price-api.doskevich.workers.dev';
-const PW = '063744';
-const AUTH_KEY = 'forecastAuth';
-const AUTH_TTL = 12 * 60 * 60 * 1000;
 const THEME_KEY = 'theme'; // shared with index.html + forecast.html
 
 // ─── Theme ───
@@ -248,29 +235,12 @@ function toggleTheme() {
   applyTheme(cur === 'dark' ? 'light' : 'dark');
 }
 
-// ─── Password gate ───
-(function () {
-  const t = Number(localStorage.getItem(AUTH_KEY) || 0);
-  if (Date.now() - t < AUTH_TTL) openApp();
-  else {
-    document.getElementById('pwGate').style.display = 'grid';
-    setTimeout(() => document.getElementById('pwInput').focus(), 100);
-  }
-  document.getElementById('pwInput').addEventListener('keydown', e => { if (e.key === 'Enter') checkPw(); });
-})();
-
-function checkPw() {
-  const v = document.getElementById('pwInput').value;
-  if (v === PW) { localStorage.setItem(AUTH_KEY, Date.now()); openApp(); }
-  else { document.getElementById('pwErr').textContent = 'Невірний пароль'; document.getElementById('pwInput').value = ''; }
-}
-
-function openApp() {
-  document.getElementById('pwGate').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  document.body.classList.remove('locked');
+// ─── Session gate (Google login + warehouses role) ───
+Auth.require('warehouses').then(user => {
+  window.__user = user;
+  Auth.mountUserWidget(user, { selector: '.topbar' });
   load();
-}
+});
 
 // ─── State ───
 const state = {

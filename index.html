@@ -272,6 +272,7 @@ body.ip-check>*:not(#accessDenied):not(script){display:none!important}
 #accessDenied h2{color:var(--red);font-size:24px;margin-bottom:8px}
 #accessDenied p{color:var(--text2);font-size:14px}
 </style>
+<script src="auth.js"></script>
 </head>
 <body class="ip-check">
 
@@ -2261,6 +2262,10 @@ setTimeout(() => document.body.classList.remove('ip-check'), 5000);
 (async () => {
   const allowed = await checkAccess();
   if (!allowed) return;
+  // Google session + role gate (home module)
+  const user = await Auth.require('home');
+  window.__user = user;
+  Auth.mountUserWidget(user, { selector: '.header-right' });
   if (!(await loadFromHash())) initHistory();
   loadSchedule();
   loadIPs();
@@ -2269,44 +2274,9 @@ setTimeout(() => document.body.classList.remove('ip-check'), 5000);
 })();
 window.addEventListener('hashchange', () => { if (location.hash.startsWith('#h=') || location.hash.startsWith('#d=')) loadFromHash(); });
 
-// ─── Forecast password gate ───
-const FORECAST_PWD = '063744';
-const FORECAST_AUTH_KEY = 'forecastAuth';
-const FORECAST_AUTH_TTL_MS = 12 * 60 * 60 * 1000; // 12h session
-function openForecast(e){
-  e.preventDefault();
-  const saved = localStorage.getItem(FORECAST_AUTH_KEY);
-  if (saved && (Date.now() - Number(saved)) < FORECAST_AUTH_TTL_MS) {
-    window.location.href = '/forecast.html';
-    return false;
-  }
-  const pwd = prompt('🔒 Введіть пароль для доступу до прогнозу:');
-  if (pwd === null) return false;
-  if (pwd === FORECAST_PWD) {
-    localStorage.setItem(FORECAST_AUTH_KEY, String(Date.now()));
-    window.location.href = '/forecast.html';
-  } else {
-    alert('❌ Невірний пароль');
-  }
-  return false;
-}
-function openWarehouses(e){
-  e.preventDefault();
-  const saved = localStorage.getItem(FORECAST_AUTH_KEY);
-  if (saved && (Date.now() - Number(saved)) < FORECAST_AUTH_TTL_MS) {
-    window.location.href = '/warehouses.html';
-    return false;
-  }
-  const pwd = prompt('🔒 Введіть пароль для доступу до складу:');
-  if (pwd === null) return false;
-  if (pwd === FORECAST_PWD) {
-    localStorage.setItem(FORECAST_AUTH_KEY, String(Date.now()));
-    window.location.href = '/warehouses.html';
-  } else {
-    alert('❌ Невірний пароль');
-  }
-  return false;
-}
+// Simple navigation — role enforcement happens on the target page
+function openForecast(e){ if (e) e.preventDefault(); window.location.href = 'forecast.html'; return false; }
+function openWarehouses(e){ if (e) e.preventDefault(); window.location.href = 'warehouses.html'; return false; }
 </script>
 </body>
 </html>

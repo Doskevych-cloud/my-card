@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Прогноз закупівель — кабель</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="auth.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -462,21 +463,11 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
 </div>
 
 <script>
-// ─── Password gate ───
-(function(){
-  const FORECAST_PWD = '063744';
-  const FORECAST_AUTH_KEY = 'forecastAuth';
-  const FORECAST_AUTH_TTL_MS = 12 * 60 * 60 * 1000;
-  const saved = localStorage.getItem(FORECAST_AUTH_KEY);
-  if (saved && (Date.now() - Number(saved)) < FORECAST_AUTH_TTL_MS) return;
-  const pwd = prompt('🔒 Введіть пароль:');
-  if (pwd === FORECAST_PWD) {
-    localStorage.setItem(FORECAST_AUTH_KEY, String(Date.now()));
-  } else {
-    document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#f6465d;font-family:Inter,sans-serif"><h2>⛔ Доступ заборонено</h2><p style="margin-top:10px;color:#848e9c">Невірний пароль</p><a href="/" style="display:inline-block;margin-top:20px;color:#ff8319;text-decoration:none">← На головну</a></div>';
-    throw new Error('Access denied');
-  }
-})();
+// ─── Session gate (Google login + forecast role) ───
+Auth.require('forecast').then(user => {
+  window.__user = user;
+  Auth.mountUserWidget(user, { selector: '.topbar-right' });
+});
 
 const API_URL = 'https://price-api.doskevich.workers.dev/';
 const LEAD_TIME_DAYS = 14;
