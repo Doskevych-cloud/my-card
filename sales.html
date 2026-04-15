@@ -61,16 +61,19 @@ a{color:inherit;text-decoration:none}
 .toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
 .toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
 
-/* Summary grid — grand "Оплачено" card + per-manager cards. All values in USD. */
-.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}
-.summary-card{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:background .15s,border-color .15s;display:flex;flex-direction:column;gap:6px;user-select:none}
+/* Summary grid — uniform cubes. Grand "Оплачено" is green, managers are neutral.
+   Manager cards include a bonus line (0.08% of paid) under the amount. */
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:14px}
+.summary-card{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:background .15s,border-color .15s;display:flex;flex-direction:column;gap:6px;user-select:none;min-height:96px}
 .summary-card:hover{background:var(--bg3);border-color:var(--border2)}
 .summary-card.active{background:var(--accent-bg);border-color:var(--accent)}
-.summary-card.grand{grid-column:1/-1;background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(34,197,94,.02));border-color:rgba(34,197,94,.25);cursor:default}
-.summary-card.grand:hover{background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(34,197,94,.02));border-color:rgba(34,197,94,.25)}
+.summary-card.grand{background:linear-gradient(135deg,rgba(34,197,94,.10),rgba(34,197,94,.02));border-color:rgba(34,197,94,.30);cursor:default}
+.summary-card.grand:hover{background:linear-gradient(135deg,rgba(34,197,94,.10),rgba(34,197,94,.02));border-color:rgba(34,197,94,.30)}
 .summary-card .name{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600;display:flex;align-items:center;gap:6px}
-.summary-card .val{font-size:22px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums;letter-spacing:-.3px}
-.summary-card.grand .val{font-size:28px}
+.summary-card .val{font-size:22px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.summary-card.grand .val{color:var(--green)}
+.summary-card .bonus{font-size:11px;color:var(--text3);font-weight:500;font-variant-numeric:tabular-nums;margin-top:auto}
+.summary-card .bonus b{color:var(--text2);font-weight:600}
 .mgr-section-head{font-weight:700;font-size:13px;margin:14px 0 8px;padding:0 2px;color:var(--text);letter-spacing:-.2px}
 
 /* Tree table */
@@ -127,8 +130,8 @@ a{color:inherit;text-decoration:none}
   .tree-tbl thead th,.tree-tbl tbody td{padding:8px 6px;font-size:11px}
   .tree-tbl thead th:nth-child(n+2){width:90px}
   .summary-grid{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+  .summary-card{min-height:80px}
   .summary-card .val{font-size:18px}
-  .summary-card.grand .val{font-size:22px}
 }
 </style>
 </head>
@@ -363,9 +366,12 @@ function render() {
   bindRows();
 }
 
-// Top: one wide "Оплачено за період" card (all currencies → USD) plus one
-// card per manager showing that manager's paid total in USD. Manager cards
-// are clickable — click toggles the drill-down table for that manager below.
+// Top: uniform grid of cards. The "Оплачено за період" card is green (grand
+// total across currencies → USD). Each manager gets a neutral card with their
+// paid total and a bonus line (0.08% of paid). Clicking a manager card toggles
+// the drill-down table below.
+const BONUS_RATE = 0.0008;  // 0.08% of paid, in USD
+
 function renderSummaryGrid(managers) {
   const host = document.getElementById('curSummary');
   if (!managers.length) { host.innerHTML = ''; return; }
@@ -383,10 +389,12 @@ function renderSummaryGrid(managers) {
   const mgrCards = perMgr.map(({ m, paid, ok }) => {
     const isOpen = state.openKeys.has(`m:${m.name}`);
     const val = ok ? '$' + fmt(paid) : '—';
+    const bonus = ok ? '$' + fmt(paid * BONUS_RATE) : '—';
     return `
       <div class="summary-card ${isOpen ? 'active' : ''}" data-key="m:${esc(m.name)}">
         <div class="name">👤 ${esc(m.name)}</div>
         <div class="val">${val}</div>
+        <div class="bonus">Бонус (0,08%): <b>${bonus}</b></div>
       </div>`;
   }).join('');
 
