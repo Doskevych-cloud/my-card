@@ -76,12 +76,6 @@ a{color:inherit;text-decoration:none}
 .toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
 .toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
 
-/* Stats row */
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
-.stat{padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
-.stat .l{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:5px}
-.stat .v{font-size:17px;font-weight:700;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
-
 /* Tree table (1C-style) */
 .tree-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
 .tree-wrap.combined{}
@@ -94,12 +88,13 @@ a{color:inherit;text-decoration:none}
 .tree-tbl tr.wh-row td{background:linear-gradient(90deg,var(--accent-bg),transparent 70%);font-weight:700;color:var(--text);padding:10px 12px;letter-spacing:-.1px}
 .tree-tbl tr.wh-row td:first-child{display:flex;align-items:center;gap:10px}
 .tree-tbl tr.wh-row .badge{font-size:10px;font-weight:700;letter-spacing:.4px;padding:2px 8px;border-radius:4px}
-.tree-tbl tr.wh-row .badge.REACT{background:var(--accent-bg);color:var(--accent)}
-.tree-tbl tr.wh-row .badge.TRUF{background:rgba(151,117,250,.14);color:#b399ff}
-.tree-tbl tr.item-row{cursor:pointer}
+.tree-tbl tr.wh-row .badge.Реакт{background:var(--accent-bg);color:var(--accent)}
+.tree-tbl tr.wh-row .badge.Генерація{background:rgba(151,117,250,.14);color:#b399ff}
+/* Uniform item row look — items without reserves just lose cursor + chevron */
+.tree-tbl tr.item-row{cursor:pointer;color:var(--text)}
+.tree-tbl tr.item-row td:first-child{color:var(--text)}
 .tree-tbl tr.item-row:hover td{background:var(--bg3)}
-.tree-tbl tr.item-row.reserved td:first-child{color:var(--text)}
-.tree-tbl tr.item-row.disabled{cursor:default;color:var(--text3)}
+.tree-tbl tr.item-row.disabled{cursor:default}
 .tree-tbl tr.item-row.disabled:hover td{background:transparent}
 .tree-tbl tr.item-row .chev{display:inline-block;width:14px;color:var(--text3);transition:transform .15s;font-size:10px;transform:translateY(-1px)}
 .tree-tbl tr.item-row.open .chev{transform:rotate(90deg) translateY(-1px)}
@@ -135,18 +130,6 @@ a{color:inherit;text-decoration:none}
 .asof{font-size:11px;color:var(--text2);margin-bottom:12px;padding:8px 12px;background:var(--blue-bg);border-left:3px solid var(--blue);border-radius:6px}
 .asof strong{color:var(--text)}
 
-/* Password gate */
-.pg{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:200}
-.pg .box{background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:32px 28px;width:min(380px,90vw);box-shadow:0 12px 40px rgba(0,0,0,.5)}
-.pg h2{font-size:16px;margin-bottom:6px}
-.pg p{font-size:12px;color:var(--text2);margin-bottom:20px}
-.pg input{width:100%;padding:11px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;letter-spacing:4px;text-align:center;outline:none}
-.pg input:focus{border-color:var(--accent)}
-.pg button{width:100%;margin-top:12px;padding:11px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer}
-.pg .err{color:var(--red);font-size:11px;margin-top:10px;text-align:center;min-height:14px}
-
-body.locked{overflow:hidden}
-
 @media (max-width:720px){
   .toolbar{padding:10px;gap:8px}
   .toolbar input[type=text]{min-width:140px}
@@ -161,18 +144,15 @@ body.locked{overflow:hidden}
 <div id="app">
   <div class="topbar">
     <h1>📦 Склад · залишки</h1>
-    <div class="counter" id="topCounter">—</div>
     <nav class="app-nav">
-      <a href="/" class="nav-pill">🏠 Головна</a>
-      <a href="/forecast.html" class="nav-pill">📊 Прогноз</a>
-      <a href="/warehouses.html" class="nav-pill active">📦 Склад</a>
+      <a href="/" class="nav-pill">📈 Прогноз</a>
+      <a href="/forecast.html" class="nav-pill">📦 Закупівлі</a>
+      <a href="/warehouses.html" class="nav-pill active">🏭 Склад</a>
     </nav>
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Переключити тему"><span id="themeIco">☀️</span><span id="themeLbl">Світла</span></button>
   </div>
 
   <div class="wrap">
-    <div class="stats" id="stats"></div>
-
     <div class="toolbar">
       <span class="lbl">На дату</span>
       <input type="date" id="asOfIn" title="Залишки на кінець обраної дати">
@@ -188,9 +168,8 @@ body.locked{overflow:hidden}
 
       <span class="sep"></span>
 
-      <span class="chip active" data-org="all" onclick="setOrg('all')">Всі</span>
-      <span class="chip" data-org="REACT" onclick="setOrg('REACT')">REACT</span>
-      <span class="chip" data-org="TRUF" onclick="setOrg('TRUF')">TRUF</span>
+      <span class="chip active" data-org="Реакт" onclick="setOrg('Реакт')">Реакт</span>
+      <span class="chip" data-org="Генерація" onclick="setOrg('Генерація')">Генерація</span>
 
       <span class="sep"></span>
 
@@ -243,12 +222,17 @@ Auth.require('warehouses').then(user => {
 });
 
 // ─── State ───
+function _todayISO() {
+  const d = new Date();
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
 const state = {
   data: null,
   view: 'combined',      // 'combined' | 'perwh'
-  org: 'all',
+  org: 'Реакт',          // 'Реакт' | 'Генерація'
   search: '',
-  asOf: null,            // YYYY-MM-DD or null (today)
+  asOf: _todayISO(),     // YYYY-MM-DD — always start with today
   showEmpty: false,
   openKeys: new Set(),   // expanded item keys
   loading: false,
@@ -274,9 +258,16 @@ function todayISO() {
   return `${y}-${m}-${dd}`;
 }
 
+// ─── Init date input ───
+function _syncAsOfInput() {
+  const el = document.getElementById('asOfIn');
+  if (el) el.value = state.asOf || '';
+}
+
 // ─── Data loading ───
 async function load() {
   state.loading = true;
+  _syncAsOfInput();
   document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
   document.getElementById('asofBanner').innerHTML = '';
   try {
@@ -286,7 +277,6 @@ async function load() {
     if (d.error) throw new Error(d.error);
     state.data = d;
     state.loading = false;
-    renderStats();
     renderBanner();
     render();
   } catch (e) {
@@ -297,8 +287,6 @@ async function load() {
 
 // ─── Filter helpers ───
 function filterSummaryByOrg(summary) {
-  if (state.org === 'all') return summary;
-  // We need to figure out which items belong to selected org via warehouses
   const orgItems = new Set();
   (state.data.warehouses || []).forEach(w => {
     if (w.org !== state.org) return;
@@ -318,32 +306,6 @@ function matchesSearch(s, reserves) {
   return false;
 }
 
-// ─── Stats ───
-function renderStats() {
-  const d = state.data;
-  const warehouses = d.warehouses || [];
-  let summary = filterSummaryByOrg(d.summary || []);
-  if (!state.showEmpty) summary = summary.filter(s => s.total > 0);
-  const totalItems = summary.length;
-  const totalQty = summary.reduce((a, x) => a + x.total, 0);
-  const totalReserve = summary.reduce((a, x) => a + x.reserve, 0);
-  const freeQty = totalQty - totalReserve;
-  const activeWh = warehouses.filter(w => state.org === 'all' || w.org === state.org);
-  const onHand = activeWh.filter(w => !w.name.startsWith(IN_TRANSIT_MARKER)).length;
-  const inTransit = activeWh.filter(w => w.name.startsWith(IN_TRANSIT_MARKER)).length;
-
-  document.getElementById('stats').innerHTML = `
-    <div class="stat"><div class="l">Складів</div><div class="v">${activeWh.length}</div></div>
-    <div class="stat"><div class="l">На складі</div><div class="v">${onHand}</div></div>
-    <div class="stat"><div class="l">В дорозі</div><div class="v">${inTransit}</div></div>
-    <div class="stat"><div class="l">Унік. позицій</div><div class="v">${totalItems}</div></div>
-    <div class="stat"><div class="l">Одиниць всього</div><div class="v">${fmt(totalQty)}</div></div>
-    <div class="stat"><div class="l">У резерві</div><div class="v" style="color:var(--blue)">${fmt(totalReserve)}</div></div>
-    <div class="stat"><div class="l">Вільно</div><div class="v" style="color:var(--green)">${fmt(freeQty)}</div></div>
-  `;
-  document.getElementById('topCounter').textContent = `${activeWh.length} складів · ${totalItems} позицій`;
-}
-
 function renderBanner() {
   const el = document.getElementById('asofBanner');
   if (!state.asOf) { el.innerHTML = ''; return; }
@@ -361,17 +323,16 @@ function setView(v) {
 function setOrg(v) {
   state.org = v;
   document.querySelectorAll('.chip[data-org]').forEach(c => c.classList.toggle('active', c.dataset.org === v));
-  renderStats();
   render();
 }
 function setToday() {
-  state.asOf = null;
-  document.getElementById('asOfIn').value = '';
+  state.asOf = _todayISO();
+  _syncAsOfInput();
   load();
 }
 document.getElementById('asOfIn').addEventListener('change', e => {
   const v = e.target.value;
-  state.asOf = v || null;
+  state.asOf = v || _todayISO();
   load();
 });
 document.getElementById('searchIn').addEventListener('input', e => {
@@ -380,7 +341,6 @@ document.getElementById('searchIn').addEventListener('input', e => {
 });
 document.getElementById('showEmpty').addEventListener('change', e => {
   state.showEmpty = e.target.checked;
-  renderStats();
   render();
 });
 
@@ -401,7 +361,7 @@ function currentItemKeys() {
     getCombinedItems().forEach(s => { if ((s.reserves || []).length) keys.push('c:' + s.name); });
   } else {
     (state.data.warehouses || []).forEach(w => {
-      if (state.org !== 'all' && w.org !== state.org) return;
+      if (w.org !== state.org) return;
       (w.items || []).forEach(it => {
         const rs = (w.reservesByItem && w.reservesByItem[it.name]) || [];
         if (rs.length) keys.push('w:' + w.id + '|' + it.name);
@@ -448,7 +408,7 @@ function renderCombined() {
 }
 
 function renderPerWh() {
-  let warehouses = (state.data.warehouses || []).filter(w => state.org === 'all' || w.org === state.org);
+  let warehouses = (state.data.warehouses || []).filter(w => w.org === state.org);
   if (!warehouses.length) {
     document.getElementById('body').innerHTML = '<div class="empty">Складів не знайдено</div>';
     return;
@@ -477,7 +437,7 @@ function renderPerWh() {
         <div class="wh-section-title">
           <span class="ico">${isTransit ? '🚛' : '🏢'}</span>
           <span>${esc(w.name)}</span>
-          <span class="badge ${w.org}" style="font-size:10px;font-weight:700;letter-spacing:.4px;padding:2px 8px;border-radius:4px;background:${w.org==='TRUF'?'var(--purple-bg)':'var(--accent-bg)'};color:${w.org==='TRUF'?'var(--purple-text)':'var(--accent)'}">${w.org}</span>
+          <span class="badge ${w.org}" style="font-size:10px;font-weight:700;letter-spacing:.4px;padding:2px 8px;border-radius:4px;background:${w.org==='Генерація'?'var(--purple-bg)':'var(--accent-bg)'};color:${w.org==='Генерація'?'var(--purple-text)':'var(--accent)'}">${w.org}</span>
           <span class="tot">${items.length} поз · ${fmt(totalTot)} од · резерв ${fmt(totalRes)}</span>
         </div>
         <div class="tree-wrap">
