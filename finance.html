@@ -140,29 +140,29 @@ a{color:inherit;text-decoration:none}
 
 /* ── AR tree table ── */
 .ar-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px}
-.ar-table{width:100%;border-collapse:collapse;font-size:12px;min-width:1100px}
-.ar-table th,.ar-table td{padding:5px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
-.ar-table th{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700;background:var(--surface2);position:sticky;top:0;z-index:2}
+.ar-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:900px}
+.ar-table th,.ar-table td{padding:7px 14px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
+.ar-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;background:var(--surface2);position:sticky;top:0;z-index:2}
 .ar-table th:first-child{text-align:left;position:sticky;left:0;z-index:3;background:var(--surface2);min-width:320px}
 .ar-table td:first-child{text-align:left;position:sticky;left:0;z-index:1;background:var(--bg)}
 .ar-table .ar-toggle{cursor:pointer;user-select:none}
 .ar-table .ar-toggle:hover{color:var(--accent)}
 .ar-table .ar-chevron{display:inline-block;width:14px;font-size:10px;color:var(--text3);transition:transform .15s}
 .ar-table .ar-chevron.open{transform:rotate(90deg)}
-/* AR header groups */
-.ar-table .thg{text-align:center;border-bottom:2px solid var(--border);padding:6px 0;font-size:10px;letter-spacing:.5px}
-.ar-table .thg-open{background:var(--blue-bg);color:var(--blue)}
-.ar-table .thg-move{background:var(--accent-bg);color:var(--accent)}
-.ar-table .thg-close{background:var(--green-bg);color:var(--green)}
 /* AR levels */
-.ar-table .ar-cur td{font-weight:800;font-size:12px;background:var(--accent-bg) !important;color:var(--text);border-bottom:2px solid var(--border)}
+.ar-table .ar-cur td{font-weight:800;font-size:13px;background:var(--accent-bg) !important;color:var(--text);border-bottom:2px solid var(--border)}
 .ar-table .ar-cur td:first-child{padding-left:8px;background:var(--accent-bg) !important}
 .ar-table .ar-cl td{font-weight:700;background:var(--surface2) !important}
 .ar-table .ar-cl td:first-child{padding-left:20px;background:var(--surface2) !important}
 .ar-table .ar-ct td{font-weight:500}
 .ar-table .ar-ct td:first-child{padding-left:36px}
-.ar-table .ar-total td{font-weight:800;font-size:12px;border-top:3px double var(--border2);background:var(--surface2) !important}
-.ar-table .ar-total td:first-child{padding-left:8px;background:var(--surface2) !important}
+/* AR progress bar */
+.ar-bar-cell{text-align:left !important;min-width:220px}
+.ar-bar{position:relative;height:22px;background:var(--bg3);border-radius:6px;overflow:hidden;border:1px solid var(--border)}
+.ar-bar-paid{height:100%;background:var(--green);border-radius:5px 0 0 5px;transition:width .3s}
+.ar-bar-ship{height:100%;background:var(--accent);opacity:.55;position:absolute;top:0;border-radius:0;transition:width .3s,left .3s}
+.ar-bar-lbl{position:absolute;top:0;left:0;right:0;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text);text-shadow:0 0 4px rgba(0,0,0,.6);pointer-events:none;letter-spacing:.3px}
+:root[data-theme="light"] .ar-bar-lbl{text-shadow:0 0 4px rgba(255,255,255,.8)}
 
 .view{display:none}
 .view.active{display:block}
@@ -892,25 +892,39 @@ function renderAr(data) {
     filtered = currencies.map(cur => {
       const clients = cur.clients.filter(cl => cl.name.toLowerCase().includes(bf));
       if (!clients.length) return null;
-      // Recalc currency totals
       const t = { openDebt:0, openPrepay:0, sold:0, paid:0, received:0, applied:0, closeDebt:0, closePrepay:0 };
       clients.forEach(cl => { ['openDebt','openPrepay','sold','paid','received','applied','closeDebt','closePrepay'].forEach(k => { t[k] += cl[k]; }); });
       return { ...cur, clients, ...t };
     }).filter(Boolean);
   }
 
-  // Grand totals (per-currency, shown at top of each currency section)
-  const grandTotals = { openDebt:0, openPrepay:0, sold:0, paid:0, received:0, applied:0, closeDebt:0, closePrepay:0 };
-  filtered.forEach(cur => {
-    ['openDebt','openPrepay','sold','paid','received','applied','closeDebt','closePrepay'].forEach(k => { grandTotals[k] += cur[k]; });
-  });
+  // Derived fields helper: orderAmt = openDebt + sold, balance = closeDebt
+  function derive(r) {
+    var orderAmt = (r.openDebt || 0) + (r.sold || 0);
+    var balance = r.closeDebt || 0;
+    var paid = r.paid || 0;
+    var sold = r.sold || 0;
+    // paidPct: fraction paid of total obligation
+    var paidPct = orderAmt > 0 ? Math.min(paid / orderAmt, 1) * 100 : 0;
+    // shipPct: fraction shipped (sold) of total obligation
+    var shipPct = orderAmt > 0 ? Math.min(sold / orderAmt, 1) * 100 : 0;
+    return { orderAmt: orderAmt, paid: paid, balance: balance, sold: sold, paidPct: paidPct, shipPct: shipPct };
+  }
+
+  // Grand totals
+  var gt = { openDebt:0, sold:0, paid:0, closeDebt:0 };
+  filtered.forEach(cur => { gt.openDebt += cur.openDebt; gt.sold += cur.sold; gt.paid += cur.paid; gt.closeDebt += cur.closeDebt; });
+  var gtD = derive(gt);
 
   // Summary cards
   document.getElementById('arSummary').innerHTML = '<div class="pnl-summary">' +
-    '<div class="pnl-card c-cost"><span class="cl">Заборгованість (кін.)</span><span class="cv">' + fmt(grandTotals.closeDebt, 2) + '</span></div>' +
-    '<div class="pnl-card c-grs"><span class="cl">Передоплата (кін.)</span><span class="cv">' + fmt(grandTotals.closePrepay, 2) + '</span></div>' +
-    '<div class="pnl-card c-rev"><span class="cl">Продано</span><span class="cv">' + fmt(grandTotals.sold, 2) + '</span></div>' +
-    '<div class="pnl-card c-net"><span class="cl">Сплачено</span><span class="cv">' + fmt(grandTotals.paid, 2) + '</span></div>' +
+    '<div class="pnl-card c-rev"><span class="cl">Сума зобов\'язань</span><span class="cv">' + fmt(gtD.orderAmt, 0) + '</span>' +
+      '<span class="cs">Борг на поч. + відвантажено</span></div>' +
+    '<div class="pnl-card c-grs"><span class="cl">Оплачено</span><span class="cv">' + fmt(gtD.paid, 0) + '</span>' +
+      '<span class="cs">' + gtD.paidPct.toFixed(1) + '% від зобов\'язань</span></div>' +
+    '<div class="pnl-card c-cost"><span class="cl">Залишок боргу</span><span class="cv">' + fmt(gtD.balance, 0) + '</span></div>' +
+    '<div class="pnl-card c-net"><span class="cl">Відвантажено</span><span class="cv">' + fmt(gtD.sold, 0) + '</span>' +
+      '<span class="cs">за період</span></div>' +
   '</div>';
 
   function fmtV(v) {
@@ -918,49 +932,57 @@ function renderAr(data) {
     return '<span class="' + (v > 0 ? 'pos' : 'neg') + '">' + fmt(v, 2) + '</span>';
   }
 
+  // Progress bar: green = paid, orange overlay = shipped portion beyond paid
+  function bar(d) {
+    if (d.orderAmt < 0.01) return '<div class="ar-bar"><div class="ar-bar-lbl">—</div></div>';
+    var pw = Math.min(d.paidPct, 100);
+    var sw = Math.min(d.shipPct, 100);
+    // shipped bar starts at 0, paid bar overlays on top
+    var lbl = pw.toFixed(0) + '% оплачено';
+    return '<div class="ar-bar">' +
+      '<div class="ar-bar-ship" style="left:0;width:' + sw.toFixed(1) + '%"></div>' +
+      '<div class="ar-bar-paid" style="width:' + pw.toFixed(1) + '%"></div>' +
+      '<div class="ar-bar-lbl">' + lbl + '</div>' +
+    '</div>';
+  }
+
   // Build table
-  let html = '<div class="ar-wrap"><table class="ar-table"><thead>' +
+  var html = '<div class="ar-wrap"><table class="ar-table"><thead>' +
     '<tr>' +
-    '<th rowspan="2">Контрагент / Договір</th>' +
-    '<th colspan="2" class="thg thg-open">Початковий залишок</th>' +
-    '<th colspan="4" class="thg thg-move">Рух за період</th>' +
-    '<th colspan="2" class="thg thg-close">Кінцевий залишок</th>' +
-    '</tr><tr>' +
-    '<th>Заборг.</th><th>Передопл.</th>' +
-    '<th>Продано</th><th>Сплачено</th><th>Надійшло</th><th>Зараховано</th>' +
-    '<th>Заборг.</th><th>Передопл.</th>' +
+    '<th>Контрагент / Договір</th>' +
+    '<th>Сума замовлення</th>' +
+    '<th>Оплачено</th>' +
+    '<th>Залишок</th>' +
+    '<th class="ar-bar-cell">Відвантаження / Оплата</th>' +
     '</tr></thead><tbody>';
 
-  const flatRows = [];
-  let rowId = 0;
+  var flatRows = [];
+  var rowId = 0;
 
   filtered.forEach(cur => {
-    const curId = 'ar' + (rowId++);
-    flatRows.push({ id: curId, parent: null, cls: 'ar-cur', name: cur.currency, ...cur, hasChildren: cur.clients.length > 0 });
+    var curId = 'ar' + (rowId++);
+    flatRows.push({ id: curId, parent: null, cls: 'ar-cur', name: cur.currency, d: derive(cur), hasChildren: cur.clients.length > 0 });
 
     cur.clients.forEach(cl => {
-      const clId = 'ar' + (rowId++);
-      flatRows.push({ id: clId, parent: curId, cls: 'ar-cl', name: cl.name, ...cl, hasChildren: cl.contracts.length > 0 });
+      var clId = 'ar' + (rowId++);
+      flatRows.push({ id: clId, parent: curId, cls: 'ar-cl', name: cl.name, d: derive(cl), hasChildren: cl.contracts.length > 0 });
 
       cl.contracts.forEach(ct => {
-        flatRows.push({ id: 'ar' + (rowId++), parent: clId, cls: 'ar-ct', name: ct.name,
-          openDebt: ct.openDebt, openPrepay: ct.openPrepay,
-          sold: ct.sold, paid: ct.paid, received: ct.received, applied: ct.applied,
-          closeDebt: ct.closeDebt, closePrepay: ct.closePrepay, hasChildren: false });
+        flatRows.push({ id: 'ar' + (rowId++), parent: clId, cls: 'ar-ct', name: ct.name, d: derive(ct), hasChildren: false });
       });
     });
   });
 
   flatRows.forEach(r => {
-    const hidden = r.parent ? ' style="display:none"' : '';
-    const chevron = r.hasChildren ? '<span class="ar-chevron" data-rid="' + r.id + '">&#9654;</span> ' : '<span style="display:inline-block;width:14px"></span> ';
-    const toggle = r.hasChildren ? ' class="ar-toggle"' : '';
+    var hidden = r.parent ? ' style="display:none"' : '';
+    var chevron = r.hasChildren ? '<span class="ar-chevron" data-rid="' + r.id + '">&#9654;</span> ' : '<span style="display:inline-block;width:14px"></span> ';
+    var toggle = r.hasChildren ? ' class="ar-toggle"' : '';
     html += '<tr class="' + r.cls + '" data-id="' + r.id + '" data-parent="' + (r.parent || '') + '"' + hidden + '>' +
       '<td' + toggle + ' onclick="arToggle(\'' + r.id + '\')">' + chevron + esc(r.name) + '</td>' +
-      '<td>' + fmtV(r.openDebt) + '</td><td>' + fmtV(r.openPrepay) + '</td>' +
-      '<td>' + fmtV(r.sold) + '</td><td>' + fmtV(r.paid) + '</td>' +
-      '<td>' + fmtV(r.received) + '</td><td>' + fmtV(r.applied) + '</td>' +
-      '<td>' + fmtV(r.closeDebt) + '</td><td>' + fmtV(r.closePrepay) + '</td>' +
+      '<td>' + fmtV(r.d.orderAmt) + '</td>' +
+      '<td>' + fmtV(r.d.paid) + '</td>' +
+      '<td>' + fmtV(r.d.balance) + '</td>' +
+      '<td class="ar-bar-cell">' + bar(r.d) + '</td>' +
       '</tr>';
   });
 
