@@ -313,10 +313,11 @@ const MN = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Се
 function mLabel(mk) { const p = mk.split('-'); return MN[+p[1]-1] + "'" + p[0].slice(2); }
 
 /* ── Render ── */
-function renderPnl(data, fxRate) {
+function renderPnl(data) {
   const { months, revenue, cogs, otherIncome, expenses, totalExpenses } = data;
-  const conv = v => fxRate ? v / fxRate : v;
-  const sfx = fxRate ? ' $' : '';
+  // Worker already returns all amounts normalized to USD
+  const conv = v => v;
+  const sfx = ' $';
   const showM = months.length > 1;
 
   // Map expense categories by fuzzy match
@@ -478,13 +479,9 @@ async function load() {
   document.getElementById('summary').innerHTML = '';
   try {
     const q = '?action=pnl_report&from=' + state.from + '&to=' + state.to + (state.org ? '&org=' + encodeURIComponent(state.org) : '');
-    const [data, fxData] = await Promise.all([
-      fetch(API_URL + q).then(r => r.json()),
-      fetch(API_URL + '?action=fx_rates').then(r => r.json()).catch(function() { return null; }),
-    ]);
+    const data = await fetch(API_URL + q).then(r => r.json());
     if (data.error) throw new Error(data.error);
-    const fxRate = (fxData && fxData.rates && fxData.rates.USD_UAH) || null;
-    renderPnl(data, fxRate);
+    renderPnl(data);
   } catch (e) {
     document.getElementById('body').innerHTML = '<div class="error">' + esc(e.message) + '</div>';
   }
