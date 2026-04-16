@@ -807,15 +807,22 @@ function renderPnl(data) {
   pnlBindCollapse();
 }
 
-// Collapse/expand all sections + subgroups at once.
+// Collapse/expand all sections + subgroups at once. When fully collapsed,
+// only the spine rows remain visible: Виторг, Собівартість, Валовий прибуток,
+// Всього витрати, Операційний прибуток, Чистий прибуток.
 function pnlToggleAll(collapse) {
   const tbl = document.querySelector('#pnlBody .pnl-table');
   if (!tbl) return;
   tbl.querySelectorAll('tr[data-is-cat], tr[data-is-sec], tr[data-is-grp]').forEach(tr => {
     tr.setAttribute('data-collapsed', collapse ? 'true' : 'false');
   });
-  // Everything that is a child of any cat / sec / grp → toggle
+  // Children of any cat / sec / grp
   tbl.querySelectorAll('tr[data-cat]:not([data-is-cat]), tr[data-sec]:not([data-is-sec]), tr[data-grp]:not([data-is-grp])').forEach(r => {
+    r.classList.toggle('collapsed-hidden', collapse);
+  });
+  // Also hide the standalone pct rows (Op margin, Net margin) and decorative
+  // spacers on full collapse — user wants ONLY the 6 spine rows visible.
+  tbl.querySelectorAll('tr.pct:not([data-cat]):not([data-sec]):not([data-grp]), tr.sp').forEach(r => {
     r.classList.toggle('collapsed-hidden', collapse);
   });
 }
