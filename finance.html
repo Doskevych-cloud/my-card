@@ -19,6 +19,7 @@
   --red:#e74c3c; --red-bg:rgba(231,76,60,.12);
   --green:#22c55e; --green-bg:rgba(34,197,94,.12);
   --blue:#3b82f6; --blue-bg:rgba(59,130,246,.12);
+  --yellow:#eab308; --yellow-bg:rgba(234,179,8,.12);
   --shadow-md:0 4px 20px rgba(0,0,0,.4);
 }
 :root[data-theme="light"]{
@@ -30,13 +31,14 @@
   --red:#d93025; --red-bg:rgba(217,48,37,.10);
   --green:#15803d; --green-bg:rgba(21,128,61,.10);
   --blue:#1d4ed8; --blue-bg:rgba(29,78,216,.10);
+  --yellow:#a16207; --yellow-bg:rgba(161,98,7,.10);
   --shadow-md:0 4px 20px rgba(0,0,0,.08);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
 a{color:inherit;text-decoration:none}
 
-.wrap{max-width:1400px;margin:0 auto;padding:20px}
+.wrap{max-width:1600px;margin:0 auto;padding:20px}
 .page-tabs{display:inline-flex;gap:4px;padding:4px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:14px}
 .ptab{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;color:var(--text2);text-decoration:none;transition:background .15s,color .15s;white-space:nowrap}
 .ptab:hover{background:var(--bg3);color:var(--text)}
@@ -56,54 +58,74 @@ a{color:inherit;text-decoration:none}
 .toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
 
 /* P&L table */
-.pnl-wrap{overflow-x:auto;margin-bottom:20px}
-.pnl-table{width:100%;border-collapse:collapse;font-size:13px;min-width:600px}
-.pnl-table th,.pnl-table td{padding:8px 14px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
+.pnl-wrap{overflow-x:auto;margin-bottom:20px;border:1px solid var(--border);border-radius:12px}
+.pnl-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:600px}
+.pnl-table th,.pnl-table td{padding:7px 14px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
 .pnl-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;background:var(--surface2);position:sticky;top:0;z-index:2}
-.pnl-table th:first-child,.pnl-table td:first-child{text-align:left;position:sticky;left:0;background:var(--bg);z-index:1}
+.pnl-table th:first-child,.pnl-table td:first-child{text-align:left;position:sticky;left:0;z-index:1;min-width:300px}
 .pnl-table th:first-child{z-index:3;background:var(--surface2)}
-.pnl-table td:last-child,.pnl-table th:last-child{font-weight:700;background:var(--surface);border-left:2px solid var(--border)}
-.pnl-table th:last-child{background:var(--surface2)}
 .pnl-table td:first-child{background:var(--bg)}
+.pnl-table td.col-total,.pnl-table th.col-total{font-weight:700;background:var(--surface);border-left:2px solid var(--border)}
+.pnl-table th.col-total{background:var(--surface2)}
 
-/* Row types */
-.pnl-table .section-hdr td{font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);background:var(--surface2) !important;border-bottom:2px solid var(--border);padding:12px 14px 6px}
-.pnl-table .section-hdr td:first-child{background:var(--surface2) !important}
-.pnl-table .item-row td{color:var(--text2);padding-left:28px}
-.pnl-table .item-row td:first-child{padding-left:28px;font-weight:500}
-.pnl-table .subtotal-row td{font-weight:700;border-top:1px solid var(--border2);border-bottom:2px solid var(--border)}
-.pnl-table .grand-row td{font-weight:800;font-size:15px;border-top:3px double var(--border2);border-bottom:none;padding:12px 14px}
-.pnl-table .grand-row td:first-child{background:var(--bg) !important}
-.pnl-table .positive{color:var(--green)}
-.pnl-table .negative{color:var(--red)}
-.pnl-table .zero{color:var(--text3)}
+/* ── Row types ── */
+/* Section header (green/orange/red bar) */
+.pnl-table .sec td{font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:10px 14px 6px;border-bottom:2px solid var(--border)}
+.pnl-table .sec td:first-child{padding-left:14px}
+.pnl-table .sec.rev td{color:var(--green);background:var(--green-bg) !important}
+.pnl-table .sec.cost td{color:var(--accent);background:var(--accent-bg) !important}
+.pnl-table .sec.exp td{color:var(--red);background:var(--red-bg) !important}
+.pnl-table .sec.tax td{color:var(--yellow);background:var(--yellow-bg) !important}
+.pnl-table .sec.other td{color:var(--blue);background:var(--blue-bg) !important}
 
-/* Empty / loading / error */
-.loading{text-align:center;padding:60px 20px;color:var(--text3);font-size:14px}
-.loading::after{content:'';display:block;width:28px;height:28px;margin:16px auto 0;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.error{text-align:center;padding:40px;color:var(--red);background:var(--red-bg);border-radius:12px;margin:20px 0}
-.empty{text-align:center;padding:60px 20px;color:var(--text3)}
+/* Sub-group header (bold, indent 1) */
+.pnl-table .grp td{font-weight:700;color:var(--text);padding-top:8px}
+.pnl-table .grp td:first-child{padding-left:20px}
+
+/* Item row (indent 2) */
+.pnl-table .itm td{color:var(--text2);font-weight:400}
+.pnl-table .itm td:first-child{padding-left:36px}
+
+/* Subtotal row */
+.pnl-table .sub td{font-weight:700;border-top:1px solid var(--border2);border-bottom:2px solid var(--border)}
+
+/* Grand total row (double top border) */
+.pnl-table .grd td{font-weight:800;font-size:14px;border-top:3px double var(--border2);padding:10px 14px}
+.pnl-table .grd td:first-child{background:var(--bg) !important}
+
+/* Percentage row */
+.pnl-table .pct td{color:var(--text3);font-size:11px;font-style:italic;border-bottom:none}
+
+/* Spacer */
+.pnl-table .sp td{border-bottom:none;padding:4px 0}
+
+/* Value colors */
+.pos{color:var(--green)}
+.neg{color:var(--red)}
+.zr{color:var(--text3)}
+.dash{color:var(--text3);font-style:italic}
 
 /* Summary cards */
 .pnl-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}
 .pnl-card{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:2px}
-.pnl-card .card-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
-.pnl-card .card-val{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.3px;line-height:1.2}
-.pnl-card.revenue{border-left:3px solid var(--green)}
-.pnl-card.revenue .card-val{color:var(--green)}
-.pnl-card.cogs{border-left:3px solid var(--accent)}
-.pnl-card.cogs .card-val{color:var(--accent)}
-.pnl-card.gross{border-left:3px solid var(--blue)}
-.pnl-card.gross .card-val{color:var(--blue)}
-.pnl-card.net{border-left:3px solid var(--green)}
-.pnl-card.net .card-val.neg{color:var(--red)}
-.pnl-card .card-sub{font-size:11px;color:var(--text3);font-weight:500}
+.pnl-card .cl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+.pnl-card .cv{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.3px;line-height:1.2}
+.pnl-card .cs{font-size:11px;color:var(--text3);font-weight:500}
+.pnl-card.c-rev{border-left:3px solid var(--green)} .pnl-card.c-rev .cv{color:var(--green)}
+.pnl-card.c-cost{border-left:3px solid var(--accent)} .pnl-card.c-cost .cv{color:var(--accent)}
+.pnl-card.c-grs{border-left:3px solid var(--blue)} .pnl-card.c-grs .cv{color:var(--blue)}
+.pnl-card.c-net{border-left:3px solid var(--green)} .pnl-card.c-net .cv.ng{color:var(--red)}
+
+.loading{text-align:center;padding:60px 20px;color:var(--text3);font-size:14px}
+.loading::after{content:'';display:block;width:28px;height:28px;margin:16px auto 0;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error{text-align:center;padding:40px;color:var(--red);background:var(--red-bg);border-radius:12px;margin:20px 0}
 
 @media(max-width:720px){
   .pnl-summary{grid-template-columns:1fr 1fr}
   .pnl-table{font-size:11px}
-  .pnl-table th,.pnl-table td{padding:6px 8px}
+  .pnl-table th,.pnl-table td{padding:5px 8px}
+  .pnl-table td:first-child,.pnl-table th:first-child{min-width:180px}
 }
 </style>
 </head>
@@ -113,7 +135,7 @@ a{color:inherit;text-decoration:none}
 <div id="app">
   <div class="wrap">
     <div class="page-tabs">
-      <a href="/finance.html" class="ptab active">📊 P&L</a>
+      <a href="/finance.html" class="ptab active">P&L</a>
     </div>
     <div class="toolbar">
       <span class="lbl">Період</span>
@@ -140,188 +162,340 @@ a{color:inherit;text-decoration:none}
 
 <script>
 const API_URL = 'https://price-api.doskevich.workers.dev';
-
 const state = { from: '', to: '', org: '', preset: '' };
+
+/* ── P&L Template Structure (matches company Excel) ── */
+const PNL_TEMPLATE = [
+  // type: sec (section header), grp (group), itm (item), sub (subtotal), grd (grand), pct (%), sp (spacer)
+  // variant: rev/cost/exp/tax/other — section coloring
+  // key: string key for matching worker data (expenses match by category name)
+
+  { type:'sec', variant:'rev', label:'Виторг від продажів, у т.ч.' },
+  { type:'itm', label:'Дистрибуція' },
+  { type:'itm', label:'Приватні сонячні станції під ключ' },
+  { type:'itm', label:'Комерційні сонячні станції під ключ' },
+  { type:'itm', label:'Роздріб' },
+  { type:'itm', label:'Роздріб під ключ' },
+  { type:'itm', label:'Проектування СЕС' },
+  { type:'itm', label:'Сервіс' },
+
+  { type:'sp' },
+  { type:'grp', label:'Інші непрямі доходи', key:'_otherIncome' },
+  { type:'itm', label:'Інші доходи (курсова різниця)' },
+  { type:'itm', label:'Інші доходи (комісія та інш.)' },
+  { type:'itm', label:'Компенсація транспортних витрат замовником' },
+  { type:'itm', label:'Оприбуткування залишків ТМЦ' },
+  { type:'itm', label:'Суборенда, взаємозаліки' },
+
+  { type:'sub', label:'Всього доходи', key:'_totalRevenue' },
+
+  { type:'sec', variant:'cost', label:'Собівартість продажів, у т.ч.' },
+  { type:'itm', label:'Дистрибуція (собівартість)' },
+  { type:'itm', label:'Приватні СЕС під ключ (собівартість)' },
+  { type:'itm', label:'Комерційні СЕС під ключ (собівартість)' },
+  { type:'itm', label:'Роздріб (собівартість)' },
+  { type:'itm', label:'Сервіс (собівартість)' },
+  { type:'sub', label:'Всього собівартість', key:'_totalCogs' },
+
+  { type:'grd', label:'Валовий прибуток', key:'_grossProfit' },
+  { type:'pct', label:'Маржинальність продажів, %', key:'_grossMargin' },
+
+  { type:'sec', variant:'exp', label:'Непрямі (накладні) витрати' },
+  { type:'pct', label:'Частка накладних витрат у виторгу, %', key:'_overheadPct' },
+
+  { type:'grp', label:'Реклама і маркетинг', key:'_grpMarketing' },
+  { type:'itm', label:'Маркетинг послуги', match:'маркетинг послуг' },
+  { type:'itm', label:'Маркетинг продукція', match:'маркетинг продукц' },
+  { type:'itm', label:'Google', match:'google' },
+  { type:'itm', label:'Facebook', match:'facebook' },
+  { type:'itm', label:'TikTok', match:'tiktok' },
+  { type:'itm', label:'Витрати на вебсайти', match:'вебсайт' },
+  { type:'itm', label:'SEO просування', match:'seo' },
+  { type:'itm', label:'Комерційні витрати', match:'комерційн' },
+
+  { type:'sp' },
+  { type:'grp', label:'ЗП та інші витрати на працівників', key:'_grpSalary' },
+  { type:'itm', label:'Заробітна плата', match:'заробітн' },
+  { type:'itm', label:'Витрати на працівників (HR, корпоратив)', match:'витрати на працівник' },
+  { type:'itm', label:'Податки на заробітну плату', match:'податки на заробітн' },
+  { type:'itm', label:'Work.ua', match:'work.ua' },
+
+  { type:'sp' },
+  { type:'grp', label:'Оренда приміщень', key:'_grpRent' },
+  { type:'itm', label:'Орендна плата (офіс)', match:'оренд.*офіс' },
+  { type:'itm', label:'Оренда складу', match:'оренд.*склад' },
+  { type:'itm', label:'Оренда навантажувача', match:'навантажувач' },
+  { type:'itm', label:'Витрати на склад', match:'витрати на склад' },
+
+  { type:'sp' },
+  { type:'grp', label:'Адміністративні витрати', key:'_grpAdmin' },
+  { type:'itm', label:'Офісні витрати', match:'офісн' },
+  { type:'itm', label:'Витрати на облік', match:'облік' },
+  { type:'itm', label:'Судовий збір', match:'судов' },
+  { type:'itm', label:'Адвокатські послуги', match:'адвокат' },
+  { type:'itm', label:'Комісії за переказ коштів', match:'комісі' },
+  { type:'itm', label:'Витрати на ПЗ', match:'програмн' },
+  { type:'itm', label:"Зв'язок", match:"зв'язок|зв\\'язок|зв.язок" },
+  { type:'itm', label:'Інтернет послуги', match:'інтернет' },
+
+  { type:'sp' },
+  { type:'grp', label:'Витрати на транспорт', key:'_grpTransport' },
+  { type:'itm', label:'Техобслуговування ТЗ', match:'техобслугов' },
+  { type:'itm', label:'Транспортні витрати (монтаж)', match:'транспортн.*монтаж' },
+  { type:'itm', label:'Транспортні витрати (офіс)', match:'транспортн.*офіс' },
+  { type:'itm', label:'Транспортні витрати (склад)', match:'транспортн.*склад' },
+  { type:'itm', label:'Транспортні витрати (сервіс)', match:'транспортн.*серві' },
+  { type:'itm', label:'Доставка', match:'доставк' },
+  { type:'itm', label:'Відрядження', match:'відряджен' },
+
+  { type:'sp' },
+  { type:'itm', label:'Штрафи, пені, неустойки', match:'штраф' },
+  { type:'itm', label:'Амортизація', match:'амортизац' },
+
+  { type:'sub', label:'Всього накладні витрати', key:'_totalOverhead' },
+
+  { type:'sec', variant:'tax', label:'Податки' },
+  { type:'itm', label:'Єдиний податок ФОП', match:'єдиний податок' },
+  { type:'itm', label:'ПДВ сплачене', match:'пдв' },
+  { type:'itm', label:'Податок на прибуток', match:'податок на прибут' },
+  { type:'sub', label:'Всього податки', key:'_totalTax' },
+
+  { type:'sec', variant:'other', label:'Інші неопераційні витрати' },
+  { type:'itm', label:'Курсові різниці', match:'курсов' },
+  { type:'itm', label:'Нестачі і втрати', match:'нестач' },
+  { type:'itm', label:'Відсотки за кредит', match:'відсотки за кредит' },
+  { type:'itm', label:'Комісія за кредит', match:'комісія за кредит' },
+  { type:'itm', label:'Ремонт та модернізація ОЗ', match:'ремонт' },
+  { type:'itm', label:'Списання ТМЦ', match:'списан' },
+  { type:'sub', label:'Всього інші витрати', key:'_totalOther' },
+
+  { type:'sp' },
+  { type:'sub', label:'Всього витрати', key:'_totalAllExpenses' },
+  { type:'grd', label:'Операційний прибуток / збиток', key:'_operatingProfit' },
+  { type:'grd', label:'Чистий прибуток / збиток', key:'_netProfit' },
+  { type:'pct', label:'Операційна рентабельність, %', key:'_opMargin' },
+  { type:'pct', label:'Загальна рентабельність, %', key:'_netMargin' },
+];
 
 function _localISO(d) {
   const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
-  return `${y}-${m}-${dd}`;
+  return y + '-' + m + '-' + dd;
 }
-
 function setPreset(p) {
-  const now = new Date();
-  const y = now.getFullYear(), m = now.getMonth();
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
   let from, to = now;
-  if (p === 'month')     { from = new Date(y, m, 1); }
+  if (p === 'month')          from = new Date(y, m, 1);
   else if (p === 'prevmonth') { from = new Date(y, m-1, 1); to = new Date(y, m, 0); }
   else if (p === 'quarter')   { const q = Math.floor(m/3); from = new Date(y, q*3, 1); }
-  else if (p === 'year')      { from = new Date(y, 0, 1); }
-  state.from = _localISO(from);
-  state.to   = _localISO(to);
-  state.preset = p;
+  else if (p === 'year')      from = new Date(y, 0, 1);
+  state.from = _localISO(from); state.to = _localISO(to); state.preset = p;
   document.getElementById('fromIn').value = state.from;
   document.getElementById('toIn').value   = state.to;
-  document.querySelectorAll('.toolbar .group:first-of-type .chip').forEach(c =>
-    c.classList.toggle('active', c.textContent.trim() === { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' }[p]));
+  document.querySelectorAll('.toolbar .group:first-of-type .chip').forEach(c => {
+    const map = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' };
+    c.classList.toggle('active', c.textContent.trim() === map[p]);
+  });
   load();
 }
-
 function setOrg(el) {
   state.org = el.dataset.org;
   el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
   load();
 }
-
-function fmt(n, dec = 0) {
+function fmt(n, dec) {
   if (n === null || n === undefined || isNaN(n)) return '—';
   return Number(n).toLocaleString('uk-UA', { maximumFractionDigits: dec, minimumFractionDigits: dec });
 }
-function fmtUsd(n) { return fmt(n, 0) + ' $'; }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-const MONTH_NAMES = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
-function monthLabel(mk) {
-  const [y, m] = mk.split('-');
-  return MONTH_NAMES[parseInt(m, 10) - 1] + "'" + y.slice(2);
-}
+const MN = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
+function mLabel(mk) { const p = mk.split('-'); return MN[+p[1]-1] + "'" + p[0].slice(2); }
 
-function valClass(n) {
-  if (n > 0.5) return 'positive';
-  if (n < -0.5) return 'negative';
-  return 'zero';
-}
-
+/* ── Render ── */
 function renderPnl(data, fxRate) {
   const { months, revenue, cogs, otherIncome, expenses, totalExpenses } = data;
-  const toUsd = v => fxRate ? v / fxRate : v;
-  const suffix = fxRate ? ' $' : '';
-  const fmtV = v => {
-    const usd = toUsd(v);
-    return `<span class="${valClass(usd)}">${fmt(usd, 0)}${suffix}</span>`;
-  };
+  const conv = v => fxRate ? v / fxRate : v;
+  const sfx = fxRate ? ' $' : '';
+  const showM = months.length > 1;
 
-  // Compute derived rows
-  const grossByMonth = {}, opProfitByMonth = {}, netByMonth = {};
-  months.forEach(m => {
-    grossByMonth[m] = (revenue.byMonth[m] || 0) - (cogs.byMonth[m] || 0);
-    opProfitByMonth[m] = grossByMonth[m] - (totalExpenses.byMonth[m] || 0);
-    netByMonth[m] = opProfitByMonth[m] + (otherIncome.byMonth[m] || 0);
+  // Map expense categories by fuzzy match
+  const expMap = {};       // templateLabel → { byMonth, total }
+  const usedExpenses = new Set();
+  const unmatchedExp = [];
+
+  PNL_TEMPLATE.forEach(row => {
+    if (!row.match) return;
+    const re = new RegExp(row.match, 'i');
+    expenses.forEach((e, i) => {
+      if (usedExpenses.has(i)) return;
+      if (re.test(e.category)) {
+        if (!expMap[row.label]) expMap[row.label] = { byMonth: {}, total: 0 };
+        months.forEach(m => { expMap[row.label].byMonth[m] = (expMap[row.label].byMonth[m] || 0) + (e.byMonth[m] || 0); });
+        expMap[row.label].total += e.total;
+        usedExpenses.add(i);
+      }
+    });
   });
-  const grossTotal    = revenue.total - cogs.total;
-  const opProfitTotal = grossTotal - totalExpenses.total;
-  const netTotal      = opProfitTotal + otherIncome.total;
+  expenses.forEach((e, i) => { if (!usedExpenses.has(i)) unmatchedExp.push(e); });
+
+  // Compute group subtotals from matched items
+  const grpTotals = {};
+  let currentGrp = null;
+  PNL_TEMPLATE.forEach(row => {
+    if (row.type === 'grp' && row.key) { currentGrp = row.key; grpTotals[currentGrp] = { byMonth: {}, total: 0 }; }
+    if (row.type === 'itm' && row.match && currentGrp && expMap[row.label]) {
+      months.forEach(m => { grpTotals[currentGrp].byMonth[m] = (grpTotals[currentGrp].byMonth[m] || 0) + (expMap[row.label].byMonth[m] || 0); });
+      grpTotals[currentGrp].total += expMap[row.label].total;
+    }
+    if (row.type === 'sec' || row.type === 'sub' || row.type === 'grd') currentGrp = null;
+  });
+
+  // Compute overhead (all matched + unmatched expenses)
+  const overheadByMonth = {}, taxByMonth = {}, otherExpByMonth = {};
+  months.forEach(m => { overheadByMonth[m] = 0; taxByMonth[m] = 0; otherExpByMonth[m] = 0; });
+  let overheadTotal = 0, taxTotal = 0, otherExpTotal = 0;
+
+  // Classify into overhead / tax / other based on template section
+  let curSection = '';
+  PNL_TEMPLATE.forEach(row => {
+    if (row.type === 'sec') curSection = row.variant;
+    if (row.type === 'itm' && row.match && expMap[row.label]) {
+      const d = expMap[row.label];
+      if (curSection === 'exp') { months.forEach(m => { overheadByMonth[m] += d.byMonth[m] || 0; }); overheadTotal += d.total; }
+      else if (curSection === 'tax') { months.forEach(m => { taxByMonth[m] += d.byMonth[m] || 0; }); taxTotal += d.total; }
+      else if (curSection === 'other') { months.forEach(m => { otherExpByMonth[m] += d.byMonth[m] || 0; }); otherExpTotal += d.total; }
+    }
+  });
+  // Unmatched go to overhead
+  unmatchedExp.forEach(e => { months.forEach(m => { overheadByMonth[m] += e.byMonth[m] || 0; }); overheadTotal += e.total; });
+
+  // Derived totals
+  const totalRevByMonth = {}, grossByMonth = {}, totalAllExpByMonth = {}, opProfitByMonth = {}, netByMonth = {};
+  let totalRevTotal = revenue.total + otherIncome.total;
+  let grossTotal = revenue.total - cogs.total;
+  let totalAllExp = cogs.total + overheadTotal + taxTotal + otherExpTotal;
+  let opProfitTotal = totalRevTotal - cogs.total - overheadTotal;
+  let netTotal = totalRevTotal - totalAllExp;
+
+  months.forEach(m => {
+    totalRevByMonth[m] = (revenue.byMonth[m] || 0) + (otherIncome.byMonth[m] || 0);
+    grossByMonth[m] = (revenue.byMonth[m] || 0) - (cogs.byMonth[m] || 0);
+    totalAllExpByMonth[m] = (cogs.byMonth[m] || 0) + (overheadByMonth[m] || 0) + (taxByMonth[m] || 0) + (otherExpByMonth[m] || 0);
+    opProfitByMonth[m] = totalRevByMonth[m] - (cogs.byMonth[m] || 0) - (overheadByMonth[m] || 0);
+    netByMonth[m] = totalRevByMonth[m] - totalAllExpByMonth[m];
+  });
+
+  // Computed-key map
+  const computed = {
+    _totalRevenue:    { byMonth: totalRevByMonth, total: totalRevTotal },
+    _totalCogs:       { byMonth: cogs.byMonth, total: cogs.total },
+    _grossProfit:     { byMonth: grossByMonth, total: grossTotal },
+    _totalOverhead:   { byMonth: overheadByMonth, total: overheadTotal },
+    _totalTax:        { byMonth: taxByMonth, total: taxTotal },
+    _totalOther:      { byMonth: otherExpByMonth, total: otherExpTotal },
+    _totalAllExpenses:{ byMonth: totalAllExpByMonth, total: totalAllExp },
+    _operatingProfit: { byMonth: opProfitByMonth, total: opProfitTotal },
+    _netProfit:       { byMonth: netByMonth, total: netTotal },
+    _otherIncome:     { byMonth: otherIncome.byMonth, total: otherIncome.total },
+  };
+  // Group subtotals
+  Object.keys(grpTotals).forEach(k => { computed[k] = grpTotals[k]; });
+
+  // Percentage rows
+  const pctRow = (numByMonth, numTotal, denomTotal) => {
+    const bm = {};
+    months.forEach(m => { bm[m] = denomTotal ? (numByMonth[m] || 0) / (totalRevByMonth[m] || 1) : 0; });
+    return { byMonth: bm, total: denomTotal ? numTotal / totalRevTotal : 0, isPct: true };
+  };
+  computed._grossMargin = pctRow(grossByMonth, grossTotal, totalRevTotal);
+  computed._overheadPct = pctRow(overheadByMonth, overheadTotal, totalRevTotal);
+  computed._opMargin    = pctRow(opProfitByMonth, opProfitTotal, totalRevTotal);
+  computed._netMargin   = pctRow(netByMonth, netTotal, totalRevTotal);
+
+  // Format helpers
+  function fmtCell(val, isPct) {
+    if (isPct) {
+      if (!val && val !== 0) return '<span class="dash">—</span>';
+      return '<span class="' + (val > 0.001 ? 'pos' : val < -0.001 ? 'neg' : 'zr') + '">' + (val * 100).toFixed(1) + '%</span>';
+    }
+    const u = conv(val || 0);
+    if (Math.abs(u) < 0.5) return '<span class="zr">—</span>';
+    return '<span class="' + (u > 0 ? 'pos' : 'neg') + '">' + fmt(u, 0) + sfx + '</span>';
+  }
 
   // Summary cards
-  document.getElementById('summary').innerHTML = `
-    <div class="pnl-summary">
-      <div class="pnl-card revenue">
-        <span class="card-lbl">Дохід</span>
-        <span class="card-val">${fmt(toUsd(revenue.total), 0)}${suffix}</span>
-      </div>
-      <div class="pnl-card cogs">
-        <span class="card-lbl">Собівартість</span>
-        <span class="card-val">${fmt(toUsd(cogs.total), 0)}${suffix}</span>
-        <span class="card-sub">${cogs.total && revenue.total ? (cogs.total / revenue.total * 100).toFixed(1) + '% від доходу' : ''}</span>
-      </div>
-      <div class="pnl-card gross">
-        <span class="card-lbl">Валовий прибуток</span>
-        <span class="card-val">${fmt(toUsd(grossTotal), 0)}${suffix}</span>
-        <span class="card-sub">${revenue.total ? 'маржа ' + (grossTotal / revenue.total * 100).toFixed(1) + '%' : ''}</span>
-      </div>
-      <div class="pnl-card net">
-        <span class="card-lbl">Чистий прибуток</span>
-        <span class="card-val ${netTotal < 0 ? 'neg' : ''}">${fmt(toUsd(netTotal), 0)}${suffix}</span>
-        <span class="card-sub">${revenue.total ? (netTotal / revenue.total * 100).toFixed(1) + '% від доходу' : ''}</span>
-      </div>
-    </div>
-  `;
+  document.getElementById('summary').innerHTML = '<div class="pnl-summary">' +
+    '<div class="pnl-card c-rev"><span class="cl">Доходи</span><span class="cv">' + fmt(conv(totalRevTotal), 0) + sfx + '</span></div>' +
+    '<div class="pnl-card c-cost"><span class="cl">Собівартість</span><span class="cv">' + fmt(conv(cogs.total), 0) + sfx + '</span>' +
+      '<span class="cs">' + (totalRevTotal ? (cogs.total / totalRevTotal * 100).toFixed(1) + '% від доходу' : '') + '</span></div>' +
+    '<div class="pnl-card c-grs"><span class="cl">Валовий прибуток</span><span class="cv">' + fmt(conv(grossTotal), 0) + sfx + '</span>' +
+      '<span class="cs">' + (totalRevTotal ? 'маржа ' + (grossTotal / totalRevTotal * 100).toFixed(1) + '%' : '') + '</span></div>' +
+    '<div class="pnl-card c-net"><span class="cl">Чистий прибуток</span><span class="cv' + (netTotal < 0 ? ' ng' : '') + '">' + fmt(conv(netTotal), 0) + sfx + '</span>' +
+      '<span class="cs">' + (totalRevTotal ? (netTotal / totalRevTotal * 100).toFixed(1) + '%' : '') + '</span></div>' +
+  '</div>';
 
-  // Table
-  const showMonths = months.length > 1;
-  const mCols = showMonths ? months.map(m => `<th>${monthLabel(m)}</th>`).join('') : '';
-
-  function dataRow(label, byMonth, total, cls = '') {
-    const mCells = showMonths ? months.map(m => `<td>${fmtV(byMonth[m] || 0)}</td>`).join('') : '';
-    return `<tr class="${cls}"><td>${esc(label)}</td>${mCells}<td>${fmtV(total)}</td></tr>`;
-  }
-  function sectionHdr(label) {
-    const span = (showMonths ? months.length : 0) + 2;
-    return `<tr class="section-hdr"><td colspan="${span}">${esc(label)}</td></tr>`;
-  }
-
+  // Build table
+  const mCols = showM ? months.map(m => '<th>' + mLabel(m) + '</th>').join('') : '';
   let rows = '';
+  const cs = (showM ? months.length : 0) + 2;
 
-  // Revenue
-  rows += sectionHdr('Доходи');
-  rows += dataRow('Дохід від реалізації', revenue.byMonth, revenue.total, 'subtotal-row');
+  PNL_TEMPLATE.forEach(row => {
+    if (row.type === 'sp') { rows += '<tr class="sp"><td colspan="' + cs + '"></td></tr>'; return; }
 
-  // COGS
-  rows += sectionHdr('Собівартість');
-  rows += dataRow('Собівартість реалізації', cogs.byMonth, cogs.total, 'subtotal-row');
+    // Resolve data
+    let d = null, isPct = false;
+    if (row.key && computed[row.key]) { d = computed[row.key]; isPct = !!d.isPct; }
+    else if (row.match && expMap[row.label]) d = expMap[row.label];
+    // Special: revenue section subtotal = revenue
+    if (row.type === 'sec' && row.variant === 'rev') d = { byMonth: revenue.byMonth, total: revenue.total };
+    if (row.type === 'sec' && row.variant === 'cost') d = { byMonth: cogs.byMonth, total: cogs.total };
 
-  // Gross profit
-  rows += dataRow('Валовий прибуток', grossByMonth, grossTotal, 'grand-row');
+    const mCells = showM ? months.map(m => '<td>' + (d ? fmtCell(d.byMonth[m] || 0, isPct) : '<span class="dash">—</span>') + '</td>').join('') : '';
+    const totalCell = d ? fmtCell(d.total, isPct) : '<span class="dash">—</span>';
+    const cls = row.type + (row.variant ? ' ' + row.variant : '');
 
-  // Operating expenses
-  rows += sectionHdr('Операційні витрати');
-  expenses.forEach(e => {
-    rows += dataRow(e.category, e.byMonth, e.total, 'item-row');
+    rows += '<tr class="' + cls + '"><td>' + esc(row.label) + '</td>' + mCells + '<td class="col-total">' + totalCell + '</td></tr>';
   });
-  if (!expenses.length) {
-    const span = (showMonths ? months.length : 0) + 2;
-    rows += `<tr class="item-row"><td colspan="${span}" style="color:var(--text3);font-style:italic">Немає даних</td></tr>`;
-  }
-  rows += dataRow('Всього витрат', totalExpenses.byMonth, totalExpenses.total, 'subtotal-row');
 
-  // Operating profit
-  rows += dataRow('Операційний прибуток (EBIT)', opProfitByMonth, opProfitTotal, 'grand-row');
-
-  // Other income
-  if (otherIncome.total) {
-    rows += sectionHdr('Інші доходи');
-    rows += dataRow('Інші доходи', otherIncome.byMonth, otherIncome.total, 'item-row');
+  // Unmatched expenses
+  if (unmatchedExp.length) {
+    rows += '<tr class="sp"><td colspan="' + cs + '"></td></tr>';
+    rows += '<tr class="grp"><td colspan="' + cs + '">Не класифіковані витрати (з 1С)</td></tr>';
+    unmatchedExp.forEach(e => {
+      const mCells = showM ? months.map(m => '<td>' + fmtCell(e.byMonth[m] || 0) + '</td>').join('') : '';
+      rows += '<tr class="itm"><td>' + esc(e.category) + '</td>' + mCells + '<td class="col-total">' + fmtCell(e.total) + '</td></tr>';
+    });
   }
 
-  // Net profit
-  rows += dataRow('Чистий прибуток', netByMonth, netTotal, 'grand-row');
-
-  document.getElementById('body').innerHTML = `
-    <div class="pnl-wrap">
-      <table class="pnl-table">
-        <thead><tr><th>Стаття</th>${mCols}<th>Всього</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>
-  `;
+  document.getElementById('body').innerHTML =
+    '<div class="pnl-wrap"><table class="pnl-table"><thead><tr><th>P&L Стаття</th>' +
+    mCols + '<th class="col-total">Всього</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
 async function load() {
-  const body = document.getElementById('body');
-  body.innerHTML = '<div class="loading">Завантаження...</div>';
+  document.getElementById('body').innerHTML = '<div class="loading">Завантаження...</div>';
   document.getElementById('summary').innerHTML = '';
   try {
-    const q = `?action=pnl_report&from=${state.from}&to=${state.to}` + (state.org ? `&org=${encodeURIComponent(state.org)}` : '');
+    const q = '?action=pnl_report&from=' + state.from + '&to=' + state.to + (state.org ? '&org=' + encodeURIComponent(state.org) : '');
     const [data, fxData] = await Promise.all([
       fetch(API_URL + q).then(r => r.json()),
-      fetch(API_URL + '?action=fx_rates').then(r => r.json()).catch(() => null),
+      fetch(API_URL + '?action=fx_rates').then(r => r.json()).catch(function() { return null; }),
     ]);
     if (data.error) throw new Error(data.error);
     const fxRate = (fxData && fxData.rates && fxData.rates.USD_UAH) || null;
     renderPnl(data, fxRate);
   } catch (e) {
-    body.innerHTML = `<div class="error">${esc(e.message)}</div>`;
+    document.getElementById('body').innerHTML = '<div class="error">' + esc(e.message) + '</div>';
   }
 }
 
-// Init date inputs
-document.getElementById('fromIn').addEventListener('change', e => { state.from = e.target.value; load(); });
-document.getElementById('toIn').addEventListener('change', e => { state.to = e.target.value; load(); });
+document.getElementById('fromIn').addEventListener('change', function(e) { state.from = e.target.value; load(); });
+document.getElementById('toIn').addEventListener('change', function(e) { state.to = e.target.value; load(); });
 
-Auth.require('finance').then(user => {
+Auth.require('finance').then(function(user) {
   window.__user = user;
   AppHeader.mount({ active: 'finance', user });
-  // default org
   document.querySelector('[data-org=""]').classList.add('active');
   setPreset('year');
 });
