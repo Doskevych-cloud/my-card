@@ -61,68 +61,56 @@ a{color:inherit;text-decoration:none}
 .toolbar input[type=text]::placeholder{color:var(--text3)}
 
 /* P&L table */
-/* ═══ P&L table — clean hierarchy, minimal color ═══
- * Visual principles:
- *  - Typography carries hierarchy (sec: 15px/800, grp: 13px/700, itm: 13px/400)
- *  - Color used sparingly: thin 3px left marker on sec (rev=green, cost=orange,
- *    exp=red, tax=yellow, other=blue). No full background fills.
- *  - Tabular numerals for alignment; monochrome chevron before collapsible headers.
- *  - Indentation chain sec → grp → itm (14 → 32 → 56 px).
- *  - Hover = subtle surface tint, not filter-brightness (less jarring).
- */
+/* ═══ P&L — uniform monochrome, single row height, no colored stripes ═══ */
 .pnl-wrap{overflow:auto;margin-bottom:20px;border:1px solid var(--border);border-radius:12px;background:var(--bg)}
 .pnl-table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;min-width:600px}
 .pnl-table th,
-.pnl-table td{padding:8px 14px;text-align:right;white-space:nowrap}
-.pnl-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;background:var(--surface2);position:sticky;top:0;z-index:2;padding-top:11px;padding-bottom:11px;border-bottom:1px solid var(--border)}
+.pnl-table td{padding:11px 14px;text-align:right;white-space:nowrap;vertical-align:middle;line-height:1.25}
+.pnl-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;background:var(--surface2);position:sticky;top:0;z-index:2;border-bottom:1px solid var(--border)}
 .pnl-table th:first-child,
-.pnl-table td:first-child{text-align:left;position:sticky;left:0;z-index:1;min-width:340px;background:var(--bg)}
-.pnl-table th:first-child{z-index:3;background:var(--surface2)}
+.pnl-table td:first-child{text-align:left;position:sticky;left:0;z-index:1;min-width:340px;background:inherit}
+.pnl-table th:first-child{z-index:3}
 .pnl-table td.col-total,
-.pnl-table th.col-total{font-weight:600;background:var(--surface);border-left:1px solid var(--border)}
-.pnl-table th.col-total{background:var(--surface2)}
+.pnl-table th.col-total{border-left:1px solid var(--border);font-weight:600}
+.pnl-table tbody tr{background:var(--bg)}
+.pnl-table tbody tr.sub,
+.pnl-table tbody tr.grd{background:var(--surface2)}
 
-/* Row types ---------------------------------------------------------- */
-/* Section header — bold, larger, thin colored accent bar on left */
-.pnl-table tr.sec td{font-weight:800;font-size:14.5px;color:var(--text);padding-top:14px;padding-bottom:10px;border-top:1px solid var(--border2)}
-.pnl-table tr.sec td:first-child{padding-left:14px;box-shadow:inset 3px 0 0 var(--text3)}
-.pnl-table tr.sec.rev  td:first-child{box-shadow:inset 3px 0 0 var(--green)}
-.pnl-table tr.sec.cost td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
-.pnl-table tr.sec.exp  td:first-child{box-shadow:inset 3px 0 0 var(--red)}
-.pnl-table tr.sec.tax  td:first-child{box-shadow:inset 3px 0 0 var(--yellow)}
-.pnl-table tr.sec.other td:first-child{box-shadow:inset 3px 0 0 var(--blue)}
-/* Group header — medium weight, indented */
-.pnl-table tr.grp td{font-weight:700;font-size:12.5px;color:var(--text);padding-top:9px;padding-bottom:7px}
-.pnl-table tr.grp td:first-child{padding-left:32px}
-/* Item (leaf) — regular weight, muted, deeper indent */
-.pnl-table tr.itm td{color:var(--text2);font-weight:400;font-size:13px;padding-top:6px;padding-bottom:6px}
-.pnl-table tr.itm td:first-child{padding-left:56px}
-/* Subtotal — bold with thin rule above */
-.pnl-table tr.sub td{font-weight:700;color:var(--text);padding-top:10px;padding-bottom:10px;border-top:1px solid var(--border2);background:var(--surface2)}
-.pnl-table tr.sub td:first-child{padding-left:14px;background:var(--surface2)}
-/* Grand total — bolder, double top rule */
-.pnl-table tr.grd td{font-weight:800;font-size:14px;padding-top:13px;padding-bottom:13px;border-top:2px solid var(--border);background:var(--surface)}
-.pnl-table tr.grd td:first-child{background:var(--surface);padding-left:14px}
-/* Percent row — small italic, no borders */
+/* Row types — hierarchy via weight + indent, NO colored accents */
+.pnl-table tr.sec td{font-weight:700;font-size:13px;color:var(--text);border-top:1px solid var(--border)}
+.pnl-table tr.sec td:first-child{padding-left:14px}
+.pnl-table tr.grp td{font-weight:600;color:var(--text)}
+.pnl-table tr.grp td:first-child{padding-left:34px}
+.pnl-table tr.itm td{color:var(--text2);font-weight:400}
+.pnl-table tr.itm td:first-child{padding-left:58px}
+.pnl-table tr.sub td{font-weight:700;color:var(--text);border-top:1px solid var(--border)}
+.pnl-table tr.sub td:first-child{padding-left:14px}
+.pnl-table tr.grd td{font-weight:800;font-size:14px;border-top:2px solid var(--border2);color:var(--text)}
+.pnl-table tr.grd td:first-child{padding-left:14px}
 .pnl-table tr.pct td{color:var(--text3);font-size:11px;font-style:italic;padding-top:3px;padding-bottom:3px;border:none}
 .pnl-table tr.pct td:first-child{padding-left:14px}
-/* Spacer row */
-.pnl-table tr.sp td{border:none;padding:4px 0;background:var(--bg)}
+.pnl-table tr.sp td{border:none;padding:3px 0;background:var(--bg)}
 
-/* Collapse disclosure ---------------------------------------------- */
+/* Very subtle row separators between itms for easier scanning */
+.pnl-table tr.itm + tr.itm td{border-top:1px solid var(--border2)}
+
+/* Disclosure triangle — monochrome, before label */
 .pnl-table tr.sec td:first-child,
-.pnl-table tr.grp td:first-child{cursor:pointer;user-select:none;transition:background .12s}
+.pnl-table tr.grp td:first-child{cursor:pointer;user-select:none}
 .pnl-table tr.sec td:first-child:hover,
 .pnl-table tr.grp td:first-child:hover{background:var(--surface)}
-.pnl-table .tri{display:inline-block;width:10px;margin-right:8px;font-size:10px;color:var(--text3);transition:transform .18s ease-out;text-align:center;line-height:1;vertical-align:1px}
+.pnl-table .tri{display:inline-block;width:10px;margin-right:8px;font-size:9px;color:var(--text3);transition:transform .18s ease-out;text-align:center;line-height:1;vertical-align:1px}
 .pnl-table tr.sec td:first-child:hover .tri,
 .pnl-table tr.grp td:first-child:hover .tri{color:var(--text)}
 .pnl-table tr[data-collapsed="true"] .tri{transform:rotate(-90deg)}
 .pnl-table tr.collapsed-hidden{display:none}
-/* When a section is collapsed, its aggregate on the sec row becomes the focus */
-.pnl-table tr.sec[data-collapsed="true"] td{padding-bottom:14px}
 
-/* Toolbar — collapse control icons */
+/* Value colors — keep pos/neg subtle */
+.pnl-table .pos{color:var(--green)}
+.pnl-table .neg{color:var(--red)}
+.pnl-table .zr,.pnl-table .dash{color:var(--text3)}
+
+/* Toolbar collapse icons */
 .pnl-collapse-ctl .chip .ic{display:inline-block;font-size:12px;line-height:1;margin-right:5px;opacity:.65;vertical-align:-1px}
 .pnl-collapse-ctl .chip:hover .ic{opacity:1}
 
@@ -371,37 +359,23 @@ const pnlState = { from: '', to: '', org: '', preset: '' };
 const PNL_TEMPLATE = [
   { type:'sec', variant:'rev', label:'Виторг від продажів, у т.ч.' },
   { type:'itm', label:'Дистрибуція', dep:'дистрибуц' },
-  { type:'itm', label:'Продажи между Генерацией и Реактом', dep:'між ген|между ген|ген.*реакт|реакт.*ген' },
+  { type:'itm', label:'Продажі між Генерацією і Реактом', dep:'між ген|между ген|ген.*реакт|реакт.*ген' },
   { type:'itm', label:'Приватні сонячні станції під ключ', dep:'приватн' },
   { type:'itm', label:'Комерційні сонячні станції під ключ', dep:'комерційн' },
   { type:'itm', label:'Роздріб', dep:'^роздріб$|^П\\.? Роздріб$' },
   { type:'itm', label:'Роздріб під ключ', dep:'роздріб під ключ' },
   { type:'itm', label:'Проектування СЕС', dep:'проектуван|поектуван' },
   { type:'itm', label:'Сервіс', dep:'серві[сз]$' },
-  { type:'itm', label:'Зелений тариф', dep:'зелений тариф' },
-  { type:'itm', label:'Основний підрозділ', dep:'основний підрозділ|основний пiдроздiл' },
-  { type:'sp' },
-  { type:'grp', label:'Інші непрямі доходи', key:'_otherIncome' },
-  { type:'itm', label:'Інші доходи (курсова різниця)', match:'курсов' },
-  { type:'itm', label:'Інші доходи (% дистрибьютера за лида)', match:'дистриб.*лід|лід.*дистриб|% дистриб' },
-  { type:'itm', label:'Інші доходи (комісія та інш.)', match:'комісі|комиссия' },
-  { type:'itm', label:'Інші доходи (розробка типових варіантів СЕС)', match:'типов.*варіант|розробк.*сес' },
-  { type:'itm', label:'Компенсація транспортних витрат замовником', match:'компенсац.*транспорт' },
-  { type:'itm', label:'Оприбуткування залишків ТМЦ', match:'оприбутк' },
-  { type:'itm', label:'Суборенда, взаємозаліки', match:'суборенд|взаєморозрах|взаимозач' },
-  { type:'itm', label:'Повернення митного збору', match:'митн' },
   { type:'sub', label:'Всього доходи', key:'_totalRevenue' },
   { type:'sec', variant:'cost', label:'Собівартість продажів, у т.ч.' },
-  { type:'itm', label:'Дистрибуція (собівартість)', dep:'дистрибуц' },
-  { type:'itm', label:'Продажи между Генерацией и Реактом (собівартість)', dep:'між ген|между ген|ген.*реакт|реакт.*ген' },
-  { type:'itm', label:'Приватні СЕС під ключ (собівартість)', dep:'приватн' },
-  { type:'itm', label:'Комерційні СЕС під ключ (собівартість)', dep:'комерційн' },
-  { type:'itm', label:'Роздріб (собівартість)', dep:'^роздріб$|^П\\.? Роздріб$' },
-  { type:'itm', label:'Роздріб під ключ (собівартість)', dep:'роздріб під ключ' },
-  { type:'itm', label:'Проектування СЕС (собівартість)', dep:'проектуван|поектуван' },
-  { type:'itm', label:'Сервіс (собівартість)', dep:'серві[сз]$' },
-  { type:'itm', label:'Зелений тариф (собівартість)', dep:'зелений тариф' },
-  { type:'itm', label:'Основний підрозділ (собівартість)', dep:'основний підрозділ|основний пiдроздiл' },
+  { type:'itm', label:'Дистрибуція', dep:'дистрибуц' },
+  { type:'itm', label:'Продажі між Генерацією і Реактом', dep:'між ген|между ген|ген.*реакт|реакт.*ген' },
+  { type:'itm', label:'Приватні СЕС під ключ', dep:'приватн' },
+  { type:'itm', label:'Комерційні СЕС під ключ', dep:'комерційн' },
+  { type:'itm', label:'Роздріб', dep:'^роздріб$|^П\\.? Роздріб$' },
+  { type:'itm', label:'Роздріб під ключ', dep:'роздріб під ключ' },
+  { type:'itm', label:'Проектування СЕС', dep:'проектуван|поектуван' },
+  { type:'itm', label:'Сервіс', dep:'серві[сз]$' },
   { type:'sub', label:'Всього собівартість', key:'_totalCogs' },
   { type:'grd', label:'Валовий прибуток, у т.ч.', key:'_grossProfit' },
   { type:'itm', label:'Дистрибуція (ВП)', dep:'дистрибуц', depMode:'gp' },
@@ -481,7 +455,7 @@ const PNL_TEMPLATE = [
   { type:'itm', label:'Штрафи, пені, неустойки', refKeys:['e11e29d1-9587-11ed-b739-cbc677b530da'] },
   { type:'itm', label:'Судовий збір', refKeys:['ece38e21-7211-11ed-b738-875f483faafd'] },
   { type:'itm', label:'Негативна курсова різниця', refKeys:['d5ff9629-b4c0-11eb-b713-c9df1bf41755'] },
-  { type:'itm', label:'Дивіденди', refKeys:['d5ff9634-b4c0-11eb-b713-c9df1bf41755'] },
+  // Дивіденди вилучено: це розподіл прибутку, а не витрати P&L
   { type:'sub', label:'Всього інші витрати', key:'_totalOther' },
   { type:'sp' },
   { type:'sub', label:'Всього витрати', key:'_totalAllExpenses' },
@@ -489,11 +463,9 @@ const PNL_TEMPLATE = [
   { type:'grd', label:'Чистий прибуток / збиток', key:'_netProfit' },
   { type:'pct', label:'Операційна рентабельність, %', key:'_opMargin' },
   { type:'pct', label:'Загальна рентабельність, %', key:'_netMargin' },
-  { type:'sp' },
-  { type:'sub', label:'Всього витрати на просування і маркетинг', key:'_grpMarketing' },
-  { type:'pct', label:'Частка витрат на маркетинг, %', key:'_marketingPct' },
-  { type:'pct', label:'Частка витрат на зарплату, %', key:'_salaryPct' },
-  { type:'itm', label:'Точка беззбитковості', key:'_breakeven' },
+  // Вилучено bottom-клаттер: маркетинговий повторний підсумок, частка ЗП,
+  // точка беззбитковості — або дублюють sec-level агрегати, або метрики,
+  // що не належать до стандартного P&L (можна повернути окремим блоком).
 ];
 
 function setPreset(p) {
@@ -680,11 +652,43 @@ function renderPnl(data) {
   const cs = (showM ? months.length : 0) + 2;
   let curVariant = '';
   let curGrp = '';
+  // ── Two-pass: first compute which grp/itm rows have any data; hide empties ──
+  function rowData(row) {
+    if (row.key && computed[row.key]) return computed[row.key];
+    if (row.refKeys && expMap[row.label]) return expMap[row.label];
+    if (row.dep) {
+      var dp = depFind(row.dep);
+      if (!dp) return null;
+      if (row.depMode === 'gp')     return { total: dp.rev.total - dp.cog.total };
+      if (row.depMode === 'margin') return { total: dp.rev.total ? (dp.rev.total - dp.cog.total) / dp.rev.total : 0, isPct:true };
+      return (curVariant === 'cost') ? dp.cog : dp.rev;
+    }
+    return null;
+  }
+  function hasValue(row) {
+    const d = rowData(row);
+    if (!d) return false;
+    return Math.abs(d.total || 0) > 0.005;
+  }
+  // Pre-scan: for each grp, check if any child itm has data
+  const grpHasData = {};
+  {
+    let scanGrp = null;
+    PNL_TEMPLATE.forEach(row => {
+      if (row.type === 'grp' && row.key) { scanGrp = row.key; grpHasData[scanGrp] = false; }
+      else if ((row.type === 'sec') || (row.type === 'sub') || (row.type === 'grd')) { scanGrp = null; }
+      else if (row.type === 'itm' && scanGrp && hasValue(row)) grpHasData[scanGrp] = true;
+    });
+  }
   PNL_TEMPLATE.forEach(row => {
     if (row.type === 'sec') { curVariant = row.variant || ''; curGrp = ''; }
     if (row.type === 'grp') { curGrp = row.key || ''; }
     if (row.type === 'sub') { curGrp = ''; }
     if (row.type === 'sp') { rows += '<tr class="sp"><td colspan="' + cs + '"></td></tr>'; return; }
+    // ── Hide empty rows to keep the table compact and aligned ──
+    if (row.type === 'itm' && !hasValue(row)) return;
+    if (row.type === 'grp' && row.key && !grpHasData[row.key]) return;
+    if (row.type === 'pct' && row.key && !(computed[row.key] && Math.abs(computed[row.key].total || 0) > 0.0005)) return;
     // sub is the TERMINAL row of its section — keep attribution for this sub row,
     // but clear curVariant AFTERWARDS so post-sub rows (profit / margins / etc.)
     // don't inherit the section and get hidden on collapse.
