@@ -117,13 +117,14 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
             <th style="text-align:center">Закупівлі</th>
             <th style="text-align:center">Склад</th>
             <th style="text-align:center">Продажі</th>
+            <th style="text-align:center">Фінанси</th>
             <th style="text-align:center">Адмін</th>
             <th style="text-align:center">Останній вхід</th>
             <th style="width: 90px"></th>
           </tr>
         </thead>
         <tbody id="tbody">
-          <tr><td colspan="8" class="loading">Завантаження…</td></tr>
+          <tr><td colspan="9" class="loading">Завантаження…</td></tr>
         </tbody>
       </table>
     </div>
@@ -156,7 +157,7 @@ async function loadUsers() {
     users = r.users || [];
     renderTable();
   } catch (e) {
-    document.getElementById('tbody').innerHTML = `<tr><td colspan="8" class="loading">❌ ${e.message}</td></tr>`;
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="9" class="loading">❌ ${e.message}</td></tr>`;
   }
 }
 
@@ -184,7 +185,7 @@ function userRow(u) {
           </div>
         </div>
       </td>
-      ${['home','forecast','warehouses','sales','admin'].map(r => `
+      ${['home','forecast','warehouses','sales','finance','admin'].map(r => `
         <td class="role-box"><input type="checkbox" ${u.roles && u.roles[r] ? 'checked' : ''} onchange="toggleRole('${u.email}','${r}',this.checked)"></td>
       `).join('')}
       <td style="text-align:center;color:var(--text2);font-size:12px">${fmtDate(u.lastLogin)}</td>
@@ -211,6 +212,7 @@ function renderTable() {
         <td class="role-box"><input type="checkbox" id="inv_forecast"></td>
         <td class="role-box"><input type="checkbox" id="inv_warehouses"></td>
         <td class="role-box"><input type="checkbox" id="inv_sales"></td>
+        <td class="role-box"><input type="checkbox" id="inv_finance"></td>
         <td class="role-box"><input type="checkbox" id="inv_admin"></td>
         <td></td>
         <td style="text-align:right">
@@ -221,7 +223,7 @@ function renderTable() {
     `;
   }
   if (!filtered.length) {
-    html += `<tr><td colspan="8" class="empty">Нічого не знайдено</td></tr>`;
+    html += `<tr><td colspan="9" class="empty">Нічого не знайдено</td></tr>`;
   } else {
     html += filtered.map(userRow).join('');
   }
@@ -245,6 +247,7 @@ async function saveInvite() {
     forecast: document.getElementById('inv_forecast').checked,
     warehouses: document.getElementById('inv_warehouses').checked,
     sales: document.getElementById('inv_sales').checked,
+    finance: document.getElementById('inv_finance').checked,
     admin: document.getElementById('inv_admin').checked,
   };
   try {
