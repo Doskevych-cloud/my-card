@@ -215,6 +215,11 @@ a{color:inherit;text-decoration:none}
           <span class="chip" data-org="Реакт" onclick="setOrg(this)">Реакт</span>
           <span class="chip" data-org="Генерація" onclick="setOrg(this)">Генерація</span>
         </span>
+        <div class="sep"></div>
+        <span class="group">
+          <span class="chip" onclick="pnlToggleAll(false)" title="Розгорнути всі групи">⊞ Розгорнути</span>
+          <span class="chip" onclick="pnlToggleAll(true)" title="Згорнути всі групи">⊟ Згорнути</span>
+        </span>
       </div>
       <div id="pnlSummary"></div>
       <div id="pnlBody"><div class="loading">Завантаження...</div></div>
@@ -700,6 +705,18 @@ function renderPnl(data) {
     '<div class="pnl-wrap"><table class="pnl-table"><thead><tr><th>P&L Стаття</th>' +
     mCols + '<th class="col-total">Всього</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   pnlBindCollapse();
+}
+
+// Collapse/expand all sections + subgroups at once.
+function pnlToggleAll(collapse) {
+  const tbl = document.querySelector('#pnlBody .pnl-table');
+  if (!tbl) return;
+  tbl.querySelectorAll('tr[data-is-sec], tr[data-is-grp]').forEach(tr => {
+    tr.setAttribute('data-collapsed', collapse ? 'true' : 'false');
+  });
+  tbl.querySelectorAll('tr[data-sec]:not([data-is-sec])').forEach(r => {
+    r.classList.toggle('collapsed-hidden', collapse);
+  });
 }
 
 // Toggle collapse/expand on sec and grp header rows.
