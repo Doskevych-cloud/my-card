@@ -156,13 +156,14 @@ a{color:inherit;text-decoration:none}
 .ar-table .ar-cl td:first-child{padding-left:20px;background:var(--surface2) !important}
 .ar-table .ar-ct td{font-weight:500}
 .ar-table .ar-ct td:first-child{padding-left:36px}
-/* AR progress bar */
-.ar-bar-cell{text-align:left !important;min-width:220px}
-.ar-bar{position:relative;height:22px;background:var(--bg3);border-radius:6px;overflow:hidden;border:1px solid var(--border)}
-.ar-bar-paid{height:100%;background:var(--green);border-radius:5px 0 0 5px;transition:width .3s}
-.ar-bar-ship{height:100%;background:var(--accent);opacity:.55;position:absolute;top:0;border-radius:0;transition:width .3s,left .3s}
-.ar-bar-lbl{position:absolute;top:0;left:0;right:0;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text);text-shadow:0 0 4px rgba(0,0,0,.6);pointer-events:none;letter-spacing:.3px}
-:root[data-theme="light"] .ar-bar-lbl{text-shadow:0 0 4px rgba(255,255,255,.8)}
+/* AR shipment box indicator */
+.ar-ship-cell{text-align:center !important;width:120px}
+.ar-box{display:inline-block;width:42px;height:22px;border-radius:5px;border:2px solid var(--border2);background:var(--bg3);position:relative;overflow:hidden;vertical-align:middle}
+.ar-box-fill{position:absolute;left:0;top:0;bottom:0;background:var(--green);transition:width .3s}
+.ar-box-lbl{font-size:10px;font-weight:700;color:var(--text2);margin-left:6px;vertical-align:middle}
+.ar-box.full{border-color:var(--green)}
+.ar-box.partial .ar-box-fill{opacity:.85}
+.ar-box.empty{border-color:var(--border)}
 
 .view{display:none}
 .view.active{display:block}
@@ -324,6 +325,7 @@ const pnlState = { from: '', to: '', org: '', preset: '' };
 const PNL_TEMPLATE = [
   { type:'sec', variant:'rev', label:'Виторг від продажів, у т.ч.' },
   { type:'itm', label:'Дистрибуція', dep:'дистрибуц' },
+  { type:'itm', label:'Продажи между Генерацией и Реактом', dep:'між ген|между ген|ген.*реакт|реакт.*ген' },
   { type:'itm', label:'Приватні сонячні станції під ключ', dep:'приватн' },
   { type:'itm', label:'Комерційні сонячні станції під ключ', dep:'комерційн' },
   { type:'itm', label:'Роздріб', dep:'^роздріб$|^П\\.? Роздріб$' },
@@ -334,14 +336,18 @@ const PNL_TEMPLATE = [
   { type:'itm', label:'Основний підрозділ', dep:'основний підрозділ|основний пiдроздiл' },
   { type:'sp' },
   { type:'grp', label:'Інші непрямі доходи', key:'_otherIncome' },
-  { type:'itm', label:'Інші доходи (курсова різниця)' },
-  { type:'itm', label:'Інші доходи (комісія та інш.)' },
-  { type:'itm', label:'Компенсація транспортних витрат замовником' },
-  { type:'itm', label:'Оприбуткування залишків ТМЦ' },
-  { type:'itm', label:'Суборенда, взаємозаліки' },
+  { type:'itm', label:'Інші доходи (курсова різниця)', match:'курсов' },
+  { type:'itm', label:'Інші доходи (% дистрибьютера за лида)', match:'дистриб.*лід|лід.*дистриб|% дистриб' },
+  { type:'itm', label:'Інші доходи (комісія та інш.)', match:'комісі|комиссия' },
+  { type:'itm', label:'Інші доходи (розробка типових варіантів СЕС)', match:'типов.*варіант|розробк.*сес' },
+  { type:'itm', label:'Компенсація транспортних витрат замовником', match:'компенсац.*транспорт' },
+  { type:'itm', label:'Оприбуткування залишків ТМЦ', match:'оприбутк' },
+  { type:'itm', label:'Суборенда, взаємозаліки', match:'суборенд|взаєморозрах|взаимозач' },
+  { type:'itm', label:'Повернення митного збору', match:'митн' },
   { type:'sub', label:'Всього доходи', key:'_totalRevenue' },
   { type:'sec', variant:'cost', label:'Собівартість продажів, у т.ч.' },
   { type:'itm', label:'Дистрибуція (собівартість)', dep:'дистрибуц' },
+  { type:'itm', label:'Продажи между Генерацией и Реактом (собівартість)', dep:'між ген|между ген|ген.*реакт|реакт.*ген' },
   { type:'itm', label:'Приватні СЕС під ключ (собівартість)', dep:'приватн' },
   { type:'itm', label:'Комерційні СЕС під ключ (собівартість)', dep:'комерційн' },
   { type:'itm', label:'Роздріб (собівартість)', dep:'^роздріб$|^П\\.? Роздріб$' },
@@ -351,8 +357,24 @@ const PNL_TEMPLATE = [
   { type:'itm', label:'Зелений тариф (собівартість)', dep:'зелений тариф' },
   { type:'itm', label:'Основний підрозділ (собівартість)', dep:'основний підрозділ|основний пiдроздiл' },
   { type:'sub', label:'Всього собівартість', key:'_totalCogs' },
-  { type:'grd', label:'Валовий прибуток', key:'_grossProfit' },
-  { type:'pct', label:'Маржинальність продажів, %', key:'_grossMargin' },
+  { type:'grd', label:'Валовий прибуток, у т.ч.', key:'_grossProfit' },
+  { type:'itm', label:'Дистрибуція (ВП)', dep:'дистрибуц', depMode:'gp' },
+  { type:'itm', label:'Продажи между Генерацией и Реактом (ВП)', dep:'між ген|между ген|ген.*реакт|реакт.*ген', depMode:'gp' },
+  { type:'itm', label:'Приватні сонячні станції під ключ (ВП)', dep:'приватн', depMode:'gp' },
+  { type:'itm', label:'Комерційні сонячні станції під ключ (ВП)', dep:'комерційн', depMode:'gp' },
+  { type:'itm', label:'Роздріб (ВП)', dep:'^роздріб$|^П\\.? Роздріб$', depMode:'gp' },
+  { type:'itm', label:'Роздріб під ключ (ВП)', dep:'роздріб під ключ', depMode:'gp' },
+  { type:'itm', label:'Проектування СЕС (ВП)', dep:'проектуван|поектуван', depMode:'gp' },
+  { type:'itm', label:'Сервіс (ВП)', dep:'серві[сз]$', depMode:'gp' },
+  { type:'pct', label:'Маржинальність продажів, у т.ч., %', key:'_grossMargin' },
+  { type:'itm', label:'Дистрибуція (маржа)', dep:'дистрибуц', depMode:'margin' },
+  { type:'itm', label:'Продажи между Генерацией и Реактом (маржа)', dep:'між ген|между ген|ген.*реакт|реакт.*ген', depMode:'margin' },
+  { type:'itm', label:'Приватні сонячні станції під ключ (маржа)', dep:'приватн', depMode:'margin' },
+  { type:'itm', label:'Комерційні сонячні станції під ключ (маржа)', dep:'комерційн', depMode:'margin' },
+  { type:'itm', label:'Роздріб (маржа)', dep:'^роздріб$|^П\\.? Роздріб$', depMode:'margin' },
+  { type:'itm', label:'Роздріб під ключ (маржа)', dep:'роздріб під ключ', depMode:'margin' },
+  { type:'itm', label:'Проектування СЕС (маржа)', dep:'проектуван|поектуван', depMode:'margin' },
+  { type:'itm', label:'Сервіс (маржа)', dep:'серві[сз]$', depMode:'margin' },
   { type:'sec', variant:'exp', label:'Непрямі (накладні) витрати' },
   { type:'pct', label:'Частка накладних витрат у виторгу, %', key:'_overheadPct' },
   { type:'grp', label:'Реклама і маркетинг', key:'_grpMarketing' },
@@ -383,7 +405,8 @@ const PNL_TEMPLATE = [
   { type:'itm', label:'Судовий збір', match:'судов' },
   { type:'itm', label:'Адвокатські послуги', match:'адвокат' },
   { type:'itm', label:'Комісії за переказ коштів', match:'комісі' },
-  { type:'itm', label:'Витрати на ПЗ', match:'програмн' },
+  { type:'itm', label:'Витрати на програмне забезпечення', match:'програмн(?!.*гір)' },
+  { type:'itm', label:'Витрати на програмне забезпечення (ГІР)', match:'програмн.*гір|гір' },
   { type:'itm', label:"Зв'язок", match:"зв'язок|зв\\'язок|зв.язок" },
   { type:'itm', label:'Інтернет послуги', match:'інтернет' },
   { type:'sp' },
@@ -408,6 +431,7 @@ const PNL_TEMPLATE = [
   { type:'itm', label:'Курсові різниці', match:'курсов' },
   { type:'itm', label:'Нестачі і втрати', match:'нестач' },
   { type:'itm', label:'Відсотки за кредит', match:'відсотки за кредит' },
+  { type:'itm', label:'Витрати на виготовлення проектів', match:'виготов.*проект|проект.*виготов' },
   { type:'itm', label:'Комісія за кредит', match:'комісія за кредит' },
   { type:'itm', label:'Ремонт та модернізація ОЗ', match:'ремонт' },
   { type:'itm', label:'Списання ТМЦ', match:'списан' },
@@ -418,6 +442,11 @@ const PNL_TEMPLATE = [
   { type:'grd', label:'Чистий прибуток / збиток', key:'_netProfit' },
   { type:'pct', label:'Операційна рентабельність, %', key:'_opMargin' },
   { type:'pct', label:'Загальна рентабельність, %', key:'_netMargin' },
+  { type:'sp' },
+  { type:'sub', label:'Всього витрати на просування і маркетинг', key:'_grpMarketing' },
+  { type:'pct', label:'Частка витрат на маркетинг, %', key:'_marketingPct' },
+  { type:'pct', label:'Частка витрат на зарплату, %', key:'_salaryPct' },
+  { type:'itm', label:'Точка беззбитковості', key:'_breakeven' },
 ];
 
 function setPreset(p) {
@@ -556,6 +585,28 @@ function renderPnl(data) {
   computed._opMargin    = pctRow(opProfitByMonth, opProfitTotal, totalRevTotal);
   computed._netMargin   = pctRow(netByMonth, netTotal, totalRevTotal);
 
+  // Additional metrics from the reference template
+  // Marketing share of revenue
+  const mktTotals = computed._grpMarketing || { byMonth: {}, total: 0 };
+  computed._marketingPct = pctRow(mktTotals.byMonth, mktTotals.total, totalRevTotal);
+  // Salary share of revenue
+  const salTotals = computed._grpSalary || { byMonth: {}, total: 0 };
+  computed._salaryPct = pctRow(salTotals.byMonth, salTotals.total, totalRevTotal);
+  // Break-even point = fixed costs / (1 - cogs/revenue)
+  // Fixed costs ≈ overhead + taxes. Contribution margin ratio = gross margin.
+  const gmRatio = totalRevTotal ? grossTotal / totalRevTotal : 0;
+  const fixedCostsTotal = overheadTotal + taxTotal;
+  const breakevenTotal = gmRatio > 0 ? fixedCostsTotal / gmRatio : 0;
+  const breakevenByMonth = {};
+  months.forEach(m => {
+    const rm = totalRevByMonth[m] || 0;
+    const gm = rm - (cogs.byMonth[m] || 0);
+    const gmr = rm ? gm / rm : 0;
+    const fc = (overheadByMonth[m] || 0) + (taxByMonth[m] || 0);
+    breakevenByMonth[m] = gmr > 0 ? fc / gmr : 0;
+  });
+  computed._breakeven = { byMonth: breakevenByMonth, total: breakevenTotal };
+
   function fmtCell(val, isPct) {
     if (isPct) {
       if (!val && val !== 0) return '<span class="dash">—</span>';
@@ -588,7 +639,30 @@ function renderPnl(data) {
     else if (row.match && expMap[row.label]) d = expMap[row.label];
     else if (row.dep) {
       var depD = depFind(row.dep);
-      if (depD) d = (curVariant === 'cost') ? depD.cog : depD.rev;
+      if (depD) {
+        if (row.depMode === 'gp') {
+          // Gross profit per department = revenue - cogs
+          var gpBM = {}, gpT = 0;
+          months.forEach(function(m) {
+            gpBM[m] = (depD.rev.byMonth[m] || 0) - (depD.cog.byMonth[m] || 0);
+          });
+          gpT = depD.rev.total - depD.cog.total;
+          d = { byMonth: gpBM, total: gpT };
+        } else if (row.depMode === 'margin') {
+          // Margin % per department = (revenue - cogs) / revenue
+          var mBM = {};
+          months.forEach(function(m) {
+            var r = depD.rev.byMonth[m] || 0;
+            var c = depD.cog.byMonth[m] || 0;
+            mBM[m] = r ? (r - c) / r : 0;
+          });
+          var mT = depD.rev.total ? (depD.rev.total - depD.cog.total) / depD.rev.total : 0;
+          d = { byMonth: mBM, total: mT, isPct: true };
+          isPct = true;
+        } else {
+          d = (curVariant === 'cost') ? depD.cog : depD.rev;
+        }
+      }
     }
     if (row.type === 'sec' && row.variant === 'rev') d = { byMonth: revenue.byMonth, total: revenue.total };
     if (row.type === 'sec' && row.variant === 'cost') d = { byMonth: cogs.byMonth, total: cogs.total };
