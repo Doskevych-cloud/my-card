@@ -186,6 +186,26 @@ const API_URL = 'https://price-api.doskevich.workers.dev';
 Auth.require('warehouses').then(user => {
   window.__user = user;
   AppHeader.mount({ active: 'warehouses', user });
+  // Org-level access: hide chips for orgs the user doesn't have access to
+  // If no orgs assigned at all → show everything (no restriction)
+  const userOrgs = user.orgs || {};
+  const hasAnyOrg = Object.values(userOrgs).some(v => v);
+  if (hasAnyOrg) {
+    const orgChips = document.querySelectorAll('.chip[data-org]');
+    let firstAllowed = null;
+    orgChips.forEach(chip => {
+      const org = chip.dataset.org;
+      if (!userOrgs[org]) {
+        chip.style.display = 'none';
+      } else if (!firstAllowed) {
+        firstAllowed = org;
+      }
+    });
+    if (firstAllowed) {
+      state.org = firstAllowed;
+      orgChips.forEach(c => c.classList.toggle('active', c.dataset.org === firstAllowed));
+    }
+  }
   load();
 });
 
