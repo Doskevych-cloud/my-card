@@ -76,20 +76,31 @@ a{color:inherit;text-decoration:none}
 .pnl-table tbody tr.sub,
 .pnl-table tbody tr.grd{background:var(--surface2)}
 
-/* Row types — hierarchy via weight + indent, NO colored accents */
-/* cat = super-category (Всього витрати wrapping Непрямі/Податки/Інші неоп.) */
-.pnl-table tr.cat td{font-weight:800;font-size:14px;color:var(--text);border-top:2px solid var(--border);background:var(--surface)}
-.pnl-table tr.cat td:first-child{padding-left:14px;background:var(--surface)}
-.pnl-table tr.sec td{font-weight:700;font-size:13px;color:var(--text);border-top:1px solid var(--border)}
-.pnl-table tr.sec td:first-child{padding-left:14px}
-/* sec that is a child of a cat gets slightly deeper indent */
+/* ═══ Row hierarchy — unified top-spine, lighter nested, mutedest items ═══ */
+/* Top spine: all main rows visible in fully-collapsed view share one style */
+.pnl-table tr.cat td,
+.pnl-table tr.sec:not([data-cat]) td,
+.pnl-table tr.grd:not([data-is-grd-head]) td{
+  font-weight:800;font-size:14px;color:var(--text);
+  border-top:1px solid var(--border);
+  background:transparent
+}
+.pnl-table tr.cat td:first-child,
+.pnl-table tr.sec:not([data-cat]) td:first-child,
+.pnl-table tr.grd:not([data-is-grd-head]) td:first-child{padding-left:14px}
+/* Collapsible GP header in the middle — same weight as top spine */
+.pnl-table tr.grd[data-is-grd-head] td{font-weight:800;font-size:14px;color:var(--text);border-top:1px solid var(--border)}
+.pnl-table tr.grd[data-is-grd-head] td:first-child{padding-left:14px}
+/* Secondary level: sec nested inside a cat (Непрямі/Податки/Інші неоп) */
+.pnl-table tr.sec[data-cat] td{font-weight:700;font-size:13px;color:var(--text);border-top:1px solid var(--border2)}
 .pnl-table tr.sec[data-cat] td:first-child{padding-left:28px}
-.pnl-table tr.grp td{font-weight:600;color:var(--text)}
+/* Tertiary: groups inside a sec (Адміністративні, Персонал, etc.) */
+.pnl-table tr.grp td{font-weight:600;font-size:12.5px;color:var(--text)}
 .pnl-table tr.grp td:first-child{padding-left:44px}
-.pnl-table tr.itm td{color:var(--text2);font-weight:400}
+/* Leaves */
+.pnl-table tr.itm td{color:var(--text2);font-weight:400;font-size:13px}
 .pnl-table tr.itm td:first-child{padding-left:58px}
-.pnl-table tr.itm[data-cat][data-sec][data-grp] td:first-child{padding-left:68px}
-.pnl-table tr.itm[data-cat][data-sec]:not([data-grp]) td:first-child{padding-left:58px}
+.pnl-table tr.itm[data-grp] td:first-child{padding-left:68px}
 .pnl-table tr.sub td{font-weight:700;color:var(--text);border-top:1px solid var(--border)}
 .pnl-table tr.sub td:first-child{padding-left:14px}
 .pnl-table tr.grd td{font-weight:800;font-size:14px;border-top:2px solid var(--border2);color:var(--text)}
@@ -127,8 +138,11 @@ a{color:inherit;text-decoration:none}
 .pnl-table .zr,
 .pnl-table .dash{color:var(--text3)}
 
-/* Toolbar collapse icons */
-.pnl-collapse-ctl .chip .ic{display:inline-block;font-size:12px;line-height:1;margin-right:5px;opacity:.65;vertical-align:-1px}
+/* Toolbar collapse buttons — bordered, stand out from other chips */
+.pnl-collapse-ctl{background:transparent;border:none;padding:0;gap:8px}
+.pnl-collapse-ctl .chip{background:var(--surface);border:1px solid var(--border);padding:7px 14px;border-radius:8px;font-weight:600}
+.pnl-collapse-ctl .chip:hover{background:var(--surface2);border-color:var(--text3)}
+.pnl-collapse-ctl .chip .ic{display:inline-block;font-size:14px;line-height:1;margin-right:6px;opacity:.75;vertical-align:-1px}
 .pnl-collapse-ctl .chip:hover .ic{opacity:1}
 
 /* Value colors */
