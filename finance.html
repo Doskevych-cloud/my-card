@@ -720,10 +720,13 @@ function renderPnl(data) {
     // DON'T reset — nest this pct (Маржинальність) as a child of the grd parent
     // so collapsing the grd hides the pct and its per-dept items too.
     if (row.type === 'pct' && row.variant && !curGrdHead) { curPctHead = row.variant; curVariant = row.variant; curGrp = ''; }
-    // Non-variant grd / pct (Op profit, Net profit, margin rows) are GLOBAL —
-    // they live outside any cat/sec/grp and must not be hidden when those collapse.
+    // Non-variant grd (Op profit, Net profit) are GLOBAL — they live outside
+    // any cat/sec/grp and must not be hidden when those collapse.
+    // NOTE: pct-without-variant is NOT reset here because pct rows like
+    // _overheadPct appear inside sec exp as a decorative metric and MUST keep
+    // inherited data-cat. Bottom margin rows (Op/Net margin) come after grd
+    // rows that already cleared curCat, so they stay correctly global.
     if (row.type === 'grd' && !row.variant) { curCat = ''; curVariant = ''; curGrp = ''; curGrdHead = ''; curPctHead = ''; }
-    if (row.type === 'pct' && !row.variant) { curCat = ''; curVariant = ''; curGrp = ''; curGrdHead = ''; curPctHead = ''; }
     if (row.type === 'sp') { rows += '<tr class="sp"><td colspan="' + cs + '"></td></tr>'; return; }
     // ── Hide empty rows to keep the table compact and aligned ──
     if (row.type === 'itm' && !hasValue(row)) return;
