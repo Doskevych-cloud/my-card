@@ -683,6 +683,9 @@ function renderPnl(data) {
     }
     if (row.type === 'sec' && row.variant === 'rev') d = { byMonth: revenue.byMonth, total: revenue.total };
     if (row.type === 'sec' && row.variant === 'cost') d = { byMonth: cogs.byMonth, total: cogs.total };
+    if (row.type === 'sec' && row.variant === 'exp') d = { byMonth: overheadByMonth, total: overheadTotal };
+    if (row.type === 'sec' && row.variant === 'tax') d = { byMonth: taxByMonth, total: taxTotal };
+    if (row.type === 'sec' && row.variant === 'other') d = { byMonth: otherExpByMonth, total: otherExpTotal };
     const mCells = showM ? months.map(m => '<td>' + (d ? fmtCell(d.byMonth[m] || 0, isPct) : '<span class="dash">—</span>') + '</td>').join('') : '';
     const totalCell = d ? fmtCell(d.total, isPct) : '<span class="dash">—</span>';
     const cls = row.type + (row.variant ? ' ' + row.variant : '');
