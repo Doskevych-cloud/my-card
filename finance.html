@@ -61,13 +61,24 @@ a{color:inherit;text-decoration:none}
 .toolbar input[type=text]::placeholder{color:var(--text3)}
 
 /* P&L table */
+/* Collapse control — icon sits nicely inside chip */
+.pnl-collapse-ctl .chip .ic{display:inline-block;font-size:13px;line-height:1;margin-right:4px;opacity:.7;vertical-align:-1px}
+.pnl-collapse-ctl .chip:hover .ic{opacity:1}
+/* ── P&L collapsible rows ── */
 .pnl-table tr.sec td:first-child,
-.pnl-table tr.grp td:first-child{cursor:pointer;user-select:none}
+.pnl-table tr.grp td:first-child{cursor:pointer;user-select:none;transition:background .1s}
+.pnl-table tr.sec td:first-child:hover .tri,
+.pnl-table tr.grp td:first-child:hover .tri{opacity:1}
 .pnl-table tr.sec td:first-child:hover,
-.pnl-table tr.grp td:first-child:hover{text-decoration:underline;text-decoration-color:var(--text3);text-underline-offset:3px}
-.pnl-table .tri{display:inline-block;margin-left:8px;font-size:9px;opacity:.55;transition:transform .15s ease-out;vertical-align:middle}
-.pnl-table tr[data-collapsed="true"] .tri{transform:rotate(180deg)}
+.pnl-table tr.grp td:first-child:hover{filter:brightness(1.08)}
+/* Disclosure triangle — ▾ by default (expanded = children below), rotates to ▸ when collapsed */
+.pnl-table .tri{display:inline-block;width:14px;margin-right:6px;font-size:10px;opacity:.45;transition:transform .18s ease-out,opacity .15s;text-align:center;vertical-align:baseline;line-height:1}
+.pnl-table tr[data-collapsed="true"] .tri{transform:rotate(-90deg);opacity:.7}
 .pnl-table tr.collapsed-hidden{display:none}
+/* Indent items nested under a grp to show hierarchy (sec → grp → itm) */
+.pnl-table tr.itm[data-grp] td:first-child{padding-left:48px}
+/* Fade collapsed section headers slightly so it's visually clear */
+.pnl-table tr.sec[data-collapsed="true"]{opacity:.85}
 .pnl-wrap{overflow-x:auto;margin-bottom:20px;border:1px solid var(--border);border-radius:12px}
 .pnl-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:600px}
 .pnl-table th,.pnl-table td{padding:7px 14px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
@@ -216,9 +227,13 @@ a{color:inherit;text-decoration:none}
           <span class="chip" data-org="Генерація" onclick="setOrg(this)">Генерація</span>
         </span>
         <div class="sep"></div>
-        <span class="group">
-          <span class="chip" onclick="pnlToggleAll(false)" title="Розгорнути всі групи">⊞ Розгорнути</span>
-          <span class="chip" onclick="pnlToggleAll(true)" title="Згорнути всі групи">⊟ Згорнути</span>
+        <span class="group pnl-collapse-ctl" title="Керування згортанням груп">
+          <span class="chip" onclick="pnlToggleAll(false)">
+            <span class="ic">⊞</span> Розгорнути
+          </span>
+          <span class="chip" onclick="pnlToggleAll(true)">
+            <span class="ic">⊟</span> Згорнути
+          </span>
         </span>
       </div>
       <div id="pnlSummary"></div>
@@ -651,6 +666,9 @@ function renderPnl(data) {
     if (row.type === 'grp') { curGrp = row.key || ''; }
     if (row.type === 'sub') { curGrp = ''; }
     if (row.type === 'sp') { rows += '<tr class="sp"><td colspan="' + cs + '"></td></tr>'; return; }
+    // sub is the TERMINAL row of its section — keep attribution for this sub row,
+    // but clear curVariant AFTERWARDS so post-sub rows (profit / margins / etc.)
+    // don't inherit the section and get hidden on collapse.
     let d = null, isPct = false;
     if (row.key && computed[row.key]) { d = computed[row.key]; isPct = !!d.isPct; }
     else if (row.refKeys && expMap[row.label]) d = expMap[row.label];
@@ -699,10 +717,15 @@ function renderPnl(data) {
       if (curVariant) dataAttrs += ' data-sec="' + curVariant + '"';
       if (curGrp)     dataAttrs += ' data-grp="' + curGrp + '"';
     }
-    // Append triangle marker to collapsible header rows
+    // Prepend disclosure triangle to collapsible header rows (▾ = expanded, rotates to ▸ when collapsed)
     let labelCell = esc(row.label);
-    if (row.type === 'sec' || row.type === 'grp') labelCell += '<span class="tri">▲</span>';
+    if (row.type === 'sec' || row.type === 'grp') {
+      labelCell = '<span class="tri" aria-hidden="true">▾</span>' + labelCell;
+    }
     rows += '<tr class="' + cls + '"' + dataAttrs + '><td>' + labelCell + '</td>' + mCells + '<td class="col-total">' + totalCell + '</td></tr>';
+    // Close the section for rows following a sub (so global profit/margin rows
+    // aren't hidden when the section is collapsed)
+    if (row.type === 'sub') curVariant = '';
   });
   document.getElementById('pnlBody').innerHTML =
     '<div class="pnl-wrap"><table class="pnl-table"><thead><tr><th>P&L Стаття</th>' +
