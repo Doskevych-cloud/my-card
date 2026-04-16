@@ -61,51 +61,70 @@ a{color:inherit;text-decoration:none}
 .toolbar input[type=text]::placeholder{color:var(--text3)}
 
 /* P&L table */
-/* Collapse control — icon sits nicely inside chip */
-.pnl-collapse-ctl .chip .ic{display:inline-block;font-size:13px;line-height:1;margin-right:4px;opacity:.7;vertical-align:-1px}
-.pnl-collapse-ctl .chip:hover .ic{opacity:1}
-/* ── P&L collapsible rows ── */
-.pnl-table tr.sec td:first-child,
-.pnl-table tr.grp td:first-child{cursor:pointer;user-select:none;transition:background .1s}
-.pnl-table tr.sec td:first-child:hover .tri,
-.pnl-table tr.grp td:first-child:hover .tri{opacity:1}
-.pnl-table tr.sec td:first-child:hover,
-.pnl-table tr.grp td:first-child:hover{filter:brightness(1.08)}
-/* Disclosure triangle — ▾ by default (expanded = children below), rotates to ▸ when collapsed */
-.pnl-table .tri{display:inline-block;width:14px;margin-right:6px;font-size:10px;opacity:.45;transition:transform .18s ease-out,opacity .15s;text-align:center;vertical-align:baseline;line-height:1}
-.pnl-table tr[data-collapsed="true"] .tri{transform:rotate(-90deg);opacity:.7}
-.pnl-table tr.collapsed-hidden{display:none}
-/* Indent items nested under a grp to show hierarchy (sec → grp → itm) */
-.pnl-table tr.itm[data-grp] td:first-child{padding-left:48px}
-/* Fade collapsed section headers slightly so it's visually clear */
-.pnl-table tr.sec[data-collapsed="true"]{opacity:.85}
-.pnl-wrap{overflow-x:auto;margin-bottom:20px;border:1px solid var(--border);border-radius:12px}
-.pnl-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:600px}
-.pnl-table th,.pnl-table td{padding:7px 14px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
-.pnl-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;background:var(--surface2);position:sticky;top:0;z-index:2}
-.pnl-table th:first-child,.pnl-table td:first-child{text-align:left;position:sticky;left:0;z-index:1;min-width:300px}
+/* ═══ P&L table — clean hierarchy, minimal color ═══
+ * Visual principles:
+ *  - Typography carries hierarchy (sec: 15px/800, grp: 13px/700, itm: 13px/400)
+ *  - Color used sparingly: thin 3px left marker on sec (rev=green, cost=orange,
+ *    exp=red, tax=yellow, other=blue). No full background fills.
+ *  - Tabular numerals for alignment; monochrome chevron before collapsible headers.
+ *  - Indentation chain sec → grp → itm (14 → 32 → 56 px).
+ *  - Hover = subtle surface tint, not filter-brightness (less jarring).
+ */
+.pnl-wrap{overflow:auto;margin-bottom:20px;border:1px solid var(--border);border-radius:12px;background:var(--bg)}
+.pnl-table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;min-width:600px}
+.pnl-table th,
+.pnl-table td{padding:8px 14px;text-align:right;white-space:nowrap}
+.pnl-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;background:var(--surface2);position:sticky;top:0;z-index:2;padding-top:11px;padding-bottom:11px;border-bottom:1px solid var(--border)}
+.pnl-table th:first-child,
+.pnl-table td:first-child{text-align:left;position:sticky;left:0;z-index:1;min-width:340px;background:var(--bg)}
 .pnl-table th:first-child{z-index:3;background:var(--surface2)}
-.pnl-table td:first-child{background:var(--bg)}
-.pnl-table td.col-total,.pnl-table th.col-total{font-weight:700;background:var(--surface);border-left:2px solid var(--border)}
+.pnl-table td.col-total,
+.pnl-table th.col-total{font-weight:600;background:var(--surface);border-left:1px solid var(--border)}
 .pnl-table th.col-total{background:var(--surface2)}
 
-/* ── Row types ── */
-.pnl-table .sec td{font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:10px 14px 6px;border-bottom:2px solid var(--border)}
-.pnl-table .sec td:first-child{padding-left:14px}
-.pnl-table .sec.rev td{color:var(--green);background:var(--green-bg) !important}
-.pnl-table .sec.cost td{color:var(--accent);background:var(--accent-bg) !important}
-.pnl-table .sec.exp td{color:var(--red);background:var(--red-bg) !important}
-.pnl-table .sec.tax td{color:var(--yellow);background:var(--yellow-bg) !important}
-.pnl-table .sec.other td{color:var(--blue);background:var(--blue-bg) !important}
-.pnl-table .grp td{font-weight:700;color:var(--text);padding-top:8px}
-.pnl-table .grp td:first-child{padding-left:20px}
-.pnl-table .itm td{color:var(--text2);font-weight:400}
-.pnl-table .itm td:first-child{padding-left:36px}
-.pnl-table .sub td{font-weight:700;border-top:1px solid var(--border2);border-bottom:2px solid var(--border)}
-.pnl-table .grd td{font-weight:800;font-size:14px;border-top:3px double var(--border2);padding:10px 14px}
-.pnl-table .grd td:first-child{background:var(--bg) !important}
-.pnl-table .pct td{color:var(--text3);font-size:11px;font-style:italic;border-bottom:none}
-.pnl-table .sp td{border-bottom:none;padding:4px 0}
+/* Row types ---------------------------------------------------------- */
+/* Section header — bold, larger, thin colored accent bar on left */
+.pnl-table tr.sec td{font-weight:800;font-size:14.5px;color:var(--text);padding-top:14px;padding-bottom:10px;border-top:1px solid var(--border2)}
+.pnl-table tr.sec td:first-child{padding-left:14px;box-shadow:inset 3px 0 0 var(--text3)}
+.pnl-table tr.sec.rev  td:first-child{box-shadow:inset 3px 0 0 var(--green)}
+.pnl-table tr.sec.cost td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+.pnl-table tr.sec.exp  td:first-child{box-shadow:inset 3px 0 0 var(--red)}
+.pnl-table tr.sec.tax  td:first-child{box-shadow:inset 3px 0 0 var(--yellow)}
+.pnl-table tr.sec.other td:first-child{box-shadow:inset 3px 0 0 var(--blue)}
+/* Group header — medium weight, indented */
+.pnl-table tr.grp td{font-weight:700;font-size:12.5px;color:var(--text);padding-top:9px;padding-bottom:7px}
+.pnl-table tr.grp td:first-child{padding-left:32px}
+/* Item (leaf) — regular weight, muted, deeper indent */
+.pnl-table tr.itm td{color:var(--text2);font-weight:400;font-size:13px;padding-top:6px;padding-bottom:6px}
+.pnl-table tr.itm td:first-child{padding-left:56px}
+/* Subtotal — bold with thin rule above */
+.pnl-table tr.sub td{font-weight:700;color:var(--text);padding-top:10px;padding-bottom:10px;border-top:1px solid var(--border2);background:var(--surface2)}
+.pnl-table tr.sub td:first-child{padding-left:14px;background:var(--surface2)}
+/* Grand total — bolder, double top rule */
+.pnl-table tr.grd td{font-weight:800;font-size:14px;padding-top:13px;padding-bottom:13px;border-top:2px solid var(--border);background:var(--surface)}
+.pnl-table tr.grd td:first-child{background:var(--surface);padding-left:14px}
+/* Percent row — small italic, no borders */
+.pnl-table tr.pct td{color:var(--text3);font-size:11px;font-style:italic;padding-top:3px;padding-bottom:3px;border:none}
+.pnl-table tr.pct td:first-child{padding-left:14px}
+/* Spacer row */
+.pnl-table tr.sp td{border:none;padding:4px 0;background:var(--bg)}
+
+/* Collapse disclosure ---------------------------------------------- */
+.pnl-table tr.sec td:first-child,
+.pnl-table tr.grp td:first-child{cursor:pointer;user-select:none;transition:background .12s}
+.pnl-table tr.sec td:first-child:hover,
+.pnl-table tr.grp td:first-child:hover{background:var(--surface)}
+.pnl-table .tri{display:inline-block;width:10px;margin-right:8px;font-size:10px;color:var(--text3);transition:transform .18s ease-out;text-align:center;line-height:1;vertical-align:1px}
+.pnl-table tr.sec td:first-child:hover .tri,
+.pnl-table tr.grp td:first-child:hover .tri{color:var(--text)}
+.pnl-table tr[data-collapsed="true"] .tri{transform:rotate(-90deg)}
+.pnl-table tr.collapsed-hidden{display:none}
+/* When a section is collapsed, its aggregate on the sec row becomes the focus */
+.pnl-table tr.sec[data-collapsed="true"] td{padding-bottom:14px}
+
+/* Toolbar — collapse control icons */
+.pnl-collapse-ctl .chip .ic{display:inline-block;font-size:12px;line-height:1;margin-right:5px;opacity:.65;vertical-align:-1px}
+.pnl-collapse-ctl .chip:hover .ic{opacity:1}
 
 /* Value colors */
 .pos{color:var(--green)}
