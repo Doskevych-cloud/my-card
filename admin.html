@@ -119,12 +119,14 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
             <th style="text-align:center">Продажі</th>
             <th style="text-align:center">Фінанси</th>
             <th style="text-align:center">Адмін</th>
+            <th style="text-align:center">Реакт</th>
+            <th style="text-align:center">Генерація</th>
             <th style="text-align:center">Останній вхід</th>
             <th style="width: 90px"></th>
           </tr>
         </thead>
         <tbody id="tbody">
-          <tr><td colspan="9" class="loading">Завантаження…</td></tr>
+          <tr><td colspan="11" class="loading">Завантаження…</td></tr>
         </tbody>
       </table>
     </div>
@@ -157,7 +159,7 @@ async function loadUsers() {
     users = r.users || [];
     renderTable();
   } catch (e) {
-    document.getElementById('tbody').innerHTML = `<tr><td colspan="9" class="loading">❌ ${e.message}</td></tr>`;
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="11" class="loading">❌ ${e.message}</td></tr>`;
   }
 }
 
@@ -188,6 +190,9 @@ function userRow(u) {
       ${['home','forecast','warehouses','sales','finance','admin'].map(r => `
         <td class="role-box"><input type="checkbox" ${u.roles && u.roles[r] ? 'checked' : ''} onchange="toggleRole('${u.email}','${r}',this.checked)"></td>
       `).join('')}
+      ${['Реакт','Генерація'].map(o => `
+        <td class="role-box"><input type="checkbox" ${u.orgs && u.orgs[o] ? 'checked' : ''} onchange="toggleOrg('${u.email}','${o}',this.checked)"></td>
+      `).join('')}
       <td style="text-align:center;color:var(--text2);font-size:12px">${fmtDate(u.lastLogin)}</td>
       <td style="text-align:right">
         <button class="btn danger" ${disableDelete ? 'disabled title="Ви не можете видалити власний акаунт"' : ''} onclick="deleteUser('${u.email}')">✕</button>
@@ -214,6 +219,8 @@ function renderTable() {
         <td class="role-box"><input type="checkbox" id="inv_sales"></td>
         <td class="role-box"><input type="checkbox" id="inv_finance"></td>
         <td class="role-box"><input type="checkbox" id="inv_admin"></td>
+        <td class="role-box"><input type="checkbox" id="inv_org_react" checked></td>
+        <td class="role-box"><input type="checkbox" id="inv_org_gen"></td>
         <td></td>
         <td style="text-align:right">
           <button class="btn" onclick="saveInvite()">✓</button>
@@ -223,7 +230,7 @@ function renderTable() {
     `;
   }
   if (!filtered.length) {
-    html += `<tr><td colspan="9" class="empty">Нічого не знайдено</td></tr>`;
+    html += `<tr><td colspan="11" class="empty">Нічого не знайдено</td></tr>`;
   } else {
     html += filtered.map(userRow).join('');
   }
@@ -250,8 +257,12 @@ async function saveInvite() {
     finance: document.getElementById('inv_finance').checked,
     admin: document.getElementById('inv_admin').checked,
   };
+  const orgs = {
+    'Реакт': document.getElementById('inv_org_react').checked,
+    'Генерація': document.getElementById('inv_org_gen').checked,
+  };
   try {
-    const r = await Auth.apiFetch('admin_user_update', { method: 'POST', body: { email, roles } });
+    const r = await Auth.apiFetch('admin_user_update', { method: 'POST', body: { email, roles, orgs } });
     const idx = users.findIndex(u => u.email === email);
     if (idx >= 0) users[idx] = r.user; else users.push(r.user);
     users.sort((a, b) => (a.email || '').localeCompare(b.email || ''));
@@ -270,6 +281,22 @@ async function toggleRole(email, role, checked) {
     const idx = users.findIndex(x => x.email === email);
     users[idx] = r.user;
     // Renders only this user to preserve scroll
+    const tr = document.querySelector(`tr[data-email="${CSS.escape(email)}"]`);
+    if (tr) tr.outerHTML = userRow(r.user);
+  } catch (e) {
+    toast(e.message, 'err');
+    renderTable();
+  }
+}
+
+async function toggleOrg(email, org, checked) {
+  const u = users.find(x => x.email === email);
+  if (!u) return;
+  const newOrgs = Object.assign({}, u.orgs, { [org]: checked });
+  try {
+    const r = await Auth.apiFetch('admin_user_update', { method: 'POST', body: { email, orgs: newOrgs } });
+    const idx = users.findIndex(x => x.email === email);
+    users[idx] = r.user;
     const tr = document.querySelector(`tr[data-email="${CSS.escape(email)}"]`);
     if (tr) tr.outerHTML = userRow(r.user);
   } catch (e) {

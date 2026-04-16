@@ -493,7 +493,27 @@ document.getElementById('toIn').addEventListener('change', function(e) { state.t
 Auth.require('finance').then(function(user) {
   window.__user = user;
   AppHeader.mount({ active: 'finance', user });
-  document.querySelector('[data-org=""]').classList.add('active');
+  // Org-level access: hide chips for orgs the user doesn't have access to
+  const userOrgs = user.orgs || {};
+  const allowedOrgs = ['Реакт', 'Генерація'].filter(o => userOrgs[o]);
+  document.querySelectorAll('.group .chip[data-org]').forEach(function(chip) {
+    const org = chip.dataset.org;
+    if (org === '') {
+      // "Всі" button — only show if user has access to multiple orgs
+      if (allowedOrgs.length < 2) chip.style.display = 'none';
+    } else {
+      if (!userOrgs[org]) chip.style.display = 'none';
+    }
+  });
+  // Auto-select: if 2+ orgs → "Всі", if 1 → that org, if 0 → "Всі" (will show nothing)
+  if (allowedOrgs.length === 1) {
+    state.org = allowedOrgs[0];
+    document.querySelectorAll('.group .chip[data-org]').forEach(function(c) {
+      c.classList.toggle('active', c.dataset.org === allowedOrgs[0]);
+    });
+  } else {
+    document.querySelector('[data-org=""]').classList.add('active');
+  }
   setPreset('year');
 });
 </script>
