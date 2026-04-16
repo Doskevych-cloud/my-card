@@ -221,6 +221,7 @@
           <a href="/forecast.html"   class="${active==='forecast'   ? 'active' : ''}">📊 Закупівлі</a>
           <a href="/warehouses.html" class="${active==='warehouses' ? 'active' : ''}">📦 Склад</a>
           <a href="/sales.html"      class="${active==='sales'      ? 'active' : ''}">📈 Продажі</a>
+          <a href="/osp.html"        class="${active==='osp'        ? 'active' : ''}">📋 Замовлення</a>
         </nav>
         <div class="spacer"></div>
         <button class="theme-btn" onclick="AppHeader.toggleTheme()" title="Переключити тему">

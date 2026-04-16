@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Продажі менеджерів</title>
+<title>Оплата та відвантаження</title>
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
@@ -19,7 +19,6 @@
   --red:#e74c3c; --red-bg:rgba(231,76,60,.12);
   --green:#22c55e; --green-bg:rgba(34,197,94,.12);
   --blue:#3b82f6; --blue-bg:rgba(59,130,246,.12);
-  --purple:#9775fa; --purple-bg:rgba(151,117,250,.14); --purple-text:#b399ff;
   --shadow-md:0 4px 20px rgba(0,0,0,.4);
 }
 :root[data-theme="light"]{
@@ -31,7 +30,6 @@
   --red:#d93025; --red-bg:rgba(217,48,37,.10);
   --green:#15803d; --green-bg:rgba(21,128,61,.10);
   --blue:#1d4ed8; --blue-bg:rgba(29,78,216,.10);
-  --purple:#6d28d9; --purple-bg:rgba(109,40,217,.12); --purple-text:#6d28d9;
   --shadow-md:0 4px 20px rgba(0,0,0,.08);
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -41,7 +39,6 @@ a{color:inherit;text-decoration:none}
 .wrap{max-width:1400px;margin:0 auto;padding:20px}
 .page-head{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
 .page-head h1{font-size:20px;font-weight:700;letter-spacing:-.4px}
-.page-head .sub{font-size:12px;color:var(--text3)}
 
 .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
 .toolbar input[type=text]{flex:1;min-width:200px;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;transition:border .15s}
@@ -60,25 +57,27 @@ a{color:inherit;text-decoration:none}
 .toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
 .toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
 
-/* Summary grid — uniform cubes. Grand "Оплачено" in green, managers neutral.
-   Each card: top stats (Оплачено / Потенціал) + bottom stats (Бонус / Пот. бонусу). */
-.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-bottom:14px}
-.summary-card{padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:background .15s,border-color .15s;display:flex;flex-direction:column;gap:6px;user-select:none;min-height:140px}
-.summary-card:hover{background:var(--bg3);border-color:var(--border2)}
-.summary-card.active{background:var(--accent-bg);border-color:var(--accent)}
-.summary-card.grand{background:linear-gradient(135deg,rgba(34,197,94,.10),rgba(34,197,94,.02));border-color:rgba(34,197,94,.30);cursor:default}
-.summary-card.grand:hover{background:linear-gradient(135deg,rgba(34,197,94,.10),rgba(34,197,94,.02));border-color:rgba(34,197,94,.30)}
-.summary-card .name{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.summary-card .stats{display:grid;grid-template-columns:1fr 1fr;gap:2px 14px;margin-top:2px}
-.summary-card .stat-lbl{font-size:9.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;font-weight:600}
-.summary-card .stat-val{font-size:17px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.2px;line-height:1.15}
-.summary-card.grand .stat-val.main{color:var(--green)}
-.summary-card .stat-val.pot{color:var(--text2)}
-.summary-card .bonus-row{display:grid;grid-template-columns:1fr 1fr;gap:2px 14px;margin-top:auto;padding-top:8px;border-top:1px dashed var(--border)}
-.summary-card .bonus-lbl{font-size:9.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;font-weight:600}
-.summary-card .bonus-val{font-size:12.5px;font-weight:700;color:var(--text2);font-variant-numeric:tabular-nums}
-.summary-card.grand .bonus-val.main{color:var(--green)}
-.mgr-section-head{font-weight:700;font-size:13px;margin:14px 0 8px;padding:0 2px;color:var(--text);letter-spacing:-.2px}
+/* OSP summary: two wide cards with progress bars */
+.osp-summary{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.osp-card{padding:16px 20px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;gap:4px}
+.osp-card.pay{border-left:3px solid var(--green)}
+.osp-card.ship{border-left:3px solid var(--blue)}
+.osp-card .osp-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px}
+.osp-card .osp-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+.osp-card .osp-pct{font-size:24px;font-weight:800;letter-spacing:-.5px;line-height:1}
+.osp-card.pay .osp-pct{color:var(--green)}
+.osp-card.ship .osp-pct{color:var(--blue)}
+.osp-card .osp-bar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin:6px 0 10px}
+.osp-card .osp-bar-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.osp-card.pay .osp-bar-fill{background:linear-gradient(90deg,var(--green),rgba(34,197,94,.5))}
+.osp-card.ship .osp-bar-fill{background:linear-gradient(90deg,var(--blue),rgba(59,130,246,.5))}
+.osp-card .osp-rows{display:flex;flex-direction:column;gap:7px}
+.osp-card .osp-row{display:flex;justify-content:space-between;align-items:baseline}
+.osp-card .osp-lbl{font-size:11.5px;color:var(--text3);font-weight:500}
+.osp-card .osp-val{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);letter-spacing:-.2px}
+.osp-card .osp-val.accent-g{color:var(--green)}
+.osp-card .osp-val.accent-b{color:var(--blue)}
+.osp-card .osp-val.muted{color:var(--text3);font-weight:600}
 
 /* Tree table */
 .tree-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
@@ -86,31 +85,27 @@ a{color:inherit;text-decoration:none}
 .tree-tbl thead th{padding:11px 12px;background:var(--bg2);color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1}
 .tree-tbl thead th:not(:first-child){text-align:right}
 .tree-tbl thead th:nth-child(1){width:auto}
-.tree-tbl thead th:nth-child(n+2){width:140px}
+.tree-tbl thead th:nth-child(n+2){width:112px}
 .tree-tbl tbody tr{transition:background .1s}
 .tree-tbl tbody td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top}
 .tree-tbl tbody td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
 .tree-tbl tbody td:first-child{overflow:hidden;text-overflow:ellipsis}
 
-.cur-section{margin-top:18px}
-.cur-section:first-child{margin-top:0}
-
-.tree-tbl tr.cur-row{cursor:pointer;color:var(--text)}
-.tree-tbl tr.cur-row td{background:var(--blue-bg);font-weight:600}
-.tree-tbl tr.cur-row:hover td{filter:brightness(1.1)}
-.tree-tbl tr.cur-row td:first-child{padding-left:38px}
-.cur-badge-inline{font-size:11px;font-weight:700;letter-spacing:.3px;padding:2px 8px;border-radius:5px;background:var(--bg2);color:var(--blue);border:1px solid var(--blue);margin-right:6px}
-
 .tree-tbl tr.client-row{cursor:pointer;color:var(--text)}
 .tree-tbl tr.client-row td{background:rgba(255,255,255,.02);font-weight:600}
 :root[data-theme="light"] .tree-tbl tr.client-row td{background:rgba(0,0,0,.015)}
 .tree-tbl tr.client-row:hover td{background:var(--bg3)}
-.tree-tbl tr.client-row td:first-child{padding-left:66px}
+.tree-tbl tr.client-row td:first-child{padding-left:38px}
 
 .tree-tbl tr.order-row{cursor:pointer;color:var(--text2)}
 .tree-tbl tr.order-row:hover td{background:var(--bg3)}
-.tree-tbl tr.order-row td:first-child{padding-left:92px;font-size:11.5px}
+.tree-tbl tr.order-row td:first-child{padding-left:66px;font-size:11.5px}
 .tree-tbl tr.order-row .meta{color:var(--text3);font-size:10.5px;margin-left:8px}
+
+.tree-tbl tr.item-row{color:var(--text2)}
+.tree-tbl tr.item-row:hover td{background:var(--bg3)}
+.tree-tbl tr.item-row td:first-child{padding-left:94px;font-size:11px;color:var(--text2)}
+.tree-tbl tr.item-row td{font-size:11px}
 
 .chev{display:inline-block;width:14px;color:var(--text3);transition:transform .15s;font-size:10px;transform:translateY(-1px)}
 .chev.open{transform:rotate(90deg) translateY(-1px)}
@@ -128,12 +123,12 @@ a{color:inherit;text-decoration:none}
 
 @media (max-width:720px){
   .toolbar{padding:10px;gap:8px}
-  .tree-tbl thead th,.tree-tbl tbody td{padding:8px 6px;font-size:11px}
-  .tree-tbl thead th:nth-child(n+2){width:90px}
-  .summary-grid{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
-  .summary-card{min-height:120px;padding:10px 12px}
-  .summary-card .stat-val{font-size:15px}
-  .summary-card .bonus-val{font-size:11.5px}
+  .tree-tbl thead th,.tree-tbl tbody td{padding:6px 4px;font-size:10.5px}
+  .tree-tbl thead th:nth-child(n+2){width:72px}
+  .osp-summary{grid-template-columns:1fr}
+  .osp-card{padding:14px 16px}
+  .osp-card .osp-pct{font-size:20px}
+  .osp-card .osp-val{font-size:14px}
 }
 </style>
 </head>
@@ -143,7 +138,7 @@ a{color:inherit;text-decoration:none}
 <div id="app">
   <div class="wrap">
     <div class="page-head">
-      <h1>📈 Продажі менеджерів</h1>
+      <h1>📋 Оплата та відвантаження замовлень</h1>
     </div>
     <div class="toolbar">
       <span class="lbl">Період</span>
@@ -167,7 +162,7 @@ a{color:inherit;text-decoration:none}
       <button class="btn" onclick="expandAll()">⊞ Розгорнути</button>
       <button class="btn" onclick="collapseAll()">⊟ Згорнути</button>
 
-      <input type="text" id="searchIn" placeholder="🔎 Пошук клієнта, менеджера, № замовлення…">
+      <input type="text" id="searchIn" placeholder="🔎 Пошук клієнта, № замовлення, товару…">
     </div>
 
     <div id="curSummary"></div>
@@ -180,8 +175,8 @@ const API_URL = 'https://price-api.doskevich.workers.dev';
 
 Auth.require('sales').then(user => {
   window.__user = user;
-  AppHeader.mount({ active: 'sales', user });
-  setPreset('month');
+  AppHeader.mount({ active: 'osp', user });
+  setPreset('year');
 });
 
 // ─── State ───
@@ -239,13 +234,13 @@ async function load() {
   document.getElementById('curSummary').innerHTML = '';
   document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
   try {
-    const q = `?action=sales_report&from=${state.from}&to=${state.to}&org=${encodeURIComponent(state.org)}`;
-    const [salesRes, fxRes] = await Promise.all([
+    const q = `?action=orders_shipment_payment&from=${state.from}&to=${state.to}&org=${encodeURIComponent(state.org)}`;
+    const [mainRes, fxRes] = await Promise.all([
       fetch(API_URL + q).then(r => r.json()),
       fetch(API_URL + '?action=fx_rates').then(r => r.json()).catch(() => null),
     ]);
-    if (salesRes.error) throw new Error(salesRes.error);
-    state.data = salesRes;
+    if (mainRes.error) throw new Error(mainRes.error);
+    state.data = mainRes;
     state.fx = (fxRes && fxRes.rates && fxRes.rates.USD_UAH) ? fxRes : null;
     state.loading = false;
     render();
@@ -305,197 +300,164 @@ function collapseAll() {
 function collectKeys() {
   const keys = [];
   const orgData = (state.data && state.data.byOrg && state.data.byOrg[state.org]) || {};
-  const managers = orgData.managers || [];
-  managers.forEach(m => {
-    const mk = `m:${m.name}`;
-    keys.push(mk);
-    m.currencies.forEach(C => {
-      const ck = `${mk}|cur:${C.currency}`;
-      keys.push(ck);
-      C.clients.forEach(c => keys.push(`${ck}|c:${c.name}`));
-    });
+  const clients = orgData.clients || [];
+  clients.forEach(c => {
+    const ck = `c:${esc(c.name)}`;
+    keys.push(ck);
+    c.orders.forEach(o => keys.push(`${ck}|o:${o.ref}`));
   });
   return keys;
 }
 
-function managerTotalsUsd(m) {
-  if (!state.fx) return { paid: 0, remain: 0, ok: false };
-  let paid = 0, remain = 0;
-  for (const C of m.currencies) {
-    const p = toUsd(C.paid, C.currency);
-    const r = toUsd(C.remain, C.currency);
-    if (p == null || r == null) return { paid: 0, remain: 0, ok: false };
-    paid += p;
-    remain += r;
-  }
-  return { paid, remain, ok: true };
-}
-
-function clientMatches(c) {
-  if (!state.search) return true;
-  const q = state.search;
+function _matchClient(c, q) {
+  if (!q) return true;
   if (c.name.toLowerCase().includes(q)) return true;
-  if (c.orders.some(o => (o.number || '').toLowerCase().includes(q))) return true;
-  return false;
+  return c.orders.some(o =>
+    (o.number || '').toLowerCase().includes(q) ||
+    o.items.some(it => (it.name || '').toLowerCase().includes(q))
+  );
 }
 
 // ─── Render ───
 function render() {
-  if (!state.data) return;
-  const orgData = (state.data.byOrg || {})[state.org];
-  const managers = (orgData && orgData.managers) || [];
+  const orgData = (state.data && state.data.byOrg && state.data.byOrg[state.org]) || null;
+  const clients = (orgData && orgData.clients) || [];
+  const visible = clients.filter(c => _matchClient(c, state.search));
 
-  renderSummaryGrid(managers);
+  // Summary cards
+  let gAmount = 0, gPaid = 0, gRem = 0, gOrdered = 0, gShipped = 0, gRemShip = 0;
+  let okCur = !!state.fx;
+  visible.forEach(c => {
+    c.orders.forEach(o => {
+      const a = toUsd(o.amount, o.currency);
+      const p = toUsd(o.paid, o.currency);
+      if (a == null || p == null) okCur = false;
+      else { gAmount += a; gPaid += p; gRem += Math.max(0, a - p); }
+      gOrdered += (+o.ordered || 0);
+      gShipped += (+o.shipped || 0);
+      gRemShip += Math.max(0, (+o.ordered || 0) - (+o.shipped || 0));
+    });
+  });
 
-  if (!managers.length) {
-    document.getElementById('body').innerHTML = '<div class="empty">Нічого не знайдено за цей період</div>';
+  const payPct = gAmount > 0 ? Math.round(gPaid / gAmount * 100) : 0;
+  const shipPct = gOrdered > 0 ? Math.round(gShipped / gOrdered * 100) : 0;
+  const $ = v => okCur ? '$' + fmt(v) : '—';
+
+  document.getElementById('curSummary').innerHTML = `
+    <div class="osp-summary">
+      <div class="osp-card pay">
+        <div class="osp-head">
+          <span class="osp-title">💰 Оплата</span>
+          <span class="osp-pct">${okCur ? payPct + '%' : '—'}</span>
+        </div>
+        <div class="osp-bar"><div class="osp-bar-fill" style="width:${payPct}%"></div></div>
+        <div class="osp-rows">
+          <div class="osp-row"><span class="osp-lbl">Сума замовлень</span><span class="osp-val">${$(gAmount)}</span></div>
+          <div class="osp-row"><span class="osp-lbl">Оплачено</span><span class="osp-val accent-g">${$(gPaid)}</span></div>
+          <div class="osp-row"><span class="osp-lbl">Залишилось</span><span class="osp-val muted">${$(gRem)}</span></div>
+        </div>
+      </div>
+      <div class="osp-card ship">
+        <div class="osp-head">
+          <span class="osp-title">🚚 Відвантаження</span>
+          <span class="osp-pct">${shipPct}%</span>
+        </div>
+        <div class="osp-bar"><div class="osp-bar-fill" style="width:${shipPct}%"></div></div>
+        <div class="osp-rows">
+          <div class="osp-row"><span class="osp-lbl">Замовлено</span><span class="osp-val">${fmt(gOrdered, 0)} од.</span></div>
+          <div class="osp-row"><span class="osp-lbl">Відвантажено</span><span class="osp-val accent-b">${fmt(gShipped, 0)} од.</span></div>
+          <div class="osp-row"><span class="osp-lbl">Залишилось</span><span class="osp-val muted">${fmt(gRemShip, 0)} од.</span></div>
+        </div>
+      </div>
+    </div>`;
+
+  if (!visible.length) {
+    document.getElementById('body').innerHTML = '<div class="empty">Немає замовлень за цей період</div>';
     return;
   }
 
-  const html = renderByManager(managers);
-  document.getElementById('body').innerHTML = html;
-  bindRows();
-}
+  // Tree rows
+  const rows = [];
+  visible.forEach(c => {
+    const ck = `c:${esc(c.name)}`;
+    const isCOpen = state.openKeys.has(ck);
 
-const BONUS_RATE = 0.0008;
+    let cAmt = 0, cPaid = 0, cRem = 0, cOk = !!state.fx;
+    let cOrd = 0, cShip = 0;
+    c.orders.forEach(o => {
+      const a = toUsd(o.amount, o.currency);
+      const p = toUsd(o.paid, o.currency);
+      if (a == null || p == null) cOk = false;
+      else { cAmt += a; cPaid += p; cRem += Math.max(0, a - p); }
+      cOrd += (+o.ordered || 0);
+      cShip += (+o.shipped || 0);
+    });
+    const cRemShip = Math.max(0, cOrd - cShip);
+    const cRemCls = cRem > 0.001 ? 'val-neg' : 'val-zero';
+    const cShipCls = cRemShip > 0 ? 'val-neg' : 'val-zero';
 
-function _summaryCardBody(paid, remain, ok, variant) {
-  const money = v => ok ? '$' + fmt(v) : '—';
-  const mainCls = variant === 'grand' ? 'stat-val main' : 'stat-val';
-  const bonusMainCls = variant === 'grand' ? 'bonus-val main' : 'bonus-val';
-  return `
-    <div class="stats">
-      <div>
-        <div class="stat-lbl">Оплачено</div>
-        <div class="${mainCls}">${money(paid)}</div>
-      </div>
-      <div>
-        <div class="stat-lbl">Потенціал</div>
-        <div class="stat-val pot">${money(remain)}</div>
-      </div>
-    </div>
-    <div class="bonus-row">
-      <div>
-        <div class="bonus-lbl">Бонус 0,08%</div>
-        <div class="${bonusMainCls}">${money(paid * BONUS_RATE)}</div>
-      </div>
-      <div>
-        <div class="bonus-lbl">Потенціал бонусу</div>
-        <div class="bonus-val">${money(remain * BONUS_RATE)}</div>
-      </div>
-    </div>`;
-}
+    rows.push(`
+      <tr class="client-row" data-key="${esc(ck)}">
+        <td><span class="chev ${isCOpen?'open':''}">▶</span>${esc(c.name)} <span style="color:var(--text3);font-weight:400;font-size:11px">· ${c.orders.length} зам.</span></td>
+        <td>${cOk ? '$'+fmt(cAmt) : '—'}</td>
+        <td class="val-pos">${cOk ? '$'+fmt(cPaid) : '—'}</td>
+        <td class="${cRemCls}">${cOk ? '$'+fmt(cRem) : '—'}</td>
+        <td>${fmt(cOrd, 0)}</td>
+        <td>${fmt(cShip, 0)}</td>
+        <td class="${cShipCls}">${fmt(cRemShip, 0)}</td>
+      </tr>`);
 
-function renderSummaryGrid(managers) {
-  const host = document.getElementById('curSummary');
-  if (!managers.length) { host.innerHTML = ''; return; }
-
-  const perMgr = managers.map(m => ({ m, ...managerTotalsUsd(m) }));
-  const allOk = perMgr.every(d => d.ok);
-  const gPaid = allOk ? perMgr.reduce((s, d) => s + d.paid, 0) : 0;
-  const gRem = allOk ? perMgr.reduce((s, d) => s + d.remain, 0) : 0;
-
-  const grandCard = `
-    <div class="summary-card grand">
-      <div class="name">💰 Оплачено за період</div>
-      ${_summaryCardBody(gPaid, gRem, allOk, 'grand')}
-    </div>`;
-
-  const mgrCards = perMgr.map(({ m, paid, remain, ok }) => {
-    const isOpen = state.openKeys.has(`m:${m.name}`);
-    return `
-      <div class="summary-card ${isOpen ? 'active' : ''}" data-key="m:${esc(m.name)}">
-        <div class="name">👤 ${esc(m.name)}</div>
-        ${_summaryCardBody(paid, remain, ok, 'mgr')}
-      </div>`;
-  }).join('');
-
-  host.innerHTML = `<div class="summary-grid">${grandCard}${mgrCards}</div>`;
-}
-
-function renderByManager(managers) {
-  const q = state.search;
-  const visibleMgrs = managers.filter(m => {
-    if (!q) return true;
-    if (m.name.toLowerCase().includes(q)) return true;
-    return m.currencies.some(C => C.clients.some(clientMatches));
+    if (!isCOpen) return;
+    c.orders.forEach(o => {
+      const ok = `${ck}|o:${o.ref}`;
+      const isOOpen = state.openKeys.has(ok);
+      const oRem = Math.max(0, (+o.amount || 0) - (+o.paid || 0));
+      const oRemShip = Math.max(0, (+o.ordered || 0) - (+o.shipped || 0));
+      const oRemCls = oRem > 0.001 ? 'val-neg' : 'val-zero';
+      const oShipCls = oRemShip > 0 ? 'val-neg' : 'val-zero';
+      const hasItems = (o.items || []).length > 0;
+      rows.push(`
+        <tr class="order-row" data-key="${esc(ok)}">
+          <td><span class="chev ${isOOpen?'open':''} ${hasItems?'':'hidden'}">▶</span>№${esc(o.number || '?')} <span class="meta">· ${fmtDate(o.date)}</span></td>
+          <td>${fmt(o.amount)} <span style="color:var(--text3);font-size:10px">${esc(o.currency)}</span></td>
+          <td class="val-pos">${fmt(o.paid)} <span style="color:var(--text3);font-size:10px">${esc(o.currency)}</span></td>
+          <td class="${oRemCls}">${fmt(oRem)} <span style="color:var(--text3);font-size:10px">${esc(o.currency)}</span></td>
+          <td>${fmt(o.ordered, 0)}</td>
+          <td>${fmt(o.shipped, 0)}</td>
+          <td class="${oShipCls}">${fmt(oRemShip, 0)}</td>
+        </tr>`);
+      if (!isOOpen) return;
+      (o.items || []).forEach(it => {
+        const iRemShip = Math.max(0, (+it.ordered || 0) - (+it.shipped || 0));
+        const iShipCls = iRemShip > 0 ? 'val-neg' : 'val-zero';
+        rows.push(`
+          <tr class="item-row">
+            <td>${esc(it.name)}</td>
+            <td colspan="3" style="color:var(--text3)">—</td>
+            <td>${fmt(it.ordered, 0)}</td>
+            <td>${fmt(it.shipped, 0)}</td>
+            <td class="${iShipCls}">${fmt(iRemShip, 0)}</td>
+          </tr>`);
+      });
+    });
   });
-  if (!visibleMgrs.length) return '';
 
-  const openMgrs = visibleMgrs.filter(m => state.openKeys.has(`m:${m.name}`));
-  if (!openMgrs.length) return '';
-
-  return openMgrs.map(m => {
-    const mk = `m:${m.name}`;
-    const curBlocks = m.currencies.map(C => {
-      const ck = `${mk}|cur:${C.currency}`;
-      const isCOpen = state.openKeys.has(ck);
-      const visibleClients = C.clients.filter(clientMatches);
-      if (q && !visibleClients.length) return '';
-      const rows = [renderCurrencyRow(ck, C, isCOpen, visibleClients.length)];
-      if (isCOpen) {
-        visibleClients.forEach(c => {
-          const clk = `${ck}|c:${c.name}`;
-          const isClOpen = state.openKeys.has(clk);
-          rows.push(renderClientRow(clk, c, C.currency, isClOpen));
-          if (isClOpen) {
-            c.orders.forEach(o => rows.push(renderOrderRow(o, C.currency)));
-          }
-        });
-      }
-      return rows.join('');
-    }).join('');
-
-    return `
-    <div class="cur-section">
-      <div class="mgr-section-head">👤 ${esc(m.name)}</div>
-      <div class="tree-wrap">
-        <table class="tree-tbl">
-          <thead><tr>
-            <th>Валюта / Клієнт / Замовлення</th>
-            <th>Сума замовлення</th>
-            <th>Оплачено</th>
-            <th>Залишилось</th>
-          </tr></thead>
-          <tbody>${curBlocks}</tbody>
-        </table>
-      </div>
+  document.getElementById('body').innerHTML = `
+    <div class="tree-wrap">
+      <table class="tree-tbl">
+        <thead><tr>
+          <th>Клієнт / Замовлення / Товар</th>
+          <th>Сума документа</th>
+          <th>Оплачено</th>
+          <th>Залишилось</th>
+          <th>Замовлено</th>
+          <th>Відвантажено</th>
+          <th>Залишилось відвант.</th>
+        </tr></thead>
+        <tbody>${rows.join('')}</tbody>
+      </table>
     </div>`;
-  }).join('');
-}
-
-function triCells(total, paid, remain) {
-  const remCls = remain > 0.001 ? 'val-neg' : (remain < -0.001 ? 'val-pos' : 'val-zero');
-  return `<td>${fmt(total)}</td><td class="val-pos">${fmt(paid)}</td><td class="${remCls}">${fmt(remain)}</td>`;
-}
-
-function renderCurrencyRow(key, C, isOpen, clientCount) {
-  return `
-    <tr class="cur-row" data-key="${esc(key)}">
-      <td><span class="chev ${isOpen?'open':''}">▶</span><span class="cur-badge-inline">${esc(C.currency)}</span> <span style="color:var(--text3);font-weight:500;font-size:11px">· ${clientCount} клієнт.</span></td>
-      ${triCells(C.total, C.paid, C.remain)}
-    </tr>`;
-}
-
-function renderClientRow(key, c, cur, isOpen) {
-  const ordersCount = c.orders.length;
-  return `
-    <tr class="client-row" data-key="${esc(key)}">
-      <td><span class="chev ${isOpen?'open':''} ${ordersCount?'':'hidden'}">▶</span>${esc(c.name)} <span style="color:var(--text3);font-weight:400;font-size:11px">· ${ordersCount} зам.</span></td>
-      ${triCells(c.total, c.paid, c.remain)}
-    </tr>`;
-}
-
-function renderOrderRow(o, cur) {
-  const payDate = o.payDate ? fmtDate(o.payDate) : (o.date ? fmtDate(o.date) : '—');
-  const meta = o.advance
-    ? '<span class="meta">аванс</span>'
-    : `<span class="meta">№${esc(o.number || '?')}${o.date ? ` · від ${fmtDate(o.date)}` : ''}</span>`;
-  return `
-    <tr class="order-row">
-      <td>${payDate} ${meta}</td>
-      ${triCells(o.total, o.paid, o.remain)}
-    </tr>`;
+  bindRows();
 }
 
 function bindRows() {
