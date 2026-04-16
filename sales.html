@@ -136,6 +136,34 @@ a{color:inherit;text-decoration:none}
   .tree-tbl.osp-tbl thead th:nth-child(n+2){width:72px}
 }
 
+/* OSP summary: two wide cards — Оплата (green) + Відвантаження (blue) with progress bars */
+.osp-summary{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.osp-card{padding:16px 20px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;gap:4px}
+.osp-card.pay{border-left:3px solid var(--green)}
+.osp-card.ship{border-left:3px solid var(--blue)}
+.osp-card .osp-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px}
+.osp-card .osp-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+.osp-card .osp-pct{font-size:24px;font-weight:800;letter-spacing:-.5px;line-height:1}
+.osp-card.pay .osp-pct{color:var(--green)}
+.osp-card.ship .osp-pct{color:var(--blue)}
+.osp-card .osp-bar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin:6px 0 10px}
+.osp-card .osp-bar-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.osp-card.pay .osp-bar-fill{background:linear-gradient(90deg,var(--green),rgba(34,197,94,.5))}
+.osp-card.ship .osp-bar-fill{background:linear-gradient(90deg,var(--blue),rgba(59,130,246,.5))}
+.osp-card .osp-rows{display:flex;flex-direction:column;gap:7px}
+.osp-card .osp-row{display:flex;justify-content:space-between;align-items:baseline}
+.osp-card .osp-lbl{font-size:11.5px;color:var(--text3);font-weight:500}
+.osp-card .osp-val{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);letter-spacing:-.2px}
+.osp-card .osp-val.accent-g{color:var(--green)}
+.osp-card .osp-val.accent-b{color:var(--blue)}
+.osp-card .osp-val.muted{color:var(--text3);font-weight:600}
+@media (max-width:720px){
+  .osp-summary{grid-template-columns:1fr}
+  .osp-card{padding:14px 16px}
+  .osp-card .osp-pct{font-size:20px}
+  .osp-card .osp-val{font-size:14px}
+}
+
 .chev{display:inline-block;width:14px;color:var(--text3);transition:transform .15s;font-size:10px;transform:translateY(-1px)}
 .chev.open{transform:rotate(90deg) translateY(-1px)}
 .chev.hidden{visibility:hidden}
@@ -605,48 +633,53 @@ function renderOsp() {
   const clients = (orgData && orgData.clients) || [];
   const visible = clients.filter(c => _ospMatchesClient(c, state.search));
 
-  // Summary cards (grand totals in USD + qty totals)
+  // Summary cards (grand totals in USD + qty totals).
+  // Clamp remaining to 0 — no negatives (matches 1C behaviour for linked orders).
   let gAmount = 0, gPaid = 0, gRem = 0, gOrdered = 0, gShipped = 0, gRemShip = 0;
   let okCur = !!state.fx;
   visible.forEach(c => {
     c.orders.forEach(o => {
       const a = toUsd(o.amount, o.currency);
       const p = toUsd(o.paid, o.currency);
-      const r = toUsd(o.remainingPay, o.currency);
-      if (a == null || p == null || r == null) okCur = false;
-      else { gAmount += a; gPaid += p; gRem += r; }
+      if (a == null || p == null) okCur = false;
+      else { gAmount += a; gPaid += p; gRem += Math.max(0, a - p); }
       gOrdered += (+o.ordered || 0);
       gShipped += (+o.shipped || 0);
-      gRemShip += (+o.remainingShip || 0);
+      gRemShip += Math.max(0, (+o.ordered || 0) - (+o.shipped || 0));
     });
   });
 
+  // Percentages
+  const payPct = gAmount > 0 ? Math.round(gPaid / gAmount * 100) : 0;
+  const shipPct = gOrdered > 0 ? Math.round(gShipped / gOrdered * 100) : 0;
+  const $ = v => okCur ? '$' + fmt(v) : '—';
+
   const host = document.getElementById('curSummary');
   host.innerHTML = `
-    <div class="summary-grid">
-      <div class="summary-card grand">
-        <div class="name">💰 Оплачено</div>
-        <div class="val">${okCur ? '$' + fmt(gPaid) : '—'}</div>
+    <div class="osp-summary">
+      <div class="osp-card pay">
+        <div class="osp-head">
+          <span class="osp-title">💰 Оплата</span>
+          <span class="osp-pct">${okCur ? payPct + '%' : '—'}</span>
+        </div>
+        <div class="osp-bar"><div class="osp-bar-fill" style="width:${payPct}%"></div></div>
+        <div class="osp-rows">
+          <div class="osp-row"><span class="osp-lbl">Сума замовлень</span><span class="osp-val">${$(gAmount)}</span></div>
+          <div class="osp-row"><span class="osp-lbl">Оплачено</span><span class="osp-val accent-g">${$(gPaid)}</span></div>
+          <div class="osp-row"><span class="osp-lbl">Залишилось</span><span class="osp-val muted">${$(gRem)}</span></div>
+        </div>
       </div>
-      <div class="summary-card">
-        <div class="name">📦 Сума замовлень</div>
-        <div class="val">${okCur ? '$' + fmt(gAmount) : '—'}</div>
-      </div>
-      <div class="summary-card">
-        <div class="name">⏳ Залишилось оплатити</div>
-        <div class="val">${okCur ? '$' + fmt(gRem) : '—'}</div>
-      </div>
-      <div class="summary-card">
-        <div class="name">📋 Замовлено, од.</div>
-        <div class="val">${fmt(gOrdered, 0)}</div>
-      </div>
-      <div class="summary-card">
-        <div class="name">🚚 Відвантажено, од.</div>
-        <div class="val">${fmt(gShipped, 0)}</div>
-      </div>
-      <div class="summary-card">
-        <div class="name">📭 Залишилось відвантажити, од.</div>
-        <div class="val">${fmt(gRemShip, 0)}</div>
+      <div class="osp-card ship">
+        <div class="osp-head">
+          <span class="osp-title">🚚 Відвантаження</span>
+          <span class="osp-pct">${shipPct}%</span>
+        </div>
+        <div class="osp-bar"><div class="osp-bar-fill" style="width:${shipPct}%"></div></div>
+        <div class="osp-rows">
+          <div class="osp-row"><span class="osp-lbl">Замовлено</span><span class="osp-val">${fmt(gOrdered, 0)} од.</span></div>
+          <div class="osp-row"><span class="osp-lbl">Відвантажено</span><span class="osp-val accent-b">${fmt(gShipped, 0)} од.</span></div>
+          <div class="osp-row"><span class="osp-lbl">Залишилось</span><span class="osp-val muted">${fmt(gRemShip, 0)} од.</span></div>
+        </div>
       </div>
     </div>`;
 
@@ -661,18 +694,20 @@ function renderOsp() {
     const ck = `osp:c:${esc(c.name)}`;
     const isCOpen = state.openKeys.has(ck);
 
-    // Per-client USD aggregate (for money columns) — orders may be in different
-    // currencies, so we convert to USD to keep client-level numbers meaningful.
+    // Per-client USD aggregate. Clamp remaining to 0 (no negatives).
     let cAmt = 0, cPaid = 0, cRem = 0, cOk = !!state.fx;
+    let cOrd = 0, cShip = 0;
     c.orders.forEach(o => {
       const a = toUsd(o.amount, o.currency);
       const p = toUsd(o.paid, o.currency);
-      const r = toUsd(o.remainingPay, o.currency);
-      if (a == null || p == null || r == null) cOk = false;
-      else { cAmt += a; cPaid += p; cRem += r; }
+      if (a == null || p == null) cOk = false;
+      else { cAmt += a; cPaid += p; cRem += Math.max(0, a - p); }
+      cOrd += (+o.ordered || 0);
+      cShip += (+o.shipped || 0);
     });
-    const cRemCls = cRem > 0.001 ? 'val-neg' : (cRem < -0.001 ? 'val-pos' : 'val-zero');
-    const cShipCls = c.remainingShip > 0 ? 'val-neg' : 'val-zero';
+    const cRemShip = Math.max(0, cOrd - cShip);
+    const cRemCls = cRem > 0.001 ? 'val-neg' : 'val-zero';
+    const cShipCls = cRemShip > 0 ? 'val-neg' : 'val-zero';
 
     rows.push(`
       <tr class="client-row" data-key="${esc(ck)}">
@@ -680,38 +715,41 @@ function renderOsp() {
         <td>${cOk ? '$'+fmt(cAmt) : '—'}</td>
         <td class="val-pos">${cOk ? '$'+fmt(cPaid) : '—'}</td>
         <td class="${cRemCls}">${cOk ? '$'+fmt(cRem) : '—'}</td>
-        <td>${fmt(c.ordered, 0)}</td>
-        <td>${fmt(c.shipped, 0)}</td>
-        <td class="${cShipCls}">${fmt(c.remainingShip, 0)}</td>
+        <td>${fmt(cOrd, 0)}</td>
+        <td>${fmt(cShip, 0)}</td>
+        <td class="${cShipCls}">${fmt(cRemShip, 0)}</td>
       </tr>`);
 
     if (!isCOpen) return;
     c.orders.forEach(o => {
       const ok = `${ck}|o:${o.ref}`;
       const isOOpen = state.openKeys.has(ok);
-      const oRemCls = o.remainingPay > 0.001 ? 'val-neg' : (o.remainingPay < -0.001 ? 'val-pos' : 'val-zero');
-      const oShipCls = o.remainingShip > 0 ? 'val-neg' : 'val-zero';
+      const oRem = Math.max(0, (+o.amount || 0) - (+o.paid || 0));
+      const oRemShip = Math.max(0, (+o.ordered || 0) - (+o.shipped || 0));
+      const oRemCls = oRem > 0.001 ? 'val-neg' : 'val-zero';
+      const oShipCls = oRemShip > 0 ? 'val-neg' : 'val-zero';
       const hasItems = (o.items || []).length > 0;
       rows.push(`
         <tr class="order-row" data-key="${esc(ok)}">
           <td><span class="chev ${isOOpen?'open':''} ${hasItems?'':'hidden'}">▶</span>№${esc(o.number || '?')} <span class="meta">· ${fmtDate(o.date)}</span></td>
           <td>${fmt(o.amount)} <span style="color:var(--text3);font-size:10px">${esc(o.currency)}</span></td>
           <td class="val-pos">${fmt(o.paid)} <span style="color:var(--text3);font-size:10px">${esc(o.currency)}</span></td>
-          <td class="${oRemCls}">${fmt(o.remainingPay)} <span style="color:var(--text3);font-size:10px">${esc(o.currency)}</span></td>
+          <td class="${oRemCls}">${fmt(oRem)} <span style="color:var(--text3);font-size:10px">${esc(o.currency)}</span></td>
           <td>${fmt(o.ordered, 0)}</td>
           <td>${fmt(o.shipped, 0)}</td>
-          <td class="${oShipCls}">${fmt(o.remainingShip, 0)}</td>
+          <td class="${oShipCls}">${fmt(oRemShip, 0)}</td>
         </tr>`);
       if (!isOOpen) return;
       (o.items || []).forEach(it => {
-        const iShipCls = it.remainingShip > 0 ? 'val-neg' : 'val-zero';
+        const iRemShip = Math.max(0, (+it.ordered || 0) - (+it.shipped || 0));
+        const iShipCls = iRemShip > 0 ? 'val-neg' : 'val-zero';
         rows.push(`
           <tr class="item-row">
             <td>${esc(it.name)}</td>
             <td colspan="3" style="color:var(--text3)">—</td>
             <td>${fmt(it.ordered, 0)}</td>
             <td>${fmt(it.shipped, 0)}</td>
-            <td class="${iShipCls}">${fmt(it.remainingShip, 0)}</td>
+            <td class="${iShipCls}">${fmt(iRemShip, 0)}</td>
           </tr>`);
       });
     });
