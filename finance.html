@@ -61,6 +61,17 @@ a{color:inherit;text-decoration:none}
 .toolbar input[type=text]::placeholder{color:var(--text3)}
 
 /* P&L table */
+.pnl-nav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;position:sticky;top:0;z-index:5;backdrop-filter:blur(8px)}
+.pnl-nav .chip{padding:5px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:7px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;white-space:nowrap}
+.pnl-nav .chip:hover{background:var(--bg3);color:var(--text);transform:translateY(-1px)}
+.pnl-nav .chip.sub{font-weight:500;font-size:10.5px;color:var(--text3);padding:4px 9px}
+.pnl-nav .chip.sec-rev{color:var(--green);border-color:var(--green)}
+.pnl-nav .chip.sec-cost{color:var(--accent);border-color:var(--accent)}
+.pnl-nav .chip.sec-exp{color:var(--red);border-color:var(--red)}
+.pnl-nav .chip.sec-tax{color:var(--yellow);border-color:var(--yellow)}
+.pnl-nav .chip.sec-other{color:var(--blue);border-color:var(--blue)}
+@keyframes pnlFlash{0%{box-shadow:inset 0 0 0 2px var(--accent)}100%{box-shadow:inset 0 0 0 0 transparent}}
+.pnl-table tr.pnl-flash td{animation:pnlFlash 1.4s ease-out;background:var(--accent-bg) !important}
 .pnl-wrap{overflow-x:auto;margin-bottom:20px;border:1px solid var(--border);border-radius:12px}
 .pnl-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:600px}
 .pnl-table th,.pnl-table td{padding:7px 14px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
@@ -377,74 +388,65 @@ const PNL_TEMPLATE = [
   { type:'itm', label:'Сервіс (маржа)', dep:'серві[сз]$', depMode:'margin' },
   { type:'sec', variant:'exp', label:'Непрямі (накладні) витрати' },
   { type:'pct', label:'Частка накладних витрат у виторгу, %', key:'_overheadPct' },
-  { type:'grp', label:'Реклама і маркетинг', key:'_grpMarketing' },
-  { type:'itm', label:'Реклама і маркетинг (загальне)', match:'^реклама|маркетинг$|реклама і маркетинг' },
-  { type:'itm', label:'Маркетинг послуги', match:'маркетинг послуг' },
-  { type:'itm', label:'Маркетинг продукція', match:'маркетинг продукц' },
-  { type:'itm', label:'Google', match:'google' },
-  { type:'itm', label:'Facebook', match:'facebook' },
-  { type:'itm', label:'TikTok', match:'tiktok' },
-  { type:'itm', label:'Витрати на вебсайти', match:'вебсайт' },
-  { type:'itm', label:'SEO просування', match:'seo' },
-  { type:'itm', label:'Комерційні витрати', match:'комерційн' },
-  { type:'itm', label:'Наші комісії (% за лід)', match:'комиссионн|% від лід|^наши комис' },
+  { type:'grp', label:'Адміністративні', key:'_grpAdmin' },
+  { type:'itm', label:'Обслуговування офісу', refKeys:['d5ff963f-b4c0-11eb-b713-c9df1bf41755'] },
+  { type:'itm', label:'Оренда приміщень', refKeys:['d5ff963e-b4c0-11eb-b713-c9df1bf41755'] },
+  { type:'itm', label:'Комунальні платежі', refKeys:['d5ff963a-b4c0-11eb-b713-c9df1bf41755'] },
+  { type:'itm', label:"Зв'язок, інтернет", refKeys:['d5ff963c-b4c0-11eb-b713-c9df1bf41755'] },
+  { type:'itm', label:'Адмін. витрати на утримання офісу', refKeys:['95c23f9a-68f8-11ed-b736-c7234ea2deff'] },
+  { type:'itm', label:'Витрати на облік', refKeys:['2d2eeeda-2374-11ec-b71f-c544016262a8'] },
+  { type:'itm', label:'Адвокатські послуги', refKeys:['f6cc935d-f977-11ed-b73e-83aea5175162'] },
+  { type:'itm', label:'Страхування майна', refKeys:['c9410a51-601f-11ed-b736-c7234ea2deff'] },
+  { type:'itm', label:'Програмне забезпечення', refKeys:['ac33ed05-c95d-11ed-b73c-f59a90987517'] },
+  { type:'itm', label:'Витрати на ПЗ (додатково)', refKeys:['10ef5407-d96f-11ef-86be-107c6149f3d7'] },
   { type:'sp' },
-  { type:'grp', label:'ЗП та інші витрати на працівників', key:'_grpSalary' },
-  { type:'itm', label:'Заробітна плата', match:'заробітн|зарплат' },
-  { type:'itm', label:'Витрати на працівників (HR, корпоратив)', match:'витрати на працівник' },
-  { type:'itm', label:'Податки на заробітну плату', match:'податки .*заробітн|податки ?\\(з заробітн' },
-  { type:'itm', label:'Work.ua', match:'work.ua' },
+  { type:'grp', label:'Персонал (ФОП)', key:'_grpSalary' },
+  { type:'itm', label:'Заробітна плата', refKeys:['d5ff9636-b4c0-11eb-b713-c9df1bf41755'] },
+  { type:'itm', label:'Відрядження', refKeys:['d5ff9639-b4c0-11eb-b713-c9df1bf41755'] },
+  { type:'itm', label:'Підзвітні суми', refKeys:['9216d050-b9da-11ed-b73b-dfd97ac8f250'] },
+  { type:'itm', label:'Витрати на працівників (HR, корпоратив)', refKeys:['7a70d232-9607-11ef-86b1-107c6149f3d7'] },
   { type:'sp' },
-  { type:'grp', label:'Оренда приміщень', key:'_grpRent' },
-  { type:'itm', label:'Оренда приміщень (офіс/склад)', match:'^оренда прим|оренд.*прим' },
-  { type:'itm', label:'Суборенда', match:'^суборенд' },
-  { type:'itm', label:'Оренда навантажувача', match:'навантажувач' },
-  { type:'itm', label:'Витрати на склад', match:'витрати на склад' },
-  { type:'itm', label:'Комунальні платежі', match:'комунальн' },
+  { type:'grp', label:'Комерційні / збутові', key:'_grpMarketing' },
+  { type:'itm', label:'Реклама і маркетинг', refKeys:['d5ff9637-b4c0-11eb-b713-c9df1bf41755'] },
+  { type:'itm', label:'Витрати на вебсайти', refKeys:['b721a609-ea3f-11f0-86fb-107c6149f3d7'] },
+  { type:'itm', label:'Оплата партнерам', refKeys:['6c55e48c-87b5-11ee-b757-ba1ab78e573d'] },
+  { type:'itm', label:'Послуги доставки', refKeys:['cc87b569-8d00-11ed-b739-cbc677b530da'] },
+  { type:'itm', label:'Логістичні послуги', refKeys:['69d99eb2-b90d-11ed-b73b-dfd97ac8f250'] },
   { type:'sp' },
-  { type:'grp', label:'Адміністративні витрати', key:'_grpAdmin' },
-  { type:'itm', label:'Адмін. витрати на утримання офісу', match:'адмін.*витр|утриманн.*офіс|обслуговування офіс' },
-  { type:'itm', label:'Витрати на облік', match:'витрати на облік|^облік' },
-  { type:'itm', label:'Судовий збір', match:'судов' },
-  { type:'itm', label:'Адвокатські послуги', match:'адвокат' },
-  { type:'itm', label:'Банківське обслуговування', match:'банк.*обслуг' },
-  { type:'itm', label:'Брокерські послуги', match:'брокерськ' },
-  { type:'itm', label:'Витрати на програмне забезпечення', match:'програмн' },
-  { type:'itm', label:"Зв'язок, інтернет", match:"зв.язок|інтернет" },
+  { type:'grp', label:'Транспорт', key:'_grpTransport' },
+  { type:'itm', label:'Транспортні витрати', refKeys:['d5ff963d-b4c0-11eb-b713-c9df1bf41755'] },
+  { type:'itm', label:'Паливо', refKeys:['36fb3bc9-6cb9-11ed-b737-b5860111d371'] },
+  { type:'itm', label:'Витрати на транспортні засоби', refKeys:['d85fca2c-8c89-11ef-a9a8-e6047a642b3f'] },
   { type:'sp' },
-  { type:'grp', label:'Витрати на транспорт', key:'_grpTransport' },
-  { type:'itm', label:'Витрати на транспортні засоби', match:'транспортн.*засоб|витрати на транспортн' },
-  { type:'itm', label:'Транспортні витрати', match:'^транспортні витрати|^транспортн.*витр' },
-  { type:'itm', label:'Паливо', match:'^паливо' },
-  { type:'itm', label:'Витрати на монтаж', match:'витрати на монтаж' },
-  { type:'itm', label:'Витрати на сервіс', match:'витрати на серві' },
-  { type:'itm', label:'Логістичні послуги', match:'логістич' },
-  { type:'itm', label:'Послуги доставки', match:'доставк' },
-  { type:'itm', label:'Відрядження', match:'відряджен' },
+  { type:'grp', label:'Склад / сервіс / проєктування', key:'_grpOps' },
+  { type:'itm', label:'Витрати на склад', refKeys:['919379f8-8c89-11ef-a9a8-e6047a642b3f'] },
+  { type:'itm', label:'Витрати на ремонт приміщень', refKeys:['70c429a4-8d25-11ef-a9a8-e6047a642b3f'] },
+  { type:'itm', label:'Витрати на монтаж', refKeys:['edada288-8fa5-11ef-a9a9-9d9a1220b9d2'] },
+  { type:'itm', label:'Витрати на сервіс', refKeys:['b16312ba-b884-11ef-86b9-107c6149f3d7'] },
+  { type:'itm', label:'Витрати на виготовлення проектів', refKeys:['676d5f48-3d30-11f0-86da-107c6149f3d7'] },
   { type:'sp' },
-  { type:'itm', label:'Страхування майна', match:'страхуван' },
-  { type:'itm', label:'Підзвітні суми', match:'підзвіт' },
-  { type:'itm', label:'Операційні витрати (інше)', match:'^операційні витрати' },
-  { type:'itm', label:'Штрафи, пені, неустойки', match:'штраф' },
-  { type:'itm', label:'Амортизація', match:'амортизац' },
+  { type:'grp', label:'Митно-брокерські', key:'_grpCustoms' },
+  { type:'itm', label:'Брокерські послуги', refKeys:['551ba578-8d02-11ed-b739-cbc677b530da'] },
+  { type:'sp' },
+  { type:'grp', label:'Інші операційні', key:'_grpOtherOp' },
+  { type:'itm', label:'Операційні витрати', refKeys:['7caf330d-8a06-11ed-b739-cbc677b530da'] },
   { type:'sub', label:'Всього накладні витрати', key:'_totalOverhead' },
   { type:'sec', variant:'tax', label:'Податки' },
-  { type:'itm', label:'Єдиний податок / Внески ФОП', match:'єдиний податок|внески до фоп' },
-  { type:'itm', label:'ПДВ (сплачене/декларація)', match:'^пдв|пдв згідно|митний платіж пдв' },
-  { type:'itm', label:'ЄСВ (єдиний соціальний внесок)', match:'^єсв|^есв|єдиний соціальний|внески .*(з(ар)?|заробіт)' },
-  { type:'itm', label:'ПДФО', match:'^пдфо' },
-  { type:'itm', label:'Військовий збір', match:'військов' },
-  { type:'itm', label:'Податок на прибуток', match:'податок на прибут' },
-  { type:'itm', label:'Інші податки', match:'^податки$|^податки ' },
+  { type:'itm', label:'Податки', refKeys:['d5ff9640-b4c0-11eb-b713-c9df1bf41755'] },
+  { type:'itm', label:'ПДВ згідно декларації', refKeys:['0d024a60-68eb-11ed-b736-c7234ea2deff'] },
+  { type:'itm', label:'Митний платіж ПДВ', refKeys:['e1f3b6a0-603d-11ed-b736-c7234ea2deff'] },
+  { type:'itm', label:'Податки (з заробітної плати)', refKeys:['5622cd46-68eb-11ed-b736-c7234ea2deff'] },
+  { type:'itm', label:'Податки ЕСВ', refKeys:['6451e45d-68eb-11ed-b736-c7234ea2deff'] },
+  { type:'itm', label:'Комерційні витрати (ПДВ)', refKeys:['8ccdf99a-1b8c-11f0-86d3-107c6149f3d7'] },
   { type:'sub', label:'Всього податки', key:'_totalTax' },
   { type:'sec', variant:'other', label:'Інші неопераційні витрати' },
-  { type:'itm', label:'Курсові різниці (негативна)', match:'негативна курсов|курсов' },
-  { type:'itm', label:'Нестачі і втрати', match:'нестач' },
-  { type:'itm', label:'Відсотки за кредит', match:'відсотки за кредит' },
-  { type:'itm', label:'Витрати на виготовлення проектів', match:'вигот.*проект|проект.*виготов' },
-  { type:'itm', label:'Комісія за кредит', match:'комісія за кредит' },
-  { type:'itm', label:'Ремонт та модернізація ОЗ', match:'ремонт|модернізац' },
-  { type:'itm', label:'Списання ТМЦ', match:'списан' },
+  { type:'itm', label:'Банківське обслуговування', refKeys:['d5ff963b-b4c0-11eb-b713-c9df1bf41755'] },
+  { type:'itm', label:'Відсотки за кредитами / позиками', refKeys:['d5ff9638-b4c0-11eb-b713-c9df1bf41755'] },
+  { type:'itm', label:'Комісія за кредит', refKeys:['f9132379-a16a-11ed-b73a-a67c62672fb8'] },
+  { type:'itm', label:'Штрафи, пені, неустойки', refKeys:['e11e29d1-9587-11ed-b739-cbc677b530da'] },
+  { type:'itm', label:'Судовий збір', refKeys:['ece38e21-7211-11ed-b738-875f483faafd'] },
+  { type:'itm', label:'Негативна курсова різниця', refKeys:['d5ff9629-b4c0-11eb-b713-c9df1bf41755'] },
+  { type:'itm', label:'Дивіденди', refKeys:['d5ff9634-b4c0-11eb-b713-c9df1bf41755'] },
   { type:'sub', label:'Всього інші витрати', key:'_totalOther' },
   { type:'sp' },
   { type:'sub', label:'Всього витрати', key:'_totalAllExpenses' },
@@ -516,12 +518,14 @@ function renderPnl(data) {
     return found ? { rev: rev, cog: cog } : null;
   }
 
+  // Match expenses to P&L rows by refKey (Ref_Key GUID from Catalog_СтатьиДвиженияДенежныхСредств)
   PNL_TEMPLATE.forEach(row => {
-    if (!row.match) return;
-    const re = new RegExp(row.match, 'i');
+    if (!row.refKeys || !row.refKeys.length) return;
+    const keys = row.refKeys.map(k => String(k).toLowerCase());
     expenses.forEach((e, i) => {
       if (usedExpenses.has(i)) return;
-      if (re.test(e.category)) {
+      const eKey = (e.refKey || '').toLowerCase();
+      if (eKey && keys.includes(eKey)) {
         if (!expMap[row.label]) expMap[row.label] = { byMonth: {}, total: 0 };
         months.forEach(m => { expMap[row.label].byMonth[m] = (expMap[row.label].byMonth[m] || 0) + (e.byMonth[m] || 0); });
         expMap[row.label].total += e.total;
@@ -529,13 +533,13 @@ function renderPnl(data) {
       }
     });
   });
-  expenses.forEach((e, i) => { if (!usedExpenses.has(i)) unmatchedExp.push(e); });
+  // (unmatched expenses intentionally discarded — only classified rows render)
 
   const grpTotals = {};
   let currentGrp = null;
   PNL_TEMPLATE.forEach(row => {
     if (row.type === 'grp' && row.key) { currentGrp = row.key; grpTotals[currentGrp] = { byMonth: {}, total: 0 }; }
-    if (row.type === 'itm' && row.match && currentGrp && expMap[row.label]) {
+    if (row.type === 'itm' && row.refKeys && currentGrp && expMap[row.label]) {
       months.forEach(m => { grpTotals[currentGrp].byMonth[m] = (grpTotals[currentGrp].byMonth[m] || 0) + (expMap[row.label].byMonth[m] || 0); });
       grpTotals[currentGrp].total += expMap[row.label].total;
     }
@@ -548,14 +552,13 @@ function renderPnl(data) {
   let curSection = '';
   PNL_TEMPLATE.forEach(row => {
     if (row.type === 'sec') curSection = row.variant;
-    if (row.type === 'itm' && row.match && expMap[row.label]) {
+    if (row.type === 'itm' && row.refKeys && expMap[row.label]) {
       const d = expMap[row.label];
       if (curSection === 'exp') { months.forEach(m => { overheadByMonth[m] += d.byMonth[m] || 0; }); overheadTotal += d.total; }
       else if (curSection === 'tax') { months.forEach(m => { taxByMonth[m] += d.byMonth[m] || 0; }); taxTotal += d.total; }
       else if (curSection === 'other') { months.forEach(m => { otherExpByMonth[m] += d.byMonth[m] || 0; }); otherExpTotal += d.total; }
     }
   });
-  unmatchedExp.forEach(e => { months.forEach(m => { overheadByMonth[m] += e.byMonth[m] || 0; }); overheadTotal += e.total; });
 
   const totalRevByMonth = {}, grossByMonth = {}, totalAllExpByMonth = {}, opProfitByMonth = {}, netByMonth = {};
   let totalRevTotal = revenue.total + otherIncome.total;
@@ -646,7 +649,7 @@ function renderPnl(data) {
     if (row.type === 'sp') { rows += '<tr class="sp"><td colspan="' + cs + '"></td></tr>'; return; }
     let d = null, isPct = false;
     if (row.key && computed[row.key]) { d = computed[row.key]; isPct = !!d.isPct; }
-    else if (row.match && expMap[row.label]) d = expMap[row.label];
+    else if (row.refKeys && expMap[row.label]) d = expMap[row.label];
     else if (row.dep) {
       var depD = depFind(row.dep);
       if (depD) {
@@ -679,19 +682,32 @@ function renderPnl(data) {
     const mCells = showM ? months.map(m => '<td>' + (d ? fmtCell(d.byMonth[m] || 0, isPct) : '<span class="dash">—</span>') + '</td>').join('') : '';
     const totalCell = d ? fmtCell(d.total, isPct) : '<span class="dash">—</span>';
     const cls = row.type + (row.variant ? ' ' + row.variant : '');
-    rows += '<tr class="' + cls + '"><td>' + esc(row.label) + '</td>' + mCells + '<td class="col-total">' + totalCell + '</td></tr>';
+    let rowId = '';
+    if (row.type === 'sec' && row.variant) rowId = ' id="pnl-sec-' + row.variant + '"';
+    else if (row.type === 'grp' && row.key) rowId = ' id="pnl-' + row.key + '"';
+    rows += '<tr class="' + cls + '"' + rowId + '><td>' + esc(row.label) + '</td>' + mCells + '<td class="col-total">' + totalCell + '</td></tr>';
   });
-  if (unmatchedExp.length) {
-    rows += '<tr class="sp"><td colspan="' + cs + '"></td></tr>';
-    rows += '<tr class="grp"><td colspan="' + cs + '">Не класифіковані витрати (з 1С)</td></tr>';
-    unmatchedExp.forEach(e => {
-      const mCells = showM ? months.map(m => '<td>' + fmtCell(e.byMonth[m] || 0) + '</td>').join('') : '';
-      rows += '<tr class="itm"><td>' + esc(e.category) + '</td>' + mCells + '<td class="col-total">' + fmtCell(e.total) + '</td></tr>';
-    });
-  }
+  // Build nav menu with anchors to sections and subgroups
+  const navParts = [];
+  const secLabels = { rev:'Виручка', cost:'Собівартість', exp:'Непрямі', tax:'Податки', other:'Інші неоп.' };
+  PNL_TEMPLATE.forEach(row => {
+    if (row.type === 'sec' && row.variant) {
+      navParts.push('<span class="chip sec-' + row.variant + '" onclick="pnlJump(\'pnl-sec-' + row.variant + '\')">' + (secLabels[row.variant] || row.label) + '</span>');
+    } else if (row.type === 'grp' && row.key) {
+      navParts.push('<span class="chip sub" onclick="pnlJump(\'pnl-' + row.key + '\')">› ' + esc(row.label) + '</span>');
+    }
+  });
   document.getElementById('pnlBody').innerHTML =
+    '<div class="pnl-nav">' + navParts.join('') + '</div>' +
     '<div class="pnl-wrap"><table class="pnl-table"><thead><tr><th>P&L Стаття</th>' +
     mCols + '<th class="col-total">Всього</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+function pnlJump(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.scrollIntoView({ behavior:'smooth', block:'start' });
+  el.classList.add('pnl-flash');
+  setTimeout(() => el.classList.remove('pnl-flash'), 1400);
 }
 
 async function pnlLoad() {
