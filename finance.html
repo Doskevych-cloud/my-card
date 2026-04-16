@@ -711,6 +711,10 @@ function renderPnl(data) {
     if (row.type === 'sub') { curGrp = ''; }
     if (row.type === 'grd' && row.variant) { curGrdHead = row.variant; curVariant = row.variant; curGrp = ''; curPctHead = ''; }
     if (row.type === 'pct' && row.variant) { curPctHead = row.variant; curVariant = row.variant; curGrp = ''; curGrdHead = ''; }
+    // Non-variant grd / pct (Op profit, Net profit, margin rows) are GLOBAL —
+    // they live outside any cat/sec/grp and must not be hidden when those collapse.
+    if (row.type === 'grd' && !row.variant) { curCat = ''; curVariant = ''; curGrp = ''; curGrdHead = ''; curPctHead = ''; }
+    if (row.type === 'pct' && !row.variant) { curCat = ''; curVariant = ''; curGrp = ''; curGrdHead = ''; curPctHead = ''; }
     if (row.type === 'sp') { rows += '<tr class="sp"><td colspan="' + cs + '"></td></tr>'; return; }
     // ── Hide empty rows to keep the table compact and aligned ──
     if (row.type === 'itm' && !hasValue(row)) return;
