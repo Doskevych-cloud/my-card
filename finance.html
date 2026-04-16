@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>P&L — Фінанси</title>
+<title>Фінанси</title>
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
@@ -40,7 +40,7 @@ a{color:inherit;text-decoration:none}
 
 .wrap{max-width:1600px;margin:0 auto;padding:20px}
 .page-tabs{display:inline-flex;gap:4px;padding:4px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:14px}
-.ptab{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;color:var(--text2);text-decoration:none;transition:background .15s,color .15s;white-space:nowrap}
+.ptab{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;color:var(--text2);text-decoration:none;transition:background .15s,color .15s;white-space:nowrap;cursor:pointer}
 .ptab:hover{background:var(--bg3);color:var(--text)}
 .ptab.active{background:var(--accent-bg);color:var(--accent)}
 
@@ -56,6 +56,9 @@ a{color:inherit;text-decoration:none}
 .toolbar .group{display:inline-flex;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px}
 .toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
 .toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
+.toolbar input[type=text]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;font-family:inherit;min-width:150px}
+.toolbar input[type=text]:focus{border-color:var(--accent)}
+.toolbar input[type=text]::placeholder{color:var(--text3)}
 
 /* P&L table */
 .pnl-wrap{overflow-x:auto;margin-bottom:20px;border:1px solid var(--border);border-radius:12px}
@@ -69,7 +72,6 @@ a{color:inherit;text-decoration:none}
 .pnl-table th.col-total{background:var(--surface2)}
 
 /* ── Row types ── */
-/* Section header (green/orange/red bar) */
 .pnl-table .sec td{font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:10px 14px 6px;border-bottom:2px solid var(--border)}
 .pnl-table .sec td:first-child{padding-left:14px}
 .pnl-table .sec.rev td{color:var(--green);background:var(--green-bg) !important}
@@ -77,26 +79,14 @@ a{color:inherit;text-decoration:none}
 .pnl-table .sec.exp td{color:var(--red);background:var(--red-bg) !important}
 .pnl-table .sec.tax td{color:var(--yellow);background:var(--yellow-bg) !important}
 .pnl-table .sec.other td{color:var(--blue);background:var(--blue-bg) !important}
-
-/* Sub-group header (bold, indent 1) */
 .pnl-table .grp td{font-weight:700;color:var(--text);padding-top:8px}
 .pnl-table .grp td:first-child{padding-left:20px}
-
-/* Item row (indent 2) */
 .pnl-table .itm td{color:var(--text2);font-weight:400}
 .pnl-table .itm td:first-child{padding-left:36px}
-
-/* Subtotal row */
 .pnl-table .sub td{font-weight:700;border-top:1px solid var(--border2);border-bottom:2px solid var(--border)}
-
-/* Grand total row (double top border) */
 .pnl-table .grd td{font-weight:800;font-size:14px;border-top:3px double var(--border2);padding:10px 14px}
 .pnl-table .grd td:first-child{background:var(--bg) !important}
-
-/* Percentage row */
 .pnl-table .pct td{color:var(--text3);font-size:11px;font-style:italic;border-bottom:none}
-
-/* Spacer */
 .pnl-table .sp td{border-bottom:none;padding:4px 0}
 
 /* Value colors */
@@ -121,11 +111,43 @@ a{color:inherit;text-decoration:none}
 @keyframes spin{to{transform:rotate(360deg)}}
 .error{text-align:center;padding:40px;color:var(--red);background:var(--red-bg);border-radius:12px;margin:20px 0}
 
+/* ── GP tree table ── */
+.gp-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px}
+.gp-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:800px}
+.gp-table th,.gp-table td{padding:7px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
+.gp-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;background:var(--surface2);position:sticky;top:0;z-index:2}
+.gp-table th:first-child{text-align:left;position:sticky;left:0;z-index:3;background:var(--surface2);min-width:360px}
+.gp-table td:first-child{text-align:left;position:sticky;left:0;z-index:1;background:var(--bg)}
+.gp-table .gp-toggle{cursor:pointer;user-select:none}
+.gp-table .gp-toggle:hover{color:var(--accent)}
+.gp-table .gp-chevron{display:inline-block;width:14px;font-size:10px;color:var(--text3);transition:transform .15s}
+.gp-table .gp-chevron.open{transform:rotate(90deg)}
+
+/* Tree levels */
+.gp-table .lvl-0 td{font-weight:800;background:var(--green-bg) !important;color:var(--text);border-bottom:2px solid var(--border)}
+.gp-table .lvl-0 td:first-child{padding-left:8px;background:var(--green-bg) !important}
+.gp-table .lvl-1 td{font-weight:700;background:var(--surface2) !important}
+.gp-table .lvl-1 td:first-child{padding-left:22px;background:var(--surface2) !important}
+.gp-table .lvl-2 td{font-weight:600}
+.gp-table .lvl-2 td:first-child{padding-left:36px}
+.gp-table .lvl-3 td{color:var(--text2)}
+.gp-table .lvl-3 td:first-child{padding-left:50px}
+.gp-table .lvl-4 td{color:var(--text3);font-size:11.5px}
+.gp-table .lvl-4 td:first-child{padding-left:64px}
+/* Grand total row */
+.gp-table .gp-total td{font-weight:800;font-size:13px;border-top:3px double var(--border2);background:var(--surface2) !important}
+.gp-table .gp-total td:first-child{background:var(--surface2) !important;padding-left:8px}
+
+.view{display:none}
+.view.active{display:block}
+
 @media(max-width:720px){
   .pnl-summary{grid-template-columns:1fr 1fr}
   .pnl-table{font-size:11px}
   .pnl-table th,.pnl-table td{padding:5px 8px}
   .pnl-table td:first-child,.pnl-table th:first-child{min-width:180px}
+  .gp-table{font-size:11px}
+  .gp-table th,.gp-table td{padding:5px 8px}
 }
 </style>
 </head>
@@ -135,41 +157,98 @@ a{color:inherit;text-decoration:none}
 <div id="app">
   <div class="wrap">
     <div class="page-tabs">
-      <a href="/finance.html" class="ptab active">P&L</a>
+      <span class="ptab active" data-view="pnl" onclick="switchTab(this)">P&L</span>
+      <span class="ptab" data-view="gp" onclick="switchTab(this)">Валовий прибуток</span>
     </div>
-    <div class="toolbar">
-      <span class="lbl">Період</span>
-      <input type="date" id="fromIn">
-      <span style="color:var(--text3)">—</span>
-      <input type="date" id="toIn">
-      <span class="group">
-        <span class="chip" onclick="setPreset('month')">Цей місяць</span>
-        <span class="chip" onclick="setPreset('prevmonth')">Минулий</span>
-        <span class="chip" onclick="setPreset('quarter')">Квартал</span>
-        <span class="chip" onclick="setPreset('year')">Рік</span>
-      </span>
-      <div class="sep"></div>
-      <span class="group">
-        <span class="chip" data-org="" onclick="setOrg(this)">Всі</span>
-        <span class="chip" data-org="Реакт" onclick="setOrg(this)">Реакт</span>
-        <span class="chip" data-org="Генерація" onclick="setOrg(this)">Генерація</span>
-      </span>
+
+    <!-- ═══ P&L View ═══ -->
+    <div id="pnlView" class="view active">
+      <div class="toolbar" id="pnlToolbar">
+        <span class="lbl">Період</span>
+        <input type="date" id="fromIn">
+        <span style="color:var(--text3)">—</span>
+        <input type="date" id="toIn">
+        <span class="group">
+          <span class="chip" onclick="setPreset('month')">Цей місяць</span>
+          <span class="chip" onclick="setPreset('prevmonth')">Минулий</span>
+          <span class="chip" onclick="setPreset('quarter')">Квартал</span>
+          <span class="chip" onclick="setPreset('year')">Рік</span>
+        </span>
+        <div class="sep"></div>
+        <span class="group" id="pnlOrgGroup">
+          <span class="chip" data-org="" onclick="setOrg(this)">Всі</span>
+          <span class="chip" data-org="Реакт" onclick="setOrg(this)">Реакт</span>
+          <span class="chip" data-org="Генерація" onclick="setOrg(this)">Генерація</span>
+        </span>
+      </div>
+      <div id="pnlSummary"></div>
+      <div id="pnlBody"><div class="loading">Завантаження...</div></div>
     </div>
-    <div id="summary"></div>
-    <div id="body"><div class="loading">Завантаження...</div></div>
+
+    <!-- ═══ Gross Profit View ═══ -->
+    <div id="gpView" class="view">
+      <div class="toolbar" id="gpToolbar">
+        <span class="lbl">Період</span>
+        <input type="date" id="gpFromIn">
+        <span style="color:var(--text3)">—</span>
+        <input type="date" id="gpToIn">
+        <span class="group">
+          <span class="chip" onclick="gpSetPreset('month')">Цей місяць</span>
+          <span class="chip" onclick="gpSetPreset('prevmonth')">Минулий</span>
+          <span class="chip" onclick="gpSetPreset('quarter')">Квартал</span>
+          <span class="chip" onclick="gpSetPreset('year')">Рік</span>
+        </span>
+        <div class="sep"></div>
+        <span class="group" id="gpOrgGroup">
+          <span class="chip" data-org="" onclick="gpSetOrg(this)">Всі</span>
+          <span class="chip" data-org="Реакт" onclick="gpSetOrg(this)">Реакт</span>
+          <span class="chip" data-org="Генерація" onclick="gpSetOrg(this)">Генерація</span>
+        </span>
+        <div class="sep"></div>
+        <span class="lbl">Покупець</span>
+        <input type="text" id="gpBuyerIn" placeholder="Пошук покупця..." oninput="gpFilterChanged()">
+        <span class="lbl">Номенклатура</span>
+        <input type="text" id="gpNomIn" placeholder="Пошук товару..." oninput="gpFilterChanged()">
+      </div>
+      <div id="gpSummary"></div>
+      <div id="gpBody"><div class="loading">Завантаження...</div></div>
+    </div>
   </div>
 </div>
 
 <script>
 const API_URL = 'https://price-api.doskevich.workers.dev';
-const state = { from: '', to: '', org: '', preset: '' };
 
-/* ── P&L Template Structure (matches company Excel) ── */
+/* ═══════════════════════════════════════════════════
+   SHARED
+   ═══════════════════════════════════════════════════ */
+const activeView = { tab: 'pnl' };
+
+function switchTab(el) {
+  document.querySelectorAll('.ptab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const v = el.dataset.view;
+  activeView.tab = v;
+  document.querySelectorAll('.view').forEach(d => d.classList.toggle('active', d.id === v + 'View'));
+  if (v === 'gp' && !gpState._loaded) gpLoad();
+}
+
+function fmt(n, dec) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return Number(n).toLocaleString('uk-UA', { maximumFractionDigits: dec, minimumFractionDigits: dec });
+}
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function _localISO(d) {
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
+  return y + '-' + m + '-' + dd;
+}
+
+/* ═══════════════════════════════════════════════════
+   P&L TAB
+   ═══════════════════════════════════════════════════ */
+const pnlState = { from: '', to: '', org: '', preset: '' };
+
 const PNL_TEMPLATE = [
-  // type: sec (section header), grp (group), itm (item), sub (subtotal), grd (grand), pct (%), sp (spacer)
-  // variant: rev/cost/exp/tax/other — section coloring
-  // key: string key for matching worker data (expenses match by category name)
-
   { type:'sec', variant:'rev', label:'Виторг від продажів, у т.ч.' },
   { type:'itm', label:'Дистрибуція' },
   { type:'itm', label:'Приватні сонячні станції під ключ' },
@@ -178,7 +257,6 @@ const PNL_TEMPLATE = [
   { type:'itm', label:'Роздріб під ключ' },
   { type:'itm', label:'Проектування СЕС' },
   { type:'itm', label:'Сервіс' },
-
   { type:'sp' },
   { type:'grp', label:'Інші непрямі доходи', key:'_otherIncome' },
   { type:'itm', label:'Інші доходи (курсова різниця)' },
@@ -186,9 +264,7 @@ const PNL_TEMPLATE = [
   { type:'itm', label:'Компенсація транспортних витрат замовником' },
   { type:'itm', label:'Оприбуткування залишків ТМЦ' },
   { type:'itm', label:'Суборенда, взаємозаліки' },
-
   { type:'sub', label:'Всього доходи', key:'_totalRevenue' },
-
   { type:'sec', variant:'cost', label:'Собівартість продажів, у т.ч.' },
   { type:'itm', label:'Дистрибуція (собівартість)' },
   { type:'itm', label:'Приватні СЕС під ключ (собівартість)' },
@@ -196,13 +272,10 @@ const PNL_TEMPLATE = [
   { type:'itm', label:'Роздріб (собівартість)' },
   { type:'itm', label:'Сервіс (собівартість)' },
   { type:'sub', label:'Всього собівартість', key:'_totalCogs' },
-
   { type:'grd', label:'Валовий прибуток', key:'_grossProfit' },
   { type:'pct', label:'Маржинальність продажів, %', key:'_grossMargin' },
-
   { type:'sec', variant:'exp', label:'Непрямі (накладні) витрати' },
   { type:'pct', label:'Частка накладних витрат у виторгу, %', key:'_overheadPct' },
-
   { type:'grp', label:'Реклама і маркетинг', key:'_grpMarketing' },
   { type:'itm', label:'Маркетинг послуги', match:'маркетинг послуг' },
   { type:'itm', label:'Маркетинг продукція', match:'маркетинг продукц' },
@@ -212,21 +285,18 @@ const PNL_TEMPLATE = [
   { type:'itm', label:'Витрати на вебсайти', match:'вебсайт' },
   { type:'itm', label:'SEO просування', match:'seo' },
   { type:'itm', label:'Комерційні витрати', match:'комерційн' },
-
   { type:'sp' },
   { type:'grp', label:'ЗП та інші витрати на працівників', key:'_grpSalary' },
   { type:'itm', label:'Заробітна плата', match:'заробітн' },
   { type:'itm', label:'Витрати на працівників (HR, корпоратив)', match:'витрати на працівник' },
   { type:'itm', label:'Податки на заробітну плату', match:'податки на заробітн' },
   { type:'itm', label:'Work.ua', match:'work.ua' },
-
   { type:'sp' },
   { type:'grp', label:'Оренда приміщень', key:'_grpRent' },
   { type:'itm', label:'Орендна плата (офіс)', match:'оренд.*офіс' },
   { type:'itm', label:'Оренда складу', match:'оренд.*склад' },
   { type:'itm', label:'Оренда навантажувача', match:'навантажувач' },
   { type:'itm', label:'Витрати на склад', match:'витрати на склад' },
-
   { type:'sp' },
   { type:'grp', label:'Адміністративні витрати', key:'_grpAdmin' },
   { type:'itm', label:'Офісні витрати', match:'офісн' },
@@ -237,7 +307,6 @@ const PNL_TEMPLATE = [
   { type:'itm', label:'Витрати на ПЗ', match:'програмн' },
   { type:'itm', label:"Зв'язок", match:"зв'язок|зв\\'язок|зв.язок" },
   { type:'itm', label:'Інтернет послуги', match:'інтернет' },
-
   { type:'sp' },
   { type:'grp', label:'Витрати на транспорт', key:'_grpTransport' },
   { type:'itm', label:'Техобслуговування ТЗ', match:'техобслугов' },
@@ -247,19 +316,15 @@ const PNL_TEMPLATE = [
   { type:'itm', label:'Транспортні витрати (сервіс)', match:'транспортн.*серві' },
   { type:'itm', label:'Доставка', match:'доставк' },
   { type:'itm', label:'Відрядження', match:'відряджен' },
-
   { type:'sp' },
   { type:'itm', label:'Штрафи, пені, неустойки', match:'штраф' },
   { type:'itm', label:'Амортизація', match:'амортизац' },
-
   { type:'sub', label:'Всього накладні витрати', key:'_totalOverhead' },
-
   { type:'sec', variant:'tax', label:'Податки' },
   { type:'itm', label:'Єдиний податок ФОП', match:'єдиний податок' },
   { type:'itm', label:'ПДВ сплачене', match:'пдв' },
   { type:'itm', label:'Податок на прибуток', match:'податок на прибут' },
   { type:'sub', label:'Всього податки', key:'_totalTax' },
-
   { type:'sec', variant:'other', label:'Інші неопераційні витрати' },
   { type:'itm', label:'Курсові різниці', match:'курсов' },
   { type:'itm', label:'Нестачі і втрати', match:'нестач' },
@@ -268,7 +333,6 @@ const PNL_TEMPLATE = [
   { type:'itm', label:'Ремонт та модернізація ОЗ', match:'ремонт' },
   { type:'itm', label:'Списання ТМЦ', match:'списан' },
   { type:'sub', label:'Всього інші витрати', key:'_totalOther' },
-
   { type:'sp' },
   { type:'sub', label:'Всього витрати', key:'_totalAllExpenses' },
   { type:'grd', label:'Операційний прибуток / збиток', key:'_operatingProfit' },
@@ -277,10 +341,6 @@ const PNL_TEMPLATE = [
   { type:'pct', label:'Загальна рентабельність, %', key:'_netMargin' },
 ];
 
-function _localISO(d) {
-  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
-  return y + '-' + m + '-' + dd;
-}
 function setPreset(p) {
   const now = new Date(), y = now.getFullYear(), m = now.getMonth();
   let from, to = now;
@@ -288,40 +348,31 @@ function setPreset(p) {
   else if (p === 'prevmonth') { from = new Date(y, m-1, 1); to = new Date(y, m, 0); }
   else if (p === 'quarter')   { const q = Math.floor(m/3); from = new Date(y, q*3, 1); }
   else if (p === 'year')      from = new Date(y, 0, 1);
-  state.from = _localISO(from); state.to = _localISO(to); state.preset = p;
-  document.getElementById('fromIn').value = state.from;
-  document.getElementById('toIn').value   = state.to;
-  document.querySelectorAll('.toolbar .group:first-of-type .chip').forEach(c => {
+  pnlState.from = _localISO(from); pnlState.to = _localISO(to); pnlState.preset = p;
+  document.getElementById('fromIn').value = pnlState.from;
+  document.getElementById('toIn').value   = pnlState.to;
+  document.querySelectorAll('#pnlToolbar .group:first-of-type .chip').forEach(c => {
     const map = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' };
     c.classList.toggle('active', c.textContent.trim() === map[p]);
   });
-  load();
+  pnlLoad();
 }
 function setOrg(el) {
-  state.org = el.dataset.org;
+  pnlState.org = el.dataset.org;
   el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
-  load();
+  pnlLoad();
 }
-function fmt(n, dec) {
-  if (n === null || n === undefined || isNaN(n)) return '—';
-  return Number(n).toLocaleString('uk-UA', { maximumFractionDigits: dec, minimumFractionDigits: dec });
-}
-function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 const MN = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
 function mLabel(mk) { const p = mk.split('-'); return MN[+p[1]-1] + "'" + p[0].slice(2); }
 
-/* ── Render ── */
 function renderPnl(data) {
-  const { months, revenue, cogs, otherIncome, expenses, totalExpenses } = data;
-  // Worker already returns all amounts normalized to USD
+  const { months, revenue, cogs, otherIncome, expenses } = data;
   const conv = v => v;
   const sfx = ' $';
   const showM = months.length > 1;
-
-  // Map expense categories by fuzzy match
-  const expMap = {};       // templateLabel → { byMonth, total }
+  const expMap = {};
   const usedExpenses = new Set();
   const unmatchedExp = [];
 
@@ -340,7 +391,6 @@ function renderPnl(data) {
   });
   expenses.forEach((e, i) => { if (!usedExpenses.has(i)) unmatchedExp.push(e); });
 
-  // Compute group subtotals from matched items
   const grpTotals = {};
   let currentGrp = null;
   PNL_TEMPLATE.forEach(row => {
@@ -352,12 +402,9 @@ function renderPnl(data) {
     if (row.type === 'sec' || row.type === 'sub' || row.type === 'grd') currentGrp = null;
   });
 
-  // Compute overhead (all matched + unmatched expenses)
   const overheadByMonth = {}, taxByMonth = {}, otherExpByMonth = {};
   months.forEach(m => { overheadByMonth[m] = 0; taxByMonth[m] = 0; otherExpByMonth[m] = 0; });
   let overheadTotal = 0, taxTotal = 0, otherExpTotal = 0;
-
-  // Classify into overhead / tax / other based on template section
   let curSection = '';
   PNL_TEMPLATE.forEach(row => {
     if (row.type === 'sec') curSection = row.variant;
@@ -368,17 +415,14 @@ function renderPnl(data) {
       else if (curSection === 'other') { months.forEach(m => { otherExpByMonth[m] += d.byMonth[m] || 0; }); otherExpTotal += d.total; }
     }
   });
-  // Unmatched go to overhead
   unmatchedExp.forEach(e => { months.forEach(m => { overheadByMonth[m] += e.byMonth[m] || 0; }); overheadTotal += e.total; });
 
-  // Derived totals
   const totalRevByMonth = {}, grossByMonth = {}, totalAllExpByMonth = {}, opProfitByMonth = {}, netByMonth = {};
   let totalRevTotal = revenue.total + otherIncome.total;
   let grossTotal = revenue.total - cogs.total;
   let totalAllExp = cogs.total + overheadTotal + taxTotal + otherExpTotal;
   let opProfitTotal = totalRevTotal - cogs.total - overheadTotal;
   let netTotal = totalRevTotal - totalAllExp;
-
   months.forEach(m => {
     totalRevByMonth[m] = (revenue.byMonth[m] || 0) + (otherIncome.byMonth[m] || 0);
     grossByMonth[m] = (revenue.byMonth[m] || 0) - (cogs.byMonth[m] || 0);
@@ -387,23 +431,20 @@ function renderPnl(data) {
     netByMonth[m] = totalRevByMonth[m] - totalAllExpByMonth[m];
   });
 
-  // Computed-key map
   const computed = {
-    _totalRevenue:    { byMonth: totalRevByMonth, total: totalRevTotal },
-    _totalCogs:       { byMonth: cogs.byMonth, total: cogs.total },
-    _grossProfit:     { byMonth: grossByMonth, total: grossTotal },
-    _totalOverhead:   { byMonth: overheadByMonth, total: overheadTotal },
-    _totalTax:        { byMonth: taxByMonth, total: taxTotal },
-    _totalOther:      { byMonth: otherExpByMonth, total: otherExpTotal },
-    _totalAllExpenses:{ byMonth: totalAllExpByMonth, total: totalAllExp },
+    _totalRevenue: { byMonth: totalRevByMonth, total: totalRevTotal },
+    _totalCogs: { byMonth: cogs.byMonth, total: cogs.total },
+    _grossProfit: { byMonth: grossByMonth, total: grossTotal },
+    _totalOverhead: { byMonth: overheadByMonth, total: overheadTotal },
+    _totalTax: { byMonth: taxByMonth, total: taxTotal },
+    _totalOther: { byMonth: otherExpByMonth, total: otherExpTotal },
+    _totalAllExpenses: { byMonth: totalAllExpByMonth, total: totalAllExp },
     _operatingProfit: { byMonth: opProfitByMonth, total: opProfitTotal },
-    _netProfit:       { byMonth: netByMonth, total: netTotal },
-    _otherIncome:     { byMonth: otherIncome.byMonth, total: otherIncome.total },
+    _netProfit: { byMonth: netByMonth, total: netTotal },
+    _otherIncome: { byMonth: otherIncome.byMonth, total: otherIncome.total },
   };
-  // Group subtotals
   Object.keys(grpTotals).forEach(k => { computed[k] = grpTotals[k]; });
 
-  // Percentage rows
   const pctRow = (numByMonth, numTotal, denomTotal) => {
     const bm = {};
     months.forEach(m => { bm[m] = denomTotal ? (numByMonth[m] || 0) / (totalRevByMonth[m] || 1) : 0; });
@@ -414,7 +455,6 @@ function renderPnl(data) {
   computed._opMargin    = pctRow(opProfitByMonth, opProfitTotal, totalRevTotal);
   computed._netMargin   = pctRow(netByMonth, netTotal, totalRevTotal);
 
-  // Format helpers
   function fmtCell(val, isPct) {
     if (isPct) {
       if (!val && val !== 0) return '<span class="dash">—</span>';
@@ -425,8 +465,7 @@ function renderPnl(data) {
     return '<span class="' + (u > 0 ? 'pos' : 'neg') + '">' + fmt(u, 0) + sfx + '</span>';
   }
 
-  // Summary cards
-  document.getElementById('summary').innerHTML = '<div class="pnl-summary">' +
+  document.getElementById('pnlSummary').innerHTML = '<div class="pnl-summary">' +
     '<div class="pnl-card c-rev"><span class="cl">Доходи</span><span class="cv">' + fmt(conv(totalRevTotal), 0) + sfx + '</span></div>' +
     '<div class="pnl-card c-cost"><span class="cl">Собівартість</span><span class="cv">' + fmt(conv(cogs.total), 0) + sfx + '</span>' +
       '<span class="cs">' + (totalRevTotal ? (cogs.total / totalRevTotal * 100).toFixed(1) + '% від доходу' : '') + '</span></div>' +
@@ -436,30 +475,21 @@ function renderPnl(data) {
       '<span class="cs">' + (totalRevTotal ? (netTotal / totalRevTotal * 100).toFixed(1) + '%' : '') + '</span></div>' +
   '</div>';
 
-  // Build table
   const mCols = showM ? months.map(m => '<th>' + mLabel(m) + '</th>').join('') : '';
   let rows = '';
   const cs = (showM ? months.length : 0) + 2;
-
   PNL_TEMPLATE.forEach(row => {
     if (row.type === 'sp') { rows += '<tr class="sp"><td colspan="' + cs + '"></td></tr>'; return; }
-
-    // Resolve data
     let d = null, isPct = false;
     if (row.key && computed[row.key]) { d = computed[row.key]; isPct = !!d.isPct; }
     else if (row.match && expMap[row.label]) d = expMap[row.label];
-    // Special: revenue section subtotal = revenue
     if (row.type === 'sec' && row.variant === 'rev') d = { byMonth: revenue.byMonth, total: revenue.total };
     if (row.type === 'sec' && row.variant === 'cost') d = { byMonth: cogs.byMonth, total: cogs.total };
-
     const mCells = showM ? months.map(m => '<td>' + (d ? fmtCell(d.byMonth[m] || 0, isPct) : '<span class="dash">—</span>') + '</td>').join('') : '';
     const totalCell = d ? fmtCell(d.total, isPct) : '<span class="dash">—</span>';
     const cls = row.type + (row.variant ? ' ' + row.variant : '');
-
     rows += '<tr class="' + cls + '"><td>' + esc(row.label) + '</td>' + mCells + '<td class="col-total">' + totalCell + '</td></tr>';
   });
-
-  // Unmatched expenses
   if (unmatchedExp.length) {
     rows += '<tr class="sp"><td colspan="' + cs + '"></td></tr>';
     rows += '<tr class="grp"><td colspan="' + cs + '">Не класифіковані витрати (з 1С)</td></tr>';
@@ -468,53 +498,292 @@ function renderPnl(data) {
       rows += '<tr class="itm"><td>' + esc(e.category) + '</td>' + mCells + '<td class="col-total">' + fmtCell(e.total) + '</td></tr>';
     });
   }
-
-  document.getElementById('body').innerHTML =
+  document.getElementById('pnlBody').innerHTML =
     '<div class="pnl-wrap"><table class="pnl-table"><thead><tr><th>P&L Стаття</th>' +
     mCols + '<th class="col-total">Всього</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
-async function load() {
-  document.getElementById('body').innerHTML = '<div class="loading">Завантаження...</div>';
-  document.getElementById('summary').innerHTML = '';
+async function pnlLoad() {
+  document.getElementById('pnlBody').innerHTML = '<div class="loading">Завантаження...</div>';
+  document.getElementById('pnlSummary').innerHTML = '';
   try {
-    const q = '?action=pnl_report&from=' + state.from + '&to=' + state.to + (state.org ? '&org=' + encodeURIComponent(state.org) : '');
+    const q = '?action=pnl_report&from=' + pnlState.from + '&to=' + pnlState.to + (pnlState.org ? '&org=' + encodeURIComponent(pnlState.org) : '');
     const data = await fetch(API_URL + q).then(r => r.json());
     if (data.error) throw new Error(data.error);
     renderPnl(data);
   } catch (e) {
-    document.getElementById('body').innerHTML = '<div class="error">' + esc(e.message) + '</div>';
+    document.getElementById('pnlBody').innerHTML = '<div class="error">' + esc(e.message) + '</div>';
   }
 }
 
-document.getElementById('fromIn').addEventListener('change', function(e) { state.from = e.target.value; load(); });
-document.getElementById('toIn').addEventListener('change', function(e) { state.to = e.target.value; load(); });
+document.getElementById('fromIn').addEventListener('change', function(e) { pnlState.from = e.target.value; pnlLoad(); });
+document.getElementById('toIn').addEventListener('change', function(e) { pnlState.to = e.target.value; pnlLoad(); });
 
+/* ═══════════════════════════════════════════════════
+   GROSS PROFIT TAB
+   ═══════════════════════════════════════════════════ */
+const gpState = { from: '', to: '', org: '', preset: '', buyerFilter: '', nomFilter: '', _loaded: false, _rawData: null };
+let gpFilterTimer = null;
+
+function gpSetPreset(p) {
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  let from, to = now;
+  if (p === 'month')          from = new Date(y, m, 1);
+  else if (p === 'prevmonth') { from = new Date(y, m-1, 1); to = new Date(y, m, 0); }
+  else if (p === 'quarter')   { const q = Math.floor(m/3); from = new Date(y, q*3, 1); }
+  else if (p === 'year')      from = new Date(y, 0, 1);
+  gpState.from = _localISO(from); gpState.to = _localISO(to); gpState.preset = p;
+  document.getElementById('gpFromIn').value = gpState.from;
+  document.getElementById('gpToIn').value   = gpState.to;
+  document.querySelectorAll('#gpToolbar .group:first-of-type .chip').forEach(c => {
+    const map = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' };
+    c.classList.toggle('active', c.textContent.trim() === map[p]);
+  });
+  gpLoad();
+}
+function gpSetOrg(el) {
+  gpState.org = el.dataset.org;
+  el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  gpLoad();
+}
+function gpFilterChanged() {
+  clearTimeout(gpFilterTimer);
+  gpFilterTimer = setTimeout(function() {
+    gpState.buyerFilter = document.getElementById('gpBuyerIn').value.trim().toLowerCase();
+    gpState.nomFilter = document.getElementById('gpNomIn').value.trim().toLowerCase();
+    if (gpState._rawData) renderGp(gpState._rawData);
+  }, 300);
+}
+
+document.getElementById('gpFromIn').addEventListener('change', function(e) { gpState.from = e.target.value; gpLoad(); });
+document.getElementById('gpToIn').addEventListener('change', function(e) { gpState.to = e.target.value; gpLoad(); });
+
+/* ── GP Render ── */
+function renderGp(data) {
+  const { total, clients } = data;
+  const sfx = ' $';
+  const bf = gpState.buyerFilter;
+  const nf = gpState.nomFilter;
+
+  // Apply client-side filters
+  let filtered = clients;
+  if (bf) {
+    filtered = filtered.filter(cl => cl.name.toLowerCase().includes(bf));
+  }
+  if (nf) {
+    // Deep filter: keep clients that have at least one matching product
+    filtered = filtered.map(cl => {
+      const contracts = cl.contracts.map(ct => {
+        const orders = ct.orders.map(ord => {
+          const products = ord.products.filter(pr => pr.name.toLowerCase().includes(nf));
+          if (!products.length) return null;
+          const qty = products.reduce((s, p) => s + p.qty, 0);
+          const revenue = products.reduce((s, p) => s + p.revenue, 0);
+          const cogs = products.reduce((s, p) => s + p.cogs, 0);
+          const profit = +(revenue - cogs).toFixed(2);
+          return { ...ord, products, qty, revenue, cogs, profit, margin: revenue ? +((profit / revenue) * 100).toFixed(2) : 0 };
+        }).filter(Boolean);
+        if (!orders.length) return null;
+        const qty = orders.reduce((s, o) => s + o.qty, 0);
+        const revenue = orders.reduce((s, o) => s + o.revenue, 0);
+        const cogs = orders.reduce((s, o) => s + o.cogs, 0);
+        const profit = +(revenue - cogs).toFixed(2);
+        return { ...ct, orders, qty, revenue, cogs, profit, margin: revenue ? +((profit / revenue) * 100).toFixed(2) : 0 };
+      }).filter(Boolean);
+      if (!contracts.length) return null;
+      const qty = contracts.reduce((s, c) => s + c.qty, 0);
+      const revenue = contracts.reduce((s, c) => s + c.revenue, 0);
+      const cogs = contracts.reduce((s, c) => s + c.cogs, 0);
+      const profit = +(revenue - cogs).toFixed(2);
+      return { ...cl, contracts, qty, revenue, cogs, profit, margin: revenue ? +((profit / revenue) * 100).toFixed(2) : 0 };
+    }).filter(Boolean);
+  }
+
+  // Recalc totals for filtered view
+  const ft = { qty: 0, revenue: 0, cogs: 0, profit: 0, margin: 0 };
+  filtered.forEach(cl => { ft.qty += cl.qty; ft.revenue += cl.revenue; ft.cogs += cl.cogs; });
+  ft.profit = +(ft.revenue - ft.cogs).toFixed(2);
+  ft.margin = ft.revenue ? +((ft.profit / ft.revenue) * 100).toFixed(2) : 0;
+
+  // Summary cards
+  document.getElementById('gpSummary').innerHTML = '<div class="pnl-summary">' +
+    '<div class="pnl-card c-rev"><span class="cl">Виручка</span><span class="cv">' + fmt(ft.revenue, 2) + sfx + '</span>' +
+      '<span class="cs">Кількість: ' + fmt(ft.qty, 0) + '</span></div>' +
+    '<div class="pnl-card c-cost"><span class="cl">Собівартість</span><span class="cv">' + fmt(ft.cogs, 2) + sfx + '</span>' +
+      '<span class="cs">' + (ft.revenue ? (ft.cogs / ft.revenue * 100).toFixed(1) + '% від виручки' : '') + '</span></div>' +
+    '<div class="pnl-card c-grs"><span class="cl">Валовий прибуток</span><span class="cv">' + fmt(ft.profit, 2) + sfx + '</span>' +
+      '<span class="cs">Рентабельність ' + ft.margin.toFixed(2) + '%</span></div>' +
+    '<div class="pnl-card c-net"><span class="cl">Клієнтів</span><span class="cv">' + filtered.length + '</span>' +
+      '<span class="cs">Накладних: ' + filtered.reduce((s, c) => s + c.contracts.reduce((s2, ct) => s2 + ct.orders.reduce((s3, o) => s3 + o.products.reduce((s4, p) => s4 + p.docs.length, 0), 0), 0), 0) + '</span></div>' +
+  '</div>';
+
+  // Build flat rows for tree table
+  const flatRows = [];
+  let rowId = 0;
+
+  filtered.forEach(cl => {
+    const clId = 'r' + (rowId++);
+    flatRows.push({ id: clId, parent: null, level: 0, name: cl.name, qty: cl.qty, revenue: cl.revenue, cogs: cl.cogs, profit: cl.profit, margin: cl.margin, hasChildren: cl.contracts.length > 0 });
+    cl.contracts.forEach(ct => {
+      const ctId = 'r' + (rowId++);
+      flatRows.push({ id: ctId, parent: clId, level: 1, name: ct.name, qty: ct.qty, revenue: ct.revenue, cogs: ct.cogs, profit: ct.profit, margin: ct.margin, hasChildren: ct.orders.length > 0 });
+      ct.orders.forEach(ord => {
+        const ordId = 'r' + (rowId++);
+        flatRows.push({ id: ordId, parent: ctId, level: 2, name: ord.name, qty: ord.qty, revenue: ord.revenue, cogs: ord.cogs, profit: ord.profit, margin: ord.margin, hasChildren: ord.products.length > 0 });
+        ord.products.forEach(pr => {
+          const prId = 'r' + (rowId++);
+          flatRows.push({ id: prId, parent: ordId, level: 3, name: pr.name, qty: pr.qty, revenue: pr.revenue, cogs: pr.cogs, profit: pr.profit, margin: pr.margin, hasChildren: pr.docs.length > 1 });
+          if (pr.docs.length > 1) {
+            pr.docs.forEach(doc => {
+              flatRows.push({ id: 'r' + (rowId++), parent: prId, level: 4, name: doc.name, qty: doc.qty, revenue: doc.revenue, cogs: doc.cogs, profit: doc.profit, margin: doc.margin, hasChildren: false });
+            });
+          }
+        });
+      });
+    });
+  });
+
+  function fmtV(v) {
+    if (Math.abs(v) < 0.005) return '<span class="zr">—</span>';
+    return '<span class="' + (v > 0 ? 'pos' : 'neg') + '">' + fmt(v, 2) + '</span>';
+  }
+  function fmtM(v) {
+    if (!v && v !== 0) return '<span class="zr">—</span>';
+    return '<span class="' + (v > 0 ? 'pos' : v < 0 ? 'neg' : 'zr') + '">' + v.toFixed(2) + '%</span>';
+  }
+
+  let html = '<div class="gp-wrap"><table class="gp-table"><thead><tr>' +
+    '<th>Покупець / Договір / Замовлення / Номенклатура</th>' +
+    '<th>Кількість</th><th>Виручка, $</th><th>Собівартість, $</th><th>Валовий прибуток, $</th><th>Рентабельність</th>' +
+    '</tr></thead><tbody>';
+
+  // Grand total row at top
+  html += '<tr class="gp-total"><td>Разом</td>' +
+    '<td>' + fmt(ft.qty, 0) + '</td>' +
+    '<td>' + fmtV(ft.revenue) + '</td>' +
+    '<td>' + fmtV(ft.cogs) + '</td>' +
+    '<td>' + fmtV(ft.profit) + '</td>' +
+    '<td>' + fmtM(ft.margin) + '</td></tr>';
+
+  flatRows.forEach(r => {
+    const hidden = r.parent ? ' style="display:none"' : '';
+    const chevron = r.hasChildren ? '<span class="gp-chevron" data-rid="' + r.id + '">&#9654;</span> ' : '<span style="display:inline-block;width:14px"></span> ';
+    const toggle = r.hasChildren ? ' class="gp-toggle"' : '';
+    html += '<tr class="lvl-' + r.level + '" data-id="' + r.id + '" data-parent="' + (r.parent || '') + '"' + hidden + '>' +
+      '<td' + toggle + ' onclick="gpToggle(\'' + r.id + '\')">' + chevron + esc(r.name) + '</td>' +
+      '<td>' + fmt(r.qty, 0) + '</td>' +
+      '<td>' + fmtV(r.revenue) + '</td>' +
+      '<td>' + fmtV(r.cogs) + '</td>' +
+      '<td>' + fmtV(r.profit) + '</td>' +
+      '<td>' + fmtM(r.margin) + '</td></tr>';
+  });
+
+  html += '</tbody></table></div>';
+  document.getElementById('gpBody').innerHTML = html;
+}
+
+// Track open state
+const gpOpenRows = new Set();
+
+function gpToggle(id) {
+  const isOpen = gpOpenRows.has(id);
+  if (isOpen) {
+    gpOpenRows.delete(id);
+    // Hide all descendants
+    gpCloseDescendants(id);
+  } else {
+    gpOpenRows.add(id);
+    // Show direct children only
+    document.querySelectorAll('.gp-table tr[data-parent="' + id + '"]').forEach(tr => {
+      tr.style.display = '';
+    });
+  }
+  // Update chevron
+  const chev = document.querySelector('.gp-chevron[data-rid="' + id + '"]');
+  if (chev) chev.classList.toggle('open', !isOpen);
+}
+
+function gpCloseDescendants(id) {
+  document.querySelectorAll('.gp-table tr[data-parent="' + id + '"]').forEach(tr => {
+    const childId = tr.dataset.id;
+    tr.style.display = 'none';
+    gpOpenRows.delete(childId);
+    // Update chevron
+    const chev = document.querySelector('.gp-chevron[data-rid="' + childId + '"]');
+    if (chev) chev.classList.remove('open');
+    gpCloseDescendants(childId);
+  });
+}
+
+async function gpLoad() {
+  gpState._loaded = true;
+  document.getElementById('gpBody').innerHTML = '<div class="loading">Завантаження...</div>';
+  document.getElementById('gpSummary').innerHTML = '';
+  gpOpenRows.clear();
+  try {
+    const q = '?action=gross_profit_report&from=' + gpState.from + '&to=' + gpState.to + (gpState.org ? '&org=' + encodeURIComponent(gpState.org) : '');
+    const data = await fetch(API_URL + q).then(r => r.json());
+    if (data.error) throw new Error(data.error);
+    gpState._rawData = data;
+    renderGp(data);
+  } catch (e) {
+    document.getElementById('gpBody').innerHTML = '<div class="error">' + esc(e.message) + '</div>';
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════ */
 Auth.require('finance').then(function(user) {
   window.__user = user;
   AppHeader.mount({ active: 'finance', user });
-  // Org-level access: hide chips for orgs the user doesn't have access to
+
+  // Org-level access for both views
+  // If no orgs assigned at all → show everything (no restriction)
   const userOrgs = user.orgs || {};
-  const allowedOrgs = ['Реакт', 'Генерація'].filter(o => userOrgs[o]);
-  document.querySelectorAll('.group .chip[data-org]').forEach(function(chip) {
-    const org = chip.dataset.org;
-    if (org === '') {
-      // "Всі" button — only show if user has access to multiple orgs
-      if (allowedOrgs.length < 2) chip.style.display = 'none';
-    } else {
-      if (!userOrgs[org]) chip.style.display = 'none';
-    }
-  });
-  // Auto-select: if 2+ orgs → "Всі", if 1 → that org, if 0 → "Всі" (will show nothing)
-  if (allowedOrgs.length === 1) {
-    state.org = allowedOrgs[0];
-    document.querySelectorAll('.group .chip[data-org]').forEach(function(c) {
-      c.classList.toggle('active', c.dataset.org === allowedOrgs[0]);
+  const hasAnyOrg = Object.values(userOrgs).some(function(v) { return v; });
+
+  if (hasAnyOrg) {
+    var allowedOrgs = ['Реакт', 'Генерація'].filter(function(o) { return userOrgs[o]; });
+    ['pnlOrgGroup', 'gpOrgGroup'].forEach(function(groupId) {
+      document.querySelectorAll('#' + groupId + ' .chip[data-org]').forEach(function(chip) {
+        var org = chip.dataset.org;
+        if (org === '') {
+          if (allowedOrgs.length < 2) chip.style.display = 'none';
+        } else {
+          if (!userOrgs[org]) chip.style.display = 'none';
+        }
+      });
     });
   } else {
-    document.querySelector('[data-org=""]').classList.add('active');
+    var allowedOrgs = ['Реакт', 'Генерація'];
   }
+
+  // Auto-select org
+  const defaultOrg = (hasAnyOrg && allowedOrgs.length === 1) ? allowedOrgs[0] : '';
+  // P&L
+  pnlState.org = defaultOrg;
+  document.querySelectorAll('#pnlOrgGroup .chip[data-org]').forEach(function(c) {
+    c.classList.toggle('active', c.dataset.org === defaultOrg);
+  });
+  // GP
+  gpState.org = defaultOrg;
+  document.querySelectorAll('#gpOrgGroup .chip[data-org]').forEach(function(c) {
+    c.classList.toggle('active', c.dataset.org === defaultOrg);
+  });
+
   setPreset('year');
+
+  // Pre-set GP dates (same as P&L default) but don't load yet
+  gpState.from = pnlState.from;
+  gpState.to = pnlState.to;
+  document.getElementById('gpFromIn').value = gpState.from;
+  document.getElementById('gpToIn').value = gpState.to;
+  // Mark the GP preset chip too
+  document.querySelectorAll('#gpToolbar .group:first-of-type .chip').forEach(c => {
+    c.classList.toggle('active', c.textContent.trim() === 'Рік');
+  });
 });
 </script>
 </body>
