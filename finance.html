@@ -138,6 +138,32 @@ a{color:inherit;text-decoration:none}
 .gp-table .gp-total td{font-weight:800;font-size:13px;border-top:3px double var(--border2);background:var(--surface2) !important}
 .gp-table .gp-total td:first-child{background:var(--surface2) !important;padding-left:8px}
 
+/* ── AR tree table ── */
+.ar-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px}
+.ar-table{width:100%;border-collapse:collapse;font-size:12px;min-width:1100px}
+.ar-table th,.ar-table td{padding:5px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
+.ar-table th{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700;background:var(--surface2);position:sticky;top:0;z-index:2}
+.ar-table th:first-child{text-align:left;position:sticky;left:0;z-index:3;background:var(--surface2);min-width:320px}
+.ar-table td:first-child{text-align:left;position:sticky;left:0;z-index:1;background:var(--bg)}
+.ar-table .ar-toggle{cursor:pointer;user-select:none}
+.ar-table .ar-toggle:hover{color:var(--accent)}
+.ar-table .ar-chevron{display:inline-block;width:14px;font-size:10px;color:var(--text3);transition:transform .15s}
+.ar-table .ar-chevron.open{transform:rotate(90deg)}
+/* AR header groups */
+.ar-table .thg{text-align:center;border-bottom:2px solid var(--border);padding:6px 0;font-size:10px;letter-spacing:.5px}
+.ar-table .thg-open{background:var(--blue-bg);color:var(--blue)}
+.ar-table .thg-move{background:var(--accent-bg);color:var(--accent)}
+.ar-table .thg-close{background:var(--green-bg);color:var(--green)}
+/* AR levels */
+.ar-table .ar-cur td{font-weight:800;font-size:12px;background:var(--accent-bg) !important;color:var(--text);border-bottom:2px solid var(--border)}
+.ar-table .ar-cur td:first-child{padding-left:8px;background:var(--accent-bg) !important}
+.ar-table .ar-cl td{font-weight:700;background:var(--surface2) !important}
+.ar-table .ar-cl td:first-child{padding-left:20px;background:var(--surface2) !important}
+.ar-table .ar-ct td{font-weight:500}
+.ar-table .ar-ct td:first-child{padding-left:36px}
+.ar-table .ar-total td{font-weight:800;font-size:12px;border-top:3px double var(--border2);background:var(--surface2) !important}
+.ar-table .ar-total td:first-child{padding-left:8px;background:var(--surface2) !important}
+
 .view{display:none}
 .view.active{display:block}
 
@@ -159,6 +185,7 @@ a{color:inherit;text-decoration:none}
     <div class="page-tabs">
       <span class="ptab active" data-view="pnl" onclick="switchTab(this)">P&L</span>
       <span class="ptab" data-view="gp" onclick="switchTab(this)">Валовий прибуток</span>
+      <span class="ptab" data-view="ar" onclick="switchTab(this)">Розрахунки з покупцями</span>
     </div>
 
     <!-- ═══ P&L View ═══ -->
@@ -213,6 +240,33 @@ a{color:inherit;text-decoration:none}
       <div id="gpSummary"></div>
       <div id="gpBody"><div class="loading">Завантаження...</div></div>
     </div>
+
+    <!-- ═══ Accounts Receivable View ═══ -->
+    <div id="arView" class="view">
+      <div class="toolbar" id="arToolbar">
+        <span class="lbl">Період</span>
+        <input type="date" id="arFromIn">
+        <span style="color:var(--text3)">—</span>
+        <input type="date" id="arToIn">
+        <span class="group">
+          <span class="chip" onclick="arSetPreset('month')">Цей місяць</span>
+          <span class="chip" onclick="arSetPreset('prevmonth')">Минулий</span>
+          <span class="chip" onclick="arSetPreset('quarter')">Квартал</span>
+          <span class="chip" onclick="arSetPreset('year')">Рік</span>
+        </span>
+        <div class="sep"></div>
+        <span class="group" id="arOrgGroup">
+          <span class="chip" data-org="" onclick="arSetOrg(this)">Всі</span>
+          <span class="chip" data-org="Реакт" onclick="arSetOrg(this)">Реакт</span>
+          <span class="chip" data-org="Генерація" onclick="arSetOrg(this)">Генерація</span>
+        </span>
+        <div class="sep"></div>
+        <span class="lbl">Покупець</span>
+        <input type="text" id="arBuyerIn" placeholder="Пошук покупця..." oninput="arFilterChanged()">
+      </div>
+      <div id="arSummary"></div>
+      <div id="arBody"><div class="loading">Завантаження...</div></div>
+    </div>
   </div>
 </div>
 
@@ -226,7 +280,7 @@ const activeView = { tab: 'pnl' };
 
 // ── URL state persistence ──
 function saveStateToUrl() {
-  const st = activeView.tab === 'gp' ? gpState : pnlState;
+  const st = activeView.tab === 'ar' ? arState : activeView.tab === 'gp' ? gpState : pnlState;
   const p = new URLSearchParams();
   p.set('tab', activeView.tab);
   if (st.from) p.set('from', st.from);
@@ -248,6 +302,7 @@ function switchTab(el) {
   activeView.tab = v;
   document.querySelectorAll('.view').forEach(d => d.classList.toggle('active', d.id === v + 'View'));
   if (v === 'gp' && !gpState._loaded) gpLoad();
+  if (v === 'ar' && !arState._loaded) arLoad();
   saveStateToUrl();
 }
 
@@ -787,6 +842,175 @@ async function gpLoad() {
 }
 
 /* ═══════════════════════════════════════════════════
+   ACCOUNTS RECEIVABLE TAB (Розрахунки з покупцями)
+   ═══════════════════════════════════════════════════ */
+const arState = { from: '', to: '', org: '', preset: '', buyerFilter: '', _loaded: false, _rawData: null };
+let arFilterTimer = null;
+
+function arSetPreset(p) {
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  let from, to = now;
+  if (p === 'month')          from = new Date(y, m, 1);
+  else if (p === 'prevmonth') { from = new Date(y, m-1, 1); to = new Date(y, m, 0); }
+  else if (p === 'quarter')   { const q = Math.floor(m/3); from = new Date(y, q*3, 1); }
+  else if (p === 'year')      from = new Date(y, 0, 1);
+  arState.from = _localISO(from); arState.to = _localISO(to); arState.preset = p;
+  document.getElementById('arFromIn').value = arState.from;
+  document.getElementById('arToIn').value   = arState.to;
+  document.querySelectorAll('#arToolbar .group:first-of-type .chip').forEach(c => {
+    const map = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' };
+    c.classList.toggle('active', c.textContent.trim() === map[p]);
+  });
+  saveStateToUrl();
+  arLoad();
+}
+function arSetOrg(el) {
+  arState.org = el.dataset.org;
+  el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  saveStateToUrl();
+  arLoad();
+}
+function arFilterChanged() {
+  clearTimeout(arFilterTimer);
+  arFilterTimer = setTimeout(function() {
+    arState.buyerFilter = document.getElementById('arBuyerIn').value.trim().toLowerCase();
+    if (arState._rawData) renderAr(arState._rawData);
+  }, 300);
+}
+
+document.getElementById('arFromIn').addEventListener('change', function(e) { arState.from = e.target.value; arLoad(); });
+document.getElementById('arToIn').addEventListener('change', function(e) { arState.to = e.target.value; arLoad(); });
+
+function renderAr(data) {
+  const { currencies } = data;
+  const bf = arState.buyerFilter;
+
+  // Apply client-side filter
+  let filtered = currencies;
+  if (bf) {
+    filtered = currencies.map(cur => {
+      const clients = cur.clients.filter(cl => cl.name.toLowerCase().includes(bf));
+      if (!clients.length) return null;
+      // Recalc currency totals
+      const t = { openDebt:0, openPrepay:0, sold:0, paid:0, received:0, applied:0, closeDebt:0, closePrepay:0 };
+      clients.forEach(cl => { ['openDebt','openPrepay','sold','paid','received','applied','closeDebt','closePrepay'].forEach(k => { t[k] += cl[k]; }); });
+      return { ...cur, clients, ...t };
+    }).filter(Boolean);
+  }
+
+  // Grand totals (per-currency, shown at top of each currency section)
+  const grandTotals = { openDebt:0, openPrepay:0, sold:0, paid:0, received:0, applied:0, closeDebt:0, closePrepay:0 };
+  filtered.forEach(cur => {
+    ['openDebt','openPrepay','sold','paid','received','applied','closeDebt','closePrepay'].forEach(k => { grandTotals[k] += cur[k]; });
+  });
+
+  // Summary cards
+  document.getElementById('arSummary').innerHTML = '<div class="pnl-summary">' +
+    '<div class="pnl-card c-cost"><span class="cl">Заборгованість (кін.)</span><span class="cv">' + fmt(grandTotals.closeDebt, 2) + '</span></div>' +
+    '<div class="pnl-card c-grs"><span class="cl">Передоплата (кін.)</span><span class="cv">' + fmt(grandTotals.closePrepay, 2) + '</span></div>' +
+    '<div class="pnl-card c-rev"><span class="cl">Продано</span><span class="cv">' + fmt(grandTotals.sold, 2) + '</span></div>' +
+    '<div class="pnl-card c-net"><span class="cl">Сплачено</span><span class="cv">' + fmt(grandTotals.paid, 2) + '</span></div>' +
+  '</div>';
+
+  function fmtV(v) {
+    if (Math.abs(v) < 0.005) return '<span class="zr">—</span>';
+    return '<span class="' + (v > 0 ? 'pos' : 'neg') + '">' + fmt(v, 2) + '</span>';
+  }
+
+  // Build table
+  let html = '<div class="ar-wrap"><table class="ar-table"><thead>' +
+    '<tr>' +
+    '<th rowspan="2">Контрагент / Договір</th>' +
+    '<th colspan="2" class="thg thg-open">Початковий залишок</th>' +
+    '<th colspan="4" class="thg thg-move">Рух за період</th>' +
+    '<th colspan="2" class="thg thg-close">Кінцевий залишок</th>' +
+    '</tr><tr>' +
+    '<th>Заборг.</th><th>Передопл.</th>' +
+    '<th>Продано</th><th>Сплачено</th><th>Надійшло</th><th>Зараховано</th>' +
+    '<th>Заборг.</th><th>Передопл.</th>' +
+    '</tr></thead><tbody>';
+
+  const flatRows = [];
+  let rowId = 0;
+
+  filtered.forEach(cur => {
+    const curId = 'ar' + (rowId++);
+    flatRows.push({ id: curId, parent: null, cls: 'ar-cur', name: cur.currency, ...cur, hasChildren: cur.clients.length > 0 });
+
+    cur.clients.forEach(cl => {
+      const clId = 'ar' + (rowId++);
+      flatRows.push({ id: clId, parent: curId, cls: 'ar-cl', name: cl.name, ...cl, hasChildren: cl.contracts.length > 0 });
+
+      cl.contracts.forEach(ct => {
+        flatRows.push({ id: 'ar' + (rowId++), parent: clId, cls: 'ar-ct', name: ct.name,
+          openDebt: ct.openDebt, openPrepay: ct.openPrepay,
+          sold: ct.sold, paid: ct.paid, received: ct.received, applied: ct.applied,
+          closeDebt: ct.closeDebt, closePrepay: ct.closePrepay, hasChildren: false });
+      });
+    });
+  });
+
+  flatRows.forEach(r => {
+    const hidden = r.parent ? ' style="display:none"' : '';
+    const chevron = r.hasChildren ? '<span class="ar-chevron" data-rid="' + r.id + '">&#9654;</span> ' : '<span style="display:inline-block;width:14px"></span> ';
+    const toggle = r.hasChildren ? ' class="ar-toggle"' : '';
+    html += '<tr class="' + r.cls + '" data-id="' + r.id + '" data-parent="' + (r.parent || '') + '"' + hidden + '>' +
+      '<td' + toggle + ' onclick="arToggle(\'' + r.id + '\')">' + chevron + esc(r.name) + '</td>' +
+      '<td>' + fmtV(r.openDebt) + '</td><td>' + fmtV(r.openPrepay) + '</td>' +
+      '<td>' + fmtV(r.sold) + '</td><td>' + fmtV(r.paid) + '</td>' +
+      '<td>' + fmtV(r.received) + '</td><td>' + fmtV(r.applied) + '</td>' +
+      '<td>' + fmtV(r.closeDebt) + '</td><td>' + fmtV(r.closePrepay) + '</td>' +
+      '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  document.getElementById('arBody').innerHTML = html;
+}
+
+const arOpenRows = new Set();
+
+function arToggle(id) {
+  const isOpen = arOpenRows.has(id);
+  if (isOpen) {
+    arOpenRows.delete(id);
+    arCloseDescendants(id);
+  } else {
+    arOpenRows.add(id);
+    document.querySelectorAll('.ar-table tr[data-parent="' + id + '"]').forEach(tr => { tr.style.display = ''; });
+  }
+  const chev = document.querySelector('.ar-chevron[data-rid="' + id + '"]');
+  if (chev) chev.classList.toggle('open', !isOpen);
+}
+
+function arCloseDescendants(id) {
+  document.querySelectorAll('.ar-table tr[data-parent="' + id + '"]').forEach(tr => {
+    const childId = tr.dataset.id;
+    tr.style.display = 'none';
+    arOpenRows.delete(childId);
+    const chev = document.querySelector('.ar-chevron[data-rid="' + childId + '"]');
+    if (chev) chev.classList.remove('open');
+    arCloseDescendants(childId);
+  });
+}
+
+async function arLoad() {
+  arState._loaded = true;
+  document.getElementById('arBody').innerHTML = '<div class="loading">Завантаження...</div>';
+  document.getElementById('arSummary').innerHTML = '';
+  arOpenRows.clear();
+  try {
+    const q = '?action=accounts_receivable&from=' + arState.from + '&to=' + arState.to + (arState.org ? '&org=' + encodeURIComponent(arState.org) : '');
+    const data = await fetch(API_URL + q).then(r => r.json());
+    if (data.error) throw new Error(data.error);
+    arState._rawData = data;
+    renderAr(data);
+  } catch (e) {
+    document.getElementById('arBody').innerHTML = '<div class="error">' + esc(e.message) + '</div>';
+  }
+}
+
+/* ═══════════════════════════════════════════════════
    INIT
    ═══════════════════════════════════════════════════ */
 Auth.require('finance').then(function(user) {
@@ -800,7 +1024,7 @@ Auth.require('finance').then(function(user) {
 
   if (hasAnyOrg) {
     var allowedOrgs = ['Реакт', 'Генерація'].filter(function(o) { return userOrgs[o]; });
-    ['pnlOrgGroup', 'gpOrgGroup'].forEach(function(groupId) {
+    ['pnlOrgGroup', 'gpOrgGroup', 'arOrgGroup'].forEach(function(groupId) {
       document.querySelectorAll('#' + groupId + ' .chip[data-org]').forEach(function(chip) {
         var org = chip.dataset.org;
         if (org === '') {
@@ -824,6 +1048,11 @@ Auth.require('finance').then(function(user) {
   // GP
   gpState.org = defaultOrg;
   document.querySelectorAll('#gpOrgGroup .chip[data-org]').forEach(function(c) {
+    c.classList.toggle('active', c.dataset.org === defaultOrg);
+  });
+  // AR
+  arState.org = defaultOrg;
+  document.querySelectorAll('#arOrgGroup .chip[data-org]').forEach(function(c) {
     c.classList.toggle('active', c.dataset.org === defaultOrg);
   });
 
@@ -859,10 +1088,26 @@ Auth.require('finance').then(function(user) {
     document.querySelectorAll('#gpToolbar .group:first-of-type .chip').forEach(function(c) {
       c.classList.toggle('active', c.textContent.trim() === presetMap[gpState.preset]);
     });
+    // AR state
+    arState.from = saved.from;
+    arState.to = saved.to;
+    arState.preset = saved.preset || '';
+    arState.org = pnlState.org;
+    document.getElementById('arFromIn').value = arState.from;
+    document.getElementById('arToIn').value = arState.to;
+    document.querySelectorAll('#arOrgGroup .chip[data-org]').forEach(function(c) {
+      c.classList.toggle('active', c.dataset.org === arState.org);
+    });
+    document.querySelectorAll('#arToolbar .group:first-of-type .chip').forEach(function(c) {
+      c.classList.toggle('active', c.textContent.trim() === presetMap[arState.preset]);
+    });
     // Switch tab if saved
     if (saved.tab === 'gp') {
       var gpTabEl = document.querySelector('.ptab[data-view="gp"]');
       if (gpTabEl) switchTab(gpTabEl);
+    } else if (saved.tab === 'ar') {
+      var arTabEl = document.querySelector('.ptab[data-view="ar"]');
+      if (arTabEl) switchTab(arTabEl);
     }
     pnlLoad();
   } else {
@@ -873,6 +1118,14 @@ Auth.require('finance').then(function(user) {
     document.getElementById('gpFromIn').value = gpState.from;
     document.getElementById('gpToIn').value = gpState.to;
     document.querySelectorAll('#gpToolbar .group:first-of-type .chip').forEach(c => {
+      c.classList.toggle('active', c.textContent.trim() === 'Рік');
+    });
+    // Pre-set AR dates too
+    arState.from = pnlState.from;
+    arState.to = pnlState.to;
+    document.getElementById('arFromIn').value = arState.from;
+    document.getElementById('arToIn').value = arState.to;
+    document.querySelectorAll('#arToolbar .group:first-of-type .chip').forEach(c => {
       c.classList.toggle('active', c.textContent.trim() === 'Рік');
     });
   }
