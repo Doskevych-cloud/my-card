@@ -224,6 +224,23 @@ const API_URL = 'https://price-api.doskevich.workers.dev';
    ═══════════════════════════════════════════════════ */
 const activeView = { tab: 'pnl' };
 
+// ── URL state persistence ──
+function saveStateToUrl() {
+  const st = activeView.tab === 'gp' ? gpState : pnlState;
+  const p = new URLSearchParams();
+  p.set('tab', activeView.tab);
+  if (st.from) p.set('from', st.from);
+  if (st.to) p.set('to', st.to);
+  if (st.org) p.set('org', st.org);
+  if (st.preset) p.set('preset', st.preset);
+  history.replaceState(null, '', '#' + p.toString());
+}
+function readStateFromUrl() {
+  const h = location.hash.slice(1);
+  if (!h) return null;
+  try { return Object.fromEntries(new URLSearchParams(h)); } catch (_) { return null; }
+}
+
 function switchTab(el) {
   document.querySelectorAll('.ptab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
@@ -231,6 +248,7 @@ function switchTab(el) {
   activeView.tab = v;
   document.querySelectorAll('.view').forEach(d => d.classList.toggle('active', d.id === v + 'View'));
   if (v === 'gp' && !gpState._loaded) gpLoad();
+  saveStateToUrl();
 }
 
 function fmt(n, dec) {
@@ -250,13 +268,15 @@ const pnlState = { from: '', to: '', org: '', preset: '' };
 
 const PNL_TEMPLATE = [
   { type:'sec', variant:'rev', label:'Виторг від продажів, у т.ч.' },
-  { type:'itm', label:'Дистрибуція' },
-  { type:'itm', label:'Приватні сонячні станції під ключ' },
-  { type:'itm', label:'Комерційні сонячні станції під ключ' },
-  { type:'itm', label:'Роздріб' },
-  { type:'itm', label:'Роздріб під ключ' },
-  { type:'itm', label:'Проектування СЕС' },
-  { type:'itm', label:'Сервіс' },
+  { type:'itm', label:'Дистрибуція', dep:'дистрибуц' },
+  { type:'itm', label:'Приватні сонячні станції під ключ', dep:'приватн' },
+  { type:'itm', label:'Комерційні сонячні станції під ключ', dep:'комерційн' },
+  { type:'itm', label:'Роздріб', dep:'^роздріб$|^П\\.? Роздріб$' },
+  { type:'itm', label:'Роздріб під ключ', dep:'роздріб під ключ' },
+  { type:'itm', label:'Проектування СЕС', dep:'проектуван|поектуван' },
+  { type:'itm', label:'Сервіс', dep:'серві[сз]$' },
+  { type:'itm', label:'Зелений тариф', dep:'зелений тариф' },
+  { type:'itm', label:'Основний підрозділ', dep:'основний підрозділ|основний пiдроздiл' },
   { type:'sp' },
   { type:'grp', label:'Інші непрямі доходи', key:'_otherIncome' },
   { type:'itm', label:'Інші доходи (курсова різниця)' },
@@ -266,11 +286,15 @@ const PNL_TEMPLATE = [
   { type:'itm', label:'Суборенда, взаємозаліки' },
   { type:'sub', label:'Всього доходи', key:'_totalRevenue' },
   { type:'sec', variant:'cost', label:'Собівартість продажів, у т.ч.' },
-  { type:'itm', label:'Дистрибуція (собівартість)' },
-  { type:'itm', label:'Приватні СЕС під ключ (собівартість)' },
-  { type:'itm', label:'Комерційні СЕС під ключ (собівартість)' },
-  { type:'itm', label:'Роздріб (собівартість)' },
-  { type:'itm', label:'Сервіс (собівартість)' },
+  { type:'itm', label:'Дистрибуція (собівартість)', dep:'дистрибуц' },
+  { type:'itm', label:'Приватні СЕС під ключ (собівартість)', dep:'приватн' },
+  { type:'itm', label:'Комерційні СЕС під ключ (собівартість)', dep:'комерційн' },
+  { type:'itm', label:'Роздріб (собівартість)', dep:'^роздріб$|^П\\.? Роздріб$' },
+  { type:'itm', label:'Роздріб під ключ (собівартість)', dep:'роздріб під ключ' },
+  { type:'itm', label:'Проектування СЕС (собівартість)', dep:'проектуван|поектуван' },
+  { type:'itm', label:'Сервіс (собівартість)', dep:'серві[сз]$' },
+  { type:'itm', label:'Зелений тариф (собівартість)', dep:'зелений тариф' },
+  { type:'itm', label:'Основний підрозділ (собівартість)', dep:'основний підрозділ|основний пiдроздiл' },
   { type:'sub', label:'Всього собівартість', key:'_totalCogs' },
   { type:'grd', label:'Валовий прибуток', key:'_grossProfit' },
   { type:'pct', label:'Маржинальність продажів, %', key:'_grossMargin' },
@@ -355,12 +379,14 @@ function setPreset(p) {
     const map = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' };
     c.classList.toggle('active', c.textContent.trim() === map[p]);
   });
+  saveStateToUrl();
   pnlLoad();
 }
 function setOrg(el) {
   pnlState.org = el.dataset.org;
   el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
+  saveStateToUrl();
   pnlLoad();
 }
 
@@ -368,13 +394,33 @@ const MN = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Се
 function mLabel(mk) { const p = mk.split('-'); return MN[+p[1]-1] + "'" + p[0].slice(2); }
 
 function renderPnl(data) {
-  const { months, revenue, cogs, otherIncome, expenses } = data;
+  const { months, revenue, cogs, otherIncome, expenses, departments } = data;
   const conv = v => v;
   const sfx = ' $';
   const showM = months.length > 1;
   const expMap = {};
   const usedExpenses = new Set();
   const unmatchedExp = [];
+
+  // Build department lookup: for each dep pattern, find matching department(s) and sum their revenue/cogs
+  const deps = departments || [];
+  function depFind(pattern) {
+    if (!pattern || !deps.length) return null;
+    const re = new RegExp(pattern, 'i');
+    const rev = { byMonth: {}, total: 0 };
+    const cog = { byMonth: {}, total: 0 };
+    let found = false;
+    deps.forEach(function(dep) {
+      if (re.test(dep.name)) {
+        found = true;
+        months.forEach(function(m) { rev.byMonth[m] = (rev.byMonth[m] || 0) + (dep.revenue.byMonth[m] || 0); });
+        rev.total += dep.revenue.total;
+        months.forEach(function(m) { cog.byMonth[m] = (cog.byMonth[m] || 0) + (dep.cogs.byMonth[m] || 0); });
+        cog.total += dep.cogs.total;
+      }
+    });
+    return found ? { rev: rev, cog: cog } : null;
+  }
 
   PNL_TEMPLATE.forEach(row => {
     if (!row.match) return;
@@ -478,11 +524,17 @@ function renderPnl(data) {
   const mCols = showM ? months.map(m => '<th>' + mLabel(m) + '</th>').join('') : '';
   let rows = '';
   const cs = (showM ? months.length : 0) + 2;
+  let curVariant = '';
   PNL_TEMPLATE.forEach(row => {
+    if (row.type === 'sec') curVariant = row.variant || '';
     if (row.type === 'sp') { rows += '<tr class="sp"><td colspan="' + cs + '"></td></tr>'; return; }
     let d = null, isPct = false;
     if (row.key && computed[row.key]) { d = computed[row.key]; isPct = !!d.isPct; }
     else if (row.match && expMap[row.label]) d = expMap[row.label];
+    else if (row.dep) {
+      var depD = depFind(row.dep);
+      if (depD) d = (curVariant === 'cost') ? depD.cog : depD.rev;
+    }
     if (row.type === 'sec' && row.variant === 'rev') d = { byMonth: revenue.byMonth, total: revenue.total };
     if (row.type === 'sec' && row.variant === 'cost') d = { byMonth: cogs.byMonth, total: cogs.total };
     const mCells = showM ? months.map(m => '<td>' + (d ? fmtCell(d.byMonth[m] || 0, isPct) : '<span class="dash">—</span>') + '</td>').join('') : '';
@@ -539,12 +591,14 @@ function gpSetPreset(p) {
     const map = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' };
     c.classList.toggle('active', c.textContent.trim() === map[p]);
   });
+  saveStateToUrl();
   gpLoad();
 }
 function gpSetOrg(el) {
   gpState.org = el.dataset.org;
   el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
+  saveStateToUrl();
   gpLoad();
 }
 function gpFilterChanged() {
@@ -773,17 +827,55 @@ Auth.require('finance').then(function(user) {
     c.classList.toggle('active', c.dataset.org === defaultOrg);
   });
 
-  setPreset('year');
-
-  // Pre-set GP dates (same as P&L default) but don't load yet
-  gpState.from = pnlState.from;
-  gpState.to = pnlState.to;
-  document.getElementById('gpFromIn').value = gpState.from;
-  document.getElementById('gpToIn').value = gpState.to;
-  // Mark the GP preset chip too
-  document.querySelectorAll('#gpToolbar .group:first-of-type .chip').forEach(c => {
-    c.classList.toggle('active', c.textContent.trim() === 'Рік');
-  });
+  // Restore state from URL or default to 'year'
+  const saved = readStateFromUrl();
+  if (saved && saved.from && saved.to) {
+    // Restore PNL state
+    pnlState.from = saved.from;
+    pnlState.to = saved.to;
+    pnlState.preset = saved.preset || '';
+    if (saved.org && (!hasAnyOrg || allowedOrgs.includes(saved.org))) pnlState.org = saved.org;
+    document.getElementById('fromIn').value = pnlState.from;
+    document.getElementById('toIn').value = pnlState.to;
+    // Update PNL preset chips
+    var presetMap = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' };
+    document.querySelectorAll('#pnlToolbar .group:first-of-type .chip').forEach(function(c) {
+      c.classList.toggle('active', c.textContent.trim() === presetMap[pnlState.preset]);
+    });
+    // Update PNL org chips
+    document.querySelectorAll('#pnlOrgGroup .chip[data-org]').forEach(function(c) {
+      c.classList.toggle('active', c.dataset.org === pnlState.org);
+    });
+    // GP state
+    gpState.from = saved.from;
+    gpState.to = saved.to;
+    gpState.preset = saved.preset || '';
+    gpState.org = pnlState.org;
+    document.getElementById('gpFromIn').value = gpState.from;
+    document.getElementById('gpToIn').value = gpState.to;
+    document.querySelectorAll('#gpOrgGroup .chip[data-org]').forEach(function(c) {
+      c.classList.toggle('active', c.dataset.org === gpState.org);
+    });
+    document.querySelectorAll('#gpToolbar .group:first-of-type .chip').forEach(function(c) {
+      c.classList.toggle('active', c.textContent.trim() === presetMap[gpState.preset]);
+    });
+    // Switch tab if saved
+    if (saved.tab === 'gp') {
+      var gpTabEl = document.querySelector('.ptab[data-view="gp"]');
+      if (gpTabEl) switchTab(gpTabEl);
+    }
+    pnlLoad();
+  } else {
+    setPreset('year');
+    // Pre-set GP dates (same as P&L default) but don't load yet
+    gpState.from = pnlState.from;
+    gpState.to = pnlState.to;
+    document.getElementById('gpFromIn').value = gpState.from;
+    document.getElementById('gpToIn').value = gpState.to;
+    document.querySelectorAll('#gpToolbar .group:first-of-type .chip').forEach(c => {
+      c.classList.toggle('active', c.textContent.trim() === 'Рік');
+    });
+  }
 });
 </script>
 </body>
