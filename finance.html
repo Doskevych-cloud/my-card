@@ -1166,6 +1166,32 @@ function renderGp(data) {
   });
 
   html += '</tbody></table></div>';
+
+  // ── Manager breakdown (separate panel above main tree) ──
+  const managers = data.managers || [];
+  if (managers.length) {
+    // Apply same buyer filter (skip for now since manager stats are independent)
+    let mgrHtml = '<div class="gp-wrap" style="margin-bottom:14px"><table class="gp-table"><thead><tr>' +
+      '<th>Менеджер</th><th>Клієнтів</th><th>Виручка, $</th><th>Собівартість, $</th><th>Валовий прибуток, $</th><th>Рентабельність</th>' +
+      '</tr></thead><tbody>';
+    const mTot = { qty: 0, revenue: 0, cogs: 0 };
+    managers.forEach(m => { mTot.revenue += m.revenue; mTot.cogs += m.cogs; mTot.qty += m.qty; });
+    const mProfit = +(mTot.revenue - mTot.cogs).toFixed(2);
+    const mMargin = mTot.revenue ? +((mProfit / mTot.revenue) * 100).toFixed(2) : 0;
+    mgrHtml += '<tr class="gp-total"><td>Разом</td><td>—</td>' +
+      '<td>' + fmtV(mTot.revenue) + '</td><td>' + fmtV(mTot.cogs) + '</td>' +
+      '<td>' + fmtV(mProfit) + '</td><td>' + fmtM(mMargin) + '</td></tr>';
+    managers.forEach(m => {
+      mgrHtml += '<tr class="lvl-0"><td>' + esc(m.name) + '</td>' +
+        '<td>' + (m.clients ? m.clients.length : 0) + '</td>' +
+        '<td>' + fmtV(m.revenue) + '</td><td>' + fmtV(m.cogs) + '</td>' +
+        '<td>' + fmtV(m.profit) + '</td><td>' + fmtM(m.margin) + '</td></tr>';
+    });
+    mgrHtml += '</tbody></table></div>';
+    html = '<h3 style="margin:8px 0 10px;font-size:14px;color:var(--text2);font-weight:700;letter-spacing:.3px">По менеджерах</h3>' + mgrHtml +
+      '<h3 style="margin:18px 0 10px;font-size:14px;color:var(--text2);font-weight:700;letter-spacing:.3px">По покупцях</h3>' + html;
+  }
+
   document.getElementById('gpBody').innerHTML = html;
 }
 
