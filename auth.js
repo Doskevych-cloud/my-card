@@ -12,6 +12,29 @@
   const TOKEN_KEY = 'session_token';
   const USER_CACHE_KEY = 'session_user';
 
+  // ── Global fetch interceptor ──
+  // Auto-attach Authorization: Bearer <token> to any fetch() call that
+  // targets our worker. This way legacy pages (index.html, forecast.html,
+  // warehouses.html, sales.html) that still use plain fetch() benefit from
+  // the server-side auth wall without a full rewrite.
+  if (!global.__authFetchPatched) {
+    const _origFetch = global.fetch.bind(global);
+    global.fetch = function (input, init) {
+      const url = typeof input === 'string' ? input : (input && input.url) || '';
+      if (url && url.includes('price-api.doskevich.workers.dev')) {
+        init = init || {};
+        const headers = new Headers(init.headers || (input && input.headers) || {});
+        const token = localStorage.getItem(TOKEN_KEY) || '';
+        if (token && !headers.has('Authorization')) {
+          headers.set('Authorization', 'Bearer ' + token);
+        }
+        init.headers = headers;
+      }
+      return _origFetch(input, init);
+    };
+    global.__authFetchPatched = true;
+  }
+
   const MODULE_LABEL = {
     home: 'Порівняння цін',
     forecast: 'Прогноз кабелю',
