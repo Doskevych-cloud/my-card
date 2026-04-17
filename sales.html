@@ -61,24 +61,37 @@ a{color:inherit;text-decoration:none}
 .toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
 .toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
 
-/* Summary grid — uniform cubes. Grand "Оплачено" in green, managers neutral.
-   Each card: top stats (Оплачено / Потенціал) + bottom stats (Бонус / Пот. бонусу). */
-.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-bottom:14px}
-.summary-card{padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:background .15s,border-color .15s;display:flex;flex-direction:column;gap:6px;user-select:none;min-height:140px}
+/* ─── Summary ─── */
+/* Grand total — один широкий банер згори. Акцент — "Оплачено"; решта
+   (потенціал, бонус, %) — маленьким шрифтом збоку, щоб не перевантажувати. */
+.summary-grand{display:flex;flex-wrap:wrap;align-items:center;gap:18px 28px;margin-bottom:12px;padding:16px 20px;background:linear-gradient(135deg,rgba(34,197,94,.10),rgba(34,197,94,.02));border:1px solid rgba(34,197,94,.30);border-radius:14px}
+.summary-grand .sg-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;display:block;margin-bottom:3px}
+.summary-grand .sg-paid{display:flex;flex-direction:column}
+.summary-grand .sg-paid .v{font-size:26px;font-weight:800;color:var(--green);letter-spacing:-.4px;line-height:1;font-variant-numeric:tabular-nums}
+.summary-grand .sg-pot{display:flex;flex-direction:column}
+.summary-grand .sg-pot .v{font-size:17px;font-weight:700;color:var(--text2);letter-spacing:-.2px;line-height:1;font-variant-numeric:tabular-nums}
+.summary-grand .sg-sep{width:1px;align-self:stretch;background:var(--border)}
+.summary-grand .sg-bonus{display:flex;gap:14px;align-items:baseline;font-size:12px;color:var(--text3)}
+.summary-grand .sg-bonus b{color:var(--green);font-weight:700;font-variant-numeric:tabular-nums}
+.summary-grand .sg-bonus .pot{color:var(--text2);font-weight:600}
+.summary-grand .sg-pct{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.summary-grand .sg-pct .val{font-size:13px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums}
+.summary-grand .sg-bar{width:160px;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.summary-grand .sg-bar-fill{height:100%;background:linear-gradient(90deg,var(--green),rgba(34,197,94,.5));border-radius:3px;transition:width .5s ease}
+
+/* Grid менеджерів — компактні картки: ім'я + оплачено + прогрес + дрібна
+   сервісна інформація (потенціал, бонус) однією лінією. */
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:14px}
+.summary-card{padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:background .15s,border-color .15s;display:flex;flex-direction:column;gap:8px;user-select:none}
 .summary-card:hover{background:var(--bg3);border-color:var(--border2)}
 .summary-card.active{background:var(--accent-bg);border-color:var(--accent)}
-.summary-card.grand{background:linear-gradient(135deg,rgba(34,197,94,.10),rgba(34,197,94,.02));border-color:rgba(34,197,94,.30);cursor:default}
-.summary-card.grand:hover{background:linear-gradient(135deg,rgba(34,197,94,.10),rgba(34,197,94,.02));border-color:rgba(34,197,94,.30)}
-.summary-card .name{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.summary-card .stats{display:grid;grid-template-columns:1fr 1fr;gap:2px 14px;margin-top:2px}
-.summary-card .stat-lbl{font-size:9.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;font-weight:600}
-.summary-card .stat-val{font-size:17px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.2px;line-height:1.15}
-.summary-card.grand .stat-val.main{color:var(--green)}
-.summary-card .stat-val.pot{color:var(--text2)}
-.summary-card .bonus-row{display:grid;grid-template-columns:1fr 1fr;gap:2px 14px;margin-top:auto;padding-top:8px;border-top:1px dashed var(--border)}
-.summary-card .bonus-lbl{font-size:9.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;font-weight:600}
-.summary-card .bonus-val{font-size:12.5px;font-weight:700;color:var(--text2);font-variant-numeric:tabular-nums}
-.summary-card.grand .bonus-val.main{color:var(--green)}
+.summary-card .name{font-size:12px;color:var(--text2);font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.summary-card .paid{font-size:20px;font-weight:800;letter-spacing:-.3px;line-height:1;color:var(--text);font-variant-numeric:tabular-nums}
+.summary-card .bar{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.summary-card .bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),rgba(255,131,25,.45));border-radius:2px;transition:width .4s ease}
+.summary-card .foot{display:flex;justify-content:space-between;gap:8px;font-size:10.5px;color:var(--text3)}
+.summary-card .foot .pot{font-weight:600}
+.summary-card .foot .bonus b{color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums}
 .mgr-section-head{font-weight:700;font-size:13px;margin:14px 0 8px;padding:0 2px;color:var(--text);letter-spacing:-.2px}
 
 /* Tree table */
@@ -132,9 +145,14 @@ a{color:inherit;text-decoration:none}
   .tree-tbl thead th,.tree-tbl tbody td{padding:8px 6px;font-size:11px}
   .tree-tbl thead th:nth-child(n+2){width:90px}
   .summary-grid{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
-  .summary-card{min-height:120px;padding:10px 12px}
-  .summary-card .stat-val{font-size:15px}
-  .summary-card .bonus-val{font-size:11.5px}
+  .summary-grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+  .summary-card{padding:10px 12px}
+  .summary-card .paid{font-size:17px}
+  .summary-grand{padding:12px 14px;gap:12px}
+  .summary-grand .sg-paid .v{font-size:20px}
+  .summary-grand .sg-pot .v{font-size:15px}
+  .summary-grand .sg-pct{margin-left:0;width:100%}
+  .summary-grand .sg-bar{width:100%}
 }
 </style>
 </head>
@@ -382,33 +400,6 @@ function render() {
 
 const BONUS_RATE = 0.0008;
 
-function _summaryCardBody(paid, remain, ok, variant) {
-  const money = v => ok ? '$' + fmt(v) : '—';
-  const mainCls = variant === 'grand' ? 'stat-val main' : 'stat-val';
-  const bonusMainCls = variant === 'grand' ? 'bonus-val main' : 'bonus-val';
-  return `
-    <div class="stats">
-      <div>
-        <div class="stat-lbl">Оплачено</div>
-        <div class="${mainCls}">${money(paid)}</div>
-      </div>
-      <div>
-        <div class="stat-lbl">Потенціал</div>
-        <div class="stat-val pot">${money(remain)}</div>
-      </div>
-    </div>
-    <div class="bonus-row">
-      <div>
-        <div class="bonus-lbl">Бонус 0,08%</div>
-        <div class="${bonusMainCls}">${money(paid * BONUS_RATE)}</div>
-      </div>
-      <div>
-        <div class="bonus-lbl">Потенціал бонусу</div>
-        <div class="bonus-val">${money(remain * BONUS_RATE)}</div>
-      </div>
-    </div>`;
-}
-
 function renderSummaryGrid(managers) {
   const host = document.getElementById('curSummary');
   if (!managers.length) { host.innerHTML = ''; return; }
@@ -417,23 +408,52 @@ function renderSummaryGrid(managers) {
   const allOk = perMgr.every(d => d.ok);
   const gPaid = allOk ? perMgr.reduce((s, d) => s + d.paid, 0) : 0;
   const gRem = allOk ? perMgr.reduce((s, d) => s + d.remain, 0) : 0;
+  const gTotal = gPaid + gRem;
+  const gPct = gTotal > 0 ? Math.round(gPaid / gTotal * 100) : 0;
+  const money = (v, ok) => ok ? '$' + fmt(v) : '—';
 
-  const grandCard = `
-    <div class="summary-card grand">
-      <div class="name">💰 Оплачено за період</div>
-      ${_summaryCardBody(gPaid, gRem, allOk, 'grand')}
+  // Grand total — широкий банер зверху з прогрес-баром і коротким бонусом
+  const grandBanner = `
+    <div class="summary-grand">
+      <div class="sg-paid">
+        <span class="sg-lbl">💰 Оплачено за період</span>
+        <span class="v">${money(gPaid, allOk)}</span>
+      </div>
+      <div class="sg-sep"></div>
+      <div class="sg-pot">
+        <span class="sg-lbl">Потенціал</span>
+        <span class="v">${money(gRem, allOk)}</span>
+      </div>
+      <div class="sg-sep"></div>
+      <div class="sg-bonus">
+        <div><span class="sg-lbl">Бонус 0,08%</span><b>${money(gPaid * BONUS_RATE, allOk)}</b></div>
+        <div><span class="sg-lbl">Потенціал бонусу</span><span class="pot">${money(gRem * BONUS_RATE, allOk)}</span></div>
+      </div>
+      <div class="sg-pct">
+        <span class="val">${allOk ? gPct + '% готово' : ''}</span>
+        <div class="sg-bar"><div class="sg-bar-fill" style="width:${gPct}%"></div></div>
+      </div>
     </div>`;
 
+  // Картки менеджерів — компактні: ім'я, оплачено (головне), прогрес-бар,
+  // футер-рядок з потенціалом і бонусом
   const mgrCards = perMgr.map(({ m, paid, remain, ok }) => {
     const isOpen = state.openKeys.has(`m:${m.name}`);
+    const total = paid + remain;
+    const pct = ok && total > 0 ? Math.round(paid / total * 100) : 0;
     return `
       <div class="summary-card ${isOpen ? 'active' : ''}" data-key="m:${esc(m.name)}">
         <div class="name">👤 ${esc(m.name)}</div>
-        ${_summaryCardBody(paid, remain, ok, 'mgr')}
+        <div class="paid">${money(paid, ok)}</div>
+        <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
+        <div class="foot">
+          <span class="pot">пот. ${money(remain, ok)}</span>
+          <span class="bonus">🪙 <b>${money(paid * BONUS_RATE, ok)}</b></span>
+        </div>
       </div>`;
   }).join('');
 
-  host.innerHTML = `<div class="summary-grid">${grandCard}${mgrCards}</div>`;
+  host.innerHTML = `${grandBanner}<div class="summary-grid">${mgrCards}</div>`;
 }
 
 function renderByManager(managers) {
