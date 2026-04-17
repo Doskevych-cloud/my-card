@@ -1481,20 +1481,6 @@ function renderPnlAccrual(data) {
     if (Math.abs(d.cogs.total || 0) < 0.5) return;
     rows += `<tr class="itm" data-sec="cost"><td>${esc(cleanDepName(d.name))}</td><td class="col-total">${fmtCell(d.cogs.total)}</td></tr>`;
   });
-  // Валовий прибуток (underline — не колапсується) + розбивка по підрозділах
-  rows += `<tr class="grd" data-sec="gp" data-is-sec="1" data-is-grd-head="1" data-collapsed="true"><td><span class="tri">▾</span>Валовий прибуток, у т.ч.</td><td class="col-total">${fmtCell(grossTotal)}</td></tr>`;
-  deps.forEach(d => {
-    const gp = (d.revenue.total || 0) - (d.cogs.total || 0);
-    if (Math.abs(gp) < 0.5) return;
-    rows += `<tr class="itm collapsed-hidden" data-sec="gp"><td>${esc(cleanDepName(d.name))}</td><td class="col-total">${fmtCell(gp)}</td></tr>`;
-  });
-  // Маржинальність продажів по підрозділах (collapsible)
-  rows += `<tr class="pct" data-sec="mg" data-is-sec="1" data-is-pct-head="1" data-collapsed="true"><td><span class="tri">▾</span>Маржинальність продажів, у т.ч.</td><td class="col-total">${pctCell(grossMgnPct)}</td></tr>`;
-  deps.forEach(d => {
-    if (Math.abs(d.revenue.total || 0) < 0.5) return;
-    const mg = (d.revenue.total - d.cogs.total) / d.revenue.total * 100;
-    rows += `<tr class="itm collapsed-hidden" data-sec="mg"><td>${esc(cleanDepName(d.name))}</td><td class="col-total">${pctCell(mg)}</td></tr>`;
-  });
   // Всього витрати (OPEX + tax + other)
   const totalAllExp = opexTotal + taxTotal + otherExp;
   rows += `<tr class="cat" data-cat="_allExp" data-is-cat="1"><td><span class="tri">▾</span>Всього витрати</td><td class="col-total">${fmtCell(totalAllExp)}</td></tr>`;
