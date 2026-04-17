@@ -1801,8 +1801,16 @@ async function openStockPriceReport() {
     } catch (e) {
       throw new Error('Не вдалось завантажити залишки: ' + (e.message || e));
     }
+    if (stockData._error) {
+      body.innerHTML = '<div class="rep-err">1С повернула помилку:<br><code style="font-size:10.5px;color:var(--text3)">' + escapeHtml(stockData._error) + '</code></div>';
+      return;
+    }
     const stockMap = stockData.stock || {};
-    if (!Object.keys(stockMap).length) { body.innerHTML = '<div class="rep-err">1С не повернула залишки.</div>'; return; }
+    if (!Object.keys(stockMap).length) {
+      const dbg = stockData._debug ? ' (rawRows: ' + stockData._debug.rawRows + ')' : '';
+      body.innerHTML = '<div class="rep-err">1С не повернула залишки' + dbg + '.</div>';
+      return;
+    }
 
     // 3) Build identities for matching
     for (const p of genProds) {
