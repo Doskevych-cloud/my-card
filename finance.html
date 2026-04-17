@@ -1020,12 +1020,24 @@ function renderPnlAccrual(data) {
     return '<span class="' + (v > 0 ? 'pos' : 'neg') + '">' + fmt(v, 0) + ' $</span>';
   };
 
+  // Margins (%):
+  //   Gross margin = (Revenue − COGS) / Revenue × 100      — стандарт
+  //   Net margin   = Net profit / (Revenue + Other income) × 100
+  const totalRev  = (revenue.total || 0) + (otherIncome.total || 0);
+  const grossMgnPct = revenue.total ? (grossTotal / revenue.total * 100) : 0;
+  const netMgnPct   = totalRev ? (netTotal / totalRev * 100) : 0;
+  const pctClass = v => (v >= 0 ? 'pos' : 'neg');
+  const pctStr  = v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
+
   // Summary cards
   document.getElementById('pnlSummary').innerHTML = '<div class="pnl-summary">' +
-    '<div class="pnl-card c-rev"><span class="cl">Доходи</span><span class="cv">' + fmt(revenue.total + otherIncome.total, 0) + ' $</span></div>' +
-    '<div class="pnl-card c-cost"><span class="cl">Собівартість</span><span class="cv">' + fmt(cogs.total, 0) + ' $</span></div>' +
-    '<div class="pnl-card c-grs"><span class="cl">Валовий прибуток</span><span class="cv">' + fmt(grossTotal, 0) + ' $</span></div>' +
-    '<div class="pnl-card c-net"><span class="cl">Чистий прибуток</span><span class="cv' + (netTotal < 0 ? ' ng' : '') + '">' + fmt(netTotal, 0) + ' $</span></div>' +
+    '<div class="pnl-card c-rev"><span class="cl">Доходи</span><span class="cv">' + fmt(totalRev, 0) + ' $</span></div>' +
+    '<div class="pnl-card c-cost"><span class="cl">Собівартість</span><span class="cv">' + fmt(cogs.total, 0) + ' $</span>' +
+      '<span class="cs">' + (revenue.total ? (cogs.total / revenue.total * 100).toFixed(1) + '% від доходу' : '') + '</span></div>' +
+    '<div class="pnl-card c-grs"><span class="cl">Валовий прибуток</span><span class="cv">' + fmt(grossTotal, 0) + ' $</span>' +
+      '<span class="cs">маржа <span class="' + pctClass(grossMgnPct) + '">' + pctStr(grossMgnPct) + '</span></span></div>' +
+    '<div class="pnl-card c-net"><span class="cl">Чистий прибуток</span><span class="cv' + (netTotal < 0 ? ' ng' : '') + '">' + fmt(netTotal, 0) + ' $</span>' +
+      '<span class="cs">рентабельність <span class="' + pctClass(netMgnPct) + '">' + pctStr(netMgnPct) + '</span></span></div>' +
     '</div>';
 
   // Helper to render a list of expense items under a section header
@@ -1066,6 +1078,12 @@ function renderPnlAccrual(data) {
   rows += `<tr class="sp"><td></td><td></td></tr>`;
   rows += `<tr class="grd"><td>Операційний прибуток / збиток</td><td class="col-total">${fmtCell(opProfit)}</td></tr>`;
   rows += `<tr class="grd"><td>Чистий прибуток / збиток</td><td class="col-total">${fmtCell(netTotal)}</td></tr>`;
+  // Стандартні маржі: gross = GP/Revenue, operating = OpProfit/Revenue, net = Net/(Revenue+OtherInc)
+  const opMgnPct  = revenue.total ? (opProfit / revenue.total * 100) : 0;
+  const pctCell = v => `<span class="${v>=0?'pos':'neg'}">${(v>=0?'+':'')+v.toFixed(1)}%</span>`;
+  rows += `<tr class="pct"><td>Валова маржа</td><td class="col-total">${pctCell(grossMgnPct)}</td></tr>`;
+  rows += `<tr class="pct"><td>Операційна рентабельність</td><td class="col-total">${pctCell(opMgnPct)}</td></tr>`;
+  rows += `<tr class="pct"><td>Чиста рентабельність</td><td class="col-total">${pctCell(netMgnPct)}</td></tr>`;
 
   document.getElementById('pnlBody').innerHTML =
     '<div class="pnl-wrap"><table class="pnl-table"><thead><tr><th>P&L стаття</th><th class="col-total">Всього</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
