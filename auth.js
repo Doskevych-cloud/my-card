@@ -12,6 +12,21 @@
   const TOKEN_KEY = 'session_token';
   const USER_CACHE_KEY = 'session_user';
 
+  // ── Dev token bootstrap ──
+  // If page is opened with ?token=XXX, save it to localStorage and strip
+  // from URL immediately so it doesn't leak via browser history / Referer.
+  // Intended for moving a valid session from dev.generacia.energy to a
+  // local preview. Requires the caller to own the token already.
+  try {
+    const u = new URL(location.href);
+    const tok = u.searchParams.get('token');
+    if (tok) {
+      localStorage.setItem(TOKEN_KEY, tok);
+      u.searchParams.delete('token');
+      history.replaceState(null, '', u.toString());
+    }
+  } catch (_) {}
+
   // ── Global fetch interceptor ──
   // Auto-attach Authorization: Bearer <token> to any fetch() call that
   // targets our worker. This way legacy pages (index.html, forecast.html,

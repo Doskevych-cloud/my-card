@@ -7,8 +7,8 @@
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
-<script src="auth.js?v=20260418"></script>
-<script src="header.js?v=20260418"></script>
+<script src="auth.js?v=d20260418"></script>
+<script src="header.js?v=d20260418"></script>
 <!-- html2pdf.js for real PDF file download (not browser print dialog) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <!-- SheetJS (xlsx) for Excel export -->
@@ -513,6 +513,8 @@ function saveStateToUrl() {
   if (st.to) p.set('to', st.to);
   if (st.org) p.set('org', st.org);
   if (st.preset) p.set('preset', st.preset);
+  // Collapsed state: default true (collapsed on load); only write if false (expanded)
+  if (st.collapsed === false) p.set('exp', '1');
   history.replaceState(null, '', '#' + p.toString());
 }
 function readStateFromUrl() {
@@ -1379,6 +1381,10 @@ function pnlToggleAll(collapse, tblArg) {
     r.classList.toggle('collapsed-hidden', collapse);
   });
   setToggleActive('.view.active .pnl-collapse-ctl', collapse);
+  // Persist collapse state in URL so it survives page reload
+  const activeTab = activeView && activeView.tab;
+  const st = activeTab === 'ar' ? arState : activeTab === 'gp' ? gpState : activeTab === 'fi' ? fiState : activeTab === 'cf' ? (window.cfState || {}) : pnlState;
+  if (st) { st.collapsed = collapse; saveStateToUrl(); }
 }
 
 // Highlight the active chip (Згорнути / Розгорнути) in a collapse-ctl group.
@@ -1398,7 +1404,7 @@ function gpToggleAll(collapse) {
   const tbl = document.querySelector('.gp-table');
   if (!tbl) return;
   tbl.querySelectorAll('tr[data-parent]').forEach(tr => {
-    if (!tr.dataset.parent) return; // root rows always visible
+    if (!tr.dataset.parent) return;
     tr.style.display = collapse ? 'none' : '';
   });
   tbl.querySelectorAll('.gp-chevron').forEach(c => c.classList.toggle('open', !collapse));
@@ -1407,6 +1413,7 @@ function gpToggleAll(collapse) {
     if (!collapse) tbl.querySelectorAll('tr[data-id]').forEach(tr => gpOpenRows.add(tr.dataset.id));
   }
   setToggleActive('#gpToolbar .pnl-collapse-ctl', collapse);
+  gpState.collapsed = collapse; saveStateToUrl();
 }
 
 function arToggleAll(collapse) {
@@ -1422,17 +1429,16 @@ function arToggleAll(collapse) {
     if (!collapse) tbl.querySelectorAll('tr[data-id]').forEach(tr => arOpenRows.add(tr.dataset.id));
   }
   setToggleActive('#arToolbar .pnl-collapse-ctl', collapse);
+  arState.collapsed = collapse; saveStateToUrl();
 }
 
 function cfToggleAll(collapse) {
-  // Cash Flow render structure may use tree rows with data-parent too.
   const tbl = document.querySelector('#cfBody .pnl-table, #cfBody .gp-table, #cfBody .ar-table, #cfBody table');
   if (!tbl) return;
   tbl.querySelectorAll('tr[data-parent]').forEach(tr => {
     if (!tr.dataset.parent) return;
     tr.style.display = collapse ? 'none' : '';
   });
-  // Also collapse rows if CF uses the PL-style cat/sec/grp
   tbl.querySelectorAll('tr[data-is-cat], tr[data-is-sec], tr[data-is-grp]').forEach(tr => {
     tr.setAttribute('data-collapsed', collapse ? 'true' : 'false');
   });
@@ -1440,6 +1446,7 @@ function cfToggleAll(collapse) {
     r.classList.toggle('collapsed-hidden', collapse);
   });
   setToggleActive('#cfToolbar .pnl-collapse-ctl', collapse);
+  if (window.cfState) { window.cfState.collapsed = collapse; saveStateToUrl(); }
 }
 
 // Toggle collapse/expand on cat / sec / grp header rows.
@@ -1592,12 +1599,22 @@ function renderPnlAccrual(data) {
   document.getElementById('pnlBody').innerHTML =
     '<div class="pnl-wrap"><table class="pnl-table"><thead><tr><th>P&L стаття</th><th class="col-total">Всього</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   pnlBindCollapse();
-  // All reports start collapsed by default
-  pnlToggleAll(true, document.querySelector('#pnlBody .pnl-table'));
+  // Apply saved collapsed state (default true — collapsed)
+  const collapsed = pnlState.collapsed !== false;
+  pnlToggleAll(collapsed, document.querySelector('#pnlBody .pnl-table'));
 }
 
-document.getElementById('fromIn').addEventListener('change', function(e) { pnlState.from = e.target.value; pnlLoad(); });
-document.getElementById('toIn').addEventListener('change', function(e) { pnlState.to = e.target.value; pnlLoad(); });
+function pnlDateChanged() {
+  pnlState.preset = detectPreset(pnlState.from, pnlState.to) || '';
+  const map = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' };
+  document.querySelectorAll('#pnlToolbar .group:first-of-type .chip').forEach(c => {
+    c.classList.toggle('active', c.textContent.trim() === map[pnlState.preset]);
+  });
+  saveStateToUrl();
+  pnlLoad();
+}
+document.getElementById('fromIn').addEventListener('change', function(e) { pnlState.from = e.target.value; pnlDateChanged(); });
+document.getElementById('toIn').addEventListener('change', function(e) { pnlState.to = e.target.value; pnlDateChanged(); });
 
 /* ═══════════════════════════════════════════════════
    FINANCIAL INDICATORS TAB
@@ -1944,8 +1961,17 @@ function gpFilterChanged() {
   }, 300);
 }
 
-document.getElementById('gpFromIn').addEventListener('change', function(e) { gpState.from = e.target.value; gpLoad(); });
-document.getElementById('gpToIn').addEventListener('change', function(e) { gpState.to = e.target.value; gpLoad(); });
+function gpDateChanged() {
+  gpState.preset = detectPreset(gpState.from, gpState.to) || '';
+  const map = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' };
+  document.querySelectorAll('#gpToolbar .group:first-of-type .chip').forEach(c => {
+    c.classList.toggle('active', c.textContent.trim() === map[gpState.preset]);
+  });
+  saveStateToUrl();
+  gpLoad();
+}
+document.getElementById('gpFromIn').addEventListener('change', function(e) { gpState.from = e.target.value; gpDateChanged(); });
+document.getElementById('gpToIn').addEventListener('change', function(e) { gpState.to = e.target.value; gpDateChanged(); });
 
 /* ── GP Render ── */
 function renderGp(data) {
@@ -2069,6 +2095,9 @@ function renderGp(data) {
 
   html += '</tbody></table></div>';
   document.getElementById('gpBody').innerHTML = html;
+  // Apply saved collapsed state (default true — collapsed)
+  if (gpState.collapsed === false) gpToggleAll(false);
+  else gpToggleAll(true);
 }
 
 // Track open state
@@ -2158,8 +2187,17 @@ function arFilterChanged() {
   }, 300);
 }
 
-document.getElementById('arFromIn').addEventListener('change', function(e) { arState.from = e.target.value; arLoad(); });
-document.getElementById('arToIn').addEventListener('change', function(e) { arState.to = e.target.value; arLoad(); });
+function arDateChanged() {
+  arState.preset = detectPreset(arState.from, arState.to) || '';
+  const map = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' };
+  document.querySelectorAll('#arToolbar .group:first-of-type .chip').forEach(c => {
+    c.classList.toggle('active', c.textContent.trim() === map[arState.preset]);
+  });
+  saveStateToUrl();
+  arLoad();
+}
+document.getElementById('arFromIn').addEventListener('change', function(e) { arState.from = e.target.value; arDateChanged(); });
+document.getElementById('arToIn').addEventListener('change', function(e) { arState.to = e.target.value; arDateChanged(); });
 
 function renderAr(data) {
   const { currencies } = data;
@@ -2267,6 +2305,9 @@ function renderAr(data) {
 
   html += '</tbody></table></div>';
   document.getElementById('arBody').innerHTML = html;
+  // Apply saved collapsed state (default true — collapsed)
+  if (arState.collapsed === false) arToggleAll(false);
+  else arToggleAll(true);
 }
 
 const arOpenRows = new Set();
@@ -2378,6 +2419,7 @@ Auth.require('finance').then(function(user) {
     pnlState.from = saved.from;
     pnlState.to = saved.to;
     pnlState.preset = saved.preset || detectPreset(saved.from, saved.to) || '';
+    pnlState.collapsed = saved.exp !== '1';
     if (saved.org && (!hasAnyOrg || allowedOrgs.includes(saved.org))) pnlState.org = saved.org;
     document.getElementById('fromIn').value = pnlState.from;
     document.getElementById('toIn').value = pnlState.to;
@@ -2394,6 +2436,7 @@ Auth.require('finance').then(function(user) {
     gpState.from = saved.from;
     gpState.to = saved.to;
     gpState.preset = saved.preset || detectPreset(saved.from, saved.to) || '';
+    gpState.collapsed = saved.exp !== '1';
     gpState.org = pnlState.org;
     document.getElementById('gpFromIn').value = gpState.from;
     document.getElementById('gpToIn').value = gpState.to;
@@ -2407,6 +2450,7 @@ Auth.require('finance').then(function(user) {
     arState.from = saved.from;
     arState.to = saved.to;
     arState.preset = saved.preset || detectPreset(saved.from, saved.to) || '';
+    arState.collapsed = saved.exp !== '1';
     arState.org = pnlState.org;
     document.getElementById('arFromIn').value = arState.from;
     document.getElementById('arToIn').value = arState.to;
