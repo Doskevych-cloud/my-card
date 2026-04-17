@@ -296,25 +296,29 @@ tr:hover td{background:var(--bg3) !important}
 .rep-body{overflow-y:auto;padding:16px 24px;flex:1}
 .rep-loading{text-align:center;padding:40px;color:var(--text3);font-size:12px}
 .rep-empty{text-align:center;padding:40px;color:var(--text3);font-size:12px;border:1px dashed var(--border);border-radius:4px}
-.rep-cat-row td{padding:0 !important;background:transparent !important;border:none !important}
+.rep-cat-row td{padding:0 !important;background:transparent !important;border:none !important;border-left:none !important}
 .rep-cat-row:hover td{background:transparent !important}
-.rep-cat-head{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg3);border-left:3px solid var(--accent);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 2px}
+.rep-cat-head{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg3);border-left:3px solid var(--accent);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:14px 0 4px}
 .rep-cat-row:first-child .rep-cat-head{margin-top:0}
 .rep-cat-head .rep-cat-count{color:var(--text3);font-weight:500;letter-spacing:0}
-.rep-tbl{width:100%;border-collapse:collapse;font-size:12px}
-.rep-tbl thead th{padding:8px 10px;background:var(--bg2);color:var(--text3);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2}
+.rep-tbl{width:100%;border-collapse:collapse;font-size:12px;table-layout:auto}
+.rep-tbl thead th{padding:8px 12px;background:var(--bg2);color:var(--text3);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2}
 .rep-tbl thead th.num{text-align:right}
-.rep-tbl td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+.rep-tbl td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
 .rep-tbl tr:hover td{background:var(--bg2)}
-.rep-tbl .rep-tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.rep-tbl .rep-row-stock td:first-child{border-left:3px solid var(--accent)}
+.rep-tbl .rep-row-price td:first-child{border-left:3px solid var(--border2)}
+.rep-tbl .rep-name-cell{display:flex;align-items:center;gap:12px;min-width:0}
+.rep-tbl .rep-tag{flex:0 0 auto;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;line-height:1.35}
 .rep-tbl .rep-tag.t-stock{background:rgba(255,131,25,.15);color:var(--accent)}
 .rep-tbl .rep-tag.t-price{background:var(--bg3);color:var(--text2)}
-.rep-tbl .rep-name{text-align:left;color:var(--text);word-break:break-word}
-.rep-tbl .rep-qty{text-align:right;color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:60px}
+.rep-tbl .rep-name{text-align:left;color:var(--text)}
+.rep-tbl .rep-name-txt{color:var(--text);word-break:break-word;min-width:0}
+.rep-tbl .rep-qty{text-align:right;color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:70px}
 .rep-tbl .rep-qty.rep-empty{color:var(--text3);font-weight:400}
 .rep-tbl .rep-price{text-align:right;color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:90px}
 .rep-tbl .rep-price.rep-empty{color:var(--text3);font-weight:400}
-.rep-tbl .rep-st{text-align:left;color:var(--text3);font-size:10.5px;white-space:nowrap;min-width:100px}
+.rep-tbl .rep-st{text-align:left;color:var(--text3);font-size:10.5px;white-space:nowrap}
 .rep-err{padding:16px;color:var(--red);background:rgba(244,67,54,.1);border-radius:4px;font-size:12px}
 #customResultsBox{margin-top:10px}
 .cs-empty{padding:16px;text-align:center;color:var(--text3);font-size:12px;border:1px dashed var(--border);border-radius:4px}
@@ -1929,20 +1933,20 @@ function renderReport() {
 
   let rows = '';
   for (const c of cats) {
-    rows += `<tr class="rep-cat-row"><td colspan="5"><div class="rep-cat-head">${escapeHtml(c)} <span class="rep-cat-count">· ${groups[c].length} поз.</span></div></td></tr>`;
+    rows += `<tr class="rep-cat-row"><td colspan="4"><div class="rep-cat-head">${escapeHtml(c)} <span class="rep-cat-count">· ${groups[c].length} поз.</span></div></td></tr>`;
     for (const it of groups[c]) {
       const tag = it.type === 'stock'
         ? '<span class="rep-tag t-stock">🟠 В наявності</span>'
         : '<span class="rep-tag t-price">⚪ В прайсі</span>';
+      const rowCls = it.type === 'stock' ? 'rep-row-stock' : 'rep-row-price';
       const qty = it.type === 'stock'
         ? `<td class="rep-qty">${it.qty} шт</td>`
         : `<td class="rep-qty rep-empty">—</td>`;
       const price = it.type === 'price' && it.price != null
         ? `<td class="rep-price">${fmt(it.price, it.currency)}</td>`
         : `<td class="rep-price rep-empty">—</td>`;
-      rows += `<tr>
-        <td>${tag}</td>
-        <td class="rep-name">${escapeHtml(it.name)}</td>
+      rows += `<tr class="${rowCls}">
+        <td class="rep-name"><div class="rep-name-cell">${tag}<span class="rep-name-txt">${escapeHtml(it.name)}</span></div></td>
         <td class="rep-st">${escapeHtml(it.status || '')}</td>
         ${qty}
         ${price}
@@ -1952,11 +1956,10 @@ function renderReport() {
 
   body.innerHTML = `<table class="rep-tbl">
     <thead><tr>
-      <th style="min-width:130px">Статус</th>
       <th>Назва товару</th>
-      <th style="min-width:100px">Стан</th>
-      <th class="num" style="min-width:80px">Залишок</th>
-      <th class="num" style="min-width:100px">Ціна</th>
+      <th style="min-width:110px">Стан</th>
+      <th class="num" style="min-width:90px">Залишок</th>
+      <th class="num" style="min-width:110px">Ціна</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
