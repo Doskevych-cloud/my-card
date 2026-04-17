@@ -302,6 +302,19 @@ tr:hover td{background:var(--bg3) !important}
 
 <div id="appHeader"></div>
 
+<div class="custom-search" id="customSearch">
+  <div class="cs-head">
+    <span class="cs-title">🔎 Пошук товару серед усіх постачальників</span>
+    <span class="cs-hint">— результат буде показано в основній таблиці з тим самим матчингом, що й при повному порівнянні</span>
+  </div>
+  <div class="cs-row">
+    <input id="customQuery" placeholder="Наприклад: DEYE SUN-12K-SG04LP3, JAM72D40-580LB, Pylontech US5000…" autocomplete="off" onkeydown="if(event.key==='Enter')customSearch()">
+    <button class="cs-btn" onclick="customSearch()">Знайти</button>
+    <button class="cs-btn cs-ghost" onclick="clearCustomSearch()" title="Очистити">×</button>
+  </div>
+  <div id="customResultsBox"></div>
+</div>
+
 <div class="page-head">
   <h1>Порівняння цін постачальників сонячного обладнання</h1>
   <span class="date" id="dateLabel"></span>
@@ -417,19 +430,6 @@ tr:hover td{background:var(--bg3) !important}
 <div class="history-panel" id="historyPanel" style="display:none">
   <h2>Історія порівнянь <span class="h-count" id="hCount"></span> <button class="h-clear" id="hClearAll" onclick="clearAllHistory()">Очистити все</button></h2>
   <div class="history-list" id="historyList"></div>
-</div>
-
-<div class="custom-search" id="customSearch">
-  <div class="cs-head">
-    <span class="cs-title">🔎 Пошук по назві товару</span>
-    <span class="cs-hint">— якщо товару нема в прайсі Генерації, введіть назву і отримайте окрему таблицю порівняння</span>
-  </div>
-  <div class="cs-row">
-    <input id="customQuery" placeholder="Наприклад: DEYE SUN-12K-SG04LP3, JAM72D40-580LB, Pylontech US5000…" autocomplete="off" onkeydown="if(event.key==='Enter')customSearch()">
-    <button class="cs-btn" onclick="customSearch()">Знайти</button>
-    <button class="cs-btn cs-ghost" onclick="clearCustomSearch()" title="Очистити">×</button>
-  </div>
-  <div id="customResultsBox"></div>
 </div>
 
 <div id="results">
