@@ -107,8 +107,8 @@ body{font-family:'Inter',-apple-system,'Segoe UI',sans-serif;background:var(--bg
 .progress .bar{width:100%;max-width:400px;height:3px;background:var(--bg3);border-radius:2px;margin:6px auto;overflow:hidden}
 .progress .fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
 /* ─── Results Table ─── */
-.wrap{overflow:auto;max-height:calc(100vh - 48px);padding:0 0 24px 0}
-tfoot td{border-bottom:none;padding:0;height:16px;background:transparent}
+.wrap{overflow:auto;max-height:calc(100vh - 48px);padding:0 0 72px 0}
+tfoot td{border-bottom:none;padding:0;height:48px;background:transparent}
 table{border-collapse:collapse;margin:0;font-size:12px;white-space:nowrap;min-width:1600px;font-variant-numeric:tabular-nums;width:100%}
 th,td{padding:6px 10px;border-bottom:1px solid var(--border);border-right:none;border-left:none;border-top:none;text-align:center;vertical-align:middle}
 thead th{position:sticky;z-index:50;font-size:11px;border-bottom:1px solid var(--border2)}
@@ -278,6 +278,35 @@ tr:hover td{background:var(--bg3) !important}
 .cs-btn:hover{background:var(--accent-hover)}
 .cs-btn.cs-ghost{background:var(--bg3);color:var(--text2);padding:7px 11px;font-size:14px}
 .cs-btn.cs-ghost:hover{background:var(--bg4);color:var(--red)}
+.cs-btn.cs-report{background:var(--bg3);color:var(--text);border:1px solid var(--border);font-weight:600}
+.cs-btn.cs-report:hover{background:var(--accent);color:var(--btn-text);border-color:var(--accent)}
+/* ─── Stock ↔ Price report modal ─── */
+.rep-content{max-width:1000px !important;width:95% !important;max-height:85vh;display:flex;flex-direction:column;padding:0 !important}
+.rep-head{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--border)}
+.rep-head h3{margin:0;font-size:14px}
+.rep-close{background:transparent;border:none;color:var(--text3);font-size:22px;cursor:pointer;padding:4px 10px;border-radius:4px;transition:all .15s}
+.rep-close:hover{background:var(--bg3);color:var(--red)}
+.rep-tabs{display:flex;gap:4px;padding:10px 24px 0;border-bottom:1px solid var(--border)}
+.rep-tab{background:transparent;border:none;color:var(--text2);font-size:12px;font-weight:600;padding:8px 14px;border-radius:4px 4px 0 0;cursor:pointer;position:relative;bottom:-1px;font-family:inherit;display:inline-flex;align-items:center;gap:6px}
+.rep-tab:hover{color:var(--text)}
+.rep-tab.active{color:var(--accent);border-bottom:2px solid var(--accent)}
+.rep-count{font-size:10px;background:var(--bg3);color:var(--text2);padding:1px 7px;border-radius:10px;font-weight:700}
+.rep-tab.active .rep-count{background:var(--accent-bg);color:var(--accent)}
+.rep-body{overflow-y:auto;padding:16px 24px;flex:1}
+.rep-loading{text-align:center;padding:40px;color:var(--text3);font-size:12px}
+.rep-empty{text-align:center;padding:40px;color:var(--text3);font-size:12px;border:1px dashed var(--border);border-radius:4px}
+.rep-cat{margin-bottom:20px}
+.rep-cat:last-child{margin-bottom:0}
+.rep-cat-head{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg3);border-left:3px solid var(--accent);border-radius:3px;margin-bottom:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.rep-cat-head .rep-cat-count{color:var(--text3);font-weight:500;letter-spacing:0}
+.rep-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.rep-tbl td{padding:5px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.rep-tbl tr:hover td{background:var(--bg2)}
+.rep-tbl .rep-name{text-align:left;color:var(--text);word-break:break-word}
+.rep-tbl .rep-qty{text-align:right;color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:60px}
+.rep-tbl .rep-price{text-align:right;color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:90px}
+.rep-tbl .rep-st{text-align:left;color:var(--text3);font-size:10.5px;white-space:nowrap;min-width:100px}
+.rep-err{padding:16px;color:var(--red);background:rgba(244,67,54,.1);border-radius:4px;font-size:12px}
 #customResultsBox{margin-top:10px}
 .cs-empty{padding:16px;text-align:center;color:var(--text3);font-size:12px;border:1px dashed var(--border);border-radius:4px}
 .cs-warning{padding:10px;color:var(--accent);font-size:12px;text-align:center;background:var(--accent-bg);border-radius:4px}
@@ -312,8 +341,26 @@ tr:hover td{background:var(--bg3) !important}
     <input id="customQuery" placeholder="Наприклад: DEYE SUN-12K-SG04LP3, JAM72D40-580LB, Pylontech US5000…" autocomplete="off" onkeydown="if(event.key==='Enter')customSearch()">
     <button class="cs-btn" onclick="customSearch()">Знайти</button>
     <button class="cs-btn cs-ghost" onclick="clearCustomSearch()" title="Очистити">×</button>
+    <button class="cs-btn cs-report" onclick="openStockPriceReport()" title="Звіт: залишки Реакт vs прайс Генерації">📋 Звіт: залишки vs прайс</button>
   </div>
   <div id="customResultsBox"></div>
+</div>
+
+<!-- Stock ↔ Price reconciliation report modal -->
+<div class="sig-modal" id="stockReportModal" style="display:none">
+  <div class="sig-modal-content rep-content">
+    <div class="rep-head">
+      <h3>📋 Звіт: залишки Реакт ↔ прайс Генерації</h3>
+      <button class="rep-close" onclick="closeStockReport()" title="Закрити">×</button>
+    </div>
+    <div class="rep-tabs">
+      <button class="rep-tab active" data-tab="missing" onclick="switchRepTab('missing')">🟠 В наявності, нема в прайсі <span class="rep-count" id="repCount_missing">—</span></button>
+      <button class="rep-tab" data-tab="priced" onclick="switchRepTab('priced')">⚪ У прайсі, нема в наявності <span class="rep-count" id="repCount_priced">—</span></button>
+    </div>
+    <div class="rep-body" id="stockReportBody">
+      <div class="rep-loading">Завантаження…</div>
+    </div>
+  </div>
 </div>
 
 <div class="page-head">
@@ -1721,6 +1768,134 @@ function clearCustomSearch() {
   if (input) input.value = '';
   const host = document.getElementById('customResultsBox');
   if (host) host.innerHTML = '';
+}
+
+// ═══════════════════════════════════════════════
+// STOCK ↔ PRICE RECONCILIATION REPORT
+// Порівняння залишків Реакт (1С) з прайсом Генерації:
+//  - що є в наявності, але нема в прайсі
+//  - що в прайсі, але нема в наявності
+// Матчинг — той самий findMatch (3-tier + hard-block) що й повне порівняння.
+// ═══════════════════════════════════════════════
+let __stockReport = null; // { missing: [...], priced: [...] }
+let __repActiveTab = 'missing';
+
+async function openStockPriceReport() {
+  const modal = document.getElementById('stockReportModal');
+  const body = document.getElementById('stockReportBody');
+  modal.style.display = 'flex';
+  body.innerHTML = '<div class="rep-loading">⏳ Завантаження залишків і прайсу…</div>';
+  document.getElementById('repCount_missing').textContent = '—';
+  document.getElementById('repCount_priced').textContent = '—';
+
+  try {
+    // 1) Ensure suppliers loaded (we need gen price list)
+    if (!window.__supProds) await loadAllSupplierProds();
+    const genProds = (window.__supProds && window.__supProds.gen) || [];
+    if (!genProds.length) { body.innerHTML = '<div class="rep-err">Прайс Генерації порожній — не можу побудувати звіт.</div>'; return; }
+
+    // 2) Fetch current stock
+    const stockRes = await fetch(API_URL + '?action=odata_stock');
+    const stockData = await stockRes.json();
+    if (stockData.error) throw new Error(stockData.error);
+    const stockMap = stockData.stock || {};
+    if (!Object.keys(stockMap).length) { body.innerHTML = '<div class="rep-err">1С не повернула залишки.</div>'; return; }
+
+    // 3) Build identities for matching
+    for (const p of genProds) {
+      if (!p._identity) p._identity = buildIdentity(p.name, p.model, p.category || guessCategory(p.name));
+    }
+
+    // 4) Compute: stock items NOT in price list
+    const missing = []; // { name, qty, model, cat }
+    for (const [sName, qty] of Object.entries(stockMap)) {
+      if (!qty || qty <= 0) continue;
+      const cat = guessCategory(sName);
+      if (!cat) continue; // skip accessories / unknowns — звіт має сенс тільки для відомих категорій
+      const model = extractModel(sName);
+      const identity = buildIdentity(sName, model, cat);
+      const isPanel = cat === 'МОДУЛІ';
+      const match = findMatch(model, sName, null, genProds, isPanel, identity);
+      if (!match) missing.push({ name: sName, qty, model, cat });
+    }
+    missing.sort((a, b) => (a.cat || '').localeCompare(b.cat || '') || b.qty - a.qty);
+
+    // 5) Compute: priced items NOT in stock
+    const priced = []; // { name, model, price, currency, cat, status }
+    for (const p of genProds) {
+      const stock = findStock(p.name, p.model, stockMap);
+      if (stock == null || stock === 0) {
+        priced.push({
+          name: p.name, model: p.model,
+          price: p.price_no_vat, currency: p.currency || 'USD',
+          cat: p.category || guessCategory(p.name) || 'ІНШЕ',
+          status: p.status || '',
+        });
+      }
+    }
+    priced.sort((a, b) => (a.cat || '').localeCompare(b.cat || '') || (a.name || '').localeCompare(b.name || ''));
+
+    __stockReport = { missing, priced };
+    document.getElementById('repCount_missing').textContent = missing.length;
+    document.getElementById('repCount_priced').textContent = priced.length;
+    renderStockReportTab(__repActiveTab);
+  } catch (e) {
+    body.innerHTML = '<div class="rep-err">Помилка: ' + escapeHtml(e.message || String(e)) + '</div>';
+  }
+}
+
+function switchRepTab(tab) {
+  __repActiveTab = tab;
+  document.querySelectorAll('.rep-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  renderStockReportTab(tab);
+}
+
+function renderStockReportTab(tab) {
+  const body = document.getElementById('stockReportBody');
+  if (!__stockReport) return;
+  const items = __stockReport[tab] || [];
+  if (!items.length) {
+    body.innerHTML = '<div class="rep-empty">Нічого не знайдено в цій категорії звіту ✅</div>';
+    return;
+  }
+  // Group by category
+  const groups = {};
+  for (const it of items) {
+    const c = it.cat || 'ІНШЕ';
+    if (!groups[c]) groups[c] = [];
+    groups[c].push(it);
+  }
+  const catOrder = ['ІНВЕРТОРИ', 'АКУМУЛЯТОРИ', 'МОДУЛІ', 'КАБЕЛІ', 'ІНШЕ'];
+  const cats = Object.keys(groups).sort((a, b) => (catOrder.indexOf(a) + 99) - (catOrder.indexOf(b) + 99));
+
+  let html = '';
+  for (const c of cats) {
+    const rows = groups[c];
+    html += `<div class="rep-cat">
+      <div class="rep-cat-head">${escapeHtml(c)} <span class="rep-cat-count">· ${rows.length} поз.</span></div>
+      <table class="rep-tbl"><tbody>`;
+    for (const it of rows) {
+      if (tab === 'missing') {
+        html += `<tr>
+          <td class="rep-name">${escapeHtml(it.name)}</td>
+          <td class="rep-qty">${it.qty} шт</td>
+        </tr>`;
+      } else {
+        const priceTxt = it.price != null ? fmt(it.price, it.currency) : '<span style="color:var(--text3)">—</span>';
+        html += `<tr>
+          <td class="rep-name">${escapeHtml(it.name)}</td>
+          <td class="rep-st">${escapeHtml(it.status || '')}</td>
+          <td class="rep-price">${priceTxt}</td>
+        </tr>`;
+      }
+    }
+    html += `</tbody></table></div>`;
+  }
+  body.innerHTML = html;
+}
+
+function closeStockReport() {
+  document.getElementById('stockReportModal').style.display = 'none';
 }
 
 // Lightweight loader — без оновлення UI слотів, просто витягує продукти з API.
