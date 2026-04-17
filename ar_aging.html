@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Заборгованість покупців за строками боргу</title>
+<script>
+  try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
+</script>
+<script src="auth.js?v=d20260418b"></script>
+<script src="header.js?v=d20260418b"></script>
+<style>
+:root{
+  --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
+  --surface:#141414; --surface2:#1c1c1c;
+  --border:#262626; --border2:#333;
+  --text:#f5f5f5; --text2:#a3a3a3; --text3:#737373;
+  --accent:#ff8319; --accent-bg:rgba(255,131,25,.12);
+  --red:#e74c3c; --red-bg:rgba(231,76,60,.12);
+  --green:#22c55e; --green-bg:rgba(34,197,94,.12);
+  --blue:#3b82f6; --blue-bg:rgba(59,130,246,.12);
+  --yellow:#eab308; --yellow-bg:rgba(234,179,8,.14);
+}
+:root[data-theme="light"]{
+  --bg:#f5f5f7; --bg2:#ffffff; --bg3:#ececef;
+  --surface:#ffffff; --surface2:#ffffff;
+  --border:#e5e5ea; --border2:#d1d1d6;
+  --text:#1c1c1e; --text2:#48484a; --text3:#8e8e93;
+  --accent:#e07017; --accent-bg:rgba(224,112,23,.12);
+  --red:#d93025; --red-bg:rgba(217,48,37,.10);
+  --green:#15803d; --green-bg:rgba(21,128,61,.10);
+  --blue:#1d4ed8; --blue-bg:rgba(29,78,216,.10);
+  --yellow:#b45309; --yellow-bg:rgba(180,83,9,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+
+.wrap{max-width:1400px;margin:0 auto;padding:20px}
+.page-tabs{display:inline-flex;gap:4px;padding:4px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:14px}
+.ptab{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;color:var(--text2);text-decoration:none;transition:background .15s,color .15s;white-space:nowrap;cursor:pointer}
+.ptab:hover{background:var(--bg3);color:var(--text)}
+.ptab.active{background:var(--accent-bg);color:var(--accent)}
+
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
+.toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.toolbar input[type=date]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;color-scheme:dark;font-family:inherit}
+:root[data-theme="light"] .toolbar input[type=date]{color-scheme:light}
+.toolbar input[type=date]:focus{border-color:var(--accent)}
+.toolbar input[type=text]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;font-family:inherit;min-width:200px}
+.toolbar input[type=text]:focus{border-color:var(--accent)}
+.toolbar .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;display:inline-flex;align-items:center;gap:6px}
+.toolbar .chip:hover{background:var(--bg3);color:var(--text)}
+.toolbar .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.toolbar .group{display:inline-flex;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px}
+.toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
+.toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
+.toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 2px}
+
+.ar-wrap{overflow:auto;margin-bottom:20px;border:1px solid var(--border);border-radius:12px;background:var(--bg)}
+.ar-table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums;min-width:900px}
+.ar-table th,.ar-table td{padding:9px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
+.ar-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;background:var(--surface2);position:sticky;top:0;z-index:2;padding-top:11px;padding-bottom:11px}
+.ar-table th:first-child,.ar-table td:first-child{text-align:left;position:sticky;left:0;background:inherit;min-width:340px}
+.ar-table th:first-child{z-index:3;background:var(--surface2)}
+.ar-table tbody tr{background:var(--bg)}
+.ar-table tr.cur-header td{font-weight:800;font-size:13.5px;color:var(--text);background:var(--surface2);border-top:1px solid var(--border)}
+.ar-table tr.client-row td{color:var(--text2);font-weight:400}
+.ar-table tr.client-row td:first-child{padding-left:30px}
+.ar-table tr.client-row:hover td{background:var(--bg3)}
+.ar-table .col-total{font-weight:700;color:var(--text);background:var(--surface)}
+.ar-table .col-b{font-size:12px}
+.ar-table .col-dim{color:var(--text3)}
+.ar-table .dash{color:var(--text3)}
+.ar-table .pos{color:var(--text)}
+.ar-table .over30{color:var(--yellow);font-weight:600}
+.ar-table .over60{color:var(--red);font-weight:700}
+
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px}
+.summary .card{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:2px}
+.summary .cl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+.summary .cv{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.3px;line-height:1.2}
+.summary .cs{font-size:11px;color:var(--text3);font-weight:500}
+
+.loading{padding:60px;text-align:center;color:var(--text3)}
+.error{padding:20px;color:var(--red);background:var(--red-bg);border-radius:8px;margin:12px 0}
+</style>
+</head>
+<body>
+
+<div id="appHeader"></div>
+<div id="app">
+  <div class="wrap">
+    <div class="page-tabs">
+      <a href="/sales.html" class="ptab">📈 Продажі менеджерів</a>
+      <a href="/osp.html" class="ptab">📋 Оплата та відвантаження</a>
+      <span class="ptab active">⏱ Заборгованість покупців</span>
+    </div>
+
+    <div class="toolbar" id="arToolbar">
+      <span class="lbl">На дату</span>
+      <input type="date" id="onDateIn">
+      <span class="chip" onclick="setToday()">Сьогодні</span>
+      <div class="sep"></div>
+      <span class="group" id="orgGroup">
+        <span class="chip" data-org="" onclick="setOrg(this)">Всі</span>
+        <span class="chip active" data-org="Реакт" onclick="setOrg(this)">Реакт</span>
+        <span class="chip" data-org="Генерація" onclick="setOrg(this)">Ген.Одеса</span>
+        <span class="chip" data-org="Ген.Київ" onclick="setOrg(this)">Ген.Київ</span>
+      </span>
+      <div class="sep"></div>
+      <input type="text" id="clientIn" placeholder="🔎 Пошук клієнта..." oninput="filterChanged()">
+    </div>
+
+    <div id="summary"></div>
+    <div id="body"><div class="loading">Завантаження…</div></div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://price-api.doskevich.workers.dev/';
+const state = { onDate: '', org: 'Реакт', clientFilter: '', _raw: null };
+
+function fmt(n, dec = 2) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return Number(n).toLocaleString('uk-UA', { maximumFractionDigits: dec, minimumFractionDigits: dec });
+}
+function fmt0(n) { return fmt(n, 0); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function setToday() {
+  const d = new Date();
+  state.onDate = d.toISOString().slice(0, 10);
+  document.getElementById('onDateIn').value = state.onDate;
+  load();
+}
+function setOrg(el) {
+  state.org = el.dataset.org;
+  el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  load();
+}
+function filterChanged() {
+  state.clientFilter = document.getElementById('clientIn').value.trim().toLowerCase();
+  if (state._raw) render(state._raw);
+}
+
+async function load() {
+  document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
+  document.getElementById('summary').innerHTML = '';
+  try {
+    const q = '?action=receivables_aging&on_date=' + state.onDate + (state.org ? '&org=' + encodeURIComponent(state.org) : '');
+    const data = await fetch(API_URL + q).then(r => r.json());
+    if (data.error) throw new Error(data.error);
+    state._raw = data;
+    render(data);
+  } catch (e) {
+    document.getElementById('body').innerHTML = '<div class="error">' + esc(e.message) + '</div>';
+  }
+}
+
+function render(data) {
+  const f = state.clientFilter;
+  const currencies = (data.currencies || []).map(c => {
+    const clients = c.clients.filter(x => !f || (x.name || '').toLowerCase().includes(f));
+    // Recompute totals if filter applied
+    if (f && clients.length !== c.clients.length) {
+      const t = clients.reduce((s, x) => s + x.total, 0);
+      const b = clients.reduce((acc, x) => ({
+        d7: acc.d7 + x.buckets.d7, d14: acc.d14 + x.buckets.d14,
+        d30: acc.d30 + x.buckets.d30, d60: acc.d60 + x.buckets.d60,
+        d61p: acc.d61p + x.buckets.d61p,
+      }), { d7: 0, d14: 0, d30: 0, d60: 0, d61p: 0 });
+      return { ...c, total: t, buckets: b, clients };
+    }
+    return { ...c, clients };
+  }).filter(c => c.clients.length > 0);
+
+  // Summary cards per currency
+  const cardsHtml = currencies.map(c => {
+    const overdue = c.buckets.d30 + c.buckets.d60 + c.buckets.d61p;
+    return `<div class="card">
+      <span class="cl">${esc(c.curName)}</span>
+      <span class="cv">${fmt(c.total, 0)}</span>
+      <span class="cs">клієнтів: ${c.clients.length}${overdue > 0 ? ' · просрочено &gt;30д: <b>' + fmt(overdue, 0) + '</b>' : ''}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('summary').innerHTML = cardsHtml
+    ? `<div class="summary">${cardsHtml}</div>`
+    : '';
+
+  // Table
+  if (!currencies.length) {
+    document.getElementById('body').innerHTML = '<div class="loading">Немає заборгованостей на цю дату</div>';
+    return;
+  }
+
+  const bCell = v => {
+    if (!v || Math.abs(v) < 0.005) return '<span class="dash">—</span>';
+    return fmt(v);
+  };
+
+  let rows = '';
+  currencies.forEach(c => {
+    rows += `<tr class="cur-header">
+      <td>${esc(c.curName)} · ${c.clients.length} клієнтів</td>
+      <td class="col-total">${fmt(c.total)}</td>
+      <td class="col-dim">—</td>
+      <td class="col-dim">—</td>
+      <td class="col-b">${bCell(c.buckets.d7)}</td>
+      <td class="col-b">${bCell(c.buckets.d14)}</td>
+      <td class="col-b">${bCell(c.buckets.d30)}</td>
+      <td class="col-b">${bCell(c.buckets.d60)}</td>
+      <td class="col-b">${bCell(c.buckets.d61p)}</td>
+    </tr>`;
+    c.clients.forEach(cl => {
+      const overClass = cl.maxDaysOverdue > 60 ? 'over60' : cl.maxDaysOverdue > 30 ? 'over30' : '';
+      const overdueAmt = cl.buckets.d30 + cl.buckets.d60 + cl.buckets.d61p;
+      rows += `<tr class="client-row">
+        <td>${esc(cl.name)}</td>
+        <td class="col-total">${fmt(cl.total)}</td>
+        <td class="col-dim">${overdueAmt > 0.005 ? fmt(overdueAmt) : '<span class="dash">—</span>'}</td>
+        <td class="col-dim ${overClass}">${cl.maxDaysOverdue > 0 ? cl.maxDaysOverdue : '<span class="dash">—</span>'}</td>
+        <td class="col-b">${bCell(cl.buckets.d7)}</td>
+        <td class="col-b">${bCell(cl.buckets.d14)}</td>
+        <td class="col-b">${bCell(cl.buckets.d30)}</td>
+        <td class="col-b">${bCell(cl.buckets.d60)}</td>
+        <td class="col-b">${bCell(cl.buckets.d61p)}</td>
+      </tr>`;
+    });
+  });
+
+  document.getElementById('body').innerHTML =
+    '<div class="ar-wrap"><table class="ar-table"><thead><tr>' +
+    '<th>Валюта / Контрагент</th>' +
+    '<th>Загальна заборгованість</th>' +
+    '<th>У т.ч. прострочена</th>' +
+    '<th>Термін прострочення, днів</th>' +
+    '<th>До 7</th>' +
+    '<th>8–14</th>' +
+    '<th>15–30</th>' +
+    '<th>31–60</th>' +
+    '<th>Від 61</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+
+document.getElementById('onDateIn').addEventListener('change', function(e) { state.onDate = e.target.value; load(); });
+
+// Auth + init
+Auth.require('sales').then(user => {
+  AppHeader.mount({ active: 'sales', user });
+  setToday();
+});
+</script>
+</body>
+</html>
