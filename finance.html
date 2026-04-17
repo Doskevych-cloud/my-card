@@ -1601,10 +1601,14 @@ function renderCf(data) {
   const ncf = data.netCashFlow || 0;
   const transfersNet = (data.transfers && data.transfers.net) || 0;
   const totalChange = closing - opening;
+  // FX impact on residual balances: не проходить через ДвиженияДенежныхСредств,
+  // тільки переоцінка залишків в ДенежныеСредства за курсом кінця періоду.
+  // = фактична зміна − (NCF + Transfers)
+  const fxImpact = totalChange - ncf - transfersNet;
   document.getElementById('cfSummary').innerHTML = '<div class="pnl-summary">' +
     `<div class="pnl-card c-rev"><span class="cl">Залишок на початок</span><span class="cv">${fmt(opening, 0)} $</span></div>` +
     `<div class="pnl-card c-grs"><span class="cl">Чистий грошовий потік</span><span class="cv${ncf<0?' ng':''}">${fmt(ncf, 0)} $</span><span class="cs">опер + інв + фін</span></div>` +
-    `<div class="pnl-card c-cost"><span class="cl">Курсові / Переміщення</span><span class="cv${transfersNet<0?' ng':''}">${fmt(transfersNet, 0)} $</span><span class="cs">FX-вплив на USD-залишок</span></div>` +
+    `<div class="pnl-card c-cost"><span class="cl">Переміщення + FX</span><span class="cv${(transfersNet+fxImpact)<0?' ng':''}">${fmt(transfersNet+fxImpact, 0)} $</span><span class="cs">внутр. рухи + переоцінка</span></div>` +
     `<div class="pnl-card c-net"><span class="cl">Залишок на кінець</span><span class="cv${closing<0?' ng':''}">${fmt(closing, 0)} $</span><span class="cs">зміна за період ${fmt(totalChange, 0)} $</span></div>` +
     '</div>';
 
@@ -1630,7 +1634,10 @@ function renderCf(data) {
   rows += renderSection('Переміщення / Курсові різниці (інфо)', 'tr', data.transfers);
   rows += `<tr class="sp"><td colspan="4"></td></tr>`;
   rows += `<tr class="sub"><td>Залишок на початок періоду</td><td class="col-total"></td><td class="col-total"></td><td class="col-total">${fmtCell(opening)}</td></tr>`;
-  rows += `<tr class="sub"><td>Зміна залишку</td><td class="col-total"></td><td class="col-total"></td><td class="col-total">${fmtCell(totalChange)}</td></tr>`;
+  rows += `<tr class="itm"><td>+ Net Cash Flow (опер + інв + фін)</td><td class="col-total"></td><td class="col-total"></td><td class="col-total">${fmtCell(ncf)}</td></tr>`;
+  rows += `<tr class="itm"><td>+ Переміщення / курс. різниці</td><td class="col-total"></td><td class="col-total"></td><td class="col-total">${fmtCell(transfersNet)}</td></tr>`;
+  rows += `<tr class="itm"><td>+ Вплив FX на залишок валюти</td><td class="col-total"></td><td class="col-total"></td><td class="col-total">${fmtCell(fxImpact)}</td></tr>`;
+  rows += `<tr class="sub"><td>= Зміна залишку</td><td class="col-total"></td><td class="col-total"></td><td class="col-total">${fmtCell(totalChange)}</td></tr>`;
   rows += `<tr class="grd"><td>Залишок на кінець періоду</td><td class="col-total"></td><td class="col-total"></td><td class="col-total">${fmtCell(closing)}</td></tr>`;
 
   document.getElementById('cfBody').innerHTML =
