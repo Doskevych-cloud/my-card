@@ -50,6 +50,9 @@ a{color:inherit;text-decoration:none}
 .hero .sub{font-size:12px;color:var(--text3);margin-top:4px}
 
 .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
+.toolbar input[type=date]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;color-scheme:dark;font-family:inherit}
+:root[data-theme="light"] .toolbar input[type=date]{color-scheme:light}
+.toolbar input[type=date]:focus{border-color:var(--accent)}
 .toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
 .toolbar .group{display:inline-flex;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px}
 .toolbar .group .chip{padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;user-select:none;transition:background .15s,color .15s}
@@ -177,14 +180,16 @@ a{color:inherit;text-decoration:none}
 
     <div class="toolbar">
       <span class="lbl">Період</span>
+      <input type="date" id="fromIn">
+      <span style="color:var(--text3)">—</span>
+      <input type="date" id="toIn">
       <span class="group" id="periodGroup">
-        <span class="chip active" data-preset="month">Цей місяць</span>
+        <span class="chip" data-preset="month">Цей місяць</span>
         <span class="chip" data-preset="prevmonth">Минулий</span>
         <span class="chip" data-preset="quarter">Квартал</span>
         <span class="chip" data-preset="year">Рік</span>
       </span>
       <span class="sep"></span>
-      <span class="lbl">Організація</span>
       <span class="group" id="orgGroup">
         <span class="chip active" data-org="">Всі</span>
         <span class="chip" data-org="Реакт">Реакт</span>
@@ -192,7 +197,6 @@ a{color:inherit;text-decoration:none}
       </span>
       <span class="sep"></span>
       <button class="btn" onclick="reloadAll()">🔄 Оновити</button>
-      <span style="margin-left:auto;font-size:11px;color:var(--text3)" id="periodLabel"></span>
     </div>
 
     <!-- KPI grid -->
@@ -243,13 +247,13 @@ a{color:inherit;text-decoration:none}
     </div>
 
     <!-- Forecast + FX -->
-    <div class="section" id="sectionMarkets">
+    <div class="section" id="sectionMarkets" style="display:none">
       <div class="section-head">
         <h2><span class="ico">🌐</span>Ринок</h2>
         <span class="sub">Курси валют · Мідь · Прогноз кабелю</span>
       </div>
       <div class="grid-2">
-        <div class="card" id="cardFx">
+        <div class="card" id="cardFx" style="display:none">
           <h3><span class="ico">💱</span>Курси валют</h3>
           <div class="meta" id="fxMeta"></div>
           <div id="fxBody"><div class="loading">Завантаження…</div></div>
@@ -371,6 +375,10 @@ function bindToolbar() {
       reloadAll();
     });
   });
+  const fi = document.getElementById('fromIn');
+  const ti = document.getElementById('toIn');
+  if (fi) fi.addEventListener('change', e => { state.from = e.target.value; dashDateChanged(); });
+  if (ti) ti.addEventListener('change', e => { state.to   = e.target.value; dashDateChanged(); });
 }
 
 function setPreset(p) {
@@ -383,8 +391,36 @@ function setPreset(p) {
   else if (p === 'year')      from = new Date(y, 0, 1);
   state.from = _localISO(from);
   state.to = _localISO(to);
+  const fi = document.getElementById('fromIn'); if (fi) fi.value = state.from;
+  const ti = document.getElementById('toIn');   if (ti) ti.value = state.to;
   document.querySelectorAll('#periodGroup .chip').forEach(c => c.classList.toggle('active', c.dataset.preset === p));
-  document.getElementById('periodLabel').textContent = `${state.from} — ${state.to}`;
+  reloadAll();
+}
+
+// Same as finance — detect preset from from/to pair
+function detectPreset(from, to) {
+  if (!from || !to) return '';
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  const iso = d => _localISO(d);
+  const monthStart = iso(new Date(y, m, 1));
+  const monthEnd   = iso(new Date(y, m + 1, 0));
+  if (from === monthStart && to >= monthStart && to <= monthEnd) return 'month';
+  const prevStart = iso(new Date(y, m - 1, 1));
+  const prevEnd   = iso(new Date(y, m, 0));
+  if (from === prevStart && to === prevEnd) return 'prevmonth';
+  const q = Math.floor(m / 3);
+  const qStart = iso(new Date(y, q * 3, 1));
+  const qEnd   = iso(new Date(y, (q + 1) * 3, 0));
+  if (from === qStart && to >= qStart && to <= qEnd) return 'quarter';
+  const yStart = iso(new Date(y, 0, 1));
+  const yEnd   = iso(new Date(y, 11, 31));
+  if (from === yStart && to >= yStart && to <= yEnd) return 'year';
+  return '';
+}
+
+function dashDateChanged() {
+  state.preset = detectPreset(state.from, state.to) || '';
+  document.querySelectorAll('#periodGroup .chip').forEach(c => c.classList.toggle('active', c.dataset.preset === state.preset));
   reloadAll();
 }
 
@@ -434,13 +470,18 @@ function buildKpiSkeleton() {
       </div>`
     ).join('');
   }
-  // show/hide sections
+  // show/hide sections — strictly per role
   document.getElementById('sectionFinance').style.display = r.finance ? '' : 'none';
   document.getElementById('sectionOps').style.display = (r.sales || r.warehouses || r.finance) ? '' : 'none';
   document.getElementById('cardManagers').style.display = r.sales ? '' : 'none';
   document.getElementById('cardWarehouses').style.display = r.warehouses ? '' : 'none';
   document.getElementById('cardAR').style.display = r.finance ? '' : 'none';
-  document.getElementById('cardCopper').style.display = r.forecast ? '' : 'none';
+  // Markets: FX потрібен для sales/finance/forecast, мідь — тільки для forecast
+  const showFx = !!(r.sales || r.finance || r.forecast);
+  const showCopper = !!r.forecast;
+  document.getElementById('cardFx').style.display = showFx ? '' : 'none';
+  document.getElementById('cardCopper').style.display = showCopper ? '' : 'none';
+  document.getElementById('sectionMarkets').style.display = (showFx || showCopper) ? '' : 'none';
 }
 
 function updateKpi(id, { val, sub = '', cls = '', error = false }) {
@@ -888,6 +929,9 @@ function renderWarehouses(d) {
 
 // ─── FX ───
 async function loadFx() {
+  const u = window.__user;
+  const r = u.roles || {};
+  if (!r.sales && !r.finance && !r.forecast) return;
   try {
     const d = await fetch(API_URL + '?action=fx_rates').then(r => r.json());
     if (d.error) throw new Error(d.error);
