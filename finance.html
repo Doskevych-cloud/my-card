@@ -9,6 +9,8 @@
 </script>
 <script src="auth.js?v=20260418"></script>
 <script src="header.js?v=20260418"></script>
+<!-- html2pdf.js for real PDF file download (not browser print dialog) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 :root{
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -451,42 +453,98 @@ function switchTab(el) {
   saveStateToUrl();
 }
 
-// Export the active tab to PDF using the browser's print dialog.
-// Assembles a page header with report title + period + org, then invokes
-// print. Our @media print CSS keeps only the active view visible, expands
-// collapsed rows, and reformats for A4 paper.
+// Export the active tab to a real PDF file using html2pdf.js.
+// Працює без діалогу друку: клонуємо активну вкладку, розгортаємо рядки,
+// стилізуємо під папір і html2pdf формує файл який одразу завантажується.
 function downloadPDF() {
-  const active = document.querySelector('.ptab.active');
-  const view   = active && active.dataset.view;
-  const titles = { pnl: 'P&L звіт', gp: 'Валовий прибуток', ar: 'Розрахунки з покупцями' };
+  if (typeof html2pdf === 'undefined') {
+    alert('PDF-бібліотека не завантажилась. Перевірте інтернет-з\'єднання.');
+    return;
+  }
+  const tabEl = document.querySelector('.ptab.active');
+  const view  = tabEl && tabEl.dataset.view;
+  const titles = { pnl: 'P&L звіт', gp: 'Валовий прибуток', fi: 'Фінансові показники', ar: 'Розрахунки з покупцями' };
   const title  = titles[view] || 'Фінансовий звіт';
-  // Pull period/org from whichever view is active
-  const state  = view === 'gp' ? gpState : view === 'ar' ? arState : pnlState;
+  const state  = view === 'gp' ? gpState : view === 'ar' ? arState : view === 'fi' ? fiState : pnlState;
   const from   = state.from || '';
   const to     = state.to   || '';
   const org    = state.org  || 'Всі організації';
   const dt     = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' });
-  const hdr    = document.getElementById('printHeader');
-  if (hdr) {
-    hdr.innerHTML = '<h1>' + esc(title) + '</h1>' +
-      '<div class="meta">' +
-      'Період: <b>' + esc(from) + '</b> — <b>' + esc(to) + '</b>' +
-      ' · Організація: <b>' + esc(org) + '</b>' +
-      ' · Згенеровано: ' + esc(dt) +
-      '</div>';
-  }
-  // Temporarily expand all collapsed rows so they appear in PDF
-  const hidden = document.querySelectorAll('.pnl-table tr.collapsed-hidden');
-  hidden.forEach(r => r.dataset._wasHidden = '1');
-  hidden.forEach(r => r.classList.remove('collapsed-hidden'));
-  setTimeout(() => {
-    window.print();
-    // After print dialog closes — restore collapsed state
-    setTimeout(() => {
-      document.querySelectorAll('.pnl-table tr[data-_was-hidden], .pnl-table tr[data-_washidden]').forEach(() => {});
-      hidden.forEach(r => { if (r.dataset._wasHidden) { r.classList.add('collapsed-hidden'); delete r.dataset._wasHidden; } });
-    }, 500);
-  }, 100);
+  const filename = `${title} · ${from} — ${to}${state.org ? ' · ' + state.org : ''}.pdf`;
+
+  // Clone the active view so modifications don't affect the live page
+  const activeView = document.querySelector('.view.active');
+  if (!activeView) return;
+  const clone = activeView.cloneNode(true);
+
+  // Remove the toolbar from the clone (period picker, chips — not needed in PDF)
+  clone.querySelectorAll('.toolbar, .pdf-btn, .pnl-collapse-ctl').forEach(el => el.remove());
+
+  // Expand all collapsed rows in the clone so they appear in PDF
+  clone.querySelectorAll('tr.collapsed-hidden').forEach(r => r.classList.remove('collapsed-hidden'));
+  clone.querySelectorAll('tr[data-collapsed="true"]').forEach(r => r.setAttribute('data-collapsed', 'false'));
+  // Unhide bottom-summary rows if any
+  clone.querySelectorAll('tr[data-bottom-summary]').forEach(r => { r.style.display = 'table-row'; });
+
+  // Build the PDF container with a header + summary + body
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'padding:12mm 10mm;background:#fff;color:#000;font-family:Inter,-apple-system,sans-serif;font-size:10pt;line-height:1.3;width:287mm;min-height:200mm';
+  wrap.innerHTML = `
+    <div style="margin-bottom:6mm;border-bottom:1px solid #999;padding-bottom:4mm;">
+      <div style="font-size:16pt;font-weight:800;margin-bottom:2mm;">${esc(title)}</div>
+      <div style="font-size:9pt;color:#555;">
+        Період: <b style="color:#000;">${esc(from)} — ${esc(to)}</b>
+        &nbsp;·&nbsp; Організація: <b style="color:#000;">${esc(org)}</b>
+        &nbsp;·&nbsp; Згенеровано: ${esc(dt)}
+      </div>
+    </div>`;
+  wrap.appendChild(clone);
+
+  // Inline override stylesheet — ensures colors/borders render correctly in canvas
+  const style = document.createElement('style');
+  style.textContent = `
+    #pdf-export * { box-shadow: none !important; }
+    #pdf-export .pnl-wrap { border:1px solid #999; border-radius:0; overflow:visible; background:#fff; }
+    #pdf-export .pnl-table { color:#000; font-size:9pt; border-collapse:collapse; width:100%; }
+    #pdf-export .pnl-table th, #pdf-export .pnl-table td { padding:4px 8px; border:none; white-space:normal; text-align:right; }
+    #pdf-export .pnl-table th:first-child, #pdf-export .pnl-table td:first-child { text-align:left; position:static; background:transparent; min-width:0; }
+    #pdf-export .pnl-table th { background:#f0f0f0; color:#333; border-bottom:1px solid #999; font-weight:700; text-transform:uppercase; font-size:8pt; letter-spacing:.3px; }
+    #pdf-export .pnl-table tr.sec td, #pdf-export .pnl-table tr.cat td { font-weight:800; border-top:1px solid #999; background:#fff; }
+    #pdf-export .pnl-table tr.grp td { font-weight:700; background:#fafafa; }
+    #pdf-export .pnl-table tr.sub td, #pdf-export .pnl-table tr.grd td { font-weight:700; background:#f6f6f6; border-top:1px solid #999; }
+    #pdf-export .pnl-table tr.itm td { color:#333; }
+    #pdf-export .pnl-table tr.pct td { color:#666; font-style:italic; }
+    #pdf-export .tri { display:none; }
+    #pdf-export .col-total { font-weight:700; }
+    #pdf-export .pos, #pdf-export .neg { color:#000 !important; }
+    #pdf-export .dash, #pdf-export .zr { color:#999; }
+    #pdf-export .pnl-summary { display:grid; grid-template-columns: repeat(4, 1fr); gap:4mm; margin:4mm 0; }
+    #pdf-export .pnl-card { padding:3mm 4mm; border:1px solid #ccc; border-radius:2mm; background:#fff; }
+    #pdf-export .pnl-card .cl { font-size:8pt; color:#666; text-transform:uppercase; letter-spacing:.3px; font-weight:700; }
+    #pdf-export .pnl-card .cv { font-size:13pt; font-weight:800; color:#000; display:block; }
+    #pdf-export .pnl-card .cs { font-size:8pt; color:#666; }
+    #pdf-export tr { page-break-inside: avoid; }
+  `;
+  wrap.id = 'pdf-export';
+  wrap.appendChild(style);
+
+  // Mount temporarily (off-screen)
+  wrap.style.position = 'fixed';
+  wrap.style.left = '-10000px';
+  wrap.style.top = '0';
+  document.body.appendChild(wrap);
+
+  const opt = {
+    margin:      [8, 8, 8, 8],
+    filename:    filename,
+    image:       { type: 'jpeg', quality: 0.96 },
+    html2canvas: { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false },
+    jsPDF:       { unit: 'mm', format: 'a4', orientation: 'landscape', compress: true },
+    pagebreak:   { mode: ['css', 'legacy'] },
+  };
+  html2pdf().set(opt).from(wrap).save()
+    .catch(e => { console.error('PDF error:', e); alert('Помилка створення PDF: ' + e.message); })
+    .finally(() => { document.body.removeChild(wrap); });
 }
 
 function fmt(n, dec) {
