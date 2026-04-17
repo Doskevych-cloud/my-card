@@ -283,6 +283,7 @@ a{color:inherit;text-decoration:none}
     <div class="page-tabs">
       <span class="ptab active" data-view="pnl" onclick="switchTab(this)">P&L</span>
       <span class="ptab" data-view="gp" onclick="switchTab(this)">Валовий прибуток</span>
+      <span class="ptab" data-view="fi" onclick="switchTab(this)">Фінансові показники</span>
       <span class="ptab" data-view="ar" onclick="switchTab(this)">Розрахунки з покупцями</span>
       <button type="button" class="pdf-btn" onclick="downloadPDF()" title="Зберегти поточну вкладку у PDF">
         <span class="ic">⬇</span> PDF
@@ -351,6 +352,30 @@ a{color:inherit;text-decoration:none}
       <div id="gpBody"><div class="loading">Завантаження...</div></div>
     </div>
 
+    <!-- ═══ Financial Indicators View ═══ -->
+    <div id="fiView" class="view">
+      <div class="toolbar" id="fiToolbar">
+        <span class="lbl">Період</span>
+        <input type="date" id="fiFromIn">
+        <span style="color:var(--text3)">—</span>
+        <input type="date" id="fiToIn">
+        <span class="group">
+          <span class="chip" onclick="fiSetPreset('month')">Цей місяць</span>
+          <span class="chip" onclick="fiSetPreset('prevmonth')">Минулий</span>
+          <span class="chip" onclick="fiSetPreset('quarter')">Квартал</span>
+          <span class="chip" onclick="fiSetPreset('year')">Рік</span>
+        </span>
+        <div class="sep"></div>
+        <span class="group" id="fiOrgGroup">
+          <span class="chip" data-org="" onclick="fiSetOrg(this)">Всі</span>
+          <span class="chip" data-org="Реакт" onclick="fiSetOrg(this)">Реакт</span>
+          <span class="chip" data-org="Генерація" onclick="fiSetOrg(this)">Генерація</span>
+        </span>
+      </div>
+      <div id="fiSummary"></div>
+      <div id="fiBody"><div class="loading">Завантаження...</div></div>
+    </div>
+
     <!-- ═══ Accounts Receivable View ═══ -->
     <div id="arView" class="view">
       <div class="toolbar" id="arToolbar">
@@ -412,6 +437,7 @@ function switchTab(el) {
   activeView.tab = v;
   document.querySelectorAll('.view').forEach(d => d.classList.toggle('active', d.id === v + 'View'));
   if (v === 'gp' && !gpState._loaded) gpLoad();
+  if (v === 'fi' && !fiState._loaded) fiLoad();
   if (v === 'ar' && !arState._loaded) arLoad();
   saveStateToUrl();
 }
@@ -1092,6 +1118,210 @@ function renderPnlAccrual(data) {
 
 document.getElementById('fromIn').addEventListener('change', function(e) { pnlState.from = e.target.value; pnlLoad(); });
 document.getElementById('toIn').addEventListener('change', function(e) { pnlState.to = e.target.value; pnlLoad(); });
+
+/* ═══════════════════════════════════════════════════
+   FINANCIAL INDICATORS TAB
+   Показує по підрозділах: Валовий прибуток, Маржа %, EBITDA.
+   Джерела:
+   • pnl_accrual_report — для EBITDA (включає амортизацію) + total revenue/cogs
+   • gross_profit_report — для розбивки по підрозділах (revenue/cogs per dept)
+   ═══════════════════════════════════════════════════ */
+const fiState = { from: '', to: '', org: '', preset: '', _loaded: false };
+
+function fiSetPreset(p) {
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  let from, to = now;
+  if (p === 'month')          from = new Date(y, m, 1);
+  else if (p === 'prevmonth') { from = new Date(y, m-1, 1); to = new Date(y, m, 0); }
+  else if (p === 'quarter')   { const q = Math.floor(m/3); from = new Date(y, q*3, 1); }
+  else if (p === 'year')      from = new Date(y, 0, 1);
+  fiState.from = _localISO(from); fiState.to = _localISO(to); fiState.preset = p;
+  document.getElementById('fiFromIn').value = fiState.from;
+  document.getElementById('fiToIn').value   = fiState.to;
+  document.querySelectorAll('#fiToolbar .group:first-of-type .chip').forEach(c => {
+    const map = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' };
+    c.classList.toggle('active', c.textContent.trim() === map[p]);
+  });
+  saveStateToUrl();
+  fiLoad();
+}
+function fiSetOrg(el) {
+  fiState.org = el.dataset.org;
+  el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  saveStateToUrl();
+  fiLoad();
+}
+
+async function fiLoad() {
+  // If period not yet set — inherit from P&L tab or default to current month
+  if (!fiState.from || !fiState.to) {
+    if (pnlState.from && pnlState.to) {
+      fiState.from = pnlState.from; fiState.to = pnlState.to; fiState.preset = pnlState.preset;
+      document.getElementById('fiFromIn').value = fiState.from;
+      document.getElementById('fiToIn').value   = fiState.to;
+    } else {
+      fiSetPreset('month');
+      return; // fiSetPreset will call fiLoad recursively
+    }
+  }
+  document.getElementById('fiBody').innerHTML = '<div class="loading">Завантаження...</div>';
+  document.getElementById('fiSummary').innerHTML = '';
+  try {
+    const orgQ = fiState.org ? '&org=' + encodeURIComponent(fiState.org) : '';
+    const q1 = '?action=pnl_accrual_report&from=' + fiState.from + '&to=' + fiState.to + orgQ;
+    const q2 = '?action=gross_profit_report&from=' + fiState.from + '&to=' + fiState.to + orgQ;
+    const [pnl, gp] = await Promise.all([
+      fetch(API_URL + q1).then(r => r.json()),
+      fetch(API_URL + q2).then(r => r.json()),
+    ]);
+    if (pnl.error) throw new Error(pnl.error);
+    if (gp.error)  throw new Error(gp.error);
+    fiState._loaded = true;
+    renderFi(pnl, gp);
+  } catch (e) {
+    document.getElementById('fiBody').innerHTML = '<div class="error">' + esc(e.message) + '</div>';
+  }
+}
+
+// ═══════════════════════════════════════════════
+// renderFi — таблиця Індикатор | (per-month) | Разом
+//
+// Показники:
+//  • Валовий прибуток (Revenue − COGS) — total + per-dept
+//  • Маржинальний прибуток (та сама формула) — синонім для GP, поки без різниці
+//  • Відсоток маржі (GP / Revenue × 100)
+//  • EBITDA = Operating Profit + Амортизація (з accrual)
+// ═══════════════════════════════════════════════
+function renderFi(pnl, gp) {
+  const months = pnl.months || [];
+  const rev  = pnl.revenue || { byMonth:{}, total:0 };
+  const cogs = pnl.cogs    || { byMonth:{}, total:0 };
+  const sec  = pnl.sections || {};
+  const opexTotal = (sec.admin && sec.admin.total || 0) + (sec.commercial && sec.commercial.total || 0);
+  // Per-month OPEX: sum admin+commercial expenses by month
+  const opexByMonth = {};
+  (pnl.expenses || []).forEach(e => {
+    if (e.section !== 'admin' && e.section !== 'commercial') return;
+    for (const m of Object.keys(e.byMonth || {})) {
+      opexByMonth[m] = (opexByMonth[m] || 0) + (e.byMonth[m] || 0);
+    }
+  });
+  // Амортизація з accrual — рядки з category '…Амортизац…'
+  const amortBy = {};
+  let amortTotal = 0;
+  (pnl.expenses || []).forEach(e => {
+    if (!/амортизац/i.test(e.category || '')) return;
+    amortTotal += e.total || 0;
+    for (const m of Object.keys(e.byMonth || {})) {
+      amortBy[m] = (amortBy[m] || 0) + (e.byMonth[m] || 0);
+    }
+  });
+
+  // Build month header
+  const MN = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
+  const mLbl = mk => { const p = mk.split('-'); return MN[+p[1]-1] + ' ' + p[0]; };
+  const fmtUSD = v => {
+    if (!v && v !== 0) return '<span class="dash">—</span>';
+    if (Math.abs(v) < 0.5) return '<span class="zr">—</span>';
+    return '<span class="' + (v > 0 ? 'pos' : 'neg') + '">' + fmt(v, 0) + ' $</span>';
+  };
+  const fmtPct = v => {
+    if (!isFinite(v)) return '<span class="dash">—</span>';
+    return '<span class="' + (v >= 0 ? 'pos' : 'neg') + '">' + (v>=0?'+':'') + v.toFixed(1) + '%</span>';
+  };
+
+  const showM = months.length > 1;
+  const mCols = showM ? months.map(m => `<th>${mLbl(m)}</th>`).join('') : '';
+
+  // Compute per-month GP and EBITDA
+  const gpByMonth = {};
+  months.forEach(m => { gpByMonth[m] = (rev.byMonth[m] || 0) - (cogs.byMonth[m] || 0); });
+  const gpTotal = rev.total - cogs.total;
+  const opProfByMonth = {};
+  months.forEach(m => { opProfByMonth[m] = gpByMonth[m] - (opexByMonth[m] || 0); });
+  const opProfTotal = gpTotal - opexTotal;
+  const ebitdaByMonth = {};
+  months.forEach(m => { ebitdaByMonth[m] = opProfByMonth[m] + (amortBy[m] || 0); });
+  const ebitdaTotal = opProfTotal + amortTotal;
+  const marginPctByMonth = {};
+  months.forEach(m => {
+    const r = rev.byMonth[m] || 0;
+    marginPctByMonth[m] = r ? (gpByMonth[m] / r * 100) : 0;
+  });
+  const marginPctTotal = rev.total ? (gpTotal / rev.total * 100) : 0;
+
+  // Per-department breakdown from gross_profit_report
+  // gross_profit_report.departments: [{ name, revenue, cogs, gp, margin }]
+  const deps = (gp.departments || []).filter(d => Math.abs(d.revenue.total) > 0.01 || Math.abs(d.cogs.total) > 0.01);
+  // gp data.departments may have different shape — try both
+  const depRows = deps.map(d => ({
+    name: d.name || d.depName || '—',
+    rev: d.revenue && d.revenue.total || 0,
+    cogs: d.cogs && d.cogs.total || 0,
+    gp: (d.revenue && d.revenue.total || 0) - (d.cogs && d.cogs.total || 0),
+    revByM: (d.revenue && d.revenue.byMonth) || {},
+    cogsByM: (d.cogs && d.cogs.byMonth) || {},
+  })).sort((a, b) => b.gp - a.gp);
+
+  // Build rows
+  const cs = (showM ? months.length : 0) + 2;
+  let rows = '';
+  // Summary row: Revenue
+  rows += `<tr class="sec rev" data-sec="rev" data-is-sec="1"><td><span class="tri">▾</span>Виручка</td>${showM ? months.map(m=>`<td>${fmtUSD(rev.byMonth[m]||0)}</td>`).join('') : ''}<td class="col-total">${fmtUSD(rev.total)}</td></tr>`;
+  rows += `<tr class="sec cost" data-sec="cost" data-is-sec="1"><td><span class="tri">▾</span>Собівартість</td>${showM ? months.map(m=>`<td>${fmtUSD(cogs.byMonth[m]||0)}</td>`).join('') : ''}<td class="col-total">${fmtUSD(cogs.total)}</td></tr>`;
+  // 1) Валовий прибуток — grp with dept breakdown
+  rows += `<tr class="grp" data-sec="gp" data-grp="_gp" data-is-grp="1"><td><span class="tri">▾</span>Валовий прибуток</td>${showM ? months.map(m=>`<td>${fmtUSD(gpByMonth[m]||0)}</td>`).join('') : ''}<td class="col-total">${fmtUSD(gpTotal)}</td></tr>`;
+  depRows.forEach(d => {
+    const gpByM = {};
+    months.forEach(m => { gpByM[m] = (d.revByM[m]||0) - (d.cogsByM[m]||0); });
+    rows += `<tr class="itm" data-sec="gp" data-grp="_gp"><td>${esc(d.name)}</td>${showM ? months.map(m=>`<td>${fmtUSD(gpByM[m])}</td>`).join('') : ''}<td class="col-total">${fmtUSD(d.gp)}</td></tr>`;
+  });
+  // 2) Маржинальний прибуток — те саме що GP (синонім за українською практикою)
+  rows += `<tr class="grp" data-sec="mg" data-grp="_mg" data-is-grp="1" data-collapsed="true"><td><span class="tri">▾</span>Маржинальний прибуток</td>${showM ? months.map(m=>`<td>${fmtUSD(gpByMonth[m]||0)}</td>`).join('') : ''}<td class="col-total">${fmtUSD(gpTotal)}</td></tr>`;
+  depRows.forEach(d => {
+    const gpByM = {};
+    months.forEach(m => { gpByM[m] = (d.revByM[m]||0) - (d.cogsByM[m]||0); });
+    rows += `<tr class="itm collapsed-hidden" data-sec="mg" data-grp="_mg"><td>${esc(d.name)}</td>${showM ? months.map(m=>`<td>${fmtUSD(gpByM[m])}</td>`).join('') : ''}<td class="col-total">${fmtUSD(d.gp)}</td></tr>`;
+  });
+  // 3) Відсоток маржі — grp with dept %
+  rows += `<tr class="grp" data-sec="mp" data-grp="_mp" data-is-grp="1" data-collapsed="true"><td><span class="tri">▾</span>Відсоток маржі</td>${showM ? months.map(m=>`<td>${fmtPct(marginPctByMonth[m])}</td>`).join('') : ''}<td class="col-total">${fmtPct(marginPctTotal)}</td></tr>`;
+  depRows.forEach(d => {
+    const mgByM = {};
+    months.forEach(m => {
+      const r = d.revByM[m] || 0;
+      mgByM[m] = r ? (((d.revByM[m]||0) - (d.cogsByM[m]||0)) / r * 100) : 0;
+    });
+    const mgTot = d.rev ? (d.gp / d.rev * 100) : 0;
+    rows += `<tr class="itm collapsed-hidden" data-sec="mp" data-grp="_mp"><td>${esc(d.name)}</td>${showM ? months.map(m=>`<td>${fmtPct(mgByM[m])}</td>`).join('') : ''}<td class="col-total">${fmtPct(mgTot)}</td></tr>`;
+  });
+  // 4) EBITDA = Operating profit + Amortization
+  rows += `<tr class="grd"><td>EBITDA</td>${showM ? months.map(m=>`<td>${fmtUSD(ebitdaByMonth[m]||0)}</td>`).join('') : ''}<td class="col-total">${fmtUSD(ebitdaTotal)}</td></tr>`;
+  rows += `<tr class="pct"><td>  у т.ч. Амортизація</td>${showM ? months.map(m=>`<td>${fmtUSD(amortBy[m]||0)}</td>`).join('') : ''}<td class="col-total">${fmtUSD(amortTotal)}</td></tr>`;
+  rows += `<tr class="pct"><td>  Операційний прибуток</td>${showM ? months.map(m=>`<td>${fmtUSD(opProfByMonth[m]||0)}</td>`).join('') : ''}<td class="col-total">${fmtUSD(opProfTotal)}</td></tr>`;
+
+  // Summary cards
+  document.getElementById('fiSummary').innerHTML = '<div class="pnl-summary">' +
+    `<div class="pnl-card c-rev"><span class="cl">Валовий прибуток</span><span class="cv">${fmt(gpTotal, 0)} $</span><span class="cs">маржа ${marginPctTotal.toFixed(1)}%</span></div>` +
+    `<div class="pnl-card c-grs"><span class="cl">EBITDA</span><span class="cv">${fmt(ebitdaTotal, 0)} $</span><span class="cs">у т.ч. Амортизація ${fmt(amortTotal, 0)} $</span></div>` +
+    `<div class="pnl-card c-net"><span class="cl">Операційний прибуток</span><span class="cv${opProfTotal<0?' ng':''}">${fmt(opProfTotal, 0)} $</span><span class="cs">${rev.total ? (opProfTotal/rev.total*100).toFixed(1) : 0}% від доходу</span></div>` +
+    '</div>';
+
+  document.getElementById('fiBody').innerHTML =
+    `<div class="pnl-wrap"><table class="pnl-table"><thead><tr><th>Індикатор</th>${mCols}<th class="col-total">Разом</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  pnlBindCollapse();
+  // Apply default-collapsed headers
+  const tbl = document.querySelector('#fiBody .pnl-table');
+  if (tbl) {
+    tbl.querySelectorAll('tr[data-is-grp][data-collapsed="true"]').forEach(tr => {
+      const grp = tr.getAttribute('data-grp');
+      tbl.querySelectorAll('tr[data-grp="' + grp + '"]:not([data-is-grp])').forEach(r => r.classList.add('collapsed-hidden'));
+    });
+  }
+}
+
+document.getElementById('fiFromIn').addEventListener('change', function(e) { fiState.from = e.target.value; fiLoad(); });
+document.getElementById('fiToIn').addEventListener('change', function(e) { fiState.to = e.target.value; fiLoad(); });
 
 /* ═══════════════════════════════════════════════════
    GROSS PROFIT TAB
