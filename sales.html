@@ -421,13 +421,13 @@ function renderSummaryGrid(managers) {
       </div>
       <div class="sg-sep"></div>
       <div class="sg-pot">
-        <span class="sg-lbl">Потенціал</span>
-        <span class="v">${money(gRem, allOk)}</span>
+        <span class="sg-lbl">Потенціал (всього)</span>
+        <span class="v">${money(gTotal, allOk)}</span>
       </div>
       <div class="sg-sep"></div>
       <div class="sg-bonus">
         <div><span class="sg-lbl">Бонус 0,08%</span><b>${money(gPaid * BONUS_RATE, allOk)}</b></div>
-        <div><span class="sg-lbl">Потенціал бонусу</span><span class="pot">${money(gRem * BONUS_RATE, allOk)}</span></div>
+        <div><span class="sg-lbl">Потенціал бонусу</span><span class="pot">${money(gTotal * BONUS_RATE, allOk)}</span></div>
       </div>
       <div class="sg-pct">
         <span class="val">${allOk ? gPct + '% готово' : ''}</span>
@@ -447,7 +447,7 @@ function renderSummaryGrid(managers) {
         <div class="paid">${money(paid, ok)}</div>
         <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
         <div class="foot">
-          <span class="pot">пот. ${money(remain, ok)}</span>
+          <span class="pot">пот. ${money(total, ok)}</span>
           <span class="bonus">🪙 <b>${money(paid * BONUS_RATE, ok)}</b></span>
         </div>
       </div>`;
