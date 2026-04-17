@@ -512,7 +512,7 @@ function renderOrderRow(o, cur) {
   const payDate = o.payDate ? fmtDate(o.payDate) : (o.date ? fmtDate(o.date) : '—');
   const meta = o.advance
     ? '<span class="meta">аванс</span>'
-    : `<span class="meta">№${esc(o.number || '?')}${o.date ? ` · від ${fmtDate(o.date)}` : ''}</span>`;
+    : `<span class="meta">Замовлення покупця №${esc(o.number || '?')}${o.date ? ` · від ${fmtDate(o.date)}` : ''}</span>`;
   return `
     <tr class="order-row">
       <td>${payDate} ${meta}</td>
