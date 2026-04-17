@@ -285,6 +285,7 @@ a{color:inherit;text-decoration:none}
     <div class="page-tabs">
       <span class="ptab active" data-view="pnl" onclick="switchTab(this)">P&L</span>
       <span class="ptab" data-view="gp" onclick="switchTab(this)">Валовий прибуток</span>
+      <span class="ptab" data-view="cf" onclick="switchTab(this)">Cash Flow</span>
       <span class="ptab" data-view="ar" onclick="switchTab(this)">Розрахунки з покупцями</span>
       <button type="button" class="pdf-btn" onclick="downloadPDF()" title="Зберегти поточну вкладку у PDF">
         <span class="ic">⬇</span> PDF
@@ -351,6 +352,30 @@ a{color:inherit;text-decoration:none}
       </div>
       <div id="gpSummary"></div>
       <div id="gpBody"><div class="loading">Завантаження...</div></div>
+    </div>
+
+    <!-- ═══ Cash Flow View ═══ -->
+    <div id="cfView" class="view">
+      <div class="toolbar" id="cfToolbar">
+        <span class="lbl">Період</span>
+        <input type="date" id="cfFromIn">
+        <span style="color:var(--text3)">—</span>
+        <input type="date" id="cfToIn">
+        <span class="group">
+          <span class="chip" onclick="cfSetPreset('month')">Цей місяць</span>
+          <span class="chip" onclick="cfSetPreset('prevmonth')">Минулий</span>
+          <span class="chip" onclick="cfSetPreset('quarter')">Квартал</span>
+          <span class="chip" onclick="cfSetPreset('year')">Рік</span>
+        </span>
+        <div class="sep"></div>
+        <span class="group" id="cfOrgGroup">
+          <span class="chip" data-org="" onclick="cfSetOrg(this)">Всі</span>
+          <span class="chip" data-org="Реакт" onclick="cfSetOrg(this)">Реакт</span>
+          <span class="chip" data-org="Генерація" onclick="cfSetOrg(this)">Генерація</span>
+        </span>
+      </div>
+      <div id="cfSummary"></div>
+      <div id="cfBody"><div class="loading">Завантаження...</div></div>
     </div>
 
     <!-- ═══ Financial Indicators View ═══ -->
@@ -448,6 +473,7 @@ function switchTab(el) {
   document.querySelectorAll('.view').forEach(d => d.classList.toggle('active', d.id === v + 'View'));
   if (v === 'gp' && !gpState._loaded) gpLoad();
   if (v === 'fi' && !fiState._loaded) fiLoad();
+  if (v === 'cf' && !cfState._loaded) cfLoad();
   if (v === 'ar' && !arState._loaded) arLoad();
   saveStateToUrl();
 }
@@ -487,10 +513,15 @@ function downloadPDF() {
 
   // Build the PDF container with a header + summary + body
   const wrap = document.createElement('div');
-  wrap.style.cssText = 'padding:12mm 10mm;background:#fff;color:#000;font-family:Inter,-apple-system,sans-serif;font-size:10pt;line-height:1.3;width:287mm;min-height:200mm';
+  // Force light theme inside PDF container so CSS vars (--bg, --text, …)
+  // resolve to readable values — otherwise dark-theme variables inherit
+  // through the clone and produce near-white text on white paper
+  // ("чисті сторінки"). data-theme="light" overrides :root[data-theme=dark].
+  wrap.setAttribute('data-theme', 'light');
+  wrap.style.cssText = 'padding:12mm 10mm;background:#fff !important;color:#000;font-family:Inter,-apple-system,sans-serif;font-size:10pt;line-height:1.3;width:287mm;min-height:200mm';
   wrap.innerHTML = `
     <div style="margin-bottom:6mm;border-bottom:1px solid #999;padding-bottom:4mm;">
-      <div style="font-size:16pt;font-weight:800;margin-bottom:2mm;">${esc(title)}</div>
+      <div style="font-size:16pt;font-weight:800;margin-bottom:2mm;color:#000;">${esc(title)}</div>
       <div style="font-size:9pt;color:#555;">
         Період: <b style="color:#000;">${esc(from)} — ${esc(to)}</b>
         &nbsp;·&nbsp; Організація: <b style="color:#000;">${esc(org)}</b>
@@ -499,36 +530,57 @@ function downloadPDF() {
     </div>`;
   wrap.appendChild(clone);
 
-  // Inline override stylesheet — ensures colors/borders render correctly in canvas
+  // Inline override stylesheet — ensures colors/borders render correctly in canvas.
+  // All overrides use !important to beat live styles that also use !important
+  // (e.g. .sec.rev td { background: var(--green-bg) !important }).
   const style = document.createElement('style');
   style.textContent = `
     #pdf-export * { box-shadow: none !important; }
-    #pdf-export .pnl-wrap { border:1px solid #999; border-radius:0; overflow:visible; background:#fff; }
-    #pdf-export .pnl-table { color:#000; font-size:9pt; border-collapse:collapse; width:100%; }
-    #pdf-export .pnl-table th, #pdf-export .pnl-table td { padding:4px 8px; border:none; white-space:normal; text-align:right; }
-    #pdf-export .pnl-table th:first-child, #pdf-export .pnl-table td:first-child { text-align:left; position:static; background:transparent; min-width:0; }
-    #pdf-export .pnl-table th { background:#f0f0f0; color:#333; border-bottom:1px solid #999; font-weight:700; text-transform:uppercase; font-size:8pt; letter-spacing:.3px; }
-    #pdf-export .pnl-table tr.sec td, #pdf-export .pnl-table tr.cat td { font-weight:800; border-top:1px solid #999; background:#fff; }
-    #pdf-export .pnl-table tr.grp td { font-weight:700; background:#fafafa; }
-    #pdf-export .pnl-table tr.sub td, #pdf-export .pnl-table tr.grd td { font-weight:700; background:#f6f6f6; border-top:1px solid #999; }
-    #pdf-export .pnl-table tr.itm td { color:#333; }
-    #pdf-export .pnl-table tr.pct td { color:#666; font-style:italic; }
-    #pdf-export .tri { display:none; }
-    #pdf-export .col-total { font-weight:700; }
-    #pdf-export .pos, #pdf-export .neg { color:#000 !important; }
-    #pdf-export .dash, #pdf-export .zr { color:#999; }
-    #pdf-export .pnl-summary { display:grid; grid-template-columns: repeat(4, 1fr); gap:4mm; margin:4mm 0; }
-    #pdf-export .pnl-card { padding:3mm 4mm; border:1px solid #ccc; border-radius:2mm; background:#fff; }
-    #pdf-export .pnl-card .cl { font-size:8pt; color:#666; text-transform:uppercase; letter-spacing:.3px; font-weight:700; }
-    #pdf-export .pnl-card .cv { font-size:13pt; font-weight:800; color:#000; display:block; }
-    #pdf-export .pnl-card .cs { font-size:8pt; color:#666; }
+    /* Force readable text & remove dark backgrounds */
+    #pdf-export { background:#fff !important; color:#000 !important; }
+    #pdf-export, #pdf-export h1, #pdf-export h2, #pdf-export h3, #pdf-export div, #pdf-export span, #pdf-export td, #pdf-export th { color:#000 !important; }
+    /* Table structure */
+    #pdf-export .pnl-wrap { border:1px solid #999 !important; border-radius:0 !important; overflow:visible !important; background:#fff !important; }
+    #pdf-export .pnl-table { color:#000 !important; font-size:9pt !important; border-collapse:collapse !important; width:100% !important; background:#fff !important; }
+    #pdf-export .pnl-table th, #pdf-export .pnl-table td { padding:4px 8px !important; border:none !important; white-space:normal !important; text-align:right !important; position:static !important; background:#fff !important; color:#000 !important; }
+    #pdf-export .pnl-table th:first-child, #pdf-export .pnl-table td:first-child { text-align:left !important; min-width:0 !important; }
+    #pdf-export .pnl-table th { background:#f0f0f0 !important; color:#333 !important; border-bottom:1px solid #999 !important; font-weight:700 !important; text-transform:uppercase !important; font-size:8pt !important; letter-spacing:.3px !important; }
+    /* Section / group / subtotal rows — muted grayscale variants */
+    #pdf-export .pnl-table tr.sec td { font-weight:800 !important; border-top:1px solid #999 !important; background:#ececec !important; color:#000 !important; text-transform:uppercase !important; font-size:8.5pt !important; letter-spacing:.3px !important; }
+    #pdf-export .pnl-table tr.grp td { font-weight:700 !important; background:#fafafa !important; color:#000 !important; }
+    #pdf-export .pnl-table tr.itm td { color:#333 !important; background:#fff !important; }
+    #pdf-export .pnl-table tr.sub td { font-weight:700 !important; background:#f2f2f2 !important; border-top:1px solid #999 !important; color:#000 !important; }
+    #pdf-export .pnl-table tr.grd td { font-weight:800 !important; background:#e8e8e8 !important; border-top:2px solid #555 !important; color:#000 !important; font-size:10pt !important; }
+    #pdf-export .pnl-table tr.pct td { color:#666 !important; font-style:italic !important; background:#fff !important; }
+    #pdf-export .pnl-table tr.sp td { background:#fff !important; border:none !important; }
+    /* Value colors → black for print */
+    #pdf-export .pos, #pdf-export .neg, #pdf-export .zr, #pdf-export .dash { color:#000 !important; }
+    #pdf-export .neg::before { content:'-'; }
+    /* Misc */
+    #pdf-export .tri { display:none !important; }
+    #pdf-export .col-total { font-weight:700 !important; border-left:1px solid #999 !important; }
+    /* Summary cards */
+    #pdf-export .pnl-summary { display:grid !important; grid-template-columns: repeat(4, 1fr) !important; gap:4mm !important; margin:4mm 0 !important; }
+    #pdf-export .pnl-card { padding:3mm 4mm !important; border:1px solid #ccc !important; border-radius:2mm !important; background:#fff !important; }
+    #pdf-export .pnl-card .cl { font-size:8pt !important; color:#666 !important; text-transform:uppercase !important; letter-spacing:.3px !important; font-weight:700 !important; }
+    #pdf-export .pnl-card .cv { font-size:13pt !important; font-weight:800 !important; color:#000 !important; display:block !important; }
+    #pdf-export .pnl-card .cs { font-size:8pt !important; color:#666 !important; }
+    /* GP table reuse same rules */
+    #pdf-export .gp-wrap { border:1px solid #999 !important; overflow:visible !important; background:#fff !important; }
+    #pdf-export .gp-table { color:#000 !important; background:#fff !important; }
+    #pdf-export .gp-table th, #pdf-export .gp-table td { background:#fff !important; color:#000 !important; position:static !important; }
+    /* AR table */
+    #pdf-export .ar-wrap { border:1px solid #999 !important; overflow:visible !important; background:#fff !important; }
+    #pdf-export .ar-table { color:#000 !important; background:#fff !important; }
+    #pdf-export .ar-table th, #pdf-export .ar-table td { background:#fff !important; color:#000 !important; position:static !important; }
     #pdf-export tr { page-break-inside: avoid; }
   `;
   wrap.id = 'pdf-export';
   wrap.appendChild(style);
 
-  // Mount temporarily (off-screen)
-  wrap.style.position = 'fixed';
+  // Mount off-screen but in normal flow so html2canvas picks up dimensions
+  // reliably (position:fixed sometimes yields zero-height canvases).
+  wrap.style.position = 'absolute';
   wrap.style.left = '-10000px';
   wrap.style.top = '0';
   document.body.appendChild(wrap);
