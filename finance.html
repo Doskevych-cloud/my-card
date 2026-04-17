@@ -371,6 +371,15 @@ a{color:inherit;text-decoration:none}
           <span class="chip" data-org="Реакт" onclick="fiSetOrg(this)">Реакт</span>
           <span class="chip" data-org="Генерація" onclick="fiSetOrg(this)">Генерація</span>
         </span>
+        <div class="sep"></div>
+        <span class="group pnl-collapse-ctl" title="Керування згортанням груп">
+          <span class="chip" onclick="pnlToggleAll(false, document.querySelector('#fiBody .pnl-table'))">
+            <span class="ic">⊞</span> Розгорнути
+          </span>
+          <span class="chip" onclick="pnlToggleAll(true, document.querySelector('#fiBody .pnl-table'))">
+            <span class="ic">⊟</span> Згорнути
+          </span>
+        </span>
       </div>
       <div id="fiSummary"></div>
       <div id="fiBody"><div class="loading">Завантаження...</div></div>
@@ -962,8 +971,8 @@ function renderPnl(data) {
 // Collapse/expand all sections + subgroups at once. When fully collapsed,
 // only the spine rows remain visible: Виторг, Собівартість, Валовий прибуток,
 // Всього витрати, Операційний прибуток, Чистий прибуток.
-function pnlToggleAll(collapse) {
-  const tbl = document.querySelector('#pnlBody .pnl-table');
+function pnlToggleAll(collapse, tblArg) {
+  const tbl = tblArg || document.querySelector('.view.active .pnl-table') || document.querySelector('#pnlBody .pnl-table');
   if (!tbl) return;
   tbl.querySelectorAll('tr[data-is-cat], tr[data-is-sec], tr[data-is-grp]').forEach(tr => {
     tr.setAttribute('data-collapsed', collapse ? 'true' : 'false');
