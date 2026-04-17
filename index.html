@@ -759,21 +759,53 @@ function renderARTop(d) {
 }
 
 function renderRevChart(d) {
+  state.trendData = d;
+  renderMetricChart();
+}
+
+// Dynamics chart — controlled by state.metric (which KPI is selected) and
+// state.gran (month / quarter aggregation).
+function renderMetricChart() {
+  const d = state.trendData;
+  if (!d) return;
   const months = (d.months || []).slice();
   if (!months.length) {
     document.querySelector('#cardRevChart .chart-wrap').innerHTML = '<div class="empty">Немає даних</div>';
     return;
   }
-  const rev = months.map(m => ((d.revenue && d.revenue.byMonth && d.revenue.byMonth[m]) || 0) + ((d.otherIncome && d.otherIncome.byMonth && d.otherIncome.byMonth[m]) || 0));
-  const cogs = months.map(m => (d.cogs && d.cogs.byMonth && d.cogs.byMonth[m]) || 0);
-  const exp = months.map(m => (d.totalExpenses && d.totalExpenses.byMonth && d.totalExpenses.byMonth[m]) || 0);
-  const gp = months.map((_, i) => rev[i] - cogs[i]);
-  const net = months.map((_, i) => rev[i] - cogs[i] - exp[i]);
 
-  const labels = months.map(m => {
-    const p = m.split('-');
-    return MN_SHORT[+p[1]-1] + "'" + p[0].slice(2);
-  });
+  const rev  = months.map(m => ((d.revenue && d.revenue.byMonth && d.revenue.byMonth[m]) || 0) + ((d.otherIncome && d.otherIncome.byMonth && d.otherIncome.byMonth[m]) || 0));
+  const cogs = months.map(m => (d.cogs && d.cogs.byMonth && d.cogs.byMonth[m]) || 0);
+  const exp  = months.map(m => (d.totalExpenses && d.totalExpenses.byMonth && d.totalExpenses.byMonth[m]) || 0);
+  const gp   = months.map((_, i) => rev[i] - cogs[i]);
+  const net  = months.map((_, i) => rev[i] - cogs[i] - exp[i]);
+
+  const metricDefs = {
+    revenue: { title: 'Доходи',            color: '#3b82f6', fill: 'rgba(59,130,246,.55)',  series: rev },
+    gross:   { title: 'Валовий прибуток',  color: '#9775fa', fill: 'rgba(151,117,250,.55)', series: gp  },
+    net:     { title: 'Чистий прибуток',   color: '#22c55e', fill: 'rgba(34,197,94,.55)',   series: net },
+    cash:    { title: 'Залишок коштів',    color: '#06b6d4', fill: 'rgba(6,182,212,.55)',   series: rev.map(()=>0) },
+    sales:   { title: 'Оплати',            color: '#f59e0b', fill: 'rgba(245,158,11,.55)',  series: rev },
+    ar:      { title: 'Дебіторка',         color: '#ef4444', fill: 'rgba(239,68,68,.55)',   series: rev.map(()=>0) },
+  };
+  const def = metricDefs[state.metric] || metricDefs.revenue;
+
+  // Aggregate to quarterly if needed
+  let labels, values;
+  if (state.gran === 'quarter') {
+    const qMap = {}, qOrder = [];
+    months.forEach((m, i) => {
+      const p = m.split('-');
+      const key = `${p[0]}-Q${Math.floor((+p[1]-1)/3)+1}`;
+      if (!(key in qMap)) { qMap[key] = 0; qOrder.push(key); }
+      qMap[key] += def.series[i];
+    });
+    labels = qOrder.map(k => { const p = k.split('-'); return `${p[1]} '${p[0].slice(2)}`; });
+    values = qOrder.map(k => qMap[k]);
+  } else {
+    labels = months.map(m => { const p = m.split('-'); return MN_SHORT[+p[1]-1] + "'" + p[0].slice(2); });
+    values = def.series;
+  }
 
   if (state.revChart) { state.revChart.destroy(); state.revChart = null; }
 
@@ -787,9 +819,7 @@ function renderRevChart(d) {
     data: {
       labels,
       datasets: [
-        { label: 'Доходи', data: rev, backgroundColor: 'rgba(59,130,246,.7)', borderRadius: 4, order: 3 },
-        { label: 'Валовий', data: gp, backgroundColor: 'rgba(151,117,250,.7)', borderRadius: 4, order: 2 },
-        { label: 'Чистий', type: 'line', data: net, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.2)', tension: .3, pointRadius: 3, borderWidth: 2, fill: false, order: 1 },
+        { label: def.title, data: values, backgroundColor: def.fill, borderColor: def.color, borderWidth: 1, borderRadius: 4 },
       ],
     },
     options: {
@@ -808,7 +838,11 @@ function renderRevChart(d) {
       },
     },
   });
-  document.getElementById('revChartMeta').textContent = `${labels.length} міс. · USD`;
+
+  const h = document.querySelector('#cardRevChart h3');
+  if (h) h.innerHTML = `<span class="ico">📊</span>Динаміка · ${def.title}`;
+  const granLbl = state.gran === 'quarter' ? 'по кварталах' : 'по місяцях';
+  document.getElementById('revChartMeta').textContent = `${labels.length} ${state.gran === 'quarter' ? 'кв.' : 'міс.'} · ${granLbl} · USD`;
 }
 
 // ─── SALES ───
