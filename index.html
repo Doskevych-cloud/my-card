@@ -1834,34 +1834,48 @@ async function openStockPriceReport() {
       if (!p._identity) p._identity = buildIdentity(p.name, p.model, p.category || guessCategory(p.name));
     }
 
-    // 4) Об'єднаний список: кожен товар має type = 'stock' або 'price'.
-    //    Матчинг — той самий findMatch (3-tier + hard-block) що й у головному
-    //    порівнянні, щоб звіт був узгоджений.
-    const items = [];
-
-    // 4a) Товари з залишку, яких нема в прайсі
+    // 4) Готуємо список залишків як "продукти" з таким самим shape, що й genProds
+    //    — ім'я, модель, категорія, identity — щоб findMatch працював в обидва боки.
+    const stockProds = [];
     for (const [sName, qty] of Object.entries(stockMap)) {
       if (!qty || qty <= 0) continue;
       const cat = guessCategory(sName);
-      if (!cat) continue;
+      if (!cat) continue; // тільки 4 категорії (ІНВЕРТОРИ/АКУМУЛЯТОРИ/МОДУЛІ/КАБЕЛІ)
       const model = extractModel(sName);
-      const identity = buildIdentity(sName, model, cat);
-      const isPanel = cat === 'МОДУЛІ';
-      const match = findMatch(model, sName, null, genProds, isPanel, identity);
-      if (!match) items.push({ type: 'stock', name: sName, qty, price: null, currency: null, cat, status: '' });
+      const sp = {
+        name: sName, model, category: cat, qty,
+        price_no_vat: null, price_vat: null, currency: null,
+      };
+      sp._identity = buildIdentity(sName, model, cat);
+      stockProds.push(sp);
     }
 
-    // 4b) Товари з прайсу, яких нема в залишку
+    // 5) Об'єднаний список з однаковим матчингом для обох напрямків.
+    //    findMatch = 3-tier (exact-model → fingerprint → fuzzy) + hard-block
+    //    (бренд/тип/потужність/ємність/вольтаж/фаза), як в головному порівнянні.
+    const items = [];
+
+    // 5a) Товари з залишку, яких нема в прайсі
+    for (const sp of stockProds) {
+      const isPanel = sp.category === 'МОДУЛІ';
+      const match = findMatch(sp.model, sp.name, null, genProds, isPanel, sp._identity);
+      if (!match) items.push({
+        type: 'stock', name: sp.name, qty: sp.qty,
+        price: null, currency: null, cat: sp.category, status: '',
+      });
+    }
+
+    // 5b) Товари з прайсу, яких нема в залишку — той самий findMatch, проти stockProds
     for (const p of genProds) {
-      const stock = findStock(p.name, p.model, stockMap);
-      if (stock == null || stock === 0) {
-        items.push({
-          type: 'price', name: p.name, qty: null,
-          price: p.price_no_vat, currency: p.currency || 'USD',
-          cat: p.category || guessCategory(p.name) || 'ІНШЕ',
-          status: p.status || '',
-        });
-      }
+      const cat = p.category || guessCategory(p.name) || 'ІНШЕ';
+      const isPanel = cat === 'МОДУЛІ';
+      const identity = p._identity || buildIdentity(p.name, p.model, cat);
+      const match = findMatch(p.model, p.name, null, stockProds, isPanel, identity);
+      if (!match) items.push({
+        type: 'price', name: p.name, qty: null,
+        price: p.price_no_vat, currency: p.currency || 'USD',
+        cat, status: p.status || '',
+      });
     }
 
     // Сортування: категорія → тип (stock першим) → за назвою
