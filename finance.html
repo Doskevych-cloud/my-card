@@ -483,10 +483,6 @@ function switchTab(el) {
 // Працює без діалогу друку: клонуємо активну вкладку, розгортаємо рядки,
 // стилізуємо під папір і html2pdf формує файл який одразу завантажується.
 function downloadPDF() {
-  if (typeof html2pdf === 'undefined') {
-    alert('PDF-бібліотека не завантажилась. Перевірте інтернет-з\'єднання.');
-    return;
-  }
   const tabEl = document.querySelector('.ptab.active');
   const view  = tabEl && tabEl.dataset.view;
   const titles = { pnl: 'P&L звіт', gp: 'Валовий прибуток', fi: 'Фінансові показники', ar: 'Розрахунки з покупцями' };
@@ -497,6 +493,114 @@ function downloadPDF() {
   const org    = state.org  || 'Всі організації';
   const dt     = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' });
   const filename = `${title} · ${from} — ${to}${state.org ? ' · ' + state.org : ''}.pdf`;
+
+  // ── NEW PRIMARY PATH: open a new window with a stand-alone HTML that
+  //    inherits fully the light theme. User gets the browser's native
+  //    print → "Save as PDF" dialog which renders the content pixel-perfect.
+  //    Fallback to html2pdf (below) if a popup blocker prevents window.open.
+  try {
+    const activeView = document.querySelector('.view.active');
+    if (!activeView) throw new Error('view');
+    const clone = activeView.cloneNode(true);
+    clone.querySelectorAll('.toolbar, .pdf-btn, .pnl-collapse-ctl').forEach(el => el.remove());
+    clone.querySelectorAll('tr.collapsed-hidden').forEach(r => r.classList.remove('collapsed-hidden'));
+    clone.querySelectorAll('tr[data-collapsed="true"]').forEach(r => r.setAttribute('data-collapsed', 'false'));
+    clone.querySelectorAll('tr[data-bottom-summary]').forEach(r => { r.style.display = 'table-row'; });
+
+    const win = window.open('', '_blank', 'width=1200,height=800');
+    if (!win) throw new Error('popup blocked');
+
+    // Inherit all CSS by reusing the current page's stylesheets — we load
+    // the same finance.html as a link, and force data-theme=light on the
+    // root so the dark-theme variables never apply.
+    win.document.open();
+    win.document.write(`<!DOCTYPE html>
+<html lang="uk" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<title>${esc(filename.replace('.pdf',''))}</title>
+<script>try{document.documentElement.setAttribute('data-theme','light')}catch(e){}<\/script>
+</head>
+<body>
+<div id="pdf-report"></div>
+<div class="pdf-footer no-print" style="position:fixed;bottom:12px;right:12px;z-index:9999">
+  <button id="btnPrint" style="padding:8px 16px;background:#e07017;color:#fff;border:0;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">Зберегти у PDF / Друкувати</button>
+  <button id="btnClose" style="padding:8px 16px;margin-left:6px;background:#f0f0f0;color:#333;border:0;border-radius:6px;font-size:13px;cursor:pointer">Закрити</button>
+</div>
+<style>
+  @media print { .no-print { display:none !important } }
+  body { margin:0; background:#fff; color:#1c1c1e; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; font-size:13px }
+  /* Force all CSS vars to light-theme values regardless of localStorage */
+  :root { --bg:#fff !important; --bg2:#fff !important; --bg3:#ececef !important;
+          --surface:#fff !important; --surface2:#fafafa !important;
+          --border:#ddd !important; --border2:#bbb !important;
+          --text:#1c1c1e !important; --text2:#48484a !important; --text3:#8e8e93 !important;
+          --accent:#d66000 !important; --accent-bg:rgba(214,96,0,.10) !important;
+          --red:#c0392b !important; --red-bg:rgba(192,57,43,.10) !important;
+          --green:#15803d !important; --green-bg:rgba(21,128,61,.10) !important;
+          --blue:#1d4ed8 !important; --blue-bg:rgba(29,78,216,.10) !important;
+          --yellow:#a16207 !important; --yellow-bg:rgba(161,98,7,.10) !important; }
+  #pdf-report { padding:12mm 8mm }
+  #pdf-report .pnl-report-header { margin-bottom:6mm; padding-bottom:3mm; border-bottom:1px solid #999 }
+  #pdf-report .pnl-report-header h1 { margin:0 0 2mm; font-size:18pt; font-weight:800 }
+  #pdf-report .pnl-report-header .sub { font-size:10pt; color:#555 }
+  /* Table: pixel-perfect, readable */
+  #pdf-report .pnl-wrap, #pdf-report .gp-wrap, #pdf-report .ar-wrap { overflow:visible !important; border:1px solid #bbb; border-radius:0; background:#fff }
+  #pdf-report table { border-collapse:collapse; width:100%; background:#fff; color:#000 }
+  #pdf-report th, #pdf-report td { padding:6px 10px; text-align:right; position:static !important; background:#fff !important; color:#000 !important; vertical-align:middle; line-height:1.3 }
+  #pdf-report th:first-child, #pdf-report td:first-child { text-align:left; min-width:0 }
+  #pdf-report th { background:#f0f0f0 !important; color:#333 !important; font-size:9pt; text-transform:uppercase; font-weight:700; letter-spacing:.3px; border-bottom:1px solid #999 }
+  #pdf-report tr.sec td { font-weight:800 !important; background:#e7e7e7 !important; border-top:1px solid #999 !important; text-transform:uppercase; font-size:9pt; letter-spacing:.3px }
+  #pdf-report tr.grp td { font-weight:700 !important; background:#f7f7f7 !important }
+  #pdf-report tr.sub td { font-weight:700 !important; background:#eee !important; border-top:1px solid #999 !important }
+  #pdf-report tr.grd td { font-weight:800 !important; background:#e0e0e0 !important; border-top:2px solid #555 !important; font-size:11pt }
+  #pdf-report tr.pct td { color:#555 !important; font-style:italic }
+  #pdf-report tr.sp td { background:#fff !important; border:none !important; padding:2px }
+  #pdf-report .pos, #pdf-report .neg, #pdf-report .zr, #pdf-report .dash { color:#000 !important }
+  #pdf-report .neg::before { content:'-' }
+  #pdf-report .col-total { font-weight:700 !important; border-left:1px solid #999 !important }
+  /* Summary cards */
+  #pdf-report .pnl-summary { display:grid; grid-template-columns:repeat(4,1fr); gap:4mm; margin:4mm 0 }
+  #pdf-report .pnl-card { padding:3mm 4mm; border:1px solid #ccc; background:#fff; border-radius:2mm }
+  #pdf-report .pnl-card .cl { font-size:8pt; color:#666; text-transform:uppercase; font-weight:700 }
+  #pdf-report .pnl-card .cv { font-size:13pt; font-weight:800; color:#000; display:block }
+  #pdf-report .pnl-card .cs { font-size:8pt; color:#666 }
+  @page { size:A4 landscape; margin:8mm }
+</style>
+</body>
+</html>`);
+    win.document.close();
+
+    // Build report: header + content
+    const reportEl = win.document.getElementById('pdf-report');
+    const header = win.document.createElement('div');
+    header.className = 'pnl-report-header';
+    header.innerHTML = `
+      <h1>${esc(title)}</h1>
+      <div class="sub">Період: <b>${esc(from)} — ${esc(to)}</b>
+        &nbsp;·&nbsp; Організація: <b>${esc(org)}</b>
+        &nbsp;·&nbsp; Згенеровано: ${esc(dt)}</div>`;
+    reportEl.appendChild(header);
+
+    // Adopt the clone into the new document
+    const imported = win.document.importNode(clone, true);
+    reportEl.appendChild(imported);
+
+    win.document.getElementById('btnPrint').addEventListener('click', () => win.print());
+    win.document.getElementById('btnClose').addEventListener('click', () => win.close());
+
+    // Auto-open the print dialog after a short delay for styles to settle
+    setTimeout(() => { try { win.focus(); win.print(); } catch (_) {} }, 400);
+    return;
+  } catch (_) {
+    // fall through to html2pdf fallback
+  }
+
+  // ── FALLBACK PATH: html2pdf.js (pre-existing behaviour) ──
+  if (typeof html2pdf === 'undefined') {
+    alert('PDF-бібліотека не завантажилась. Перевірте інтернет-з\'єднання.');
+    return;
+  }
 
   // Clone the active view so modifications don't affect the live page
   const activeView = document.querySelector('.view.active');
