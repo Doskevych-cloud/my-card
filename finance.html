@@ -991,13 +991,85 @@ async function pnlLoad() {
   document.getElementById('pnlBody').innerHTML = '<div class="loading">Завантаження...</div>';
   document.getElementById('pnlSummary').innerHTML = '';
   try {
-    const q = '?action=pnl_report&from=' + pnlState.from + '&to=' + pnlState.to + (pnlState.org ? '&org=' + encodeURIComponent(pnlState.org) : '');
+    // Accrual P&L: single query to AccumulationRegister_ДоходыИРасходы (бухгалтерський P&L 1С)
+    const q = '?action=pnl_accrual_report&from=' + pnlState.from + '&to=' + pnlState.to + (pnlState.org ? '&org=' + encodeURIComponent(pnlState.org) : '');
     const data = await fetch(API_URL + q).then(r => r.json());
     if (data.error) throw new Error(data.error);
-    renderPnl(data);
+    renderPnlAccrual(data);
   } catch (e) {
     document.getElementById('pnlBody').innerHTML = '<div class="error">' + esc(e.message) + '</div>';
   }
+}
+
+// ═══════════════════════════════════════════════
+// renderPnlAccrual — рендер на основі accrual-даних з ДохРасх register.
+// Без template-matching, просто секції + статті з бекенду.
+// ═══════════════════════════════════════════════
+function renderPnlAccrual(data) {
+  const { revenue, cogs, expenses, income, otherIncome, totalExpenses, sections, months } = data;
+  const grossTotal  = (revenue.total || 0) - (cogs.total || 0);
+  const netTotal    = (revenue.total || 0) + (otherIncome.total || 0) - (cogs.total || 0) - (totalExpenses.total || 0);
+  const opexTotal   = (sections.admin.total || 0) + (sections.commercial.total || 0);
+  const taxTotal    = sections.tax.total || 0;
+  const otherExp    = sections.other_expense.total || 0;
+  const opProfit    = (revenue.total || 0) - (cogs.total || 0) - opexTotal;
+
+  const fmtCell = v => {
+    if (!v && v !== 0) return '<span class="dash">—</span>';
+    if (Math.abs(v) < 0.5) return '<span class="zr">—</span>';
+    return '<span class="' + (v > 0 ? 'pos' : 'neg') + '">' + fmt(v, 0) + ' $</span>';
+  };
+
+  // Summary cards
+  document.getElementById('pnlSummary').innerHTML = '<div class="pnl-summary">' +
+    '<div class="pnl-card c-rev"><span class="cl">Доходи</span><span class="cv">' + fmt(revenue.total + otherIncome.total, 0) + ' $</span></div>' +
+    '<div class="pnl-card c-cost"><span class="cl">Собівартість</span><span class="cv">' + fmt(cogs.total, 0) + ' $</span></div>' +
+    '<div class="pnl-card c-grs"><span class="cl">Валовий прибуток</span><span class="cv">' + fmt(grossTotal, 0) + ' $</span></div>' +
+    '<div class="pnl-card c-net"><span class="cl">Чистий прибуток</span><span class="cv' + (netTotal < 0 ? ' ng' : '') + '">' + fmt(netTotal, 0) + ' $</span></div>' +
+    '</div>';
+
+  // Helper to render a list of expense items under a section header
+  const renderItems = (items, sectionName) => items
+    .filter(e => e.section === sectionName)
+    .sort((a, b) => b.total - a.total)
+    .map(e => `<tr class="itm"><td>${esc(e.category)}</td><td class="col-total">${fmtCell(e.total)}</td></tr>`)
+    .join('');
+
+  let rows = '';
+  // Виручка
+  rows += `<tr class="sec rev" data-sec="rev" data-is-sec="1"><td><span class="tri">▾</span>Виторг від продажів</td><td class="col-total">${fmtCell(revenue.total)}</td></tr>`;
+  // (інші непрямі доходи)
+  if (income && income.length) {
+    rows += `<tr class="grp" data-sec="rev" data-grp="_otherInc" data-is-grp="1"><td><span class="tri">▾</span>Інші непрямі доходи</td><td class="col-total">${fmtCell(otherIncome.total)}</td></tr>`;
+    rows += income.sort((a,b)=>b.total-a.total).map(i => `<tr class="itm" data-sec="rev" data-grp="_otherInc"><td>${esc(i.category)}</td><td class="col-total">${fmtCell(i.total)}</td></tr>`).join('');
+  }
+  // Собівартість
+  rows += `<tr class="sec cost" data-sec="cost" data-is-sec="1"><td><span class="tri">▾</span>Собівартість продажів</td><td class="col-total">${fmtCell(cogs.total)}</td></tr>`;
+  // Всього витрати (OPEX + tax + other)
+  const totalAllExp = opexTotal + taxTotal + otherExp;
+  rows += `<tr class="cat" data-cat="_allExp" data-is-cat="1"><td><span class="tri">▾</span>Всього витрати</td><td class="col-total">${fmtCell(totalAllExp)}</td></tr>`;
+  // Непрямі
+  rows += `<tr class="sec exp" data-cat="_allExp" data-sec="exp" data-is-sec="1"><td><span class="tri">▾</span>Непрямі (накладні) витрати</td><td class="col-total">${fmtCell(opexTotal)}</td></tr>`;
+  // sub-group Адміністративні
+  rows += `<tr class="grp" data-cat="_allExp" data-sec="exp" data-grp="_admin" data-is-grp="1"><td><span class="tri">▾</span>Адміністративні</td><td class="col-total">${fmtCell(sections.admin.total)}</td></tr>`;
+  rows += expenses.filter(e => e.section === 'admin').sort((a,b)=>b.total-a.total).map(e => `<tr class="itm" data-cat="_allExp" data-sec="exp" data-grp="_admin"><td>${esc(e.category)}</td><td class="col-total">${fmtCell(e.total)}</td></tr>`).join('');
+  // sub-group Комерційні
+  rows += `<tr class="grp" data-cat="_allExp" data-sec="exp" data-grp="_comm" data-is-grp="1"><td><span class="tri">▾</span>Комерційні / збут / транспорт</td><td class="col-total">${fmtCell(sections.commercial.total)}</td></tr>`;
+  rows += expenses.filter(e => e.section === 'commercial').sort((a,b)=>b.total-a.total).map(e => `<tr class="itm" data-cat="_allExp" data-sec="exp" data-grp="_comm"><td>${esc(e.category)}</td><td class="col-total">${fmtCell(e.total)}</td></tr>`).join('');
+  // Податки
+  rows += `<tr class="sec tax" data-cat="_allExp" data-sec="tax" data-is-sec="1"><td><span class="tri">▾</span>Податки</td><td class="col-total">${fmtCell(taxTotal)}</td></tr>`;
+  rows += expenses.filter(e => e.section === 'tax').sort((a,b)=>b.total-a.total).map(e => `<tr class="itm" data-cat="_allExp" data-sec="tax"><td>${esc(e.category)}</td><td class="col-total">${fmtCell(e.total)}</td></tr>`).join('');
+  // Інші неоп.
+  rows += `<tr class="sec other" data-cat="_allExp" data-sec="other" data-is-sec="1"><td><span class="tri">▾</span>Інші неопераційні витрати</td><td class="col-total">${fmtCell(otherExp)}</td></tr>`;
+  rows += expenses.filter(e => e.section === 'other_expense').sort((a,b)=>b.total-a.total).map(e => `<tr class="itm" data-cat="_allExp" data-sec="other"><td>${esc(e.category)}</td><td class="col-total">${fmtCell(e.total)}</td></tr>`).join('');
+  // Прибутки
+  rows += `<tr class="sp"><td></td><td></td></tr>`;
+  rows += `<tr class="grd"><td>Операційний прибуток / збиток</td><td class="col-total">${fmtCell(opProfit)}</td></tr>`;
+  rows += `<tr class="grd"><td>Чистий прибуток / збиток</td><td class="col-total">${fmtCell(netTotal)}</td></tr>`;
+
+  document.getElementById('pnlBody').innerHTML =
+    '<div class="pnl-wrap"><table class="pnl-table"><thead><tr><th>P&L стаття</th><th class="col-total">Всього</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  pnlBindCollapse();
 }
 
 document.getElementById('fromIn').addEventListener('change', function(e) { pnlState.from = e.target.value; pnlLoad(); });
