@@ -8,39 +8,44 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=d20260418b"></script>
-<script src="header.js?v=d20260418b"></script>
+<script src="auth.js?v=bin20260418"></script>
+<script src="header.js?v=bin20260418"></script>
 <style>
 :root{
-  --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
-  --surface:#141414; --surface2:#1c1c1c;
-  --border:#262626; --border2:#333;
-  --text:#f5f5f5; --text2:#a3a3a3; --text3:#737373;
+  /* Binance-inspired palette */
+  --bg:#0b0e11; --bg2:#181a20; --bg3:#1e2329;
+  --surface:#181a20; --surface2:#1e2329; --surface3:#2b3139;
+  --border:#2b3139; --border2:#373e47;
+  --text:#eaecef; --text2:#b7bdc6; --text3:#848e9c; --text4:#5e6673;
   --accent:#ff8319; --accent-bg:rgba(255,131,25,.12);
-  --red:#e74c3c; --red-bg:rgba(231,76,60,.12);
-  --green:#22c55e; --green-bg:rgba(34,197,94,.12);
-  --blue:#3b82f6; --blue-bg:rgba(59,130,246,.12);
-  --yellow:#eab308; --yellow-bg:rgba(234,179,8,.12);
+  --gold:#f0b90b; --gold-bg:rgba(240,185,11,.12);
+  --red:#f6465d; --red-bg:rgba(246,70,93,.12);
+  --green:#0ecb81; --green-bg:rgba(14,203,129,.12);
+  --blue:#3375bb; --blue-bg:rgba(51,117,187,.12);
+  --yellow:#f0b90b; --yellow-bg:rgba(240,185,11,.12);
   --purple:#9775fa; --purple-bg:rgba(151,117,250,.14);
   --cyan:#22d3ee; --cyan-bg:rgba(34,211,238,.12);
-  --shadow-md:0 4px 20px rgba(0,0,0,.4);
+  --shadow-md:0 8px 32px rgba(0,0,0,.5);
+  --shadow-sm:0 2px 8px rgba(0,0,0,.3);
 }
 :root[data-theme="light"]{
   --bg:#f5f5f7; --bg2:#ffffff; --bg3:#ececef;
-  --surface:#ffffff; --surface2:#ffffff;
+  --surface:#ffffff; --surface2:#ffffff; --surface3:#f0f2f5;
   --border:#e5e5ea; --border2:#d1d1d6;
-  --text:#1c1c1e; --text2:#48484a; --text3:#8e8e93;
+  --text:#1c1c1e; --text2:#48484a; --text3:#8e8e93; --text4:#b0b0b8;
   --accent:#e07017; --accent-bg:rgba(224,112,23,.12);
+  --gold:#c68f00; --gold-bg:rgba(198,143,0,.12);
   --red:#d93025; --red-bg:rgba(217,48,37,.10);
   --green:#15803d; --green-bg:rgba(21,128,61,.10);
   --blue:#1d4ed8; --blue-bg:rgba(29,78,216,.10);
   --yellow:#a16207; --yellow-bg:rgba(161,98,7,.10);
   --purple:#6d28d9; --purple-bg:rgba(109,40,217,.12);
   --cyan:#0891b2; --cyan-bg:rgba(8,145,178,.12);
-  --shadow-md:0 4px 20px rgba(0,0,0,.08);
+  --shadow-md:0 8px 24px rgba(0,0,0,.08);
+  --shadow-sm:0 2px 6px rgba(0,0,0,.04);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+body{font-family:'Inter','IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
 
 .wrap{max-width:1600px;margin:0 auto;padding:20px}
@@ -48,125 +53,161 @@ a{color:inherit;text-decoration:none}
 .hero{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px}
 .hero h1{font-size:22px;font-weight:700;letter-spacing:-.4px}
 .hero .sub{font-size:12px;color:var(--text3);margin-top:4px}
+.hero-pulse{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+.hero-pulse::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse-dot 1.6s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.6)}}
 
-.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
 .toolbar input[type=date]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;color-scheme:dark;font-family:inherit}
 :root[data-theme="light"] .toolbar input[type=date]{color-scheme:light}
-.toolbar input[type=date]:focus{border-color:var(--accent)}
+.toolbar input[type=date]:focus{border-color:var(--gold)}
 .toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
 .toolbar .group{display:inline-flex;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px}
 .toolbar .group .chip{padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;user-select:none;transition:background .15s,color .15s}
 .toolbar .group .chip:hover{background:var(--bg3);color:var(--text)}
-.toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
+.toolbar .group .chip.active{background:var(--gold-bg);color:var(--gold)}
 .toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 2px}
 .toolbar .btn{padding:7px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s}
 .toolbar .btn:hover{background:var(--bg3);color:var(--text);border-color:var(--border2)}
+.toolbar .btn:active{transform:scale(.97)}
 
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px}
-.kpi{padding:16px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;min-height:110px;transition:border-color .15s,background .15s}
+/* ═══ BLOCK — основний контейнер модуля ═══ */
+.block{margin-top:22px;border:1px solid var(--border);border-radius:16px;background:linear-gradient(180deg,var(--surface) 0%,var(--surface2) 100%);overflow:hidden;position:relative;box-shadow:var(--shadow-sm);animation:block-in .45s ease-out backwards}
+.block:nth-child(2){animation-delay:.05s}
+.block:nth-child(3){animation-delay:.1s}
+.block:nth-child(4){animation-delay:.15s}
+.block:nth-child(5){animation-delay:.2s}
+@keyframes block-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.block::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--block-color,var(--gold));opacity:.85}
+.block.b-finance{--block-color:var(--gold)}
+.block.b-sales{--block-color:var(--green)}
+.block.b-warehouses{--block-color:var(--blue)}
+.block.b-purchasing{--block-color:var(--accent)}
+
+.block-head{display:flex;align-items:center;gap:14px;padding:16px 22px 14px;border-bottom:1px solid var(--border)}
+.block-ico{width:36px;height:36px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:19px;background:color-mix(in srgb,var(--block-color) 14%,transparent);color:var(--block-color);flex-shrink:0;border:1px solid color-mix(in srgb,var(--block-color) 22%,transparent)}
+.block-title{font-size:15px;font-weight:800;letter-spacing:.2px;text-transform:uppercase;color:var(--text)}
+.block-sub{font-size:11.5px;color:var(--text3);margin-top:2px;font-weight:500}
+.block-meta{margin-left:auto;font-size:11px;color:var(--text3);font-weight:600}
+.block-body{padding:18px 22px 20px;display:flex;flex-direction:column;gap:14px}
+
+/* ═══ KPI rows inside blocks ═══ */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.kpi{padding:14px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:5px;position:relative;overflow:hidden;min-height:96px;transition:border-color .15s,background .15s,transform .15s}
 .kpi.clickable{cursor:pointer}
-.kpi.clickable:hover{background:var(--bg3);border-color:var(--border2)}
-.kpi.selected{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
-.kpi.selected::after{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--accent)}
-.kpi .kpi-head{display:flex;align-items:center;gap:8px}
-.kpi .kpi-ico{font-size:16px;opacity:.85}
-.kpi .kpi-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
-.kpi .kpi-val{font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.1;color:var(--text);font-variant-numeric:tabular-nums}
+.kpi.clickable:hover{background:var(--surface3);border-color:var(--border2);transform:translateY(-1px)}
+.kpi.selected{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold),0 0 16px rgba(240,185,11,.12)}
+.kpi.selected::after{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--gold)}
+.kpi .kpi-head{display:flex;align-items:center;gap:7px}
+.kpi .kpi-ico{font-size:14px;opacity:.85}
+.kpi .kpi-lbl{font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+.kpi .kpi-val{font-size:22px;font-weight:800;letter-spacing:-.3px;line-height:1.1;color:var(--text);font-variant-numeric:tabular-nums}
 .kpi .kpi-val.neg{color:var(--red)}
 .kpi .kpi-val.pos{color:var(--green)}
-.kpi .kpi-sub{font-size:11.5px;color:var(--text3);font-weight:500;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.kpi .kpi-sub{font-size:11px;color:var(--text3);font-weight:500;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .kpi .kpi-delta{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:5px;font-size:10.5px;font-weight:700}
 .kpi .kpi-delta.up{background:var(--green-bg);color:var(--green)}
 .kpi .kpi-delta.down{background:var(--red-bg);color:var(--red)}
-.kpi.ldg .kpi-val{color:var(--text3);font-size:20px;font-style:italic}
-.kpi.err{border-color:rgba(231,76,60,.4)}
-.kpi.err .kpi-val{color:var(--red);font-size:14px}
-.kpi.c-rev{border-left:3px solid var(--blue)}
-.kpi.c-gp{border-left:3px solid var(--purple)}
+.kpi.ldg .kpi-val{color:var(--text3);font-size:16px;font-style:italic}
+.kpi.err{border-color:rgba(246,70,93,.35)}
+.kpi.err .kpi-val{color:var(--red);font-size:13px;font-style:normal}
+/* KPI-тип — кольорова мінішкала зліва */
+.kpi.c-rev{border-left:3px solid var(--gold)}
+.kpi.c-gp{border-left:3px solid var(--gold)}
 .kpi.c-net{border-left:3px solid var(--green)}
 .kpi.c-cash{border-left:3px solid var(--cyan)}
-.kpi.c-sales{border-left:3px solid var(--accent)}
-.kpi.c-ar{border-left:3px solid var(--yellow)}
-.kpi.c-stock{border-left:3px solid var(--purple)}
-
-.section{margin-top:24px}
-.section-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:0 4px}
-.section-head h2{font-size:15px;font-weight:700;letter-spacing:-.2px;color:var(--text);display:flex;align-items:center;gap:8px}
-.section-head .sub{font-size:11px;color:var(--text3);margin-left:auto;font-weight:500}
-.section-head .ico{font-size:17px}
+.kpi.c-sales{border-left:3px solid var(--green)}
+.kpi.c-ar{border-left:3px solid var(--red)}
+.kpi.c-stock{border-left:3px solid var(--blue)}
 
 .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px}
 .grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
 
-.card{padding:16px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;gap:10px}
-.card h3{font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;line-height:1.2}
+.card{padding:14px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:10px}
+.card h3{font-size:12.5px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;line-height:1.2;text-transform:uppercase;letter-spacing:.3px}
 .card h3 .ico{font-size:14px;opacity:.9}
-.card .meta{font-size:11px;color:var(--text3);font-weight:500;margin-left:auto}
+.card .meta{font-size:11px;color:var(--text3);font-weight:600;margin-left:auto}
 .card .chart-wrap{position:relative;width:100%;height:260px}
 .card .chart-wrap.sm{height:180px}
 .card .loading{text-align:center;padding:30px 10px;color:var(--text3);font-size:12px}
-.card .loading::after{content:'';display:block;width:22px;height:22px;margin:12px auto 0;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+.card .loading::after{content:'';display:block;width:22px;height:22px;margin:12px auto 0;border:2.5px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite}
 .card .error{text-align:center;padding:20px 10px;color:var(--red);font-size:12px;background:var(--red-bg);border-radius:10px}
 .card .empty{text-align:center;padding:30px 10px;color:var(--text3);font-size:12px;font-style:italic}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* Leaderboard tables */
 .leader{border-top:1px solid var(--border);padding-top:8px}
-.leader-row{display:grid;grid-template-columns:24px 1fr auto auto;gap:10px;align-items:center;padding:8px 4px;border-bottom:1px solid var(--border)}
+.leader-row{display:grid;grid-template-columns:24px 1fr auto auto;gap:10px;align-items:center;padding:8px 4px;border-bottom:1px solid var(--border);transition:background .15s}
+.leader-row:hover{background:var(--surface3)}
 .leader-row:last-child{border-bottom:none}
-.leader-rank{font-size:11px;color:var(--text3);font-weight:700;text-align:right}
+.leader-rank{font-size:11px;color:var(--text3);font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
 .leader-name{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .leader-sub{font-size:11px;color:var(--text3);font-weight:500;margin-left:6px}
 .leader-val{font-size:13px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;text-align:right}
-.leader-bar{grid-column:2 / -1;height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:4px}
-.leader-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-bg));border-radius:2px;transition:width .6s ease}
-.leader-row.mgr .leader-bar-fill{background:linear-gradient(90deg,var(--accent),rgba(255,131,25,.4))}
-.leader-row.stock .leader-bar-fill{background:linear-gradient(90deg,var(--purple),rgba(151,117,250,.4))}
-.leader-row.ar .leader-bar-fill{background:linear-gradient(90deg,var(--yellow),rgba(234,179,8,.4))}
+.leader-bar{grid-column:2 / -1;height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;margin-top:4px}
+.leader-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),rgba(240,185,11,.3));border-radius:2px;transition:width .6s ease}
+.leader-row.mgr .leader-bar-fill{background:linear-gradient(90deg,var(--green),rgba(14,203,129,.3))}
+.leader-row.stock .leader-bar-fill{background:linear-gradient(90deg,var(--blue),rgba(51,117,187,.3))}
+.leader-row.ar .leader-bar-fill{background:linear-gradient(90deg,var(--red),rgba(246,70,93,.3))}
 
 /* Mini FX / forecast info rows */
-.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.info-cell{padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:10px}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
+.info-cell{padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;transition:background .15s}
+.info-cell:hover{background:var(--surface3)}
 .info-cell .info-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-bottom:3px}
-.info-cell .info-val{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);letter-spacing:-.2px;line-height:1.2}
+.info-cell .info-val{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--text);letter-spacing:-.3px;line-height:1.2}
 .info-cell .info-val.pos{color:var(--green)}
 .info-cell .info-val.neg{color:var(--red)}
-.info-cell .info-sub{font-size:10.5px;color:var(--text3);margin-top:2px}
+.info-cell .info-sub{font-size:10.5px;color:var(--text3);margin-top:3px}
 .info-cell .info-trend{display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:4px;font-size:9.5px;font-weight:700;margin-top:3px;text-transform:uppercase;letter-spacing:.3px}
 .info-cell .info-trend.up{background:var(--red-bg);color:var(--red)}
 .info-cell .info-trend.down{background:var(--green-bg);color:var(--green)}
 .info-cell .info-trend.flat{background:var(--bg3);color:var(--text3)}
 
 /* Module gate banner */
-.hint{padding:24px;background:var(--surface2);border:1px dashed var(--border2);border-radius:14px;text-align:center;color:var(--text3);font-size:13px}
-.hint .ic{font-size:28px;display:block;margin-bottom:8px;opacity:.7}
+.hint{padding:30px;background:var(--surface2);border:1px dashed var(--border2);border-radius:14px;text-align:center;color:var(--text3);font-size:13px}
+.hint .ic{font-size:32px;display:block;margin-bottom:10px;opacity:.7}
 
 .denied{grid-column:1/-1;padding:30px;text-align:center;color:var(--text3);background:var(--surface2);border:1px dashed var(--border2);border-radius:14px;font-size:13px}
 .denied .ic{font-size:22px;display:block;margin-bottom:6px;opacity:.7}
 
 /* Warehouse widget */
-.wh-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
-.wh-stat{padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;display:flex;flex-direction:column;gap:2px}
+.wh-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.wh-stat{padding:11px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;display:flex;flex-direction:column;gap:3px;transition:background .15s}
+.wh-stat:hover{background:var(--surface3)}
 .wh-stat .wh-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
-.wh-stat .wh-val{font-size:18px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.3px;line-height:1.2}
+.wh-stat .wh-val{font-size:20px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.3px;line-height:1.2}
 .wh-stat.org-R{border-left:3px solid var(--accent)}
 .wh-stat.org-G{border-left:3px solid var(--purple)}
 .wh-stat .wh-sub{font-size:10.5px;color:var(--text3);font-weight:500}
 
 /* Cash-flow summary */
-.cf-line{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.cf-line{display:flex;align-items:center;justify-content:space-between;padding:9px 2px;border-bottom:1px solid var(--border);font-size:13px}
 .cf-line:last-child{border-bottom:none}
-.cf-line .cf-lbl{color:var(--text2)}
+.cf-line .cf-lbl{color:var(--text2);display:flex;align-items:center;gap:8px}
 .cf-line .cf-val{font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
 .cf-line.cf-total{padding-top:12px;margin-top:4px;border-top:1.5px solid var(--border2);font-weight:700}
 .cf-line.cf-total .cf-lbl{color:var(--text)}
 
+/* Ticker row — Binance-style */
+.ticker{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.ticker::-webkit-scrollbar{display:none}
+.ticker-pill{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-size:11.5px;font-weight:600;color:var(--text2);white-space:nowrap}
+.ticker-pill b{color:var(--text);font-weight:700;font-variant-numeric:tabular-nums}
+.ticker-pill .up{color:var(--green);font-weight:700}
+.ticker-pill .down{color:var(--red);font-weight:700}
+
+@media(max-width:900px){
+  .block-body{padding:14px}
+  .block-head{padding:14px 16px}
+}
 @media(max-width:720px){
   .wrap{padding:12px}
-  .kpi .kpi-val{font-size:22px}
+  .kpi .kpi-val{font-size:18px}
   .grid-2,.grid-3{grid-template-columns:1fr}
   .card .chart-wrap{height:220px}
   .hero h1{font-size:18px}
+  .block-title{font-size:13px}
 }
 </style>
 </head>
@@ -208,44 +249,31 @@ a{color:inherit;text-decoration:none}
       <button class="btn" onclick="reloadAll()">🔄 Оновити</button>
     </div>
 
-    <!-- KPI grid -->
-    <div class="kpi-grid" id="kpiGrid"></div>
+    <!-- Hidden host for cards without a home (keeps legacy IDs) -->
+    <div id="kpiGrid" style="display:none"></div>
 
-    <!-- Finance section: trend chart + cash flow -->
-    <div class="section" id="sectionFinance" style="display:none">
-      <div class="section-head">
-        <h2><span class="ico">💰</span>Фінансові показники</h2>
-        <span class="sub">P&L · Cash Flow · 6 місяців</span>
-      </div>
-      <div class="grid-2">
-        <div class="card" id="cardRevChart">
-          <h3><span class="ico">📊</span>Доходи · Валовий · Чистий</h3>
-          <div class="meta" id="revChartMeta"></div>
-          <div class="chart-wrap"><canvas id="revChartCanvas"></canvas></div>
+    <!-- ═══ БЛОК: ФІНАНСИ ═══ -->
+    <section class="block b-finance" id="sectionFinance" style="display:none">
+      <div class="block-head">
+        <div class="block-ico">💰</div>
+        <div>
+          <div class="block-title">Фінанси</div>
+          <div class="block-sub">Доходи · Валовий · Чистий · Cash Flow · Дебіторка</div>
         </div>
-        <div class="card" id="cardCashFlow">
-          <h3><span class="ico">💵</span>Грошовий потік</h3>
-          <div id="cfBody"><div class="loading">Завантаження…</div></div>
-        </div>
+        <div class="block-meta" id="financeMeta"></div>
       </div>
-    </div>
-
-    <!-- Sales + Warehouses + AR -->
-    <div class="section" id="sectionOps" style="display:none">
-      <div class="section-head">
-        <h2><span class="ico">📈</span>Операційна активність</h2>
-        <span class="sub">Менеджери · Склад · Дебіторка</span>
-      </div>
-      <div class="grid-3">
-        <div class="card" id="cardManagers" style="display:none">
-          <h3><span class="ico">🏆</span>ТОП менеджерів</h3>
-          <div class="meta" id="managersMeta"></div>
-          <div id="managersBody"><div class="loading">Завантаження…</div></div>
-        </div>
-        <div class="card" id="cardWarehouses" style="display:none">
-          <h3><span class="ico">📦</span>Склад · резерви</h3>
-          <div class="meta" id="whMeta"></div>
-          <div id="whBody"><div class="loading">Завантаження…</div></div>
+      <div class="block-body">
+        <div class="kpi-row" id="financeKpis"></div>
+        <div class="grid-2">
+          <div class="card" id="cardRevChart">
+            <h3><span class="ico">📊</span>Динаміка</h3>
+            <div class="meta" id="revChartMeta"></div>
+            <div class="chart-wrap"><canvas id="revChartCanvas"></canvas></div>
+          </div>
+          <div class="card" id="cardCashFlow">
+            <h3><span class="ico">💵</span>Грошовий потік</h3>
+            <div id="cfBody"><div class="loading">Завантаження…</div></div>
+          </div>
         </div>
         <div class="card" id="cardAR" style="display:none">
           <h3><span class="ico">⚠️</span>ТОП дебіторів</h3>
@@ -253,27 +281,73 @@ a{color:inherit;text-decoration:none}
           <div id="arBody"><div class="loading">Завантаження…</div></div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- Forecast + FX -->
-    <div class="section" id="sectionMarkets" style="display:none">
-      <div class="section-head">
-        <h2><span class="ico">🌐</span>Ринок</h2>
-        <span class="sub">Курси валют · Мідь · Прогноз кабелю</span>
-      </div>
-      <div class="grid-2">
-        <div class="card" id="cardFx" style="display:none">
-          <h3><span class="ico">💱</span>Курси валют</h3>
-          <div class="meta" id="fxMeta"></div>
-          <div id="fxBody"><div class="loading">Завантаження…</div></div>
+    <!-- ═══ БЛОК: ПРОДАЖІ ═══ -->
+    <section class="block b-sales" id="sectionSales" style="display:none">
+      <div class="block-head">
+        <div class="block-ico">📈</div>
+        <div>
+          <div class="block-title">Продажі</div>
+          <div class="block-sub">Оплати · Бонуси · ТОП менеджерів</div>
         </div>
-        <div class="card" id="cardCopper" style="display:none">
-          <h3><span class="ico">🪙</span>Мідь · прогноз кабелю</h3>
-          <div class="meta" id="copperMeta"></div>
-          <div id="copperBody"><div class="loading">Завантаження…</div></div>
+        <div class="block-meta" id="salesBlockMeta"></div>
+      </div>
+      <div class="block-body">
+        <div class="kpi-row" id="salesKpis"></div>
+        <div class="card" id="cardManagers">
+          <h3><span class="ico">🏆</span>ТОП менеджерів</h3>
+          <div class="meta" id="managersMeta"></div>
+          <div id="managersBody"><div class="loading">Завантаження…</div></div>
         </div>
       </div>
-    </div>
+    </section>
+
+    <!-- ═══ БЛОК: СКЛАД ═══ -->
+    <section class="block b-warehouses" id="sectionWarehouses" style="display:none">
+      <div class="block-head">
+        <div class="block-ico">📦</div>
+        <div>
+          <div class="block-title">Склад</div>
+          <div class="block-sub">Залишки · Резерви по клієнтах · Реакт + Генерація</div>
+        </div>
+        <div class="block-meta" id="warehousesBlockMeta"></div>
+      </div>
+      <div class="block-body">
+        <div class="kpi-row" id="warehousesKpis"></div>
+        <div class="card" id="cardWarehouses">
+          <h3><span class="ico">📦</span>Резерви по складах</h3>
+          <div class="meta" id="whMeta"></div>
+          <div id="whBody"><div class="loading">Завантаження…</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ БЛОК: ЗАКУПКИ ═══ -->
+    <section class="block b-purchasing" id="sectionPurchasing" style="display:none">
+      <div class="block-head">
+        <div class="block-ico">📊</div>
+        <div>
+          <div class="block-title">Закупки</div>
+          <div class="block-sub">Мідь · Кабель · Курси валют</div>
+        </div>
+        <div class="block-meta" id="purchasingBlockMeta"></div>
+      </div>
+      <div class="block-body">
+        <div class="grid-2">
+          <div class="card" id="cardCopper" style="display:none">
+            <h3><span class="ico">🪙</span>Мідь · прогноз кабелю</h3>
+            <div class="meta" id="copperMeta"></div>
+            <div id="copperBody"><div class="loading">Завантаження…</div></div>
+          </div>
+          <div class="card" id="cardFx" style="display:none">
+            <h3><span class="ico">💱</span>Курси валют</h3>
+            <div class="meta" id="fxMeta"></div>
+            <div id="fxBody"><div class="loading">Завантаження…</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- No-access placeholder -->
     <div id="noAccess" style="display:none"></div>
@@ -481,60 +555,74 @@ function reloadAll() {
   loadForecast();
 }
 
-// ─── KPI grid skeleton ───
+// ─── KPI skeleton: distributes KPIs into per-block rows ───
 function buildKpiSkeleton() {
   const u = window.__user;
   const r = u.roles || {};
-  const cards = [];
+
+  const financeKpis = [];
+  const salesKpis = [];
+  const warehousesKpis = [];
+
   if (r.finance) {
-    cards.push({ id: 'kpiRevenue', cls: 'c-rev',   ico: '📈', lbl: 'Доходи' });
-    cards.push({ id: 'kpiGross',   cls: 'c-gp',    ico: '💹', lbl: 'Валовий прибуток' });
-    cards.push({ id: 'kpiNet',     cls: 'c-net',   ico: '✅', lbl: 'Чистий прибуток' });
-    cards.push({ id: 'kpiCash',    cls: 'c-cash',  ico: '💵', lbl: 'Залишок коштів' });
+    financeKpis.push({ id: 'kpiRevenue', cls: 'c-rev',   ico: '📈', lbl: 'Доходи' });
+    financeKpis.push({ id: 'kpiGross',   cls: 'c-gp',    ico: '💹', lbl: 'Валовий' });
+    financeKpis.push({ id: 'kpiNet',     cls: 'c-net',   ico: '✅', lbl: 'Чистий' });
+    financeKpis.push({ id: 'kpiCash',    cls: 'c-cash',  ico: '💵', lbl: 'Залишок коштів' });
+    financeKpis.push({ id: 'kpiAR',      cls: 'c-ar',    ico: '⚠️', lbl: 'Дебіторка' });
   }
   if (r.sales) {
-    cards.push({ id: 'kpiSales',   cls: 'c-sales', ico: '🤝', lbl: 'Оплати за період' });
-  }
-  if (r.finance) {
-    cards.push({ id: 'kpiAR',      cls: 'c-ar',    ico: '⚠️', lbl: 'Дебіторка на кінець' });
+    salesKpis.push({ id: 'kpiSales',     cls: 'c-sales', ico: '🤝', lbl: 'Оплати за період' });
   }
   if (r.warehouses) {
-    cards.push({ id: 'kpiStock',   cls: 'c-stock', ico: '📦', lbl: 'Резерви в складах' });
+    warehousesKpis.push({ id: 'kpiStock',cls: 'c-stock', ico: '📦', lbl: 'Активні резерви' });
   }
-  const host = document.getElementById('kpiGrid');
-  if (!cards.length) {
-    host.innerHTML = `
-      <div style="grid-column:1/-1;padding:30px;text-align:center;background:var(--surface2);border:1px dashed var(--border2);border-radius:14px;color:var(--text3)">
-        <div style="font-size:28px;margin-bottom:8px">🔒</div>
-        <div>У вас поки немає доступу до ключових модулів. Попросіть адміністратора відкрити <b>Фінанси</b>, <b>Продажі</b> або <b>Склад</b>.</div>
-      </div>`;
-  } else {
-    host.innerHTML = cards.map(c =>
-      `<div class="kpi ${c.cls} ldg" id="${c.id}">
-        <div class="kpi-head"><span class="kpi-ico">${c.ico}</span><span class="kpi-lbl">${c.lbl}</span></div>
-        <div class="kpi-val">Завантаження…</div>
-        <div class="kpi-sub"></div>
-      </div>`
-    ).join('');
-  }
-  // show/hide sections — strictly per role
-  document.getElementById('sectionFinance').style.display = r.finance ? '' : 'none';
-  document.getElementById('sectionOps').style.display = (r.sales || r.warehouses || r.finance) ? '' : 'none';
-  document.getElementById('cardManagers').style.display = r.sales ? '' : 'none';
-  document.getElementById('cardWarehouses').style.display = r.warehouses ? '' : 'none';
-  document.getElementById('cardAR').style.display = r.finance ? '' : 'none';
-  // Markets: FX потрібен для sales/finance/forecast, мідь — тільки для forecast
+
+  const kpiHtml = c => `<div class="kpi ${c.cls} ldg" id="${c.id}">
+    <div class="kpi-head"><span class="kpi-ico">${c.ico}</span><span class="kpi-lbl">${c.lbl}</span></div>
+    <div class="kpi-val">Завантаження…</div>
+    <div class="kpi-sub"></div>
+  </div>`;
+
+  document.getElementById('financeKpis').innerHTML = financeKpis.map(kpiHtml).join('');
+  document.getElementById('salesKpis').innerHTML   = salesKpis.map(kpiHtml).join('');
+  document.getElementById('warehousesKpis').innerHTML = warehousesKpis.map(kpiHtml).join('');
+
+  // Per-block visibility — strictly role-gated
+  document.getElementById('sectionFinance').style.display    = r.finance    ? '' : 'none';
+  document.getElementById('sectionSales').style.display      = r.sales      ? '' : 'none';
+  document.getElementById('sectionWarehouses').style.display = r.warehouses ? '' : 'none';
+  document.getElementById('cardAR').style.display            = r.finance    ? '' : 'none';
+
+  // Markets block: FX for sales/finance/forecast, copper for forecast
   const showFx = !!(r.sales || r.finance || r.forecast);
   const showCopper = !!r.forecast;
   document.getElementById('cardFx').style.display = showFx ? '' : 'none';
   document.getElementById('cardCopper').style.display = showCopper ? '' : 'none';
-  document.getElementById('sectionMarkets').style.display = (showFx || showCopper) ? '' : 'none';
+  document.getElementById('sectionPurchasing').style.display = (showFx || showCopper) ? '' : 'none';
+
+  // Empty-state hint below toolbar if no modules at all
+  const anyModule = r.finance || r.sales || r.warehouses || r.forecast;
+  let hintEl = document.getElementById('noModulesHint');
+  if (!anyModule) {
+    if (!hintEl) {
+      hintEl = document.createElement('div');
+      hintEl.id = 'noModulesHint';
+      hintEl.className = 'hint';
+      hintEl.innerHTML = `<div class="ic">🔒</div>
+        <div>У вас поки немає доступу до ключових модулів. Попросіть адміністратора відкрити <b>Фінанси</b>, <b>Продажі</b> або <b>Склад</b>.</div>`;
+      const toolbar = document.querySelector('.toolbar');
+      toolbar.parentNode.insertBefore(hintEl, toolbar.nextSibling);
+    }
+  } else if (hintEl) {
+    hintEl.remove();
+  }
 }
 
 // Call once after buildKpiSkeleton() populates #kpiGrid so each card is wired.
 function initKpiInteractions() { bindKpiCards(); }
 
-function updateKpi(id, { val, sub = '', cls = '', error = false }) {
+function updateKpi(id, { val, sub = '', cls = '', error = false, numeric = null }) {
   const el = document.getElementById(id);
   if (!el) return;
   el.classList.remove('ldg', 'err');
@@ -543,9 +631,35 @@ function updateKpi(id, { val, sub = '', cls = '', error = false }) {
   const subEl = el.querySelector('.kpi-sub');
   valEl.classList.remove('pos', 'neg');
   if (cls) valEl.classList.add(cls);
-  valEl.textContent = val;
+  if (numeric && numeric.target != null && !error) {
+    animateNumber(valEl, numeric.target, numeric.format);
+  } else {
+    valEl.textContent = val;
+  }
   subEl.innerHTML = sub;
 }
+
+// Simple count-up animation for KPI numbers. Uses rAF; cancels any prior run.
+function animateNumber(el, target, formatFn) {
+  const DUR = 650;
+  const prev = Number(el.dataset.counting || 0);
+  if (!isFinite(target)) { el.textContent = formatFn(0); return; }
+  const start = performance.now();
+  cancelAnimationFrame(el._raf || 0);
+  const ease = t => 1 - Math.pow(1 - t, 3);
+  const tick = now => {
+    const t = Math.min(1, (now - start) / DUR);
+    const cur = prev + (target - prev) * ease(t);
+    el.textContent = formatFn(cur);
+    if (t < 1) el._raf = requestAnimationFrame(tick);
+    else { el.dataset.counting = String(target); }
+  };
+  el._raf = requestAnimationFrame(tick);
+}
+
+// Shorthand formatters for KPI animation
+const kpiMoneyFmt = (cur = '$') => v => fmtMoney(v, cur);
+const kpiNumFmt = (dec = 0) => v => fmt(v, dec);
 
 // ─── FINANCE: P&L + Cash Flow + AR ───
 async function loadFinance() {
@@ -610,16 +724,16 @@ async function loadFinance() {
     };
 
     updateKpi('kpiRevenue', {
-      val: fmtMoney(totalRev, '$'),
+      numeric: { target: totalRev, format: kpiMoneyFmt('$') },
       sub: `${revenue > 0 && otherInc > 0 ? `осн. ${fmt(revenue,0)} · ін. ${fmt(otherInc,0)}` : 'USD'} ${deltaHtml(totalRev, prevRev)}`,
     });
     updateKpi('kpiGross', {
-      val: fmtMoney(gp, '$'),
+      numeric: { target: gp, format: kpiMoneyFmt('$') },
       cls: gp < 0 ? 'neg' : '',
       sub: `маржа ${totalRev ? fmtPct(gp/totalRev) : '—'} ${deltaHtml(gp, prevGp)}`,
     });
     updateKpi('kpiNet', {
-      val: fmtMoney(net, '$'),
+      numeric: { target: net, format: kpiMoneyFmt('$') },
       cls: net < 0 ? 'neg' : 'pos',
       sub: `маржа ${totalRev ? fmtPct(net/totalRev) : '—'} ${deltaHtml(net, prevNet)}`,
     });
@@ -634,7 +748,7 @@ async function loadFinance() {
   if (cfR.status === 'fulfilled' && !cfR.value.error) {
     const d = cfR.value;
     updateKpi('kpiCash', {
-      val: fmtMoney(d.closing || 0, '$'),
+      numeric: { target: d.closing || 0, format: kpiMoneyFmt('$') },
       cls: (d.closing || 0) < 0 ? 'neg' : '',
       sub: `NCF за період <b style="color:${(d.netCashFlow||0) >= 0 ? 'var(--green)' : 'var(--red)'}">${fmtMoney(d.netCashFlow || 0, '$')}</b>`,
     });
@@ -650,7 +764,7 @@ async function loadFinance() {
     const d = arR.value;
     const totalUsd = arTotalUsd(d);
     updateKpi('kpiAR', {
-      val: fmtMoney(totalUsd, '$'),
+      numeric: { target: totalUsd, format: kpiMoneyFmt('$') },
       sub: 'сума боргу клієнтів',
     });
     renderARTop(d);
@@ -896,7 +1010,7 @@ async function loadSales() {
   });
 
   updateKpi('kpiSales', {
-    val: fmtMoney(grandPaidUsd, '$'),
+    numeric: { target: grandPaidUsd, format: kpiMoneyFmt('$') },
     sub: `потенціал ${fmtMoney(grandRemainUsd, '$')}${convOk ? '' : ' <span style="color:var(--yellow)">· не всі курси</span>'}`,
   });
 
@@ -966,7 +1080,7 @@ function renderWarehouses(d) {
   });
 
   updateKpi('kpiStock', {
-    val: fmt(totalReserveItems, 0),
+    numeric: { target: totalReserveItems, format: kpiNumFmt(0) },
     sub: `${fmt(totalItems,0)} позицій · ${fmt(totalOrders,0)} активних резервів`,
   });
 
