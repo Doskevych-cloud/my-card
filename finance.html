@@ -43,6 +43,40 @@ a{color:inherit;text-decoration:none}
 .ptab{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;color:var(--text2);text-decoration:none;transition:background .15s,color .15s;white-space:nowrap;cursor:pointer}
 .ptab:hover{background:var(--bg3);color:var(--text)}
 .ptab.active{background:var(--accent-bg);color:var(--accent)}
+.pdf-btn{margin-left:auto;padding:7px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:background .12s,border-color .12s}
+.pdf-btn:hover{background:var(--surface2);border-color:var(--text3)}
+.pdf-btn .ic{font-size:13px;opacity:.75}
+.pdf-btn:hover .ic{opacity:1}
+.page-tabs{display:flex;align-items:center;gap:6px}
+/* ── Print styles: only active view, expanded rows, clean layout ── */
+@media print{
+  @page{size:A4;margin:14mm 10mm}
+  body{background:#fff;color:#000;font-size:11pt}
+  #app,.wrap{max-width:none;width:100%;padding:0;margin:0}
+  /* Hide everything not relevant to the report */
+  .page-tabs,.toolbar,.pdf-btn,#pnlSummary,#gpSummary,.header,#appHeader,
+  .tri,.sp,.pnl-collapse-ctl{display:none !important}
+  .view{display:none !important}
+  .view.active{display:block !important}
+  /* Expand all collapsed rows for print */
+  .pnl-table tr.collapsed-hidden{display:table-row !important}
+  .pnl-table tr[data-collapsed="true"]{data-collapsed:"false"}
+  /* Simpler table for print */
+  .pnl-wrap{border:1px solid #999;border-radius:0;overflow:visible}
+  .pnl-table{font-size:10.5pt;color:#000;min-width:0}
+  .pnl-table th,.pnl-table td{padding:4px 8px;white-space:normal}
+  .pnl-table th:first-child,.pnl-table td:first-child{position:static;min-width:0;background:#fff}
+  .pnl-table th{background:#f0f0f0 !important;color:#333;border-bottom:1px solid #999;position:static}
+  .pnl-table td.col-total,.pnl-table th.col-total{background:#f6f6f6 !important;border-left:none}
+  .pnl-table tr.cat td,.pnl-table tr.sec td,.pnl-table tr.sub td,.pnl-table tr.grd td{border-top:1px solid #999;background:#fff !important}
+  .pnl-table tr.grp td{background:#fafafa !important}
+  .pnl-table tr.itm td{color:#333}
+  /* Print-only report header */
+  .print-header{display:block !important;margin-bottom:10mm}
+  .print-header h1{margin:0 0 4mm;font-size:16pt;font-weight:800}
+  .print-header .meta{font-size:10pt;color:#555}
+}
+.print-header{display:none}
 
 .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
 .toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
@@ -239,10 +273,14 @@ a{color:inherit;text-decoration:none}
 <div id="appHeader"></div>
 <div id="app">
   <div class="wrap">
+    <div class="print-header" id="printHeader"></div>
     <div class="page-tabs">
       <span class="ptab active" data-view="pnl" onclick="switchTab(this)">P&L</span>
       <span class="ptab" data-view="gp" onclick="switchTab(this)">Валовий прибуток</span>
       <span class="ptab" data-view="ar" onclick="switchTab(this)">Розрахунки з покупцями</span>
+      <button type="button" class="pdf-btn" onclick="downloadPDF()" title="Зберегти поточну вкладку у PDF">
+        <span class="ic">⬇</span> PDF
+      </button>
     </div>
 
     <!-- ═══ P&L View ═══ -->
@@ -370,6 +408,44 @@ function switchTab(el) {
   if (v === 'gp' && !gpState._loaded) gpLoad();
   if (v === 'ar' && !arState._loaded) arLoad();
   saveStateToUrl();
+}
+
+// Export the active tab to PDF using the browser's print dialog.
+// Assembles a page header with report title + period + org, then invokes
+// print. Our @media print CSS keeps only the active view visible, expands
+// collapsed rows, and reformats for A4 paper.
+function downloadPDF() {
+  const active = document.querySelector('.ptab.active');
+  const view   = active && active.dataset.view;
+  const titles = { pnl: 'P&L звіт', gp: 'Валовий прибуток', ar: 'Розрахунки з покупцями' };
+  const title  = titles[view] || 'Фінансовий звіт';
+  // Pull period/org from whichever view is active
+  const state  = view === 'gp' ? gpState : view === 'ar' ? arState : pnlState;
+  const from   = state.from || '';
+  const to     = state.to   || '';
+  const org    = state.org  || 'Всі організації';
+  const dt     = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' });
+  const hdr    = document.getElementById('printHeader');
+  if (hdr) {
+    hdr.innerHTML = '<h1>' + esc(title) + '</h1>' +
+      '<div class="meta">' +
+      'Період: <b>' + esc(from) + '</b> — <b>' + esc(to) + '</b>' +
+      ' · Організація: <b>' + esc(org) + '</b>' +
+      ' · Згенеровано: ' + esc(dt) +
+      '</div>';
+  }
+  // Temporarily expand all collapsed rows so they appear in PDF
+  const hidden = document.querySelectorAll('.pnl-table tr.collapsed-hidden');
+  hidden.forEach(r => r.dataset._wasHidden = '1');
+  hidden.forEach(r => r.classList.remove('collapsed-hidden'));
+  setTimeout(() => {
+    window.print();
+    // After print dialog closes — restore collapsed state
+    setTimeout(() => {
+      document.querySelectorAll('.pnl-table tr[data-_was-hidden], .pnl-table tr[data-_washidden]').forEach(() => {});
+      hidden.forEach(r => { if (r.dataset._wasHidden) { r.classList.add('collapsed-hidden'); delete r.dataset._wasHidden; } });
+    }, 500);
+  }, 100);
 }
 
 function fmt(n, dec) {
