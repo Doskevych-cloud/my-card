@@ -1794,10 +1794,13 @@ async function openStockPriceReport() {
     const genProds = (window.__supProds && window.__supProds.gen) || [];
     if (!genProds.length) { body.innerHTML = '<div class="rep-err">Прайс Генерації порожній — не можу побудувати звіт.</div>'; return; }
 
-    // 2) Fetch current stock
-    const stockRes = await fetch(API_URL + '?action=odata_stock');
-    const stockData = await stockRes.json();
-    if (stockData.error) throw new Error(stockData.error);
+    // 2) Fetch current stock (через Auth.apiFetch — передає Bearer token)
+    let stockData;
+    try {
+      stockData = await Auth.apiFetch('odata_stock');
+    } catch (e) {
+      throw new Error('Не вдалось завантажити залишки: ' + (e.message || e));
+    }
     const stockMap = stockData.stock || {};
     if (!Object.keys(stockMap).length) { body.innerHTML = '<div class="rep-err">1С не повернула залишки.</div>'; return; }
 
@@ -1908,9 +1911,7 @@ async function loadAllSupplierProds() {
   __loadingSupProds = (async () => {
     const fetchProds = async (action) => {
       try {
-        const r = await fetch(API_URL + '?action=' + action);
-        const d = await r.json();
-        if (d.error) return [];
+        const d = await Auth.apiFetch(action);
         return d.products || [];
       } catch (e) { console.warn('load ' + action, e); return []; }
     };
