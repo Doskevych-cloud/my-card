@@ -120,6 +120,12 @@ a{color:inherit;text-decoration:none}
 .pnl-table tr.cat td:first-child,
 .pnl-table tr.sec:not([data-cat]) td:first-child,
 .pnl-table tr.grd:not([data-is-grd-head]) td:first-child{padding-left:14px}
+/* Non-collapsible spine rows (Op/Net Profit, sub totals) get a phantom
+ * triangle-width spacer so the text aligns with collapsible siblings */
+.pnl-table tr.grd:not([data-is-grd-head]) td:first-child::before,
+.pnl-table tr.sub:not([data-cat]) td:first-child::before{
+  content:'';display:inline-block;width:18px
+}
 /* Collapsible GP header in the middle — same weight as top spine */
 .pnl-table tr.grd[data-is-grd-head] td{font-weight:800;font-size:14px;color:var(--text);border-top:1px solid var(--border)}
 .pnl-table tr.grd[data-is-grd-head] td:first-child{padding-left:14px}
@@ -561,8 +567,9 @@ const PNL_TEMPLATE = [
   { type:'grd', label:'Чистий прибуток / збиток', key:'_netProfit' },
   { type:'pct', label:'Операційна рентабельність, %', key:'_opMargin' },
   { type:'pct', label:'Загальна рентабельність, %', key:'_netMargin' },
-  // Bottom Валовий прибуток — завжди внизу, з візуальним gap-ом через sp,
+  // Bottom Валовий прибуток — завжди внизу, з візуальним gap-ом через 2x sp,
   // collapsible (за замовчуванням згорнутий), розкриває per-dept ВП та маржу.
+  { type:'sp' },
   { type:'sp' },
   { type:'grd', variant:'gp-bottom', label:'Валовий прибуток', key:'_grossProfit', defaultCollapsed:true },
   { type:'itm', label:'Дистрибуція', dep:'дистрибуц', depMode:'gp' },
