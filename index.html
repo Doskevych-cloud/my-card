@@ -1790,9 +1790,14 @@ async function openStockPriceReport() {
 
   try {
     // 1) Ensure suppliers loaded (we need gen price list)
-    if (!window.__supProds) await loadAllSupplierProds();
-    const genProds = (window.__supProds && window.__supProds.gen) || [];
-    if (!genProds.length) { body.innerHTML = '<div class="rep-err">Прайс Генерації порожній — не можу побудувати звіт.</div>'; return; }
+    let sup = window.__supProds;
+    if (!sup || !sup.gen || !sup.gen.length) sup = await loadAllSupplierProds();
+    const genProds = (sup && sup.gen) || [];
+    if (!genProds.length) {
+      const errs = (sup && sup._errors && sup._errors.length) ? sup._errors.join(' · ') : 'невідома причина';
+      body.innerHTML = '<div class="rep-err">Прайс Генерації порожній — не можу побудувати звіт.<br><code style="font-size:10.5px;color:var(--text3)">' + escapeHtml(errs) + '</code></div>';
+      return;
+    }
 
     // 2) Fetch current stock (через Auth.apiFetch — передає Bearer token)
     let stockData;
@@ -1917,11 +1922,16 @@ async function loadAllSupplierProds() {
   if (window.__supProds) return window.__supProds;
   if (__loadingSupProds) return __loadingSupProds;
   __loadingSupProds = (async () => {
+    const errors = [];
     const fetchProds = async (action) => {
       try {
         const d = await Auth.apiFetch(action);
         return d.products || [];
-      } catch (e) { console.warn('load ' + action, e); return []; }
+      } catch (e) {
+        console.warn('load ' + action, e);
+        errors.push(action + ': ' + (e.message || e));
+        return [];
+      }
     };
     const [genRaw, helRaw, dolRaw, seRaw, peRaw, svRaw] = await Promise.all([
       fetchProds('gen_data'), fetchProds('hel_data'), fetchProds('dolya_data'),
@@ -1938,11 +1948,12 @@ async function loadAllSupplierProds() {
     if (files.atm) { try { atm = await parseAtmosfera(files.atm); } catch(e){} }
     const sig = sigRawText ? parseSIG(sigRawText) : [];
     const ssj = ssjRawText ? parseSSJ(ssjRawText) : [];
-    return { gen, hel: helRaw, dol: dolRaw, se: seRaw, pe: peRaw, sv: svRaw, atm, sig, ssj };
+    return { gen, hel: helRaw, dol: dolRaw, se: seRaw, pe: peRaw, sv: svRaw, atm, sig, ssj, _errors: errors };
   })();
   try {
     const out = await __loadingSupProds;
-    window.__supProds = out;
+    // Не кешуємо результат якщо Генерація порожня — скоріш за все auth/worker issue
+    if (out.gen && out.gen.length) window.__supProds = out;
     return out;
   } finally {
     __loadingSupProds = null;
