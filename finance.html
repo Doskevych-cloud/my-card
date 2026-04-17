@@ -11,6 +11,8 @@
 <script src="header.js?v=20260418"></script>
 <!-- html2pdf.js for real PDF file download (not browser print dialog) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<!-- SheetJS (xlsx) for Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -45,10 +47,13 @@ a{color:inherit;text-decoration:none}
 .ptab{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;color:var(--text2);text-decoration:none;transition:background .15s,color .15s;white-space:nowrap;cursor:pointer}
 .ptab:hover{background:var(--bg3);color:var(--text)}
 .ptab.active{background:var(--accent-bg);color:var(--accent)}
-.pdf-btn{margin-left:auto;padding:7px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:background .12s,border-color .12s}
+.pdf-btn{padding:7px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:background .12s,border-color .12s}
 .pdf-btn:hover{background:var(--surface2);border-color:var(--text3)}
 .pdf-btn .ic{font-size:13px;opacity:.75}
 .pdf-btn:hover .ic{opacity:1}
+.export-dropdown .export-item{display:flex;align-items:center;gap:8px;width:100%;padding:9px 14px;background:transparent;border:0;color:var(--text);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;text-align:left;transition:background .12s}
+.export-dropdown .export-item:hover{background:var(--surface2)}
+.export-dropdown .export-item .ic{font-size:15px;opacity:.85;width:18px;text-align:center}
 .page-tabs{display:flex;align-items:center;gap:6px}
 /* ── Print styles: only active view, expanded rows, clean layout ── */
 @media print{
@@ -288,9 +293,19 @@ a{color:inherit;text-decoration:none}
       <span class="ptab" data-view="fi" onclick="switchTab(this)">Фінансові показники</span>
       <span class="ptab" data-view="cf" onclick="switchTab(this)">Cash Flow</span>
       <span class="ptab" data-view="ar" onclick="switchTab(this)">Розрахунки з покупцями</span>
-      <button type="button" class="pdf-btn" onclick="downloadPDF()" title="Зберегти поточну вкладку у PDF">
-        <span class="ic">⬇</span> PDF
-      </button>
+      <span class="export-menu" style="margin-left:auto;position:relative">
+        <button type="button" class="pdf-btn" onclick="toggleExportMenu(event)" title="Експортувати поточну вкладку">
+          <span class="ic">⬇</span> Експорт <span style="opacity:.7">▾</span>
+        </button>
+        <div id="exportDropdown" class="export-dropdown" style="display:none;position:absolute;right:0;top:100%;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;min-width:160px;box-shadow:var(--shadow-md);z-index:100;overflow:hidden">
+          <button type="button" class="export-item" onclick="downloadPDF(); closeExportMenu()">
+            <span class="ic">📄</span> PDF
+          </button>
+          <button type="button" class="export-item" onclick="downloadXLSX(); closeExportMenu()">
+            <span class="ic">📊</span> Excel (xlsx)
+          </button>
+        </div>
+      </span>
     </div>
 
     <!-- ═══ P&L View ═══ -->
@@ -482,6 +497,129 @@ function switchTab(el) {
 // Export the active tab to a real PDF file using html2pdf.js.
 // Працює без діалогу друку: клонуємо активну вкладку, розгортаємо рядки,
 // стилізуємо під папір і html2pdf формує файл який одразу завантажується.
+// ── Export menu (PDF / Excel) ──
+function toggleExportMenu(ev) {
+  if (ev) ev.stopPropagation();
+  const dd = document.getElementById('exportDropdown');
+  if (!dd) return;
+  const open = dd.style.display !== 'none';
+  dd.style.display = open ? 'none' : 'block';
+  if (!open) {
+    // Close on outside click (once)
+    setTimeout(() => {
+      document.addEventListener('click', closeExportMenu, { once: true });
+    }, 0);
+  }
+}
+function closeExportMenu() {
+  const dd = document.getElementById('exportDropdown');
+  if (dd) dd.style.display = 'none';
+}
+
+// ── Excel (xlsx) export ──
+function downloadXLSX() {
+  if (typeof XLSX === 'undefined') {
+    alert('Excel-бібліотека не завантажилась. Перевірте інтернет-з\'єднання.');
+    return;
+  }
+  const tabEl = document.querySelector('.ptab.active');
+  const view  = tabEl && tabEl.dataset.view;
+  const titles = { pnl: 'P&L звіт', gp: 'Валовий прибуток', fi: 'Фінансові показники', cf: 'Cash Flow', ar: 'Розрахунки з покупцями' };
+  const title  = titles[view] || 'Фінансовий звіт';
+  const state  = view === 'gp' ? gpState : view === 'ar' ? arState : view === 'fi' ? fiState : (view === 'cf' ? (window.cfState || {}) : pnlState);
+  const from   = state.from || '';
+  const to     = state.to   || '';
+  const org    = state.org  || 'Всі організації';
+  const dt     = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' });
+  const filename = `${title} · ${from} — ${to}${state.org ? ' · ' + state.org : ''}.xlsx`;
+
+  // Find active view's table(s)
+  const activeView = document.querySelector('.view.active');
+  if (!activeView) return;
+  const tables = activeView.querySelectorAll('table');
+  if (!tables.length) { alert('Немає даних для експорту'); return; }
+
+  // Utility: extract cell text without HTML/triangles
+  const cellText = td => {
+    const clone = td.cloneNode(true);
+    clone.querySelectorAll('.tri').forEach(e => e.remove());
+    return clone.textContent.trim().replace(/\s+/g, ' ');
+  };
+  // Utility: try to parse a cell as number. Handles "1 234,56 $", "12.5%", "—", etc.
+  const cellValue = td => {
+    const raw = cellText(td);
+    if (!raw || raw === '—') return null;
+    // Strip currency, non-breaking spaces, normal spaces
+    let s = raw.replace(/[$€₴\u00A0]/g, '').replace(/\s/g, '').replace(/'/g, '');
+    // Negative in parens → minus
+    if (/^\(.+\)$/.test(s)) s = '-' + s.slice(1, -1);
+    const isPct = /%$/.test(s);
+    if (isPct) s = s.slice(0, -1);
+    // Ukrainian decimal comma → dot
+    s = s.replace(',', '.');
+    const n = Number(s);
+    if (isNaN(n)) return raw; // keep as text if not parsable
+    return isPct ? { n: n / 100, fmt: '0.0%' } : n;
+  };
+
+  const wb = XLSX.utils.book_new();
+  tables.forEach((tbl, i) => {
+    // Only include visible rows (respect collapse state is NOT desired — export all)
+    const rows = Array.from(tbl.querySelectorAll('tr'));
+    const aoa = [];
+    rows.forEach(tr => {
+      const cells = Array.from(tr.querySelectorAll('th, td'));
+      if (!cells.length) return;
+      // Preserve hierarchy via leading spaces based on row class
+      const cls = tr.className || '';
+      let indent = '';
+      if (/\bitm\b/.test(cls)) indent = '    ';
+      else if (/\bgrp\b/.test(cls)) indent = '  ';
+      else if (/\bpct\b/.test(cls) && !/is-sec|is-pct-head/.test(tr.outerHTML)) indent = '  ';
+      const row = cells.map((td, ci) => {
+        const v = cellValue(td);
+        if (ci === 0) {
+          const txt = cellText(td);
+          return indent + txt;
+        }
+        return v;
+      });
+      aoa.push(row);
+    });
+    // Build worksheet with headers row = first row
+    const ws = XLSX.utils.aoa_to_sheet(aoa.map(r => r.map(c => (c && typeof c === 'object' && c.n !== undefined) ? c.n : c)));
+    // Apply percent format where we marked it
+    aoa.forEach((r, ri) => {
+      r.forEach((cell, ci) => {
+        if (cell && typeof cell === 'object' && cell.fmt) {
+          const addr = XLSX.utils.encode_cell({ r: ri, c: ci });
+          if (ws[addr]) ws[addr].z = cell.fmt;
+        }
+      });
+    });
+    // Set column widths
+    ws['!cols'] = aoa[0] ? aoa[0].map((_, ci) => ({ wch: ci === 0 ? 52 : 14 })) : [];
+    const sheetName = tables.length === 1 ? title.slice(0, 31) : `${title.slice(0, 28)} ${i+1}`;
+    XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
+  });
+
+  // Prepend a meta sheet
+  const meta = [
+    [title],
+    [],
+    ['Період', `${from} — ${to}`],
+    ['Організація', org],
+    ['Згенеровано', dt],
+  ];
+  const metaWs = XLSX.utils.aoa_to_sheet(meta);
+  metaWs['!cols'] = [{ wch: 20 }, { wch: 40 }];
+  XLSX.utils.book_append_sheet(wb, metaWs, 'Звіт');
+  // Move meta to first position
+  wb.SheetNames.unshift(wb.SheetNames.pop());
+
+  XLSX.writeFile(wb, filename);
+}
+
 function downloadPDF() {
   const tabEl = document.querySelector('.ptab.active');
   const view  = tabEl && tabEl.dataset.view;
@@ -588,9 +726,9 @@ function downloadPDF() {
 
     win.document.getElementById('btnPrint').addEventListener('click', () => win.print());
     win.document.getElementById('btnClose').addEventListener('click', () => win.close());
-
-    // Auto-open the print dialog after a short delay for styles to settle
-    setTimeout(() => { try { win.focus(); win.print(); } catch (_) {} }, 400);
+    // No automatic print dialog — user clicks the "Зберегти у PDF / Друкувати"
+    // button themselves when they're ready.
+    try { win.focus(); } catch (_) {}
     return;
   } catch (_) {
     // fall through to html2pdf fallback
