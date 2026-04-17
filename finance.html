@@ -185,6 +185,8 @@ a{color:inherit;text-decoration:none}
 .pnl-collapse-ctl{background:transparent;border:none;padding:0;gap:8px}
 .pnl-collapse-ctl .chip{background:var(--surface);border:1px solid var(--border);padding:7px 14px;border-radius:8px;font-weight:600}
 .pnl-collapse-ctl .chip:hover{background:var(--surface2);border-color:var(--text3)}
+.pnl-collapse-ctl .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.pnl-collapse-ctl .chip.active .ic{opacity:1}
 .pnl-collapse-ctl .chip .ic{display:inline-block;font-size:14px;line-height:1;margin-right:6px;opacity:.75;vertical-align:-1px}
 .pnl-collapse-ctl .chip:hover .ic{opacity:1}
 
@@ -336,15 +338,14 @@ a{color:inherit;text-decoration:none}
         <span class="group" id="pnlOrgGroup">
           <span class="chip" data-org="" onclick="setOrg(this)">Всі</span>
           <span class="chip" data-org="Реакт" onclick="setOrg(this)">Реакт</span>
-          <span class="chip" data-org="Генерація" onclick="setOrg(this)">Ген.Одеса</span>
-          <span class="chip" data-org="Ген.Київ" onclick="setOrg(this)">Ген.Київ</span>
+          <span class="chip" data-org="Генерація" onclick="setOrg(this)">Генерація</span>
         </span>
         <div class="sep"></div>
         <span class="group pnl-collapse-ctl" title="Керування згортанням груп">
           <span class="chip" onclick="pnlToggleAll(false)">
             <span class="ic">⊞</span> Розгорнути
           </span>
-          <span class="chip" onclick="pnlToggleAll(true)">
+          <span class="chip active" onclick="pnlToggleAll(true)">
             <span class="ic">⊟</span> Згорнути
           </span>
         </span>
@@ -370,14 +371,22 @@ a{color:inherit;text-decoration:none}
         <span class="group" id="gpOrgGroup">
           <span class="chip" data-org="" onclick="gpSetOrg(this)">Всі</span>
           <span class="chip" data-org="Реакт" onclick="gpSetOrg(this)">Реакт</span>
-          <span class="chip" data-org="Генерація" onclick="gpSetOrg(this)">Ген.Одеса</span>
-          <span class="chip" data-org="Ген.Київ" onclick="gpSetOrg(this)">Ген.Київ</span>
+          <span class="chip" data-org="Генерація" onclick="gpSetOrg(this)">Генерація</span>
         </span>
         <div class="sep"></div>
         <span class="lbl">Покупець</span>
         <input type="text" id="gpBuyerIn" placeholder="Пошук покупця..." oninput="gpFilterChanged()">
         <span class="lbl">Номенклатура</span>
         <input type="text" id="gpNomIn" placeholder="Пошук товару..." oninput="gpFilterChanged()">
+        <div class="sep"></div>
+        <span class="group pnl-collapse-ctl" title="Керування згортанням груп">
+          <span class="chip" onclick="gpToggleAll(false)">
+            <span class="ic">⊞</span> Розгорнути
+          </span>
+          <span class="chip active" onclick="gpToggleAll(true)">
+            <span class="ic">⊟</span> Згорнути
+          </span>
+        </span>
       </div>
       <div id="gpSummary"></div>
       <div id="gpBody"><div class="loading">Завантаження...</div></div>
@@ -400,8 +409,16 @@ a{color:inherit;text-decoration:none}
         <span class="group" id="cfOrgGroup">
           <span class="chip" data-org="" onclick="cfSetOrg(this)">Всі</span>
           <span class="chip" data-org="Реакт" onclick="cfSetOrg(this)">Реакт</span>
-          <span class="chip" data-org="Генерація" onclick="cfSetOrg(this)">Ген.Одеса</span>
-          <span class="chip" data-org="Ген.Київ" onclick="cfSetOrg(this)">Ген.Київ</span>
+          <span class="chip" data-org="Генерація" onclick="cfSetOrg(this)">Генерація</span>
+        </span>
+        <div class="sep"></div>
+        <span class="group pnl-collapse-ctl" title="Керування згортанням груп">
+          <span class="chip" onclick="cfToggleAll(false)">
+            <span class="ic">⊞</span> Розгорнути
+          </span>
+          <span class="chip active" onclick="cfToggleAll(true)">
+            <span class="ic">⊟</span> Згорнути
+          </span>
         </span>
       </div>
       <div id="cfSummary"></div>
@@ -425,15 +442,14 @@ a{color:inherit;text-decoration:none}
         <span class="group" id="fiOrgGroup">
           <span class="chip" data-org="" onclick="fiSetOrg(this)">Всі</span>
           <span class="chip" data-org="Реакт" onclick="fiSetOrg(this)">Реакт</span>
-          <span class="chip" data-org="Генерація" onclick="fiSetOrg(this)">Ген.Одеса</span>
-          <span class="chip" data-org="Ген.Київ" onclick="fiSetOrg(this)">Ген.Київ</span>
+          <span class="chip" data-org="Генерація" onclick="fiSetOrg(this)">Генерація</span>
         </span>
         <div class="sep"></div>
         <span class="group pnl-collapse-ctl" title="Керування згортанням груп">
           <span class="chip" onclick="pnlToggleAll(false, document.querySelector('#fiBody .pnl-table'))">
             <span class="ic">⊞</span> Розгорнути
           </span>
-          <span class="chip" onclick="pnlToggleAll(true, document.querySelector('#fiBody .pnl-table'))">
+          <span class="chip active" onclick="pnlToggleAll(true, document.querySelector('#fiBody .pnl-table'))">
             <span class="ic">⊟</span> Згорнути
           </span>
         </span>
@@ -459,12 +475,20 @@ a{color:inherit;text-decoration:none}
         <span class="group" id="arOrgGroup">
           <span class="chip" data-org="" onclick="arSetOrg(this)">Всі</span>
           <span class="chip" data-org="Реакт" onclick="arSetOrg(this)">Реакт</span>
-          <span class="chip" data-org="Генерація" onclick="arSetOrg(this)">Ген.Одеса</span>
-          <span class="chip" data-org="Ген.Київ" onclick="arSetOrg(this)">Ген.Київ</span>
+          <span class="chip" data-org="Генерація" onclick="arSetOrg(this)">Генерація</span>
         </span>
         <div class="sep"></div>
         <span class="lbl">Покупець</span>
         <input type="text" id="arBuyerIn" placeholder="Пошук покупця..." oninput="arFilterChanged()">
+        <div class="sep"></div>
+        <span class="group pnl-collapse-ctl" title="Керування згортанням груп">
+          <span class="chip" onclick="arToggleAll(false)">
+            <span class="ic">⊞</span> Розгорнути
+          </span>
+          <span class="chip active" onclick="arToggleAll(true)">
+            <span class="ic">⊟</span> Згорнути
+          </span>
+        </span>
       </div>
       <div id="arSummary"></div>
       <div id="arBody"><div class="loading">Завантаження...</div></div>
@@ -1345,20 +1369,75 @@ function pnlToggleAll(collapse, tblArg) {
   tbl.querySelectorAll('tr[data-is-cat], tr[data-is-sec], tr[data-is-grp]').forEach(tr => {
     tr.setAttribute('data-collapsed', collapse ? 'true' : 'false');
   });
-  // Children of any cat / sec / grp
   tbl.querySelectorAll('tr[data-cat]:not([data-is-cat]), tr[data-sec]:not([data-is-sec]), tr[data-grp]:not([data-is-grp])').forEach(r => {
     r.classList.toggle('collapsed-hidden', collapse);
   });
-  // Full-collapse extras: hide standalone pct (Op / Net margin) and spacers.
-  // The bottom Валовий прибуток block стає завжди видимим (сам grd), а
-  // його діти — приховані default-collapsed логікою; їх toggle не чіпаємо
-  // щоб користувач керував ними окремо через клік.
   tbl.querySelectorAll(
     'tr.pct:not([data-cat]):not([data-sec]):not([data-grp]), ' +
     'tr.sp'
   ).forEach(r => {
     r.classList.toggle('collapsed-hidden', collapse);
   });
+  setToggleActive('.view.active .pnl-collapse-ctl', collapse);
+}
+
+// Highlight the active chip (Згорнути / Розгорнути) in a collapse-ctl group.
+function setToggleActive(groupSelector, collapse) {
+  document.querySelectorAll(groupSelector + ' .chip').forEach(ch => {
+    const isCollapseBtn = /згорнути/i.test(ch.textContent);
+    const isExpandBtn   = /розгорнути/i.test(ch.textContent);
+    if (!isCollapseBtn && !isExpandBtn) return;
+    ch.classList.toggle('active', isCollapseBtn ? collapse : !collapse);
+  });
+}
+
+// Tree-based collapse/expand for GP and AR (show only top-level / all).
+function gpToggleAll(collapse) {
+  const tbl = document.querySelector('.gp-table');
+  if (!tbl) return;
+  tbl.querySelectorAll('tr[data-parent]').forEach(tr => {
+    if (!tr.dataset.parent) return; // root rows always visible
+    tr.style.display = collapse ? 'none' : '';
+  });
+  tbl.querySelectorAll('.gp-chevron').forEach(c => c.classList.toggle('open', !collapse));
+  if (typeof gpOpenRows !== 'undefined') {
+    gpOpenRows.clear();
+    if (!collapse) tbl.querySelectorAll('tr[data-id]').forEach(tr => gpOpenRows.add(tr.dataset.id));
+  }
+  setToggleActive('#gpToolbar .pnl-collapse-ctl', collapse);
+}
+
+function arToggleAll(collapse) {
+  const tbl = document.querySelector('.ar-table');
+  if (!tbl) return;
+  tbl.querySelectorAll('tr[data-parent]').forEach(tr => {
+    if (!tr.dataset.parent) return;
+    tr.style.display = collapse ? 'none' : '';
+  });
+  tbl.querySelectorAll('.ar-chevron').forEach(c => c.classList.toggle('open', !collapse));
+  if (typeof arOpenRows !== 'undefined') {
+    arOpenRows.clear();
+    if (!collapse) tbl.querySelectorAll('tr[data-id]').forEach(tr => arOpenRows.add(tr.dataset.id));
+  }
+  setToggleActive('#arToolbar .pnl-collapse-ctl', collapse);
+}
+
+function cfToggleAll(collapse) {
+  // Cash Flow render structure may use tree rows with data-parent too.
+  const tbl = document.querySelector('#cfBody .pnl-table, #cfBody .gp-table, #cfBody .ar-table, #cfBody table');
+  if (!tbl) return;
+  tbl.querySelectorAll('tr[data-parent]').forEach(tr => {
+    if (!tr.dataset.parent) return;
+    tr.style.display = collapse ? 'none' : '';
+  });
+  // Also collapse rows if CF uses the PL-style cat/sec/grp
+  tbl.querySelectorAll('tr[data-is-cat], tr[data-is-sec], tr[data-is-grp]').forEach(tr => {
+    tr.setAttribute('data-collapsed', collapse ? 'true' : 'false');
+  });
+  tbl.querySelectorAll('tr[data-cat]:not([data-is-cat]), tr[data-sec]:not([data-is-sec]), tr[data-grp]:not([data-is-grp])').forEach(r => {
+    r.classList.toggle('collapsed-hidden', collapse);
+  });
+  setToggleActive('#cfToolbar .pnl-collapse-ctl', collapse);
 }
 
 // Toggle collapse/expand on cat / sec / grp header rows.
@@ -1511,6 +1590,8 @@ function renderPnlAccrual(data) {
   document.getElementById('pnlBody').innerHTML =
     '<div class="pnl-wrap"><table class="pnl-table"><thead><tr><th>P&L стаття</th><th class="col-total">Всього</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   pnlBindCollapse();
+  // All reports start collapsed by default
+  pnlToggleAll(true, document.querySelector('#pnlBody .pnl-table'));
 }
 
 document.getElementById('fromIn').addEventListener('change', function(e) { pnlState.from = e.target.value; pnlLoad(); });
