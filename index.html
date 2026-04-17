@@ -8,8 +8,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=bin20260418"></script>
-<script src="header.js?v=bin20260418"></script>
+<script src="auth.js?v=bin20260418b"></script>
+<script src="header.js?v=bin20260418b"></script>
 <style>
 :root{
   /* Binance-inspired palette */
@@ -188,6 +188,24 @@ a{color:inherit;text-decoration:none}
 .cf-line .cf-val{font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
 .cf-line.cf-total{padding-top:12px;margin-top:4px;border-top:1.5px solid var(--border2);font-weight:700}
 .cf-line.cf-total .cf-lbl{color:var(--text)}
+
+/* "More" button below leaderboards */
+.more-btn{margin-top:10px;width:100%;padding:10px 14px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s,border-color .15s,color .15s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.more-btn:hover{background:var(--surface3);border-color:var(--gold);color:var(--gold)}
+.more-btn:active{transform:scale(.99)}
+
+/* ═══ MODAL ═══ */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;transition:opacity .18s ease-out}
+.modal-backdrop.open{opacity:1}
+.modal-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:min(720px,100%);max-height:min(calc(100vh - 48px),860px);display:flex;flex-direction:column;box-shadow:var(--shadow-md);transform:translateY(10px) scale(.98);transition:transform .22s cubic-bezier(.2,.8,.25,1)}
+.modal-backdrop.open .modal-card{transform:translateY(0) scale(1)}
+.modal-head{display:flex;align-items:flex-start;gap:12px;padding:18px 22px 14px;border-bottom:1px solid var(--border)}
+.modal-title{font-size:16px;font-weight:800;letter-spacing:.2px;color:var(--text)}
+.modal-sub{font-size:12px;color:var(--text3);margin-top:3px;font-weight:500}
+.modal-close{margin-left:auto;width:30px;height:30px;border-radius:8px;background:transparent;border:1px solid var(--border);color:var(--text2);cursor:pointer;font:inherit;font-size:14px;display:inline-flex;align-items:center;justify-content:center;transition:background .15s,color .15s,border-color .15s}
+.modal-close:hover{background:var(--red-bg);color:var(--red);border-color:rgba(246,70,93,.3)}
+.modal-body{padding:16px 22px 22px;overflow-y:auto;flex:1}
+.modal-body .leader{border-top:none;padding-top:0}
 
 /* Ticker row — Binance-style */
 .ticker{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
@@ -964,7 +982,8 @@ async function loadSales() {
   const u = window.__user;
   if (!u.roles || !u.roles.sales) return;
 
-  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '&org=Реакт';
+  // When org is empty ("Всі") — не передаємо параметр, і worker поверне всі 3 орг.
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
   const q = `?action=sales_report&from=${state.from}&to=${state.to}${orgQ}`;
 
   // Also fetch fx_rates for potential conversion
@@ -1015,25 +1034,85 @@ async function loadSales() {
   });
 
   const managers = Object.values(managerTotals).sort((a, b) => b.paidUsd - a.paidUsd);
+  state.managersAll = managers; // cache full list for modal
   if (!managers.length) {
     document.getElementById('managersBody').innerHTML = '<div class="empty">Немає оплат за цей період</div>';
     return;
   }
   const top = managers.slice(0, 6);
-  const max = Math.max(...top.map(m => m.paidUsd), 1);
+  const max = Math.max(...managers.map(m => m.paidUsd), 1);
   const BONUS = 0.0008;
-  const html = top.map((m, i) => `
+  const rowHtml = (m, i) => `
     <div class="leader-row mgr">
       <div class="leader-rank">${i+1}</div>
       <div class="leader-name" title="${esc(m.name)}">${esc(m.name)}${m.ok ? '' : ' <span class="leader-sub" style="color:var(--yellow)">~</span>'}</div>
       <div class="leader-sub">бонус ${fmtMoney(m.paidUsd * BONUS, '$')}</div>
       <div class="leader-val">${fmtMoney(m.paidUsd, '$')}</div>
       <div class="leader-bar"><div class="leader-bar-fill" style="width:${m.paidUsd/max*100}%"></div></div>
-    </div>
-  `).join('');
-  document.getElementById('managersBody').innerHTML = `<div class="leader">${html}</div>`;
+    </div>`;
+  const topHtml = top.map(rowHtml).join('');
+  const extraBtn = managers.length > top.length
+    ? `<button class="more-btn" onclick="openManagersModal()">Переглянути всіх (${managers.length}) →</button>`
+    : '';
+  document.getElementById('managersBody').innerHTML = `<div class="leader">${topHtml}</div>${extraBtn}`;
   document.getElementById('managersMeta').textContent = `${managers.length} менеджерів · ${orgsToSum.join(', ')}`;
 }
+
+// Modal: show ALL managers (not capped)
+function openManagersModal() {
+  const managers = state.managersAll || [];
+  if (!managers.length) return;
+  const max = Math.max(...managers.map(m => m.paidUsd), 1);
+  const BONUS = 0.0008;
+  const totalPaid = managers.reduce((s, m) => s + m.paidUsd, 0);
+  const totalBonus = totalPaid * BONUS;
+  const rows = managers.map((m, i) => `
+    <div class="leader-row mgr">
+      <div class="leader-rank">${i+1}</div>
+      <div class="leader-name" title="${esc(m.name)}">${esc(m.name)}${m.ok ? '' : ' <span class="leader-sub" style="color:var(--yellow)">~</span>'}</div>
+      <div class="leader-sub">бонус ${fmtMoney(m.paidUsd * BONUS, '$')}</div>
+      <div class="leader-val">${fmtMoney(m.paidUsd, '$')}</div>
+      <div class="leader-bar"><div class="leader-bar-fill" style="width:${m.paidUsd/max*100}%"></div></div>
+    </div>`).join('');
+  openModal({
+    title: '🏆 ТОП менеджерів',
+    sub: `${managers.length} менеджерів · сума оплат ${fmtMoney(totalPaid, '$')} · бонус ${fmtMoney(totalBonus, '$')}`,
+    body: `<div class="leader">${rows}</div>`,
+  });
+}
+
+// Generic modal (title + sub + html body)
+function openModal({ title, sub = '', body }) {
+  closeModal();
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.id = 'dashModal';
+  backdrop.innerHTML = `
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="modal-head">
+        <div>
+          <div class="modal-title">${title}</div>
+          ${sub ? `<div class="modal-sub">${sub}</div>` : ''}
+        </div>
+        <button class="modal-close" onclick="closeModal()" aria-label="Закрити">✕</button>
+      </div>
+      <div class="modal-body">${body}</div>
+    </div>`;
+  backdrop.addEventListener('click', closeModal);
+  document.body.appendChild(backdrop);
+  // ESC to close
+  document.addEventListener('keydown', modalKeyHandler);
+  // Animate in
+  requestAnimationFrame(() => backdrop.classList.add('open'));
+}
+function closeModal() {
+  const m = document.getElementById('dashModal');
+  if (!m) return;
+  m.classList.remove('open');
+  document.removeEventListener('keydown', modalKeyHandler);
+  setTimeout(() => m.remove(), 180);
+}
+function modalKeyHandler(e) { if (e.key === 'Escape') closeModal(); }
 
 function toUsd(amt, cur) {
   if (!isFinite(amt)) return null;
