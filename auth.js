@@ -36,9 +36,12 @@
   }
 
   const MODULE_LABEL = {
+    dashboard: 'Дашборд',
     home: 'Порівняння цін',
     forecast: 'Прогноз кабелю',
     warehouses: 'Склад',
+    sales: 'Продажі',
+    finance: 'Фінанси',
     admin: 'Адмін-панель',
   };
 

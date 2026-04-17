@@ -112,7 +112,8 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
       <table>
         <thead>
           <tr>
-            <th style="width: 38%">Користувач</th>
+            <th style="width: 32%">Користувач</th>
+            <th style="text-align:center">Дашборд</th>
             <th style="text-align:center">Порівняння цін</th>
             <th style="text-align:center">Закупівлі</th>
             <th style="text-align:center">Склад</th>
@@ -126,7 +127,7 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
           </tr>
         </thead>
         <tbody id="tbody">
-          <tr><td colspan="11" class="loading">Завантаження…</td></tr>
+          <tr><td colspan="12" class="loading">Завантаження…</td></tr>
         </tbody>
       </table>
     </div>
@@ -187,7 +188,7 @@ function userRow(u) {
           </div>
         </div>
       </td>
-      ${['home','forecast','warehouses','sales','finance','admin'].map(r => `
+      ${['dashboard','home','forecast','warehouses','sales','finance','admin'].map(r => `
         <td class="role-box"><input type="checkbox" ${u.roles && u.roles[r] ? 'checked' : ''} onchange="toggleRole('${u.email}','${r}',this.checked)"></td>
       `).join('')}
       ${['Реакт','Генерація'].map(o => `
@@ -213,6 +214,7 @@ function renderTable() {
     html += `
       <tr class="invite-row">
         <td><input id="inviteEmail" placeholder="name@gmail.com" autofocus></td>
+        <td class="role-box"><input type="checkbox" id="inv_dashboard" checked></td>
         <td class="role-box"><input type="checkbox" id="inv_home"></td>
         <td class="role-box"><input type="checkbox" id="inv_forecast"></td>
         <td class="role-box"><input type="checkbox" id="inv_warehouses"></td>
@@ -230,7 +232,7 @@ function renderTable() {
     `;
   }
   if (!filtered.length) {
-    html += `<tr><td colspan="11" class="empty">Нічого не знайдено</td></tr>`;
+    html += `<tr><td colspan="12" class="empty">Нічого не знайдено</td></tr>`;
   } else {
     html += filtered.map(userRow).join('');
   }
@@ -250,6 +252,7 @@ async function saveInvite() {
   const email = document.getElementById('inviteEmail').value.trim().toLowerCase();
   if (!email || !email.includes('@')) { toast('Вкажіть коректний email', 'err'); return; }
   const roles = {
+    dashboard: document.getElementById('inv_dashboard').checked,
     home: document.getElementById('inv_home').checked,
     forecast: document.getElementById('inv_forecast').checked,
     warehouses: document.getElementById('inv_warehouses').checked,

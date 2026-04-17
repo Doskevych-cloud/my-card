@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Дашборд · RE:ACT</title>
+<script>
+  try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="auth.js?v=20260418d"></script>
+<script src="header.js?v=20260418d"></script>
+<style>
+:root{
+  --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
+  --surface:#141414; --surface2:#1c1c1c;
+  --border:#262626; --border2:#333;
+  --text:#f5f5f5; --text2:#a3a3a3; --text3:#737373;
+  --accent:#ff8319; --accent-bg:rgba(255,131,25,.12);
+  --red:#e74c3c; --red-bg:rgba(231,76,60,.12);
+  --green:#22c55e; --green-bg:rgba(34,197,94,.12);
+  --blue:#3b82f6; --blue-bg:rgba(59,130,246,.12);
+  --yellow:#eab308; --yellow-bg:rgba(234,179,8,.12);
+  --purple:#9775fa; --purple-bg:rgba(151,117,250,.14);
+  --cyan:#22d3ee; --cyan-bg:rgba(34,211,238,.12);
+  --shadow-md:0 4px 20px rgba(0,0,0,.4);
+}
+:root[data-theme="light"]{
+  --bg:#f5f5f7; --bg2:#ffffff; --bg3:#ececef;
+  --surface:#ffffff; --surface2:#ffffff;
+  --border:#e5e5ea; --border2:#d1d1d6;
+  --text:#1c1c1e; --text2:#48484a; --text3:#8e8e93;
+  --accent:#e07017; --accent-bg:rgba(224,112,23,.12);
+  --red:#d93025; --red-bg:rgba(217,48,37,.10);
+  --green:#15803d; --green-bg:rgba(21,128,61,.10);
+  --blue:#1d4ed8; --blue-bg:rgba(29,78,216,.10);
+  --yellow:#a16207; --yellow-bg:rgba(161,98,7,.10);
+  --purple:#6d28d9; --purple-bg:rgba(109,40,217,.12);
+  --cyan:#0891b2; --cyan-bg:rgba(8,145,178,.12);
+  --shadow-md:0 4px 20px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+
+.wrap{max-width:1600px;margin:0 auto;padding:20px}
+
+.hero{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.hero h1{font-size:22px;font-weight:700;letter-spacing:-.4px}
+.hero .sub{font-size:12px;color:var(--text3);margin-top:4px}
+
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
+.toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.toolbar .group{display:inline-flex;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px}
+.toolbar .group .chip{padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;user-select:none;transition:background .15s,color .15s}
+.toolbar .group .chip:hover{background:var(--bg3);color:var(--text)}
+.toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
+.toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 2px}
+.toolbar .btn{padding:7px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s}
+.toolbar .btn:hover{background:var(--bg3);color:var(--text);border-color:var(--border2)}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px}
+.kpi{padding:16px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;min-height:110px}
+.kpi .kpi-head{display:flex;align-items:center;gap:8px}
+.kpi .kpi-ico{font-size:16px;opacity:.85}
+.kpi .kpi-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+.kpi .kpi-val{font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.1;color:var(--text);font-variant-numeric:tabular-nums}
+.kpi .kpi-val.neg{color:var(--red)}
+.kpi .kpi-val.pos{color:var(--green)}
+.kpi .kpi-sub{font-size:11.5px;color:var(--text3);font-weight:500;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.kpi .kpi-delta{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:5px;font-size:10.5px;font-weight:700}
+.kpi .kpi-delta.up{background:var(--green-bg);color:var(--green)}
+.kpi .kpi-delta.down{background:var(--red-bg);color:var(--red)}
+.kpi.ldg .kpi-val{color:var(--text3);font-size:20px;font-style:italic}
+.kpi.err{border-color:rgba(231,76,60,.4)}
+.kpi.err .kpi-val{color:var(--red);font-size:14px}
+.kpi.c-rev{border-left:3px solid var(--blue)}
+.kpi.c-gp{border-left:3px solid var(--purple)}
+.kpi.c-net{border-left:3px solid var(--green)}
+.kpi.c-cash{border-left:3px solid var(--cyan)}
+.kpi.c-sales{border-left:3px solid var(--accent)}
+.kpi.c-ar{border-left:3px solid var(--yellow)}
+.kpi.c-stock{border-left:3px solid var(--purple)}
+
+.section{margin-top:24px}
+.section-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:0 4px}
+.section-head h2{font-size:15px;font-weight:700;letter-spacing:-.2px;color:var(--text);display:flex;align-items:center;gap:8px}
+.section-head .sub{font-size:11px;color:var(--text3);margin-left:auto;font-weight:500}
+.section-head .ico{font-size:17px}
+
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+
+.card{padding:16px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;gap:10px}
+.card h3{font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;line-height:1.2}
+.card h3 .ico{font-size:14px;opacity:.9}
+.card .meta{font-size:11px;color:var(--text3);font-weight:500;margin-left:auto}
+.card .chart-wrap{position:relative;width:100%;height:260px}
+.card .chart-wrap.sm{height:180px}
+.card .loading{text-align:center;padding:30px 10px;color:var(--text3);font-size:12px}
+.card .loading::after{content:'';display:block;width:22px;height:22px;margin:12px auto 0;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+.card .error{text-align:center;padding:20px 10px;color:var(--red);font-size:12px;background:var(--red-bg);border-radius:10px}
+.card .empty{text-align:center;padding:30px 10px;color:var(--text3);font-size:12px;font-style:italic}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Leaderboard tables */
+.leader{border-top:1px solid var(--border);padding-top:8px}
+.leader-row{display:grid;grid-template-columns:24px 1fr auto auto;gap:10px;align-items:center;padding:8px 4px;border-bottom:1px solid var(--border)}
+.leader-row:last-child{border-bottom:none}
+.leader-rank{font-size:11px;color:var(--text3);font-weight:700;text-align:right}
+.leader-name{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.leader-sub{font-size:11px;color:var(--text3);font-weight:500;margin-left:6px}
+.leader-val{font-size:13px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;text-align:right}
+.leader-bar{grid-column:2 / -1;height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:4px}
+.leader-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-bg));border-radius:2px;transition:width .6s ease}
+.leader-row.mgr .leader-bar-fill{background:linear-gradient(90deg,var(--accent),rgba(255,131,25,.4))}
+.leader-row.stock .leader-bar-fill{background:linear-gradient(90deg,var(--purple),rgba(151,117,250,.4))}
+.leader-row.ar .leader-bar-fill{background:linear-gradient(90deg,var(--yellow),rgba(234,179,8,.4))}
+
+/* Mini FX / forecast info rows */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.info-cell{padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:10px}
+.info-cell .info-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-bottom:3px}
+.info-cell .info-val{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);letter-spacing:-.2px;line-height:1.2}
+.info-cell .info-val.pos{color:var(--green)}
+.info-cell .info-val.neg{color:var(--red)}
+.info-cell .info-sub{font-size:10.5px;color:var(--text3);margin-top:2px}
+.info-cell .info-trend{display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:4px;font-size:9.5px;font-weight:700;margin-top:3px;text-transform:uppercase;letter-spacing:.3px}
+.info-cell .info-trend.up{background:var(--red-bg);color:var(--red)}
+.info-cell .info-trend.down{background:var(--green-bg);color:var(--green)}
+.info-cell .info-trend.flat{background:var(--bg3);color:var(--text3)}
+
+/* Module gate banner */
+.hint{padding:24px;background:var(--surface2);border:1px dashed var(--border2);border-radius:14px;text-align:center;color:var(--text3);font-size:13px}
+.hint .ic{font-size:28px;display:block;margin-bottom:8px;opacity:.7}
+
+.denied{grid-column:1/-1;padding:30px;text-align:center;color:var(--text3);background:var(--surface2);border:1px dashed var(--border2);border-radius:14px;font-size:13px}
+.denied .ic{font-size:22px;display:block;margin-bottom:6px;opacity:.7}
+
+/* Warehouse widget */
+.wh-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.wh-stat{padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;display:flex;flex-direction:column;gap:2px}
+.wh-stat .wh-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+.wh-stat .wh-val{font-size:18px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.3px;line-height:1.2}
+.wh-stat.org-R{border-left:3px solid var(--accent)}
+.wh-stat.org-G{border-left:3px solid var(--purple)}
+.wh-stat .wh-sub{font-size:10.5px;color:var(--text3);font-weight:500}
+
+/* Cash-flow summary */
+.cf-line{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.cf-line:last-child{border-bottom:none}
+.cf-line .cf-lbl{color:var(--text2)}
+.cf-line .cf-val{font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.cf-line.cf-total{padding-top:12px;margin-top:4px;border-top:1.5px solid var(--border2);font-weight:700}
+.cf-line.cf-total .cf-lbl{color:var(--text)}
+
+@media(max-width:720px){
+  .wrap{padding:12px}
+  .kpi .kpi-val{font-size:22px}
+  .grid-2,.grid-3{grid-template-columns:1fr}
+  .card .chart-wrap{height:220px}
+  .hero h1{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<div id="appHeader"></div>
+<div id="app">
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <h1 id="heroTitle">🧭 Дашборд</h1>
+        <div class="sub" id="heroSub">Ключові показники компанії</div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <span class="lbl">Період</span>
+      <span class="group" id="periodGroup">
+        <span class="chip active" data-preset="month">Цей місяць</span>
+        <span class="chip" data-preset="prevmonth">Минулий</span>
+        <span class="chip" data-preset="quarter">Квартал</span>
+        <span class="chip" data-preset="year">Рік</span>
+      </span>
+      <span class="sep"></span>
+      <span class="lbl">Організація</span>
+      <span class="group" id="orgGroup">
+        <span class="chip active" data-org="">Всі</span>
+        <span class="chip" data-org="Реакт">Реакт</span>
+        <span class="chip" data-org="Генерація">Генерація</span>
+      </span>
+      <span class="sep"></span>
+      <button class="btn" onclick="reloadAll()">🔄 Оновити</button>
+      <span style="margin-left:auto;font-size:11px;color:var(--text3)" id="periodLabel"></span>
+    </div>
+
+    <!-- KPI grid -->
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <!-- Finance section: trend chart + cash flow -->
+    <div class="section" id="sectionFinance" style="display:none">
+      <div class="section-head">
+        <h2><span class="ico">💰</span>Фінансові показники</h2>
+        <span class="sub">P&L · Cash Flow · 6 місяців</span>
+      </div>
+      <div class="grid-2">
+        <div class="card" id="cardRevChart">
+          <h3><span class="ico">📊</span>Доходи · Валовий · Чистий</h3>
+          <div class="meta" id="revChartMeta"></div>
+          <div class="chart-wrap"><canvas id="revChartCanvas"></canvas></div>
+        </div>
+        <div class="card" id="cardCashFlow">
+          <h3><span class="ico">💵</span>Грошовий потік</h3>
+          <div id="cfBody"><div class="loading">Завантаження…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sales + Warehouses + AR -->
+    <div class="section" id="sectionOps" style="display:none">
+      <div class="section-head">
+        <h2><span class="ico">📈</span>Операційна активність</h2>
+        <span class="sub">Менеджери · Склад · Дебіторка</span>
+      </div>
+      <div class="grid-3">
+        <div class="card" id="cardManagers" style="display:none">
+          <h3><span class="ico">🏆</span>ТОП менеджерів</h3>
+          <div class="meta" id="managersMeta"></div>
+          <div id="managersBody"><div class="loading">Завантаження…</div></div>
+        </div>
+        <div class="card" id="cardWarehouses" style="display:none">
+          <h3><span class="ico">📦</span>Склад · резерви</h3>
+          <div class="meta" id="whMeta"></div>
+          <div id="whBody"><div class="loading">Завантаження…</div></div>
+        </div>
+        <div class="card" id="cardAR" style="display:none">
+          <h3><span class="ico">⚠️</span>ТОП дебіторів</h3>
+          <div class="meta" id="arMeta"></div>
+          <div id="arBody"><div class="loading">Завантаження…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Forecast + FX -->
+    <div class="section" id="sectionMarkets">
+      <div class="section-head">
+        <h2><span class="ico">🌐</span>Ринок</h2>
+        <span class="sub">Курси валют · Мідь · Прогноз кабелю</span>
+      </div>
+      <div class="grid-2">
+        <div class="card" id="cardFx">
+          <h3><span class="ico">💱</span>Курси валют</h3>
+          <div class="meta" id="fxMeta"></div>
+          <div id="fxBody"><div class="loading">Завантаження…</div></div>
+        </div>
+        <div class="card" id="cardCopper" style="display:none">
+          <h3><span class="ico">🪙</span>Мідь · прогноз кабелю</h3>
+          <div class="meta" id="copperMeta"></div>
+          <div id="copperBody"><div class="loading">Завантаження…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- No-access placeholder -->
+    <div id="noAccess" style="display:none"></div>
+
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://price-api.doskevich.workers.dev';
+
+// ─── Session gate (dashboard role) + unified header ───
+Auth.require('dashboard').then(user => {
+  window.__user = user;
+  AppHeader.mount({ active: 'dashboard', user });
+  document.getElementById('heroTitle').textContent = `🧭 Привіт, ${user.name ? user.name.split(' ')[0] : 'друже'}!`;
+  document.getElementById('heroSub').textContent = roleSummary(user);
+
+  // Filter org chips based on user.orgs access
+  const userOrgs = user.orgs || {};
+  const hasAnyOrg = Object.values(userOrgs).some(v => v);
+  if (hasAnyOrg) {
+    const orgChips = document.querySelectorAll('#orgGroup .chip[data-org]');
+    let hiddenCount = 0;
+    orgChips.forEach(chip => {
+      const org = chip.dataset.org;
+      if (org && !userOrgs[org]) { chip.style.display = 'none'; hiddenCount++; }
+    });
+    // If one of the specific orgs is hidden, auto-select "all" but remember user's org set
+    const visibleOrgs = Array.from(orgChips).filter(c => c.style.display !== 'none').map(c => c.dataset.org);
+    // If only one org is available, auto-select that one (hide "all")
+    if (visibleOrgs.length === 2 && visibleOrgs[0] === '') {
+      // User only has one specific org access
+      const allChip = document.querySelector('#orgGroup .chip[data-org=""]');
+      const specificChip = document.querySelector(`#orgGroup .chip[data-org="${visibleOrgs[1]}"]`);
+      if (specificChip) {
+        allChip.classList.remove('active');
+        specificChip.classList.add('active');
+        state.org = visibleOrgs[1];
+      }
+    }
+  }
+
+  bindToolbar();
+  setPreset('month');
+});
+
+function roleSummary(user) {
+  const r = user.roles || {};
+  const mods = [];
+  if (r.finance)    mods.push('Фінанси');
+  if (r.sales)      mods.push('Продажі');
+  if (r.warehouses) mods.push('Склад');
+  if (r.forecast)   mods.push('Закупівлі');
+  if (r.home)       mods.push('Порівняння цін');
+  if (mods.length === 0) return 'Вам доступна лише загальна інформація — попросіть адміна відкрити модулі.';
+  return 'Доступно: ' + mods.join(' · ');
+}
+
+// ─── State ───
+function _todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function _localISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+const state = {
+  preset: 'month',
+  from: '', to: '',
+  org: '',
+  // charts
+  revChart: null,
+  // cached data
+  fx: null,
+};
+
+const MN_FULL = ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
+const MN_SHORT = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
+
+function fmt(n, dec = 0) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return Number(n).toLocaleString('uk-UA', { maximumFractionDigits: dec, minimumFractionDigits: dec });
+}
+function fmtMoney(n, cur = '$', dec = 0) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  const sign = n < 0 ? '−' : '';
+  return sign + fmt(Math.abs(n), dec) + ' ' + cur;
+}
+function fmtPct(n, dec = 1) {
+  if (n === null || n === undefined || !isFinite(n)) return '—';
+  return (n * 100).toFixed(dec) + '%';
+}
+function esc(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function bindToolbar() {
+  document.querySelectorAll('#periodGroup .chip').forEach(chip => {
+    chip.addEventListener('click', () => setPreset(chip.dataset.preset));
+  });
+  document.querySelectorAll('#orgGroup .chip').forEach(chip => {
+    if (chip.style.display === 'none') return;
+    chip.addEventListener('click', () => {
+      if (chip.style.display === 'none') return;
+      document.querySelectorAll('#orgGroup .chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      state.org = chip.dataset.org;
+      reloadAll();
+    });
+  });
+}
+
+function setPreset(p) {
+  state.preset = p;
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  let from, to = now;
+  if (p === 'month')          from = new Date(y, m, 1);
+  else if (p === 'prevmonth') { from = new Date(y, m-1, 1); to = new Date(y, m, 0); }
+  else if (p === 'quarter')   { const q = Math.floor(m/3); from = new Date(y, q*3, 1); }
+  else if (p === 'year')      from = new Date(y, 0, 1);
+  state.from = _localISO(from);
+  state.to = _localISO(to);
+  document.querySelectorAll('#periodGroup .chip').forEach(c => c.classList.toggle('active', c.dataset.preset === p));
+  document.getElementById('periodLabel').textContent = `${state.from} — ${state.to}`;
+  reloadAll();
+}
+
+function reloadAll() {
+  // Reset KPI grid and widget bodies
+  buildKpiSkeleton();
+  loadFinance();
+  loadSales();
+  loadWarehouses();
+  loadFx();
+  loadForecast();
+}
+
+// ─── KPI grid skeleton ───
+function buildKpiSkeleton() {
+  const u = window.__user;
+  const r = u.roles || {};
+  const cards = [];
+  if (r.finance) {
+    cards.push({ id: 'kpiRevenue', cls: 'c-rev',   ico: '📈', lbl: 'Доходи' });
+    cards.push({ id: 'kpiGross',   cls: 'c-gp',    ico: '💹', lbl: 'Валовий прибуток' });
+    cards.push({ id: 'kpiNet',     cls: 'c-net',   ico: '✅', lbl: 'Чистий прибуток' });
+    cards.push({ id: 'kpiCash',    cls: 'c-cash',  ico: '💵', lbl: 'Залишок коштів' });
+  }
+  if (r.sales) {
+    cards.push({ id: 'kpiSales',   cls: 'c-sales', ico: '🤝', lbl: 'Оплати за період' });
+  }
+  if (r.finance) {
+    cards.push({ id: 'kpiAR',      cls: 'c-ar',    ico: '⚠️', lbl: 'Дебіторка на кінець' });
+  }
+  if (r.warehouses) {
+    cards.push({ id: 'kpiStock',   cls: 'c-stock', ico: '📦', lbl: 'Резерви в складах' });
+  }
+  const host = document.getElementById('kpiGrid');
+  if (!cards.length) {
+    host.innerHTML = `
+      <div style="grid-column:1/-1;padding:30px;text-align:center;background:var(--surface2);border:1px dashed var(--border2);border-radius:14px;color:var(--text3)">
+        <div style="font-size:28px;margin-bottom:8px">🔒</div>
+        <div>У вас поки немає доступу до ключових модулів. Попросіть адміністратора відкрити <b>Фінанси</b>, <b>Продажі</b> або <b>Склад</b>.</div>
+      </div>`;
+  } else {
+    host.innerHTML = cards.map(c =>
+      `<div class="kpi ${c.cls} ldg" id="${c.id}">
+        <div class="kpi-head"><span class="kpi-ico">${c.ico}</span><span class="kpi-lbl">${c.lbl}</span></div>
+        <div class="kpi-val">Завантаження…</div>
+        <div class="kpi-sub"></div>
+      </div>`
+    ).join('');
+  }
+  // show/hide sections
+  document.getElementById('sectionFinance').style.display = r.finance ? '' : 'none';
+  document.getElementById('sectionOps').style.display = (r.sales || r.warehouses || r.finance) ? '' : 'none';
+  document.getElementById('cardManagers').style.display = r.sales ? '' : 'none';
+  document.getElementById('cardWarehouses').style.display = r.warehouses ? '' : 'none';
+  document.getElementById('cardAR').style.display = r.finance ? '' : 'none';
+  document.getElementById('cardCopper').style.display = r.forecast ? '' : 'none';
+}
+
+function updateKpi(id, { val, sub = '', cls = '', error = false }) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('ldg', 'err');
+  if (error) el.classList.add('err');
+  const valEl = el.querySelector('.kpi-val');
+  const subEl = el.querySelector('.kpi-sub');
+  valEl.classList.remove('pos', 'neg');
+  if (cls) valEl.classList.add(cls);
+  valEl.textContent = val;
+  subEl.innerHTML = sub;
+}
+
+// ─── FINANCE: P&L + Cash Flow + AR ───
+async function loadFinance() {
+  const u = window.__user;
+  if (!u.roles || !u.roles.finance) return;
+
+  // Accrual P&L for current period
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
+  const qAcc = `?action=pnl_accrual_report&from=${state.from}&to=${state.to}${orgQ}`;
+  const qCf  = `?action=cash_flow_report&from=${state.from}&to=${state.to}${orgQ}`;
+  const qAr  = `?action=accounts_receivable&from=${state.from}&to=${state.to}${orgQ}`;
+
+  // For trend chart — last 6 months
+  const trendFrom = _localISO(new Date(new Date().getFullYear(), new Date().getMonth() - 5, 1));
+  const trendTo = state.to;
+  const qTrend = `?action=pnl_accrual_report&from=${trendFrom}&to=${trendTo}${orgQ}`;
+
+  // Previous-period comparison
+  const prevPeriod = prevPeriodOf(state.from, state.to);
+  const qPrev = prevPeriod ? `?action=pnl_accrual_report&from=${prevPeriod.from}&to=${prevPeriod.to}${orgQ}` : null;
+
+  const [accR, cfR, arR, trendR, prevR] = await Promise.allSettled([
+    fetch(API_URL + qAcc).then(r => r.json()),
+    fetch(API_URL + qCf).then(r => r.json()),
+    fetch(API_URL + qAr).then(r => r.json()),
+    fetch(API_URL + qTrend).then(r => r.json()),
+    qPrev ? fetch(API_URL + qPrev).then(r => r.json()) : Promise.resolve(null),
+  ]);
+
+  // P&L KPIs
+  if (accR.status === 'fulfilled' && !accR.value.error) {
+    const d = accR.value;
+    const revenue = d.revenue ? d.revenue.total : 0;
+    const otherInc = d.otherIncome ? d.otherIncome.total : 0;
+    const cogs = d.cogs ? d.cogs.total : 0;
+    const totalExp = d.totalExpenses ? d.totalExpenses.total : 0;
+    const totalRev = revenue + otherInc;
+    const gp = revenue - cogs;
+    const net = totalRev - cogs - totalExp;
+
+    let prevRev = null, prevGp = null, prevNet = null;
+    if (prevR && prevR.status === 'fulfilled' && prevR.value && !prevR.value.error) {
+      const p = prevR.value;
+      const pRev = (p.revenue ? p.revenue.total : 0) + (p.otherIncome ? p.otherIncome.total : 0);
+      const pCogs = p.cogs ? p.cogs.total : 0;
+      const pExp = p.totalExpenses ? p.totalExpenses.total : 0;
+      prevRev = pRev;
+      prevGp = (p.revenue ? p.revenue.total : 0) - pCogs;
+      prevNet = pRev - pCogs - pExp;
+    }
+
+    const deltaPct = (cur, prev) => {
+      if (prev == null || !isFinite(prev) || Math.abs(prev) < 0.5) return null;
+      return (cur - prev) / Math.abs(prev);
+    };
+    const deltaHtml = (cur, prev, good = 'up') => {
+      const dp = deltaPct(cur, prev);
+      if (dp == null) return '';
+      const sign = dp > 0 ? '▲' : (dp < 0 ? '▼' : '–');
+      const cls = dp > 0.0001 ? (good === 'up' ? 'up' : 'down') : (dp < -0.0001 ? (good === 'up' ? 'down' : 'up') : '');
+      return `<span class="kpi-delta ${cls}">${sign} ${Math.abs(dp*100).toFixed(1)}%</span>`;
+    };
+
+    updateKpi('kpiRevenue', {
+      val: fmtMoney(totalRev, '$'),
+      sub: `${revenue > 0 && otherInc > 0 ? `осн. ${fmt(revenue,0)} · ін. ${fmt(otherInc,0)}` : 'USD'} ${deltaHtml(totalRev, prevRev)}`,
+    });
+    updateKpi('kpiGross', {
+      val: fmtMoney(gp, '$'),
+      cls: gp < 0 ? 'neg' : '',
+      sub: `маржа ${totalRev ? fmtPct(gp/totalRev) : '—'} ${deltaHtml(gp, prevGp)}`,
+    });
+    updateKpi('kpiNet', {
+      val: fmtMoney(net, '$'),
+      cls: net < 0 ? 'neg' : 'pos',
+      sub: `маржа ${totalRev ? fmtPct(net/totalRev) : '—'} ${deltaHtml(net, prevNet)}`,
+    });
+  } else {
+    const msg = accR.status === 'fulfilled' ? (accR.value.error || 'помилка') : accR.reason.message;
+    updateKpi('kpiRevenue', { val: 'Помилка', sub: esc(msg.slice(0,80)), error: true });
+    updateKpi('kpiGross',   { val: '—', sub: '', error: true });
+    updateKpi('kpiNet',     { val: '—', sub: '', error: true });
+  }
+
+  // Cash flow KPI
+  if (cfR.status === 'fulfilled' && !cfR.value.error) {
+    const d = cfR.value;
+    updateKpi('kpiCash', {
+      val: fmtMoney(d.closing || 0, '$'),
+      cls: (d.closing || 0) < 0 ? 'neg' : '',
+      sub: `NCF за період <b style="color:${(d.netCashFlow||0) >= 0 ? 'var(--green)' : 'var(--red)'}">${fmtMoney(d.netCashFlow || 0, '$')}</b>`,
+    });
+    renderCashFlow(d);
+  } else {
+    const msg = cfR.status === 'fulfilled' ? (cfR.value.error || 'помилка') : cfR.reason.message;
+    updateKpi('kpiCash', { val: 'Помилка', sub: esc(msg.slice(0,80)), error: true });
+    document.getElementById('cfBody').innerHTML = `<div class="error">${esc(msg)}</div>`;
+  }
+
+  // AR KPI + top-5 debtors
+  if (arR.status === 'fulfilled' && !arR.value.error) {
+    const d = arR.value;
+    const totalUsd = arTotalUsd(d);
+    updateKpi('kpiAR', {
+      val: fmtMoney(totalUsd, '$'),
+      sub: 'сума боргу клієнтів',
+    });
+    renderARTop(d);
+  } else {
+    const msg = arR.status === 'fulfilled' ? (arR.value.error || 'помилка') : arR.reason.message;
+    updateKpi('kpiAR', { val: 'Помилка', sub: esc(msg.slice(0,80)), error: true });
+    document.getElementById('arBody').innerHTML = `<div class="error">${esc(msg)}</div>`;
+  }
+
+  // Revenue trend chart
+  if (trendR.status === 'fulfilled' && !trendR.value.error) {
+    renderRevChart(trendR.value);
+  } else {
+    const msg = trendR.status === 'fulfilled' ? (trendR.value.error || 'помилка') : trendR.reason.message;
+    document.getElementById('cardRevChart').querySelector('.chart-wrap').innerHTML = `<div class="error">${esc(msg)}</div>`;
+  }
+}
+
+function prevPeriodOf(from, to) {
+  try {
+    const f = new Date(from + 'T00:00:00');
+    const t = new Date(to + 'T00:00:00');
+    const dayMs = 86400000;
+    const lenDays = Math.round((t - f) / dayMs) + 1;
+    const prevTo = new Date(f.getTime() - dayMs);
+    const prevFrom = new Date(prevTo.getTime() - (lenDays - 1) * dayMs);
+    return { from: _localISO(prevFrom), to: _localISO(prevTo) };
+  } catch { return null; }
+}
+
+function renderCashFlow(d) {
+  const net = d.netCashFlow || 0;
+  const opening = d.opening || 0;
+  const closing = d.closing || 0;
+  const op = (d.operating && d.operating.net) || 0;
+  const inv = (d.investing && d.investing.net) || 0;
+  const fin = (d.financing && d.financing.net) || 0;
+  const line = (lbl, val, cls = '', total = false) => `
+    <div class="cf-line${total?' cf-total':''}">
+      <span class="cf-lbl">${lbl}</span>
+      <span class="cf-val" style="color:${cls==='pos'?'var(--green)':cls==='neg'?'var(--red)':'var(--text)'}">${fmtMoney(val,'$')}</span>
+    </div>`;
+  const cls = v => v > 0.001 ? 'pos' : (v < -0.001 ? 'neg' : '');
+  document.getElementById('cfBody').innerHTML = `
+    ${line('Залишок на початок', opening)}
+    ${line('💼 Операційна діяльність', op, cls(op))}
+    ${line('🏗️ Інвестиційна діяльність', inv, cls(inv))}
+    ${line('🏦 Фінансова діяльність', fin, cls(fin))}
+    ${line('Чистий грошовий потік', net, cls(net), true)}
+    ${line('Залишок на кінець', closing, cls(closing), false)}
+  `;
+}
+
+function arTotalUsd(d) {
+  // fetchAccountsReceivable returns { from, to, currencies: [...]} or similar; safely walk
+  if (!d) return 0;
+  let totalUsd = 0;
+  // Expected shape: d.currencies[] with { currency, totalUsd, clients[] }
+  if (Array.isArray(d.currencies)) {
+    d.currencies.forEach(c => {
+      if (c.totalUsd != null) totalUsd += c.totalUsd;
+      else if (c.clients) {
+        c.clients.forEach(cl => {
+          if (cl.totalUsd != null) totalUsd += cl.totalUsd;
+        });
+      }
+    });
+  } else if (d.clients) {
+    d.clients.forEach(cl => { if (cl.totalUsd != null) totalUsd += cl.totalUsd; });
+  } else if (d.total != null) totalUsd = d.total;
+  else if (d.totalUsd != null) totalUsd = d.totalUsd;
+  return totalUsd;
+}
+
+function renderARTop(d) {
+  // Build flat list of top-5 clients by USD balance
+  const rows = [];
+  if (Array.isArray(d.currencies)) {
+    d.currencies.forEach(c => {
+      (c.clients || []).forEach(cl => {
+        const name = cl.name || cl.clientName || '—';
+        const amt = cl.totalUsd != null ? cl.totalUsd : (cl.balanceUsd || cl.total || 0);
+        rows.push({ name, amt, cur: c.currency });
+      });
+    });
+  } else if (d.clients) {
+    d.clients.forEach(cl => rows.push({ name: cl.name || '—', amt: cl.totalUsd || cl.total || 0 }));
+  }
+  rows.sort((a, b) => Math.abs(b.amt) - Math.abs(a.amt));
+  const top = rows.filter(r => Math.abs(r.amt) > 0.5).slice(0, 5);
+  if (!top.length) {
+    document.getElementById('arBody').innerHTML = '<div class="empty">Немає дебіторки за цей період</div>';
+    return;
+  }
+  const max = Math.max(...top.map(r => Math.abs(r.amt)));
+  const html = top.map((r, i) => `
+    <div class="leader-row ar">
+      <div class="leader-rank">${i+1}</div>
+      <div class="leader-name" title="${esc(r.name)}">${esc(r.name)}${r.cur ? ` <span class="leader-sub">${esc(r.cur)}</span>` : ''}</div>
+      <div></div>
+      <div class="leader-val" style="color:${r.amt<0?'var(--green)':'var(--text)'}">${fmtMoney(r.amt,'$')}</div>
+      <div class="leader-bar"><div class="leader-bar-fill" style="width:${Math.abs(r.amt)/max*100}%"></div></div>
+    </div>`).join('');
+  document.getElementById('arBody').innerHTML = `<div class="leader">${html}</div>`;
+  document.getElementById('arMeta').textContent = `${top.length} з ${rows.length}`;
+}
+
+function renderRevChart(d) {
+  const months = (d.months || []).slice();
+  if (!months.length) {
+    document.querySelector('#cardRevChart .chart-wrap').innerHTML = '<div class="empty">Немає даних</div>';
+    return;
+  }
+  const rev = months.map(m => ((d.revenue && d.revenue.byMonth && d.revenue.byMonth[m]) || 0) + ((d.otherIncome && d.otherIncome.byMonth && d.otherIncome.byMonth[m]) || 0));
+  const cogs = months.map(m => (d.cogs && d.cogs.byMonth && d.cogs.byMonth[m]) || 0);
+  const exp = months.map(m => (d.totalExpenses && d.totalExpenses.byMonth && d.totalExpenses.byMonth[m]) || 0);
+  const gp = months.map((_, i) => rev[i] - cogs[i]);
+  const net = months.map((_, i) => rev[i] - cogs[i] - exp[i]);
+
+  const labels = months.map(m => {
+    const p = m.split('-');
+    return MN_SHORT[+p[1]-1] + "'" + p[0].slice(2);
+  });
+
+  if (state.revChart) { state.revChart.destroy(); state.revChart = null; }
+
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  const tick = isDark ? '#a3a3a3' : '#48484a';
+  const grid = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+
+  const ctx = document.getElementById('revChartCanvas').getContext('2d');
+  state.revChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Доходи', data: rev, backgroundColor: 'rgba(59,130,246,.7)', borderRadius: 4, order: 3 },
+        { label: 'Валовий', data: gp, backgroundColor: 'rgba(151,117,250,.7)', borderRadius: 4, order: 2 },
+        { label: 'Чистий', type: 'line', data: net, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.2)', tension: .3, pointRadius: 3, borderWidth: 2, fill: false, order: 1 },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: tick, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: c => `${c.dataset.label}: ${fmtMoney(c.parsed.y, '$')}`,
+          },
+        },
+      },
+      scales: {
+        x: { ticks: { color: tick, font: { size: 11 } }, grid: { display: false } },
+        y: { ticks: { color: tick, font: { size: 10 }, callback: v => fmt(v/1000,0) + 'k' }, grid: { color: grid } },
+      },
+    },
+  });
+  document.getElementById('revChartMeta').textContent = `${labels.length} міс. · USD`;
+}
+
+// ─── SALES ───
+async function loadSales() {
+  const u = window.__user;
+  if (!u.roles || !u.roles.sales) return;
+
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '&org=Реакт';
+  const q = `?action=sales_report&from=${state.from}&to=${state.to}${orgQ}`;
+
+  // Also fetch fx_rates for potential conversion
+  const [salesR, fxR] = await Promise.allSettled([
+    fetch(API_URL + q).then(r => r.json()),
+    state.fx ? Promise.resolve({ rates: state.fx }) : fetch(API_URL + '?action=fx_rates').then(r => r.json()),
+  ]);
+
+  if (fxR.status === 'fulfilled' && fxR.value && fxR.value.rates) state.fx = fxR.value.rates;
+
+  if (salesR.status !== 'fulfilled' || salesR.value.error) {
+    const msg = salesR.status === 'fulfilled' ? (salesR.value.error || 'помилка') : salesR.reason.message;
+    updateKpi('kpiSales', { val: 'Помилка', sub: esc(msg.slice(0,80)), error: true });
+    document.getElementById('managersBody').innerHTML = `<div class="error">${esc(msg)}</div>`;
+    return;
+  }
+
+  const d = salesR.value;
+  // If "Всі" — aggregate both orgs; else use selected
+  const orgsToSum = state.org ? [state.org] : ['Реакт', 'Генерація'];
+  const managerTotals = {}; // name → { paid, remain, currencies: Set }
+  let grandPaidUsd = 0, grandRemainUsd = 0, convOk = true;
+
+  orgsToSum.forEach(orgKey => {
+    const orgData = (d.byOrg || {})[orgKey];
+    if (!orgData || !orgData.managers) return;
+    orgData.managers.forEach(m => {
+      if (!managerTotals[m.name]) managerTotals[m.name] = { name: m.name, paidUsd: 0, remainUsd: 0, ok: true, currencies: new Set() };
+      const mt = managerTotals[m.name];
+      m.currencies.forEach(C => {
+        const pUsd = toUsd(C.paid, C.currency);
+        const rUsd = toUsd(C.remain, C.currency);
+        if (pUsd == null || rUsd == null) { mt.ok = false; convOk = false; }
+        else {
+          mt.paidUsd += pUsd;
+          mt.remainUsd += rUsd;
+          grandPaidUsd += pUsd;
+          grandRemainUsd += rUsd;
+        }
+        mt.currencies.add(C.currency);
+      });
+    });
+  });
+
+  updateKpi('kpiSales', {
+    val: fmtMoney(grandPaidUsd, '$'),
+    sub: `потенціал ${fmtMoney(grandRemainUsd, '$')}${convOk ? '' : ' <span style="color:var(--yellow)">· не всі курси</span>'}`,
+  });
+
+  const managers = Object.values(managerTotals).sort((a, b) => b.paidUsd - a.paidUsd);
+  if (!managers.length) {
+    document.getElementById('managersBody').innerHTML = '<div class="empty">Немає оплат за цей період</div>';
+    return;
+  }
+  const top = managers.slice(0, 6);
+  const max = Math.max(...top.map(m => m.paidUsd), 1);
+  const BONUS = 0.0008;
+  const html = top.map((m, i) => `
+    <div class="leader-row mgr">
+      <div class="leader-rank">${i+1}</div>
+      <div class="leader-name" title="${esc(m.name)}">${esc(m.name)}${m.ok ? '' : ' <span class="leader-sub" style="color:var(--yellow)">~</span>'}</div>
+      <div class="leader-sub">бонус ${fmtMoney(m.paidUsd * BONUS, '$')}</div>
+      <div class="leader-val">${fmtMoney(m.paidUsd, '$')}</div>
+      <div class="leader-bar"><div class="leader-bar-fill" style="width:${m.paidUsd/max*100}%"></div></div>
+    </div>
+  `).join('');
+  document.getElementById('managersBody').innerHTML = `<div class="leader">${html}</div>`;
+  document.getElementById('managersMeta').textContent = `${managers.length} менеджерів · ${orgsToSum.join(', ')}`;
+}
+
+function toUsd(amt, cur) {
+  if (!isFinite(amt)) return null;
+  if (cur === 'USD') return amt;
+  if (!state.fx) return null;
+  if (cur === 'UAH') return state.fx.USD_UAH > 0 ? amt / state.fx.USD_UAH : null;
+  if (cur === 'EUR') return (state.fx.EUR_UAH > 0 && state.fx.USD_UAH > 0) ? amt * state.fx.EUR_UAH / state.fx.USD_UAH : null;
+  return null;
+}
+
+// ─── WAREHOUSES ───
+async function loadWarehouses() {
+  const u = window.__user;
+  if (!u.roles || !u.roles.warehouses) return;
+
+  const q = `?action=warehouses_stock&date=${state.to}`;
+  try {
+    const d = await fetch(API_URL + q).then(r => r.json());
+    if (d.error) throw new Error(d.error);
+    renderWarehouses(d);
+  } catch (e) {
+    updateKpi('kpiStock', { val: 'Помилка', sub: esc(e.message.slice(0,80)), error: true });
+    document.getElementById('whBody').innerHTML = `<div class="error">${esc(e.message)}</div>`;
+  }
+}
+
+function renderWarehouses(d) {
+  const userOrgs = window.__user.orgs || {};
+  const hasAnyOrg = Object.values(userOrgs).some(v => v);
+  const orgs = hasAnyOrg ? Object.keys(userOrgs).filter(k => userOrgs[k]) : ['Реакт', 'Генерація'];
+
+  let totalItems = 0, totalReserveItems = 0, totalOrders = 0;
+  const allItems = [];
+  orgs.forEach(org => {
+    const list = (d.summaryByOrg && d.summaryByOrg[org]) || [];
+    list.forEach(it => {
+      if (it.total > 0) totalItems++;
+      if (it.reserve > 0) {
+        totalReserveItems++;
+        totalOrders += (it.reserves || []).length;
+        allItems.push({ ...it, org });
+      }
+    });
+  });
+
+  updateKpi('kpiStock', {
+    val: fmt(totalReserveItems, 0),
+    sub: `${fmt(totalItems,0)} позицій · ${fmt(totalOrders,0)} активних резервів`,
+  });
+
+  // Top-5 reserved items
+  allItems.sort((a, b) => b.reserve - a.reserve);
+  const top = allItems.slice(0, 5);
+
+  const orgStats = orgs.map(org => {
+    const list = (d.summaryByOrg && d.summaryByOrg[org]) || [];
+    const tot = list.reduce((s, i) => s + Math.max(0, i.total), 0);
+    const res = list.reduce((s, i) => s + Math.max(0, i.reserve), 0);
+    return { org, tot, res, free: tot - res, positions: list.filter(i => i.total > 0).length };
+  });
+
+  const html = `
+    <div class="wh-stats">
+      ${orgStats.map(s => `
+        <div class="wh-stat org-${s.org === 'Реакт' ? 'R' : 'G'}">
+          <span class="wh-lbl">${esc(s.org)}</span>
+          <span class="wh-val">${fmt(s.positions,0)}</span>
+          <span class="wh-sub">всього ${fmt(s.tot,0)} · резерв ${fmt(s.res,0)}</span>
+        </div>
+      `).join('')}
+    </div>
+    ${top.length ? `
+      <div style="margin-top:10px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700">ТОП-5 за резервом</div>
+      <div class="leader">
+        ${top.map((it, i) => {
+          const max = top[0].reserve || 1;
+          return `<div class="leader-row stock">
+            <div class="leader-rank">${i+1}</div>
+            <div class="leader-name" title="${esc(it.name)}"><span style="font-size:10px;padding:1px 5px;border-radius:3px;background:${it.org==='Реакт'?'var(--accent-bg)':'var(--purple-bg)'};color:${it.org==='Реакт'?'var(--accent)':'var(--purple)'};font-weight:700;margin-right:5px;vertical-align:1px">${esc(it.org.slice(0,3))}</span>${esc(it.name)}</div>
+            <div></div>
+            <div class="leader-val">${fmt(it.reserve,0)}</div>
+            <div class="leader-bar"><div class="leader-bar-fill" style="width:${it.reserve/max*100}%"></div></div>
+          </div>`;
+        }).join('')}
+      </div>
+    ` : ''}
+  `;
+  document.getElementById('whBody').innerHTML = html;
+  document.getElementById('whMeta').textContent = `на ${state.to}`;
+}
+
+// ─── FX ───
+async function loadFx() {
+  try {
+    const d = await fetch(API_URL + '?action=fx_rates').then(r => r.json());
+    if (d.error) throw new Error(d.error);
+    state.fx = d.rates;
+    renderFx(d);
+  } catch (e) {
+    document.getElementById('fxBody').innerHTML = `<div class="error">${esc(e.message)}</div>`;
+  }
+}
+
+function renderFx(d) {
+  const r = d.rates || {};
+  const usdUah = r.USD_UAH || 0;
+  const eurUah = r.EUR_UAH || 0;
+  const eurUsd = usdUah > 0 ? eurUah / usdUah : 0;
+  document.getElementById('fxBody').innerHTML = `
+    <div class="info-grid">
+      <div class="info-cell">
+        <div class="info-lbl">USD → UAH</div>
+        <div class="info-val">${usdUah ? fmt(usdUah, 3) : '—'}</div>
+        <div class="info-sub">₴ за 1 USD</div>
+      </div>
+      <div class="info-cell">
+        <div class="info-lbl">EUR → UAH</div>
+        <div class="info-val">${eurUah ? fmt(eurUah, 3) : '—'}</div>
+        <div class="info-sub">₴ за 1 EUR</div>
+      </div>
+      <div class="info-cell">
+        <div class="info-lbl">EUR / USD</div>
+        <div class="info-val">${eurUsd ? fmt(eurUsd, 4) : '—'}</div>
+        <div class="info-sub">кросс</div>
+      </div>
+      <div class="info-cell">
+        <div class="info-lbl">Джерело</div>
+        <div class="info-val" style="font-size:12px">${esc(d.source || 'interbank')}</div>
+        <div class="info-sub">+${((d.markup||0)*100).toFixed(1)}% націнка</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('fxMeta').textContent = d.asOf ? new Date(d.asOf).toLocaleString('uk-UA', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' }) : '';
+}
+
+// ─── FORECAST (copper + cable) ───
+async function loadForecast() {
+  const u = window.__user;
+  if (!u.roles || !u.roles.forecast) return;
+
+  const [copperR, eurusdR, cableR] = await Promise.allSettled([
+    fetch(API_URL + '?action=copper_avg').then(r => r.json()),
+    fetch(API_URL + '?action=eurusd_data').then(r => r.json()),
+    fetch(API_URL + '?action=cable_forecast').then(r => r.json()),
+  ]);
+
+  const copper = copperR.status === 'fulfilled' ? copperR.value : null;
+  const eurusd = eurusdR.status === 'fulfilled' ? eurusdR.value : null;
+  const cable = cableR.status === 'fulfilled' ? cableR.value : null;
+
+  if ((!copper || copper.error) && (!cable || cable.error)) {
+    const msg = (copper && copper.error) || (copperR.status === 'rejected' ? copperR.reason.message : 'немає даних');
+    document.getElementById('copperBody').innerHTML = `<div class="error">${esc(msg)}</div>`;
+    return;
+  }
+
+  // Days of cable stock
+  let daysText = '—';
+  let daysTrend = 'flat';
+  if (cable && !cable.error && cable.stock && cable.wma) {
+    const total = cable.stock.total || 0;
+    const wma = cable.wma.total || 0;
+    if (wma > 0) {
+      const days = Math.round(total / wma);
+      daysText = days + ' дн.';
+      daysTrend = days > 60 ? 'down' : (days < 20 ? 'up' : 'flat');
+    }
+  }
+
+  const copperVal = copper && copper.current ? copper.current : null;
+  const copperTrend = copper && copper.trend ? copper.trend : null;
+  const copperDiff = copper && copper.diff ? copper.diff : '';
+
+  const eurUsd = eurusd && eurusd.current ? eurusd.current : null;
+  const eurUsdTrend = eurusd && eurusd.trend ? eurusd.trend : null;
+
+  const trendCls = t => (t === 'UP' ? 'up' : (t === 'DOWN' ? 'down' : 'flat'));
+  const trendArrow = t => (t === 'UP' ? '▲' : (t === 'DOWN' ? '▼' : '–'));
+
+  document.getElementById('copperBody').innerHTML = `
+    <div class="info-grid">
+      <div class="info-cell">
+        <div class="info-lbl">Мідь, €/100кг</div>
+        <div class="info-val">${copperVal ? fmt(copperVal, 2) : '—'}</div>
+        ${copperTrend ? `<div class="info-trend ${trendCls(copperTrend)}">${trendArrow(copperTrend)} ${copperDiff}</div>` : ''}
+      </div>
+      <div class="info-cell">
+        <div class="info-lbl">EUR / USD</div>
+        <div class="info-val">${eurUsd ? fmt(eurUsd, 4) : '—'}</div>
+        ${eurUsdTrend ? `<div class="info-trend ${trendCls(eurUsdTrend)}">${trendArrow(eurUsdTrend)} ${(eurusd && eurusd.diff) || ''}</div>` : ''}
+      </div>
+      <div class="info-cell">
+        <div class="info-lbl">Кабель 6мм² · залишок</div>
+        <div class="info-val">${cable && cable.stock ? fmt(cable.stock.total, 0) + ' км' : '—'}</div>
+        <div class="info-sub">чорн. ${cable && cable.stock ? fmt(cable.stock.black, 0) : '—'} · черв. ${cable && cable.stock ? fmt(cable.stock.red, 0) : '—'}</div>
+      </div>
+      <div class="info-cell">
+        <div class="info-lbl">Вистачить на</div>
+        <div class="info-val ${daysTrend==='up'?'neg':daysTrend==='down'?'pos':''}">${daysText}</div>
+        <div class="info-sub">за ${cable && cable.wma ? fmt(cable.wma.total, 1) : '—'} км/день</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('copperMeta').textContent = copper && copper.avg30 ? `30дн середнє ${fmt(copper.avg30, 2)}` : '';
+}
+
+</script>
+</body>
+</html>

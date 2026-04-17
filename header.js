@@ -217,6 +217,7 @@
           <span class="name">REACT</span>
         </a>
         <nav class="nav">
+          <a href="/dashboard.html"  class="${active==='dashboard'  ? 'active' : ''}">🧭 Дашборд</a>
           <a href="/"                class="${active==='home'       ? 'active' : ''}">🏠 Порівняння цін</a>
           <a href="/forecast.html"   class="${active==='forecast'   ? 'active' : ''}">📊 Закупівлі</a>
           <a href="/warehouses.html" class="${active==='warehouses' ? 'active' : ''}">📦 Склад</a>

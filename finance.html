@@ -243,11 +243,11 @@ a{color:inherit;text-decoration:none}
 /* Grand total row */
 .gp-table .gp-total td{font-weight:800;font-size:14px;color:var(--text);border-top:2px solid var(--border2);background:var(--surface2) !important}
 .gp-table .gp-total td:first-child{padding-left:14px;background:var(--surface2) !important}
-/* Toggle + chevron — monochrome, same as P&L tri */
+/* Toggle + triangle — identical to P&L .tri */
 .gp-table .gp-toggle{cursor:pointer;user-select:none}
 .gp-table .gp-toggle:hover{background:var(--surface2)}
-.gp-table .gp-chevron{display:inline-block;width:10px;margin-right:8px;font-size:9px;color:var(--text3);transition:transform .18s ease-out;text-align:center;line-height:1;vertical-align:1px}
-.gp-table .gp-chevron.open{transform:rotate(90deg)}
+.gp-table .gp-chevron{display:inline-block;width:10px;margin-right:8px;font-size:9px;color:var(--text3);transition:transform .18s ease-out;text-align:center;line-height:1;vertical-align:1px;transform:rotate(-90deg)}
+.gp-table .gp-chevron.open{transform:rotate(0deg)}
 /* Subtle separators between sibling leaves */
 .gp-table .lvl-3 + .lvl-3 td,
 .gp-table .lvl-4 + .lvl-4 td{border-top:1px solid var(--border2)}
@@ -262,8 +262,8 @@ a{color:inherit;text-decoration:none}
 .ar-table tbody tr{background:var(--bg)}
 .ar-table .ar-toggle{cursor:pointer;user-select:none}
 .ar-table .ar-toggle:hover{background:var(--surface2)}
-.ar-table .ar-chevron{display:inline-block;width:10px;margin-right:8px;font-size:9px;color:var(--text3);transition:transform .18s ease-out;text-align:center;line-height:1;vertical-align:1px}
-.ar-table .ar-chevron.open{transform:rotate(90deg)}
+.ar-table .ar-chevron{display:inline-block;width:10px;margin-right:8px;font-size:9px;color:var(--text3);transition:transform .18s ease-out;text-align:center;line-height:1;vertical-align:1px;transform:rotate(-90deg)}
+.ar-table .ar-chevron.open{transform:rotate(0deg)}
 /* Row hierarchy: currency / client / contract → cat / sec / grp */
 .ar-table .ar-cur td{font-weight:800;font-size:14px;color:var(--text);border-top:1px solid var(--border);background:transparent}
 .ar-table .ar-cur td:first-child{padding-left:14px;background:var(--bg)}
@@ -1382,12 +1382,14 @@ function pnlToggleAll(collapse, tblArg) {
 }
 
 // Highlight the active chip (Згорнути / Розгорнути) in a collapse-ctl group.
+// NB: «Розгорнути» містить підрядок «згорнути» — треба перевіряти expand першим.
 function setToggleActive(groupSelector, collapse) {
   document.querySelectorAll(groupSelector + ' .chip').forEach(ch => {
-    const isCollapseBtn = /згорнути/i.test(ch.textContent);
-    const isExpandBtn   = /розгорнути/i.test(ch.textContent);
+    const txt = ch.textContent || '';
+    const isExpandBtn   = /розгорнути/i.test(txt);
+    const isCollapseBtn = !isExpandBtn && /згорнути/i.test(txt);
     if (!isCollapseBtn && !isExpandBtn) return;
-    ch.classList.toggle('active', isCollapseBtn ? collapse : !collapse);
+    ch.classList.toggle('active', isExpandBtn ? !collapse : collapse);
   });
 }
 
@@ -2054,7 +2056,7 @@ function renderGp(data) {
 
   flatRows.forEach(r => {
     const hidden = r.parent ? ' style="display:none"' : '';
-    const chevron = r.hasChildren ? '<span class="gp-chevron" data-rid="' + r.id + '">&#9654;</span> ' : '<span style="display:inline-block;width:14px"></span> ';
+    const chevron = r.hasChildren ? '<span class="gp-chevron" data-rid="' + r.id + '">&#9662;</span> ' : '<span style="display:inline-block;width:14px"></span> ';
     const toggle = r.hasChildren ? ' class="gp-toggle"' : '';
     html += '<tr class="lvl-' + r.level + '" data-id="' + r.id + '" data-parent="' + (r.parent || '') + '"' + hidden + '>' +
       '<td' + toggle + ' onclick="gpToggle(\'' + r.id + '\')">' + chevron + esc(r.name) + '</td>' +
@@ -2252,7 +2254,7 @@ function renderAr(data) {
 
   flatRows.forEach(r => {
     var hidden = r.parent ? ' style="display:none"' : '';
-    var chevron = r.hasChildren ? '<span class="ar-chevron" data-rid="' + r.id + '">&#9654;</span> ' : '<span style="display:inline-block;width:14px"></span> ';
+    var chevron = r.hasChildren ? '<span class="ar-chevron" data-rid="' + r.id + '">&#9662;</span> ' : '<span style="display:inline-block;width:14px"></span> ';
     var toggle = r.hasChildren ? ' class="ar-toggle"' : '';
     html += '<tr class="' + r.cls + '" data-id="' + r.id + '" data-parent="' + (r.parent || '') + '"' + hidden + '>' +
       '<td' + toggle + ' onclick="arToggle(\'' + r.id + '\')">' + chevron + esc(r.name) + '</td>' +
@@ -2312,6 +2314,20 @@ async function arLoad() {
 /* ═══════════════════════════════════════════════════
    INIT
    ═══════════════════════════════════════════════════ */
+// Detect which preset (month/prevmonth/quarter/year) matches given from/to dates.
+function detectPreset(from, to) {
+  if (!from || !to) return '';
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  const iso = d => _localISO(d);
+  if (from === iso(new Date(y, m, 1)) && to === iso(now)) return 'month';
+  if (from === iso(new Date(y, m-1, 1)) && to === iso(new Date(y, m, 0))) return 'prevmonth';
+  const q = Math.floor(m/3);
+  if (from === iso(new Date(y, q*3, 1)) && to === iso(now)) return 'quarter';
+  if (from === iso(new Date(y, 0, 1)) && to === iso(now)) return 'year';
+  return '';
+}
+
 Auth.require('finance').then(function(user) {
   window.__user = user;
   AppHeader.mount({ active: 'finance', user });
@@ -2361,7 +2377,7 @@ Auth.require('finance').then(function(user) {
     // Restore PNL state
     pnlState.from = saved.from;
     pnlState.to = saved.to;
-    pnlState.preset = saved.preset || '';
+    pnlState.preset = saved.preset || detectPreset(saved.from, saved.to) || '';
     if (saved.org && (!hasAnyOrg || allowedOrgs.includes(saved.org))) pnlState.org = saved.org;
     document.getElementById('fromIn').value = pnlState.from;
     document.getElementById('toIn').value = pnlState.to;
@@ -2377,7 +2393,7 @@ Auth.require('finance').then(function(user) {
     // GP state
     gpState.from = saved.from;
     gpState.to = saved.to;
-    gpState.preset = saved.preset || '';
+    gpState.preset = saved.preset || detectPreset(saved.from, saved.to) || '';
     gpState.org = pnlState.org;
     document.getElementById('gpFromIn').value = gpState.from;
     document.getElementById('gpToIn').value = gpState.to;
@@ -2390,7 +2406,7 @@ Auth.require('finance').then(function(user) {
     // AR state
     arState.from = saved.from;
     arState.to = saved.to;
-    arState.preset = saved.preset || '';
+    arState.preset = saved.preset || detectPreset(saved.from, saved.to) || '';
     arState.org = pnlState.org;
     document.getElementById('arFromIn').value = arState.from;
     document.getElementById('arToIn').value = arState.to;
