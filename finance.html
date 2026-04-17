@@ -988,8 +988,9 @@ function pnlToggleAll(collapse) {
 // - cat: hide all rows with matching data-cat (except the cat row)
 // - sec: hide all rows with matching data-sec (except the sec row)
 // - grp: hide all rows with matching data-grp (except the grp row)
-function pnlBindCollapse() {
-  const tbl = document.querySelector('#pnlBody .pnl-table');
+function pnlBindCollapse(tblArg) {
+  // Accept explicit table element, fallback to first visible .pnl-table in active view
+  const tbl = tblArg || document.querySelector('.view.active .pnl-table') || document.querySelector('#pnlBody .pnl-table');
   if (!tbl) return;
   tbl.querySelectorAll('tr[data-is-cat], tr[data-is-sec], tr[data-is-grp]').forEach(tr => {
     const cell = tr.querySelector('td');
@@ -1169,16 +1170,12 @@ async function fiLoad() {
   document.getElementById('fiSummary').innerHTML = '';
   try {
     const orgQ = fiState.org ? '&org=' + encodeURIComponent(fiState.org) : '';
-    const q1 = '?action=pnl_accrual_report&from=' + fiState.from + '&to=' + fiState.to + orgQ;
-    const q2 = '?action=gross_profit_report&from=' + fiState.from + '&to=' + fiState.to + orgQ;
-    const [pnl, gp] = await Promise.all([
-      fetch(API_URL + q1).then(r => r.json()),
-      fetch(API_URL + q2).then(r => r.json()),
-    ]);
+    const q = '?action=pnl_accrual_report&from=' + fiState.from + '&to=' + fiState.to + orgQ;
+    const pnl = await fetch(API_URL + q).then(r => r.json());
     if (pnl.error) throw new Error(pnl.error);
-    if (gp.error)  throw new Error(gp.error);
     fiState._loaded = true;
-    renderFi(pnl, gp);
+    // Pass same data as both args — renderFi uses pnl.departments now
+    renderFi(pnl, pnl);
   } catch (e) {
     document.getElementById('fiBody').innerHTML = '<div class="error">' + esc(e.message) + '</div>';
   }
@@ -1251,17 +1248,15 @@ function renderFi(pnl, gp) {
   });
   const marginPctTotal = rev.total ? (gpTotal / rev.total * 100) : 0;
 
-  // Per-department breakdown from gross_profit_report
-  // gross_profit_report.departments: [{ name, revenue, cogs, gp, margin }]
-  const deps = (gp.departments || []).filter(d => Math.abs(d.revenue.total) > 0.01 || Math.abs(d.cogs.total) > 0.01);
-  // gp data.departments may have different shape — try both
+  // Per-department breakdown from SAME ДохРасх register (matches topline exactly)
+  const deps = (pnl.departments || []).filter(d => Math.abs(d.revenue.total) > 0.01 || Math.abs(d.cogs.total) > 0.01);
   const depRows = deps.map(d => ({
-    name: d.name || d.depName || '—',
-    rev: d.revenue && d.revenue.total || 0,
-    cogs: d.cogs && d.cogs.total || 0,
-    gp: (d.revenue && d.revenue.total || 0) - (d.cogs && d.cogs.total || 0),
-    revByM: (d.revenue && d.revenue.byMonth) || {},
-    cogsByM: (d.cogs && d.cogs.byMonth) || {},
+    name: d.name || '—',
+    rev: d.revenue.total || 0,
+    cogs: d.cogs.total || 0,
+    gp: (d.revenue.total || 0) - (d.cogs.total || 0),
+    revByM: d.revenue.byMonth || {},
+    cogsByM: d.cogs.byMonth || {},
   })).sort((a, b) => b.gp - a.gp);
 
   // Build rows
@@ -1309,14 +1304,11 @@ function renderFi(pnl, gp) {
 
   document.getElementById('fiBody').innerHTML =
     `<div class="pnl-wrap"><table class="pnl-table"><thead><tr><th>Індикатор</th>${mCols}<th class="col-total">Разом</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-  pnlBindCollapse();
-  // Apply default-collapsed headers
   const tbl = document.querySelector('#fiBody .pnl-table');
   if (tbl) {
-    tbl.querySelectorAll('tr[data-is-grp][data-collapsed="true"]').forEach(tr => {
-      const grp = tr.getAttribute('data-grp');
-      tbl.querySelectorAll('tr[data-grp="' + grp + '"]:not([data-is-grp])').forEach(r => r.classList.add('collapsed-hidden'));
-    });
+    pnlBindCollapse(tbl);
+    // Default-collapsed headers — children should already have .collapsed-hidden
+    // from render (we inject it inline); no post-processing needed.
   }
 }
 
@@ -1820,13 +1812,19 @@ Auth.require('finance').then(function(user) {
     document.querySelectorAll('#arToolbar .group:first-of-type .chip').forEach(function(c) {
       c.classList.toggle('active', c.textContent.trim() === presetMap[arState.preset]);
     });
-    // Switch tab if saved
-    if (saved.tab === 'gp') {
+    // Switch tab if saved, OR from ?tab=fi|gp|ar query param
+    const qp = new URLSearchParams(location.search);
+    const forcedTab = qp.get('tab');
+    const chosenTab = forcedTab || saved.tab;
+    if (chosenTab === 'gp') {
       var gpTabEl = document.querySelector('.ptab[data-view="gp"]');
       if (gpTabEl) switchTab(gpTabEl);
-    } else if (saved.tab === 'ar') {
+    } else if (chosenTab === 'ar') {
       var arTabEl = document.querySelector('.ptab[data-view="ar"]');
       if (arTabEl) switchTab(arTabEl);
+    } else if (chosenTab === 'fi') {
+      var fiTabEl = document.querySelector('.ptab[data-view="fi"]');
+      if (fiTabEl) switchTab(fiTabEl);
     }
     pnlLoad();
   } else {
@@ -1847,6 +1845,20 @@ Auth.require('finance').then(function(user) {
     document.querySelectorAll('#arToolbar .group:first-of-type .chip').forEach(c => {
       c.classList.toggle('active', c.textContent.trim() === 'Рік');
     });
+    // Pre-set FI dates too
+    fiState.from = pnlState.from;
+    fiState.to = pnlState.to;
+    document.getElementById('fiFromIn').value = fiState.from;
+    document.getElementById('fiToIn').value = fiState.to;
+    document.querySelectorAll('#fiToolbar .group:first-of-type .chip').forEach(c => {
+      c.classList.toggle('active', c.textContent.trim() === 'Рік');
+    });
+    // Honor ?tab=fi|gp|ar on first visit (no saved state)
+    const qp = new URLSearchParams(location.search);
+    const forcedTab = qp.get('tab');
+    if (forcedTab === 'fi') { var t = document.querySelector('.ptab[data-view="fi"]'); if (t) switchTab(t); }
+    else if (forcedTab === 'gp') { var t = document.querySelector('.ptab[data-view="gp"]'); if (t) switchTab(t); }
+    else if (forcedTab === 'ar') { var t = document.querySelector('.ptab[data-view="ar"]'); if (t) switchTab(t); }
   }
 });
 </script>
