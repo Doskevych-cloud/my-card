@@ -286,25 +286,34 @@ tr:hover td{background:var(--bg3) !important}
 .rep-head h3{margin:0;font-size:14px}
 .rep-close{background:transparent;border:none;color:var(--text3);font-size:22px;cursor:pointer;padding:4px 10px;border-radius:4px;transition:all .15s}
 .rep-close:hover{background:var(--bg3);color:var(--red)}
-.rep-tabs{display:flex;gap:4px;padding:10px 24px 0;border-bottom:1px solid var(--border)}
-.rep-tab{background:transparent;border:none;color:var(--text2);font-size:12px;font-weight:600;padding:8px 14px;border-radius:4px 4px 0 0;cursor:pointer;position:relative;bottom:-1px;font-family:inherit;display:inline-flex;align-items:center;gap:6px}
-.rep-tab:hover{color:var(--text)}
-.rep-tab.active{color:var(--accent);border-bottom:2px solid var(--accent)}
+.rep-filters{display:flex;gap:6px;align-items:center;padding:12px 24px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.rep-flt-lbl{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-right:4px}
+.rep-flt{background:var(--bg2);border:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:600;padding:6px 12px;border-radius:14px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.rep-flt:hover{color:var(--text);border-color:var(--border2)}
+.rep-flt.active{background:var(--accent-bg);color:var(--accent);border-color:var(--accent)}
 .rep-count{font-size:10px;background:var(--bg3);color:var(--text2);padding:1px 7px;border-radius:10px;font-weight:700}
-.rep-tab.active .rep-count{background:var(--accent-bg);color:var(--accent)}
+.rep-flt.active .rep-count{background:rgba(255,131,25,.25);color:var(--accent)}
 .rep-body{overflow-y:auto;padding:16px 24px;flex:1}
 .rep-loading{text-align:center;padding:40px;color:var(--text3);font-size:12px}
 .rep-empty{text-align:center;padding:40px;color:var(--text3);font-size:12px;border:1px dashed var(--border);border-radius:4px}
-.rep-cat{margin-bottom:20px}
-.rep-cat:last-child{margin-bottom:0}
-.rep-cat-head{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg3);border-left:3px solid var(--accent);border-radius:3px;margin-bottom:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.rep-cat-row td{padding:0 !important;background:transparent !important;border:none !important}
+.rep-cat-row:hover td{background:transparent !important}
+.rep-cat-head{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg3);border-left:3px solid var(--accent);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 2px}
+.rep-cat-row:first-child .rep-cat-head{margin-top:0}
 .rep-cat-head .rep-cat-count{color:var(--text3);font-weight:500;letter-spacing:0}
 .rep-tbl{width:100%;border-collapse:collapse;font-size:12px}
-.rep-tbl td{padding:5px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.rep-tbl thead th{padding:8px 10px;background:var(--bg2);color:var(--text3);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2}
+.rep-tbl thead th.num{text-align:right}
+.rep-tbl td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
 .rep-tbl tr:hover td{background:var(--bg2)}
+.rep-tbl .rep-tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.rep-tbl .rep-tag.t-stock{background:rgba(255,131,25,.15);color:var(--accent)}
+.rep-tbl .rep-tag.t-price{background:var(--bg3);color:var(--text2)}
 .rep-tbl .rep-name{text-align:left;color:var(--text);word-break:break-word}
 .rep-tbl .rep-qty{text-align:right;color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:60px}
+.rep-tbl .rep-qty.rep-empty{color:var(--text3);font-weight:400}
 .rep-tbl .rep-price{text-align:right;color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:90px}
+.rep-tbl .rep-price.rep-empty{color:var(--text3);font-weight:400}
 .rep-tbl .rep-st{text-align:left;color:var(--text3);font-size:10.5px;white-space:nowrap;min-width:100px}
 .rep-err{padding:16px;color:var(--red);background:rgba(244,67,54,.1);border-radius:4px;font-size:12px}
 #customResultsBox{margin-top:10px}
@@ -353,9 +362,11 @@ tr:hover td{background:var(--bg3) !important}
       <h3>📋 Звіт: залишки Реакт ↔ прайс Генерації</h3>
       <button class="rep-close" onclick="closeStockReport()" title="Закрити">×</button>
     </div>
-    <div class="rep-tabs">
-      <button class="rep-tab active" data-tab="missing" onclick="switchRepTab('missing')">🟠 В наявності, нема в прайсі <span class="rep-count" id="repCount_missing">—</span></button>
-      <button class="rep-tab" data-tab="priced" onclick="switchRepTab('priced')">⚪ У прайсі, нема в наявності <span class="rep-count" id="repCount_priced">—</span></button>
+    <div class="rep-filters">
+      <span class="rep-flt-lbl">Показати:</span>
+      <button class="rep-flt active" data-f="all" onclick="filterRep('all')">Все <span class="rep-count" id="repCount_all">—</span></button>
+      <button class="rep-flt" data-f="missing" onclick="filterRep('missing')">🟠 В наявності, нема в прайсі <span class="rep-count" id="repCount_missing">—</span></button>
+      <button class="rep-flt" data-f="priced" onclick="filterRep('priced')">⚪ У прайсі, нема в наявності <span class="rep-count" id="repCount_priced">—</span></button>
     </div>
     <div class="rep-body" id="stockReportBody">
       <div class="rep-loading">Завантаження…</div>
@@ -1777,14 +1788,15 @@ function clearCustomSearch() {
 //  - що в прайсі, але нема в наявності
 // Матчинг — той самий findMatch (3-tier + hard-block) що й повне порівняння.
 // ═══════════════════════════════════════════════
-let __stockReport = null; // { missing: [...], priced: [...] }
-let __repActiveTab = 'missing';
+let __stockReport = null; // { all: [...] } — уніфікований список з полем type
+let __repFilter = 'all';
 
 async function openStockPriceReport() {
   const modal = document.getElementById('stockReportModal');
   const body = document.getElementById('stockReportBody');
   modal.style.display = 'flex';
   body.innerHTML = '<div class="rep-loading">⏳ Завантаження залишків і прайсу…</div>';
+  document.getElementById('repCount_all').textContent = '—';
   document.getElementById('repCount_missing').textContent = '—';
   document.getElementById('repCount_priced').textContent = '—';
 
@@ -1822,92 +1834,118 @@ async function openStockPriceReport() {
       if (!p._identity) p._identity = buildIdentity(p.name, p.model, p.category || guessCategory(p.name));
     }
 
-    // 4) Compute: stock items NOT in price list
-    const missing = []; // { name, qty, model, cat }
+    // 4) Об'єднаний список: кожен товар має type = 'stock' або 'price'.
+    //    Матчинг — той самий findMatch (3-tier + hard-block) що й у головному
+    //    порівнянні, щоб звіт був узгоджений.
+    const items = [];
+
+    // 4a) Товари з залишку, яких нема в прайсі
     for (const [sName, qty] of Object.entries(stockMap)) {
       if (!qty || qty <= 0) continue;
       const cat = guessCategory(sName);
-      if (!cat) continue; // skip accessories / unknowns — звіт має сенс тільки для відомих категорій
+      if (!cat) continue;
       const model = extractModel(sName);
       const identity = buildIdentity(sName, model, cat);
       const isPanel = cat === 'МОДУЛІ';
       const match = findMatch(model, sName, null, genProds, isPanel, identity);
-      if (!match) missing.push({ name: sName, qty, model, cat });
+      if (!match) items.push({ type: 'stock', name: sName, qty, price: null, currency: null, cat, status: '' });
     }
-    missing.sort((a, b) => (a.cat || '').localeCompare(b.cat || '') || b.qty - a.qty);
 
-    // 5) Compute: priced items NOT in stock
-    const priced = []; // { name, model, price, currency, cat, status }
+    // 4b) Товари з прайсу, яких нема в залишку
     for (const p of genProds) {
       const stock = findStock(p.name, p.model, stockMap);
       if (stock == null || stock === 0) {
-        priced.push({
-          name: p.name, model: p.model,
+        items.push({
+          type: 'price', name: p.name, qty: null,
           price: p.price_no_vat, currency: p.currency || 'USD',
           cat: p.category || guessCategory(p.name) || 'ІНШЕ',
           status: p.status || '',
         });
       }
     }
-    priced.sort((a, b) => (a.cat || '').localeCompare(b.cat || '') || (a.name || '').localeCompare(b.name || ''));
 
-    __stockReport = { missing, priced };
-    document.getElementById('repCount_missing').textContent = missing.length;
-    document.getElementById('repCount_priced').textContent = priced.length;
-    renderStockReportTab(__repActiveTab);
+    // Сортування: категорія → тип (stock першим) → за назвою
+    const catOrder = ['ІНВЕРТОРИ','АКУМУЛЯТОРИ','МОДУЛІ','КАБЕЛІ','ІНШЕ'];
+    const catIdx = c => { const i = catOrder.indexOf(c); return i < 0 ? 999 : i; };
+    items.sort((a, b) =>
+      catIdx(a.cat) - catIdx(b.cat)
+      || (a.type === b.type ? 0 : (a.type === 'stock' ? -1 : 1))
+      || (a.name || '').localeCompare(b.name || '')
+    );
+
+    __stockReport = { all: items };
+    const cntStock = items.filter(i => i.type === 'stock').length;
+    const cntPrice = items.filter(i => i.type === 'price').length;
+    document.getElementById('repCount_all').textContent = items.length;
+    document.getElementById('repCount_missing').textContent = cntStock;
+    document.getElementById('repCount_priced').textContent = cntPrice;
+    renderReport();
   } catch (e) {
     body.innerHTML = '<div class="rep-err">Помилка: ' + escapeHtml(e.message || String(e)) + '</div>';
   }
 }
 
-function switchRepTab(tab) {
-  __repActiveTab = tab;
-  document.querySelectorAll('.rep-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  renderStockReportTab(tab);
+function filterRep(f) {
+  __repFilter = f;
+  document.querySelectorAll('.rep-flt').forEach(b => b.classList.toggle('active', b.dataset.f === f));
+  renderReport();
 }
 
-function renderStockReportTab(tab) {
+function renderReport() {
   const body = document.getElementById('stockReportBody');
   if (!__stockReport) return;
-  const items = __stockReport[tab] || [];
+  const all = __stockReport.all || [];
+  const items = __repFilter === 'all' ? all
+              : __repFilter === 'missing' ? all.filter(i => i.type === 'stock')
+              : all.filter(i => i.type === 'price');
+
   if (!items.length) {
-    body.innerHTML = '<div class="rep-empty">Нічого не знайдено в цій категорії звіту ✅</div>';
+    body.innerHTML = '<div class="rep-empty">Нічого не знайдено ✅</div>';
     return;
   }
-  // Group by category
+  // Групуємо по категоріях, заголовок категорії — розділювач
   const groups = {};
   for (const it of items) {
     const c = it.cat || 'ІНШЕ';
     if (!groups[c]) groups[c] = [];
     groups[c].push(it);
   }
-  const catOrder = ['ІНВЕРТОРИ', 'АКУМУЛЯТОРИ', 'МОДУЛІ', 'КАБЕЛІ', 'ІНШЕ'];
+  const catOrder = ['ІНВЕРТОРИ','АКУМУЛЯТОРИ','МОДУЛІ','КАБЕЛІ','ІНШЕ'];
   const cats = Object.keys(groups).sort((a, b) => (catOrder.indexOf(a) + 99) - (catOrder.indexOf(b) + 99));
 
-  let html = '';
+  let rows = '';
   for (const c of cats) {
-    const rows = groups[c];
-    html += `<div class="rep-cat">
-      <div class="rep-cat-head">${escapeHtml(c)} <span class="rep-cat-count">· ${rows.length} поз.</span></div>
-      <table class="rep-tbl"><tbody>`;
-    for (const it of rows) {
-      if (tab === 'missing') {
-        html += `<tr>
-          <td class="rep-name">${escapeHtml(it.name)}</td>
-          <td class="rep-qty">${it.qty} шт</td>
-        </tr>`;
-      } else {
-        const priceTxt = it.price != null ? fmt(it.price, it.currency) : '<span style="color:var(--text3)">—</span>';
-        html += `<tr>
-          <td class="rep-name">${escapeHtml(it.name)}</td>
-          <td class="rep-st">${escapeHtml(it.status || '')}</td>
-          <td class="rep-price">${priceTxt}</td>
-        </tr>`;
-      }
+    rows += `<tr class="rep-cat-row"><td colspan="5"><div class="rep-cat-head">${escapeHtml(c)} <span class="rep-cat-count">· ${groups[c].length} поз.</span></div></td></tr>`;
+    for (const it of groups[c]) {
+      const tag = it.type === 'stock'
+        ? '<span class="rep-tag t-stock">🟠 В наявності</span>'
+        : '<span class="rep-tag t-price">⚪ В прайсі</span>';
+      const qty = it.type === 'stock'
+        ? `<td class="rep-qty">${it.qty} шт</td>`
+        : `<td class="rep-qty rep-empty">—</td>`;
+      const price = it.type === 'price' && it.price != null
+        ? `<td class="rep-price">${fmt(it.price, it.currency)}</td>`
+        : `<td class="rep-price rep-empty">—</td>`;
+      rows += `<tr>
+        <td>${tag}</td>
+        <td class="rep-name">${escapeHtml(it.name)}</td>
+        <td class="rep-st">${escapeHtml(it.status || '')}</td>
+        ${qty}
+        ${price}
+      </tr>`;
     }
-    html += `</tbody></table></div>`;
   }
-  body.innerHTML = html;
+
+  body.innerHTML = `<table class="rep-tbl">
+    <thead><tr>
+      <th style="min-width:130px">Статус</th>
+      <th>Назва товару</th>
+      <th style="min-width:100px">Стан</th>
+      <th class="num" style="min-width:80px">Залишок</th>
+      <th class="num" style="min-width:100px">Ціна</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
 }
 
 function closeStockReport() {
