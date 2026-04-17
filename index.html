@@ -1714,70 +1714,6 @@ function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-function findBestByQuery(query, prods) {
-  if (!prods || !prods.length) return null;
-  const qRaw = String(query || '').trim();
-  if (qRaw.length < 2) return null;
-  const qL = cyr(qRaw).toLowerCase();
-  const qModel = extractModel(qRaw);
-  const qN = qModel ? normModel(qModel) : null;
-  // Tokens: split by punctuation + whitespace. Keep substantive tokens only —
-  // drop short generic suffixes like "EU" that match too many unrelated products.
-  const STOP_TOKENS = new Set(['eu', 'ua', 'usa', 'ам', 'am', 'pro', 'plus', 'new']);
-  const qTokens = qL.split(/[\s\-\/.,()\[\]]+/)
-    .filter(t => t.length >= 2 && !STOP_TOKENS.has(t));
-  const qIdent = buildIdentity(qRaw, qModel, guessCategory(qRaw));
-
-  let best = null;
-  let bestScore = 0;
-  for (const p of prods) {
-    if (!p || !p.name) continue;
-    if (p.price_no_vat == null && p.price_vat == null) continue;
-
-    // Hard block: reject cross-brand / cross-kind / power mismatch.
-    // This prevents e.g. "SUN-12K-SG02LP1" matching a Sungrow comms module
-    // or a different Deye line (SG01HP3 vs SG02LP1).
-    const pIdent = p._identity || buildIdentity(p.name, p.model, p.category || guessCategory(p.name));
-    if (isHardBlocked(qIdent, pIdent)) continue;
-
-    const nL = cyr(p.name).toLowerCase();
-    let score = 0;
-
-    // Full-phrase substring (either direction)
-    if (qL.length >= 4 && nL.includes(qL)) score += 200;
-    else if (nL.length >= 4 && qL.includes(nL)) score += 120;
-
-    // Model equality / fuzzy — the primary signal when user enters a model
-    if (qN && p.model) {
-      const pN = normModel(p.model);
-      if (pN && pN === qN) score += 150;
-      else if (fuzzyMatch(qModel, p.model)) score += 80;
-    }
-
-    // Token coverage (word-boundary to avoid "sun" matching "sungrow")
-    if (qTokens.length) {
-      let hits = 0;
-      for (const t of qTokens) {
-        const re = new RegExp('\\b' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b');
-        if (re.test(nL)) hits++;
-      }
-      const ratio = hits / qTokens.length;
-      if (ratio >= 0.5) score += Math.round(ratio * 60);
-    }
-
-    const prevBestPrice = best ? (best.price_no_vat ?? best.price_vat ?? Infinity) : Infinity;
-    const thisPrice = p.price_no_vat ?? p.price_vat ?? Infinity;
-    if (score > bestScore || (score === bestScore && thisPrice < prevBestPrice)) {
-      bestScore = score;
-      best = p;
-    }
-  }
-  // If user entered a model, require at least fuzzy/exact model match.
-  // Token-coverage alone isn't enough to match across product lines.
-  if (qN && bestScore < 80) return null;
-  return bestScore >= 30 ? best : null;
-}
-
 function clearCustomSearch() {
   const input = document.getElementById('customQuery');
   if (input) input.value = '';
@@ -1830,39 +1766,62 @@ async function loadAllSupplierProds() {
 async function customSearch() {
   const q = (document.getElementById('customQuery').value || '').trim();
   const host = document.getElementById('customResultsBox');
-  if (!host) return;
-  if (!q) { host.innerHTML = ''; return; }
+  if (!q) { if (host) host.innerHTML = ''; return; }
+
+  // Always clear the mini-box — результати тепер показуємо в головній таблиці
+  if (host) host.innerHTML = '';
+
   if (!window.__supProds) {
-    host.innerHTML = '<div class="cs-warning">⏳ Завантаження прайсів постачальників…</div>';
+    if (host) host.innerHTML = '<div class="cs-warning">⏳ Завантаження прайсів постачальників…</div>';
     try {
       await loadAllSupplierProds();
     } catch (e) {
-      host.innerHTML = '<div class="cs-empty">Помилка завантаження прайсів: ' + escapeHtml(e.message || String(e)) + '</div>';
+      if (host) host.innerHTML = '<div class="cs-empty">Помилка завантаження прайсів: ' + escapeHtml(e.message || String(e)) + '</div>';
       return;
     }
+    if (host) host.innerHTML = '';
   }
   const S = window.__supProds;
 
-  const gm = findBestByQuery(q, S.gen);
-  const hm = findBestByQuery(q, S.hel);
-  const dm = findBestByQuery(q, S.dol);
-  const sm = findBestByQuery(q, S.se);
-  const pm = findBestByQuery(q, S.pe);
-  const vm = findBestByQuery(q, S.sv);
-  const am = findBestByQuery(q, S.atm);
-  const im = findBestByQuery(q, S.sig);
-  const jm = findBestByQuery(q, S.ssj);
+  // Pre-compute identities — потрібні для findMatch як у головному порівнянні
+  for (const list of [S.gen, S.hel, S.dol, S.se, S.pe, S.sv, S.atm, S.sig, S.ssj]) {
+    for (const p of list) {
+      if (!p._identity) p._identity = buildIdentity(p.name, p.model, p.category || guessCategory(p.name));
+    }
+  }
+
+  // "Віртуальний" anchor з запиту — такий самий shape як genProd у головному
+  // порівнянні. findMatch далі обробить його точно так само.
+  const qModel = extractModel(q);
+  const qCat = guessCategory(q) || 'ПОШУК';
+  const qIdentity = buildIdentity(q, qModel, qCat);
+  const isPanel = qCat === 'МОДУЛІ';
+
+  const match = (list) => findMatch(qModel, q, null, list, isPanel, qIdentity);
+  const gm = match(S.gen);
+  const hm = match(S.hel);
+  const dm = match(S.dol);
+  const sm = match(S.se);
+  const pm = match(S.pe);
+  const vm = match(S.sv);
+  const am = match(S.atm);
+  const im = match(S.sig);
+  const jm = match(S.ssj);
 
   const anyMatch = gm || hm || dm || sm || pm || vm || am || im || jm;
   if (!anyMatch) {
-    host.innerHTML = `<div class="cs-empty">Нічого не знайдено для «<b>${escapeHtml(q)}</b>» у жодного постачальника. Спробуйте змінити запит (модель або бренд + потужність).</div>`;
+    if (host) host.innerHTML = `<div class="cs-empty">Нічого не знайдено для «<b>${escapeHtml(q)}</b>» у жодного постачальника. Спробуйте змінити запит (модель або бренд + потужність).</div>`;
     return;
   }
 
+  // Якщо Генерація співпала — беремо її як anchor (ім'я/модель/стокова ціна).
+  // Так рядок виглядатиме так само як у головному порівнянні.
+  const anchor = gm || { name: q, model: qModel, status: null, price_no_vat: null, price_vat: null, currency: 'USD' };
+
   const row = {
-    cat: guessCategory(q) || 'ПОШУК',
-    name: q,
-    model: extractModel(q),
+    cat: qCat,
+    name: anchor.name,
+    model: anchor.model || qModel,
     gSt: gm ? gm.status : null, gNV: gm ? gm.price_no_vat : null, gV: gm ? gm.price_vat : null, gC: gm ? (gm.currency || 'USD') : 'USD', gStock: null,
     hSt: hm ? hm.status : null, hNV: hm ? hm.price_no_vat : null, hV: hm ? hm.price_vat : null, hR: hm ? (hm.rrc || null) : null, hC: hm ? (hm.currency || 'USD') : 'USD',
     dSt: dm ? dm.status : null, dNV: dm ? dm.price_no_vat : null, dV: dm ? dm.price_vat : null, dC: dm ? (dm.currency || 'USD') : 'USD',
@@ -1874,92 +1833,11 @@ async function customSearch() {
     jSt: jm ? jm.status : null, jNV: jm ? jm.price_no_vat : null, jV: jm ? jm.price_vat : null, jC: jm ? (jm.currency || 'USD') : 'USD',
   };
 
-  // Best price
-  const prices = [['Генерація',row.gNV,row.gC],['Helius',row.hNV,row.hC],['Dolya',row.dNV,row.dC],['SE',row.sNV,row.sC],['ПЕ',row.pNV,row.pC],['SV',row.vNV,row.vC],['Атмосфера',row.aNV,row.aC],['СІГ',row.iNV,row.iC],['SSJ',row.jNV,row.jC]].filter(p => p[1] != null);
-  const best = prices.length ? prices.reduce((a, b) => b[1] < a[1] ? b : a) : null;
-  const bestWho = best ? prices.filter(p => p[1] === best[1]).map(p => p[0]).join(' / ') : '';
-  const bestP = best ? best[1] : null;
-  const bestC = best ? best[2] : 'USD';
-
-  // Matched names (for verification — what actually got picked per supplier)
-  const matches = [];
-  if (gm) matches.push({cls:'cs-tag-gen', lbl:'Генерація', name: gm.name});
-  if (hm) matches.push({cls:'cs-tag-hel', lbl:'Helius', name: hm.name});
-  if (dm) matches.push({cls:'cs-tag-dol', lbl:'Dolya', name: dm.name});
-  if (sm) matches.push({cls:'cs-tag-se', lbl:'SE', name: sm.name});
-  if (pm) matches.push({cls:'cs-tag-pe', lbl:'ПЕ', name: pm.name});
-  if (vm) matches.push({cls:'cs-tag-sv', lbl:'SV', name: vm.name});
-  if (am) matches.push({cls:'cs-tag-atm', lbl:'Атмосфера', name: am.name});
-  if (im) matches.push({cls:'cs-tag-sig', lbl:'СІГ', name: im.name});
-  if (jm) matches.push({cls:'cs-tag-ssj', lbl:'SSJ', name: jm.name});
-
-  // Reuse the same column structure as the main comparison table
-  const thead1 = document.querySelector('#mainTable thead tr:first-child').outerHTML;
-  const thead2 = document.querySelector('#mainTable thead tr:last-child').outerHTML;
-  const mainCls = document.getElementById('mainTable').className;
-  const r = row;
-  const rowHtml = `<tr>
-      <td class="t-tovar bl">1</td>
-      <td class="t-tovar art">${escapeHtml(r.name)}</td>
-      <td class="t-gen bl stock"></td>
-      <td class="t-gen status">${escapeHtml(r.gSt || '')}</td>
-      <td class="t-gen">${fmt(r.gNV, r.gC)}</td>
-      <td class="t-gen">${fmt(r.gV, r.gC)}</td>
-      <td class="t-hel bl status">${escapeHtml(r.hSt || '')}</td>
-      <td class="t-hel">${fmt(r.hNV, r.hC)}</td>
-      <td class="d-hel">${delta(r.hNV, r.gNV)}</td>
-      <td class="t-hel">${fmt(r.hV, r.hC)}</td>
-      <td class="d-hel">${delta(r.hV, r.gV)}</td>
-      <td class="t-hel">${fmt(r.hR, r.hC)}</td>
-      <td class="t-dol bl status">${escapeHtml(r.dSt || '')}</td>
-      <td class="t-dol">${fmt(r.dNV, r.dC)}</td>
-      <td class="d-dol">${delta(r.dNV, r.gNV)}</td>
-      <td class="t-dol">${fmt(r.dV, r.dC)}</td>
-      <td class="d-dol">${delta(r.dV, r.gV)}</td>
-      <td class="t-se bl status">${escapeHtml(r.sSt || '')}</td>
-      <td class="t-se">${fmt(r.sNV, r.sC)}</td>
-      <td class="d-se">${delta(r.sNV, r.gNV)}</td>
-      <td class="t-se">${fmt(r.sV, r.sC)}</td>
-      <td class="d-se">${delta(r.sV, r.gV)}</td>
-      <td class="t-pe bl status">${escapeHtml(r.pSt || '')}</td>
-      <td class="t-pe">${fmt(r.pNV, r.pC)}</td>
-      <td class="d-pe">${delta(r.pNV, r.gNV)}</td>
-      <td class="t-pe">${fmt(r.pV, r.pC)}</td>
-      <td class="d-pe">${delta(r.pV, r.gV)}</td>
-      <td class="t-sv bl status">${escapeHtml(r.vSt || '')}</td>
-      <td class="t-sv">${fmt(r.vNV, r.vC)}</td>
-      <td class="d-sv">${delta(r.vNV, r.gNV)}</td>
-      <td class="t-sv">${fmt(r.vV, r.vC)}</td>
-      <td class="d-sv">${delta(r.vV, r.gV)}</td>
-      <td class="t-atm bl status">${escapeHtml(r.aSt || '')}</td>
-      <td class="t-atm">${fmt(r.aNV, r.aC)}</td>
-      <td class="d-atm">${delta(r.aNV, r.gNV)}</td>
-      <td class="t-atm">${fmt(r.aV, r.aC)}</td>
-      <td class="d-atm">${delta(r.aV, r.gV)}</td>
-      <td class="t-sig bl status">${escapeHtml(r.iSt || '')}</td>
-      <td class="t-sig">${fmt(r.iNV, r.iC)}</td>
-      <td class="d-sig">${delta(r.iNV, r.gNV)}</td>
-      <td class="t-sig">${fmt(r.iV, r.iC)}</td>
-      <td class="d-sig">${delta(r.iV, r.gV)}</td>
-      <td class="t-ssj bl status">${escapeHtml(r.jSt || '')}</td>
-      <td class="t-ssj">${fmt(r.jNV, r.jC)}</td>
-      <td class="d-ssj">${delta(r.jNV, r.gNV)}</td>
-      <td class="t-ssj">${fmt(r.jV, r.jC)}</td>
-      <td class="d-ssj">${delta(r.jV, r.gV)}</td>
-      <td class="t-best bl">${escapeHtml(bestWho)}</td>
-      <td class="t-best bold">${fmt(bestP, bestC)}</td>
-    </tr>`;
-
-  const matchHtml = matches.length
-    ? `<div class="cs-match-names">${matches.map(m => `<span class="cs-tag ${m.cls}" title="${escapeHtml(m.name)}"><span class="cs-tag-lbl">${escapeHtml(m.lbl)}:</span><span class="cs-tag-nm">${escapeHtml(m.name)}</span></span>`).join('')}</div>`
-    : '';
-
-  host.innerHTML = `
-    <div class="cs-mini-wrap">
-      <table class="${mainCls}"><thead>${thead1}${thead2}</thead><tbody>${rowHtml}</tbody></table>
-    </div>
-    ${matchHtml}
-  `;
+  // Вставляємо в головну таблицю через той самий renderTable
+  renderTable([row]);
+  const resultsEl = document.getElementById('results');
+  resultsEl.style.display = 'block';
+  resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ═══════════════════════════════════════════════
