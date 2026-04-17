@@ -285,6 +285,7 @@ a{color:inherit;text-decoration:none}
     <div class="page-tabs">
       <span class="ptab active" data-view="pnl" onclick="switchTab(this)">P&L</span>
       <span class="ptab" data-view="gp" onclick="switchTab(this)">Валовий прибуток</span>
+      <span class="ptab" data-view="fi" onclick="switchTab(this)">Фінансові показники</span>
       <span class="ptab" data-view="cf" onclick="switchTab(this)">Cash Flow</span>
       <span class="ptab" data-view="ar" onclick="switchTab(this)">Розрахунки з покупцями</span>
       <button type="button" class="pdf-btn" onclick="downloadPDF()" title="Зберегти поточну вкладку у PDF">
@@ -1434,6 +1435,110 @@ document.getElementById('fiFromIn').addEventListener('change', function(e) { fiS
 document.getElementById('fiToIn').addEventListener('change', function(e) { fiState.to = e.target.value; fiLoad(); });
 
 /* ═══════════════════════════════════════════════════
+   CASH FLOW TAB (Direct method, 3 sections + Transfers info)
+   ═══════════════════════════════════════════════════ */
+const cfState = { from: '', to: '', org: '', preset: '', _loaded: false };
+
+function cfSetPreset(p) {
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  let from, to = now;
+  if (p === 'month')          from = new Date(y, m, 1);
+  else if (p === 'prevmonth') { from = new Date(y, m-1, 1); to = new Date(y, m, 0); }
+  else if (p === 'quarter')   { const q = Math.floor(m/3); from = new Date(y, q*3, 1); }
+  else if (p === 'year')      from = new Date(y, 0, 1);
+  cfState.from = _localISO(from); cfState.to = _localISO(to); cfState.preset = p;
+  document.getElementById('cfFromIn').value = cfState.from;
+  document.getElementById('cfToIn').value   = cfState.to;
+  document.querySelectorAll('#cfToolbar .group:first-of-type .chip').forEach(c => {
+    const map = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' };
+    c.classList.toggle('active', c.textContent.trim() === map[p]);
+  });
+  saveStateToUrl();
+  cfLoad();
+}
+function cfSetOrg(el) {
+  cfState.org = el.dataset.org;
+  el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  saveStateToUrl();
+  cfLoad();
+}
+
+async function cfLoad() {
+  if (!cfState.from || !cfState.to) {
+    if (pnlState.from && pnlState.to) {
+      cfState.from = pnlState.from; cfState.to = pnlState.to; cfState.preset = pnlState.preset;
+      document.getElementById('cfFromIn').value = cfState.from;
+      document.getElementById('cfToIn').value   = cfState.to;
+    } else { cfSetPreset('month'); return; }
+  }
+  document.getElementById('cfBody').innerHTML = '<div class="loading">Завантаження...</div>';
+  document.getElementById('cfSummary').innerHTML = '';
+  try {
+    const orgQ = cfState.org ? '&org=' + encodeURIComponent(cfState.org) : '';
+    const q = '?action=cash_flow_report&from=' + cfState.from + '&to=' + cfState.to + orgQ;
+    const data = await fetch(API_URL + q).then(r => r.json());
+    if (data.error) throw new Error(data.error);
+    cfState._loaded = true;
+    renderCf(data);
+  } catch (e) {
+    document.getElementById('cfBody').innerHTML = '<div class="error">' + esc(e.message) + '</div>';
+  }
+}
+
+function renderCf(data) {
+  const fmtCell = v => {
+    if (!v && v !== 0) return '<span class="dash">—</span>';
+    if (Math.abs(v) < 0.5) return '<span class="zr">—</span>';
+    return '<span class="' + (v > 0 ? 'pos' : 'neg') + '">' + fmt(v, 0) + ' $</span>';
+  };
+  const opening = data.opening || 0;
+  const closing = data.closing || 0;
+  const ncf = data.netCashFlow || 0;
+  const transfersNet = (data.transfers && data.transfers.net) || 0;
+  const totalChange = closing - opening;
+  document.getElementById('cfSummary').innerHTML = '<div class="pnl-summary">' +
+    `<div class="pnl-card c-rev"><span class="cl">Залишок на початок</span><span class="cv">${fmt(opening, 0)} $</span></div>` +
+    `<div class="pnl-card c-grs"><span class="cl">Чистий грошовий потік</span><span class="cv${ncf<0?' ng':''}">${fmt(ncf, 0)} $</span><span class="cs">опер + інв + фін</span></div>` +
+    `<div class="pnl-card c-cost"><span class="cl">Курсові / Переміщення</span><span class="cv${transfersNet<0?' ng':''}">${fmt(transfersNet, 0)} $</span><span class="cs">FX-вплив на USD-залишок</span></div>` +
+    `<div class="pnl-card c-net"><span class="cl">Залишок на кінець</span><span class="cv${closing<0?' ng':''}">${fmt(closing, 0)} $</span><span class="cs">зміна за період ${fmt(totalChange, 0)} $</span></div>` +
+    '</div>';
+
+  const renderSection = (title, key, secData) => {
+    const arts = (secData && secData.articles) || [];
+    const inflow = (secData && secData.inflow) || 0;
+    const outflow = (secData && secData.outflow) || 0;
+    const net = (secData && secData.net) || 0;
+    let r = `<tr class="sec" data-sec="${key}" data-is-sec="1"><td><span class="tri">▾</span>${esc(title)}</td><td class="col-total">${fmtCell(inflow)}</td><td class="col-total">${fmtCell(-outflow)}</td><td class="col-total">${fmtCell(net)}</td></tr>`;
+    arts.forEach(a => {
+      const itemNet = a.inflow - a.outflow;
+      r += `<tr class="itm" data-sec="${key}"><td>${esc(a.description)}</td><td class="col-total">${fmtCell(a.inflow)}</td><td class="col-total">${fmtCell(-a.outflow)}</td><td class="col-total">${fmtCell(itemNet)}</td></tr>`;
+    });
+    return r;
+  };
+
+  let rows = '';
+  rows += renderSection('Операційна діяльність', 'op', data.operating);
+  rows += renderSection('Інвестиційна діяльність', 'inv', data.investing);
+  rows += renderSection('Фінансова діяльність', 'fin', data.financing);
+  rows += `<tr class="grd"><td>Чистий грошовий потік (опер + інв + фін)</td><td class="col-total"></td><td class="col-total"></td><td class="col-total">${fmtCell(ncf)}</td></tr>`;
+  rows += `<tr class="sp"><td colspan="4"></td></tr>`;
+  rows += renderSection('Переміщення / Курсові різниці (інфо)', 'tr', data.transfers);
+  rows += `<tr class="sp"><td colspan="4"></td></tr>`;
+  rows += `<tr class="sub"><td>Залишок на початок періоду</td><td class="col-total"></td><td class="col-total"></td><td class="col-total">${fmtCell(opening)}</td></tr>`;
+  rows += `<tr class="sub"><td>Зміна залишку</td><td class="col-total"></td><td class="col-total"></td><td class="col-total">${fmtCell(totalChange)}</td></tr>`;
+  rows += `<tr class="grd"><td>Залишок на кінець періоду</td><td class="col-total"></td><td class="col-total"></td><td class="col-total">${fmtCell(closing)}</td></tr>`;
+
+  document.getElementById('cfBody').innerHTML =
+    `<div class="pnl-wrap"><table class="pnl-table"><thead><tr><th>Стаття</th><th class="col-total">Надходження</th><th class="col-total">Виплата</th><th class="col-total">Сальдо</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  const tbl = document.querySelector('#cfBody .pnl-table');
+  if (tbl) pnlBindCollapse(tbl);
+}
+
+document.getElementById('cfFromIn').addEventListener('change', function(e) { cfState.from = e.target.value; cfLoad(); });
+document.getElementById('cfToIn').addEventListener('change', function(e) { cfState.to = e.target.value; cfLoad(); });
+
+/* ═══════════════════════════════════════════════════
    GROSS PROFIT TAB
    ═══════════════════════════════════════════════════ */
 const gpState = { from: '', to: '', org: '', preset: '', buyerFilter: '', nomFilter: '', _loaded: false, _rawData: null };
@@ -1943,6 +2048,9 @@ Auth.require('finance').then(function(user) {
     } else if (chosenTab === 'fi') {
       var fiTabEl = document.querySelector('.ptab[data-view="fi"]');
       if (fiTabEl) switchTab(fiTabEl);
+    } else if (chosenTab === 'cf') {
+      var cfTabEl = document.querySelector('.ptab[data-view="cf"]');
+      if (cfTabEl) switchTab(cfTabEl);
     }
     pnlLoad();
   } else {
@@ -1971,11 +2079,20 @@ Auth.require('finance').then(function(user) {
     document.querySelectorAll('#fiToolbar .group:first-of-type .chip').forEach(c => {
       c.classList.toggle('active', c.textContent.trim() === 'Рік');
     });
-    // Honor ?tab=fi|gp|ar on first visit (no saved state)
+    // Pre-set CF dates too
+    cfState.from = pnlState.from;
+    cfState.to = pnlState.to;
+    document.getElementById('cfFromIn').value = cfState.from;
+    document.getElementById('cfToIn').value = cfState.to;
+    document.querySelectorAll('#cfToolbar .group:first-of-type .chip').forEach(c => {
+      c.classList.toggle('active', c.textContent.trim() === 'Рік');
+    });
+    // Honor ?tab=fi|gp|cf|ar on first visit (no saved state)
     const qp = new URLSearchParams(location.search);
     const forcedTab = qp.get('tab');
     if (forcedTab === 'fi') { var t = document.querySelector('.ptab[data-view="fi"]'); if (t) switchTab(t); }
     else if (forcedTab === 'gp') { var t = document.querySelector('.ptab[data-view="gp"]'); if (t) switchTab(t); }
+    else if (forcedTab === 'cf') { var t = document.querySelector('.ptab[data-view="cf"]'); if (t) switchTab(t); }
     else if (forcedTab === 'ar') { var t = document.querySelector('.ptab[data-view="ar"]'); if (t) switchTab(t); }
   }
 });
