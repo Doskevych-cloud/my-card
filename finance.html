@@ -1297,16 +1297,44 @@ function renderPnlAccrual(data) {
     .map(e => `<tr class="itm"><td>${esc(e.category)}</td><td class="col-total">${fmtCell(e.total)}</td></tr>`)
     .join('');
 
+  // Percent cell helper (used for margin rows + bottom metrics)
+  const pctCell = v => `<span class="${v>=0?'pos':'neg'}">${(v>=0?'+':'')+v.toFixed(1)}%</span>`;
+
   let rows = '';
-  // Виручка
+  // Sort departments by revenue desc for consistent ordering
+  const deps = (data.departments || []).slice().sort((a, b) => (b.revenue.total || 0) - (a.revenue.total || 0));
+
+  // Виручка + розбивка по підрозділах
   rows += `<tr class="sec rev" data-sec="rev" data-is-sec="1"><td><span class="tri">▾</span>Виторг від продажів</td><td class="col-total">${fmtCell(revenue.total)}</td></tr>`;
+  deps.forEach(d => {
+    if (Math.abs(d.revenue.total || 0) < 0.5) return;
+    rows += `<tr class="itm" data-sec="rev"><td>${esc(d.name)}</td><td class="col-total">${fmtCell(d.revenue.total)}</td></tr>`;
+  });
   // (інші непрямі доходи)
   if (income && income.length) {
     rows += `<tr class="grp" data-sec="rev" data-grp="_otherInc" data-is-grp="1"><td><span class="tri">▾</span>Інші непрямі доходи</td><td class="col-total">${fmtCell(otherIncome.total)}</td></tr>`;
     rows += income.sort((a,b)=>b.total-a.total).map(i => `<tr class="itm" data-sec="rev" data-grp="_otherInc"><td>${esc(i.category)}</td><td class="col-total">${fmtCell(i.total)}</td></tr>`).join('');
   }
-  // Собівартість
+  // Собівартість + розбивка по підрозділах
   rows += `<tr class="sec cost" data-sec="cost" data-is-sec="1"><td><span class="tri">▾</span>Собівартість продажів</td><td class="col-total">${fmtCell(cogs.total)}</td></tr>`;
+  deps.forEach(d => {
+    if (Math.abs(d.cogs.total || 0) < 0.5) return;
+    rows += `<tr class="itm" data-sec="cost"><td>${esc(d.name)}</td><td class="col-total">${fmtCell(d.cogs.total)}</td></tr>`;
+  });
+  // Валовий прибуток (underline — не колапсується) + розбивка по підрозділах
+  rows += `<tr class="grd" data-sec="gp" data-is-sec="1" data-is-grd-head="1" data-collapsed="true"><td><span class="tri">▾</span>Валовий прибуток, у т.ч.</td><td class="col-total">${fmtCell(grossTotal)}</td></tr>`;
+  deps.forEach(d => {
+    const gp = (d.revenue.total || 0) - (d.cogs.total || 0);
+    if (Math.abs(gp) < 0.5) return;
+    rows += `<tr class="itm collapsed-hidden" data-sec="gp"><td>${esc(d.name)}</td><td class="col-total">${fmtCell(gp)}</td></tr>`;
+  });
+  // Маржинальність продажів по підрозділах (collapsible)
+  rows += `<tr class="pct" data-sec="mg" data-is-sec="1" data-is-pct-head="1" data-collapsed="true"><td><span class="tri">▾</span>Маржинальність продажів, у т.ч.</td><td class="col-total">${pctCell(grossMgnPct)}</td></tr>`;
+  deps.forEach(d => {
+    if (Math.abs(d.revenue.total || 0) < 0.5) return;
+    const mg = (d.revenue.total - d.cogs.total) / d.revenue.total * 100;
+    rows += `<tr class="itm collapsed-hidden" data-sec="mg"><td>${esc(d.name)}</td><td class="col-total">${pctCell(mg)}</td></tr>`;
+  });
   // Всього витрати (OPEX + tax + other)
   const totalAllExp = opexTotal + taxTotal + otherExp;
   rows += `<tr class="cat" data-cat="_allExp" data-is-cat="1"><td><span class="tri">▾</span>Всього витрати</td><td class="col-total">${fmtCell(totalAllExp)}</td></tr>`;
@@ -1330,7 +1358,6 @@ function renderPnlAccrual(data) {
   rows += `<tr class="grd"><td>Чистий прибуток / збиток</td><td class="col-total">${fmtCell(netTotal)}</td></tr>`;
   // Стандартні маржі: gross = GP/Revenue, operating = OpProfit/Revenue, net = Net/(Revenue+OtherInc)
   const opMgnPct  = revenue.total ? (opProfit / revenue.total * 100) : 0;
-  const pctCell = v => `<span class="${v>=0?'pos':'neg'}">${(v>=0?'+':'')+v.toFixed(1)}%</span>`;
   rows += `<tr class="pct"><td>Валова маржа</td><td class="col-total">${pctCell(grossMgnPct)}</td></tr>`;
   rows += `<tr class="pct"><td>Операційна рентабельність</td><td class="col-total">${pctCell(opMgnPct)}</td></tr>`;
   rows += `<tr class="pct"><td>Чиста рентабельність</td><td class="col-total">${pctCell(netMgnPct)}</td></tr>`;
