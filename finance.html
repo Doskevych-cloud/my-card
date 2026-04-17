@@ -1255,6 +1255,12 @@ async function pnlLoad() {
 // renderPnlAccrual — рендер на основі accrual-даних з ДохРасх register.
 // Без template-matching, просто секції + статті з бекенду.
 // ═══════════════════════════════════════════════
+// Strip one-letter prefixes like "П. " that 1C adds for internal sorting
+// (e.g. "П. Дистрибуція" → "Дистрибуція").
+function cleanDepName(name) {
+  return String(name || '').replace(/^[А-ЯA-Zа-яa-z]\.\s+/, '').trim();
+}
+
 function renderPnlAccrual(data) {
   const { revenue, cogs, expenses, income, otherIncome, totalExpenses, sections, months } = data;
   const grossTotal  = (revenue.total || 0) - (cogs.total || 0);
@@ -1308,7 +1314,7 @@ function renderPnlAccrual(data) {
   rows += `<tr class="sec rev" data-sec="rev" data-is-sec="1"><td><span class="tri">▾</span>Виторг від продажів</td><td class="col-total">${fmtCell(revenue.total)}</td></tr>`;
   deps.forEach(d => {
     if (Math.abs(d.revenue.total || 0) < 0.5) return;
-    rows += `<tr class="itm" data-sec="rev"><td>${esc(d.name)}</td><td class="col-total">${fmtCell(d.revenue.total)}</td></tr>`;
+    rows += `<tr class="itm" data-sec="rev"><td>${esc(cleanDepName(d.name))}</td><td class="col-total">${fmtCell(d.revenue.total)}</td></tr>`;
   });
   // (інші непрямі доходи)
   if (income && income.length) {
@@ -1319,21 +1325,21 @@ function renderPnlAccrual(data) {
   rows += `<tr class="sec cost" data-sec="cost" data-is-sec="1"><td><span class="tri">▾</span>Собівартість продажів</td><td class="col-total">${fmtCell(cogs.total)}</td></tr>`;
   deps.forEach(d => {
     if (Math.abs(d.cogs.total || 0) < 0.5) return;
-    rows += `<tr class="itm" data-sec="cost"><td>${esc(d.name)}</td><td class="col-total">${fmtCell(d.cogs.total)}</td></tr>`;
+    rows += `<tr class="itm" data-sec="cost"><td>${esc(cleanDepName(d.name))}</td><td class="col-total">${fmtCell(d.cogs.total)}</td></tr>`;
   });
   // Валовий прибуток (underline — не колапсується) + розбивка по підрозділах
   rows += `<tr class="grd" data-sec="gp" data-is-sec="1" data-is-grd-head="1" data-collapsed="true"><td><span class="tri">▾</span>Валовий прибуток, у т.ч.</td><td class="col-total">${fmtCell(grossTotal)}</td></tr>`;
   deps.forEach(d => {
     const gp = (d.revenue.total || 0) - (d.cogs.total || 0);
     if (Math.abs(gp) < 0.5) return;
-    rows += `<tr class="itm collapsed-hidden" data-sec="gp"><td>${esc(d.name)}</td><td class="col-total">${fmtCell(gp)}</td></tr>`;
+    rows += `<tr class="itm collapsed-hidden" data-sec="gp"><td>${esc(cleanDepName(d.name))}</td><td class="col-total">${fmtCell(gp)}</td></tr>`;
   });
   // Маржинальність продажів по підрозділах (collapsible)
   rows += `<tr class="pct" data-sec="mg" data-is-sec="1" data-is-pct-head="1" data-collapsed="true"><td><span class="tri">▾</span>Маржинальність продажів, у т.ч.</td><td class="col-total">${pctCell(grossMgnPct)}</td></tr>`;
   deps.forEach(d => {
     if (Math.abs(d.revenue.total || 0) < 0.5) return;
     const mg = (d.revenue.total - d.cogs.total) / d.revenue.total * 100;
-    rows += `<tr class="itm collapsed-hidden" data-sec="mg"><td>${esc(d.name)}</td><td class="col-total">${pctCell(mg)}</td></tr>`;
+    rows += `<tr class="itm collapsed-hidden" data-sec="mg"><td>${esc(cleanDepName(d.name))}</td><td class="col-total">${pctCell(mg)}</td></tr>`;
   });
   // Всього витрати (OPEX + tax + other)
   const totalAllExp = opexTotal + taxTotal + otherExp;
