@@ -182,6 +182,7 @@ a{color:inherit;text-decoration:none}
 
       <span class="sep"></span>
 
+      <span class="chip" data-org="" onclick="setOrg('')">Всі</span>
       <span class="chip active" data-org="Реакт" onclick="setOrg('Реакт')">Реакт</span>
       <span class="chip" data-org="Генерація" onclick="setOrg('Генерація')">Генерація</span>
 
@@ -347,8 +348,7 @@ function collapseAll() {
 
 function collectKeys() {
   const keys = [];
-  const orgData = (state.data && state.data.byOrg && state.data.byOrg[state.org]) || {};
-  const managers = orgData.managers || [];
+  const managers = getManagers();
   managers.forEach(m => {
     const mk = `m:${m.name}`;
     keys.push(mk);
@@ -382,11 +382,53 @@ function clientMatches(c) {
   return false;
 }
 
+// Merge managers across orgs when state.org === '' (Всі). For a single org —
+// just return its managers. Merging sums paid/total/remain per manager and
+// per currency/client so the user sees aggregated numbers.
+function getManagers() {
+  if (!state.data) return [];
+  const byOrg = state.data.byOrg || {};
+  if (state.org) return (byOrg[state.org] && byOrg[state.org].managers) || [];
+
+  const merged = {};
+  Object.values(byOrg).forEach(od => {
+    (od.managers || []).forEach(m => {
+      const k = m.name;
+      if (!merged[k]) {
+        merged[k] = { name: m.name, total: 0, paid: 0, remain: 0, currencies: {} };
+      }
+      const M = merged[k];
+      M.total += m.total; M.paid += m.paid; M.remain += m.remain;
+      (m.currencies || []).forEach(C => {
+        if (!M.currencies[C.currency]) {
+          M.currencies[C.currency] = { currency: C.currency, total: 0, paid: 0, remain: 0, clients: {} };
+        }
+        const CC = M.currencies[C.currency];
+        CC.total += C.total; CC.paid += C.paid; CC.remain += C.remain;
+        (C.clients || []).forEach(cl => {
+          if (!CC.clients[cl.name]) {
+            CC.clients[cl.name] = { name: cl.name, total: 0, paid: 0, remain: 0, orders: [] };
+          }
+          const CL = CC.clients[cl.name];
+          CL.total += cl.total; CL.paid += cl.paid; CL.remain += cl.remain;
+          CL.orders.push(...(cl.orders || []));
+        });
+      });
+    });
+  });
+  return Object.values(merged).map(m => ({
+    ...m,
+    currencies: Object.values(m.currencies).map(C => ({
+      ...C,
+      clients: Object.values(C.clients).sort((a, b) => b.paid - a.paid),
+    })).sort((a, b) => b.paid - a.paid),
+  })).sort((a, b) => b.paid - a.paid);
+}
+
 // ─── Render ───
 function render() {
   if (!state.data) return;
-  const orgData = (state.data.byOrg || {})[state.org];
-  const managers = (orgData && orgData.managers) || [];
+  const managers = getManagers();
 
   renderSummaryGrid(managers);
 
