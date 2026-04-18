@@ -162,42 +162,76 @@
     location.href = 'login.html?return=' + ret;
   }
 
-  // Block page with a full-screen deny overlay (no role or not logged in).
+  // Block page with a deny overlay. Preserves the shared #appHeader and
+  // the impersonation banner so admin can always "Return as admin" even
+  // if the impersonated user has no access to the landing page.
   function showDenyScreen(reason, module) {
     const user = cachedUser();
     const modLabel = MODULE_LABEL[module] || module;
+    const imp = isImpersonating();
+    const impAdmin = imp ? impersonatedBy() : '';
     document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
-    document.body.innerHTML = `
+
+    // Якщо ми в імперсонації — монтуємо шапку з банером "Повернутись",
+    // щоб адмін не застряг на заблокованій сторінці.
+    if (imp && global.AppHeader && global.AppHeader.mount) {
+      try { global.AppHeader.mount({ active: '', user }); } catch {}
+    }
+
+    // Стилі + deny-картка додаються ПІСЛЯ існуючого appHeader, не перетираючи body.
+    const headerEl = document.getElementById('appHeader');
+    const denyHtml = `
       <style>
         body { margin:0; font-family: Inter, -apple-system, Segoe UI, sans-serif;
-               background: var(--bg, #0b0e11); color: var(--text, #eaecef);
-               min-height: 100vh; display:flex; align-items:center; justify-content:center; }
+               background: var(--bg, #0b0e11); color: var(--text, #eaecef); min-height: 100vh; }
+        #__denyWrap { display:flex; align-items:center; justify-content:center; padding: 60px 20px; min-height: calc(100vh - 80px); }
         .deny { max-width: 460px; padding: 40px 32px; text-align:center;
                 background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
                 border-radius: 16px; }
         .deny h1 { margin:0 0 12px; font-size: 22px; }
         .deny p  { margin: 10px 0; color:#9aa4b2; line-height:1.5; }
         .deny .email { color:#ff8319; font-weight:600; }
-        .deny button, .deny a.btn { display:inline-block; margin-top:18px; padding:10px 18px;
+        .deny .btns { display:flex; gap: 10px; justify-content:center; flex-wrap:wrap; margin-top:18px }
+        .deny button, .deny a.btn { display:inline-block; padding:10px 18px;
                 background:#ff8319; color:#111; text-decoration:none; font-weight:600;
-                border:0; border-radius:10px; cursor:pointer; font-size:14px; }
+                border:0; border-radius:10px; cursor:pointer; font-size:14px; font-family:inherit }
+        .deny a.btn.ghost { background: transparent; color: #eaecef; border: 1px solid rgba(255,255,255,.12) }
+        .deny button.imp-back { background:#f0b90b }
+        .deny button.imp-back:hover { background:#ffcc33 }
         .deny .muted { margin-top:14px; font-size:12px; color:#6b7280; }
         .deny .avatar { width:56px; height:56px; border-radius:50%; margin:0 auto 16px;
                 background:#ff8319; color:#111; display:flex; align-items:center; justify-content:center;
                 font-weight:700; font-size:22px; }
         .deny img.avatar { object-fit:cover; }
       </style>
-      <div class="deny">
-        ${user && user.picture
-          ? `<img class="avatar" src="${user.picture}" referrerpolicy="no-referrer" alt="">`
-          : `<div class="avatar">${user ? (user.name || user.email || '?').slice(0,1).toUpperCase() : '?'}</div>`}
-        <h1>⛔ Немає доступу до модуля «${modLabel}»</h1>
-        ${user ? `<p>Ви увійшли як <span class="email">${user.email}</span></p>` : ''}
-        <p>${reason || 'Зверніться до адміністратора, щоб відкрити доступ.'}</p>
-        <a class="btn" href="index.html">← На головну</a>
-        ${user ? `<div class="muted"><a href="#" onclick="Auth.logout();return false" style="color:#6b7280">Вийти з акаунта</a></div>` : ''}
+      <div id="__denyWrap">
+        <div class="deny">
+          ${user && user.picture
+            ? `<img class="avatar" src="${user.picture}" referrerpolicy="no-referrer" alt="">`
+            : `<div class="avatar">${user ? (user.name || user.email || '?').slice(0,1).toUpperCase() : '?'}</div>`}
+          <h1>⛔ Немає доступу до модуля «${modLabel}»</h1>
+          ${user ? `<p>Ви увійшли як <span class="email">${user.email}</span>${imp ? ` (адмін ${impAdmin})` : ''}</p>` : ''}
+          <p>${reason || 'Зверніться до адміністратора, щоб відкрити доступ.'}</p>
+          <div class="btns">
+            ${imp
+              ? `<button class="imp-back" onclick="AppHeader && AppHeader.stopImpersonate && AppHeader.stopImpersonate()">← Повернутись як адмін</button>
+                 <a class="btn ghost" href="/admin.html">До адмін-панелі</a>`
+              : `<a class="btn" href="index.html">← На головну</a>`}
+          </div>
+          ${user && !imp ? `<div class="muted"><a href="#" onclick="Auth.logout();return false" style="color:#6b7280">Вийти з акаунта</a></div>` : ''}
+        </div>
       </div>
     `;
+
+    // Замість body.innerHTML = ... щоб не знести вже змонтовану шапку,
+    // чистимо все КРІМ #appHeader і додаємо deny після нього.
+    const kids = Array.from(document.body.children);
+    for (const el of kids) {
+      if (el.id !== 'appHeader') el.remove();
+    }
+    const tpl = document.createElement('div');
+    tpl.innerHTML = denyHtml;
+    while (tpl.firstChild) document.body.appendChild(tpl.firstChild);
   }
 
   // ── DEV-MODE: Finance is admin-only while module is being stabilized.
