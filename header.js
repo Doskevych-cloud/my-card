@@ -256,6 +256,7 @@
           <a href="/warehouses.html" class="${active==='warehouses' ? 'active' : ''}">📦 Склад</a>
           <a href="/sales.html"      class="${active==='sales'      ? 'active' : ''}">📈 Продажі</a>
           ${isAdmin ? `<a href="/finance.html"    class="${active==='finance'    ? 'active' : ''}">💰 Фінанси</a>` : ''}
+          ${isAdmin ? `<a href="/reports.html"    class="${active==='reports'    ? 'active' : ''}">📑 Звіти</a>` : ''}
         </nav>
         <div class="spacer"></div>
         <button class="theme-btn" onclick="AppHeader.toggleTheme()" title="Переключити тему">

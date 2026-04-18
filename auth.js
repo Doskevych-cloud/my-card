@@ -57,6 +57,7 @@
     warehouses: 'Склад',
     sales: 'Продажі',
     finance: 'Фінанси',
+    reports: 'Звіти',
     admin: 'Адмін-панель',
   };
 

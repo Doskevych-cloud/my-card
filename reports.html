@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Звіти</title>
+<script>
+  try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
+</script>
+<script src="auth.js?v=clean20260418"></script>
+<script src="header.js?v=clean20260418"></script>
+<style>
+:root{
+  --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
+  --surface:#141414; --surface2:#1c1c1c;
+  --border:#262626; --border2:#333;
+  --text:#f5f5f5; --text2:#a3a3a3; --text3:#737373;
+  --accent:#ff8319; --accent-bg:rgba(255,131,25,.12);
+  --red:#e74c3c; --red-bg:rgba(231,76,60,.12);
+  --green:#22c55e; --green-bg:rgba(34,197,94,.12);
+  --blue:#3b82f6; --blue-bg:rgba(59,130,246,.12);
+  --yellow:#eab308; --yellow-bg:rgba(234,179,8,.12);
+  --shadow-md:0 4px 20px rgba(0,0,0,.4);
+}
+:root[data-theme="light"]{
+  --bg:#f5f5f7; --bg2:#ffffff; --bg3:#ececef;
+  --surface:#ffffff; --surface2:#ffffff;
+  --border:#e5e5ea; --border2:#d1d1d6;
+  --text:#1c1c1e; --text2:#48484a; --text3:#8e8e93;
+  --accent:#e07017; --accent-bg:rgba(224,112,23,.12);
+  --red:#d93025; --red-bg:rgba(217,48,37,.10);
+  --green:#15803d; --green-bg:rgba(21,128,61,.10);
+  --blue:#1d4ed8; --blue-bg:rgba(29,78,216,.10);
+  --yellow:#a16207; --yellow-bg:rgba(161,98,7,.10);
+  --shadow-md:0 4px 20px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+
+.wrap{max-width:1400px;margin:0 auto;padding:20px}
+
+/* Page tabs (categories) */
+.page-tabs{display:inline-flex;gap:4px;padding:4px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:14px}
+.ptab{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;color:var(--text2);text-decoration:none;transition:background .15s,color .15s;white-space:nowrap;cursor:pointer;border:none;background:transparent;font-family:inherit}
+.ptab:hover{background:var(--bg3);color:var(--text)}
+.ptab.active{background:var(--accent-bg);color:var(--accent)}
+
+/* Sub-tabs (reports inside a category) */
+.sub-tabs{display:inline-flex;gap:2px;padding:3px;background:var(--bg2);border:1px solid var(--border);border-radius:9px;margin-bottom:14px;margin-left:8px}
+.sub-tabs .stab{padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;background:transparent;border:none;font-family:inherit}
+.sub-tabs .stab:hover{color:var(--text)}
+.sub-tabs .stab.active{background:var(--accent-bg);color:var(--accent)}
+
+/* Toolbar */
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
+.toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.toolbar .meta{font-size:12px;color:var(--text3)}
+.toolbar .meta b{color:var(--text2);font-weight:600}
+.toolbar .spacer{flex:1}
+
+/* KPI cards */
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px}
+.kpi-card{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:3px}
+.kpi-card .lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+.kpi-card .val{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.3px;line-height:1.2;color:var(--text)}
+.kpi-card .sub{font-size:11px;color:var(--text3);font-weight:500}
+.kpi-card.c-success .val{color:var(--green)}
+.kpi-card.c-fail .val{color:var(--red)}
+.kpi-card.c-progress .val{color:var(--blue)}
+.kpi-card.c-rate .val{color:var(--accent)}
+
+/* Section header */
+.section-h{display:flex;align-items:baseline;justify-content:space-between;margin:18px 0 10px;padding:0 2px}
+.section-h h2{font-size:14px;font-weight:700;color:var(--text);margin:0}
+.section-h .hint{font-size:11px;color:var(--text3)}
+
+/* Funnel */
+.funnel{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:18px}
+.funnel-row{display:grid;grid-template-columns:200px 1fr 80px 70px 70px 70px;gap:10px;align-items:center;padding:6px 4px;border-bottom:1px solid var(--border);font-size:12.5px}
+.funnel-row:last-child{border-bottom:none}
+.funnel-row .stage{font-weight:600;color:var(--text)}
+.funnel-row .bar-wrap{position:relative;height:24px;background:var(--bg3);border-radius:6px;overflow:hidden}
+.funnel-row .bar{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--accent),#ff5a2e);border-radius:6px;transition:width .25s}
+.funnel-row .bar-label{position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;color:#111;text-shadow:0 1px 0 rgba(255,255,255,.2)}
+.funnel-row .col-num{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.funnel-row .col-num.success{color:var(--green)}
+.funnel-row .col-num.fail{color:var(--red)}
+.funnel-row .col-num.progress{color:var(--text2)}
+.funnel-row .col-num.conv{color:var(--accent)}
+.funnel-head{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;padding:6px 4px;border-bottom:1px solid var(--border2);background:transparent;display:grid;grid-template-columns:200px 1fr 80px 70px 70px 70px;gap:10px;align-items:center}
+.funnel-head .col-num{text-align:right}
+
+/* Managers table */
+.mgr-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px;background:var(--surface2);margin-bottom:20px}
+.mgr-table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;min-width:560px}
+.mgr-table th,.mgr-table td{padding:10px 14px;text-align:right;white-space:nowrap;line-height:1.25}
+.mgr-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;background:var(--surface);border-bottom:1px solid var(--border)}
+.mgr-table th:first-child,.mgr-table td:first-child{text-align:left;font-weight:600;color:var(--text)}
+.mgr-table td{color:var(--text2);font-weight:500;border-bottom:1px solid var(--border)}
+.mgr-table tr:last-child td{border-bottom:none}
+.mgr-table tr:hover td{background:var(--bg3)}
+.mgr-table td.success{color:var(--green);font-weight:700}
+.mgr-table td.fail{color:var(--red);font-weight:700}
+.mgr-table td.progress{color:var(--blue);font-weight:700}
+.mgr-table td.conv{color:var(--accent);font-weight:700}
+.mgr-table .conv-bar{display:inline-block;width:60px;height:4px;background:var(--bg3);border-radius:2px;vertical-align:middle;margin-left:8px;overflow:hidden}
+.mgr-table .conv-bar i{display:block;height:100%;background:var(--accent);border-radius:2px}
+
+/* States */
+.loading,.empty,.error-box{padding:40px 20px;text-align:center;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:12px}
+.error-box{border-color:var(--red);color:var(--red);background:var(--red-bg)}
+.muted{color:var(--text3);font-size:11px}
+
+@media (max-width:700px){
+  .funnel-row,.funnel-head{grid-template-columns:140px 1fr 60px 50px 50px 50px;font-size:11px;gap:6px}
+  .funnel-row .stage{font-size:11px}
+}
+</style>
+</head>
+<body>
+<div id="appHeader"></div>
+
+<div class="wrap">
+  <div>
+    <div class="page-tabs" role="tablist">
+      <button class="ptab active" data-cat="sales">📈 Продажі</button>
+    </div>
+    <div class="sub-tabs" id="subTabs">
+      <button class="stab active" data-rep="planfix_funnel">🎯 Воронка лідогенерації</button>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <span class="lbl">Звіт</span>
+    <span class="meta" id="reportMeta">Конверсії лідогенерації по етапах · з Planfix</span>
+    <span class="spacer"></span>
+    <span class="meta" id="freshness">—</span>
+    <button class="btn btn--secondary btn--sm" id="btnRefresh">↻ Оновити</button>
+  </div>
+
+  <div id="content">
+    <div class="loading">Завантаження звіту…</div>
+  </div>
+</div>
+
+<script>
+Auth.require('reports').then(user => {
+  AppHeader.mount({ active: 'reports', user });
+  load();
+
+  document.getElementById('btnRefresh').addEventListener('click', () => load(true));
+});
+
+const API = 'https://price-api.doskevich.workers.dev/';
+
+async function load(force = false) {
+  const c = document.getElementById('content');
+  c.innerHTML = '<div class="loading">Завантаження звіту…</div>';
+  try {
+    const url = API + '?action=planfix_funnel' + (force ? '&_=' + Date.now() : '');
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+    render(data);
+  } catch (e) {
+    c.innerHTML = `<div class="error-box">Помилка: ${esc(e.message || e)}</div>`;
+  }
+}
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function fmt(n){return Number(n||0).toLocaleString('uk-UA')}
+function pct(n){return (Math.round((n||0)*1000)/10).toFixed(1) + '%'}
+
+function render(d) {
+  document.getElementById('freshness').innerHTML = d.generatedAt
+    ? `Оновлено: <b>${esc(d.generatedAt.replace('T',' ').slice(0,16))}</b>`
+    : '';
+
+  const total = d.total || 0;
+  const successPct = total ? d.success / total : 0;
+  const failPct = total ? d.fail / total : 0;
+  const inProgressPct = total ? d.inProgress / total : 0;
+
+  const maxStageTotal = Math.max(...d.funnel.map(f => f.total), 1);
+
+  // Conversion between consecutive stages
+  const stageConv = d.funnel.map((f, i) => {
+    if (i === 0) return null;
+    const prev = d.funnel[i - 1].total;
+    return prev > 0 ? f.total / prev : 0;
+  });
+
+  let html = '';
+
+  // KPI
+  html += `
+  <div class="kpi">
+    <div class="kpi-card">
+      <div class="lbl">Усього угод</div>
+      <div class="val">${fmt(total)}</div>
+      <div class="sub">у воронці звіту</div>
+    </div>
+    <div class="kpi-card c-success">
+      <div class="lbl">Успішно</div>
+      <div class="val">${fmt(d.success)}</div>
+      <div class="sub">${pct(successPct)} від усіх</div>
+    </div>
+    <div class="kpi-card c-fail">
+      <div class="lbl">Неуспішно</div>
+      <div class="val">${fmt(d.fail)}</div>
+      <div class="sub">${pct(failPct)} від усіх</div>
+    </div>
+    <div class="kpi-card c-progress">
+      <div class="lbl">У роботі</div>
+      <div class="val">${fmt(d.inProgress)}</div>
+      <div class="sub">${pct(inProgressPct)} від усіх</div>
+    </div>
+    <div class="kpi-card c-rate">
+      <div class="lbl">Загальна конверсія</div>
+      <div class="val">${pct(d.conversionRate)}</div>
+      <div class="sub">успіх / всього</div>
+    </div>
+  </div>`;
+
+  // Funnel
+  html += `
+  <div class="section-h">
+    <h2>🎯 Воронка по етапах</h2>
+    <span class="hint">Бар = частка від найбільшого етапу</span>
+  </div>
+  <div class="funnel">
+    <div class="funnel-head">
+      <div>Етап</div>
+      <div></div>
+      <div class="col-num">Усього</div>
+      <div class="col-num">✓</div>
+      <div class="col-num">✗</div>
+      <div class="col-num">CR ↻</div>
+    </div>`;
+  d.funnel.forEach((f, i) => {
+    const w = (f.total / maxStageTotal) * 100;
+    const conv = stageConv[i];
+    html += `
+      <div class="funnel-row">
+        <div class="stage">${esc(f.stage)}</div>
+        <div class="bar-wrap"><div class="bar" style="width:${w}%"></div><div class="bar-label">${fmt(f.total)}</div></div>
+        <div class="col-num">${fmt(f.total)}</div>
+        <div class="col-num success">${f.success ? fmt(f.success) : '—'}</div>
+        <div class="col-num fail">${f.fail ? fmt(f.fail) : '—'}</div>
+        <div class="col-num conv">${conv === null ? '—' : pct(conv)}</div>
+      </div>`;
+  });
+  html += `</div>`;
+
+  // Managers
+  html += `
+  <div class="section-h">
+    <h2>👥 По менеджерах</h2>
+    <span class="hint">Сортування — за кількістю угод</span>
+  </div>
+  <div class="mgr-wrap">
+    <table class="mgr-table">
+      <thead>
+        <tr>
+          <th>Менеджер</th>
+          <th>Угод</th>
+          <th>Успіх</th>
+          <th>Провал</th>
+          <th>В роботі</th>
+          <th>Конверсія</th>
+        </tr>
+      </thead>
+      <tbody>`;
+  d.managers.forEach(m => {
+    const cr = m.total ? m.success / m.total : 0;
+    html += `
+        <tr>
+          <td>${esc(m.name)}</td>
+          <td>${fmt(m.total)}</td>
+          <td class="success">${m.success ? fmt(m.success) : '—'}</td>
+          <td class="fail">${m.fail ? fmt(m.fail) : '—'}</td>
+          <td class="progress">${m.inProgress ? fmt(m.inProgress) : '—'}</td>
+          <td class="conv">${pct(cr)}<span class="conv-bar"><i style="width:${Math.round(cr*100)}%"></i></span></td>
+        </tr>`;
+  });
+  html += `
+      </tbody>
+    </table>
+  </div>
+  <div class="muted" style="text-align:right;padding:4px 6px">
+    Джерело: Planfix звіт #${d.reportId} «${esc(d.reportName)}». Кеш 30 хв (Planfix дозволяє перебудову раз на 10 хв).
+  </div>`;
+
+  document.getElementById('content').innerHTML = html;
+}
+</script>
+</body>
+</html>
