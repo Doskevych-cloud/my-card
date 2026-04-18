@@ -483,20 +483,20 @@ function render() {
     <div class="funnel-head">
       <div>Етап</div><div></div>
       <div class="col-num">Усього</div>
-      <div class="col-num">→ наступний</div>
+      <div class="col-num">% з попереднього</div>
       <div class="col-num">% від №1</div>
     </div>`;
   a.funnel.forEach((f, i) => {
     const w = (f.total / maxStageTotal) * 100;
     const fromBase = stageConv[i];
-    const next = a.funnel[i+1];
-    const stepConv = (next && f.total > 0) ? next.total / f.total : null;
+    const prev = i > 0 ? a.funnel[i-1] : null;
+    const fromPrev = (prev && prev.total > 0) ? f.total / prev.total : null;
     html += `
       <div class="funnel-row">
         <div class="stage">${esc(f.stage)}</div>
         <div class="bar-wrap"><div class="bar" style="width:${w}%"></div><div class="bar-label">${fmt(f.total)}</div></div>
         <div class="col-num">${fmt(f.total)}</div>
-        <div class="col-num conv">${stepConv === null ? '—' : pct(stepConv)}</div>
+        <div class="col-num conv">${fromPrev === null ? '—' : pct(fromPrev)}</div>
         <div class="col-num conv">${pct(fromBase)}</div>
       </div>`;
   });
