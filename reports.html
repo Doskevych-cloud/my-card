@@ -148,7 +148,8 @@ a{color:inherit;text-decoration:none}
       <button class="ptab active" data-cat="sales">📈 Продажі</button>
     </div>
     <div class="sub-tabs" id="subTabs">
-      <button class="stab active" data-rep="planfix_funnel">🎯 Воронка лідогенерації</button>
+      <button class="stab active" data-rep="planfix">🎯 Воронка (Planfix)</button>
+      <button class="stab" data-rep="sheet">📊 За датою переходу (таблиця)</button>
     </div>
   </div>
 
@@ -194,7 +195,8 @@ function _firstOfMonthISO(){const d=new Date();return _localISO(new Date(d.getFu
 function _lastOfMonthISO(){const d=new Date();return _localISO(new Date(d.getFullYear(), d.getMonth()+1, 0))}
 
 const state = {
-  raw: null,            // { tasks, generatedAt, reportName, stages }
+  raw: null,            // { tasks, generatedAt, reportName, stages } or sheet-agg
+  source: 'planfix',    // 'planfix' | 'sheet'
   from: _firstOfMonthISO(),
   to: _lastOfMonthISO(),
   preset: 'month',
@@ -228,6 +230,7 @@ function saveStateToUrl() {
   h.set('to', state.to);
   if (state.preset) h.set('preset', state.preset);
   if (state.org)    h.set('org', state.org);
+  if (state.source !== 'planfix') h.set('src', state.source);
   history.replaceState(null, '', '#' + h.toString());
 }
 function hydrateFromHash() {
@@ -236,6 +239,7 @@ function hydrateFromHash() {
   if (h.get('to'))   state.to   = h.get('to');
   if (h.get('preset')) state.preset = h.get('preset');
   if (h.get('org'))    state.org    = h.get('org');
+  if (h.get('src'))    state.source = h.get('src');
   if (!h.get('preset')) state.preset = detectPreset(state.from, state.to);
 }
 function detectPreset(from, to) {
@@ -308,25 +312,48 @@ function attachEvents() {
     c.addEventListener('click', () => setPreset(c.dataset.preset));
   });
   document.getElementById('btnRefresh').addEventListener('click', () => load(true));
+  document.querySelectorAll('#subTabs .stab').forEach(t => {
+    t.addEventListener('click', () => {
+      state.source = t.dataset.rep || 'planfix';
+      document.querySelectorAll('#subTabs .stab').forEach(x => x.classList.toggle('active', x === t));
+      // org-chip only works for Planfix (template id)
+      document.querySelectorAll('.chip[data-org]').forEach(c => {
+        c.style.opacity = state.source === 'sheet' ? .4 : 1;
+        c.style.pointerEvents = state.source === 'sheet' ? 'none' : '';
+      });
+      saveStateToUrl(); load();
+    });
+  });
+  // Initial sync of sub-tab state
+  document.querySelectorAll('#subTabs .stab').forEach(t =>
+    t.classList.toggle('active', t.dataset.rep === state.source)
+  );
 }
 
 // ─── Data ───
 async function load(force = false) {
   state.loading = true;
-  document.getElementById('content').innerHTML = '<div class="loading">Завантаження звіту з Planfix…</div>';
+  const srcLabel = state.source === 'sheet' ? 'Google Sheets' : 'Planfix';
+  document.getElementById('content').innerHTML = `<div class="loading">Завантаження звіту з ${srcLabel}…</div>`;
   try {
-    const params = new URLSearchParams({ action: 'planfix_funnel', from: state.from, to: state.to });
+    const action = state.source === 'sheet' ? 'sheet_funnel' : 'planfix_funnel';
+    const params = new URLSearchParams({ action, from: state.from, to: state.to });
     if (force) params.set('_', Date.now());
     const res = await fetch(API + '?' + params.toString());
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
     state.raw = data;
     state.loading = false;
-    const fresh = data.generatedAt ? data.generatedAt.replace('T',' ').slice(0,16) : '';
-    let label = fresh ? `Дані Planfix: <b>${esc(fresh)}</b>` : '';
-    if (data._stale) {
-      const ago = data._staleSince ? Math.round((Date.now() - data._staleSince) / 60000) : '?';
-      label += ` <span style="color:var(--yellow)">⚠ кеш ${ago} хв (Planfix limit 10 хв)</span>`;
+    let label = '';
+    if (state.source === 'sheet') {
+      label = `Джерело: <b>Google Sheets</b> · рядків у періоді: <b>${fmt(data._rowsInPeriod || 0)}</b>`;
+    } else {
+      const fresh = data.generatedAt ? data.generatedAt.replace('T',' ').slice(0,16) : '';
+      label = fresh ? `Дані Planfix: <b>${esc(fresh)}</b>` : '';
+      if (data._stale) {
+        const ago = data._staleSince ? Math.round((Date.now() - data._staleSince) / 60000) : '?';
+        label += ` <span style="color:var(--yellow)">⚠ кеш ${ago} хв (Planfix limit 10 хв)</span>`;
+      }
     }
     document.getElementById('freshness').innerHTML = label;
     render();
@@ -407,8 +434,14 @@ function fmtDateUA(iso){if(!iso)return '—';const d=iso.slice(0,10).split('-');
 // ─── Render ───
 function render() {
   if (!state.raw) return;
-  const tasks = filteredTasks();
-  const a = aggregate(tasks, state.raw.stages);
+  let a, tasks = [];
+  if (state.source === 'sheet') {
+    // Worker sheet_funnel already returns aggregated shape matching aggregate().
+    a = state.raw;
+  } else {
+    tasks = filteredTasks();
+    a = aggregate(tasks, state.raw.stages);
+  }
   const maxStageTotal = Math.max(...a.funnel.map(f => f.total), 1);
   // Конверсія = % від 1-го етапу (як в офіційному звіті Planfix).
   const baseStageTotal = (a.funnel[0] && a.funnel[0].total) || 0;
@@ -502,7 +535,31 @@ function render() {
   });
   html += `</tbody></table></div>`;
 
-  // Tasks
+  // Channels (тільки для sheet-режиму)
+  if (state.source === 'sheet' && a.channels && a.channels.length) {
+    html += `
+    <div class="section-h"><h2>🌐 Канали реклами</h2><span class="hint">Унікальні угоди по джерелу</span></div>
+    <div class="mgr-wrap">
+      <table class="mgr-table">
+        <thead><tr><th>Канал</th><th>Угод</th><th>Успіх</th><th>Провал</th><th>В роботі</th><th>Конверсія</th></tr></thead>
+        <tbody>`;
+    a.channels.forEach(c => {
+      const cr = c.total ? c.success / c.total : 0;
+      html += `
+        <tr>
+          <td>${esc(c.name)}</td>
+          <td>${fmt(c.total)}</td>
+          <td class="success">${c.success ? fmt(c.success) : '—'}</td>
+          <td class="fail">${c.fail ? fmt(c.fail) : '—'}</td>
+          <td class="progress">${c.inProgress ? fmt(c.inProgress) : '—'}</td>
+          <td class="conv">${pct(cr)}<span class="conv-bar"><i style="width:${Math.round(cr*100)}%"></i></span></td>
+        </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+
+  // Tasks — тільки для Planfix-режиму (у sheet rows агреговані, raw немає)
+  if (state.source !== 'sheet') {
   const uniqTasks = new Set(tasks.map(t => t.id)).size;
   html += `
   <div class="section-h"><h2>📋 Задачі (${fmt(uniqTasks)} унікальних, ${fmt(tasks.length)} проходжень)</h2><span class="hint">Останні зміни вгорі</span></div>
@@ -528,9 +585,16 @@ function render() {
   if (sorted.length > 200) {
     html += `<tr><td colspan="5" class="muted" style="text-align:center;padding:10px">… показано перші 200 з ${fmt(sorted.length)}</td></tr>`;
   }
-  html += `</tbody></table></div>
+  html += `</tbody></table></div>`;
+  } // end if (state.source !== 'sheet')
+
+  // Footer
+  const srcDesc = state.source === 'sheet'
+    ? `Google Sheets (кожен рядок = подія переходу статусу, реальна дата зміни). Кеш 1 год.`
+    : `Planfix звіт «${esc(state.raw.reportName)}» (items[5] = остання зміна задачі). Кеш 1 год.`;
+  html += `
   <div class="muted" style="text-align:right;padding:4px 6px">
-    Джерело: Planfix звіт «${esc(state.raw.reportName)}» за ${esc(state.raw.from || '')} — ${esc(state.raw.to || '')}. Кеш 1 год (Planfix generate ≥ 10 хв).
+    Джерело: ${srcDesc} Період: ${esc(state.raw.from || '')} — ${esc(state.raw.to || '')}.
   </div>`;
 
   document.getElementById('content').innerHTML = html;
