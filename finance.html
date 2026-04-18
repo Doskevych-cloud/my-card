@@ -2434,11 +2434,11 @@ function renderMs(data) {
   };
   document.getElementById('msSummary').innerHTML =
     '<div class="pnl-summary">' +
-    card('c-rev', '🟢 Клієнти винні нам',         ar.debtsTotalUsd, ar.debts.length + ' контрагентів') +
-    card('c-cost', '⚪ Передоплати клієнтів',      ar.prepaysTotalUsd, 'ми ще не відвантажили товар') +
-    card('c-cost', '🔴 Ми винні постачальникам',   ap.debtsTotalUsd, ap.debts.length + ' контрагентів') +
-    card('c-grs', '⚪ Передоплати постачальникам', ap.prepaysTotalUsd, 'постачальник ще не відвантажив') +
-    card('c-net', '⚖️ Чистий стан',                 net.usd, 'наш нетто (≈ ' + fmt(net.uah, 0) + ' ₴)') +
+    card('c-rev', 'Клієнти винні нам',         ar.debtsTotalUsd, ar.debts.length + ' контрагентів') +
+    card('c-cost', 'Передоплати клієнтів',      ar.prepaysTotalUsd, 'ми ще не відвантажили товар') +
+    card('c-cost', 'Ми винні постачальникам',   ap.debtsTotalUsd, ap.debts.length + ' контрагентів') +
+    card('c-grs', 'Передоплати постачальникам', ap.prepaysTotalUsd, 'постачальник ще не відвантажив') +
+    card('c-net', 'Чистий стан',                 net.usd, 'наш нетто (≈ ' + fmt(net.uah, 0) + ' ₴)') +
     '</div>';
 
   // 2-column body: клієнти | постачальники. Кожна колонка — 2 таблиці (борги + аванси).
@@ -2468,14 +2468,14 @@ function renderMs(data) {
       // Клієнти
       '<div>' +
         '<h3 style="font-size:13px;font-weight:700;color:var(--text);margin:0 4px 10px;text-transform:uppercase;letter-spacing:.3px">👥 Клієнти</h3>' +
-        tbl('🟢 Винні нам',               ar.debtsTotalUsd,   ar.debts,   'var(--green)', 'дебіторка') +
-        tbl('⚪ Від них отримано аванс',    ar.prepaysTotalUsd, ar.prepays, 'var(--text2)', 'відвантаження заборговане') +
+        tbl('Винні нам',               ar.debtsTotalUsd,   ar.debts,   'var(--green)', 'дебіторка') +
+        tbl('Від них отримано аванс',    ar.prepaysTotalUsd, ar.prepays, 'var(--text2)', 'відвантаження заборговане') +
       '</div>' +
       // Постачальники
       '<div>' +
         '<h3 style="font-size:13px;font-weight:700;color:var(--text);margin:0 4px 10px;text-transform:uppercase;letter-spacing:.3px">🏭 Постачальники</h3>' +
-        tbl('🔴 Ми винні',                 ap.debtsTotalUsd,   ap.debts,   'var(--red)',   'кредиторка') +
-        tbl('⚪ Ми дали аванс',             ap.prepaysTotalUsd, ap.prepays, 'var(--text2)', 'поставка заборгована') +
+        tbl('Ми винні',                 ap.debtsTotalUsd,   ap.debts,   'var(--red)',   'кредиторка') +
+        tbl('Ми дали аванс',             ap.prepaysTotalUsd, ap.prepays, 'var(--text2)', 'поставка заборгована') +
       '</div>' +
     '</div>';
   document.getElementById('msBody').innerHTML = html;

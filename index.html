@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=noplash20260418"></script>
-<script src="header.js?v=noplash20260418"></script>
+<script src="auth.js?v=naked20260418"></script>
+<script src="header.js?v=naked20260418"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -70,25 +70,18 @@ a{color:inherit;text-decoration:none}
 .toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 2px}
 /* buttons unified via header.js (.btn + .btn--secondary/--sm) */
 
-/* ═══ BLOCK — основний контейнер модуля ═══ */
-.block{margin-top:22px;border:1px solid var(--border);border-radius:16px;background:linear-gradient(180deg,var(--surface) 0%,var(--surface2) 100%);overflow:hidden;position:relative;box-shadow:var(--shadow-sm);animation:block-in .45s ease-out backwards}
+/* ═══ BLOCK — секція дашборду (без рамок, без плашок, без іконок). Тільки назва + вміст. ═══ */
+.block{margin-top:22px;position:relative;animation:block-in .45s ease-out backwards}
 .block:nth-child(2){animation-delay:.05s}
 .block:nth-child(3){animation-delay:.1s}
 .block:nth-child(4){animation-delay:.15s}
 .block:nth-child(5){animation-delay:.2s}
 @keyframes block-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-.block::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--block-color,var(--accent));opacity:.85}
-.block.b-finance{--block-color:var(--accent)}
-.block.b-sales{--block-color:var(--green)}
-.block.b-warehouses{--block-color:var(--purple)}
-.block.b-purchasing{--block-color:var(--cyan)}
 
-.block-head{display:flex;align-items:center;gap:14px;padding:16px 22px 14px;border-bottom:1px solid var(--border)}
-.block-ico{width:36px;height:36px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:19px;background:color-mix(in srgb,var(--block-color) 14%,transparent);color:var(--block-color);flex-shrink:0;border:1px solid color-mix(in srgb,var(--block-color) 22%,transparent)}
-.block-title{font-size:15px;font-weight:700;letter-spacing:-.2px;color:var(--text);display:flex;align-items:center;gap:8px}
-.block-sub{font-size:11.5px;color:var(--text3);margin-top:2px;font-weight:500}
+.block-head{display:flex;align-items:center;gap:14px;padding:4px 0 12px}
+.block-title{font-size:15px;font-weight:700;letter-spacing:-.2px;color:var(--text)}
 .block-meta{margin-left:auto;font-size:11px;color:var(--text3);font-weight:600}
-.block-body{padding:18px 22px 20px;display:flex;flex-direction:column;gap:14px}
+.block-body{padding:0;display:flex;flex-direction:column;gap:14px}
 
 /* ═══ KPI rows inside blocks ═══ */
 .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
@@ -264,11 +257,7 @@ a{color:inherit;text-decoration:none}
     <!-- ═══ БЛОК: КЛЮЧОВІ ПОКАЗНИКИ ═══ -->
     <section class="block b-finance" id="sectionKey" style="display:none">
       <div class="block-head">
-        <div class="block-ico">💰</div>
-        <div>
-          <div class="block-title">Ключові показники</div>
-          <div class="block-sub">Обсяг реалізації · Дебіторка · Кредиторка</div>
-        </div>
+        <div class="block-title">Ключові показники</div>
         <div class="block-meta" id="keyMeta"></div>
       </div>
       <div class="block-body">
@@ -279,11 +268,7 @@ a{color:inherit;text-decoration:none}
     <!-- ═══ БЛОК: РЕЙТИНГ МЕНЕДЖЕРІВ ═══ -->
     <section class="block b-sales" id="sectionSales" style="display:none">
       <div class="block-head">
-        <div class="block-ico">🏆</div>
-        <div>
-          <div class="block-title">Рейтинг менеджерів</div>
-          <div class="block-sub">Оплати · Бонуси за період</div>
-        </div>
+        <div class="block-title">Рейтинг менеджерів</div>
         <div class="block-meta" id="salesBlockMeta"></div>
       </div>
       <div class="block-body">
@@ -463,13 +448,13 @@ function buildKpiSkeleton() {
 
   const keyKpis = [];
   if (r.finance) {
-    keyKpis.push({ id: 'kpiRevenue', cls: 'c-rev', ico: '💵', lbl: 'Обсяг реалізації' });
-    keyKpis.push({ id: 'kpiAR',      cls: 'c-ar',  ico: '🟢', lbl: 'Дебіторка' });
-    keyKpis.push({ id: 'kpiAP',      cls: 'c-ap',  ico: '🔴', lbl: 'Кредиторка' });
+    keyKpis.push({ id: 'kpiRevenue', cls: 'c-rev', lbl: 'Обсяг реалізації' });
+    keyKpis.push({ id: 'kpiAR',      cls: 'c-ar',  lbl: 'Дебіторка' });
+    keyKpis.push({ id: 'kpiAP',      cls: 'c-ap',  lbl: 'Кредиторка' });
   }
 
   const kpiHtml = c => `<div class="kpi ${c.cls} ldg" id="${c.id}">
-    <div class="kpi-head"><span class="kpi-ico">${c.ico}</span><span class="kpi-lbl">${c.lbl}</span></div>
+    <div class="kpi-head"><span class="kpi-lbl">${c.lbl}</span></div>
     <div class="kpi-val">—</div>
     <div class="kpi-sub"></div>
     <canvas class="kpi-spark" id="${c.id}Spark" width="180" height="30"></canvas>
