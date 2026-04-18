@@ -356,6 +356,17 @@ function renderSummary(currencies) {
   </div>`;
 }
 
+function scaleBar(buckets, total) {
+  if (!total) return '<span class="scale-bar"></span>';
+  const segs = BUCKET_ORDER.map(k => {
+    const v = buckets[k] || 0;
+    if (v < 0.005) return '';
+    const pct = (v / total) * 100;
+    return `<div class="seg seg-${k}" style="width:${pct}%" title="${BUCKET_LABEL[k]} дн.: ${fmt(v)} (${pct.toFixed(1)}%)"></div>`;
+  }).join('');
+  return `<div class="scale-bar">${segs}</div>`;
+}
+
 function renderTable(currencies) {
   // Sort currencies: USD → EUR → UAH → others
   const CUR_ORDER = { USD:1, EUR:2, UAH:3 };
@@ -377,13 +388,9 @@ function renderTable(currencies) {
         ${fmt(c.total)} ${sign}
         <span class="meta">${clients.length} клієнт${clients.length === 1 ? '' : 'ів'} · сер. вік ${avgAge.toFixed(0)} дн.</span>
       </td>
-      <td class="total">${fmt(c.total)}</td>
+      <td class="total">${fmt(c.total)} ${sign}</td>
       <td class="age">${avgAge.toFixed(0)} дн.</td>
-      ${BUCKET_ORDER.map(k => {
-        const v = c.buckets[k] || 0;
-        const has = v >= 0.005;
-        return `<td class="num b-val b-${k}${has ? ' has' : ' zr'}">${fmt(v)}</td>`;
-      }).join('')}
+      <td class="scale-cell">${scaleBar(c.buckets, c.total)}</td>
     </tr>`;
 
     // Client rows
@@ -391,13 +398,9 @@ function renderTable(currencies) {
       const ageCls = cl.maxDaysOverdue > 60 ? 'bad' : cl.maxDaysOverdue > 30 ? 'warn' : '';
       rows += `<tr class="ar-cl${collapsed ? ' collapsed-hidden' : ''}" data-cur="${esc(curKey)}">
         <td title="${esc(cl.name)}">${esc(cl.name)}</td>
-        <td class="total">${fmt(cl.total)}</td>
+        <td class="total">${fmt(cl.total)} ${sign}</td>
         <td class="age ${ageCls}">${cl.maxDaysOverdue > 0 ? cl.maxDaysOverdue + ' дн.' : '—'}</td>
-        ${BUCKET_ORDER.map(k => {
-          const v = cl.buckets[k] || 0;
-          const has = v >= 0.005;
-          return `<td class="num b-val b-${k}${has ? ' has' : ' zr'}">${fmt(v)}</td>`;
-        }).join('')}
+        <td class="scale-cell">${scaleBar(cl.buckets, cl.total)}</td>
       </tr>`;
     });
   });
@@ -410,11 +413,16 @@ function renderTable(currencies) {
             <th>Валюта / Контрагент</th>
             <th>Заборгованість</th>
             <th>Вік боргу</th>
-            <th class="b-d7"><span class="sw"></span>До 7</th>
-            <th class="b-d14"><span class="sw"></span>8–14</th>
-            <th class="b-d30"><span class="sw"></span>15–30</th>
-            <th class="b-d60"><span class="sw"></span>31–60</th>
-            <th class="b-d61p"><span class="sw"></span>Від 61</th>
+            <th class="scale-head">
+              Розподіл по строках
+              <div class="scale-ticks">
+                <span class="c-d7">До 7</span>
+                <span class="c-d14">8–14</span>
+                <span class="c-d30">15–30</span>
+                <span class="c-d60">31–60</span>
+                <span class="c-d61p">Від 61</span>
+              </div>
+            </th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
