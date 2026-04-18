@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=mdl20260418"></script>
-<script src="header.js?v=mdl20260418"></script>
+<script src="auth.js?v=line20260418"></script>
+<script src="header.js?v=line20260418"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -901,50 +901,96 @@ function openRevenueModal() {
   openModal({
     title: '💵 Оплачено — динаміка',
     sub: `6 місяців · середнє ${fmtMoney(avg, '$')} · max ${fmtMoney(max, '$')} · min ${fmtMoney(min, '$')}`,
-    body: `<div style="position:relative;height:320px"><canvas id="revTrendCanvas"></canvas></div>`,
+    body: `<div style="position:relative;height:360px"><canvas id="revTrendCanvas"></canvas></div>`,
   });
 
-  // Chart.js — bar chart with tooltip, delayed render so canvas is attached
+  // Chart.js — smooth area line chart with crosshair + tooltip
   requestAnimationFrame(() => {
     const canvas = document.getElementById('revTrendCanvas');
     if (!canvas) return;
     const isDark = (document.documentElement.getAttribute('data-theme') || 'dark') !== 'light';
     const tick = isDark ? '#a3a3a3' : '#48484a';
-    const grid = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
-    const accentCss = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#ff8319';
+    const grid = isDark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.05)';
     const greenCss = getComputedStyle(document.documentElement).getPropertyValue('--green').trim() || '#22c55e';
+    const accentCss = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#ff8319';
 
-    state.modalChart = new Chart(canvas.getContext('2d'), {
-      type: 'bar',
+    const ctx = canvas.getContext('2d');
+    // Area gradient (green → fade)
+    const grad = ctx.createLinearGradient(0, 0, 0, 360);
+    grad.addColorStop(0, greenCss + '55');
+    grad.addColorStop(1, greenCss + '00');
+
+    // Highlight last point (current month) — orange dot, others green
+    const lastIdx = values.length - 1;
+    const pointColors = values.map((_, i) => i === lastIdx ? accentCss : greenCss);
+    const pointSizes  = values.map((_, i) => i === lastIdx ? 6 : 4);
+
+    // Crosshair + active-dot plugin: vertical line on hover
+    const crosshairPlugin = {
+      id: 'crosshair',
+      afterDraw(chart) {
+        const tt = chart.tooltip;
+        if (!tt || !tt._active || !tt._active.length) return;
+        const active = tt._active[0];
+        const x = active.element.x;
+        const yTop = chart.chartArea.top;
+        const yBot = chart.chartArea.bottom;
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(x, yTop);
+        ctx.lineTo(x, yBot);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = isDark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.12)';
+        ctx.setLineDash([4, 4]);
+        ctx.stroke();
+        ctx.restore();
+      },
+    };
+
+    state.modalChart = new Chart(ctx, {
+      type: 'line',
       data: {
         labels,
         datasets: [{
           label: 'Оплачено',
           data: values,
-          backgroundColor: values.map((v, i) => i === values.length - 1 ? accentCss : greenCss + 'aa'),
-          borderColor: values.map((v, i) => i === values.length - 1 ? accentCss : greenCss),
-          borderWidth: 1,
-          borderRadius: 6,
-          maxBarThickness: 52,
+          borderColor: greenCss,
+          borderWidth: 2,
+          backgroundColor: grad,
+          fill: true,
+          tension: 0.35,
+          pointBackgroundColor: pointColors,
+          pointBorderColor: pointColors,
+          pointRadius: pointSizes,
+          pointHoverRadius: 8,
+          pointHoverBackgroundColor: pointColors,
+          pointHoverBorderColor: '#ffffff',
+          pointHoverBorderWidth: 2,
+          cubicInterpolationMode: 'monotone',
         }],
       },
+      plugins: [crosshairPlugin],
       options: {
         responsive: true, maintainAspectRatio: false,
-        animation: { duration: 420, easing: 'easeOutCubic' },
+        interaction: { mode: 'index', intersect: false, axis: 'x' },
+        animation: { duration: 520, easing: 'easeOutCubic' },
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: 'rgba(20,20,20,.96)',
+            backgroundColor: 'rgba(18,18,18,.97)',
             borderColor: 'rgba(255,255,255,.1)',
             borderWidth: 1,
             titleColor: '#f5f5f5',
             bodyColor: '#f5f5f5',
-            padding: 10,
+            padding: 12,
+            cornerRadius: 8,
             titleFont: { size: 12, weight: '600' },
-            bodyFont: { size: 13, weight: '700' },
+            bodyFont: { size: 14, weight: '700' },
+            displayColors: false,
             callbacks: {
               title: items => items[0].label,
-              label: c => '💵 ' + fmtMoney(c.parsed.y, '$'),
+              label: c => fmtMoney(c.parsed.y, '$'),
               afterLabel: c => {
                 const idx = c.dataIndex;
                 if (idx === 0) return '';
@@ -958,8 +1004,17 @@ function openRevenueModal() {
           },
         },
         scales: {
-          x: { ticks: { color: tick, font: { size: 11 } }, grid: { display: false } },
-          y: { ticks: { color: tick, font: { size: 10 }, callback: v => fmt(v / 1000, 0) + 'k' }, grid: { color: grid } },
+          x: {
+            ticks: { color: tick, font: { size: 11 } },
+            grid: { display: false, drawBorder: false },
+            border: { display: false },
+          },
+          y: {
+            ticks: { color: tick, font: { size: 10 }, callback: v => fmt(v / 1000, 0) + 'k' },
+            grid: { color: grid, drawBorder: false },
+            border: { display: false },
+            beginAtZero: true,
+          },
         },
       },
     });
