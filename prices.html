@@ -2313,48 +2313,16 @@ let historyCache = [];
 
 async function fetchHistory() {
   try {
-    const res = await fetch(API_URL);
-    if (!res.ok) return [];
-    const data = await res.json();
+    const data = await Auth.apiFetch('history_get');
     historyCache = data.history || [];
     return historyCache;
   } catch(e) { console.warn('Fetch history error', e); return []; }
 }
 
-async function postToGAS(payload) {
-  try {
-    // Try fetch first (modern, reliable)
-    const fd = new URLSearchParams();
-    fd.append('data', payload);
-    await fetch(API_URL, { method: 'POST', body: fd, mode: 'no-cors' });
-  } catch(e) {
-    // Fallback: iframe form
-    await new Promise(resolve => {
-      const iframeName = 'pf' + Date.now();
-      const iframe = document.createElement('iframe');
-      iframe.name = iframeName;
-      iframe.style.display = 'none';
-      document.body.appendChild(iframe);
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = API_URL;
-      form.target = iframeName;
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'data';
-      input.value = payload;
-      form.appendChild(input);
-      document.body.appendChild(form);
-      form.submit();
-      setTimeout(() => { form.remove(); iframe.remove(); resolve(); }, 4000);
-    });
-  }
-}
-
 async function pushHistory(list) {
   historyCache = list;
   try {
-    await postToGAS(JSON.stringify(list));
+    await Auth.apiFetch('history_set', { method: 'POST', body: { data: list } });
   } catch(e) { console.warn('Save history error', e); }
 }
 
@@ -2414,21 +2382,26 @@ function renderHistoryUI(history) {
 
   panel.style.display = '';
   count.textContent = `(${history.length})`;
+  // All string fields MUST go through escapeHtml(); h.id MUST be numeric since
+  // it lands inside on-click JS attributes. Untrusted history originated as an
+  // unauth KV write before the fix — keep the render hardened.
   list.innerHTML = history.map(h => {
+    const id = Number(h.id) || 0;
     const tags = (h.suppliers || []).map(s => {
       const cls = {gen:'gen',hel:'hel',dol:'dol',se:'se',pe:'pe',sv:'sv',atm:'atm',sig:'sig',ssj:'ssj'}[s.key] || 'gen';
-      return `<span class="h-tag h-tag-${cls}">${s.name}</span>`;
+      return `<span class="h-tag h-tag-${cls}">${escapeHtml(s.name)}</span>`;
     }).join('');
-    const hasData = !!(h.rows && h.rows.length);
-    return `<div class="history-item" onclick="openHistoryEntry(${h.id})">
+    const tot = Number(h.totalItems) || 0;
+    const mat = Number(h.matches) || 0;
+    return `<div class="history-item" onclick="openHistoryEntry(${id})">
       <div class="h-info">
-        <div class="h-date">${h.date}</div>
-        <div class="h-meta">${h.totalItems} товарів, ${h.matches} збігів</div>
+        <div class="h-date">${escapeHtml(h.date)}</div>
+        <div class="h-meta">${tot} товарів, ${mat} збігів</div>
         <div class="h-suppliers">${tags}</div>
       </div>
       <div class="h-actions">
-        <button class="h-btn-open" onclick="event.stopPropagation();openHistoryEntry(${h.id})">Відкрити</button>
-        <button class="h-btn" onclick="event.stopPropagation();deleteHistoryItem(${h.id})" title="Видалити">&times;</button>
+        <button class="h-btn-open" onclick="event.stopPropagation();openHistoryEntry(${id})">Відкрити</button>
+        <button class="h-btn" onclick="event.stopPropagation();deleteHistoryItem(${id})" title="Видалити">&times;</button>
       </div>
     </div>`;
   }).join('');
