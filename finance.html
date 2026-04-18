@@ -2442,15 +2442,24 @@ function renderMs(data) {
     '</div>';
 
   // 2-column body: клієнти | постачальники. Кожна колонка — 2 таблиці (борги + аванси).
+  // Per-contract currency amounts shown inline ("12 000 $  / 1 500 €  / 80 000 ₴")
+  const sign = cur => cur === 'USD' ? '$' : cur === 'EUR' ? '€' : cur === 'UAH' ? '₴' : cur;
+  const curBreakdown = (curs) => {
+    if (!curs || !curs.length) return '';
+    return curs
+      .sort((a, b) => Math.abs(b.amt) - Math.abs(a.amt))
+      .map(c => fmt(Math.abs(c.amt), 0) + ' ' + sign(c.cur))
+      .join('  ·  ');
+  };
   const rowsHtml = (rows, color) => {
     if (!rows.length) return '<tr class="itm"><td class="col-total" colspan="2" style="text-align:center;color:var(--text3);font-style:italic">— порожньо —</td></tr>';
     return rows.map(r => {
       const usd = (r.balanceUsd || 0);
-      const uah = (r.balanceUah || 0);
+      const breakdown = curBreakdown(r.currencies);
       return '<tr class="itm">' +
         '<td>' + esc(r.name || r.cpKey) + '</td>' +
         '<td class="col-total" style="color:' + color + '">' + fmt(usd, 0) + ' $</td>' +
-        '<td class="col-total" style="color:var(--text3);font-size:11.5px">' + fmt(uah, 0) + ' ₴</td>' +
+        '<td class="col-total" style="color:var(--text3);font-size:11.5px">' + esc(breakdown) + '</td>' +
       '</tr>';
     }).join('');
   };
@@ -2458,9 +2467,9 @@ function renderMs(data) {
     const totUsd = (rows || []).reduce((s, r) => s + (r.balanceUsd || 0), 0);
     return '<div class="pnl-wrap" style="margin-bottom:14px">' +
       '<table class="pnl-table">' +
-        '<thead><tr><th style="min-width:300px">' + title + '<span style="color:var(--text3);font-weight:500;font-size:11px;margin-left:8px">' + (subtitle||'') + '</span></th><th class="col-total">USD</th><th class="col-total">UAH</th></tr></thead>' +
+        '<thead><tr><th style="min-width:300px">' + title + '<span style="color:var(--text3);font-weight:500;font-size:11px;margin-left:8px">' + (subtitle||'') + '</span></th><th class="col-total">USD</th><th class="col-total">За валютами</th></tr></thead>' +
         '<tbody>' + rowsHtml(rows, color) + '</tbody>' +
-        '<tfoot><tr class="grd"><td>Разом</td><td class="col-total" style="color:' + color + '">' + fmt(totUsd, 0) + ' $</td><td class="col-total" style="color:var(--text3)">' + fmt(totUsd * fx, 0) + ' ₴</td></tr></tfoot>' +
+        '<tfoot><tr class="grd"><td>Разом</td><td class="col-total" style="color:' + color + '">' + fmt(totUsd, 0) + ' $</td><td class="col-total" style="color:var(--text3)"></td></tr></tfoot>' +
       '</table></div>';
   };
   const html =
@@ -2626,6 +2635,9 @@ Auth.require('finance').then(function(user) {
     } else if (chosenTab === 'cf') {
       var cfTabEl = document.querySelector('.ptab[data-view="cf"]');
       if (cfTabEl) switchTab(cfTabEl);
+    } else if (chosenTab === 'ms') {
+      var msTabEl = document.querySelector('.ptab[data-view="ms"]');
+      if (msTabEl) switchTab(msTabEl);
     }
     pnlLoad();
   } else {
@@ -2669,6 +2681,7 @@ Auth.require('finance').then(function(user) {
     else if (forcedTab === 'gp') { var t = document.querySelector('.ptab[data-view="gp"]'); if (t) switchTab(t); }
     else if (forcedTab === 'cf') { var t = document.querySelector('.ptab[data-view="cf"]'); if (t) switchTab(t); }
     else if (forcedTab === 'ar') { var t = document.querySelector('.ptab[data-view="ar"]'); if (t) switchTab(t); }
+    else if (forcedTab === 'ms') { var t = document.querySelector('.ptab[data-view="ms"]'); if (t) switchTab(t); }
   }
 });
 </script>
