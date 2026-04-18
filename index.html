@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=all20260418"></script>
-<script src="header.js?v=all20260418"></script>
+<script src="auth.js?v=arms20260418"></script>
+<script src="header.js?v=arms20260418"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -555,8 +555,10 @@ async function loadKey() {
 
   const qSales   = `?action=sales_report&from=${state.from}&to=${state.to}${orgQ}`;
   const qSalesP  = prev ? `?action=sales_report&from=${prev.from}&to=${prev.to}${orgQ}` : null;
-  const qAR      = `?action=accounts_receivable&from=${state.from}&to=${state.to}${orgQ}`;
-  const qARp     = prev ? `?action=accounts_receivable&from=${prev.from}&to=${prev.to}${orgQ}` : null;
+  // mutual_settlements дає одним викликом одразу AR + AP:
+  //   d.ar.debtsTotalUsd — клієнти винні нам
+  //   d.ap.debtsTotalUsd — ми винні постачальникам
+  // Окремий accounts_receivable уже не потрібен.
   const qMS      = `?action=mutual_settlements&on=${state.to}${orgQ}`;
   const qMSp     = prev ? `?action=mutual_settlements&on=${prev.to}${orgQ}` : null;
   const qFx      = state.fx ? Promise.resolve({ rates: state.fx }) : fetch(API_URL + '?action=fx_rates').then(r => r.json()).catch(() => null);
@@ -568,11 +570,9 @@ async function loadKey() {
   const qPnlP     = prev ? `?action=pnl_accrual_report&from=${prev.from}&to=${prev.to}${orgQ}` : null;
   const qPnlT     = `?action=pnl_accrual_report&from=${trendFrom}&to=${trendEnd}${orgQ}`;
 
-  const [salesR, salesPrevR, ar, arPrev, ms, msPrev, fx, pnl, pnlPrev, pnlTrend, ...sparkR] = await Promise.allSettled([
+  const [salesR, salesPrevR, ms, msPrev, fx, pnl, pnlPrev, pnlTrend, ...sparkR] = await Promise.allSettled([
     fetch(API_URL + qSales).then(r => r.json()),
     qSalesP ? fetch(API_URL + qSalesP).then(r => r.json()) : Promise.resolve(null),
-    fetch(API_URL + qAR).then(r => r.json()),
-    qARp ? fetch(API_URL + qARp).then(r => r.json()) : Promise.resolve(null),
     fetch(API_URL + qMS).then(r => r.json()),
     qMSp ? fetch(API_URL + qMSp).then(r => r.json()) : Promise.resolve(null),
     qFx,
@@ -622,40 +622,31 @@ async function loadKey() {
     updateKpi('kpiRevenue', { val: 'Помилка', sub: esc(msg.slice(0, 80)), error: true });
   }
 
-  // 2) ДЕБІТОРКА = сума боргу клієнтів (USD)
-  if (ar.status === 'fulfilled' && !ar.value.error) {
-    const curVal = arTotalUsd(ar.value);
-    let prevVal = null;
-    if (arPrev && arPrev.status === 'fulfilled' && arPrev.value && !arPrev.value.error) {
-      prevVal = arTotalUsd(arPrev.value);
+  // 2+3) ДЕБІТОРКА + КРЕДИТОРКА — обидві з одного mutual_settlements payload
+  if (ms.status === 'fulfilled' && !ms.value.error) {
+    const d = ms.value;
+    const arCur = msArTotal(d);
+    const apCur = msApTotal(d);
+    let arPrev = null, apPrev = null;
+    if (msPrev && msPrev.status === 'fulfilled' && msPrev.value && !msPrev.value.error) {
+      arPrev = msArTotal(msPrev.value);
+      apPrev = msApTotal(msPrev.value);
     }
     updateKpi('kpiAR', {
-      numeric: { target: curVal, format: kpiMoneyFmt('$') },
-      sub: `клієнти винні нам ${deltaHtml(curVal, prevVal, 'down')}`,
+      numeric: { target: arCur, format: kpiMoneyFmt('$') },
+      sub: `клієнти винні нам ${deltaHtml(arCur, arPrev, 'down')}`,
     });
-    // Sparkline + клік на модалку
-    fetchArSparkline(trendBuckets, orgQ);
-    wireKpiClick('kpiAR', openArModal);
-  } else {
-    const msg = ar.status === 'fulfilled' ? (ar.value.error || 'помилка') : ar.reason.message;
-    updateKpi('kpiAR', { val: 'Помилка', sub: esc(msg.slice(0, 80)), error: true });
-  }
-
-  // 3) КРЕДИТОРКА = ми винні постачальникам (USD)
-  if (ms.status === 'fulfilled' && !ms.value.error) {
-    const curVal = (ms.value.ap && ms.value.ap.debtsTotalUsd) || 0;
-    let prevVal = null;
-    if (msPrev && msPrev.status === 'fulfilled' && msPrev.value && !msPrev.value.error) {
-      prevVal = (msPrev.value.ap && msPrev.value.ap.debtsTotalUsd) || 0;
-    }
     updateKpi('kpiAP', {
-      numeric: { target: curVal, format: kpiMoneyFmt('$') },
-      sub: `ми винні постачальникам ${deltaHtml(curVal, prevVal, 'down')}`,
+      numeric: { target: apCur, format: kpiMoneyFmt('$') },
+      sub: `ми винні постачальникам ${deltaHtml(apCur, apPrev, 'down')}`,
     });
-    fetchApSparkline(trendBuckets, orgQ);
+    // Один спільний набір mutual_settlements викликів для обох sparkline-ів
+    fetchMsSparklines(trendBuckets, orgQ);
+    wireKpiClick('kpiAR', openArModal);
     wireKpiClick('kpiAP', openApModal);
   } else {
     const msg = ms.status === 'fulfilled' ? (ms.value.error || 'помилка') : ms.reason.message;
+    updateKpi('kpiAR', { val: 'Помилка', sub: esc(msg.slice(0, 80)), error: true });
     updateKpi('kpiAP', { val: 'Помилка', sub: esc(msg.slice(0, 80)), error: true });
   }
 
@@ -842,22 +833,27 @@ function wireKpiClick(kpiId, openFn) {
   el._clickWired = true;
 }
 
-// AR sparkline — point-in-time баланси дебіторки на кінець кожного місяця YTD
-async function fetchArSparkline(buckets, orgQ) {
-  const resps = await Promise.all(buckets.map(b =>
-    fetch(API_URL + `?action=accounts_receivable&from=${b.from}&to=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
-  ));
-  const series = resps.map(d => arTotalUsd(d) || 0);
-  drawSparkline('kpiARSpark', series, { color: 'var(--red)' });
+// Підсумки з mutual_settlements payload:
+//   ar (клієнти нам винні)   = sum(arRows.borgUsd)
+//   ap (ми винні постачальникам) = sum(apRows.nashUsd)
+function msArTotal(d) {
+  if (!d || !Array.isArray(d.ar)) return 0;
+  return d.ar.reduce((s, r) => s + (r.borgUsd || 0), 0);
+}
+function msApTotal(d) {
+  if (!d || !Array.isArray(d.ap)) return 0;
+  return d.ap.reduce((s, r) => s + (r.nashUsd || 0), 0);
 }
 
-// AP sparkline — через mutual_settlements on=<bucket.to>
-async function fetchApSparkline(buckets, orgQ) {
+// Один спільний набір запитів mutual_settlements для AR + AP sparkline.
+async function fetchMsSparklines(buckets, orgQ) {
   const resps = await Promise.all(buckets.map(b =>
     fetch(API_URL + `?action=mutual_settlements&on=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
   ));
-  const series = resps.map(d => (d && d.ap && d.ap.debtsTotalUsd) || 0);
-  drawSparkline('kpiAPSpark', series, { color: 'var(--red)' });
+  const arSeries = resps.map(msArTotal);
+  const apSeries = resps.map(msApTotal);
+  drawSparkline('kpiARSpark', arSeries, { color: 'var(--red)' });
+  drawSparkline('kpiAPSpark', apSeries, { color: 'var(--red)' });
 }
 
 function drawSparkline(canvasId, series, opts = {}) {
@@ -1172,18 +1168,12 @@ async function reloadModalChart() {
     const p = await fetch(API_URL + `?action=pnl_accrual_report&from=${from}&to=${to}${orgQ}`).then(r => r.json()).catch(() => null);
     const byM = pnlNetByMonth(p);
     values = buckets.map(b => sumBucketMonths(b, byM));
-  } else if (metric === 'ar') {
-    // Point-in-time баланс дебіторки на кінець кожного bucket
-    const resps = await Promise.all(buckets.map(b =>
-      fetch(API_URL + `?action=accounts_receivable&from=${b.from}&to=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
-    ));
-    values = resps.map(d => arTotalUsd(d));
-  } else if (metric === 'ap') {
-    // Point-in-time баланс кредиторки через mutual_settlements
+  } else if (metric === 'ar' || metric === 'ap') {
+    // Обидві беруться з mutual_settlements (point-in-time на bucket.to)
     const resps = await Promise.all(buckets.map(b =>
       fetch(API_URL + `?action=mutual_settlements&on=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
     ));
-    values = resps.map(d => (d && d.ap && d.ap.debtsTotalUsd) || 0);
+    values = resps.map(metric === 'ar' ? msArTotal : msApTotal);
   }
 
   renderModalChart(buckets, values, gran, metric);
