@@ -372,9 +372,23 @@ function aggregate(tasks, stages) {
     else managers[t.manager].inProgress++;
   }
   const fullFunnel = offFunnel.total > 0 ? funnel.concat([offFunnel]) : funnel;
+  // Воронка — це ІСТОРІЯ проходжень: одна задача лічиться у кожному стейджі,
+  // через який пройшла. Щоб KPI не завищувалися, використовуємо:
+  //   leadsCount  = stage 1 (усі задачі, що увійшли у воронку)
+  //   wonCount    = stage 8 (Успішно реалізовано)
+  //   lostCount   = задачі, чий останній стейдж «Неуспішно» (виходить із funnel)
+  //                → приблизно = сума fail у стейджі 1 (бо при fail задача не йде далі)
+  const leadsCount = funnel[0].total;
+  const wonCount   = funnel[7].total;
+  const lostCount  = funnel.reduce((a, f) => a + f.fail, 0);
+  const activeCount = Math.max(leadsCount - wonCount - lostCount, 0);
   return {
-    total, success, fail, inProgress: total - success - fail,
-    conversionRate: total ? success/total : 0,
+    total, passes: total,              // повна кількість проходжень (для довідки)
+    leads: leadsCount,
+    won: wonCount,
+    lost: lostCount,
+    active: activeCount,
+    conversionRate: leadsCount ? wonCount / leadsCount : 0,  // ← реальна воронкова CR
     funnel: fullFunnel,
     managers: Object.values(managers).sort((a,b)=>b.total-a.total),
   };
@@ -398,39 +412,39 @@ function render() {
 
   let html = '';
 
-  if (a.total === 0) {
-    html = `<div class="empty">У вибраний період угод немає.</div>`;
+  if (a.leads === 0) {
+    html = `<div class="empty">У вибраний період лідів немає.</div>`;
     document.getElementById('content').innerHTML = html;
     return;
   }
 
-  // KPI
+  // KPI — на основі унікальних задач у воронці (не суми проходжень)
   html += `
   <div class="kpi">
     <div class="kpi-card">
-      <div class="lbl">Усього угод</div>
-      <div class="val">${fmt(a.total)}</div>
-      <div class="sub">у фільтрі періоду</div>
+      <div class="lbl">Лідів (етап 1)</div>
+      <div class="val">${fmt(a.leads)}</div>
+      <div class="sub">ввійшли у воронку</div>
     </div>
     <div class="kpi-card c-success">
       <div class="lbl">Успішно</div>
-      <div class="val">${fmt(a.success)}</div>
-      <div class="sub">${pct(a.success/a.total)} від усіх</div>
+      <div class="val">${fmt(a.won)}</div>
+      <div class="sub">${pct(a.leads ? a.won/a.leads : 0)} від лідів</div>
     </div>
     <div class="kpi-card c-fail">
       <div class="lbl">Неуспішно</div>
-      <div class="val">${fmt(a.fail)}</div>
-      <div class="sub">${pct(a.fail/a.total)} від усіх</div>
+      <div class="val">${fmt(a.lost)}</div>
+      <div class="sub">${pct(a.leads ? a.lost/a.leads : 0)} від лідів</div>
     </div>
     <div class="kpi-card c-progress">
       <div class="lbl">У роботі</div>
-      <div class="val">${fmt(a.inProgress)}</div>
-      <div class="sub">${pct(a.inProgress/a.total)} від усіх</div>
+      <div class="val">${fmt(a.active)}</div>
+      <div class="sub">${pct(a.leads ? a.active/a.leads : 0)} від лідів</div>
     </div>
     <div class="kpi-card c-rate">
-      <div class="lbl">Загальна конверсія</div>
+      <div class="lbl">Кінцева конверсія</div>
       <div class="val">${pct(a.conversionRate)}</div>
-      <div class="sub">успіх / всього</div>
+      <div class="sub">Успішно / Лідів</div>
     </div>
   </div>`;
 

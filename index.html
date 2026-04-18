@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=q20260418"></script>
-<script src="header.js?v=q20260418"></script>
+<script src="auth.js?v=net20260418"></script>
+<script src="header.js?v=net20260418"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -349,7 +349,8 @@ const state = {
   org: '',
   fx: null,                // cached USD/UAH for sales USD conversion
   managersAll: null,       // full manager list for modal
-  revTrend: null,          // { months:[Date], values:[Number] } — 6-month "Оплачено"
+  revTrend: null,          // { buckets, values, granularity } — "Оплачено"
+  netTrend: null,          // same shape — "Чистий прибуток" з P&L
   modalChart: null,        // live Chart.js instance inside modal (destroy on close)
 };
 
@@ -450,6 +451,7 @@ function buildKpiSkeleton() {
 
   const keyKpis = [];
   if (r.finance) {
+    keyKpis.push({ id: 'kpiNet',     cls: 'c-net', lbl: 'Чистий прибуток' });
     keyKpis.push({ id: 'kpiRevenue', cls: 'c-rev', lbl: 'Оплачено за період' });
     keyKpis.push({ id: 'kpiAR',      cls: 'c-ar',  lbl: 'Дебіторка' });
     keyKpis.push({ id: 'kpiAP',      cls: 'c-ap',  lbl: 'Кредиторка' });
@@ -556,8 +558,15 @@ async function loadKey() {
   const qMS      = `?action=mutual_settlements&on=${state.to}${orgQ}`;
   const qMSp     = prev ? `?action=mutual_settlements&on=${prev.to}${orgQ}` : null;
   const qFx      = state.fx ? Promise.resolve({ rates: state.fx }) : fetch(API_URL + '?action=fx_rates').then(r => r.json()).catch(() => null);
+  // P&L (accrual) — один запит на весь trend-діапазон дає byMonth для всіх
+  // потрібних місяців (дешевше ніж 6-12 окремих викликів).
+  const trendFrom = trendBuckets[0].from;
+  const trendEnd  = trendBuckets[trendBuckets.length - 1].to;
+  const qPnl      = `?action=pnl_accrual_report&from=${state.from}&to=${state.to}${orgQ}`;
+  const qPnlP     = prev ? `?action=pnl_accrual_report&from=${prev.from}&to=${prev.to}${orgQ}` : null;
+  const qPnlT     = `?action=pnl_accrual_report&from=${trendFrom}&to=${trendEnd}${orgQ}`;
 
-  const [salesR, salesPrevR, ar, arPrev, ms, msPrev, fx, ...sparkR] = await Promise.allSettled([
+  const [salesR, salesPrevR, ar, arPrev, ms, msPrev, fx, pnl, pnlPrev, pnlTrend, ...sparkR] = await Promise.allSettled([
     fetch(API_URL + qSales).then(r => r.json()),
     qSalesP ? fetch(API_URL + qSalesP).then(r => r.json()) : Promise.resolve(null),
     fetch(API_URL + qAR).then(r => r.json()),
@@ -565,6 +574,9 @@ async function loadKey() {
     fetch(API_URL + qMS).then(r => r.json()),
     qMSp ? fetch(API_URL + qMSp).then(r => r.json()) : Promise.resolve(null),
     qFx,
+    fetch(API_URL + qPnl).then(r => r.json()),
+    qPnlP ? fetch(API_URL + qPnlP).then(r => r.json()) : Promise.resolve(null),
+    fetch(API_URL + qPnlT).then(r => r.json()),
     ...sparkReqs,
   ]);
 
@@ -653,6 +665,78 @@ async function loadKey() {
   } else {
     const msg = ms.status === 'fulfilled' ? (ms.value.error || 'помилка') : ms.reason.message;
     updateKpi('kpiAP', { val: 'Помилка', sub: esc(msg.slice(0, 80)), error: true });
+  }
+
+  // 4) ЧИСТИЙ ПРИБУТОК = P&L accrual → (revenue + otherIncome) − cogs − totalExpenses
+  function netFromPnl(p) {
+    if (!p) return null;
+    const rev = (p.revenue && p.revenue.total) || 0;
+    const inc = (p.otherIncome && p.otherIncome.total) || 0;
+    const cogs = (p.cogs && p.cogs.total) || 0;
+    const exp = (p.totalExpenses && p.totalExpenses.total) || 0;
+    return rev + inc - cogs - exp;
+  }
+  // Aggregate P&L monthly net profit into trend buckets (quarter-aware)
+  function netByMonth(p) {
+    if (!p || !Array.isArray(p.months)) return null;
+    const byM = {};
+    p.months.forEach(m => {
+      const rev = ((p.revenue && p.revenue.byMonth && p.revenue.byMonth[m]) || 0)
+                + ((p.otherIncome && p.otherIncome.byMonth && p.otherIncome.byMonth[m]) || 0);
+      const cogs = (p.cogs && p.cogs.byMonth && p.cogs.byMonth[m]) || 0;
+      const exp = (p.totalExpenses && p.totalExpenses.byMonth && p.totalExpenses.byMonth[m]) || 0;
+      byM[m] = rev - cogs - exp;
+    });
+    return byM;
+  }
+  // Sum net from pnlTrend's byMonth map across bucket.from..bucket.to (month-level)
+  function aggregateBuckets(byM) {
+    if (!byM) return trendBuckets.map(() => 0);
+    return trendBuckets.map(b => {
+      // Iterate months between b.from and b.to inclusive
+      const f = new Date(b.from + 'T00:00:00');
+      const t = new Date(b.to + 'T00:00:00');
+      let sum = 0;
+      const d = new Date(f.getFullYear(), f.getMonth(), 1);
+      while (d <= t) {
+        const mk = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        sum += (byM[mk] || 0);
+        d.setMonth(d.getMonth() + 1);
+      }
+      return sum;
+    });
+  }
+
+  if (pnl.status === 'fulfilled' && !pnl.value.error) {
+    const curNet = netFromPnl(pnl.value);
+    let prevNet = null;
+    if (pnlPrev && pnlPrev.status === 'fulfilled' && pnlPrev.value && !pnlPrev.value.error) {
+      prevNet = netFromPnl(pnlPrev.value);
+    }
+    const revenue = ((pnl.value.revenue && pnl.value.revenue.total) || 0)
+                  + ((pnl.value.otherIncome && pnl.value.otherIncome.total) || 0);
+    const margin = revenue > 0 ? (curNet / revenue) : 0;
+    updateKpi('kpiNet', {
+      numeric: { target: curNet, format: kpiMoneyFmt('$') },
+      cls: curNet < 0 ? 'neg' : (curNet > 0 ? 'pos' : ''),
+      sub: `маржа ${revenue ? fmtPct(margin) : '—'} ${deltaHtml(curNet, prevNet)}`,
+    });
+    // Sparkline: aggregate pnlTrend's byMonth into buckets
+    if (pnlTrend.status === 'fulfilled' && !pnlTrend.value.error) {
+      const byM = netByMonth(pnlTrend.value);
+      const series = aggregateBuckets(byM);
+      drawSparkline('kpiNetSpark', series, { color: 'var(--green)' });
+      state.netTrend = { buckets: trendBuckets, values: series, granularity: (state.preset === 'quarter' ? 'quarter' : 'month') };
+      const netEl = document.getElementById('kpiNet');
+      if (netEl && !netEl._clickWired) {
+        netEl.classList.add('clickable');
+        netEl.addEventListener('click', () => openNetModal());
+        netEl._clickWired = true;
+      }
+    }
+  } else {
+    const msg = pnl.status === 'fulfilled' ? (pnl.value.error || 'помилка') : pnl.reason.message;
+    updateKpi('kpiNet', { val: 'Помилка', sub: esc(msg.slice(0, 80)), error: true });
   }
 }
 
@@ -935,8 +1019,10 @@ function closeModal() {
 function modalKeyHandler(e) { if (e.key === 'Escape') closeModal(); }
 
 // ─── Revenue trend modal: adaptive granularity (quarter vs month) ───
-function openRevenueModal() {
-  const t = state.revTrend;
+function openRevenueModal() { openTrendModal(state.revTrend, { title: '💵 Оплачено — динаміка', label: 'Оплачено' }); }
+function openNetModal()     { openTrendModal(state.netTrend, { title: '✅ Чистий прибуток — динаміка', label: 'Чистий' }); }
+
+function openTrendModal(t, opts) {
   if (!t || !t.values || !t.values.length) return;
   const buckets = t.buckets || [];
   const labels = buckets.map(b => b.label);
@@ -950,7 +1036,7 @@ function openRevenueModal() {
   const prevLabel = gran === 'quarter' ? 'попер. квартал' : 'попер. міс';
 
   openModal({
-    title: '💵 Оплачено — динаміка',
+    title: opts.title,
     sub: `${values.length} ${unit} · середнє ${fmtMoney(avg, '$')} · max ${fmtMoney(max, '$')} · min ${fmtMoney(min, '$')}`,
     body: `<div style="position:relative;height:360px"><canvas id="revTrendCanvas"></canvas></div>`,
   });
@@ -999,12 +1085,13 @@ function openRevenueModal() {
       },
     };
 
+    const hasNegatives = values.some(v => v < 0);
     state.modalChart = new Chart(ctx, {
       type: 'line',
       data: {
         labels,
         datasets: [{
-          label: 'Оплачено',
+          label: opts.label || '',
           data: values,
           borderColor: greenCss,
           borderWidth: 2,
@@ -1064,7 +1151,7 @@ function openRevenueModal() {
             ticks: { color: tick, font: { size: 10 }, callback: v => fmt(v / 1000, 0) + 'k' },
             grid: { color: grid, drawBorder: false },
             border: { display: false },
-            beginAtZero: true,
+            beginAtZero: !hasNegatives,
           },
         },
       },
