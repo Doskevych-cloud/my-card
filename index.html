@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=2y20260418"></script>
-<script src="header.js?v=2y20260418"></script>
+<script src="auth.js?v=ytd20260418"></script>
+<script src="header.js?v=ytd20260418"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -546,7 +546,8 @@ async function loadKey() {
   //  • year    → 12 місяців
   //  • решта   → 6 місяців
   const trendTo = new Date(state.to + 'T00:00:00');
-  const trendBuckets = buildTrendBuckets(state.preset, trendTo, state.to);
+  // Sparkline: завжди поточний рік (місячні точки)
+  const trendBuckets = buildYtdBuckets(trendTo, state.to);
   const sparkReqs = trendBuckets.map(b =>
     fetch(API_URL + `?action=sales_report&from=${b.from}&to=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
   );
@@ -585,23 +586,8 @@ async function loadKey() {
     state.fx = fx.value.rates;
   }
 
-  // Helper: sum paid USD across all managers in a sales_report payload
-  function sumPaidUsd(payload) {
-    if (!payload) return null;
-    const orgsToSum = state.org ? [state.org] : ['Реакт', 'Генерація'];
-    let total = 0, ok = true;
-    orgsToSum.forEach(o => {
-      const od = (payload.byOrg || {})[o];
-      if (!od || !od.managers) return;
-      od.managers.forEach(m => {
-        m.currencies.forEach(C => {
-          const v = toUsd(C.paid, C.currency);
-          if (v == null) ok = false; else total += v;
-        });
-      });
-    });
-    return { total, ok };
-  }
+  // Local shortcut — delegates to top-level helper (same instance for modal)
+  const sumPaidUsd = (payload) => salesPaidUsd(payload, state.org);
 
   // 1) ОПЛАЧЕНО ЗА ПЕРІОД = sum of manager payments (USD) — matches Sales page
   if (salesR.status === 'fulfilled' && !salesR.value.error) {
@@ -622,7 +608,7 @@ async function loadKey() {
       return v ? v.total : 0;
     });
     drawSparkline('kpiRevenueSpark', series, { color: 'var(--green)' });
-    state.revTrend = { buckets: trendBuckets, values: series, granularity: (state.preset === 'quarter' ? 'quarter' : state.preset === 'year' ? 'year' : 'month') };
+    state.revTrend = { buckets: trendBuckets, values: series, granularity: 'month' };
     // Make KPI card clickable — opens modal with full chart
     const kpiEl = document.getElementById('kpiRevenue');
     if (kpiEl && !kpiEl._clickWired) {
@@ -726,7 +712,7 @@ async function loadKey() {
       const byM = netByMonth(pnlTrend.value);
       const series = aggregateBuckets(byM);
       drawSparkline('kpiNetSpark', series, { color: 'var(--green)' });
-      state.netTrend = { buckets: trendBuckets, values: series, granularity: (state.preset === 'quarter' ? 'quarter' : state.preset === 'year' ? 'year' : 'month') };
+      state.netTrend = { buckets: trendBuckets, values: series, granularity: 'month' };
       const netEl = document.getElementById('kpiNet');
       if (netEl && !netEl._clickWired) {
         netEl.classList.add('clickable');
@@ -743,16 +729,18 @@ async function loadKey() {
 // Helpers preserved from legacy — trimmed to what key KPIs need
 // Build trend buckets for the sparkline / modal chart based on selected preset.
 // Returns [{ from:'YYYY-MM-DD', to:'YYYY-MM-DD', label:'Q1 26' | 'Квітень 2026', isCurrent }]
-// Завжди 2-річне вікно, а гранулярність під фільтр:
-//   quarter → 8 кварталів
-//   year    → 2 роки
-//   решта   → 24 місяці
-function buildTrendBuckets(preset, baseToDate, stateToIso) {
+// Універсальний генератор buckets: mode + кількість.
+//   mode='month'   → N останніх місяців
+//   mode='quarter' → N останніх кварталів
+//   mode='year'    → N останніх років
+// baseTo — дата-прив'язка (зазвичай state.to), stateToIso — обрізаємо
+// останній bucket до цієї дати (щоб "поточний" не містив майбутніх днів).
+function buildTrendBuckets(mode, n, baseToDate, stateToIso) {
   const y = baseToDate.getFullYear(), m = baseToDate.getMonth();
   const buckets = [];
-  if (preset === 'quarter') {
+  if (mode === 'quarter') {
     const curQ = Math.floor(m / 3);
-    for (let i = 7; i >= 0; i--) {
+    for (let i = n - 1; i >= 0; i--) {
       const totalQ = y * 4 + curQ - i;
       const qy = Math.floor(totalQ / 4);
       const qq = ((totalQ % 4) + 4) % 4;
@@ -767,8 +755,8 @@ function buildTrendBuckets(preset, baseToDate, stateToIso) {
         isCurrent: isCur,
       });
     }
-  } else if (preset === 'year') {
-    for (let i = 1; i >= 0; i--) {
+  } else if (mode === 'year') {
+    for (let i = n - 1; i >= 0; i--) {
       const yy = y - i;
       const yStart = new Date(yy, 0, 1);
       const yEnd   = new Date(yy, 11, 31);
@@ -781,8 +769,8 @@ function buildTrendBuckets(preset, baseToDate, stateToIso) {
       });
     }
   } else {
-    // 24 місяці для 'month' / 'prevmonth' / custom
-    for (let i = 23; i >= 0; i--) {
+    // months
+    for (let i = n - 1; i >= 0; i--) {
       const mStart = new Date(y, m - i, 1);
       const mEnd   = new Date(y, m - i + 1, 0);
       const isCur = i === 0;
@@ -795,6 +783,13 @@ function buildTrendBuckets(preset, baseToDate, stateToIso) {
     }
   }
   return buckets;
+}
+
+// Sparkline під KPI — поточний рік: Січень..поточний місяць
+function buildYtdBuckets(baseToDate, stateToIso) {
+  const baseTo = baseToDate || new Date();
+  const n = baseTo.getMonth() + 1; // 1..12
+  return buildTrendBuckets('month', n, baseTo, stateToIso || _localISO(baseTo));
 }
 
 function prevPeriodOf(from, to) {
@@ -1021,30 +1016,143 @@ function closeModal() {
 }
 function modalKeyHandler(e) { if (e.key === 'Escape') closeModal(); }
 
-// ─── Revenue trend modal: adaptive granularity (quarter vs month) ───
-function openRevenueModal() { openTrendModal(state.revTrend, { title: '💵 Оплачено — динаміка', label: 'Оплачено' }); }
-function openNetModal()     { openTrendModal(state.netTrend, { title: '✅ Чистий прибуток — динаміка', label: 'Чистий' }); }
+// Top-level helpers (used by loadKey + modal reload)
+function salesPaidUsd(payload, orgFilter) {
+  if (!payload) return null;
+  const orgsToSum = orgFilter ? [orgFilter] : ['Реакт', 'Генерація'];
+  let total = 0, ok = true;
+  orgsToSum.forEach(o => {
+    const od = (payload.byOrg || {})[o];
+    if (!od || !od.managers) return;
+    od.managers.forEach(m => {
+      (m.currencies || []).forEach(C => {
+        const v = toUsd(C.paid, C.currency);
+        if (v == null) ok = false; else total += v;
+      });
+    });
+  });
+  return { total, ok };
+}
+function pnlNetByMonth(p) {
+  if (!p || !Array.isArray(p.months)) return {};
+  const byM = {};
+  p.months.forEach(m => {
+    const rev = ((p.revenue && p.revenue.byMonth && p.revenue.byMonth[m]) || 0)
+              + ((p.otherIncome && p.otherIncome.byMonth && p.otherIncome.byMonth[m]) || 0);
+    const cogs = (p.cogs && p.cogs.byMonth && p.cogs.byMonth[m]) || 0;
+    const exp  = (p.totalExpenses && p.totalExpenses.byMonth && p.totalExpenses.byMonth[m]) || 0;
+    byM[m] = rev - cogs - exp;
+  });
+  return byM;
+}
+function sumBucketMonths(bucket, byM) {
+  const f = new Date(bucket.from + 'T00:00:00');
+  const t = new Date(bucket.to + 'T00:00:00');
+  let s = 0;
+  const d = new Date(f.getFullYear(), f.getMonth(), 1);
+  while (d <= t) {
+    const mk = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    s += (byM[mk] || 0);
+    d.setMonth(d.getMonth() + 1);
+  }
+  return s;
+}
 
-function openTrendModal(t, opts) {
-  if (!t || !t.values || !t.values.length) return;
-  const buckets = t.buckets || [];
+// ─── Модалка з granularity-перемикачем ───
+const METRIC_DEFS = {
+  revenue: { title: '💵 Оплачено — динаміка', label: 'Оплачено' },
+  net:     { title: '✅ Чистий прибуток — динаміка', label: 'Чистий' },
+};
+const GRAN_COUNT = { month: 12, quarter: 6, year: 3 };
+
+function openRevenueModal() { openTrendModal('revenue'); }
+function openNetModal()     { openTrendModal('net'); }
+
+function openTrendModal(metric) {
+  const def = METRIC_DEFS[metric];
+  if (!def) return;
+  state.modalMetric = metric;
+  state.modalGran = 'month';
+  openModal({
+    title: def.title,
+    sub: '<span id="modalSubText">завантаження…</span>',
+    body: `
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <span class="lbl" style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600">Гранулярність</span>
+        <span class="group" style="display:inline-flex;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px">
+          <span class="chip active" data-modalgran="month" onclick="switchModalGran('month')">Місяці · 12</span>
+          <span class="chip" data-modalgran="quarter" onclick="switchModalGran('quarter')">Квартали · 6</span>
+          <span class="chip" data-modalgran="year" onclick="switchModalGran('year')">Роки · 3</span>
+        </span>
+      </div>
+      <div style="position:relative;height:340px"><canvas id="revTrendCanvas"></canvas></div>
+    `,
+  });
+  // Style for pills inside modal — reuse toolbar chip look
+  const pillStyle = document.createElement('style');
+  pillStyle.id = 'modalPillStyle';
+  pillStyle.textContent = `
+    #dashModal .chip[data-modalgran]{padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;user-select:none;transition:background .15s,color .15s}
+    #dashModal .chip[data-modalgran]:hover{background:var(--bg3);color:var(--text)}
+    #dashModal .chip[data-modalgran].active{background:var(--accent-bg);color:var(--accent)}
+  `;
+  if (!document.getElementById('modalPillStyle')) document.head.appendChild(pillStyle);
+  reloadModalChart();
+}
+
+function switchModalGran(gran) {
+  state.modalGran = gran;
+  document.querySelectorAll('#dashModal .chip[data-modalgran]').forEach(c => c.classList.toggle('active', c.dataset.modalgran === gran));
+  reloadModalChart();
+}
+
+async function reloadModalChart() {
+  const metric = state.modalMetric;
+  const gran = state.modalGran || 'month';
+  const n = GRAN_COUNT[gran] || 12;
+  const baseTo = new Date(state.to + 'T00:00:00');
+  const buckets = buildTrendBuckets(gran, n, baseTo, state.to);
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
+
+  // Loading state
+  const sub = document.getElementById('modalSubText');
+  if (sub) sub.textContent = 'Завантаження…';
+  if (state.modalChart) { try { state.modalChart.destroy(); } catch(_) {} state.modalChart = null; }
+
+  let values = [];
+  if (metric === 'revenue') {
+    const resps = await Promise.all(buckets.map(b =>
+      fetch(API_URL + `?action=sales_report&from=${b.from}&to=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
+    ));
+    values = resps.map(p => {
+      const v = salesPaidUsd(p, state.org);
+      return v ? v.total : 0;
+    });
+  } else if (metric === 'net') {
+    // Один запит pnl_accrual_report на увесь діапазон + агрегація по buckets
+    const from = buckets[0].from;
+    const to = buckets[buckets.length - 1].to;
+    const p = await fetch(API_URL + `?action=pnl_accrual_report&from=${from}&to=${to}${orgQ}`).then(r => r.json()).catch(() => null);
+    const byM = pnlNetByMonth(p);
+    values = buckets.map(b => sumBucketMonths(b, byM));
+  }
+
+  renderModalChart(buckets, values, gran, metric);
+}
+
+function renderModalChart(buckets, values, gran, metric) {
+  const def = METRIC_DEFS[metric];
   const labels = buckets.map(b => b.label);
-  const values = t.values.slice();
   const total = values.reduce((s, v) => s + v, 0);
-  const avg = total / values.length;
-  const max = Math.max(...values);
-  const min = Math.min(...values);
-  const gran = t.granularity || 'month';
+  const avg = values.length ? total / values.length : 0;
+  const max = values.length ? Math.max(...values) : 0;
+  const min = values.length ? Math.min(...values) : 0;
   const unit = gran === 'quarter' ? 'кварталів' : gran === 'year' ? 'років' : 'місяців';
   const prevLabel = gran === 'quarter' ? 'попер. квартал' : gran === 'year' ? 'попер. рік' : 'попер. міс';
+  const sub = document.getElementById('modalSubText');
+  if (sub) sub.textContent = `${values.length} ${unit} · середнє ${fmtMoney(avg, '$')} · max ${fmtMoney(max, '$')} · min ${fmtMoney(min, '$')}`;
+  const opts = { label: def.label };
 
-  openModal({
-    title: opts.title,
-    sub: `${values.length} ${unit} · середнє ${fmtMoney(avg, '$')} · max ${fmtMoney(max, '$')} · min ${fmtMoney(min, '$')}`,
-    body: `<div style="position:relative;height:360px"><canvas id="revTrendCanvas"></canvas></div>`,
-  });
-
-  // Chart.js — smooth area line chart with crosshair + tooltip
   requestAnimationFrame(() => {
     const canvas = document.getElementById('revTrendCanvas');
     if (!canvas) return;
