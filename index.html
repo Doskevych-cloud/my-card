@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=arms20260418"></script>
-<script src="header.js?v=arms20260418"></script>
+<script src="auth.js?v=today20260418"></script>
+<script src="header.js?v=today20260418"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -555,12 +555,12 @@ async function loadKey() {
 
   const qSales   = `?action=sales_report&from=${state.from}&to=${state.to}${orgQ}`;
   const qSalesP  = prev ? `?action=sales_report&from=${prev.from}&to=${prev.to}${orgQ}` : null;
-  // mutual_settlements дає одним викликом одразу AR + AP:
-  //   d.ar.debtsTotalUsd — клієнти винні нам
-  //   d.ap.debtsTotalUsd — ми винні постачальникам
-  // Окремий accounts_receivable уже не потрібен.
-  const qMS      = `?action=mutual_settlements&on=${state.to}${orgQ}`;
-  const qMSp     = prev ? `?action=mutual_settlements&on=${prev.to}${orgQ}` : null;
+  // mutual_settlements — AR/AP завжди станом на сьогодні (не залежить від фільтра).
+  // Порівняння робимо з балансом місяць тому — щоб delta показувала "vs минулий місяць".
+  const msOnToday = todayIso;
+  const msOnMonthAgo = (() => { const d = new Date(todayDate); d.setMonth(d.getMonth() - 1); return _localISO(d); })();
+  const qMS      = `?action=mutual_settlements&on=${msOnToday}${orgQ}`;
+  const qMSp     = `?action=mutual_settlements&on=${msOnMonthAgo}${orgQ}`;
   const qFx      = state.fx ? Promise.resolve({ rates: state.fx }) : fetch(API_URL + '?action=fx_rates').then(r => r.json()).catch(() => null);
   // P&L (accrual) — один запит на весь trend-діапазон дає byMonth для всіх
   // потрібних місяців (дешевше ніж 6-12 окремих викликів).
@@ -634,11 +634,11 @@ async function loadKey() {
     }
     updateKpi('kpiAR', {
       numeric: { target: arCur, format: kpiMoneyFmt('$') },
-      sub: `клієнти винні нам ${deltaHtml(arCur, arPrev, 'down')}`,
+      sub: `станом на сьогодні ${deltaHtml(arCur, arPrev, 'down')}`,
     });
     updateKpi('kpiAP', {
       numeric: { target: apCur, format: kpiMoneyFmt('$') },
-      sub: `ми винні постачальникам ${deltaHtml(apCur, apPrev, 'down')}`,
+      sub: `станом на сьогодні ${deltaHtml(apCur, apPrev, 'down')}`,
     });
     // Один спільний набір mutual_settlements викликів для обох sparkline-ів
     fetchMsSparklines(trendBuckets, orgQ);
