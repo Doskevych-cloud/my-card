@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=naked20260418"></script>
-<script src="header.js?v=naked20260418"></script>
+<script src="auth.js?v=paid20260418"></script>
+<script src="header.js?v=paid20260418"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -441,14 +441,14 @@ function reloadAll() {
   loadSales();
 }
 
-// ─── 3 ключові KPI: Обсяг реалізації · Дебіторка · Кредиторка ───
+// ─── 3 ключові KPI: Оплачено за період · Дебіторка · Кредиторка ───
 function buildKpiSkeleton() {
   const u = window.__user;
   const r = u.roles || {};
 
   const keyKpis = [];
   if (r.finance) {
-    keyKpis.push({ id: 'kpiRevenue', cls: 'c-rev', lbl: 'Обсяг реалізації' });
+    keyKpis.push({ id: 'kpiRevenue', cls: 'c-rev', lbl: 'Оплачено за період' });
     keyKpis.push({ id: 'kpiAR',      cls: 'c-ar',  lbl: 'Дебіторка' });
     keyKpis.push({ id: 'kpiAP',      cls: 'c-ap',  lbl: 'Кредиторка' });
   }
@@ -534,52 +534,88 @@ async function loadKey() {
   if (!u.roles || !u.roles.finance) return;
   const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
 
-  // 6-month history для sparkline (current period END on the latest month)
-  const to = new Date(state.to + 'T00:00:00');
-  const trendStart = new Date(to.getFullYear(), to.getMonth() - 5, 1);
-  const trendFrom = _localISO(trendStart);
-  const trendTo = state.to;
-
   // Previous-period comparison
   const prev = prevPeriodOf(state.from, state.to);
 
-  const qCF   = `?action=cash_flow_report&from=${state.from}&to=${state.to}${orgQ}`;
-  const qCFp  = prev ? `?action=cash_flow_report&from=${prev.from}&to=${prev.to}${orgQ}` : null;
-  const qCFt  = `?action=cash_flow_report&from=${trendFrom}&to=${trendTo}${orgQ}`;
-  const qAR   = `?action=accounts_receivable&from=${state.from}&to=${state.to}${orgQ}`;
-  const qARp  = prev ? `?action=accounts_receivable&from=${prev.from}&to=${prev.to}${orgQ}` : null;
-  const qMS   = `?action=mutual_settlements&on=${state.to}${orgQ}`;
-  const qMSp  = prev ? `?action=mutual_settlements&on=${prev.to}${orgQ}` : null;
+  // Для sparkline будуємо 6 місяців — окремі запити sales_report, кешуються
+  // в KV на бекенді, тож при повторному завантаженні миттєво
+  const trendTo = new Date(state.to + 'T00:00:00');
+  const sparkReqs = [];
+  const sparkMonths = [];
+  for (let i = 5; i >= 0; i--) {
+    const mStart = new Date(trendTo.getFullYear(), trendTo.getMonth() - i, 1);
+    const mEnd = new Date(trendTo.getFullYear(), trendTo.getMonth() - i + 1, 0);
+    // For the current month use state.to so we include only "so far"
+    const isCur = i === 0;
+    const fromD = _localISO(mStart);
+    const toD = isCur ? state.to : _localISO(mEnd);
+    sparkMonths.push(mStart);
+    sparkReqs.push(fetch(API_URL + `?action=sales_report&from=${fromD}&to=${toD}${orgQ}`).then(r => r.json()).catch(() => null));
+  }
 
-  const [cf, cfPrev, cfTrend, ar, arPrev, ms, msPrev] = await Promise.allSettled([
-    fetch(API_URL + qCF).then(r => r.json()),
-    qCFp ? fetch(API_URL + qCFp).then(r => r.json()) : Promise.resolve(null),
-    fetch(API_URL + qCFt).then(r => r.json()),
+  const qSales   = `?action=sales_report&from=${state.from}&to=${state.to}${orgQ}`;
+  const qSalesP  = prev ? `?action=sales_report&from=${prev.from}&to=${prev.to}${orgQ}` : null;
+  const qAR      = `?action=accounts_receivable&from=${state.from}&to=${state.to}${orgQ}`;
+  const qARp     = prev ? `?action=accounts_receivable&from=${prev.from}&to=${prev.to}${orgQ}` : null;
+  const qMS      = `?action=mutual_settlements&on=${state.to}${orgQ}`;
+  const qMSp     = prev ? `?action=mutual_settlements&on=${prev.to}${orgQ}` : null;
+  const qFx      = state.fx ? Promise.resolve({ rates: state.fx }) : fetch(API_URL + '?action=fx_rates').then(r => r.json()).catch(() => null);
+
+  const [salesR, salesPrevR, ar, arPrev, ms, msPrev, fx, ...sparkR] = await Promise.allSettled([
+    fetch(API_URL + qSales).then(r => r.json()),
+    qSalesP ? fetch(API_URL + qSalesP).then(r => r.json()) : Promise.resolve(null),
     fetch(API_URL + qAR).then(r => r.json()),
     qARp ? fetch(API_URL + qARp).then(r => r.json()) : Promise.resolve(null),
     fetch(API_URL + qMS).then(r => r.json()),
     qMSp ? fetch(API_URL + qMSp).then(r => r.json()) : Promise.resolve(null),
+    qFx,
+    ...sparkReqs,
   ]);
 
-  // 1) ОБСЯГ РЕАЛІЗАЦІЇ = cash-flow operating.inflow
-  if (cf.status === 'fulfilled' && !cf.value.error) {
-    const curVal = (cf.value.operating && cf.value.operating.inflow) || 0;
+  // Ensure FX is ready for USD conversion (reuse if loadSales already set it)
+  if (fx && fx.status === 'fulfilled' && fx.value && fx.value.rates) {
+    state.fx = fx.value.rates;
+  }
+
+  // Helper: sum paid USD across all managers in a sales_report payload
+  function sumPaidUsd(payload) {
+    if (!payload) return null;
+    const orgsToSum = state.org ? [state.org] : ['Реакт', 'Генерація'];
+    let total = 0, ok = true;
+    orgsToSum.forEach(o => {
+      const od = (payload.byOrg || {})[o];
+      if (!od || !od.managers) return;
+      od.managers.forEach(m => {
+        m.currencies.forEach(C => {
+          const v = toUsd(C.paid, C.currency);
+          if (v == null) ok = false; else total += v;
+        });
+      });
+    });
+    return { total, ok };
+  }
+
+  // 1) ОПЛАЧЕНО ЗА ПЕРІОД = sum of manager payments (USD) — matches Sales page
+  if (salesR.status === 'fulfilled' && !salesR.value.error) {
+    const cur = sumPaidUsd(salesR.value);
     let prevVal = null;
-    if (cfPrev && cfPrev.status === 'fulfilled' && cfPrev.value && !cfPrev.value.error) {
-      prevVal = (cfPrev.value.operating && cfPrev.value.operating.inflow) || 0;
+    if (salesPrevR && salesPrevR.status === 'fulfilled' && salesPrevR.value && !salesPrevR.value.error) {
+      const p = sumPaidUsd(salesPrevR.value);
+      if (p && p.ok) prevVal = p.total;
     }
     updateKpi('kpiRevenue', {
-      numeric: { target: curVal, format: kpiMoneyFmt('$') },
-      sub: `усі оплати за період ${deltaHtml(curVal, prevVal)}`,
+      numeric: { target: cur ? cur.total : 0, format: kpiMoneyFmt('$') },
+      sub: `оплати менеджерам${cur && !cur.ok ? ' <span style="color:var(--yellow)">· не всі курси</span>' : ''} ${deltaHtml(cur ? cur.total : 0, prevVal)}`,
     });
-    if (cfTrend.status === 'fulfilled' && !cfTrend.value.error) {
-      const inMap = (cfTrend.value.operating && cfTrend.value.operating.byMonth && cfTrend.value.operating.byMonth.in) || {};
-      const months = (cfTrend.value.months) || [];
-      const series = months.map(m => inMap[m] || 0);
-      drawSparkline('kpiRevenueSpark', series, { color: 'var(--green)' });
-    }
+    // Sparkline over 6 months — sum paid USD from each monthly sales_report
+    const series = sparkR.map(r => {
+      if (r.status !== 'fulfilled' || !r.value || r.value.error) return 0;
+      const v = sumPaidUsd(r.value);
+      return v ? v.total : 0;
+    });
+    drawSparkline('kpiRevenueSpark', series, { color: 'var(--green)' });
   } else {
-    const msg = cf.status === 'fulfilled' ? (cf.value.error || 'помилка') : cf.reason.message;
+    const msg = salesR.status === 'fulfilled' ? (salesR.value.error || 'помилка') : salesR.reason.message;
     updateKpi('kpiRevenue', { val: 'Помилка', sub: esc(msg.slice(0, 80)), error: true });
   }
 
