@@ -10,8 +10,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-<script src="auth.js?v=btn20260418"></script>
-<script src="header.js?v=btn20260418"></script>
+<script src="auth.js?v=imp20260418"></script>
+<script src="header.js?v=imp20260418"></script>
 <style>
 :root {
   --bg:#0b0e11; --card:#161a20; --card2:#1e2329; --text:#eaecef; --text2:#9aa4b2; --text3:#6b7280;
@@ -191,11 +191,22 @@ function userRow(u) {
         <td class="role-box"><input type="checkbox" ${u.orgs && u.orgs[o] ? 'checked' : ''} onchange="toggleOrg('${u.email}','${o}',this.checked)"></td>
       `).join('')}
       <td style="text-align:center;color:var(--text2);font-size:12px">${fmtDate(u.lastLogin)}</td>
-      <td style="text-align:right">
+      <td style="text-align:right;white-space:nowrap">
+        <button class="btn btn--ghost btn--sm" ${disableDelete ? 'disabled title="Це ваш акаунт"' : 'title="Зайти як цей користувач — побачите систему його очима"'} onclick="impersonate('${u.email}')">👤 Як</button>
         <button class="btn btn--danger btn--sm" ${disableDelete ? 'disabled title="Ви не можете видалити власний акаунт"' : ''} onclick="deleteUser('${u.email}')">✕</button>
       </td>
     </tr>
   `;
+}
+
+async function impersonate(email) {
+  if (!confirm(`Зайти як ${email}?\n\nВи побачите систему його очима — свої доступи, свої сторінки. У верхній частині буде жовта смуга «Ви переглядаєте від імені…» з кнопкою повернення.`)) return;
+  try {
+    await Auth.startImpersonate(email);
+    location.href = '/';
+  } catch (e) {
+    toast('Помилка: ' + (e.message || e), 'err');
+  }
 }
 
 function renderTable() {

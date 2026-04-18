@@ -168,6 +168,38 @@
     .btn--danger:hover{ background:rgba(246,70,93,.1); border-color:var(--bad, #f6465d) }
     .btn--sm{ padding:5px 10px; font-size:11px }
 
+    /* Impersonation banner — видно на будь-якій сторінці коли адмін
+       переглядає систему як інший користувач. Жовтий для привертання
+       уваги + кнопка повернення. */
+    .imp-banner{
+      display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+      padding:8px 20px;
+      background:linear-gradient(90deg, rgba(240,185,11,.18), rgba(240,185,11,.08));
+      color:#f0b90b;
+      border-bottom:1px solid rgba(240,185,11,.35);
+      font-size:12px; font-weight:500;
+      font-family:'Inter',-apple-system,sans-serif;
+    }
+    .imp-banner b{ color:#f0b90b; font-weight:700 }
+    .imp-banner .imp-dot{
+      width:8px; height:8px; border-radius:50%; background:#f0b90b;
+      box-shadow:0 0 0 0 rgba(240,185,11,.7);
+      animation: imp-pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes imp-pulse{
+      0%,100%{ box-shadow:0 0 0 0 rgba(240,185,11,.6); transform:scale(1) }
+      50%    { box-shadow:0 0 0 6px rgba(240,185,11,0);  transform:scale(.85) }
+    }
+    .imp-banner .imp-exit{
+      margin-left:auto;
+      background:#f0b90b; color:#1a1a1a;
+      border:0; border-radius:6px;
+      padding:5px 12px; font-weight:700; font-size:11px;
+      cursor:pointer; font-family:inherit;
+      transition: background .15s;
+    }
+    .imp-banner .imp-exit:hover{ background:#ffcc33 }
+
     @media (max-width:720px){
       .app-topbar{ padding:10px 12px; gap:10px }
       .app-topbar .brand .name{ display:none }
@@ -243,7 +275,17 @@
       document.body.insertBefore(host, document.body.firstChild);
     }
 
+    const impersonating = !!(global.Auth && global.Auth.isImpersonating && global.Auth.isImpersonating());
+    const impBy = impersonating && global.Auth.impersonatedBy ? global.Auth.impersonatedBy() : '';
+    const impBanner = impersonating ? `
+      <div class="imp-banner">
+        <span class="imp-dot"></span>
+        <span>Ви переглядаєте систему від імені <b>${esc(user && user.email || '')}</b>${impBy ? ` (адмін <b>${esc(impBy)}</b>)` : ''}</span>
+        <button class="imp-exit" onclick="AppHeader.stopImpersonate()">← Повернутись як адмін</button>
+      </div>` : '';
+
     host.innerHTML = `
+      ${impBanner}
       <header class="app-topbar">
         <a class="brand" href="/" title="REACT">
           <span class="logo">R</span>
@@ -291,5 +333,13 @@
     }
   }
 
-  global.AppHeader = { mount, toggleTheme, applyTheme };
+  async function stopImpersonate() {
+    if (!global.Auth || !global.Auth.stopImpersonate) return;
+    try { await global.Auth.stopImpersonate(); } catch (e) { console.error(e); }
+    // Перезавантажуємо щоб кожна сторінка знов зробила Auth.require від
+    // імені реального адміна. Найчистіший варіант.
+    location.href = '/admin.html';
+  }
+
+  global.AppHeader = { mount, toggleTheme, applyTheme, stopImpersonate };
 })(window);

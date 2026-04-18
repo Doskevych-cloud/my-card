@@ -10,8 +10,8 @@
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
-<script src="auth.js?v=ms20260418"></script>
-<script src="header.js?v=ms20260418"></script>
+<script src="auth.js?v=imp20260418"></script>
+<script src="header.js?v=imp20260418"></script>
 <!-- html2pdf.js for real PDF file download (not browser print dialog) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <!-- SheetJS (xlsx) for Excel export -->
@@ -2273,28 +2273,13 @@ function renderAr(data) {
     return '<span class="' + (v > 0 ? 'pos' : 'neg') + '">' + fmt(v, 2) + '</span>';
   }
 
-  // Progress bar: green = paid, orange overlay = shipped portion beyond paid
-  function bar(d) {
-    if (d.orderAmt < 0.01) return '<div class="ar-bar"><div class="ar-bar-lbl">—</div></div>';
-    var pw = Math.min(d.paidPct, 100);
-    var sw = Math.min(d.shipPct, 100);
-    // shipped bar starts at 0, paid bar overlays on top
-    var lbl = pw.toFixed(0) + '% оплачено';
-    return '<div class="ar-bar">' +
-      '<div class="ar-bar-ship" style="left:0;width:' + sw.toFixed(1) + '%"></div>' +
-      '<div class="ar-bar-paid" style="width:' + pw.toFixed(1) + '%"></div>' +
-      '<div class="ar-bar-lbl">' + lbl + '</div>' +
-    '</div>';
-  }
-
-  // Build table
+  // Build table (без прогрес-бар колонки — P&L стиль)
   var html = '<div class="ar-wrap"><table class="ar-table"><thead>' +
     '<tr>' +
     '<th>Контрагент / Договір</th>' +
     '<th>Сума замовлення</th>' +
     '<th>Оплачено</th>' +
     '<th>Залишок</th>' +
-    '<th class="ar-bar-cell">Відвантаження / Оплата</th>' +
     '</tr></thead><tbody>';
 
   var flatRows = [];
@@ -2323,7 +2308,6 @@ function renderAr(data) {
       '<td>' + fmtV(r.d.orderAmt) + '</td>' +
       '<td>' + fmtV(r.d.paid) + '</td>' +
       '<td>' + fmtV(r.d.balance) + '</td>' +
-      '<td class="ar-bar-cell">' + bar(r.d) + '</td>' +
       '</tr>';
   });
 

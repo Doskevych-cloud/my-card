@@ -11,6 +11,14 @@
   const API = 'https://price-api.doskevich.workers.dev/';
   const TOKEN_KEY = 'session_token';
   const USER_CACHE_KEY = 'session_user';
+  // ── Impersonation (admin тимчасово переходить у сесію іншого користувача) ──
+  // Стратегія: при старті — backup поточного токену+юзера у *_bak ключі,
+  // поверх пишемо токен/юзера цільового. Stop — повертаємо бекап. У всіх
+  // запитах Auth.apiFetch/fetch-interceptor далі використовуються поточні
+  // TOKEN_KEY/USER_CACHE_KEY — ніяких розгалужень в логіці доступу не треба.
+  const ADMIN_TOKEN_BAK = 'admin_token_bak';
+  const ADMIN_USER_BAK = 'admin_user_bak';
+  const IMPERSONATED_BY_KEY = 'impersonated_by';
 
   // ── Dev token bootstrap ── (REMOVED 2026-04-18)
   // The previous ?token=XXX bootstrap was a session-fixation gadget on the
@@ -107,7 +115,46 @@
   async function logout() {
     try { await apiFetch('auth_logout', { method: 'POST' }); } catch {}
     clearToken();
+    // Чистимо і бекап імперсонації — повний logout
+    localStorage.removeItem(ADMIN_TOKEN_BAK);
+    localStorage.removeItem(ADMIN_USER_BAK);
+    localStorage.removeItem(IMPERSONATED_BY_KEY);
     location.href = 'login.html';
+  }
+
+  // ── Impersonation helpers ──
+  function isImpersonating() {
+    return !!localStorage.getItem(ADMIN_TOKEN_BAK);
+  }
+  function impersonatedBy() {
+    return localStorage.getItem(IMPERSONATED_BY_KEY) || '';
+  }
+  async function startImpersonate(email) {
+    // Бекап поточної адмін-сесії
+    const curTok = getToken();
+    const curUser = cachedUser();
+    if (!curTok || !curUser) throw new Error('Не авторизовано');
+    if (!(curUser.roles && curUser.roles.admin)) throw new Error('Не адмін');
+    const r = await apiFetch('admin_impersonate', { method: 'POST', body: { email } });
+    localStorage.setItem(ADMIN_TOKEN_BAK, curTok);
+    localStorage.setItem(ADMIN_USER_BAK, JSON.stringify(curUser));
+    localStorage.setItem(IMPERSONATED_BY_KEY, curUser.email);
+    setToken(r.token);
+    setCachedUser(r.user);
+    return r.user;
+  }
+  async function stopImpersonate() {
+    const bakTok = localStorage.getItem(ADMIN_TOKEN_BAK);
+    const bakUser = localStorage.getItem(ADMIN_USER_BAK);
+    if (!bakTok || !bakUser) return null;
+    // Знищуємо тимчасову імперсоновану сесію на сервері
+    try { await apiFetch('auth_logout', { method: 'POST' }); } catch {}
+    setToken(bakTok);
+    try { setCachedUser(JSON.parse(bakUser)); } catch { setCachedUser(null); }
+    localStorage.removeItem(ADMIN_TOKEN_BAK);
+    localStorage.removeItem(ADMIN_USER_BAK);
+    localStorage.removeItem(IMPERSONATED_BY_KEY);
+    return cachedUser();
   }
 
   function loginRedirect() {
@@ -195,5 +242,8 @@
     require,
     cachedUser,
     MODULE_LABEL,
+    // Impersonation
+    isImpersonating, impersonatedBy,
+    startImpersonate, stopImpersonate,
   };
 })(window);
