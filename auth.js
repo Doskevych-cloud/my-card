@@ -177,12 +177,15 @@
       user = cachedUser();
       if (!user) { loginRedirect(); return new Promise(() => {}); }
     }
-    if (!user.roles || !user.roles[role]) {
+    const roles = user.roles || {};
+    // Admin bypasses all per-module role checks — except special DEV gates below.
+    const isAdmin = !!roles.admin;
+    if (!isAdmin && !roles[role]) {
       showDenyScreen(`Адмін ще не відкрив вам доступ до цього модуля.`, role);
       return new Promise(() => {}); // halt caller
     }
     // DEV gate: finance available only to admins until module is stable
-    if (FINANCE_ADMIN_ONLY && role === 'finance' && !user.roles.admin) {
+    if (FINANCE_ADMIN_ONLY && role === 'finance' && !isAdmin) {
       showDenyScreen(
         'Розділ «Фінанси» тимчасово доступний лише адміністраторам — модуль ще в активній розробці.',
         'finance'
