@@ -190,12 +190,13 @@ const API = 'https://price-api.doskevich.workers.dev/';
 // ─── State ───
 function _localISO(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function _todayISO(){return _localISO(new Date())}
-function _firstOfMonthISO(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`}
+function _firstOfMonthISO(){const d=new Date();return _localISO(new Date(d.getFullYear(), d.getMonth(), 1))}
+function _lastOfMonthISO(){const d=new Date();return _localISO(new Date(d.getFullYear(), d.getMonth()+1, 0))}
 
 const state = {
   raw: null,            // { tasks, generatedAt, reportName, stages }
   from: _firstOfMonthISO(),
-  to: _todayISO(),
+  to: _lastOfMonthISO(),
   preset: 'month',
   org: '',
   loading: false,
@@ -239,19 +240,22 @@ function hydrateFromHash() {
 }
 function detectPreset(from, to) {
   if (!from || !to) return '';
-  if (from === '1970-01-01') return 'all';
+  if (from === '2020-01-01') return 'all';
   const now = new Date();
   const y = now.getFullYear(), m = now.getMonth();
-  const first = _localISO(new Date(y, m, 1));
-  const today = _todayISO();
-  if (from === first && to === today) return 'month';
+  const monthStart = _localISO(new Date(y, m, 1));
+  const monthEnd   = _localISO(new Date(y, m+1, 0));
+  if (from === monthStart && to === monthEnd) return 'month';
   const pStart = _localISO(new Date(y, m-1, 1));
   const pEnd   = _localISO(new Date(y, m, 0));
   if (from === pStart && to === pEnd) return 'prevmonth';
-  const qStart = _localISO(new Date(y, Math.floor(m/3)*3, 1));
-  if (from === qStart && to === today) return 'quarter';
+  const q = Math.floor(m/3);
+  const qStart = _localISO(new Date(y, q*3, 1));
+  const qEnd   = _localISO(new Date(y, q*3+3, 0));
+  if (from === qStart && to === qEnd) return 'quarter';
   const yStart = _localISO(new Date(y, 0, 1));
-  if (from === yStart && to === today) return 'year';
+  const yEnd   = _localISO(new Date(y, 11, 31));
+  if (from === yStart && to === yEnd) return 'year';
   return '';
 }
 
@@ -273,12 +277,13 @@ function syncOrgChips() {
 function setPreset(p) {
   const now = new Date();
   const y = now.getFullYear(), m = now.getMonth();
-  let from, to = now;
-  if (p === 'month') from = new Date(y, m, 1);
+  // Match Planfix UI presets: period = full calendar range (not bounded by today).
+  let from, to;
+  if (p === 'month') { from = new Date(y, m, 1); to = new Date(y, m+1, 0); }
   else if (p === 'prevmonth') { from = new Date(y, m-1, 1); to = new Date(y, m, 0); }
-  else if (p === 'quarter') from = new Date(y, Math.floor(m/3)*3, 1);
-  else if (p === 'year') from = new Date(y, 0, 1);
-  else if (p === 'all')  { state.from = '2020-01-01'; state.to = _todayISO(); state.preset = 'all'; syncInputs(); syncPresetChips(); saveStateToUrl(); load(); return; }
+  else if (p === 'quarter') { const q = Math.floor(m/3); from = new Date(y, q*3, 1); to = new Date(y, q*3+3, 0); }
+  else if (p === 'year') { from = new Date(y, 0, 1); to = new Date(y, 11, 31); }
+  else if (p === 'all')  { state.from = '2020-01-01'; state.to = '2026-12-31'; state.preset = 'all'; syncInputs(); syncPresetChips(); saveStateToUrl(); load(); return; }
   state.from = _localISO(from);
   state.to = _localISO(to);
   state.preset = p;
