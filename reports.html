@@ -354,41 +354,45 @@ function aggregate(tasks, stages) {
   // stages = ["1. Спробу...", ..., "8. Успішно реалізовано"]
   const funnel = stages.map((s, i) => ({ stage: s, num: i + 1, total: 0, success: 0, fail: 0, inProgress: 0 }));
   const offFunnel = { stage: 'Поза воронкою', num: 0, total: 0, success: 0, fail: 0, inProgress: 0 };
-  const managers = {};
 
-  let total = 0, success = 0, fail = 0;
+  // ── Воронка: кожен рядок (прохід через стейдж) лічиться. Це історія. ──
   for (const t of tasks) {
-    total++;
     const bucket = (t.stage >= 1 && t.stage <= 8) ? funnel[t.stage - 1] : offFunnel;
     bucket.total++;
-    if (t.outcome === 'success') { bucket.success++; success++; }
-    else if (t.outcome === 'fail') { bucket.fail++; fail++; }
+    if (t.outcome === 'success') bucket.success++;
+    else if (t.outcome === 'fail') bucket.fail++;
     else bucket.inProgress++;
-
-    if (!managers[t.manager]) managers[t.manager] = { name: t.manager, total: 0, success: 0, fail: 0, inProgress: 0 };
-    managers[t.manager].total++;
-    if (t.outcome === 'success') managers[t.manager].success++;
-    else if (t.outcome === 'fail') managers[t.manager].fail++;
-    else managers[t.manager].inProgress++;
   }
   const fullFunnel = offFunnel.total > 0 ? funnel.concat([offFunnel]) : funnel;
-  // Воронка — це ІСТОРІЯ проходжень: одна задача лічиться у кожному стейджі,
-  // через який пройшла. Щоб KPI не завищувалися, використовуємо:
-  //   leadsCount  = stage 1 (усі задачі, що увійшли у воронку)
-  //   wonCount    = stage 8 (Успішно реалізовано)
-  //   lostCount   = задачі, чий останній стейдж «Неуспішно» (виходить із funnel)
-  //                → приблизно = сума fail у стейджі 1 (бо при fail задача не йде далі)
-  const leadsCount = funnel[0].total;
-  const wonCount   = funnel[7].total;
-  const lostCount  = funnel.reduce((a, f) => a + f.fail, 0);
-  const activeCount = Math.max(leadsCount - wonCount - lostCount, 0);
+
+  // ── KPI і менеджери рахуються по УНІКАЛЬНИХ задачах (не по проходженнях). ──
+  // Для кожної задачі беремо її МАКСИМАЛЬНИЙ стейдж — це поточна позиція у воронці.
+  const uniq = {};
+  for (const t of tasks) {
+    if (!t.id) continue;
+    const prev = uniq[t.id];
+    if (!prev || (t.stage || 0) > (prev.stage || 0)) uniq[t.id] = t;
+  }
+  const unique = Object.values(uniq);
+  const leads = unique.length;
+  let won = 0, lost = 0, active = 0;
+  const managers = {};
+  for (const t of unique) {
+    if (t.outcome === 'success') won++;
+    else if (t.outcome === 'fail') lost++;
+    else active++;
+
+    const name = t.manager || '—';
+    if (!managers[name]) managers[name] = { name, total: 0, success: 0, fail: 0, inProgress: 0 };
+    managers[name].total++;
+    if (t.outcome === 'success') managers[name].success++;
+    else if (t.outcome === 'fail') managers[name].fail++;
+    else managers[name].inProgress++;
+  }
   return {
-    total, passes: total,              // повна кількість проходжень (для довідки)
-    leads: leadsCount,
-    won: wonCount,
-    lost: lostCount,
-    active: activeCount,
-    conversionRate: leadsCount ? wonCount / leadsCount : 0,  // ← реальна воронкова CR
+    passes: tasks.length,
+    leads, won, lost, active,
+    conversionRate: leads ? won / leads : 0,
     funnel: fullFunnel,
     managers: Object.values(managers).sort((a,b)=>b.total-a.total),
   };
@@ -499,8 +503,9 @@ function render() {
   html += `</tbody></table></div>`;
 
   // Tasks
+  const uniqTasks = new Set(tasks.map(t => t.id)).size;
   html += `
-  <div class="section-h"><h2>📋 Задачі (${fmt(tasks.length)})</h2><span class="hint">Останні зміни вгорі</span></div>
+  <div class="section-h"><h2>📋 Задачі (${fmt(uniqTasks)} унікальних, ${fmt(tasks.length)} проходжень)</h2><span class="hint">Останні зміни вгорі</span></div>
   <div class="tasks-wrap"><table class="tasks-table">
     <thead><tr><th>#</th><th>Назва</th><th>Етап</th><th>Менеджер</th><th>Остання зміна</th></tr></thead>
     <tbody>`;
@@ -525,7 +530,7 @@ function render() {
   }
   html += `</tbody></table></div>
   <div class="muted" style="text-align:right;padding:4px 6px">
-    Джерело: «${esc(state.raw.reportName)}» за ${state.raw.year}. Дані з Planfix (template 99431 «Замовлення дилера» + 130339 «Продажі станцій»). Кеш 30 хв.
+    Джерело: Planfix звіт «${esc(state.raw.reportName)}» за ${esc(state.raw.from || '')} — ${esc(state.raw.to || '')}. Кеш 1 год (Planfix generate ≥ 10 хв).
   </div>`;
 
   document.getElementById('content').innerHTML = html;
