@@ -85,7 +85,7 @@ a{color:inherit;text-decoration:none}
 
 /* Funnel */
 .funnel{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:18px}
-.funnel-row{display:grid;grid-template-columns:200px 1fr 80px 70px 70px 70px;gap:10px;align-items:center;padding:6px 4px;border-bottom:1px solid var(--border);font-size:12.5px}
+.funnel-row{display:grid;grid-template-columns:220px 1fr 80px 90px 90px;gap:10px;align-items:center;padding:6px 4px;border-bottom:1px solid var(--border);font-size:12.5px}
 .funnel-row:last-child{border-bottom:none}
 .funnel-row .stage{font-weight:600;color:var(--text)}
 .funnel-row .bar-wrap{position:relative;height:24px;background:var(--bg3);border-radius:6px;overflow:hidden}
@@ -96,7 +96,7 @@ a{color:inherit;text-decoration:none}
 .funnel-row .col-num.fail{color:var(--red)}
 .funnel-row .col-num.progress{color:var(--text2)}
 .funnel-row .col-num.conv{color:var(--accent)}
-.funnel-head{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;padding:6px 4px;border-bottom:1px solid var(--border2);background:transparent;display:grid;grid-template-columns:200px 1fr 80px 70px 70px 70px;gap:10px;align-items:center}
+.funnel-head{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;padding:6px 4px;border-bottom:1px solid var(--border2);background:transparent;display:grid;grid-template-columns:220px 1fr 80px 90px 90px;gap:10px;align-items:center}
 .funnel-head .col-num{text-align:right}
 
 /* Managers table */
@@ -135,7 +135,7 @@ a{color:inherit;text-decoration:none}
 .muted{color:var(--text3);font-size:11px}
 
 @media (max-width:700px){
-  .funnel-row,.funnel-head{grid-template-columns:140px 1fr 60px 50px 50px 50px;font-size:11px;gap:6px}
+  .funnel-row,.funnel-head{grid-template-columns:140px 1fr 60px 70px 70px;font-size:11px;gap:6px}
 }
 </style>
 </head>
@@ -483,21 +483,21 @@ function render() {
     <div class="funnel-head">
       <div>Етап</div><div></div>
       <div class="col-num">Усього</div>
-      <div class="col-num">✓</div>
-      <div class="col-num">✗</div>
+      <div class="col-num">→ наступний</div>
       <div class="col-num">% від №1</div>
     </div>`;
   a.funnel.forEach((f, i) => {
     const w = (f.total / maxStageTotal) * 100;
-    const conv = stageConv[i];
+    const fromBase = stageConv[i];
+    const next = a.funnel[i+1];
+    const stepConv = (next && f.total > 0) ? next.total / f.total : null;
     html += `
       <div class="funnel-row">
         <div class="stage">${esc(f.stage)}</div>
         <div class="bar-wrap"><div class="bar" style="width:${w}%"></div><div class="bar-label">${fmt(f.total)}</div></div>
         <div class="col-num">${fmt(f.total)}</div>
-        <div class="col-num success">${f.success ? fmt(f.success) : '—'}</div>
-        <div class="col-num fail">${f.fail ? fmt(f.fail) : '—'}</div>
-        <div class="col-num conv">${pct(conv)}</div>
+        <div class="col-num conv">${stepConv === null ? '—' : pct(stepConv)}</div>
+        <div class="col-num conv">${pct(fromBase)}</div>
       </div>`;
   });
   html += `</div>`;
