@@ -201,11 +201,12 @@ const state = {
   loading: false,
 };
 
-// TODO: коли буде мапа менеджерів → org, перенести у Planfix-групу або в admin-панель.
-// Поки що empty означає «всі менеджери».
-const ORG_MANAGERS = {
-  'Реакт': new Set([]),
-  'Генерація': new Set([]),
+// Org розрізняється по об'єкту (template id) задачі в Planfix:
+//   Реакт      → "Замовлення дилера" (id 99431)
+//   Генерація  → "Продажі станцій"   (id 130339)
+const ORG_TEMPLATES = {
+  'Реакт':     new Set([99431]),
+  'Генерація': new Set([130339]),
 };
 
 // ─── Boot ───
@@ -334,10 +335,10 @@ function inRange(iso, from, to) {
 function filteredTasks() {
   if (!state.raw) return [];
   const from = state.from, to = state.to;
-  const orgSet = state.org ? ORG_MANAGERS[state.org] : null;
+  const orgSet = state.org ? ORG_TEMPLATES[state.org] : null;
   return state.raw.tasks.filter(t => {
     if (!inRange(t.dateISO, from, to)) return false;
-    if (orgSet && orgSet.size > 0 && !orgSet.has(t.manager)) return false;
+    if (orgSet && !orgSet.has(t.templateId)) return false;
     return true;
   });
 }
