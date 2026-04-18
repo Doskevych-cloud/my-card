@@ -298,8 +298,10 @@ function renderSummary(currencies) {
 
   currencies.forEach(c => {
     const tUSD = toUsd(c.total, c.curName);
-    const odUSD = toUsd(c.buckets.d30 + c.buckets.d60 + c.buckets.d61p, c.curName);
-    const o60USD = toUsd(c.buckets.d60 + c.buckets.d61p, c.curName);
+    // «Прострочено» = борг 31+ днів (d60+d61p) — матчить label «>30 днів».
+    // «Критично»   = борг 61+ днів (d61p)      — матчить label «>60 днів».
+    const odUSD = toUsd(c.buckets.d60 + c.buckets.d61p, c.curName);
+    const o60USD = toUsd(c.buckets.d61p, c.curName);
     tTotalUSD += tUSD;
     tOverdueUSD += odUSD;
     tOver60USD += o60USD;
@@ -323,12 +325,12 @@ function renderSummary(currencies) {
     <div class="ar-card c-o30 ${o30Tone}">
       <span class="cl">Прострочено</span>
       <div class="cv">${fmt(tOverdueUSD)} <span class="ccy">$</span></div>
-      <span class="cs"><span class="term">15+ днів</span>${overduePct.toFixed(0)}% від загального</span>
+      <span class="cs"><span class="term">31+ днів</span>${overduePct.toFixed(0)}% від загального</span>
     </div>
     <div class="ar-card c-o60 ${o60Tone}">
       <span class="cl">Критично</span>
       <div class="cv">${fmt(tOver60USD)} <span class="ccy">$</span></div>
-      <span class="cs"><span class="term">31+ днів</span>${over60Pct.toFixed(0)}% від загального</span>
+      <span class="cs"><span class="term">61+ днів</span>${over60Pct.toFixed(0)}% від загального</span>
     </div>
     <div class="ar-card c-age ${ageTone}">
       <span class="cl">Середній вік боргу</span>
