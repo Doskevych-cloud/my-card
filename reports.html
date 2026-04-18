@@ -570,9 +570,9 @@ function render() {
       <thead><tr>
         ${th('id', '#')}
         ${th('name', 'Назва')}
-        ${th('createdDate', 'Створено')}
-        ${th('currentStatus', 'Статус')}
-        ${th('changeDate', 'Остання зміна')}
+        ${th('prevStatus', 'Попер. статус')}
+        ${th('currentStatus', 'Поточний статус')}
+        ${th('changeDate', 'Дата зміни')}
         ${th('channel', 'Канал')}
         ${th('budget', 'Бюджет $')}
         ${th('clientClass', 'Клас')}
@@ -589,7 +589,7 @@ function render() {
         <tr>
           <td class="num"><a class="tlink" href="${url}" target="_blank" rel="noopener">${esc(l.id)}</a></td>
           <td>${esc(l.name)}${badge}</td>
-          <td>${esc(l.createdDate)}</td>
+          <td>${esc(l.prevStatus)}</td>
           <td>${esc(l.currentStatus)}</td>
           <td>${esc(l.changeDate)}</td>
           <td>${esc(l.channel)}</td>
