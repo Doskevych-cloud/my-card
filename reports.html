@@ -583,13 +583,10 @@ function render() {
       <tbody>`;
     list.forEach(l => {
       const url = `https://solar.planfix.ua/task/${l.id}`;
-      const ds = l.dealStatus;
-      const badge = ds === 'Успешно' ? ' <span class="badge b-ok" title="Угода закрита успішно">✓</span>'
-                  : ds === 'Неуспешно' ? ' <span class="badge b-fail" title="Угода закрита неуспішно">✗</span>' : '';
       html += `
         <tr>
           <td class="num"><a class="tlink" href="${url}" target="_blank" rel="noopener">${esc(l.id)}</a></td>
-          <td>${esc(l.name)}${badge}</td>
+          <td>${esc(l.name)}</td>
           <td>${esc(l.createdDate)}</td>
           <td>${esc(l.prevStatus)}</td>
           <td>${esc(l.currentStatus)}</td>
