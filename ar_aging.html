@@ -323,8 +323,8 @@ function renderSummary(currencies) {
   });
   const pctOf = v => tTotalUSD ? (v / tTotalUSD) * 100 : 0;
 
-  const totalActive = !state.bucketFilter;
-  const totalCls = `ar-card c-debt clickable${totalActive ? ' active' : ' dim'}`;
+  const anyActive = !!state.bucketFilter;
+  const totalCls = `ar-card c-debt clickable${anyActive ? ' dim' : ''}`;
   document.getElementById('summary').innerHTML = `<div class="ar-summary">
     <div class="${totalCls}" onclick="clearBucketFilter()">
       <span class="cl">Загальна заборгованість</span>
