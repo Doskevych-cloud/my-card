@@ -278,11 +278,11 @@ function setPreset(p) {
   else if (p === 'prevmonth') { from = new Date(y, m-1, 1); to = new Date(y, m, 0); }
   else if (p === 'quarter') from = new Date(y, Math.floor(m/3)*3, 1);
   else if (p === 'year') from = new Date(y, 0, 1);
-  else if (p === 'all')  { state.from = '2020-01-01'; state.to = _todayISO(); state.preset = 'all'; syncInputs(); syncPresetChips(); saveStateToUrl(); load(); return; }
+  else if (p === 'all')  { state.from = '2020-01-01'; state.to = _todayISO(); state.preset = 'all'; syncInputs(); syncPresetChips(); saveStateToUrl(); render(); return; }
   state.from = _localISO(from);
   state.to = _localISO(to);
   state.preset = p;
-  syncInputs(); syncPresetChips(); saveStateToUrl(); load();
+  syncInputs(); syncPresetChips(); saveStateToUrl(); render();
 }
 function setOrg(v) {
   state.org = v || '';
@@ -292,12 +292,12 @@ function attachEvents() {
   document.getElementById('fromIn').addEventListener('change', e => {
     state.from = e.target.value || _firstOfMonthISO();
     state.preset = detectPreset(state.from, state.to);
-    syncPresetChips(); saveStateToUrl(); load();
+    syncPresetChips(); saveStateToUrl(); render();
   });
   document.getElementById('toIn').addEventListener('change', e => {
     state.to = e.target.value || _todayISO();
     state.preset = detectPreset(state.from, state.to);
-    syncPresetChips(); saveStateToUrl(); load();
+    syncPresetChips(); saveStateToUrl(); render();
   });
   document.querySelectorAll('#presetGroup .chip').forEach(c => {
     c.addEventListener('click', () => setPreset(c.dataset.preset));
@@ -310,16 +310,19 @@ async function load(force = false) {
   state.loading = true;
   document.getElementById('content').innerHTML = '<div class="loading">Завантаження звіту з Planfix…</div>';
   try {
-    const params = new URLSearchParams({ action: 'planfix_funnel', from: state.from, to: state.to });
-    if (force) params.set('_', Date.now());
-    const res = await fetch(API + '?' + params.toString());
+    const url = API + '?action=planfix_funnel' + (force ? '&_=' + Date.now() : '');
+    const res = await fetch(url);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
     state.raw = data;
     state.loading = false;
-    document.getElementById('freshness').innerHTML = data.generatedAt
-      ? `Дані Planfix: <b>${esc(data.generatedAt.replace('T',' ').slice(0,16))}</b>`
-      : '';
+    const fresh = data.generatedAt ? data.generatedAt.replace('T',' ').slice(0,16) : '';
+    let label = fresh ? `Дані Planfix: <b>${esc(fresh)}</b>` : '';
+    if (data._stale) {
+      const ago = data._staleSince ? Math.round((Date.now() - data._staleSince) / 60000) : '?';
+      label += ` <span style="color:var(--yellow)">⚠ кеш ${ago} хв (Planfix limit 10 хв)</span>`;
+    }
+    document.getElementById('freshness').innerHTML = label;
     render();
   } catch (e) {
     state.loading = false;
@@ -335,9 +338,13 @@ function inRange(iso, from, to) {
 }
 function filteredTasks() {
   if (!state.raw) return [];
-  // Period filter is applied by Planfix in /generate; client only filters by org.
+  const from = state.from, to = state.to;
   const orgSet = state.org ? ORG_TEMPLATES[state.org] : null;
-  return state.raw.tasks.filter(t => !orgSet || orgSet.has(t.templateId));
+  return state.raw.tasks.filter(t => {
+    if (!inRange(t.dateISO, from, to)) return false;
+    if (orgSet && !orgSet.has(t.templateId)) return false;
+    return true;
+  });
 }
 
 function aggregate(tasks, stages) {
