@@ -448,28 +448,29 @@ function render() {
     return;
   }
 
-  // KPI — на основі унікальних задач у воронці (не суми проходжень)
+  // KPI — когорта у період (унікальні задачі, що увійшли в стейдж у вибраний період)
+  const activeTotal = a.activeTotal || 0;
   html += `
   <div class="kpi">
     <div class="kpi-card">
       <div class="lbl">Лідів (етап 1)</div>
       <div class="val">${fmt(a.leads)}</div>
-      <div class="sub">ввійшли у воронку</div>
+      <div class="sub">нові ліди за період</div>
     </div>
     <div class="kpi-card c-success">
-      <div class="lbl">Успішно</div>
+      <div class="lbl">Успішно (етап 8)</div>
       <div class="val">${fmt(a.won)}</div>
       <div class="sub">${pct(a.leads ? a.won/a.leads : 0)} від лідів</div>
     </div>
     <div class="kpi-card c-fail">
-      <div class="lbl">Неуспішно</div>
+      <div class="lbl">Закрито неуспішно</div>
       <div class="val">${fmt(a.lost)}</div>
       <div class="sub">${pct(a.leads ? a.lost/a.leads : 0)} від лідів</div>
     </div>
     <div class="kpi-card c-progress">
-      <div class="lbl">У роботі</div>
-      <div class="val">${fmt(a.active)}</div>
-      <div class="sub">${pct(a.leads ? a.active/a.leads : 0)} від лідів</div>
+      <div class="lbl">Усього задач</div>
+      <div class="val">${fmt(activeTotal)}</div>
+      <div class="sub">унікальних з активністю</div>
     </div>
     <div class="kpi-card c-rate">
       <div class="lbl">Кінцева конверсія</div>
