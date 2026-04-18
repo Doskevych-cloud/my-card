@@ -160,6 +160,10 @@
     `;
   }
 
+  // ── DEV-MODE: Finance is admin-only while module is being stabilized.
+  // To open Finance for general users, change to: const FINANCE_ADMIN_ONLY = false;
+  const FINANCE_ADMIN_ONLY = true;
+
   // Full flow: checks session, fetches user, verifies role, or redirects/denies.
   // Returns the user on success.
   async function require(role) {
@@ -175,6 +179,14 @@
     if (!user.roles || !user.roles[role]) {
       showDenyScreen(`Адмін ще не відкрив вам доступ до цього модуля.`, role);
       return new Promise(() => {}); // halt caller
+    }
+    // DEV gate: finance available only to admins until module is stable
+    if (FINANCE_ADMIN_ONLY && role === 'finance' && !user.roles.admin) {
+      showDenyScreen(
+        'Розділ «Фінанси» тимчасово доступний лише адміністраторам — модуль ще в активній розробці.',
+        'finance'
+      );
+      return new Promise(() => {});
     }
     return user;
   }
