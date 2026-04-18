@@ -124,6 +124,9 @@ a{color:inherit;text-decoration:none}
 .tasks-table .num{text-align:right;font-variant-numeric:tabular-nums;color:var(--text3)}
 .tasks-table a.tlink{color:var(--accent)}
 .tasks-table a.tlink:hover{text-decoration:underline}
+.tasks-table th.sortable{cursor:pointer;user-select:none}
+.tasks-table th.sortable:hover{color:var(--text)}
+.tasks-table th.sorted{color:var(--accent)}
 .tasks-table .badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10.5px;font-weight:700;letter-spacing:.2px}
 .tasks-table .b-ok{background:var(--green-bg);color:var(--green)}
 .tasks-table .b-fail{background:var(--red-bg);color:var(--red)}
@@ -196,6 +199,7 @@ const state = {
   org: '',
   loading: false,
 };
+let leadsSort = { col: 'changeDate', dir: 'desc' };
 
 // Org розрізняється по об'єкту (template id) задачі в Planfix:
 //   Реакт      → "Замовлення дилера" (id 99431)
@@ -546,6 +550,58 @@ function render() {
     html += `</tbody></table></div>`;
   }
 
+  // Усі ліди (sheet only) — сортовна таблиця
+  if (state.source === 'sheet' && a.leadsList && a.leadsList.length) {
+    const list = [...a.leadsList].sort((x, y) => {
+      const col = leadsSort.col;
+      let va = x[col], vb = y[col];
+      if (typeof va === 'number' && typeof vb === 'number') {
+        return leadsSort.dir === 'asc' ? va - vb : vb - va;
+      }
+      va = String(va || ''); vb = String(vb || '');
+      const cmp = va.localeCompare(vb, 'uk');
+      return leadsSort.dir === 'asc' ? cmp : -cmp;
+    });
+    const arrow = c => leadsSort.col === c ? (leadsSort.dir === 'asc' ? ' ↑' : ' ↓') : '';
+    const th = (c, label) => `<th class="sortable ${leadsSort.col === c ? 'sorted' : ''}" data-col="${c}">${label}${arrow(c)}</th>`;
+    html += `
+    <div class="section-h"><h2>📋 Усі ліди (${fmt(list.length)})</h2><span class="hint">Клік по заголовку — сортування</span></div>
+    <div class="tasks-wrap"><table class="tasks-table" id="leadsTable">
+      <thead><tr>
+        ${th('id', '#')}
+        ${th('name', 'Назва')}
+        ${th('createdDate', 'Створено')}
+        ${th('currentStatus', 'Статус')}
+        ${th('changeDate', 'Остання зміна')}
+        ${th('channel', 'Канал')}
+        ${th('budget', 'Бюджет $')}
+        ${th('clientClass', 'Клас')}
+        ${th('clientType', 'Тип')}
+        ${th('manager', 'Менеджер')}
+      </tr></thead>
+      <tbody>`;
+    list.forEach(l => {
+      const url = `https://solar.planfix.ua/task/${l.id}`;
+      const ds = l.dealStatus;
+      const badge = ds === 'Успешно' ? ' <span class="badge b-ok">✓</span>'
+                  : ds === 'Неуспешно' ? ' <span class="badge b-fail">✗</span>' : '';
+      html += `
+        <tr>
+          <td class="num"><a class="tlink" href="${url}" target="_blank" rel="noopener">${esc(l.id)}</a></td>
+          <td>${esc(l.name)}${badge}</td>
+          <td>${esc(l.createdDate)}</td>
+          <td>${esc(l.currentStatus)}</td>
+          <td>${esc(l.changeDate)}</td>
+          <td>${esc(l.channel)}</td>
+          <td class="num">${l.budget ? fmt(l.budget) : '—'}</td>
+          <td>${esc(l.clientClass)}</td>
+          <td>${esc(l.clientType)}</td>
+          <td>${esc(l.manager)}</td>
+        </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+
   // Tasks — тільки для Planfix-режиму (у sheet rows агреговані, raw немає)
   if (state.source !== 'sheet') {
   const uniqTasks = new Set(tasks.map(t => t.id)).size;
@@ -586,6 +642,16 @@ function render() {
   </div>`;
 
   document.getElementById('content').innerHTML = html;
+
+  // Sort handler для таблиці «Усі ліди»
+  document.querySelectorAll('#leadsTable th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      if (leadsSort.col === col) leadsSort.dir = leadsSort.dir === 'asc' ? 'desc' : 'asc';
+      else { leadsSort.col = col; leadsSort.dir = 'desc'; }
+      render();
+    });
+  });
 }
 </script>
 </body>
