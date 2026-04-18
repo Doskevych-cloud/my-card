@@ -20,7 +20,6 @@
   --green:#22c55e; --green-bg:rgba(34,197,94,.12);
   --blue:#3b82f6; --blue-bg:rgba(59,130,246,.12);
   --yellow:#eab308; --yellow-bg:rgba(234,179,8,.12);
-  --shadow-md:0 4px 20px rgba(0,0,0,.4);
 }
 :root[data-theme="light"]{
   --bg:#f5f5f7; --bg2:#ffffff; --bg3:#ececef;
@@ -32,7 +31,6 @@
   --green:#15803d; --green-bg:rgba(21,128,61,.10);
   --blue:#1d4ed8; --blue-bg:rgba(29,78,216,.10);
   --yellow:#a16207; --yellow-bg:rgba(161,98,7,.10);
-  --shadow-md:0 4px 20px rgba(0,0,0,.08);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
@@ -40,26 +38,36 @@ a{color:inherit;text-decoration:none}
 
 .wrap{max-width:1400px;margin:0 auto;padding:20px}
 
-/* Page tabs (categories) */
+/* Page tabs */
 .page-tabs{display:inline-flex;gap:4px;padding:4px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:14px}
 .ptab{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;color:var(--text2);text-decoration:none;transition:background .15s,color .15s;white-space:nowrap;cursor:pointer;border:none;background:transparent;font-family:inherit}
 .ptab:hover{background:var(--bg3);color:var(--text)}
 .ptab.active{background:var(--accent-bg);color:var(--accent)}
 
-/* Sub-tabs (reports inside a category) */
+/* Sub-tabs */
 .sub-tabs{display:inline-flex;gap:2px;padding:3px;background:var(--bg2);border:1px solid var(--border);border-radius:9px;margin-bottom:14px;margin-left:8px}
 .sub-tabs .stab{padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;background:transparent;border:none;font-family:inherit}
 .sub-tabs .stab:hover{color:var(--text)}
 .sub-tabs .stab.active{background:var(--accent-bg);color:var(--accent)}
 
-/* Toolbar */
+/* Toolbar — same canon as sales.html / ar_aging.html */
 .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
 .toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
-.toolbar .meta{font-size:12px;color:var(--text3)}
-.toolbar .meta b{color:var(--text2);font-weight:600}
+.toolbar input[type=date]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;color-scheme:dark;font-family:inherit}
+:root[data-theme="light"] .toolbar input[type=date]{color-scheme:light}
+.toolbar input[type=date]:focus{border-color:var(--accent)}
+.toolbar .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;display:inline-flex;align-items:center;gap:6px;border-radius:8px}
+.toolbar .chip:hover{background:var(--bg3);color:var(--text)}
+.toolbar .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.toolbar .group{display:inline-flex;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px}
+.toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
+.toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
+.toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 2px}
 .toolbar .spacer{flex:1}
+.toolbar .meta{font-size:11.5px;color:var(--text3)}
+.toolbar .meta b{color:var(--text2);font-weight:600}
 
-/* KPI cards */
+/* KPI */
 .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px}
 .kpi-card{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:3px}
 .kpi-card .lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
@@ -107,6 +115,20 @@ a{color:inherit;text-decoration:none}
 .mgr-table .conv-bar{display:inline-block;width:60px;height:4px;background:var(--bg3);border-radius:2px;vertical-align:middle;margin-left:8px;overflow:hidden}
 .mgr-table .conv-bar i{display:block;height:100%;background:var(--accent);border-radius:2px}
 
+/* Tasks list (collapsible) */
+.tasks-wrap{border:1px solid var(--border);border-radius:12px;background:var(--surface2);overflow:hidden;margin-bottom:20px}
+.tasks-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.tasks-table th,.tasks-table td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+.tasks-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;background:var(--surface);position:sticky;top:0}
+.tasks-table tr:hover td{background:var(--bg3)}
+.tasks-table .num{text-align:right;font-variant-numeric:tabular-nums;color:var(--text3)}
+.tasks-table a.tlink{color:var(--accent)}
+.tasks-table a.tlink:hover{text-decoration:underline}
+.tasks-table .badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10.5px;font-weight:700;letter-spacing:.2px}
+.tasks-table .b-ok{background:var(--green-bg);color:var(--green)}
+.tasks-table .b-fail{background:var(--red-bg);color:var(--red)}
+.tasks-table .b-prog{background:var(--blue-bg);color:var(--blue)}
+
 /* States */
 .loading,.empty,.error-box{padding:40px 20px;text-align:center;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:12px}
 .error-box{border-color:var(--red);color:var(--red);background:var(--red-bg)}
@@ -114,7 +136,6 @@ a{color:inherit;text-decoration:none}
 
 @media (max-width:700px){
   .funnel-row,.funnel-head{grid-template-columns:140px 1fr 60px 50px 50px 50px;font-size:11px;gap:6px}
-  .funnel-row .stage{font-size:11px}
 }
 </style>
 </head>
@@ -132,11 +153,30 @@ a{color:inherit;text-decoration:none}
   </div>
 
   <div class="toolbar">
-    <span class="lbl">Звіт</span>
-    <span class="meta" id="reportMeta">Конверсії лідогенерації по етапах · з Planfix</span>
+    <span class="lbl">Період</span>
+    <input type="date" id="fromIn">
+    <span style="color:var(--text3)">—</span>
+    <input type="date" id="toIn">
+    <span class="group" id="presetGroup">
+      <span class="chip" data-preset="month">Цей місяць</span>
+      <span class="chip" data-preset="prevmonth">Минулий</span>
+      <span class="chip" data-preset="quarter">Квартал</span>
+      <span class="chip" data-preset="year">Рік</span>
+      <span class="chip" data-preset="all">Весь час</span>
+    </span>
+
+    <span class="sep"></span>
+
+    <span class="chip active" data-org="" onclick="setOrg('')">Усі</span>
+    <span class="chip" data-org="Реакт" onclick="setOrg('Реакт')">Реакт</span>
+    <span class="chip" data-org="Генерація" onclick="setOrg('Генерація')">Генерація</span>
+
+    <span class="sep"></span>
+
+    <button class="btn btn--secondary btn--sm" id="btnRefresh">↻ Оновити</button>
+
     <span class="spacer"></span>
     <span class="meta" id="freshness">—</span>
-    <button class="btn btn--secondary btn--sm" id="btnRefresh">↻ Оновити</button>
   </div>
 
   <div id="content">
@@ -145,80 +185,239 @@ a{color:inherit;text-decoration:none}
 </div>
 
 <script>
-Auth.require('reports').then(user => {
-  AppHeader.mount({ active: 'reports', user });
-  load();
-
-  document.getElementById('btnRefresh').addEventListener('click', () => load(true));
-});
-
 const API = 'https://price-api.doskevich.workers.dev/';
 
+// ─── State ───
+function _localISO(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function _todayISO(){return _localISO(new Date())}
+function _firstOfMonthISO(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`}
+
+const state = {
+  raw: null,            // { tasks, generatedAt, reportName, stages }
+  from: _firstOfMonthISO(),
+  to: _todayISO(),
+  preset: 'month',
+  org: '',
+  loading: false,
+};
+
+// TODO: коли буде мапа менеджерів → org, перенести у Planfix-групу або в admin-панель.
+// Поки що empty означає «всі менеджери».
+const ORG_MANAGERS = {
+  'Реакт': new Set([]),
+  'Генерація': new Set([]),
+};
+
+// ─── Boot ───
+Auth.require('reports').then(user => {
+  AppHeader.mount({ active: 'reports', user });
+  hydrateFromHash();
+  syncInputs();
+  syncPresetChips();
+  syncOrgChips();
+  attachEvents();
+  load();
+});
+
+// ─── URL state ───
+function saveStateToUrl() {
+  const h = new URLSearchParams();
+  h.set('from', state.from);
+  h.set('to', state.to);
+  if (state.preset) h.set('preset', state.preset);
+  if (state.org)    h.set('org', state.org);
+  history.replaceState(null, '', '#' + h.toString());
+}
+function hydrateFromHash() {
+  const h = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+  if (h.get('from')) state.from = h.get('from');
+  if (h.get('to'))   state.to   = h.get('to');
+  if (h.get('preset')) state.preset = h.get('preset');
+  if (h.get('org'))    state.org    = h.get('org');
+  if (!h.get('preset')) state.preset = detectPreset(state.from, state.to);
+}
+function detectPreset(from, to) {
+  if (!from || !to) return '';
+  if (from === '1970-01-01') return 'all';
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  const first = _localISO(new Date(y, m, 1));
+  const today = _todayISO();
+  if (from === first && to === today) return 'month';
+  const pStart = _localISO(new Date(y, m-1, 1));
+  const pEnd   = _localISO(new Date(y, m, 0));
+  if (from === pStart && to === pEnd) return 'prevmonth';
+  const qStart = _localISO(new Date(y, Math.floor(m/3)*3, 1));
+  if (from === qStart && to === today) return 'quarter';
+  const yStart = _localISO(new Date(y, 0, 1));
+  if (from === yStart && to === today) return 'year';
+  return '';
+}
+
+// ─── Controls ───
+function syncInputs() {
+  document.getElementById('fromIn').value = state.from;
+  document.getElementById('toIn').value = state.to;
+}
+function syncPresetChips() {
+  document.querySelectorAll('#presetGroup .chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.preset === state.preset);
+  });
+}
+function syncOrgChips() {
+  document.querySelectorAll('.chip[data-org]').forEach(c => {
+    c.classList.toggle('active', (c.dataset.org || '') === (state.org || ''));
+  });
+}
+function setPreset(p) {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  let from, to = now;
+  if (p === 'month') from = new Date(y, m, 1);
+  else if (p === 'prevmonth') { from = new Date(y, m-1, 1); to = new Date(y, m, 0); }
+  else if (p === 'quarter') from = new Date(y, Math.floor(m/3)*3, 1);
+  else if (p === 'year') from = new Date(y, 0, 1);
+  else if (p === 'all')  { state.from = '1970-01-01'; state.to = _todayISO(); state.preset = 'all'; syncInputs(); syncPresetChips(); saveStateToUrl(); render(); return; }
+  state.from = _localISO(from);
+  state.to = _localISO(to);
+  state.preset = p;
+  syncInputs(); syncPresetChips(); saveStateToUrl(); render();
+}
+function setOrg(v) {
+  state.org = v || '';
+  syncOrgChips(); saveStateToUrl(); render();
+}
+function attachEvents() {
+  document.getElementById('fromIn').addEventListener('change', e => {
+    state.from = e.target.value || _firstOfMonthISO();
+    state.preset = detectPreset(state.from, state.to);
+    syncPresetChips(); saveStateToUrl(); render();
+  });
+  document.getElementById('toIn').addEventListener('change', e => {
+    state.to = e.target.value || _todayISO();
+    state.preset = detectPreset(state.from, state.to);
+    syncPresetChips(); saveStateToUrl(); render();
+  });
+  document.querySelectorAll('#presetGroup .chip').forEach(c => {
+    c.addEventListener('click', () => setPreset(c.dataset.preset));
+  });
+  document.getElementById('btnRefresh').addEventListener('click', () => load(true));
+}
+
+// ─── Data ───
 async function load(force = false) {
-  const c = document.getElementById('content');
-  c.innerHTML = '<div class="loading">Завантаження звіту…</div>';
+  state.loading = true;
+  document.getElementById('content').innerHTML = '<div class="loading">Завантаження звіту з Planfix…</div>';
   try {
     const url = API + '?action=planfix_funnel' + (force ? '&_=' + Date.now() : '');
     const res = await fetch(url);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
-    render(data);
+    state.raw = data;
+    state.loading = false;
+    document.getElementById('freshness').innerHTML = data.generatedAt
+      ? `Дані Planfix: <b>${esc(data.generatedAt.replace('T',' ').slice(0,16))}</b>`
+      : '';
+    render();
   } catch (e) {
-    c.innerHTML = `<div class="error-box">Помилка: ${esc(e.message || e)}</div>`;
+    state.loading = false;
+    document.getElementById('content').innerHTML = `<div class="error-box">Помилка: ${esc(e.message || e)}</div>`;
   }
 }
 
+// ─── Filtering ───
+function inRange(iso, from, to) {
+  if (!iso) return false;
+  const d = iso.slice(0, 10);
+  return d >= from && d <= to;
+}
+function filteredTasks() {
+  if (!state.raw) return [];
+  const from = state.from, to = state.to;
+  const orgSet = state.org ? ORG_MANAGERS[state.org] : null;
+  return state.raw.tasks.filter(t => {
+    if (!inRange(t.dateISO, from, to)) return false;
+    if (orgSet && orgSet.size > 0 && !orgSet.has(t.manager)) return false;
+    return true;
+  });
+}
+
+function aggregate(tasks, stages) {
+  const funnel = {};
+  for (const s of stages) funnel[s] = { stage: s, total: 0, success: 0, fail: 0, inProgress: 0 };
+  const managers = {};
+  for (const t of tasks) {
+    if (!funnel[t.stage]) funnel[t.stage] = { stage: t.stage, total: 0, success: 0, fail: 0, inProgress: 0 };
+    funnel[t.stage].total++;
+    if (t.outcome === 'Успешно') funnel[t.stage].success++;
+    else if (t.outcome === 'Неуспешно') funnel[t.stage].fail++;
+    else funnel[t.stage].inProgress++;
+
+    if (!managers[t.manager]) managers[t.manager] = { name: t.manager, total: 0, success: 0, fail: 0, inProgress: 0 };
+    managers[t.manager].total++;
+    if (t.outcome === 'Успешно') managers[t.manager].success++;
+    else if (t.outcome === 'Неуспешно') managers[t.manager].fail++;
+    else managers[t.manager].inProgress++;
+  }
+  const total = tasks.length;
+  const success = Object.values(funnel).reduce((a,b)=>a+b.success,0);
+  const fail = Object.values(funnel).reduce((a,b)=>a+b.fail,0);
+  return {
+    total, success, fail, inProgress: total-success-fail,
+    conversionRate: total ? success/total : 0,
+    funnel: Object.values(funnel),
+    managers: Object.values(managers).sort((a,b)=>b.total-a.total),
+  };
+}
+
+// ─── Helpers ───
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function fmt(n){return Number(n||0).toLocaleString('uk-UA')}
 function pct(n){return (Math.round((n||0)*1000)/10).toFixed(1) + '%'}
+function fmtDateUA(iso){if(!iso)return '—';const d=iso.slice(0,10).split('-');return `${d[2]}.${d[1]}.${d[0]}`}
 
-function render(d) {
-  document.getElementById('freshness').innerHTML = d.generatedAt
-    ? `Оновлено: <b>${esc(d.generatedAt.replace('T',' ').slice(0,16))}</b>`
-    : '';
-
-  const total = d.total || 0;
-  const successPct = total ? d.success / total : 0;
-  const failPct = total ? d.fail / total : 0;
-  const inProgressPct = total ? d.inProgress / total : 0;
-
-  const maxStageTotal = Math.max(...d.funnel.map(f => f.total), 1);
-
-  // Conversion between consecutive stages
-  const stageConv = d.funnel.map((f, i) => {
-    if (i === 0) return null;
-    const prev = d.funnel[i - 1].total;
-    return prev > 0 ? f.total / prev : 0;
-  });
+// ─── Render ───
+function render() {
+  if (!state.raw) return;
+  const tasks = filteredTasks();
+  const a = aggregate(tasks, state.raw.stages);
+  const maxStageTotal = Math.max(...a.funnel.map(f => f.total), 1);
+  const stageConv = a.funnel.map((f, i) => i === 0 ? null : (a.funnel[i-1].total > 0 ? f.total / a.funnel[i-1].total : 0));
 
   let html = '';
+
+  if (a.total === 0) {
+    html = `<div class="empty">У вибраний період угод немає.</div>`;
+    document.getElementById('content').innerHTML = html;
+    return;
+  }
 
   // KPI
   html += `
   <div class="kpi">
     <div class="kpi-card">
       <div class="lbl">Усього угод</div>
-      <div class="val">${fmt(total)}</div>
-      <div class="sub">у воронці звіту</div>
+      <div class="val">${fmt(a.total)}</div>
+      <div class="sub">у фільтрі періоду</div>
     </div>
     <div class="kpi-card c-success">
       <div class="lbl">Успішно</div>
-      <div class="val">${fmt(d.success)}</div>
-      <div class="sub">${pct(successPct)} від усіх</div>
+      <div class="val">${fmt(a.success)}</div>
+      <div class="sub">${pct(a.success/a.total)} від усіх</div>
     </div>
     <div class="kpi-card c-fail">
       <div class="lbl">Неуспішно</div>
-      <div class="val">${fmt(d.fail)}</div>
-      <div class="sub">${pct(failPct)} від усіх</div>
+      <div class="val">${fmt(a.fail)}</div>
+      <div class="sub">${pct(a.fail/a.total)} від усіх</div>
     </div>
     <div class="kpi-card c-progress">
       <div class="lbl">У роботі</div>
-      <div class="val">${fmt(d.inProgress)}</div>
-      <div class="sub">${pct(inProgressPct)} від усіх</div>
+      <div class="val">${fmt(a.inProgress)}</div>
+      <div class="sub">${pct(a.inProgress/a.total)} від усіх</div>
     </div>
     <div class="kpi-card c-rate">
       <div class="lbl">Загальна конверсія</div>
-      <div class="val">${pct(d.conversionRate)}</div>
+      <div class="val">${pct(a.conversionRate)}</div>
       <div class="sub">успіх / всього</div>
     </div>
   </div>`;
@@ -231,14 +430,13 @@ function render(d) {
   </div>
   <div class="funnel">
     <div class="funnel-head">
-      <div>Етап</div>
-      <div></div>
+      <div>Етап</div><div></div>
       <div class="col-num">Усього</div>
       <div class="col-num">✓</div>
       <div class="col-num">✗</div>
       <div class="col-num">CR ↻</div>
     </div>`;
-  d.funnel.forEach((f, i) => {
+  a.funnel.forEach((f, i) => {
     const w = (f.total / maxStageTotal) * 100;
     const conv = stageConv[i];
     html += `
@@ -255,41 +453,51 @@ function render(d) {
 
   // Managers
   html += `
-  <div class="section-h">
-    <h2>👥 По менеджерах</h2>
-    <span class="hint">Сортування — за кількістю угод</span>
-  </div>
+  <div class="section-h"><h2>👥 По менеджерах</h2><span class="hint">Сортування — за кількістю угод</span></div>
   <div class="mgr-wrap">
     <table class="mgr-table">
-      <thead>
-        <tr>
-          <th>Менеджер</th>
-          <th>Угод</th>
-          <th>Успіх</th>
-          <th>Провал</th>
-          <th>В роботі</th>
-          <th>Конверсія</th>
-        </tr>
-      </thead>
+      <thead><tr><th>Менеджер</th><th>Угод</th><th>Успіх</th><th>Провал</th><th>В роботі</th><th>Конверсія</th></tr></thead>
       <tbody>`;
-  d.managers.forEach(m => {
+  a.managers.forEach(m => {
     const cr = m.total ? m.success / m.total : 0;
     html += `
-        <tr>
-          <td>${esc(m.name)}</td>
-          <td>${fmt(m.total)}</td>
-          <td class="success">${m.success ? fmt(m.success) : '—'}</td>
-          <td class="fail">${m.fail ? fmt(m.fail) : '—'}</td>
-          <td class="progress">${m.inProgress ? fmt(m.inProgress) : '—'}</td>
-          <td class="conv">${pct(cr)}<span class="conv-bar"><i style="width:${Math.round(cr*100)}%"></i></span></td>
-        </tr>`;
+      <tr>
+        <td>${esc(m.name)}</td>
+        <td>${fmt(m.total)}</td>
+        <td class="success">${m.success ? fmt(m.success) : '—'}</td>
+        <td class="fail">${m.fail ? fmt(m.fail) : '—'}</td>
+        <td class="progress">${m.inProgress ? fmt(m.inProgress) : '—'}</td>
+        <td class="conv">${pct(cr)}<span class="conv-bar"><i style="width:${Math.round(cr*100)}%"></i></span></td>
+      </tr>`;
   });
+  html += `</tbody></table></div>`;
+
+  // Tasks
   html += `
-      </tbody>
-    </table>
-  </div>
+  <div class="section-h"><h2>📋 Задачі (${fmt(tasks.length)})</h2><span class="hint">Останні зміни вгорі</span></div>
+  <div class="tasks-wrap"><table class="tasks-table">
+    <thead><tr><th>#</th><th>Назва</th><th>Етап</th><th>Менеджер</th><th>Остання зміна</th></tr></thead>
+    <tbody>`;
+  const sorted = tasks.slice().sort((a,b) => (b.dateISO||'').localeCompare(a.dateISO||''));
+  sorted.slice(0, 200).forEach(t => {
+    const badge = t.outcome === 'Успешно' ? '<span class="badge b-ok">✓ успіх</span>'
+                : t.outcome === 'Неуспешно' ? '<span class="badge b-fail">✗ провал</span>'
+                : '<span class="badge b-prog">у роботі</span>';
+    html += `
+      <tr>
+        <td class="num">${esc(t.id)}</td>
+        <td>${t.taskUrl ? `<a class="tlink" href="${esc(t.taskUrl)}" target="_blank" rel="noopener">${esc(t.title)}</a>` : esc(t.title)} ${badge}</td>
+        <td>${esc(t.stage)}</td>
+        <td>${esc(t.manager)}</td>
+        <td>${esc(t.date || fmtDateUA(t.dateISO))}</td>
+      </tr>`;
+  });
+  if (sorted.length > 200) {
+    html += `<tr><td colspan="5" class="muted" style="text-align:center;padding:10px">… показано перші 200 з ${fmt(sorted.length)}</td></tr>`;
+  }
+  html += `</tbody></table></div>
   <div class="muted" style="text-align:right;padding:4px 6px">
-    Джерело: Planfix звіт #${d.reportId} «${esc(d.reportName)}». Кеш 30 хв (Planfix дозволяє перебудову раз на 10 хв).
+    Джерело: Planfix звіт #${state.raw.reportId} «${esc(state.raw.reportName)}». Кеш 30 хв (Planfix дозволяє перебудову раз на 10 хв).
   </div>`;
 
   document.getElementById('content').innerHTML = html;
