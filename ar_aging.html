@@ -114,31 +114,24 @@ a{color:inherit;text-decoration:none}
 /* Numeric highlighting */
 .ar-table td.total{font-weight:700;color:var(--text)}
 .ar-table tr.ar-cl td.total{font-weight:600}
-.ar-table td.age{font-weight:500}
-.ar-table td.age.warn{color:var(--yellow);font-weight:600}
-.ar-table td.age.bad{color:var(--red);font-weight:700}
+.ar-table td.age{font-weight:500;color:var(--text2)}
 
-/* Aging scale — one column replacing 5 bucket columns */
-.ar-table th.scale-head,
-.ar-table td.scale-cell{min-width:300px;width:320px;text-align:left;padding-right:14px}
-.scale-bar{display:flex;width:100%;height:10px;border-radius:3px;overflow:hidden;background:var(--bg3)}
-.scale-bar .seg{transition:opacity .15s}
-.scale-bar .seg:hover{opacity:.75}
-.ar-cur .scale-bar{height:12px}
-.ar-cl .scale-bar{height:8px}
-.seg-d7{background:var(--green)}
-.seg-d14{background:var(--blue)}
-.seg-d30{background:var(--yellow)}
-.seg-d60{background:var(--accent)}
-.seg-d61p{background:var(--red)}
-.scale-ticks{display:flex;width:100%;margin-top:5px;font-size:9px;color:var(--text3);font-weight:600;letter-spacing:0;text-transform:none}
-.scale-ticks span{flex:1;text-align:center;border-left:1px solid var(--border)}
-.scale-ticks span:first-child{border-left:none}
-.scale-ticks span.c-d7  {color:var(--green)}
-.scale-ticks span.c-d14 {color:var(--blue)}
-.scale-ticks span.c-d30 {color:var(--yellow)}
-.scale-ticks span.c-d60 {color:var(--accent)}
-.scale-ticks span.c-d61p{color:var(--red)}
+/* Header: column-type swatches on top of bucket columns */
+.ar-table th .sw{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:5px;vertical-align:2px}
+.ar-table th.b-d7  .sw{background:var(--green)}
+.ar-table th.b-d14 .sw{background:var(--blue)}
+.ar-table th.b-d30 .sw{background:var(--yellow)}
+.ar-table th.b-d60 .sw{background:var(--accent)}
+.ar-table th.b-d61p .sw{background:var(--red)}
+
+/* Numeric bucket cells — subtle color tint on the number itself */
+.ar-table td.num{color:var(--text)}
+.ar-table td.num.zr{color:var(--text3);font-weight:400}
+.ar-table td.b-val.has.b-d7  {color:var(--green)}
+.ar-table td.b-val.has.b-d14 {color:var(--blue)}
+.ar-table td.b-val.has.b-d30 {color:var(--yellow)}
+.ar-table td.b-val.has.b-d60 {color:var(--accent)}
+.ar-table td.b-val.has.b-d61p{color:var(--red)}
 
 /* Loading + empty */
 .loading{text-align:center;padding:60px 20px;color:var(--text3);font-size:14px}
@@ -356,17 +349,6 @@ function renderSummary(currencies) {
   </div>`;
 }
 
-function scaleBar(buckets, total) {
-  if (!total) return '<span class="scale-bar"></span>';
-  const segs = BUCKET_ORDER.map(k => {
-    const v = buckets[k] || 0;
-    if (v < 0.005) return '';
-    const pct = (v / total) * 100;
-    return `<div class="seg seg-${k}" style="width:${pct}%" title="${BUCKET_LABEL[k]} дн.: ${fmt(v)} (${pct.toFixed(1)}%)"></div>`;
-  }).join('');
-  return `<div class="scale-bar">${segs}</div>`;
-}
-
 function renderTable(currencies) {
   // Sort currencies: USD → EUR → UAH → others
   const CUR_ORDER = { USD:1, EUR:2, UAH:3 };
@@ -380,7 +362,6 @@ function renderTable(currencies) {
     const avgAge = weightedAge(c.total, c.buckets);
     const clients = sortClients(c.clients);
 
-    // Currency header row (collapsible)
     rows += `<tr class="ar-cur" data-cur="${esc(curKey)}"${collapsed ? ' data-collapsed="true"' : ''}>
       <td onclick="toggleCur('${esc(curKey)}')">
         <span class="tri">▾</span>
@@ -388,19 +369,25 @@ function renderTable(currencies) {
         ${fmt(c.total)} ${sign}
         <span class="meta">${clients.length} клієнт${clients.length === 1 ? '' : 'ів'} · сер. вік ${avgAge.toFixed(0)} дн.</span>
       </td>
-      <td class="total">${fmt(c.total)} ${sign}</td>
+      <td class="total">${fmt(c.total)}</td>
       <td class="age">${avgAge.toFixed(0)} дн.</td>
-      <td class="scale-cell">${scaleBar(c.buckets, c.total)}</td>
+      ${BUCKET_ORDER.map(k => {
+        const v = c.buckets[k] || 0;
+        const has = v >= 0.005;
+        return `<td class="num b-val b-${k}${has ? ' has' : ' zr'}">${fmt(v)}</td>`;
+      }).join('')}
     </tr>`;
 
-    // Client rows
     clients.forEach(cl => {
-      const ageCls = cl.maxDaysOverdue > 60 ? 'bad' : cl.maxDaysOverdue > 30 ? 'warn' : '';
       rows += `<tr class="ar-cl${collapsed ? ' collapsed-hidden' : ''}" data-cur="${esc(curKey)}">
         <td title="${esc(cl.name)}">${esc(cl.name)}</td>
-        <td class="total">${fmt(cl.total)} ${sign}</td>
-        <td class="age ${ageCls}">${cl.maxDaysOverdue > 0 ? cl.maxDaysOverdue + ' дн.' : '—'}</td>
-        <td class="scale-cell">${scaleBar(cl.buckets, cl.total)}</td>
+        <td class="total">${fmt(cl.total)}</td>
+        <td class="age">${cl.maxDaysOverdue > 0 ? cl.maxDaysOverdue + ' дн.' : '—'}</td>
+        ${BUCKET_ORDER.map(k => {
+          const v = cl.buckets[k] || 0;
+          const has = v >= 0.005;
+          return `<td class="num b-val b-${k}${has ? ' has' : ' zr'}">${fmt(v)}</td>`;
+        }).join('')}
       </tr>`;
     });
   });
@@ -413,16 +400,11 @@ function renderTable(currencies) {
             <th>Валюта / Контрагент</th>
             <th>Заборгованість</th>
             <th>Вік боргу</th>
-            <th class="scale-head">
-              Розподіл по строках
-              <div class="scale-ticks">
-                <span class="c-d7">До 7</span>
-                <span class="c-d14">8–14</span>
-                <span class="c-d30">15–30</span>
-                <span class="c-d60">31–60</span>
-                <span class="c-d61p">Від 61</span>
-              </div>
-            </th>
+            <th class="b-d7"><span class="sw"></span>До 7</th>
+            <th class="b-d14"><span class="sw"></span>8–14</th>
+            <th class="b-d30"><span class="sw"></span>15–30</th>
+            <th class="b-d60"><span class="sw"></span>31–60</th>
+            <th class="b-d61p"><span class="sw"></span>Від 61</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
