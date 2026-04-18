@@ -148,8 +148,7 @@ a{color:inherit;text-decoration:none}
       <button class="ptab active" data-cat="sales">📈 Продажі</button>
     </div>
     <div class="sub-tabs" id="subTabs">
-      <button class="stab active" data-rep="planfix">🎯 Воронка (Planfix)</button>
-      <button class="stab" data-rep="sheet">📊 За датою переходу (таблиця)</button>
+      <button class="stab active" data-rep="sheet">🎯 Воронка лідогенерації</button>
     </div>
   </div>
 
@@ -165,12 +164,6 @@ a{color:inherit;text-decoration:none}
       <span class="chip" data-preset="year">Рік</span>
       <span class="chip" data-preset="all">Весь час</span>
     </span>
-
-    <span class="sep"></span>
-
-    <span class="chip active" data-org="" onclick="setOrg('')">Всі</span>
-    <span class="chip" data-org="Реакт" onclick="setOrg('Реакт')">Реакт</span>
-    <span class="chip" data-org="Генерація" onclick="setOrg('Генерація')">Генерація</span>
 
     <span class="sep"></span>
 
@@ -195,8 +188,8 @@ function _firstOfMonthISO(){const d=new Date();return _localISO(new Date(d.getFu
 function _lastOfMonthISO(){const d=new Date();return _localISO(new Date(d.getFullYear(), d.getMonth()+1, 0))}
 
 const state = {
-  raw: null,            // { tasks, generatedAt, reportName, stages } or sheet-agg
-  source: 'planfix',    // 'planfix' | 'sheet'
+  raw: null,            // sheet-aggregated payload
+  source: 'sheet',
   from: _firstOfMonthISO(),
   to: _lastOfMonthISO(),
   preset: 'month',
