@@ -323,8 +323,10 @@ function renderSummary(currencies) {
   });
   const pctOf = v => tTotalUSD ? (v / tTotalUSD) * 100 : 0;
 
+  const totalActive = !state.bucketFilter;
+  const totalCls = `ar-card c-debt clickable${totalActive ? ' active' : ' dim'}`;
   document.getElementById('summary').innerHTML = `<div class="ar-summary">
-    <div class="ar-card c-debt">
+    <div class="${totalCls}" onclick="clearBucketFilter()">
       <span class="cl">Загальна заборгованість</span>
       <div class="cv">${fmt(tTotalUSD)} <span class="ccy">$</span></div>
       <span class="cs">${tClients} клієнт${tClients === 1 ? '' : 'ів'}${USD_UAH ? ' · курс ' + USD_UAH.toFixed(2) + ' ₴/$' : ''}</span>
@@ -349,6 +351,12 @@ function bucketCard(key, label, amount, pct) {
 
 function toggleBucketFilter(key) {
   state.bucketFilter = (state.bucketFilter === key) ? null : key;
+  if (state._raw) render(state._raw);
+}
+
+function clearBucketFilter() {
+  if (!state.bucketFilter) return;
+  state.bucketFilter = null;
   if (state._raw) render(state._raw);
 }
 
