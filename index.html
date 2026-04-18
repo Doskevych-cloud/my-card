@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=today20260418"></script>
-<script src="header.js?v=today20260418"></script>
+<script src="auth.js?v=conv20260418"></script>
+<script src="header.js?v=conv20260418"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -442,6 +442,7 @@ function reloadAll() {
   buildKpiSkeleton();
   loadKey();
   loadSales();
+  loadConversion();
 }
 
 // ─── 3 ключові KPI: Оплачено за період · Дебіторка · Кредиторка ───
@@ -456,6 +457,11 @@ function buildKpiSkeleton() {
     keyKpis.push({ id: 'kpiAR',      cls: 'c-ar',  lbl: 'Дебіторка' });
     keyKpis.push({ id: 'kpiAP',      cls: 'c-ap',  lbl: 'Кредиторка' });
   }
+  if (r.reports) {
+    keyKpis.push({ id: 'kpiLeads', cls: 'c-lead',lbl: 'Нові ліди' });
+    keyKpis.push({ id: 'kpiWon',   cls: 'c-won', lbl: 'Успішно реалізовано' });
+    keyKpis.push({ id: 'kpiConv',  cls: 'c-conv',lbl: 'Кінцева конверсія' });
+  }
 
   const kpiHtml = c => `<div class="kpi ${c.cls} ldg" id="${c.id}">
     <div class="kpi-head"><span class="kpi-lbl">${c.lbl}</span></div>
@@ -467,7 +473,7 @@ function buildKpiSkeleton() {
   document.getElementById('keyKpis').innerHTML = keyKpis.map(kpiHtml).join('');
 
   // Per-block visibility — strictly role-gated
-  document.getElementById('sectionKey').style.display   = r.finance ? '' : 'none';
+  document.getElementById('sectionKey').style.display   = (r.finance || r.reports) ? '' : 'none';
   document.getElementById('sectionSales').style.display = r.sales   ? '' : 'none';
 
   // Empty-state hint
@@ -905,6 +911,78 @@ function drawSparkline(canvasId, series, opts = {}) {
   ctx.fill();
 }
 
+// ─── CONVERSION (ліди / успіх / кінцева конверсія) ───
+async function loadConversion() {
+  const u = window.__user;
+  if (!u.roles || !u.roles.reports) return;
+
+  // Поточний період (з фільтра) + місяць тому для delta
+  const todayDate = new Date();
+  const todayIso = _localISO(todayDate);
+  const monthAgo = (() => { const d = new Date(todayDate); d.setMonth(d.getMonth() - 1); return _localISO(d); })();
+
+  const qCur  = `?action=sheet_funnel&from=${state.from}&to=${state.to}`;
+  const qPrev = (() => {
+    const prev = prevPeriodOf(state.from, state.to);
+    return prev ? `?action=sheet_funnel&from=${prev.from}&to=${prev.to}` : null;
+  })();
+
+  // Sparkline: 12 місяців поточного року (як у інших ключових KPI)
+  const trendBuckets = buildYtdBuckets(todayDate, todayIso);
+  const sparkReqs = trendBuckets.map(b =>
+    fetch(API_URL + `?action=sheet_funnel&from=${b.from}&to=${b.to}`).then(r => r.json()).catch(() => null)
+  );
+
+  const [curR, prevR, ...sparkR] = await Promise.allSettled([
+    fetch(API_URL + qCur).then(r => r.json()),
+    qPrev ? fetch(API_URL + qPrev).then(r => r.json()) : Promise.resolve(null),
+    ...sparkReqs,
+  ]);
+
+  const getCur = r => (r && r.status === 'fulfilled' && r.value && !r.value.error) ? r.value : null;
+  const cur = getCur(curR);
+  const prev = getCur(prevR);
+
+  const curLeads = cur ? (cur.leads || 0) : 0;
+  const curWon   = cur ? (cur.won   || 0) : 0;
+  const curConv  = curLeads ? (curWon / curLeads * 100) : 0;
+  const prevLeads = prev ? (prev.leads || 0) : null;
+  const prevWon   = prev ? (prev.won   || 0) : null;
+  const prevConv  = (prev && prev.leads) ? (prev.won / prev.leads * 100) : null;
+
+  if (!cur) {
+    const msg = curR.status === 'fulfilled' ? (curR.value.error || 'помилка') : curR.reason?.message;
+    ['kpiLeads','kpiWon','kpiConv'].forEach(id =>
+      updateKpi(id, { val: 'Помилка', sub: esc(String(msg).slice(0, 80)), error: true })
+    );
+    return;
+  }
+
+  updateKpi('kpiLeads', {
+    numeric: { target: curLeads, format: kpiNumFmt(0) },
+    sub: `нові звернення ${deltaHtml(curLeads, prevLeads)}`,
+  });
+  updateKpi('kpiWon', {
+    numeric: { target: curWon, format: kpiNumFmt(0) },
+    sub: `закрито успішно ${deltaHtml(curWon, prevWon)}`,
+  });
+  updateKpi('kpiConv', {
+    numeric: { target: curConv, format: v => v.toFixed(1) + '%' },
+    sub: `успіх / ліди ${deltaHtml(curConv, prevConv)}`,
+  });
+
+  // Sparklines + клік на модалки
+  const leadsSeries = sparkR.map(r => (r.status === 'fulfilled' && r.value) ? (r.value.leads || 0) : 0);
+  const wonSeries   = sparkR.map(r => (r.status === 'fulfilled' && r.value) ? (r.value.won   || 0) : 0);
+  const convSeries  = sparkR.map((r, i) => leadsSeries[i] ? (wonSeries[i] / leadsSeries[i] * 100) : 0);
+  drawSparkline('kpiLeadsSpark', leadsSeries, { color: 'var(--accent)' });
+  drawSparkline('kpiWonSpark',   wonSeries,   { color: 'var(--green)' });
+  drawSparkline('kpiConvSpark',  convSeries,  { color: 'var(--accent)' });
+  wireKpiClick('kpiLeads', openLeadsModal);
+  wireKpiClick('kpiWon',   openWonModal);
+  wireKpiClick('kpiConv',  openConvModal);
+}
+
 // ─── SALES ───
 async function loadSales() {
   const u = window.__user;
@@ -1089,10 +1167,13 @@ function sumBucketMonths(bucket, byM) {
 
 // ─── Модалка з granularity-перемикачем ───
 const METRIC_DEFS = {
-  revenue: { title: '💵 Оплачено — динаміка', label: 'Оплачено' },
-  net:     { title: '✅ Чистий прибуток — динаміка', label: 'Чистий' },
-  ar:      { title: '⚠️ Дебіторка — динаміка', label: 'Дебіторка' },
-  ap:      { title: '💳 Кредиторка — динаміка', label: 'Кредиторка' },
+  revenue: { title: '💵 Оплачено — динаміка', label: 'Оплачено', unit: '$' },
+  net:     { title: '✅ Чистий прибуток — динаміка', label: 'Чистий', unit: '$' },
+  ar:      { title: '⚠️ Дебіторка — динаміка', label: 'Дебіторка', unit: '$' },
+  ap:      { title: '💳 Кредиторка — динаміка', label: 'Кредиторка', unit: '$' },
+  leads:   { title: '🎯 Нові ліди — динаміка', label: 'Ліди', unit: '' },
+  won:     { title: '🏆 Успішно реалізовано — динаміка', label: 'Успіх', unit: '' },
+  conv:    { title: '📊 Кінцева конверсія — динаміка', label: 'Конверсія', unit: '%' },
 };
 const GRAN_COUNT = { month: 12, quarter: 6, year: 3 };
 
@@ -1100,6 +1181,9 @@ function openRevenueModal() { openTrendModal('revenue'); }
 function openNetModal()     { openTrendModal('net'); }
 function openArModal()      { openTrendModal('ar'); }
 function openApModal()      { openTrendModal('ap'); }
+function openLeadsModal()   { openTrendModal('leads'); }
+function openWonModal()     { openTrendModal('won'); }
+function openConvModal()    { openTrendModal('conv'); }
 
 function openTrendModal(metric) {
   const def = METRIC_DEFS[metric];
@@ -1174,6 +1258,20 @@ async function reloadModalChart() {
       fetch(API_URL + `?action=mutual_settlements&on=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
     ));
     values = resps.map(metric === 'ar' ? msArTotal : msApTotal);
+  } else if (metric === 'leads' || metric === 'won' || metric === 'conv') {
+    // sheet_funnel — per-bucket (period-based)
+    const resps = await Promise.all(buckets.map(b =>
+      fetch(API_URL + `?action=sheet_funnel&from=${b.from}&to=${b.to}`).then(r => r.json()).catch(() => null)
+    ));
+    values = resps.map(d => {
+      if (!d || d.error) return 0;
+      const leads = d.leads || 0;
+      const won = d.won || 0;
+      if (metric === 'leads') return leads;
+      if (metric === 'won')   return won;
+      // conv %: won / leads × 100
+      return leads ? (won / leads * 100) : 0;
+    });
   }
 
   renderModalChart(buckets, values, gran, metric);
@@ -1189,8 +1287,14 @@ function renderModalChart(buckets, values, gran, metric) {
   const unit = gran === 'quarter' ? 'кварталів' : gran === 'year' ? 'років' : 'місяців';
   const prevLabel = gran === 'quarter' ? 'попер. квартал' : gran === 'year' ? 'попер. рік' : 'попер. міс';
   const sub = document.getElementById('modalSubText');
-  if (sub) sub.textContent = `${values.length} ${unit} · середнє ${fmtMoney(avg, '$')} · max ${fmtMoney(max, '$')} · min ${fmtMoney(min, '$')}`;
-  const opts = { label: def.label };
+  // Форматування значень — $, % або ціле число
+  const fmtVal = (v) => {
+    if (def.unit === '$') return fmtMoney(v, '$');
+    if (def.unit === '%') return (v || 0).toFixed(1) + '%';
+    return fmt(v, 0);
+  };
+  if (sub) sub.textContent = `${values.length} ${unit} · середнє ${fmtVal(avg)} · max ${fmtVal(max)} · min ${fmtVal(min)}`;
+  const opts = { label: def.label, fmtVal };
 
   requestAnimationFrame(() => {
     const canvas = document.getElementById('revTrendCanvas');
@@ -1278,7 +1382,7 @@ function renderModalChart(buckets, values, gran, metric) {
             displayColors: false,
             callbacks: {
               title: items => items[0].label,
-              label: c => fmtMoney(c.parsed.y, '$'),
+              label: c => opts.fmtVal(c.parsed.y),
               afterLabel: c => {
                 const idx = c.dataIndex;
                 if (idx === 0) return '';
@@ -1298,7 +1402,11 @@ function renderModalChart(buckets, values, gran, metric) {
             border: { display: false },
           },
           y: {
-            ticks: { color: tick, font: { size: 10 }, callback: v => fmt(v / 1000, 0) + 'k' },
+            ticks: { color: tick, font: { size: 10 }, callback: v => {
+              if (def.unit === '$') return fmt(v/1000, 0) + 'k';
+              if (def.unit === '%') return v.toFixed(0) + '%';
+              return fmt(v, 0);
+            } },
             grid: { color: grid, drawBorder: false },
             border: { display: false },
             beginAtZero: !hasNegatives,
