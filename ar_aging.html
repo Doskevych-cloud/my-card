@@ -7,8 +7,8 @@
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
-<script src="auth.js?v=btn20260418"></script>
-<script src="header.js?v=btn20260418"></script>
+<script src="auth.js?v=clean20260418"></script>
+<script src="header.js?v=clean20260418"></script>
 <style>
 :root{
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -65,17 +65,10 @@ a{color:inherit;text-decoration:none}
 
 /* Summary cards — identical to P&L summary */
 .ar-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}
-.ar-card{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:3px;border-left:3px solid var(--border)}
-.ar-card.c-debt{border-left-color:var(--text2)}
-.ar-card.c-o30.good{border-left-color:var(--green)}
-.ar-card.c-o30.warn{border-left-color:var(--yellow)}
-.ar-card.c-o30.bad{border-left-color:var(--red)}
-.ar-card.c-o60.good{border-left-color:var(--green)}
-.ar-card.c-o60.warn{border-left-color:var(--yellow)}
-.ar-card.c-o60.bad{border-left-color:var(--red)}
-.ar-card.c-age.good{border-left-color:var(--green)}
-.ar-card.c-age.warn{border-left-color:var(--yellow)}
-.ar-card.c-age.bad{border-left-color:var(--red)}
+.ar-card{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:3px}
+.ar-card.c-o30.bad .cv,
+.ar-card.c-o60.bad .cv,
+.ar-card.c-age.bad .cv{color:var(--red)}
 .ar-card .cl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
 .ar-card .cv{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.3px;line-height:1.2;color:var(--text)}
 .ar-card .cv .unit{font-size:13px;font-weight:600;color:var(--text3);margin-left:3px}
@@ -83,6 +76,14 @@ a{color:inherit;text-decoration:none}
 .ar-card .cv-sub{font-size:14px;font-weight:700;color:var(--text2);font-variant-numeric:tabular-nums;margin-top:1px}
 .ar-card .cv-sub .ccy{font-size:11px;font-weight:600;color:var(--text3);margin-left:3px}
 .ar-card .cs{font-size:11px;color:var(--text3);font-weight:500}
+.ar-card .cs .term{display:inline-block;padding:2px 7px;background:var(--bg3);border-radius:4px;font-size:10.5px;font-weight:700;color:var(--text2);letter-spacing:.3px;margin-right:6px;font-variant-numeric:tabular-nums}
+
+/* Tinted card accents — subtle color on the big number */
+.ar-card.c-o30  .cv{color:var(--yellow)}
+.ar-card.c-o60  .cv{color:var(--red)}
+.ar-card.c-age.warn .cv{color:var(--yellow)}
+.ar-card.c-age.bad  .cv{color:var(--red)}
+.ar-card.c-age.good .cv{color:var(--green)}
 
 /* AR table — matches P&L look */
 .ar-wrap{overflow:auto;margin-bottom:20px;border:1px solid var(--border);border-radius:12px;background:var(--bg)}
@@ -325,19 +326,19 @@ function renderSummary(currencies) {
       <span class="cs">${tClients} клієнт${tClients === 1 ? '' : 'ів'}${USD_UAH ? ' · курс ' + USD_UAH.toFixed(2) + ' ₴/$' : ''}</span>
     </div>
     <div class="ar-card c-o30 ${o30Tone}">
-      <span class="cl">Прострочено &gt; 30 днів</span>
-      <span class="cv">${overduePct.toFixed(0)}<span class="unit">%</span></span>
-      <span class="cs">від загального боргу</span>
+      <span class="cl">Прострочено</span>
+      <div class="cv">${fmt(tOverdueUSD)} <span class="ccy">$</span></div>
+      <span class="cs"><span class="term">15+ днів</span>${overduePct.toFixed(0)}% від загального</span>
     </div>
     <div class="ar-card c-o60 ${o60Tone}">
-      <span class="cl">Критично &gt; 60 днів</span>
-      <span class="cv">${over60Pct.toFixed(0)}<span class="unit">%</span></span>
-      <span class="cs">найстаріша частка</span>
+      <span class="cl">Критично</span>
+      <div class="cv">${fmt(tOver60USD)} <span class="ccy">$</span></div>
+      <span class="cs"><span class="term">31+ днів</span>${over60Pct.toFixed(0)}% від загального</span>
     </div>
     <div class="ar-card c-age ${ageTone}">
       <span class="cl">Середній вік боргу</span>
-      <span class="cv">${avgAge.toFixed(0)}<span class="unit">днів</span></span>
-      <span class="cs">зважений по сумі</span>
+      <div class="cv">${avgAge.toFixed(0)} <span class="unit">днів</span></div>
+      <span class="cs">зважений по сумі боргу</span>
     </div>
   </div>`;
 }
