@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=ytd20260418"></script>
-<script src="header.js?v=ytd20260418"></script>
+<script src="auth.js?v=all20260418"></script>
+<script src="header.js?v=all20260418"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -545,9 +545,10 @@ async function loadKey() {
   //  • quarter → 6 кварталів
   //  • year    → 12 місяців
   //  • решта   → 6 місяців
-  const trendTo = new Date(state.to + 'T00:00:00');
-  // Sparkline: завжди поточний рік (місячні точки)
-  const trendBuckets = buildYtdBuckets(trendTo, state.to);
+  // Sparkline: завжди поточний рік (місячні точки) — НЕЗАЛЕЖНО від обраного фільтра
+  const todayDate = new Date();
+  const todayIso = _localISO(todayDate);
+  const trendBuckets = buildYtdBuckets(todayDate, todayIso);
   const sparkReqs = trendBuckets.map(b =>
     fetch(API_URL + `?action=sales_report&from=${b.from}&to=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
   );
@@ -632,6 +633,9 @@ async function loadKey() {
       numeric: { target: curVal, format: kpiMoneyFmt('$') },
       sub: `клієнти винні нам ${deltaHtml(curVal, prevVal, 'down')}`,
     });
+    // Sparkline + клік на модалку
+    fetchArSparkline(trendBuckets, orgQ);
+    wireKpiClick('kpiAR', openArModal);
   } else {
     const msg = ar.status === 'fulfilled' ? (ar.value.error || 'помилка') : ar.reason.message;
     updateKpi('kpiAR', { val: 'Помилка', sub: esc(msg.slice(0, 80)), error: true });
@@ -648,6 +652,8 @@ async function loadKey() {
       numeric: { target: curVal, format: kpiMoneyFmt('$') },
       sub: `ми винні постачальникам ${deltaHtml(curVal, prevVal, 'down')}`,
     });
+    fetchApSparkline(trendBuckets, orgQ);
+    wireKpiClick('kpiAP', openApModal);
   } else {
     const msg = ms.status === 'fulfilled' ? (ms.value.error || 'помилка') : ms.reason.message;
     updateKpi('kpiAP', { val: 'Помилка', sub: esc(msg.slice(0, 80)), error: true });
@@ -827,6 +833,33 @@ function deltaHtml(cur, prev, good = 'up') {
 }
 
 // Sparkline — тонка лінія з ліво-до-права заливкою, 180x30
+// Спільна обгортка: позначити KPI як клікабельний + прив'язати модалку один раз
+function wireKpiClick(kpiId, openFn) {
+  const el = document.getElementById(kpiId);
+  if (!el || el._clickWired) return;
+  el.classList.add('clickable');
+  el.addEventListener('click', openFn);
+  el._clickWired = true;
+}
+
+// AR sparkline — point-in-time баланси дебіторки на кінець кожного місяця YTD
+async function fetchArSparkline(buckets, orgQ) {
+  const resps = await Promise.all(buckets.map(b =>
+    fetch(API_URL + `?action=accounts_receivable&from=${b.from}&to=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
+  ));
+  const series = resps.map(d => arTotalUsd(d) || 0);
+  drawSparkline('kpiARSpark', series, { color: 'var(--red)' });
+}
+
+// AP sparkline — через mutual_settlements on=<bucket.to>
+async function fetchApSparkline(buckets, orgQ) {
+  const resps = await Promise.all(buckets.map(b =>
+    fetch(API_URL + `?action=mutual_settlements&on=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
+  ));
+  const series = resps.map(d => (d && d.ap && d.ap.debtsTotalUsd) || 0);
+  drawSparkline('kpiAPSpark', series, { color: 'var(--red)' });
+}
+
 function drawSparkline(canvasId, series, opts = {}) {
   const canvas = document.getElementById(canvasId);
   if (!canvas || !series || series.length < 2) return;
@@ -1062,11 +1095,15 @@ function sumBucketMonths(bucket, byM) {
 const METRIC_DEFS = {
   revenue: { title: '💵 Оплачено — динаміка', label: 'Оплачено' },
   net:     { title: '✅ Чистий прибуток — динаміка', label: 'Чистий' },
+  ar:      { title: '⚠️ Дебіторка — динаміка', label: 'Дебіторка' },
+  ap:      { title: '💳 Кредиторка — динаміка', label: 'Кредиторка' },
 };
 const GRAN_COUNT = { month: 12, quarter: 6, year: 3 };
 
 function openRevenueModal() { openTrendModal('revenue'); }
 function openNetModal()     { openTrendModal('net'); }
+function openArModal()      { openTrendModal('ar'); }
+function openApModal()      { openTrendModal('ap'); }
 
 function openTrendModal(metric) {
   const def = METRIC_DEFS[metric];
@@ -1080,9 +1117,9 @@ function openTrendModal(metric) {
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
         <span class="lbl" style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600">Гранулярність</span>
         <span class="group" style="display:inline-flex;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px">
-          <span class="chip active" data-modalgran="month" onclick="switchModalGran('month')">Місяці · 12</span>
-          <span class="chip" data-modalgran="quarter" onclick="switchModalGran('quarter')">Квартали · 6</span>
-          <span class="chip" data-modalgran="year" onclick="switchModalGran('year')">Роки · 3</span>
+          <span class="chip active" data-modalgran="month" onclick="switchModalGran('month')">Місяць</span>
+          <span class="chip" data-modalgran="quarter" onclick="switchModalGran('quarter')">Квартал</span>
+          <span class="chip" data-modalgran="year" onclick="switchModalGran('year')">Роки</span>
         </span>
       </div>
       <div style="position:relative;height:340px"><canvas id="revTrendCanvas"></canvas></div>
@@ -1135,6 +1172,18 @@ async function reloadModalChart() {
     const p = await fetch(API_URL + `?action=pnl_accrual_report&from=${from}&to=${to}${orgQ}`).then(r => r.json()).catch(() => null);
     const byM = pnlNetByMonth(p);
     values = buckets.map(b => sumBucketMonths(b, byM));
+  } else if (metric === 'ar') {
+    // Point-in-time баланс дебіторки на кінець кожного bucket
+    const resps = await Promise.all(buckets.map(b =>
+      fetch(API_URL + `?action=accounts_receivable&from=${b.from}&to=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
+    ));
+    values = resps.map(d => arTotalUsd(d));
+  } else if (metric === 'ap') {
+    // Point-in-time баланс кредиторки через mutual_settlements
+    const resps = await Promise.all(buckets.map(b =>
+      fetch(API_URL + `?action=mutual_settlements&on=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
+    ));
+    values = resps.map(d => (d && d.ap && d.ap.debtsTotalUsd) || 0);
   }
 
   renderModalChart(buckets, values, gran, metric);
