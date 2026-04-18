@@ -4,12 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Дашборд · RE:ACT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=u20260418"></script>
-<script src="header.js?v=u20260418"></script>
+<script src="auth.js?v=btn20260418"></script>
+<script src="header.js?v=btn20260418"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -65,9 +68,7 @@ a{color:inherit;text-decoration:none}
 .toolbar .group .chip:hover{background:var(--bg3);color:var(--text)}
 .toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
 .toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 2px}
-.toolbar .btn{padding:7px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s}
-.toolbar .btn:hover{background:var(--bg3);color:var(--text);border-color:var(--border2)}
-.toolbar .btn:active{transform:scale(.97)}
+/* buttons unified via header.js (.btn + .btn--secondary/--sm) */
 
 /* ═══ BLOCK — основний контейнер модуля ═══ */
 .block{margin-top:22px;border:1px solid var(--border);border-radius:16px;background:linear-gradient(180deg,var(--surface) 0%,var(--surface2) 100%);overflow:hidden;position:relative;box-shadow:var(--shadow-sm);animation:block-in .45s ease-out backwards}
@@ -262,7 +263,7 @@ a{color:inherit;text-decoration:none}
         <span class="chip" data-gran="quarter">Поквартально</span>
       </span>
       <span class="sep"></span>
-      <button class="btn" onclick="reloadAll()">🔄 Оновити</button>
+      <button class="btn btn--secondary btn--sm" onclick="reloadAll()">🔄 Оновити</button>
     </div>
 
     <!-- Hidden host for cards without a home (keeps legacy IDs) -->

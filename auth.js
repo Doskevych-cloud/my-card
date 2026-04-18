@@ -179,47 +179,12 @@
     return user;
   }
 
-  // Render user widget into top nav (small avatar + dropdown with logout).
-  function mountUserWidget(user, opts = {}) {
-    const host = document.querySelector(opts.selector || '.app-nav');
-    if (!host || !user) return;
-    const wrap = document.createElement('div');
-    wrap.className = 'user-widget';
-    wrap.style.cssText = 'position:relative;margin-left:auto;display:flex;align-items:center;gap:10px';
-    const isAdmin = !!(user.roles && user.roles.admin);
-    wrap.innerHTML = `
-      ${isAdmin ? `<a class="nav-pill" href="admin.html" style="font-size:12px">⚙ Адмін</a>` : ''}
-      <button id="authBtn" title="${user.email}"
-        style="display:flex;align-items:center;gap:8px;background:transparent;border:1px solid var(--border,rgba(255,255,255,.1));color:var(--text,#eaecef);padding:4px 10px 4px 4px;border-radius:999px;cursor:pointer;font:inherit;font-size:13px">
-        ${user.picture
-          ? `<img src="${user.picture}" referrerpolicy="no-referrer" alt="" style="width:26px;height:26px;border-radius:50%;object-fit:cover">`
-          : `<span style="width:26px;height:26px;border-radius:50%;background:#ff8319;color:#111;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">${(user.name||user.email||'?').slice(0,1).toUpperCase()}</span>`}
-        <span style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${user.name || user.email}</span>
-      </button>
-      <div id="authMenu" style="display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:220px;background:var(--card,#1e2329);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:8px;z-index:1000;box-shadow:0 10px 30px rgba(0,0,0,.4)">
-        <div style="padding:8px 10px;color:var(--text3,#6b7280);font-size:12px;border-bottom:1px solid var(--border,rgba(255,255,255,.08));margin-bottom:6px">${user.email}</div>
-        <button id="authLogout" style="width:100%;text-align:left;background:transparent;border:0;color:var(--text,#eaecef);padding:8px 10px;border-radius:8px;cursor:pointer;font:inherit">Вийти</button>
-      </div>
-    `;
-    host.appendChild(wrap);
-    const btn = wrap.querySelector('#authBtn');
-    const menu = wrap.querySelector('#authMenu');
-    btn.addEventListener('click', (e) => { e.stopPropagation(); menu.style.display = menu.style.display === 'none' ? 'block' : 'none'; });
-    document.addEventListener('click', () => { menu.style.display = 'none'; });
-    wrap.querySelector('#authLogout').addEventListener('click', (e) => { e.preventDefault(); logout(); });
-    // hover styles
-    const style = document.createElement('style');
-    style.textContent = `#authMenu button:hover { background: rgba(255,255,255,.06) }`;
-    document.head.appendChild(style);
-  }
-
   global.Auth = {
     API,
     getToken, setToken, clearToken,
     fetchMe, loginWithIdToken, logout,
     apiFetch,
     require,
-    mountUserWidget,
     cachedUser,
     MODULE_LABEL,
   };

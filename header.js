@@ -139,6 +139,35 @@
     }
     .app-topbar .user-menu button:hover{ background: rgba(255,131,25,.10); color:#ff8319 }
 
+    .app-topbar a:focus-visible,
+    .app-topbar button:focus-visible{
+      outline:2px solid #ff8319; outline-offset:2px; border-radius:8px;
+    }
+
+    /* ══ Unified button system — primary / secondary / ghost / danger + --sm ══ */
+    .btn{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:7px 14px; border-radius:8px;
+      font:inherit; font-size:12.5px; font-weight:600;
+      line-height:1; white-space:nowrap;
+      cursor:pointer; user-select:none;
+      background:transparent; color:var(--text, #eaecef);
+      border:1px solid transparent;
+      transition:background .12s, border-color .12s, color .12s, transform .12s;
+    }
+    .btn:disabled{ opacity:.5; cursor:not-allowed }
+    .btn:focus-visible{ outline:2px solid var(--accent, #ff8319); outline-offset:2px }
+    .btn:active{ transform:scale(.97) }
+    .btn--primary{ background:var(--accent, #ff8319); color:#111; border-color:var(--accent, #ff8319) }
+    .btn--primary:hover{ background:#ff9540; border-color:#ff9540 }
+    .btn--secondary{ background:var(--surface, var(--bg2, #141414)); color:var(--text, #eaecef); border-color:var(--border, #262626) }
+    .btn--secondary:hover{ background:var(--surface2, var(--bg3, #1c1c1c)); border-color:var(--text3, #737373) }
+    .btn--ghost{ background:transparent; color:var(--text2, #a3a3a3); border-color:var(--border, #262626) }
+    .btn--ghost:hover{ background:var(--bg3, rgba(255,255,255,.04)); color:var(--text, #eaecef); border-color:var(--border2, #333) }
+    .btn--danger{ background:transparent; color:var(--bad, #f6465d); border-color:rgba(246,70,93,.3) }
+    .btn--danger:hover{ background:rgba(246,70,93,.1); border-color:var(--bad, #f6465d) }
+    .btn--sm{ padding:5px 10px; font-size:11px }
+
     @media (max-width:720px){
       .app-topbar{ padding:10px 12px; gap:10px }
       .app-topbar .brand .name{ display:none }
@@ -156,6 +185,10 @@
     s.textContent = CSS;
     document.head.appendChild(s);
   }
+
+  // Inject styles eagerly at script-load so .btn utilities are available
+  // BEFORE AppHeader.mount() fires (avoids FOUC on buttons).
+  try { injectStyle(); } catch (_) {}
 
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);

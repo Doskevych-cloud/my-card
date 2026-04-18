@@ -4,12 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Прогноз закупівель — кабель</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=bin20260418"></script>
-<script src="header.js?v=bin20260418"></script>
+<script src="auth.js?v=btn20260418"></script>
+<script src="header.js?v=btn20260418"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -99,9 +102,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
 .brand .txt{line-height:1.1}
 .brand .sub{font-size:10px;color:var(--text2);font-weight:500;text-transform:uppercase;letter-spacing:1px}
 .topbar-right{display:flex;align-items:center;gap:10px}
-.pill-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--text2);text-decoration:none;padding:8px 14px;border:1px solid var(--border2);border-radius:8px;background:var(--glass-bg);transition:all .2s;cursor:pointer}
-.pill-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg);transform:translateY(-1px)}
-.pill-btn svg{width:14px;height:14px;fill:currentColor}
+/* buttons unified via header.js (.btn + .btn--secondary/--sm) */
+.btn svg{width:14px;height:14px;fill:currentColor}
 .app-nav{display:inline-flex;align-items:center;gap:4px;padding:3px;border:1px solid var(--border);border-radius:10px;background:var(--glass-bg)}
 .app-nav .nav-pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:var(--text2);text-decoration:none;padding:6px 11px;border-radius:7px;transition:all .15s;white-space:nowrap}
 .app-nav .nav-pill:hover{background:var(--bg3,rgba(255,255,255,.04));color:var(--text)}
@@ -794,7 +796,7 @@ function renderShipments(f){
       <div class="ship-stat"><div class="lab">Середнє 30 днів</div><div class="val">${fmt(avg30, 1)} м/д</div></div>
       <div class="ship-stat"><div class="lab">Тренд тижня</div><div class="val"><span class="kpi-trend ${trendCls}">${trendStr}</span></div></div>
       <div class="ship-stat accent"><div class="lab">Прогноз WMA</div><div class="val">${fmt(f.wma.total, 1)} м/д</div></div>
-      <div class="ship-stat"><div class="lab">Архів</div><div class="val"><button class="pill-btn" onclick="openShipDetail(null)" style="padding:6px 12px;font-size:11px">60 днів →</button></div></div>
+      <div class="ship-stat"><div class="lab">Архів</div><div class="val"><button class="btn btn--secondary btn--sm" onclick="openShipDetail(null)">60 днів →</button></div></div>
     </div>
     <div class="chart-wrap"><canvas id="shipChart"></canvas></div>
   `;

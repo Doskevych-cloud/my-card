@@ -4,11 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Продажі менеджерів</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
-<script src="auth.js?v=bin20260418"></script>
-<script src="header.js?v=bin20260418"></script>
+<script src="auth.js?v=btn20260418"></script>
+<script src="header.js?v=btn20260418"></script>
 <style>
 :root{
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -54,8 +57,7 @@ a{color:inherit;text-decoration:none}
 .toolbar .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;display:inline-flex;align-items:center;gap:6px}
 .toolbar .chip:hover{background:var(--bg3);color:var(--text)}
 .toolbar .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
-.toolbar .btn{padding:7px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s}
-.toolbar .btn:hover{background:var(--bg3);color:var(--text);border-color:var(--border2)}
+/* buttons unified via header.js (.btn + .btn--secondary/--sm) */
 .toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 2px}
 .toolbar .group{display:inline-flex;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px}
 .toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
@@ -185,8 +187,8 @@ a{color:inherit;text-decoration:none}
 
       <span class="sep"></span>
 
-      <button class="btn" onclick="expandAll()">⊞ Розгорнути</button>
-      <button class="btn" onclick="collapseAll()">⊟ Згорнути</button>
+      <button class="btn btn--secondary btn--sm" onclick="expandAll()">⊞ Розгорнути</button>
+      <button class="btn btn--secondary btn--sm" onclick="collapseAll()">⊟ Згорнути</button>
 
       <input type="text" id="searchIn" placeholder="🔎 Пошук клієнта, менеджера, № замовлення…">
     </div>
