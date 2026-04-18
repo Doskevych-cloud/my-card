@@ -318,17 +318,10 @@ function renderSummary(currencies) {
   const o60Tone = toneClass(over60Pct,  [10, 25]);
   const ageTone = toneClass(avgAge,     [20, 45]);
 
-  // Per-currency breakdown as sub-lines under the main USD figure
-  const sorted = currencies.slice().sort((a, b) => b.total - a.total);
-  const perCurHtml = sorted.map(c =>
-    `<div class="cv-sub">${fmt(c.total)} <span class="ccy">${curSign(c.curName)}</span></div>`
-  ).join('');
-
   document.getElementById('summary').innerHTML = `<div class="ar-summary">
     <div class="ar-card c-debt">
       <span class="cl">Загальна заборгованість</span>
       <div class="cv">${fmt(tTotalUSD)} <span class="ccy">$</span></div>
-      ${perCurHtml}
       <span class="cs">${tClients} клієнт${tClients === 1 ? '' : 'ів'}${USD_UAH ? ' · курс ' + USD_UAH.toFixed(2) + ' ₴/$' : ''}</span>
     </div>
     <div class="ar-card c-o30 ${o30Tone}">
