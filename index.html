@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=line20260418"></script>
-<script src="header.js?v=line20260418"></script>
+<script src="auth.js?v=q20260418"></script>
+<script src="header.js?v=q20260418"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -539,21 +539,15 @@ async function loadKey() {
   // Previous-period comparison
   const prev = prevPeriodOf(state.from, state.to);
 
-  // Для sparkline будуємо 6 місяців — окремі запити sales_report, кешуються
-  // в KV на бекенді, тож при повторному завантаженні миттєво
+  // Гранулярність trend-ряду зав'язана на preset:
+  //  • quarter → 6 кварталів
+  //  • year    → 12 місяців
+  //  • решта   → 6 місяців
   const trendTo = new Date(state.to + 'T00:00:00');
-  const sparkReqs = [];
-  const sparkMonths = [];
-  for (let i = 5; i >= 0; i--) {
-    const mStart = new Date(trendTo.getFullYear(), trendTo.getMonth() - i, 1);
-    const mEnd = new Date(trendTo.getFullYear(), trendTo.getMonth() - i + 1, 0);
-    // For the current month use state.to so we include only "so far"
-    const isCur = i === 0;
-    const fromD = _localISO(mStart);
-    const toD = isCur ? state.to : _localISO(mEnd);
-    sparkMonths.push(mStart);
-    sparkReqs.push(fetch(API_URL + `?action=sales_report&from=${fromD}&to=${toD}${orgQ}`).then(r => r.json()).catch(() => null));
-  }
+  const trendBuckets = buildTrendBuckets(state.preset, trendTo, state.to);
+  const sparkReqs = trendBuckets.map(b =>
+    fetch(API_URL + `?action=sales_report&from=${b.from}&to=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
+  );
 
   const qSales   = `?action=sales_report&from=${state.from}&to=${state.to}${orgQ}`;
   const qSalesP  = prev ? `?action=sales_report&from=${prev.from}&to=${prev.to}${orgQ}` : null;
@@ -616,7 +610,7 @@ async function loadKey() {
       return v ? v.total : 0;
     });
     drawSparkline('kpiRevenueSpark', series, { color: 'var(--green)' });
-    state.revTrend = { months: sparkMonths, values: series };
+    state.revTrend = { buckets: trendBuckets, values: series, granularity: (state.preset === 'quarter' ? 'quarter' : 'month') };
     // Make KPI card clickable — opens modal with full chart
     const kpiEl = document.getElementById('kpiRevenue');
     if (kpiEl && !kpiEl._clickWired) {
@@ -663,6 +657,59 @@ async function loadKey() {
 }
 
 // Helpers preserved from legacy — trimmed to what key KPIs need
+// Build trend buckets for the sparkline / modal chart based on selected preset.
+// Returns [{ from:'YYYY-MM-DD', to:'YYYY-MM-DD', label:'Q1 26' | 'Квітень 2026', isCurrent }]
+function buildTrendBuckets(preset, baseToDate, stateToIso) {
+  const y = baseToDate.getFullYear(), m = baseToDate.getMonth();
+  const buckets = [];
+  if (preset === 'quarter') {
+    // Last 6 quarters ending with the quarter that contains baseToDate
+    const curQ = Math.floor(m / 3);
+    for (let i = 5; i >= 0; i--) {
+      const totalQ = y * 4 + curQ - i;
+      const qy = Math.floor(totalQ / 4);
+      const qq = ((totalQ % 4) + 4) % 4;
+      const startMonth = qq * 3;
+      const qStart = new Date(qy, startMonth, 1);
+      const qEnd   = new Date(qy, startMonth + 3, 0);
+      const isCur = i === 0;
+      buckets.push({
+        from: _localISO(qStart),
+        to: isCur ? stateToIso : _localISO(qEnd),
+        label: `Q${qq + 1} '${String(qy).slice(2)}`,
+        isCurrent: isCur,
+      });
+    }
+  } else if (preset === 'year') {
+    // 12 months for year view
+    for (let i = 11; i >= 0; i--) {
+      const mStart = new Date(y, m - i, 1);
+      const mEnd   = new Date(y, m - i + 1, 0);
+      const isCur = i === 0;
+      buckets.push({
+        from: _localISO(mStart),
+        to: isCur ? stateToIso : _localISO(mEnd),
+        label: MN_SHORT[mStart.getMonth()] + " '" + String(mStart.getFullYear()).slice(2),
+        isCurrent: isCur,
+      });
+    }
+  } else {
+    // Default: 6 months for 'month' / 'prevmonth' / custom
+    for (let i = 5; i >= 0; i--) {
+      const mStart = new Date(y, m - i, 1);
+      const mEnd   = new Date(y, m - i + 1, 0);
+      const isCur = i === 0;
+      buckets.push({
+        from: _localISO(mStart),
+        to: isCur ? stateToIso : _localISO(mEnd),
+        label: MN_FULL[mStart.getMonth()] + ' ' + mStart.getFullYear(),
+        isCurrent: isCur,
+      });
+    }
+  }
+  return buckets;
+}
+
 function prevPeriodOf(from, to) {
   try {
     const f = new Date(from + 'T00:00:00');
@@ -887,20 +934,24 @@ function closeModal() {
 }
 function modalKeyHandler(e) { if (e.key === 'Escape') closeModal(); }
 
-// ─── Revenue trend modal: 6-month chart with tooltip ───
+// ─── Revenue trend modal: adaptive granularity (quarter vs month) ───
 function openRevenueModal() {
   const t = state.revTrend;
   if (!t || !t.values || !t.values.length) return;
-  const labels = t.months.map(d => MN_FULL[d.getMonth()] + ' ' + d.getFullYear());
+  const buckets = t.buckets || [];
+  const labels = buckets.map(b => b.label);
   const values = t.values.slice();
   const total = values.reduce((s, v) => s + v, 0);
   const avg = total / values.length;
   const max = Math.max(...values);
   const min = Math.min(...values);
+  const gran = t.granularity || 'month';
+  const unit = gran === 'quarter' ? 'кварталів' : 'місяців';
+  const prevLabel = gran === 'quarter' ? 'попер. квартал' : 'попер. міс';
 
   openModal({
     title: '💵 Оплачено — динаміка',
-    sub: `6 місяців · середнє ${fmtMoney(avg, '$')} · max ${fmtMoney(max, '$')} · min ${fmtMoney(min, '$')}`,
+    sub: `${values.length} ${unit} · середнє ${fmtMoney(avg, '$')} · max ${fmtMoney(max, '$')} · min ${fmtMoney(min, '$')}`,
     body: `<div style="position:relative;height:360px"><canvas id="revTrendCanvas"></canvas></div>`,
   });
 
@@ -998,7 +1049,7 @@ function openRevenueModal() {
                 if (!prev) return '';
                 const dp = (values[idx] - prev) / Math.abs(prev);
                 const arrow = dp > 0 ? '▲' : (dp < 0 ? '▼' : '–');
-                return `${arrow} ${(dp * 100).toFixed(1)}% vs попер. міс`;
+                return `${arrow} ${(dp * 100).toFixed(1)}% vs ${prevLabel}`;
               },
             },
           },
