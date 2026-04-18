@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=paid20260418"></script>
-<script src="header.js?v=paid20260418"></script>
+<script src="auth.js?v=mdl20260418"></script>
+<script src="header.js?v=mdl20260418"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -349,6 +349,8 @@ const state = {
   org: '',
   fx: null,                // cached USD/UAH for sales USD conversion
   managersAll: null,       // full manager list for modal
+  revTrend: null,          // { months:[Date], values:[Number] } — 6-month "Оплачено"
+  modalChart: null,        // live Chart.js instance inside modal (destroy on close)
 };
 
 const MN_FULL = ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
@@ -614,6 +616,14 @@ async function loadKey() {
       return v ? v.total : 0;
     });
     drawSparkline('kpiRevenueSpark', series, { color: 'var(--green)' });
+    state.revTrend = { months: sparkMonths, values: series };
+    // Make KPI card clickable — opens modal with full chart
+    const kpiEl = document.getElementById('kpiRevenue');
+    if (kpiEl && !kpiEl._clickWired) {
+      kpiEl.classList.add('clickable');
+      kpiEl.addEventListener('click', () => openRevenueModal());
+      kpiEl._clickWired = true;
+    }
   } else {
     const msg = salesR.status === 'fulfilled' ? (salesR.value.error || 'помилка') : salesR.reason.message;
     updateKpi('kpiRevenue', { val: 'Помилка', sub: esc(msg.slice(0, 80)), error: true });
@@ -871,9 +881,90 @@ function closeModal() {
   if (!m) return;
   m.classList.remove('open');
   document.removeEventListener('keydown', modalKeyHandler);
+  // Destroy any live Chart.js instance to free canvas / listeners
+  if (state.modalChart) { try { state.modalChart.destroy(); } catch(_) {} state.modalChart = null; }
   setTimeout(() => m.remove(), 180);
 }
 function modalKeyHandler(e) { if (e.key === 'Escape') closeModal(); }
+
+// ─── Revenue trend modal: 6-month chart with tooltip ───
+function openRevenueModal() {
+  const t = state.revTrend;
+  if (!t || !t.values || !t.values.length) return;
+  const labels = t.months.map(d => MN_FULL[d.getMonth()] + ' ' + d.getFullYear());
+  const values = t.values.slice();
+  const total = values.reduce((s, v) => s + v, 0);
+  const avg = total / values.length;
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+
+  openModal({
+    title: '💵 Оплачено — динаміка',
+    sub: `6 місяців · середнє ${fmtMoney(avg, '$')} · max ${fmtMoney(max, '$')} · min ${fmtMoney(min, '$')}`,
+    body: `<div style="position:relative;height:320px"><canvas id="revTrendCanvas"></canvas></div>`,
+  });
+
+  // Chart.js — bar chart with tooltip, delayed render so canvas is attached
+  requestAnimationFrame(() => {
+    const canvas = document.getElementById('revTrendCanvas');
+    if (!canvas) return;
+    const isDark = (document.documentElement.getAttribute('data-theme') || 'dark') !== 'light';
+    const tick = isDark ? '#a3a3a3' : '#48484a';
+    const grid = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+    const accentCss = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#ff8319';
+    const greenCss = getComputedStyle(document.documentElement).getPropertyValue('--green').trim() || '#22c55e';
+
+    state.modalChart = new Chart(canvas.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Оплачено',
+          data: values,
+          backgroundColor: values.map((v, i) => i === values.length - 1 ? accentCss : greenCss + 'aa'),
+          borderColor: values.map((v, i) => i === values.length - 1 ? accentCss : greenCss),
+          borderWidth: 1,
+          borderRadius: 6,
+          maxBarThickness: 52,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        animation: { duration: 420, easing: 'easeOutCubic' },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(20,20,20,.96)',
+            borderColor: 'rgba(255,255,255,.1)',
+            borderWidth: 1,
+            titleColor: '#f5f5f5',
+            bodyColor: '#f5f5f5',
+            padding: 10,
+            titleFont: { size: 12, weight: '600' },
+            bodyFont: { size: 13, weight: '700' },
+            callbacks: {
+              title: items => items[0].label,
+              label: c => '💵 ' + fmtMoney(c.parsed.y, '$'),
+              afterLabel: c => {
+                const idx = c.dataIndex;
+                if (idx === 0) return '';
+                const prev = values[idx - 1];
+                if (!prev) return '';
+                const dp = (values[idx] - prev) / Math.abs(prev);
+                const arrow = dp > 0 ? '▲' : (dp < 0 ? '▼' : '–');
+                return `${arrow} ${(dp * 100).toFixed(1)}% vs попер. міс`;
+              },
+            },
+          },
+        },
+        scales: {
+          x: { ticks: { color: tick, font: { size: 11 } }, grid: { display: false } },
+          y: { ticks: { color: tick, font: { size: 10 }, callback: v => fmt(v / 1000, 0) + 'k' }, grid: { color: grid } },
+        },
+      },
+    });
+  });
+}
 
 function toUsd(amt, cur) {
   if (!isFinite(amt)) return null;
