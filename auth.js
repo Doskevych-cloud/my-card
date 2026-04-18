@@ -162,6 +162,11 @@
     location.href = 'login.html?return=' + ret;
   }
 
+  // HTML escape (used by showDenyScreen). Tiny duplicate of header.js/esc().
+  function _dEsc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
   // Block page with a deny overlay. Preserves the shared #appHeader and
   // the impersonation banner so admin can always "Return as admin" even
   // if the impersonated user has no access to the landing page.
@@ -207,11 +212,11 @@
       <div id="__denyWrap">
         <div class="deny">
           ${user && user.picture
-            ? `<img class="avatar" src="${user.picture}" referrerpolicy="no-referrer" alt="">`
-            : `<div class="avatar">${user ? (user.name || user.email || '?').slice(0,1).toUpperCase() : '?'}</div>`}
-          <h1>⛔ Немає доступу до модуля «${modLabel}»</h1>
-          ${user ? `<p>Ви увійшли як <span class="email">${user.email}</span>${imp ? ` (адмін ${impAdmin})` : ''}</p>` : ''}
-          <p>${reason || 'Зверніться до адміністратора, щоб відкрити доступ.'}</p>
+            ? `<img class="avatar" src="${_dEsc(user.picture)}" referrerpolicy="no-referrer" alt="">`
+            : `<div class="avatar">${_dEsc(user ? (user.name || user.email || '?').slice(0,1).toUpperCase() : '?')}</div>`}
+          <h1>⛔ Немає доступу до модуля «${_dEsc(modLabel)}»</h1>
+          ${user ? `<p>Ви увійшли як <span class="email">${_dEsc(user.email)}</span>${imp ? ` (адмін ${_dEsc(impAdmin)})` : ''}</p>` : ''}
+          <p>${_dEsc(reason || 'Зверніться до адміністратора, щоб відкрити доступ.')}</p>
           <div class="btns">
             ${imp
               ? `<button class="imp-back" onclick="AppHeader && AppHeader.stopImpersonate && AppHeader.stopImpersonate()">← Повернутись як адмін</button>

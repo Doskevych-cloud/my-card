@@ -91,8 +91,13 @@ function toggleTheme(){
 applyTheme(localStorage.getItem('theme') || 'dark');
 
 function returnTo() {
-  const p = new URLSearchParams(location.search).get('return');
-  return p || 'index.html';
+  const p = new URLSearchParams(location.search).get('return') || '';
+  // Same-origin internal path only — blocks `javascript:`, `data:`, `//evil.com`
+  // and any absolute external URL. The 2nd char must exist and must NOT be /
+  // or \ (protocol-relative bypass), and the path must not contain a colon
+  // (scheme smuggling via `/%3A`, though URL decoding is limited here).
+  if (/^\/[^\/\\:]/.test(p) && !p.includes(':')) return p;
+  return 'index.html';
 }
 
 // If already logged in, skip straight to the return URL

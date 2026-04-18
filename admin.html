@@ -155,8 +155,9 @@ async function loadUsers() {
     const r = await Auth.apiFetch('admin_users');
     users = r.users || [];
     renderTable();
+    initDelegation();
   } catch (e) {
-    document.getElementById('tbody').innerHTML = `<tr><td colspan="11" class="loading">❌ ${e.message}</td></tr>`;
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="11" class="loading">❌ ${escapeHtml(e.message)}</td></tr>`;
   }
 }
 
@@ -170,11 +171,13 @@ function fmtDate(iso) {
 function userRow(u) {
   const initials = (u.name || u.email || '?').slice(0,1).toUpperCase();
   const av = u.picture
-    ? `<img class="avatar" src="${u.picture}" referrerpolicy="no-referrer" alt="">`
-    : `<span class="avatar">${initials}</span>`;
+    ? `<img class="avatar" src="${escapeHtml(u.picture)}" referrerpolicy="no-referrer" alt="">`
+    : `<span class="avatar">${escapeHtml(initials)}</span>`;
   const disableDelete = u.email === currentUser.email;
+  // Change/click handlers wire up via event delegation (initDelegation) so
+  // u.email never lands inside an `onclick=` JS-string literal.
   return `
-    <tr data-email="${u.email}">
+    <tr data-email="${escapeHtml(u.email)}">
       <td>
         <div class="user-cell">
           ${av}
@@ -185,18 +188,37 @@ function userRow(u) {
         </div>
       </td>
       ${['dashboard','home','forecast','warehouses','sales','finance','admin'].map(r => `
-        <td class="role-box"><input type="checkbox" ${u.roles && u.roles[r] ? 'checked' : ''} onchange="toggleRole('${u.email}','${r}',this.checked)"></td>
+        <td class="role-box"><input type="checkbox" ${u.roles && u.roles[r] ? 'checked' : ''} data-act="role" data-key="${r}"></td>
       `).join('')}
       ${['Реакт','Генерація'].map(o => `
-        <td class="role-box"><input type="checkbox" ${u.orgs && u.orgs[o] ? 'checked' : ''} onchange="toggleOrg('${u.email}','${o}',this.checked)"></td>
+        <td class="role-box"><input type="checkbox" ${u.orgs && u.orgs[o] ? 'checked' : ''} data-act="org" data-key="${escapeHtml(o)}"></td>
       `).join('')}
       <td style="text-align:center;color:var(--text2);font-size:12px">${fmtDate(u.lastLogin)}</td>
       <td style="text-align:right;white-space:nowrap">
-        <button class="btn btn--ghost btn--sm" ${disableDelete ? 'disabled title="Це ваш акаунт"' : 'title="Зайти як цей користувач — побачите систему його очима"'} onclick="impersonate('${u.email}')">👤 Як</button>
-        <button class="btn btn--danger btn--sm" ${disableDelete ? 'disabled title="Ви не можете видалити власний акаунт"' : ''} onclick="deleteUser('${u.email}')">✕</button>
+        <button class="btn btn--ghost btn--sm" ${disableDelete ? 'disabled title="Це ваш акаунт"' : 'title="Зайти як цей користувач — побачите систему його очима"'} data-act="impersonate">👤 Як</button>
+        <button class="btn btn--danger btn--sm" ${disableDelete ? 'disabled title="Ви не можете видалити власний акаунт"' : ''} data-act="delete">✕</button>
       </td>
     </tr>
   `;
+}
+
+function initDelegation() {
+  const tb = document.getElementById('tbody');
+  if (tb.__wired) return; tb.__wired = true;
+  tb.addEventListener('change', (e) => {
+    const row = e.target.closest('tr[data-email]'); if (!row) return;
+    const email = row.dataset.email;
+    const act = e.target.dataset.act;
+    if (act === 'role') toggleRole(email, e.target.dataset.key, e.target.checked);
+    else if (act === 'org') toggleOrg(email, e.target.dataset.key, e.target.checked);
+  });
+  tb.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-act]'); if (!btn) return;
+    const row = btn.closest('tr[data-email]'); if (!row) return;
+    const email = row.dataset.email;
+    if (btn.dataset.act === 'impersonate') impersonate(email);
+    else if (btn.dataset.act === 'delete') deleteUser(email);
+  });
 }
 
 async function impersonate(email) {
@@ -255,9 +277,13 @@ function toggleInvite() {
   renderTable();
 }
 
+// Accepts typical RFC-5322-ish addresses without quotes/parens — the intent is
+// to keep the value safe for HTML attribute / JS string rendering downstream.
+const EMAIL_RE = /^[a-z0-9][a-z0-9._+\-]*@[a-z0-9-]+(?:\.[a-z0-9-]+)+$/;
+
 async function saveInvite() {
   const email = document.getElementById('inviteEmail').value.trim().toLowerCase();
-  if (!email || !email.includes('@')) { toast('Вкажіть коректний email', 'err'); return; }
+  if (!EMAIL_RE.test(email)) { toast('Вкажіть коректний email', 'err'); return; }
   const roles = {
     dashboard: document.getElementById('inv_dashboard').checked,
     home: document.getElementById('inv_home').checked,
