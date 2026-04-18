@@ -66,9 +66,10 @@ a{color:inherit;text-decoration:none}
 /* Summary cards — identical to P&L summary */
 .ar-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}
 .ar-card{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:3px}
-.ar-card.c-o30.bad .cv,
-.ar-card.c-o60.bad .cv,
-.ar-card.c-age.bad .cv{color:var(--red)}
+/* Bucket-tinted cards — numbers colored by age band */
+.ar-card.c-b-d30  .cv{color:var(--yellow)}
+.ar-card.c-b-d60  .cv{color:var(--accent)}
+.ar-card.c-b-d61p .cv{color:var(--red)}
 .ar-card .cl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
 .ar-card .cv{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.3px;line-height:1.2;color:var(--text)}
 .ar-card .cv .unit{font-size:13px;font-weight:600;color:var(--text3);margin-left:3px}
@@ -283,7 +284,6 @@ function render(data) {
 function renderSummary(currencies) {
   if (!currencies.length) { document.getElementById('summary').innerHTML = ''; return; }
 
-  let tTotalUSD = 0, tOverdueUSD = 0, tOver60USD = 0, tClients = 0, weightedAgeUSDSum = 0;
   const raw = state._raw || {};
   const fx = raw.fxRates || {};
   const USD_UAH = fx.USD_UAH || 0;
@@ -296,25 +296,14 @@ function renderSummary(currencies) {
     return 0;
   };
 
+  let tTotalUSD = 0, tClients = 0;
+  const bucketUSD = { d7:0, d14:0, d30:0, d60:0, d61p:0 };
   currencies.forEach(c => {
-    const tUSD = toUsd(c.total, c.curName);
-    // «Прострочено» = борг 31+ днів (d60+d61p) — матчить label «>30 днів».
-    // «Критично»   = борг 61+ днів (d61p)      — матчить label «>60 днів».
-    const odUSD = toUsd(c.buckets.d60 + c.buckets.d61p, c.curName);
-    const o60USD = toUsd(c.buckets.d61p, c.curName);
-    tTotalUSD += tUSD;
-    tOverdueUSD += odUSD;
-    tOver60USD += o60USD;
-    tClients += c.clients.length;
-    weightedAgeUSDSum += weightedAge(c.total, c.buckets) * tUSD;
+    tTotalUSD += toUsd(c.total, c.curName);
+    tClients  += c.clients.length;
+    BUCKET_ORDER.forEach(k => { bucketUSD[k] += toUsd(c.buckets[k] || 0, c.curName); });
   });
-  const overduePct = tTotalUSD ? (tOverdueUSD / tTotalUSD) * 100 : 0;
-  const over60Pct  = tTotalUSD ? (tOver60USD  / tTotalUSD) * 100 : 0;
-  const avgAge     = tTotalUSD ? weightedAgeUSDSum / tTotalUSD : 0;
-
-  const o30Tone = toneClass(overduePct, [20, 40]);
-  const o60Tone = toneClass(over60Pct,  [10, 25]);
-  const ageTone = toneClass(avgAge,     [20, 45]);
+  const pctOf = v => tTotalUSD ? (v / tTotalUSD) * 100 : 0;
 
   document.getElementById('summary').innerHTML = `<div class="ar-summary">
     <div class="ar-card c-debt">
@@ -322,20 +311,20 @@ function renderSummary(currencies) {
       <div class="cv">${fmt(tTotalUSD)} <span class="ccy">$</span></div>
       <span class="cs">${tClients} клієнт${tClients === 1 ? '' : 'ів'}${USD_UAH ? ' · курс ' + USD_UAH.toFixed(2) + ' ₴/$' : ''}</span>
     </div>
-    <div class="ar-card c-o30 ${o30Tone}">
-      <span class="cl">Прострочено</span>
-      <div class="cv">${fmt(tOverdueUSD)} <span class="ccy">$</span></div>
-      <span class="cs"><span class="term">31+ днів</span>${overduePct.toFixed(0)}% від загального</span>
+    <div class="ar-card c-b-d30">
+      <span class="cl">15–30 днів</span>
+      <div class="cv">${fmt(bucketUSD.d30)} <span class="ccy">$</span></div>
+      <span class="cs">${pctOf(bucketUSD.d30).toFixed(0)}% від загального</span>
     </div>
-    <div class="ar-card c-o60 ${o60Tone}">
-      <span class="cl">Критично</span>
-      <div class="cv">${fmt(tOver60USD)} <span class="ccy">$</span></div>
-      <span class="cs"><span class="term">61+ днів</span>${over60Pct.toFixed(0)}% від загального</span>
+    <div class="ar-card c-b-d60">
+      <span class="cl">31–60 днів</span>
+      <div class="cv">${fmt(bucketUSD.d60)} <span class="ccy">$</span></div>
+      <span class="cs">${pctOf(bucketUSD.d60).toFixed(0)}% від загального</span>
     </div>
-    <div class="ar-card c-age ${ageTone}">
-      <span class="cl">Середній вік боргу</span>
-      <div class="cv">${avgAge.toFixed(0)} <span class="unit">днів</span></div>
-      <span class="cs">зважений по сумі боргу</span>
+    <div class="ar-card c-b-d61p">
+      <span class="cl">Від 61 дня</span>
+      <div class="cv">${fmt(bucketUSD.d61p)} <span class="ccy">$</span></div>
+      <span class="cs">${pctOf(bucketUSD.d61p).toFixed(0)}% від загального</span>
     </div>
   </div>`;
 }
