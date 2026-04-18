@@ -344,29 +344,31 @@ function filteredTasks() {
 }
 
 function aggregate(tasks, stages) {
-  const funnel = {};
-  for (const s of stages) funnel[s] = { stage: s, total: 0, success: 0, fail: 0, inProgress: 0 };
+  // stages = ["1. Спробу...", ..., "8. Успішно реалізовано"]
+  const funnel = stages.map((s, i) => ({ stage: s, num: i + 1, total: 0, success: 0, fail: 0, inProgress: 0 }));
+  const offFunnel = { stage: 'Поза воронкою', num: 0, total: 0, success: 0, fail: 0, inProgress: 0 };
   const managers = {};
+
+  let total = 0, success = 0, fail = 0;
   for (const t of tasks) {
-    if (!funnel[t.stage]) funnel[t.stage] = { stage: t.stage, total: 0, success: 0, fail: 0, inProgress: 0 };
-    funnel[t.stage].total++;
-    if (t.outcome === 'Успешно') funnel[t.stage].success++;
-    else if (t.outcome === 'Неуспешно') funnel[t.stage].fail++;
-    else funnel[t.stage].inProgress++;
+    total++;
+    const bucket = (t.stage >= 1 && t.stage <= 8) ? funnel[t.stage - 1] : offFunnel;
+    bucket.total++;
+    if (t.outcome === 'success') { bucket.success++; success++; }
+    else if (t.outcome === 'fail') { bucket.fail++; fail++; }
+    else bucket.inProgress++;
 
     if (!managers[t.manager]) managers[t.manager] = { name: t.manager, total: 0, success: 0, fail: 0, inProgress: 0 };
     managers[t.manager].total++;
-    if (t.outcome === 'Успешно') managers[t.manager].success++;
-    else if (t.outcome === 'Неуспешно') managers[t.manager].fail++;
+    if (t.outcome === 'success') managers[t.manager].success++;
+    else if (t.outcome === 'fail') managers[t.manager].fail++;
     else managers[t.manager].inProgress++;
   }
-  const total = tasks.length;
-  const success = Object.values(funnel).reduce((a,b)=>a+b.success,0);
-  const fail = Object.values(funnel).reduce((a,b)=>a+b.fail,0);
+  const fullFunnel = offFunnel.total > 0 ? funnel.concat([offFunnel]) : funnel;
   return {
-    total, success, fail, inProgress: total-success-fail,
+    total, success, fail, inProgress: total - success - fail,
     conversionRate: total ? success/total : 0,
-    funnel: Object.values(funnel),
+    funnel: fullFunnel,
     managers: Object.values(managers).sort((a,b)=>b.total-a.total),
   };
 }
@@ -480,17 +482,19 @@ function render() {
     <thead><tr><th>#</th><th>Назва</th><th>Етап</th><th>Менеджер</th><th>Остання зміна</th></tr></thead>
     <tbody>`;
   const sorted = tasks.slice().sort((a,b) => (b.dateISO||'').localeCompare(a.dateISO||''));
+  const stageLabel = (n) => (n >= 1 && n <= 8) ? state.raw.stages[n-1] : (t => '— ' + (t || ''));
   sorted.slice(0, 200).forEach(t => {
-    const badge = t.outcome === 'Успешно' ? '<span class="badge b-ok">✓ успіх</span>'
-                : t.outcome === 'Неуспешно' ? '<span class="badge b-fail">✗ провал</span>'
+    const badge = t.outcome === 'success' ? '<span class="badge b-ok">✓ успіх</span>'
+                : t.outcome === 'fail'    ? '<span class="badge b-fail">✗ провал</span>'
                 : '<span class="badge b-prog">у роботі</span>';
+    const stageTxt = (t.stage >= 1 && t.stage <= 8) ? state.raw.stages[t.stage-1] : (t.statusName || '—');
     html += `
       <tr>
         <td class="num">${esc(t.id)}</td>
         <td>${t.taskUrl ? `<a class="tlink" href="${esc(t.taskUrl)}" target="_blank" rel="noopener">${esc(t.title)}</a>` : esc(t.title)} ${badge}</td>
-        <td>${esc(t.stage)}</td>
+        <td>${esc(stageTxt)}</td>
         <td>${esc(t.manager)}</td>
-        <td>${esc(t.date || fmtDateUA(t.dateISO))}</td>
+        <td>${esc(fmtDateUA(t.dateISO))}</td>
       </tr>`;
   });
   if (sorted.length > 200) {
@@ -498,7 +502,7 @@ function render() {
   }
   html += `</tbody></table></div>
   <div class="muted" style="text-align:right;padding:4px 6px">
-    Джерело: Planfix звіт #${state.raw.reportId} «${esc(state.raw.reportName)}». Кеш 30 хв (Planfix дозволяє перебудову раз на 10 хв).
+    Джерело: «${esc(state.raw.reportName)}» за ${state.raw.year}. Дані з Planfix (template 99431 «Замовлення дилера» + 130339 «Продажі станцій»). Кеш 30 хв.
   </div>`;
 
   document.getElementById('content').innerHTML = html;
