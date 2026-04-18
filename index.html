@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=net20260418"></script>
-<script src="header.js?v=net20260418"></script>
+<script src="auth.js?v=2y20260418"></script>
+<script src="header.js?v=2y20260418"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -622,7 +622,7 @@ async function loadKey() {
       return v ? v.total : 0;
     });
     drawSparkline('kpiRevenueSpark', series, { color: 'var(--green)' });
-    state.revTrend = { buckets: trendBuckets, values: series, granularity: (state.preset === 'quarter' ? 'quarter' : 'month') };
+    state.revTrend = { buckets: trendBuckets, values: series, granularity: (state.preset === 'quarter' ? 'quarter' : state.preset === 'year' ? 'year' : 'month') };
     // Make KPI card clickable — opens modal with full chart
     const kpiEl = document.getElementById('kpiRevenue');
     if (kpiEl && !kpiEl._clickWired) {
@@ -726,7 +726,7 @@ async function loadKey() {
       const byM = netByMonth(pnlTrend.value);
       const series = aggregateBuckets(byM);
       drawSparkline('kpiNetSpark', series, { color: 'var(--green)' });
-      state.netTrend = { buckets: trendBuckets, values: series, granularity: (state.preset === 'quarter' ? 'quarter' : 'month') };
+      state.netTrend = { buckets: trendBuckets, values: series, granularity: (state.preset === 'quarter' ? 'quarter' : state.preset === 'year' ? 'year' : 'month') };
       const netEl = document.getElementById('kpiNet');
       if (netEl && !netEl._clickWired) {
         netEl.classList.add('clickable');
@@ -743,13 +743,16 @@ async function loadKey() {
 // Helpers preserved from legacy — trimmed to what key KPIs need
 // Build trend buckets for the sparkline / modal chart based on selected preset.
 // Returns [{ from:'YYYY-MM-DD', to:'YYYY-MM-DD', label:'Q1 26' | 'Квітень 2026', isCurrent }]
+// Завжди 2-річне вікно, а гранулярність під фільтр:
+//   quarter → 8 кварталів
+//   year    → 2 роки
+//   решта   → 24 місяці
 function buildTrendBuckets(preset, baseToDate, stateToIso) {
   const y = baseToDate.getFullYear(), m = baseToDate.getMonth();
   const buckets = [];
   if (preset === 'quarter') {
-    // Last 6 quarters ending with the quarter that contains baseToDate
     const curQ = Math.floor(m / 3);
-    for (let i = 5; i >= 0; i--) {
+    for (let i = 7; i >= 0; i--) {
       const totalQ = y * 4 + curQ - i;
       const qy = Math.floor(totalQ / 4);
       const qq = ((totalQ % 4) + 4) % 4;
@@ -765,8 +768,21 @@ function buildTrendBuckets(preset, baseToDate, stateToIso) {
       });
     }
   } else if (preset === 'year') {
-    // 12 months for year view
-    for (let i = 11; i >= 0; i--) {
+    for (let i = 1; i >= 0; i--) {
+      const yy = y - i;
+      const yStart = new Date(yy, 0, 1);
+      const yEnd   = new Date(yy, 11, 31);
+      const isCur = i === 0;
+      buckets.push({
+        from: _localISO(yStart),
+        to: isCur ? stateToIso : _localISO(yEnd),
+        label: String(yy),
+        isCurrent: isCur,
+      });
+    }
+  } else {
+    // 24 місяці для 'month' / 'prevmonth' / custom
+    for (let i = 23; i >= 0; i--) {
       const mStart = new Date(y, m - i, 1);
       const mEnd   = new Date(y, m - i + 1, 0);
       const isCur = i === 0;
@@ -774,19 +790,6 @@ function buildTrendBuckets(preset, baseToDate, stateToIso) {
         from: _localISO(mStart),
         to: isCur ? stateToIso : _localISO(mEnd),
         label: MN_SHORT[mStart.getMonth()] + " '" + String(mStart.getFullYear()).slice(2),
-        isCurrent: isCur,
-      });
-    }
-  } else {
-    // Default: 6 months for 'month' / 'prevmonth' / custom
-    for (let i = 5; i >= 0; i--) {
-      const mStart = new Date(y, m - i, 1);
-      const mEnd   = new Date(y, m - i + 1, 0);
-      const isCur = i === 0;
-      buckets.push({
-        from: _localISO(mStart),
-        to: isCur ? stateToIso : _localISO(mEnd),
-        label: MN_FULL[mStart.getMonth()] + ' ' + mStart.getFullYear(),
         isCurrent: isCur,
       });
     }
@@ -1032,8 +1035,8 @@ function openTrendModal(t, opts) {
   const max = Math.max(...values);
   const min = Math.min(...values);
   const gran = t.granularity || 'month';
-  const unit = gran === 'quarter' ? 'кварталів' : 'місяців';
-  const prevLabel = gran === 'quarter' ? 'попер. квартал' : 'попер. міс';
+  const unit = gran === 'quarter' ? 'кварталів' : gran === 'year' ? 'років' : 'місяців';
+  const prevLabel = gran === 'quarter' ? 'попер. квартал' : gran === 'year' ? 'попер. рік' : 'попер. міс';
 
   openModal({
     title: opts.title,
