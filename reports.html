@@ -67,6 +67,12 @@ a{color:inherit;text-decoration:none}
 .toolbar .meta{font-size:11.5px;color:var(--text3)}
 .toolbar .meta b{color:var(--text2);font-weight:600}
 
+/* Info banner under toolbar */
+.info-banner{padding:10px 14px;margin-bottom:14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;font-size:12px;color:var(--text2);line-height:1.5}
+.info-banner b{color:var(--text);font-weight:700}
+.info-banner .ib-row{display:flex;gap:10px;flex-wrap:wrap}
+.info-banner .ib-tag{display:inline-block;padding:1px 7px;background:var(--bg3);border-radius:4px;font-size:10.5px;color:var(--text3);font-weight:600;letter-spacing:.2px;margin-right:4px}
+
 /* KPI */
 .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px}
 .kpi-card{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:3px}
@@ -182,6 +188,8 @@ a{color:inherit;text-decoration:none}
     <span class="spacer"></span>
     <span class="meta" id="freshness">—</span>
   </div>
+
+  <div class="info-banner" id="infoBanner"></div>
 
   <div id="content">
     <div class="loading">Завантаження звіту…</div>
@@ -454,7 +462,38 @@ function pct(n){return (Math.round((n||0)*1000)/10).toFixed(1) + '%'}
 function fmtDateUA(iso){if(!iso)return '—';const d=iso.slice(0,10).split('-');return `${d[2]}.${d[1]}.${d[0]}`}
 
 // ─── Render ───
+function updateInfoBanner() {
+  const el = document.getElementById('infoBanner');
+  if (!el) return;
+  let html = '';
+  if (state.source === 'sheet') {
+    html = `
+      <div class="ib-row">
+        <span class="ib-tag">ЗА ПЕРІОД</span>
+        <b>Кожен стейдж =</b> унікальні задачі, які <b>увійшли</b> в нього у вибрані дати (рахуємо подію переходу статусу).
+      </div>
+      <div style="margin-top:6px">
+        <b>Stage_i не пов'язаний зі stage_{i-1}</b>: задача могла отримати аванс ще в березні, а реалізуватись у квітні —
+        у такому разі вона є у stage 8 (квітня) але немає у stage 7 (квітня). Це <b>не баг</b> — відображає лише дії за період.
+        Для класичної маркетингової воронки → перемкнись на <b>Pipeline (кумулятивна)</b>.
+      </div>`;
+  } else if (state.source === 'sheet-cum') {
+    html = `
+      <div class="ib-row">
+        <span class="ib-tag">PIPELINE</span>
+        <b>Кожен стейдж =</b> унікальні задачі з активністю в період, які <b>колись досягли</b> цього стейджу або вище
+        (рахуємо макс. досягнутий стейдж за всю історію до кінця періоду).
+      </div>
+      <div style="margin-top:6px">
+        Воронка <b>монотонна</b>: stage_i ≥ stage_{i+1} завжди. «% з попереднього» = реальна конверсія між стейджами.
+      </div>`;
+  }
+  el.innerHTML = html;
+  el.style.display = html ? 'block' : 'none';
+}
+
 function render() {
+  updateInfoBanner();
   if (!state.raw) return;
   let a, tasks = [];
   if ((state.source === 'sheet' || state.source === 'sheet-cum')) {
@@ -478,27 +517,36 @@ function render() {
   }
 
   // KPI — когорта у період (унікальні задачі, що увійшли в стейдж у вибраний період)
+  const isCum = state.source === 'sheet-cum';
+  const tipLeads = isCum
+    ? 'Унікальних задач з активністю у період, які мали хоча б один стейдж воронки за всю історію (= етап 1 «Нове»).'
+    : 'Унікальних задач, які увійшли в етап 1 «Нове» у вибраний період.';
+  const tipWon = isCum
+    ? 'Унікальних задач, що колись досягли «Аванс отримано» (включно з тими, що пішли далі в реалізацію).'
+    : 'Унікальних задач, що увійшли в «Аванс отримано» у вибраний період. Win = кінець продажів.';
+  const tipLost = 'Унікальних задач, що увійшли у «Закрито та не реалізовано» у вибраний період.';
+  const tipRate = 'Win / Leads = «Аванс отримано» поділити на «Нове».';
   html += `
   <div class="kpi">
-    <div class="kpi-card">
+    <div class="kpi-card" title="${esc(tipLeads)}">
       <div class="lbl">Лідів (етап 1)</div>
       <div class="val">${fmt(a.leads)}</div>
-      <div class="sub">нові ліди за період</div>
+      <div class="sub">${isCum ? 'у pipeline (за всю історію)' : 'нові ліди за період'}</div>
     </div>
-    <div class="kpi-card c-success">
-      <div class="lbl">Успішно (етап 8)</div>
+    <div class="kpi-card c-success" title="${esc(tipWon)}">
+      <div class="lbl">Аванс отримано (Win)</div>
       <div class="val">${fmt(a.won)}</div>
       <div class="sub">${pct(a.leads ? a.won/a.leads : 0)} від лідів</div>
     </div>
-    <div class="kpi-card c-fail">
+    <div class="kpi-card c-fail" title="${esc(tipLost)}">
       <div class="lbl">Закрито неуспішно</div>
       <div class="val">${fmt(a.lost)}</div>
       <div class="sub">${pct(a.leads ? a.lost/a.leads : 0)} від лідів</div>
     </div>
-    <div class="kpi-card c-rate">
+    <div class="kpi-card c-rate" title="${esc(tipRate)}">
       <div class="lbl">Кінцева конверсія</div>
       <div class="val">${pct(a.conversionRate)}</div>
-      <div class="sub">Успішно / Лідів</div>
+      <div class="sub">Win / Лідів</div>
     </div>
   </div>`;
 
@@ -510,10 +558,10 @@ function render() {
   </div>
   <div class="funnel">
     <div class="funnel-head">
-      <div>Етап</div><div></div>
-      <div class="col-num">Усього</div>
-      <div class="col-num">% з попереднього</div>
-      <div class="col-num">% від №1</div>
+      <div title="Стадія воронки продажів. 1=Нове → 8=Аванс отримано">Етап</div><div></div>
+      <div class="col-num" title="${esc(isCum ? 'Унікальних задач, що колись досягли цього стейджу або вище.' : 'Унікальних задач, які увійшли в цей стейдж у вибраний період.')}">Усього</div>
+      <div class="col-num" title="Конверсія між сусідніми стейджами: total(N) / total(N-1)">% з попереднього</div>
+      <div class="col-num" title="Частка від першого стейджу воронки: total(N) / total(1)">% від №1</div>
     </div>`;
   a.funnel.forEach((f, i) => {
     const w = (f.total / maxStageTotal) * 100;
