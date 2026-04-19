@@ -171,6 +171,10 @@ a{color:inherit;text-decoration:none}
         <span class="chip" data-org="react">Реакт</span>
         <span class="chip" data-org="gen">Генерація</span>
       </span>
+
+      <span class="sep"></span>
+
+      <input type="text" id="qIn" placeholder="🔎 постачальник (назва / ЕДРПОУ)" style="flex:1;min-width:220px;padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none">
     </div>
 
     <div class="tabs" id="tabs">
@@ -197,7 +201,7 @@ const fmtCurSigned = (n, cur) => {
 const body = document.getElementById('body');
 const sub  = document.getElementById('subTitle');
 
-const state = { from:'', to:'', org:'', preset:'12m', tab:'overview', dvTable:'counterparties', dvSearch:'', dvOffset:0 };
+const state = { from:'', to:'', org:'', preset:'12m', q:'', tab:'overview', dvTable:'counterparties', dvSearch:'', dvOffset:0 };
 const DV_TABLES = [
   'counterparties','purchase_orders','purchase_receipts','purchase_receipt_items',
   'payments_out','ap_movements',
@@ -242,6 +246,7 @@ function saveUrl(){
   h.set('from', state.from); h.set('to', state.to);
   if (state.org) h.set('org', state.org);
   if (state.preset) h.set('preset', state.preset);
+  if (state.q) h.set('sq', state.q);
   if (state.tab && state.tab !== 'overview') h.set('tab', state.tab);
   if (state.tab === 'data') {
     if (state.dvTable) h.set('t', state.dvTable);
@@ -261,6 +266,7 @@ function readUrl(){
     state.from = from; state.to = to; state.preset = '12m';
   }
   if (h.get('org')) state.org = h.get('org');
+  if (h.get('sq')) state.q = h.get('sq');
   if (h.get('tab') === 'data') state.tab = 'data';
   if (h.get('t') && DV_TABLES.includes(h.get('t'))) state.dvTable = h.get('t');
   if (h.get('q')) state.dvSearch = h.get('q');
@@ -270,6 +276,8 @@ function readUrl(){
 function syncToolbar(){
   document.getElementById('fromIn').value = state.from;
   document.getElementById('toIn').value   = state.to;
+  const qEl = document.getElementById('qIn');
+  if (qEl && qEl.value !== state.q) qEl.value = state.q;
   document.querySelectorAll('#presetGroup .chip').forEach(c => c.classList.toggle('active', c.dataset.preset === state.preset));
   document.querySelectorAll('#orgGroup .chip').forEach(c => c.classList.toggle('active', c.dataset.org === state.org));
   document.querySelectorAll('#tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.tab === state.tab));
@@ -287,6 +295,12 @@ function wireToolbar(){
     if (state.tab === t.dataset.tab) return;
     setState({ tab: t.dataset.tab });
   }));
+  let qTimer = null;
+  document.getElementById('qIn').addEventListener('input', e => {
+    const v = e.target.value;
+    clearTimeout(qTimer);
+    qTimer = setTimeout(() => setState({ q: v.trim() }), 250);
+  });
 }
 
 function kindBadge(k){
@@ -397,7 +411,8 @@ async function loadOverview(){
   body.innerHTML = '<div class="loading">Завантаження…</div>';
   const params = new URLSearchParams({ action:'suppliers_overview', from:state.from, to:state.to });
   if (state.org) params.set('org', state.org);
-  params.set('limit', '30');
+  if (state.q) params.set('q', state.q);
+  params.set('limit', state.q ? '100' : '30');
   try{
     const res = await fetch(`${API}/?${params}`);
     if (!res.ok) throw new Error(`${res.status} ${await res.text().catch(()=>res.statusText)}`);
