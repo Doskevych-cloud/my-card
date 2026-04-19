@@ -108,13 +108,15 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
       <table>
         <thead>
           <tr>
-            <th style="width: 32%">Користувач</th>
+            <th style="width: 28%">Користувач</th>
             <th style="text-align:center">Дашборд</th>
             <th style="text-align:center">Порівняння цін</th>
             <th style="text-align:center">Закупівлі</th>
             <th style="text-align:center">Склад</th>
             <th style="text-align:center">Продажі</th>
+            <th style="text-align:center">Звіти</th>
             <th style="text-align:center">Фінанси</th>
+            <th style="text-align:center">Постачальники</th>
             <th style="text-align:center">Адмін</th>
             <th style="text-align:center">Реакт</th>
             <th style="text-align:center">Генерація</th>
@@ -123,7 +125,7 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
           </tr>
         </thead>
         <tbody id="tbody">
-          <tr><td colspan="12" class="loading">Завантаження…</td></tr>
+          <tr><td colspan="14" class="loading">Завантаження…</td></tr>
         </tbody>
       </table>
     </div>
@@ -157,7 +159,7 @@ async function loadUsers() {
     renderTable();
     initDelegation();
   } catch (e) {
-    document.getElementById('tbody').innerHTML = `<tr><td colspan="11" class="loading">❌ ${escapeHtml(e.message)}</td></tr>`;
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="14" class="loading">❌ ${escapeHtml(e.message)}</td></tr>`;
   }
 }
 
@@ -187,7 +189,7 @@ function userRow(u) {
           </div>
         </div>
       </td>
-      ${['dashboard','home','forecast','warehouses','sales','finance','admin'].map(r => `
+      ${['dashboard','home','forecast','warehouses','sales','reports','finance','suppliers','admin'].map(r => `
         <td class="role-box"><input type="checkbox" ${u.roles && u.roles[r] ? 'checked' : ''} data-act="role" data-key="${r}"></td>
       `).join('')}
       ${['Реакт','Генерація'].map(o => `
@@ -248,7 +250,9 @@ function renderTable() {
         <td class="role-box"><input type="checkbox" id="inv_forecast"></td>
         <td class="role-box"><input type="checkbox" id="inv_warehouses"></td>
         <td class="role-box"><input type="checkbox" id="inv_sales"></td>
+        <td class="role-box"><input type="checkbox" id="inv_reports"></td>
         <td class="role-box"><input type="checkbox" id="inv_finance"></td>
+        <td class="role-box"><input type="checkbox" id="inv_suppliers"></td>
         <td class="role-box"><input type="checkbox" id="inv_admin"></td>
         <td class="role-box"><input type="checkbox" id="inv_org_react" checked></td>
         <td class="role-box"><input type="checkbox" id="inv_org_gen"></td>
@@ -261,7 +265,7 @@ function renderTable() {
     `;
   }
   if (!filtered.length) {
-    html += `<tr><td colspan="12" class="empty">Нічого не знайдено</td></tr>`;
+    html += `<tr><td colspan="14" class="empty">Нічого не знайдено</td></tr>`;
   } else {
     html += filtered.map(userRow).join('');
   }
@@ -290,7 +294,9 @@ async function saveInvite() {
     forecast: document.getElementById('inv_forecast').checked,
     warehouses: document.getElementById('inv_warehouses').checked,
     sales: document.getElementById('inv_sales').checked,
+    reports: document.getElementById('inv_reports').checked,
     finance: document.getElementById('inv_finance').checked,
+    suppliers: document.getElementById('inv_suppliers').checked,
     admin: document.getElementById('inv_admin').checked,
   };
   const orgs = {

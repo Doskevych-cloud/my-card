@@ -348,26 +348,30 @@ function kindBadge(k){
 }
 
 function renderKpi(k){
-  // 3 KPI-блоки: "Борги нам" (пост. винні), "Борги наші" (ми винні), "Ітого".
-  // Знак 1С: +нам, −ми. owed_to_us_usd >= 0, we_owe_usd >= 0 (абсолютні суми).
-  const owedToUs = Number(k.owed_to_us_usd) || 0;
-  const weOwe = Number(k.we_owe_usd) || 0;
-  const total = Number(k.balance_usd) || (owedToUs - weOwe);
-  const totalCls = total < 0 ? 'neg' : (total > 0 ? 'pos' : '');
+  // 3 KPI-блоки: "Борги нам" / "Борги наші" / "Ітого" — по кожній валюті окремо
+  // та сумарно у USD (management). Знак 1С: +нам, −ми.
+  const bbc = k.balance_by_currency || {};
+  const curOrder = ['USD', 'UAH', 'EUR'];
+  const curs = curOrder.filter(c => bbc[c] && (Math.abs(bbc[c].owed_to_us) > 0.01 || Math.abs(bbc[c].we_owe) > 0.01));
+  const renderBlock = (label, cls, picker) => {
+    const lines = curs.map(c => {
+      const v = picker(bbc[c]);
+      return `<div class="sub" style="font-variant-numeric:tabular-nums">${c}: ${fmtCur(v, c)}</div>`;
+    }).join('');
+    const usdPicker = picker({ owed_to_us: Number(k.owed_to_us_usd) || 0, we_owe: Number(k.we_owe_usd) || 0, total: Number(k.balance_usd) || 0 });
+    return `
+    <div class="kpi">
+      <div class="label">${label}</div>
+      <div class="value ${cls}">${cls === 'pos' || cls === 'neg' ? fmtCur(Math.abs(usdPicker), 'USD') : (Math.abs(usdPicker) < 1 ? '0 $' : fmtCurSigned(usdPicker, 'USD'))}</div>
+      ${lines}
+    </div>`;
+  };
+  const totalCls = (Number(k.balance_usd) || 0) < 0 ? 'neg' : ((Number(k.balance_usd) || 0) > 0 ? 'pos' : '');
   return `
   <div class="kpi-row" style="grid-template-columns:repeat(3, 1fr)">
-    <div class="kpi">
-      <div class="label">Борги нам (постачальники винні)</div>
-      <div class="value pos">${fmtCur(owedToUs, 'USD')}</div>
-    </div>
-    <div class="kpi">
-      <div class="label">Борги наші (ми винні)</div>
-      <div class="value neg">${fmtCur(weOwe, 'USD')}</div>
-    </div>
-    <div class="kpi">
-      <div class="label">Ітого · +нам / −ми</div>
-      <div class="value ${totalCls}">${Math.abs(total) < 1 ? '0 $' : fmtCurSigned(total, 'USD')}</div>
-    </div>
+    ${renderBlock('Борги нам (постачальники винні)', 'pos', b => b.owed_to_us)}
+    ${renderBlock('Борги наші (ми винні)', 'neg', b => b.we_owe)}
+    ${renderBlock('Ітого · +нам / −ми', totalCls, b => b.total)}
   </div>`;
 }
 
@@ -378,53 +382,53 @@ function renderTop(rows){
   let i = 0;
   for (const r of rows) {
     i++;
-    const curs = Object.keys(r.by_currency).sort((a,b) => CUR_ORDER.indexOf(a) - CUR_ORDER.indexOf(b));
-    const b = Number(r.balance_usd) || 0;
-    const balCls = b < -1 ? 'neg' : (b > 1 ? 'pos' : 'muted');
-    const balStr = Math.abs(b) < 1 ? '—' : fmtCurSigned(b, 'USD');
-    // Main row per supplier — USD borg; якщо валют декілька, перша (primary); борг USD.
-    const primary = r.primary || curs[0] || 'USD';
-    const c0 = r.by_currency[primary] || { r_cnt:0, r_period:0, p_cnt:0, p_period:0 };
-    lines.push(`
-    <tr class="clickable" data-ref="${r.ref_key}">
-      <td class="num">${i}</td>
-      <td class="name">${r.description}${kindBadge(r.kind)}</td>
-      <td class="cur">${primary}</td>
-      <td>${fmtCnt(c0.r_cnt)}</td>
-      <td class="amount">${Math.abs(c0.r_period) < 1 ? '—' : fmtCur(c0.r_period, primary)}</td>
-      <td>${fmtCnt(c0.p_cnt)}</td>
-      <td class="amount">${Math.abs(c0.p_period) < 1 ? '—' : fmtCur(c0.p_period, primary)}</td>
-      <td class="amount ${balCls}">${balStr}</td>
-    </tr>`);
-    // Додаткові валюти (оборот/оплати у валюті документа) — без балансу, бо борг USD-один
-    for (const cur of curs) {
-      if (cur === primary) continue;
-      const c = r.by_currency[cur];
-      if (Math.abs(c.r_period) < 1 && Math.abs(c.p_period) < 1) continue;
-      lines.push(`
-      <tr class="cur-sub">
-        <td class="num"></td>
-        <td class="name"><span class="cur-indent">↳ також у ${cur}</span></td>
-        <td class="cur">${cur}</td>
-        <td>${fmtCnt(c.r_cnt)}</td>
-        <td class="amount">${Math.abs(c.r_period) < 1 ? '—' : fmtCur(c.r_period, cur)}</td>
-        <td>${fmtCnt(c.p_cnt)}</td>
-        <td class="amount">${Math.abs(c.p_period) < 1 ? '—' : fmtCur(c.p_period, cur)}</td>
-        <td class="amount muted">—</td>
-      </tr>`);
+    // Об'єднуємо валюти з обороту (by_currency) і з залишку (balance_by_currency).
+    const actCurs = Object.keys(r.by_currency || {});
+    const balCurs = Object.keys(r.balance_by_currency || {});
+    const allCurs = [...new Set([...actCurs, ...balCurs])]
+      .sort((a,b) => CUR_ORDER.indexOf(a) - CUR_ORDER.indexOf(b));
+    // Primary: якщо вказаний backend — беремо; інакше валюта з найбільшим |balance|.
+    let primary = r.primary;
+    if (!primary && balCurs.length) {
+      let maxAbs = -1;
+      for (const c of balCurs) {
+        const v = Math.abs(Number((r.balance_by_currency || {})[c]) || 0);
+        if (v > maxAbs) { maxAbs = v; primary = c; }
+      }
     }
+    if (!primary) primary = allCurs[0] || 'USD';
+    // Перестрибнемо primary у перший рядок
+    const ordered = [primary, ...allCurs.filter(c => c !== primary)];
+    ordered.forEach((cur, idx) => {
+      const act = (r.by_currency || {})[cur] || { r_cnt:0, r_period:0, p_cnt:0, p_period:0 };
+      const bal = Number((r.balance_by_currency || {})[cur]) || 0;
+      const balCls = bal < -0.01 ? 'neg' : (bal > 0.01 ? 'pos' : 'muted');
+      const balStr = Math.abs(bal) < 0.01 ? '—' : fmtCurSigned(bal, cur);
+      const isFirst = idx === 0;
+      lines.push(`
+      <tr class="${isFirst ? 'clickable' : 'cur-sub clickable'}" data-ref="${r.ref_key}">
+        <td class="num">${isFirst ? i : ''}</td>
+        <td class="name">${isFirst ? (r.description + kindBadge(r.kind)) : '<span class="cur-indent">↳ також у ' + cur + '</span>'}</td>
+        <td class="cur">${cur}</td>
+        <td>${fmtCnt(act.r_cnt)}</td>
+        <td class="amount">${Math.abs(act.r_period) < 0.01 ? '—' : fmtCur(act.r_period, cur)}</td>
+        <td>${fmtCnt(act.p_cnt)}</td>
+        <td class="amount">${Math.abs(act.p_period) < 0.01 ? '—' : fmtCur(act.p_period, cur)}</td>
+        <td class="amount ${balCls}">${balStr}</td>
+      </tr>`);
+    });
   }
   return `
   <div class="sect">
     <div class="sect-head">Топ-постачальники<span class="count">${rows.length}</span>
-      <span style="margin-left:12px;font-weight:500;color:var(--text3)">борг у USD (1С management), оборот/оплати у валюті документа</span>
+      <span style="margin-left:12px;font-weight:500;color:var(--text3)">залишок у валюті документа · +нам, −ми</span>
     </div>
     <table class="s-tbl">
       <thead><tr>
         <th>#</th><th>Постачальник</th><th>Вал</th>
         <th>Надх.</th><th>Оборот</th>
         <th>Плат.</th><th>Оплачено</th>
-        <th>Борг, $</th>
+        <th>Залишок</th>
       </tr></thead>
       <tbody>${lines.join('')}</tbody>
     </table>
@@ -670,7 +674,7 @@ function load(){
   return loadOverview();
 }
 
-Auth.require('admin').then(user => {
+Auth.require('suppliers').then(user => {
   AppHeader.mount({ active:'suppliers', user });
   readUrl();
   syncToolbar();

@@ -300,7 +300,7 @@
           ${can('forecast')   ? `<a href="/forecast.html"   class="${active==='forecast'   ? 'active' : ''}">📊 Закупівлі</a>` : ''}
           ${can('warehouses') ? `<a href="/warehouses.html" class="${active==='warehouses' ? 'active' : ''}">📦 Склад</a>` : ''}
           ${can('sales')      ? `<a href="/sales.html"      class="${active==='sales'      ? 'active' : ''}">📈 Продажі</a>` : ''}
-          ${isAdmin           ? `<a href="/suppliers.html"  class="${active==='suppliers'  ? 'active' : ''}">🚚 Постачальники</a>` : ''}
+          ${can('suppliers')  ? `<a href="/suppliers.html"  class="${active==='suppliers'  ? 'active' : ''}">🚚 Постачальники</a>` : ''}
           ${isAdmin           ? `<a href="/finance.html"    class="${active==='finance'    ? 'active' : ''}">💰 Фінанси</a>` : ''}
           ${can('reports')    ? `<a href="/reports.html"    class="${active==='reports'    ? 'active' : ''}">📑 Звіти</a>` : ''}
         </nav>
