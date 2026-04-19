@@ -348,30 +348,25 @@ function kindBadge(k){
 }
 
 function renderKpi(k){
-  // 3 KPI-блоки: "Борги нам" / "Борги наші" / "Ітого" — по кожній валюті окремо
-  // та сумарно у USD (management). Знак 1С: +нам, −ми.
-  const bbc = k.balance_by_currency || {};
-  const curOrder = ['USD', 'UAH', 'EUR'];
-  const curs = curOrder.filter(c => bbc[c] && (Math.abs(bbc[c].owed_to_us) > 0.01 || Math.abs(bbc[c].we_owe) > 0.01));
-  const renderBlock = (label, cls, picker) => {
-    const lines = curs.map(c => {
-      const v = picker(bbc[c]);
-      return `<div class="sub" style="font-variant-numeric:tabular-nums">${c}: ${fmtCur(v, c)}</div>`;
-    }).join('');
-    const usdPicker = picker({ owed_to_us: Number(k.owed_to_us_usd) || 0, we_owe: Number(k.we_owe_usd) || 0, total: Number(k.balance_usd) || 0 });
-    return `
-    <div class="kpi">
-      <div class="label">${label}</div>
-      <div class="value ${cls}">${cls === 'pos' || cls === 'neg' ? fmtCur(Math.abs(usdPicker), 'USD') : (Math.abs(usdPicker) < 1 ? '0 $' : fmtCurSigned(usdPicker, 'USD'))}</div>
-      ${lines}
-    </div>`;
-  };
-  const totalCls = (Number(k.balance_usd) || 0) < 0 ? 'neg' : ((Number(k.balance_usd) || 0) > 0 ? 'pos' : '');
+  // 3 KPI-блоки у USD (management currency). Per-currency залишки — у таблиці нижче.
+  const owedToUs = Number(k.owed_to_us_usd) || 0;
+  const weOwe = Number(k.we_owe_usd) || 0;
+  const total = Number(k.balance_usd) || (owedToUs - weOwe);
+  const totalCls = total < 0 ? 'neg' : (total > 0 ? 'pos' : '');
   return `
   <div class="kpi-row" style="grid-template-columns:repeat(3, 1fr)">
-    ${renderBlock('Борги нам (постачальники винні)', 'pos', b => b.owed_to_us)}
-    ${renderBlock('Борги наші (ми винні)', 'neg', b => b.we_owe)}
-    ${renderBlock('Ітого · +нам / −ми', totalCls, b => b.total)}
+    <div class="kpi">
+      <div class="label">Борги нам (постачальники винні)</div>
+      <div class="value pos">${fmtCur(owedToUs, 'USD')}</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Борги наші (ми винні)</div>
+      <div class="value neg">${fmtCur(weOwe, 'USD')}</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Ітого · +нам / −ми</div>
+      <div class="value ${totalCls}">${Math.abs(total) < 1 ? '0 $' : fmtCurSigned(total, 'USD')}</div>
+    </div>
   </div>`;
 }
 
