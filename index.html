@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=imp20260419"></script>
-<script src="header.js?v=imp20260419"></script>
+<script src="auth.js?v=supp20260419"></script>
+<script src="header.js?v=supp20260419"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -443,6 +443,7 @@ function reloadAll() {
   loadKey();
   loadSales();
   loadConversion();
+  loadSuppliersKpi();
 }
 
 // ─── 3 ключові KPI: Оплачено за період · Дебіторка · Кредиторка ───
@@ -462,6 +463,9 @@ function buildKpiSkeleton() {
     keyKpis.push({ id: 'kpiWon',   cls: 'c-won', lbl: 'Успішно реалізовано' });
     keyKpis.push({ id: 'kpiConv',  cls: 'c-conv',lbl: 'Кінцева конверсія' });
   }
+  if (r.suppliers) {
+    keyKpis.push({ id: 'kpiSuppDebt', cls: 'c-supp', lbl: 'Борги наші (постачальники)' });
+  }
 
   const kpiHtml = c => `<div class="kpi ${c.cls} ldg" id="${c.id}">
     <div class="kpi-head"><span class="kpi-lbl">${c.lbl}</span></div>
@@ -473,7 +477,7 @@ function buildKpiSkeleton() {
   document.getElementById('keyKpis').innerHTML = keyKpis.map(kpiHtml).join('');
 
   // Per-block visibility — strictly role-gated
-  document.getElementById('sectionKey').style.display   = (r.finance || r.reports) ? '' : 'none';
+  document.getElementById('sectionKey').style.display   = (r.finance || r.reports || r.suppliers) ? '' : 'none';
   document.getElementById('sectionSales').style.display = r.sales   ? '' : 'none';
 
   // Empty-state hint
@@ -983,6 +987,53 @@ async function loadConversion() {
   wireKpiClick('kpiConv',  openConvModal);
 }
 
+// ─── SUPPLIERS (борги наші постачальникам) ───
+async function loadSuppliersKpi() {
+  const u = window.__user;
+  if (!u.roles || !u.roles.suppliers) return;
+
+  const todayDate = new Date();
+  const todayIso = _localISO(todayDate);
+  const monthAgo = (() => { const d = new Date(todayDate); d.setMonth(d.getMonth() - 1); return _localISO(d); })();
+  const yearAgo = (() => { const d = new Date(todayDate); d.setFullYear(d.getFullYear() - 1); return _localISO(d); })();
+
+  // Поточний — з початку року до сьогодні, попередній — з рік тому до місяць тому (для delta)
+  const qCur  = `?action=suppliers_overview&from=${_localISO(new Date(todayDate.getFullYear(), 0, 1))}&to=${todayIso}`;
+  const qPrev = `?action=suppliers_overview&from=${yearAgo}&to=${monthAgo}`;
+
+  const trendBuckets = buildYtdBuckets(todayDate, todayIso);
+  const sparkReqs = trendBuckets.map(b =>
+    fetch(API_URL + `?action=suppliers_overview&from=${b.from}&to=${b.to}`).then(r => r.json()).catch(() => null)
+  );
+
+  const [curR, prevR, ...sparkR] = await Promise.allSettled([
+    fetch(API_URL + qCur).then(r => r.json()),
+    fetch(API_URL + qPrev).then(r => r.json()),
+    ...sparkReqs,
+  ]);
+
+  const cur = (curR.status === 'fulfilled' && curR.value && !curR.value.error) ? curR.value : null;
+  const prev = (prevR.status === 'fulfilled' && prevR.value && !prevR.value.error) ? prevR.value : null;
+
+  if (!cur) {
+    const msg = curR.status === 'fulfilled' ? (curR.value.error || 'помилка') : curR.reason?.message;
+    updateKpi('kpiSuppDebt', { val: 'Помилка', sub: esc(String(msg).slice(0, 80)), error: true });
+    return;
+  }
+
+  const curVal = Number((cur.kpi && cur.kpi.we_owe_usd) || 0);
+  const prevVal = prev ? Number((prev.kpi && prev.kpi.we_owe_usd) || 0) : null;
+
+  updateKpi('kpiSuppDebt', {
+    numeric: { target: curVal, format: kpiMoneyFmt('$') },
+    sub: `станом на сьогодні ${deltaHtml(curVal, prevVal, 'down')}`,
+  });
+
+  const series = sparkR.map(r => (r.status === 'fulfilled' && r.value && r.value.kpi) ? (Number(r.value.kpi.we_owe_usd) || 0) : 0);
+  drawSparkline('kpiSuppDebtSpark', series, { color: 'var(--red)' });
+  wireKpiClick('kpiSuppDebt', openSuppDebtModal);
+}
+
 // ─── SALES ───
 async function loadSales() {
   const u = window.__user;
@@ -1174,6 +1225,7 @@ const METRIC_DEFS = {
   leads:   { title: '🎯 Нові ліди — динаміка', label: 'Ліди', unit: '' },
   won:     { title: '🏆 Успішно реалізовано — динаміка', label: 'Успіх', unit: '' },
   conv:    { title: '📊 Кінцева конверсія — динаміка', label: 'Конверсія', unit: '%' },
+  suppDebt:{ title: '🏭 Борги постачальникам — динаміка', label: 'Борг', unit: '$' },
 };
 const GRAN_COUNT = { month: 12, quarter: 6, year: 3 };
 
@@ -1184,6 +1236,7 @@ function openApModal()      { openTrendModal('ap'); }
 function openLeadsModal()   { openTrendModal('leads'); }
 function openWonModal()     { openTrendModal('won'); }
 function openConvModal()    { openTrendModal('conv'); }
+function openSuppDebtModal(){ openTrendModal('suppDebt'); }
 
 function openTrendModal(metric) {
   const def = METRIC_DEFS[metric];
@@ -1272,6 +1325,12 @@ async function reloadModalChart() {
       // conv %: won / leads × 100
       return leads ? (won / leads * 100) : 0;
     });
+  } else if (metric === 'suppDebt') {
+    // suppliers_overview per bucket — we_owe_usd (борги наші постачальникам)
+    const resps = await Promise.all(buckets.map(b =>
+      fetch(API_URL + `?action=suppliers_overview&from=${b.from}&to=${b.to}`).then(r => r.json()).catch(() => null)
+    ));
+    values = resps.map(d => (d && d.kpi && Number(d.kpi.we_owe_usd)) || 0);
   }
 
   renderModalChart(buckets, values, gran, metric);
