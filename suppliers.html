@@ -301,7 +301,7 @@ async function load(){
   if (state.org) params.set('org', state.org);
   params.set('limit', '30');
   try{
-    const res = await Auth.apiFetch(`${API}/?${params}`);
+    const res = await fetch(`${API}/?${params}`);
     if (!res.ok) throw new Error(`${res.status} ${await res.text().catch(()=>res.statusText)}`);
     const d = await res.json();
     if (d.error) throw new Error(d.error);
