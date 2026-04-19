@@ -507,21 +507,12 @@ function renderDetail(d){
     </tr>`;
   }).join('');
 
-  // Підсумок акту звірки: по валютах — збільшення / зменшення / баланс (знак 1С: +нам, −ми)
-  const CUR_ORDER_ACT = ['USD','UAH','EUR'];
-  const actCurs = Object.keys(act_totals || {}).sort((a,b) => (CUR_ORDER_ACT.indexOf(a)+99)%100 - (CUR_ORDER_ACT.indexOf(b)+99)%100);
-  const actTotalsRows = actCurs.map(cur => {
-    const t = act_totals[cur];
-    const balCls = t.balance < 0 ? 'neg' : (t.balance > 0 ? 'pos' : 'muted');
-    return `
-    <tr>
-      <td class="name"><b>${cur}</b></td>
-      <td>${fmtCnt(t.count)}</td>
-      <td class="amount">${fmtCur(t.increase, cur)}</td>
-      <td class="amount">${fmtCur(t.decrease, cur)}</td>
-      <td class="amount ${balCls}">${Math.abs(t.balance) < 0.01 ? '—' : fmtCurSigned(t.balance, cur)}</td>
-    </tr>`;
-  }).join('');
+  // Підсумок акту звірки в USD (management currency бази 1С).
+  // Формула як у 1С: closing = opening + (decrease − increase), знак +нам, −ми.
+  const actUsd = (act_totals && act_totals.USD) || { opening: 0, increase: 0, decrease: 0, period_change: 0, closing: 0, count: 0 };
+  const openCls = actUsd.opening < 0 ? 'neg' : (actUsd.opening > 0 ? 'pos' : 'muted');
+  const closeCls = actUsd.closing < 0 ? 'neg' : (actUsd.closing > 0 ? 'pos' : 'muted');
+  const changeCls = actUsd.period_change < 0 ? 'neg' : (actUsd.period_change > 0 ? 'pos' : 'muted');
 
   return `
   <div class="sect">
@@ -567,14 +558,24 @@ function renderDetail(d){
     </div>
   </div>
   <div class="sect">
-    <div class="sect-head">Акт звірки · підсумок по валютах<span class="count">${actCurs.length}</span>
-      <span style="margin-left:12px;font-weight:500;color:var(--text3)">баланс: +нам, −ми</span>
+    <div class="sect-head">Акт звірки в USD<span class="count">${fmtCnt(actUsd.count)} рухів</span>
+      <span style="margin-left:12px;font-weight:500;color:var(--text3)">як у 1С: +нам, −ми · management currency = USD</span>
     </div>
     <table class="s-tbl">
       <thead><tr>
-        <th>Валюта</th><th>Рухів</th><th>Збільшення боргу</th><th>Зменшення боргу</th><th>Наш борг на кінець</th>
+        <th>Початковий залишок</th>
+        <th>Збільшення боргу (закупки)</th>
+        <th>Зменшення боргу (оплати)</th>
+        <th>Зміна за період</th>
+        <th>Кінцевий залишок на ${state.to}</th>
       </tr></thead>
-      <tbody>${actTotalsRows || '<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">немає</td></tr>'}</tbody>
+      <tbody><tr>
+        <td class="amount ${openCls}">${Math.abs(actUsd.opening) < 0.01 ? '—' : fmtCurSigned(actUsd.opening, 'USD')}</td>
+        <td class="amount">${fmtCur(actUsd.increase, 'USD')}</td>
+        <td class="amount">${fmtCur(actUsd.decrease, 'USD')}</td>
+        <td class="amount ${changeCls}">${Math.abs(actUsd.period_change) < 0.01 ? '—' : fmtCurSigned(actUsd.period_change, 'USD')}</td>
+        <td class="amount ${closeCls}"><b>${Math.abs(actUsd.closing) < 0.01 ? '—' : fmtCurSigned(actUsd.closing, 'USD')}</b></td>
+      </tr></tbody>
     </table>
   </div>
   <div class="sect">
