@@ -301,6 +301,7 @@
           ${can('warehouses') ? `<a href="/warehouses.html" class="${active==='warehouses' ? 'active' : ''}">📦 Склад</a>` : ''}
           ${can('sales')      ? `<a href="/sales.html"      class="${active==='sales'      ? 'active' : ''}">📈 Продажі</a>` : ''}
           ${can('suppliers')  ? `<a href="/suppliers.html"  class="${active==='suppliers'  ? 'active' : ''}">🚚 Постачальники</a>` : ''}
+          ${can('customers')  ? `<a href="/customers.html"  class="${active==='customers'  ? 'active' : ''}">🤝 Покупці</a>` : ''}
           ${isAdmin           ? `<a href="/finance.html"    class="${active==='finance'    ? 'active' : ''}">💰 Фінанси</a>` : ''}
           ${can('reports')    ? `<a href="/reports.html"    class="${active==='reports'    ? 'active' : ''}">📑 Звіти</a>` : ''}
         </nav>

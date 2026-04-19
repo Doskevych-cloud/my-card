@@ -59,6 +59,7 @@
     finance: 'Фінанси',
     reports: 'Звіти',
     suppliers: 'Постачальники',
+    customers: 'Покупці',
     admin: 'Адмін-панель',
   };
 

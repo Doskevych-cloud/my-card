@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Постачальники</title>
+<title>Покупці</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
@@ -190,7 +190,7 @@ a{color:inherit;text-decoration:none}
 <div id="app">
   <div class="wrap">
     <div class="page-head">
-      <h1>Постачальники</h1>
+      <h1>Покупці</h1>
       <span class="sub" id="subTitle">—</span>
     </div>
 
@@ -218,7 +218,7 @@ a{color:inherit;text-decoration:none}
 
       <span class="sep"></span>
 
-      <input type="text" id="qIn" placeholder="🔎 постачальник (назва / ЕДРПОУ)" style="flex:1;min-width:220px;padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none">
+      <input type="text" id="qIn" placeholder="🔎 покупець (назва / ЕДРПОУ)" style="flex:1;min-width:220px;padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none">
     </div>
 
     <div class="tabs" id="tabs">
@@ -365,7 +365,7 @@ function renderKpi(k){
   return `
   <div class="kpi-row" style="grid-template-columns:repeat(3, 1fr)">
     <div class="kpi">
-      <div class="label">Борги нам (постачальники винні)</div>
+      <div class="label">Борги нам (клієнти винні)</div>
       <div class="value pos">${fmtCur(owedToUs, 'USD')}</div>
     </div>
     <div class="kpi">
@@ -380,7 +380,7 @@ function renderKpi(k){
 }
 
 function renderTop(rows){
-  if (!rows.length) return `<div class="sect"><div class="sect-head">Топ-постачальники</div><div class="empty">Немає даних у цьому періоді</div></div>`;
+  if (!rows.length) return `<div class="sect"><div class="sect-head">Топ-покупці</div><div class="empty">Немає даних у цьому періоді</div></div>`;
   const CUR_ORDER = ['USD','UAH','EUR'];
   const lines = [];
   let i = 0;
@@ -429,14 +429,14 @@ function renderTop(rows){
   }
   return `
   <div class="sect">
-    <div class="sect-head">Топ-постачальники<span class="count">${rows.length}</span>
+    <div class="sect-head">Топ-покупці<span class="count">${rows.length}</span>
       <span style="margin-left:12px;font-weight:500;color:var(--text3)">залишок = оплачено − закуплено · +нам, −ми</span>
     </div>
     <table class="s-tbl">
       <thead><tr>
-        <th>#</th><th>Постачальник</th><th>Вал</th>
-        <th>Надх.</th><th>Поставлено</th>
-        <th>Плат.</th><th>Оплачено</th>
+        <th>#</th><th>Покупець</th><th>Вал</th>
+        <th>Продажів</th><th>Продано</th>
+        <th>Плат.</th><th>Отримано</th>
         <th>Залишок</th>
       </tr></thead>
       <tbody>${lines.join('')}</tbody>
@@ -466,7 +466,7 @@ function renderDynamics(data){
 
 async function loadOverview(){
   body.innerHTML = '<div class="loading">Завантаження…</div>';
-  const params = new URLSearchParams({ action:'suppliers_overview', from:state.from, to:state.to });
+  const params = new URLSearchParams({ action:'customers_overview', from:state.from, to:state.to });
   if (state.org) params.set('org', state.org);
   if (state.q) params.set('q', state.q);
   params.set('limit', state.q ? '100' : '30');
@@ -487,7 +487,7 @@ async function loadOverview(){
 }
 
 async function loadDetail(refKey){
-  const p = new URLSearchParams({ action:'supplier_detail', ref_key:refKey, from:state.from, to:state.to });
+  const p = new URLSearchParams({ action:'customer_detail', ref_key:refKey, from:state.from, to:state.to });
   if (state.org) p.set('org', state.org);
   try{
     const res = await fetch(`${API}/?${p}`);
@@ -528,7 +528,7 @@ function renderDetailPage(d){
     </tr>`).join('');
 
   return `
-  <button class="detail-back" onclick="goBack()">← Назад до списку постачальників</button>
+  <button class="detail-back" onclick="goBack()">← Назад до списку покупців</button>
 
   <div class="detail-head">
     <h2>${supplier.description}</h2>
@@ -573,7 +573,7 @@ function renderDetailPage(d){
   ${(orders || []).length ? `
   <details style="margin-top:14px">
     <summary style="padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);list-style:none">
-      Замовлення постачальнику (${(orders||[]).length})
+      Замовлення покупця (${(orders||[]).length})
     </summary>
     <div class="sect" style="margin-top:6px;border-radius:12px">
       <table class="s-tbl">
@@ -593,7 +593,7 @@ function goBack(){
 async function loadDetailPage(){
   body.innerHTML = '<div class="loading">Завантаження акту звірки…</div>';
   sub.textContent = 'Акт звірки';
-  const p = new URLSearchParams({ action:'supplier_detail', ref_key:state.detailRef, from:state.from, to:state.to });
+  const p = new URLSearchParams({ action:'customer_detail', ref_key:state.detailRef, from:state.from, to:state.to });
   if (state.org) p.set('org', state.org);
   try{
     const res = await fetch(`${API}/?${p}`);
@@ -683,8 +683,8 @@ function load(){
   return loadOverview();
 }
 
-Auth.require('suppliers').then(user => {
-  AppHeader.mount({ active:'suppliers', user });
+Auth.require('customers').then(user => {
+  AppHeader.mount({ active:'customers', user });
   readUrl();
   syncToolbar();
   wireToolbar();
