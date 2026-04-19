@@ -266,7 +266,8 @@ function readUrl(){
     state.from = from; state.to = to; state.preset = '12m';
   }
   if (h.get('org')) state.org = h.get('org');
-  if (h.get('sq')) state.q = h.get('sq');
+  if (h.get('sq') !== null) state.q = h.get('sq');
+  else state.q = 'RichSun'; // DEV: фіксація тестового постачальника поки звіт стабілізується
   if (h.get('tab') === 'data') state.tab = 'data';
   if (h.get('t') && DV_TABLES.includes(h.get('t'))) state.dvTable = h.get('t');
   if (h.get('q')) state.dvSearch = h.get('q');
@@ -418,11 +419,102 @@ async function loadOverview(){
     if (!res.ok) throw new Error(`${res.status} ${await res.text().catch(()=>res.statusText)}`);
     const d = await res.json();
     if (d.error) throw new Error(d.error);
-    sub.textContent = `${d.period.from} → ${d.period.to}${d.period.org ? ' · ' + d.period.org : ''}`;
+    sub.textContent = `${d.period.from} → ${d.period.to}${d.period.org ? ' · ' + d.period.org : ''}${d.period.q ? ' · q="' + d.period.q + '"' : ''}`;
     body.innerHTML = renderKpi(d.kpi) + renderTop(d.top) + renderDynamics(d.dynamics);
+    // Якщо є пошук і match ≤ 1 — підвантажимо повний drill-down
+    if (state.q && d.top.length >= 1) {
+      const detail = await loadDetail(d.top[0].ref_key);
+      if (detail) body.insertAdjacentHTML('beforeend', renderDetail(detail));
+    }
   }catch(e){
     body.innerHTML = `<div class="error">Помилка: ${e.message}</div>`;
   }
+}
+
+async function loadDetail(refKey){
+  const p = new URLSearchParams({ action:'supplier_detail', ref_key:refKey, from:state.from, to:state.to });
+  if (state.org) p.set('org', state.org);
+  try{
+    const res = await fetch(`${API}/?${p}`);
+    if (!res.ok) throw new Error(`${res.status}`);
+    return await res.json();
+  }catch(e){ console.error('detail', e); return null; }
+}
+
+function renderDetail(d){
+  const { supplier, totals, totals_usd_ref, receipts, payments } = d;
+  const CUR_ORDER = ['USD','UAH','EUR'];
+  const curs = Object.keys(totals).sort((a,b) => (CUR_ORDER.indexOf(a)+999)%1000 - (CUR_ORDER.indexOf(b)+999)%1000);
+
+  const totalsHtml = curs.map(cur => {
+    const t = totals[cur];
+    const balCls = t.balance < 0 ? 'neg' : (t.balance > 0 ? 'pos' : 'muted');
+    return `
+    <tr>
+      <td class="name"><b>${cur}</b></td>
+      <td>${fmtCnt(t.receipts_count)}</td>
+      <td class="amount">${fmtCur(t.receipts_sum, cur)}</td>
+      <td>${fmtCnt(t.payments_count)}</td>
+      <td class="amount">${fmtCur(t.payments_sum, cur)}</td>
+      <td class="amount ${balCls}">${Math.abs(t.balance) < 1 ? '—' : fmtCurSigned(t.balance, cur)}</td>
+    </tr>`;
+  }).join('');
+
+  const rcptRows = receipts.map(r => `
+    <tr>
+      <td>${(r.doc_date || '').slice(0,10)}</td>
+      <td>${r.number || '—'}</td>
+      <td class="cur">${r.currency}</td>
+      <td class="amount">${fmtCur(r.amount, r.currency)}</td>
+      <td class="amount muted">${r.amount_usd ? fmtNum(r.amount_usd) + ' $' : '—'}</td>
+      <td class="muted">${r.org_short || r.org_name || '—'}</td>
+      <td class="muted">${r.warehouse || '—'}</td>
+    </tr>`).join('');
+
+  const payRows = payments.map(r => `
+    <tr>
+      <td>${(r.doc_date || '').slice(0,10)}</td>
+      <td>${r.number || '—'}</td>
+      <td class="cur">${r.currency}</td>
+      <td class="amount">${fmtCur(r.amount, r.currency)}</td>
+      <td class="amount muted">${r.amount_usd ? fmtNum(r.amount_usd) + ' $' : '—'}</td>
+      <td class="muted">${r.doc_type === 'bank' ? 'банк' : 'каса'}</td>
+      <td class="muted">${r.org_short || r.org_name || '—'}</td>
+      <td class="muted" title="${(r.comment || '').replace(/"/g,'&quot;')}">${(r.cashflow_item || '').slice(0,40)}</td>
+    </tr>`).join('');
+
+  return `
+  <div class="sect">
+    <div class="sect-head">Деталі: ${supplier.description}<span class="count">USD-еквівалент (по NBU): borg=${fmtCurSigned(totals_usd_ref.balance_usd, 'USD')}</span></div>
+    <table class="s-tbl">
+      <thead><tr>
+        <th>Валюта</th><th>Надходжень</th><th>Закуплено</th><th>Платежів</th><th>Сплачено</th><th>Борг (+нам,−ми)</th>
+      </tr></thead>
+      <tbody>${totalsHtml}</tbody>
+    </table>
+  </div>
+  <div class="sect">
+    <div class="sect-head">Надходження<span class="count">${receipts.length}</span></div>
+    <div style="overflow:auto;max-height:440px">
+    <table class="s-tbl">
+      <thead><tr>
+        <th>Дата</th><th>№</th><th>Вал</th><th>Сума</th><th>у $ (NBU)</th><th>Організація</th><th>Склад</th>
+      </tr></thead>
+      <tbody>${rcptRows || '<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">немає</td></tr>'}</tbody>
+    </table>
+    </div>
+  </div>
+  <div class="sect">
+    <div class="sect-head">Платежі<span class="count">${payments.length}</span></div>
+    <div style="overflow:auto;max-height:440px">
+    <table class="s-tbl">
+      <thead><tr>
+        <th>Дата</th><th>№</th><th>Вал</th><th>Сума</th><th>у $ (NBU)</th><th>Тип</th><th>Орг</th><th>Стаття ДДС</th>
+      </tr></thead>
+      <tbody>${payRows || '<tr><td colspan="8" class="muted" style="text-align:center;padding:20px">немає</td></tr>'}</tbody>
+    </table>
+    </div>
+  </div>`;
 }
 
 function fmtCell(v){
