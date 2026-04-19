@@ -170,6 +170,12 @@ a{color:inherit;text-decoration:none}
 
     <span class="sep"></span>
 
+    <span class="chip active" data-ct="" onclick="setClientType('')">Усі</span>
+    <span class="chip" data-ct="private" onclick="setClientType('private')">Приватні</span>
+    <span class="chip" data-ct="business" onclick="setClientType('business')">Бізнес</span>
+
+    <span class="sep"></span>
+
     <button class="btn btn--secondary btn--sm" id="btnRefresh">↻ Оновити</button>
 
     <span class="spacer"></span>
@@ -197,6 +203,7 @@ const state = {
   to: _lastOfMonthISO(),
   preset: 'month',
   org: '',
+  clientType: '',       // '' | 'private' | 'business'
   loading: false,
 };
 let leadsSort = { col: 'changeDate', dir: 'desc' };
@@ -216,6 +223,7 @@ Auth.require('reports').then(user => {
   syncInputs();
   syncPresetChips();
   syncOrgChips();
+  syncClientTypeChips();
   attachEvents();
   load();
 });
@@ -228,6 +236,7 @@ function saveStateToUrl() {
   if (state.preset) h.set('preset', state.preset);
   if (state.org)    h.set('org', state.org);
   if (state.source !== 'planfix') h.set('src', state.source);
+  if (state.clientType) h.set('ct', state.clientType);
   history.replaceState(null, '', '#' + h.toString());
 }
 function hydrateFromHash() {
@@ -237,6 +246,7 @@ function hydrateFromHash() {
   if (h.get('preset')) state.preset = h.get('preset');
   if (h.get('org'))    state.org    = h.get('org');
   if (h.get('src'))    state.source = h.get('src');
+  if (h.get('ct'))     state.clientType = h.get('ct');
   if (!h.get('preset')) state.preset = detectPreset(state.from, state.to);
 }
 function detectPreset(from, to) {
@@ -294,6 +304,15 @@ function setOrg(v) {
   state.org = v || '';
   syncOrgChips(); saveStateToUrl(); render(); // org — клієнтський, без re-fetch
 }
+function syncClientTypeChips() {
+  document.querySelectorAll('.chip[data-ct]').forEach(c => {
+    c.classList.toggle('active', (c.dataset.ct || '') === (state.clientType || ''));
+  });
+}
+function setClientType(v) {
+  state.clientType = v || '';
+  syncClientTypeChips(); saveStateToUrl(); load();
+}
 function attachEvents() {
   document.getElementById('fromIn').addEventListener('change', e => {
     state.from = e.target.value || _firstOfMonthISO();
@@ -335,6 +354,7 @@ async function load(force = false) {
   try {
     const action = state.source === 'sheet' ? 'sheet_funnel' : 'planfix_funnel';
     const params = new URLSearchParams({ action, from: state.from, to: state.to });
+    if (state.source === 'sheet' && state.clientType) params.set('clientType', state.clientType);
     if (force) params.set('_', Date.now());
     const res = await fetch(API + '?' + params.toString());
     const data = await res.json();
