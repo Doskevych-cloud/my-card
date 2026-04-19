@@ -2402,22 +2402,13 @@ async function msLoad() {
 }
 
 function renderMs(data) {
-  // Backend shape (v7+): ar/ap are arrays of per-CP rows with fields
-  //   { cpKey, name, borgSum, nashSum, razomSum, borgUsd, nashUsd, razomUsd, currencies:[{cur,borg,nash,razom}] }
-  const ar = Array.isArray(data.ar) ? data.ar : [];
-  const ap = Array.isArray(data.ap) ? data.ap : [];
-  const grand = data.grand || { borg: 0, nash: 0, razom: 0, borgUsd: 0, nashUsd: 0, razomUsd: 0 };
+  // Backend shape (v9+): { debit: [...], credit: [...], totals: { debitUsd, creditUsd, netUsd, ... } }
+  const debit  = Array.isArray(data.debit)  ? data.debit  : [];
+  const credit = Array.isArray(data.credit) ? data.credit : [];
+  const t = data.totals || { debitUsd: 0, creditUsd: 0, netUsd: 0 };
   const fx = (data.fx && data.fx.USD_UAH) || 41.5;
 
-  // Summary cards (USD equivalent).
-  // AR side: Борг = клієнти винні нам; Наш = передоплати клієнтів
-  // AP side: Борг = постачальники винні нам (наші аванси); Наш = ми винні постачальникам
-  const arBorgUsd = ar.reduce((s, r) => s + r.borgUsd, 0);
-  const arNashUsd = ar.reduce((s, r) => s + r.nashUsd, 0);
-  const apBorgUsd = ap.reduce((s, r) => s + r.borgUsd, 0);
-  const apNashUsd = ap.reduce((s, r) => s + r.nashUsd, 0);
-  const netUsd = (arBorgUsd + apBorgUsd) - (arNashUsd + apNashUsd);
-
+  // 3 картки: Дебіторка · Кредиторка · Чистий стан
   const card = (cls, lbl, usd, sub) => {
     const usdStr = (usd >= 0 ? '' : '−') + fmt(Math.abs(usd), 0) + ' $';
     return '<div class="pnl-card ' + cls + '">' +
@@ -2428,73 +2419,50 @@ function renderMs(data) {
   };
   document.getElementById('msSummary').innerHTML =
     '<div class="pnl-summary">' +
-    card('c-rev', 'Клієнти винні нам',         arBorgUsd, ar.length + ' контрагентів') +
-    card('c-cost', 'Передоплати клієнтів',      arNashUsd, 'ми ще не відвантажили товар') +
-    card('c-cost', 'Ми винні постачальникам',   apNashUsd, ap.length + ' контрагентів') +
-    card('c-grs', 'Передоплати постачальникам', apBorgUsd, 'постачальник ще не відвантажив') +
-    card('c-net', 'Чистий стан',                 netUsd, 'наш нетто (≈ ' + fmt(netUsd * fx, 0) + ' ₴)') +
+    card('c-rev',  'Нам винні (дебіторка)',  t.debitUsd,  debit.length + ' контрагентів') +
+    card('c-cost', 'Ми винні (кредиторка)',  t.creditUsd, credit.length + ' контрагентів') +
+    card('c-net',  'Чистий стан',             t.netUsd,    '≈ ' + fmt(t.netUsd * fx, 0) + ' ₴') +
     '</div>';
 
-  // Helper: currency breakdown, signed
+  // Breakdown per валюта (signed)
   const sign = cur => cur === 'USD' ? '$' : cur === 'EUR' ? '€' : cur === 'UAH' ? '₴' : cur;
   const curBreakdown = (curs) => {
     if (!curs || !curs.length) return '';
     return curs
-      .sort((a, b) => Math.abs(b.razom || 0) - Math.abs(a.razom || 0))
-      .map(c => {
-        const parts = [];
-        if (c.borg >= 0.005) parts.push(fmt(c.borg, 0) + ' ' + sign(c.cur));
-        if (c.nash >= 0.005) parts.push('−' + fmt(c.nash, 0) + ' ' + sign(c.cur));
-        return parts.join(' / ');
-      })
-      .filter(Boolean)
+      .sort((a, b) => Math.abs(b.amt) - Math.abs(a.amt))
+      .map(c => (c.amt < 0 ? '−' : '') + fmt(Math.abs(c.amt), 0) + ' ' + sign(c.cur))
       .join('  ·  ');
   };
-  // Split rows into those with positive razom (net we're owed) and negative (net we owe).
-  const splitBy = (rows) => {
-    const debts = rows.filter(r => r.razomUsd > 0.005);
-    const prepays = rows.filter(r => r.razomUsd < -0.005);
-    return { debts, prepays };
-  };
-  const rowsHtml = (rows, color, debtType) => {
+
+  const rowsHtml = (rows, color) => {
     if (!rows.length) return '<tr class="itm"><td class="col-total" colspan="2" style="text-align:center;color:var(--text3);font-style:italic">— порожньо —</td></tr>';
-    return rows.map(r => {
-      const usd = debtType === 'debt' ? r.razomUsd : -r.razomUsd;
-      const breakdown = curBreakdown(r.currencies);
-      return '<tr class="itm">' +
+    return rows.map(r =>
+      '<tr class="itm">' +
         '<td>' + esc(r.name || r.cpKey) + '</td>' +
-        '<td class="col-total" style="color:' + color + '">' + fmt(usd, 0) + ' $</td>' +
-        '<td class="col-total" style="color:var(--text3);font-size:11.5px">' + esc(breakdown) + '</td>' +
-      '</tr>';
-    }).join('');
+        '<td class="col-total" style="color:' + color + '">' + fmt(r.netUsd, 0) + ' $</td>' +
+        '<td class="col-total" style="color:var(--text3);font-size:11.5px">' + esc(curBreakdown(r.currencies)) + '</td>' +
+      '</tr>'
+    ).join('');
   };
-  const tbl = (title, rows, color, subtitle, debtType) => {
-    const totUsd = (rows || []).reduce((s, r) => s + (debtType === 'debt' ? r.razomUsd : -r.razomUsd), 0);
-    return '<div class="pnl-wrap" style="margin-bottom:14px">' +
+
+  const tbl = (title, rows, color, totUsd, subtitle) =>
+    '<div class="pnl-wrap" style="margin-bottom:14px">' +
       '<table class="pnl-table">' +
-        '<thead><tr><th style="min-width:300px">' + title + '<span style="color:var(--text3);font-weight:500;font-size:11px;margin-left:8px">' + (subtitle||'') + '</span></th><th class="col-total">USD</th><th class="col-total">За валютами</th></tr></thead>' +
-        '<tbody>' + rowsHtml(rows, color, debtType) + '</tbody>' +
-        '<tfoot><tr class="grd"><td>Разом</td><td class="col-total" style="color:' + color + '">' + fmt(totUsd, 0) + ' $</td><td class="col-total" style="color:var(--text3)"></td></tr></tfoot>' +
-      '</table></div>';
-  };
-  const arSplit = splitBy(ar);
-  const apSplit = splitBy(ap);
-  const html =
-    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(480px,1fr));gap:14px">' +
-      // Клієнти
-      '<div>' +
-        '<h3 style="font-size:13px;font-weight:700;color:var(--text);margin:0 4px 10px;text-transform:uppercase;letter-spacing:.3px">👥 Клієнти</h3>' +
-        tbl('Винні нам',              arSplit.debts,   'var(--green)', 'дебіторка',   'debt') +
-        tbl('Від них отримано аванс', arSplit.prepays, 'var(--text2)', 'відвантаження заборговане', 'prepay') +
-      '</div>' +
-      // Постачальники (знак уже інвертовано на бекенді: razomUsd>0 = постачальник винен нам)
-      '<div>' +
-        '<h3 style="font-size:13px;font-weight:700;color:var(--text);margin:0 4px 10px;text-transform:uppercase;letter-spacing:.3px">🏭 Постачальники</h3>' +
-        tbl('Ми винні',         apSplit.prepays, 'var(--red)',   'кредиторка',         'prepay') +
-        tbl('Ми дали аванс',    apSplit.debts,   'var(--text2)', 'поставка заборгована', 'debt') +
-      '</div>' +
+        '<thead><tr>' +
+          '<th style="min-width:300px">' + title + '<span style="color:var(--text3);font-weight:500;font-size:11px;margin-left:8px">' + (subtitle||'') + '</span></th>' +
+          '<th class="col-total">USD</th>' +
+          '<th class="col-total">За валютами</th>' +
+        '</tr></thead>' +
+        '<tbody>' + rowsHtml(rows, color) + '</tbody>' +
+        '<tfoot><tr class="grd"><td>Разом</td><td class="col-total" style="color:' + color + '">' + fmt(totUsd, 0) + ' $</td><td></td></tr></tfoot>' +
+      '</table>' +
     '</div>';
-  document.getElementById('msBody').innerHTML = html;
+
+  document.getElementById('msBody').innerHTML =
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(480px,1fr));gap:14px">' +
+      tbl('Нам винні',  debit,  'var(--green)', t.debitUsd,  debit.length + ' контрагентів') +
+      tbl('Ми винні',   credit, 'var(--red)',   t.creditUsd, credit.length + ' контрагентів') +
+    '</div>';
 }
 document.addEventListener('DOMContentLoaded', function() {
   const onIn = document.getElementById('msOnIn');
