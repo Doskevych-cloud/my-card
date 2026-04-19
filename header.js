@@ -266,7 +266,10 @@
     injectStyle();
     const active = opts.active || '';
     const user = opts.user || (global.Auth && global.Auth.cachedUser && global.Auth.cachedUser()) || null;
-    const isAdmin = !!(user && user.roles && user.roles.admin);
+    const roles = (user && user.roles) || {};
+    const isAdmin = !!roles.admin;
+    // Admin sees everything; others — only modules where they have the role.
+    const can = (r) => isAdmin || !!roles[r];
 
     let host = document.getElementById('appHeader');
     if (!host) {
@@ -292,14 +295,14 @@
           <span class="name">REACT</span>
         </a>
         <nav class="nav">
-          <a href="/"                class="${active==='dashboard'  ? 'active' : ''}">🧭 Дашборд</a>
-          <a href="/prices.html"     class="${active==='home'       ? 'active' : ''}">🏠 Порівняння цін</a>
-          <a href="/forecast.html"   class="${active==='forecast'   ? 'active' : ''}">📊 Закупівлі</a>
-          <a href="/warehouses.html" class="${active==='warehouses' ? 'active' : ''}">📦 Склад</a>
-          <a href="/sales.html"      class="${active==='sales'      ? 'active' : ''}">📈 Продажі</a>
-          ${isAdmin ? `<a href="/suppliers.html"  class="${active==='suppliers'  ? 'active' : ''}">🚚 Постачальники</a>` : ''}
-          ${isAdmin ? `<a href="/finance.html"    class="${active==='finance'    ? 'active' : ''}">💰 Фінанси</a>` : ''}
-          ${isAdmin ? `<a href="/reports.html"    class="${active==='reports'    ? 'active' : ''}">📑 Звіти</a>` : ''}
+          ${can('dashboard')  ? `<a href="/"                class="${active==='dashboard'  ? 'active' : ''}">🧭 Дашборд</a>` : ''}
+          ${can('home')       ? `<a href="/prices.html"     class="${active==='home'       ? 'active' : ''}">🏠 Порівняння цін</a>` : ''}
+          ${can('forecast')   ? `<a href="/forecast.html"   class="${active==='forecast'   ? 'active' : ''}">📊 Закупівлі</a>` : ''}
+          ${can('warehouses') ? `<a href="/warehouses.html" class="${active==='warehouses' ? 'active' : ''}">📦 Склад</a>` : ''}
+          ${can('sales')      ? `<a href="/sales.html"      class="${active==='sales'      ? 'active' : ''}">📈 Продажі</a>` : ''}
+          ${isAdmin           ? `<a href="/suppliers.html"  class="${active==='suppliers'  ? 'active' : ''}">🚚 Постачальники</a>` : ''}
+          ${isAdmin           ? `<a href="/finance.html"    class="${active==='finance'    ? 'active' : ''}">💰 Фінанси</a>` : ''}
+          ${can('reports')    ? `<a href="/reports.html"    class="${active==='reports'    ? 'active' : ''}">📑 Звіти</a>` : ''}
         </nav>
         <div class="spacer"></div>
         <button class="theme-btn" onclick="AppHeader.toggleTheme()" title="Переключити тему">
