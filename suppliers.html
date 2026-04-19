@@ -83,6 +83,10 @@ a{color:inherit;text-decoration:none}
 .s-tbl td.amount.pos{color:var(--green)}
 .s-tbl td.amount.neg{color:var(--red)}
 .s-tbl td.muted{color:var(--text3)}
+.s-tbl td.cur{color:var(--text3);font-size:10px;font-weight:700;letter-spacing:.4px;text-align:left!important;width:44px}
+.s-tbl tr.cur-sub td{background:transparent;border-bottom:1px dotted var(--border);padding-top:4px;padding-bottom:4px;color:var(--text2)}
+.s-tbl tr.cur-sub td.name .cur-indent{color:var(--text3);font-size:11px;padding-left:14px}
+.s-tbl tr.cur-sub .num,.s-tbl tr.cur-sub .name{color:var(--text3)}
 
 /* Dynamics bar chart */
 .dyn{padding:18px 18px 14px}
@@ -150,9 +154,16 @@ a{color:inherit;text-decoration:none}
 
 <script>
 const API = 'https://price-api.doskevich.workers.dev';
-const fmtUsd = n => new Intl.NumberFormat('uk-UA',{maximumFractionDigits:0}).format(Number(n)||0);
-const fmtUsdSigned = n => { const v = Number(n) || 0; const abs = new Intl.NumberFormat('uk-UA',{maximumFractionDigits:0}).format(Math.abs(v)); return v < 0 ? '−' + abs : (v > 0 ? '+' + abs : '0'); };
+const CUR_SYM = { USD: '$', EUR: '€', UAH: '₴' };
+const fmtNum = n => new Intl.NumberFormat('uk-UA',{maximumFractionDigits:0}).format(Number(n)||0);
 const fmtCnt = n => new Intl.NumberFormat('uk-UA').format(Number(n)||0);
+const fmtCur = (n, cur) => { const s = CUR_SYM[cur] || ''; return `${fmtNum(n)} ${s}`.trim(); };
+const fmtCurSigned = (n, cur) => {
+  const v = Number(n) || 0;
+  const s = CUR_SYM[cur] || '';
+  const abs = fmtNum(Math.abs(v));
+  return (v < 0 ? '−' : (v > 0 ? '+' : '')) + abs + ' ' + s;
+};
 const body = document.getElementById('body');
 const sub  = document.getElementById('subTitle');
 
@@ -234,51 +245,78 @@ function kindBadge(k){
 }
 
 function renderKpi(k){
-  // balance_total_usd: знак 1С (+нам, -ми).
-  // Від'ємний (ми винні) → red; додатний (нам винні) → green.
-  const b = k.balance_total_usd;
-  const owedCls = b < 0 ? 'neg' : (b > 0 ? 'pos' : '');
-  const owedLbl = b < 0 ? 'Ми винні' : (b > 0 ? 'Нам винні' : 'Баланс');
-  const avg = k.receipts_count > 0 ? k.turnover_usd / k.receipts_count : 0;
+  // Показую один блок на валюту (USD/UAH/EUR) з turnover + paid + balance у цій валюті.
+  // Балансу колір: від'ємний (ми винні) → red; додатний (нам винні) → green.
+  // USD-загалом — окремим маленьким рядком (агрегація по всіх валютах через NBU).
+  const currencyOrder = ['USD', 'UAH', 'EUR'];
+  const cells = currencyOrder
+    .filter(cur => k.by_currency && k.by_currency[cur] &&
+      (Math.abs(k.by_currency[cur].turnover) > 0 || Math.abs(k.by_currency[cur].paid) > 0 || Math.abs(k.by_currency[cur].balance) > 0))
+    .map(cur => {
+      const c = k.by_currency[cur];
+      const owedCls = c.balance < 0 ? 'neg' : (c.balance > 0 ? 'pos' : '');
+      return `
+      <div class="kpi">
+        <div class="label">${cur} · баланс</div>
+        <div class="value ${owedCls}">${Math.abs(c.balance) < 1 ? '—' : fmtCurSigned(c.balance, cur)}</div>
+        <div class="sub">оборот ${fmtCur(c.turnover, cur)} · оплата ${fmtCur(c.paid, cur)}</div>
+      </div>`;
+    }).join('');
+  // Аggregated sum in USD (equivalent) для вищого огляду
+  const bUsd = k.balance_usd || 0;
+  const usdCls = bUsd < 0 ? 'neg' : (bUsd > 0 ? 'pos' : '');
   return `
-  <div class="kpi-row">
-    <div class="kpi"><div class="label">Закупівлі, $</div><div class="value">${fmtUsd(k.turnover_usd)}</div><div class="sub">${fmtCnt(k.receipts_count)} надходжень</div></div>
-    <div class="kpi"><div class="label">Активних постачальників</div><div class="value">${fmtCnt(k.active_suppliers)}</div></div>
-    <div class="kpi"><div class="label">Середній приход, $</div><div class="value">${fmtUsd(avg)}</div></div>
-    <div class="kpi"><div class="label">Оплачено, $</div><div class="value pos">${fmtUsd(k.paid_usd)}</div><div class="sub">${fmtCnt(k.payments_count)} платежів</div></div>
-    <div class="kpi"><div class="label">${owedLbl}, $</div><div class="value ${owedCls}">${fmtUsd(Math.abs(b))}</div></div>
+  <div class="kpi-row" style="grid-template-columns:repeat(${Math.max(3, cells.match(/<div class="kpi"/g)?.length || 0) + 3}, 1fr)">
+    ${cells}
+    <div class="kpi"><div class="label">Усього в $</div><div class="value ${usdCls}">${Math.abs(bUsd) < 1 ? '—' : fmtCurSigned(bUsd, 'USD')}</div><div class="sub">еквівалент по NBU</div></div>
+    <div class="kpi"><div class="label">Активних постачальників</div><div class="value">${fmtCnt(k.active_suppliers)}</div><div class="sub">${fmtCnt(k.receipts_count)} надх · ${fmtCnt(k.payments_count)} плат</div></div>
     <div class="kpi"><div class="label">Період</div><div class="value" style="font-size:14px">${state.from}<br>${state.to}</div></div>
   </div>`;
 }
 
 function renderTop(rows){
   if (!rows.length) return `<div class="sect"><div class="sect-head">Топ-постачальники</div><div class="empty">Немає даних у цьому періоді</div></div>`;
-  const body = rows.map((r,i)=>{
-    // balance_usd: 1С-знак (+нам, -ми). Від'ємний → red (ми винні), додатний → green.
-    const b = Number(r.balance_usd) || 0;
-    const balCls = b < -1 ? 'neg' : (b > 1 ? 'pos' : 'muted');
-    const balStr = Math.abs(b) < 1 ? '—' : fmtUsdSigned(b);
-    return `
-    <tr>
-      <td class="num">${i+1}</td>
-      <td class="name">${r.description}${kindBadge(r.kind)}</td>
-      <td>${fmtCnt(r.receipts)}</td>
-      <td class="amount">${fmtUsd(r.turnover_usd)}</td>
-      <td class="amount">${fmtUsd(r.payments_usd)}</td>
-      <td class="amount ${balCls}">${balStr}</td>
-    </tr>`;
-  }).join('');
+  const CUR_ORDER = ['USD','EUR','UAH'];
+  // Для постачальника з кількома валютами — рядок на кожну валюту, але name в першому лише.
+  const lines = [];
+  let i = 0;
+  for (const r of rows) {
+    i++;
+    const curs = Object.keys(r.by_currency).sort((a,b) => CUR_ORDER.indexOf(a) - CUR_ORDER.indexOf(b));
+    // Primary — перша рядок, баланс виділений. Інші — менш яскраво.
+    curs.forEach((cur, idx) => {
+      const c = r.by_currency[cur];
+      const b = Number(c.balance) || 0;
+      const balCls = b < -1 ? 'neg' : (b > 1 ? 'pos' : 'muted');
+      const balStr = Math.abs(b) < 1 ? '—' : fmtCurSigned(b, cur);
+      const isFirst = idx === 0;
+      const rowCls = isFirst ? '' : 'cur-sub';
+      lines.push(`
+      <tr class="${rowCls}">
+        <td class="num">${isFirst ? i : ''}</td>
+        <td class="name">${isFirst ? (r.description + kindBadge(r.kind)) : '<span class="cur-indent">↳ ' + cur + '</span>'}</td>
+        <td class="cur">${cur}</td>
+        <td>${fmtCnt(c.r_cnt)}</td>
+        <td class="amount">${Math.abs(c.r_period) < 1 ? '—' : fmtCur(c.r_period, cur)}</td>
+        <td>${fmtCnt(c.p_cnt)}</td>
+        <td class="amount">${Math.abs(c.p_period) < 1 ? '—' : fmtCur(c.p_period, cur)}</td>
+        <td class="amount ${balCls}">${balStr}</td>
+      </tr>`);
+    });
+  }
   return `
   <div class="sect">
     <div class="sect-head">Топ-постачальники<span class="count">${rows.length}</span>
-      <span style="margin-left:12px;font-weight:500;color:var(--text3)">баланс: +нам, −ми</span>
+      <span style="margin-left:12px;font-weight:500;color:var(--text3)">борг: +нам, −ми · валюти окремо</span>
     </div>
     <table class="s-tbl">
       <thead><tr>
-        <th>#</th><th>Постачальник</th>
-        <th>Надходжень</th><th>Оборот, $</th><th>Оплачено, $</th><th>Борг, $</th>
+        <th>#</th><th>Постачальник</th><th>Вал</th>
+        <th>Надх.</th><th>Оборот</th>
+        <th>Плат.</th><th>Оплачено</th>
+        <th>Борг</th>
       </tr></thead>
-      <tbody>${body}</tbody>
+      <tbody>${lines.join('')}</tbody>
     </table>
   </div>`;
 }
