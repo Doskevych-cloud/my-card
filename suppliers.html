@@ -348,34 +348,26 @@ function kindBadge(k){
 }
 
 function renderKpi(k){
-  // Баланс — один у USD (1С management currency), знак 1С: +нам, −ми.
-  // Оборот/оплати — по валютах документа (без штучної конвертації).
-  const bUsd = Number(k.balance_usd) || 0;
-  const usdCls = bUsd < 0 ? 'neg' : (bUsd > 0 ? 'pos' : '');
-  const currencyOrder = ['USD', 'UAH', 'EUR'];
-  const curCells = currencyOrder
-    .filter(cur => k.by_currency && k.by_currency[cur] &&
-      (Math.abs(k.by_currency[cur].turnover) > 0 || Math.abs(k.by_currency[cur].paid) > 0))
-    .map(cur => {
-      const c = k.by_currency[cur];
-      return `
-      <div class="kpi">
-        <div class="label">${cur} · оборот</div>
-        <div class="value">${fmtCur(c.turnover, cur)}</div>
-        <div class="sub">оплачено ${fmtCur(c.paid, cur)} · ${fmtCnt(c.receipts_count)} надх / ${fmtCnt(c.payments_count)} плат</div>
-      </div>`;
-    }).join('');
-  const totalBlocks = (curCells.match(/<div class="kpi"/g)?.length || 0) + 3;
+  // 3 KPI-блоки: "Борги нам" (пост. винні), "Борги наші" (ми винні), "Ітого".
+  // Знак 1С: +нам, −ми. owed_to_us_usd >= 0, we_owe_usd >= 0 (абсолютні суми).
+  const owedToUs = Number(k.owed_to_us_usd) || 0;
+  const weOwe = Number(k.we_owe_usd) || 0;
+  const total = Number(k.balance_usd) || (owedToUs - weOwe);
+  const totalCls = total < 0 ? 'neg' : (total > 0 ? 'pos' : '');
   return `
-  <div class="kpi-row" style="grid-template-columns:repeat(${totalBlocks}, 1fr)">
+  <div class="kpi-row" style="grid-template-columns:repeat(3, 1fr)">
     <div class="kpi">
-      <div class="label">Борг (1С, USD)</div>
-      <div class="value ${usdCls}">${Math.abs(bUsd) < 1 ? '—' : fmtCurSigned(bUsd, 'USD')}</div>
-      <div class="sub">+нам, −ми</div>
+      <div class="label">Борги нам (постачальники винні)</div>
+      <div class="value pos">${fmtCur(owedToUs, 'USD')}</div>
     </div>
-    ${curCells}
-    <div class="kpi"><div class="label">Постачальників</div><div class="value">${fmtCnt(k.active_suppliers)}</div><div class="sub">${fmtCnt(k.receipts_count)} надх · ${fmtCnt(k.payments_count)} плат</div></div>
-    <div class="kpi"><div class="label">Період</div><div class="value" style="font-size:14px">${state.from}<br>${state.to}</div></div>
+    <div class="kpi">
+      <div class="label">Борги наші (ми винні)</div>
+      <div class="value neg">${fmtCur(weOwe, 'USD')}</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Ітого · +нам / −ми</div>
+      <div class="value ${totalCls}">${Math.abs(total) < 1 ? '0 $' : fmtCurSigned(total, 'USD')}</div>
+    </div>
   </div>`;
 }
 
