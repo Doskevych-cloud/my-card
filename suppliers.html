@@ -150,7 +150,8 @@ a{color:inherit;text-decoration:none}
 
 <script>
 const API = 'https://price-api.doskevich.workers.dev';
-const fmtGrn = n => new Intl.NumberFormat('uk-UA',{maximumFractionDigits:0}).format(Number(n)||0);
+const fmtUsd = n => new Intl.NumberFormat('uk-UA',{maximumFractionDigits:0}).format(Number(n)||0);
+const fmtUsdSigned = n => { const v = Number(n) || 0; const abs = new Intl.NumberFormat('uk-UA',{maximumFractionDigits:0}).format(Math.abs(v)); return v < 0 ? '−' + abs : (v > 0 ? '+' + abs : '0'); };
 const fmtCnt = n => new Intl.NumberFormat('uk-UA').format(Number(n)||0);
 const body = document.getElementById('body');
 const sub  = document.getElementById('subTitle');
@@ -233,17 +234,19 @@ function kindBadge(k){
 }
 
 function renderKpi(k){
-  // balance_total > 0 → ми винні постачальникам → червоний
-  const owedCls = k.balance_total > 0 ? 'neg' : (k.balance_total < 0 ? 'pos' : '');
-  const owedLbl = k.balance_total > 0 ? 'Ми винні' : (k.balance_total < 0 ? 'Нам винні' : 'Баланс');
-  const avg = k.receipts_count > 0 ? k.turnover / k.receipts_count : 0;
+  // balance_total_usd: знак 1С (+нам, -ми).
+  // Від'ємний (ми винні) → red; додатний (нам винні) → green.
+  const b = k.balance_total_usd;
+  const owedCls = b < 0 ? 'neg' : (b > 0 ? 'pos' : '');
+  const owedLbl = b < 0 ? 'Ми винні' : (b > 0 ? 'Нам винні' : 'Баланс');
+  const avg = k.receipts_count > 0 ? k.turnover_usd / k.receipts_count : 0;
   return `
   <div class="kpi-row">
-    <div class="kpi"><div class="label">Оборот закупівель, грн</div><div class="value">${fmtGrn(k.turnover)}</div><div class="sub">${fmtCnt(k.receipts_count)} надходжень</div></div>
+    <div class="kpi"><div class="label">Закупівлі, $</div><div class="value">${fmtUsd(k.turnover_usd)}</div><div class="sub">${fmtCnt(k.receipts_count)} надходжень</div></div>
     <div class="kpi"><div class="label">Активних постачальників</div><div class="value">${fmtCnt(k.active_suppliers)}</div></div>
-    <div class="kpi"><div class="label">Середній приход, грн</div><div class="value">${fmtGrn(avg)}</div></div>
-    <div class="kpi"><div class="label">Оплачено, грн</div><div class="value pos">${fmtGrn(k.paid)}</div><div class="sub">${fmtCnt(k.payments_count)} платежів</div></div>
-    <div class="kpi"><div class="label">${owedLbl}, грн</div><div class="value ${owedCls}">${fmtGrn(Math.abs(k.balance_total))}</div></div>
+    <div class="kpi"><div class="label">Середній приход, $</div><div class="value">${fmtUsd(avg)}</div></div>
+    <div class="kpi"><div class="label">Оплачено, $</div><div class="value pos">${fmtUsd(k.paid_usd)}</div><div class="sub">${fmtCnt(k.payments_count)} платежів</div></div>
+    <div class="kpi"><div class="label">${owedLbl}, $</div><div class="value ${owedCls}">${fmtUsd(Math.abs(b))}</div></div>
     <div class="kpi"><div class="label">Період</div><div class="value" style="font-size:14px">${state.from}<br>${state.to}</div></div>
   </div>`;
 }
@@ -251,25 +254,29 @@ function renderKpi(k){
 function renderTop(rows){
   if (!rows.length) return `<div class="sect"><div class="sect-head">Топ-постачальники</div><div class="empty">Немає даних у цьому періоді</div></div>`;
   const body = rows.map((r,i)=>{
-    const balCls = r.balance > 1 ? 'neg' : (r.balance < -1 ? 'pos' : 'muted');
-    const balStr = Math.abs(r.balance) < 1 ? '—' : fmtGrn(Math.abs(r.balance));
+    // balance_usd: 1С-знак (+нам, -ми). Від'ємний → red (ми винні), додатний → green.
+    const b = Number(r.balance_usd) || 0;
+    const balCls = b < -1 ? 'neg' : (b > 1 ? 'pos' : 'muted');
+    const balStr = Math.abs(b) < 1 ? '—' : fmtUsdSigned(b);
     return `
     <tr>
       <td class="num">${i+1}</td>
       <td class="name">${r.description}${kindBadge(r.kind)}</td>
       <td>${fmtCnt(r.receipts)}</td>
-      <td class="amount">${fmtGrn(r.turnover)}</td>
-      <td class="amount">${fmtGrn(r.payments)}</td>
+      <td class="amount">${fmtUsd(r.turnover_usd)}</td>
+      <td class="amount">${fmtUsd(r.payments_usd)}</td>
       <td class="amount ${balCls}">${balStr}</td>
     </tr>`;
   }).join('');
   return `
   <div class="sect">
-    <div class="sect-head">Топ-постачальники<span class="count">${rows.length}</span></div>
+    <div class="sect-head">Топ-постачальники<span class="count">${rows.length}</span>
+      <span style="margin-left:12px;font-weight:500;color:var(--text3)">баланс: +нам, −ми</span>
+    </div>
     <table class="s-tbl">
       <thead><tr>
         <th>#</th><th>Постачальник</th>
-        <th>Надходжень</th><th>Оборот, грн</th><th>Оплачено, грн</th><th>Баланс, грн</th>
+        <th>Надходжень</th><th>Оборот, $</th><th>Оплачено, $</th><th>Борг, $</th>
       </tr></thead>
       <tbody>${body}</tbody>
     </table>
@@ -278,19 +285,20 @@ function renderTop(rows){
 
 function renderDynamics(data){
   if (!data.length) return '';
-  const max = Math.max(...data.map(d => d.turnover));
+  const max = Math.max(...data.map(d => Number(d.turnover_usd) || 0));
   const bars = data.map(d => {
-    const h = max > 0 ? (d.turnover / max * 100) : 0;
+    const v = Number(d.turnover_usd) || 0;
+    const h = max > 0 ? (v / max * 100) : 0;
     return `
     <div class="dyn-bar">
-      <div class="tip"><b>${d.month}</b><br>${fmtGrn(d.turnover)} грн · ${fmtCnt(d.receipts)} шт</div>
+      <div class="tip"><b>${d.month}</b><br>$${fmtUsd(v)} · ${fmtCnt(d.receipts)} шт</div>
       <div class="fill" style="height:${h}%"></div>
       <div class="mon">${d.month.slice(2)}</div>
     </div>`;
   }).join('');
   return `
   <div class="sect">
-    <div class="sect-head">Динаміка по місяцях<span class="count">${data.length} міс</span></div>
+    <div class="sect-head">Динаміка закупівель ($)<span class="count">${data.length} міс</span></div>
     <div class="dyn"><div class="dyn-bars">${bars}</div></div>
   </div>`;
 }
