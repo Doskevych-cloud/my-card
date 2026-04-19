@@ -98,6 +98,31 @@ a{color:inherit;text-decoration:none}
 .dyn-bar .tip{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--text);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .1s;z-index:10;font-variant-numeric:tabular-nums}
 .dyn-bar:hover .tip{opacity:1}
 
+/* Tabs */
+.tabs{display:flex;gap:2px;margin-bottom:14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:4px;width:fit-content}
+.tabs .tab{padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .12s;user-select:none}
+.tabs .tab:hover{color:var(--text);background:var(--bg3)}
+.tabs .tab.active{background:var(--accent-bg);color:var(--accent)}
+
+/* Data viewer */
+.dv-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.dv-toolbar select{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-family:inherit;outline:none;min-width:200px}
+.dv-toolbar select:focus{border-color:var(--accent)}
+.dv-toolbar input[type=text]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;min-width:220px}
+.dv-toolbar input[type=text]:focus{border-color:var(--accent)}
+.dv-toolbar .meta{margin-left:auto;color:var(--text3);font-size:11px;font-variant-numeric:tabular-nums}
+.dv-toolbar .btn{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .12s}
+.dv-toolbar .btn:hover{background:var(--bg3);color:var(--text)}
+.dv-toolbar .btn:disabled{opacity:.4;cursor:not-allowed}
+
+.dv-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:auto;max-height:calc(100vh - 260px)}
+.dv-tbl{width:100%;border-collapse:collapse;font-size:11.5px;font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+.dv-tbl thead th{padding:8px 10px;background:var(--bg2);color:var(--text3);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.3px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;white-space:nowrap}
+.dv-tbl tbody td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:top;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dv-tbl tbody td.num{text-align:right;font-variant-numeric:tabular-nums}
+.dv-tbl tbody td.null{color:var(--text3);font-style:italic}
+.dv-tbl tbody tr:hover td{background:var(--bg3)}
+
 .loading{padding:50px 20px;text-align:center;color:var(--text2);font-size:13px}
 .loading::after{content:'';display:block;width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:14px auto 0}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -148,6 +173,11 @@ a{color:inherit;text-decoration:none}
       </span>
     </div>
 
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-tab="overview">Огляд</div>
+      <div class="tab" data-tab="data">Дані</div>
+    </div>
+
     <div id="body"><div class="loading">Завантаження…</div></div>
   </div>
 </div>
@@ -167,7 +197,14 @@ const fmtCurSigned = (n, cur) => {
 const body = document.getElementById('body');
 const sub  = document.getElementById('subTitle');
 
-const state = { from:'', to:'', org:'', preset:'12m' };
+const state = { from:'', to:'', org:'', preset:'12m', tab:'overview', dvTable:'counterparties', dvSearch:'', dvOffset:0 };
+const DV_TABLES = [
+  'counterparties','purchase_orders','purchase_receipts','purchase_receipt_items',
+  'payments_out','ap_movements',
+  'nomenclature','warehouses','employees','organizations','currencies',
+  'cashflow_items','contracts','fx_rates','sync_state','sync_log',
+];
+const DV_LIMIT = 100;
 
 function todayIso(){ return new Date().toISOString().slice(0,10); }
 function shiftDays(iso, days){ const d=new Date(iso); d.setDate(d.getDate()+days); return d.toISOString().slice(0,10); }
@@ -205,6 +242,12 @@ function saveUrl(){
   h.set('from', state.from); h.set('to', state.to);
   if (state.org) h.set('org', state.org);
   if (state.preset) h.set('preset', state.preset);
+  if (state.tab && state.tab !== 'overview') h.set('tab', state.tab);
+  if (state.tab === 'data') {
+    if (state.dvTable) h.set('t', state.dvTable);
+    if (state.dvSearch) h.set('q', state.dvSearch);
+    if (state.dvOffset) h.set('o', String(state.dvOffset));
+  }
   history.replaceState(null, '', '#' + h.toString());
 }
 function readUrl(){
@@ -218,6 +261,10 @@ function readUrl(){
     state.from = from; state.to = to; state.preset = '12m';
   }
   if (h.get('org')) state.org = h.get('org');
+  if (h.get('tab') === 'data') state.tab = 'data';
+  if (h.get('t') && DV_TABLES.includes(h.get('t'))) state.dvTable = h.get('t');
+  if (h.get('q')) state.dvSearch = h.get('q');
+  if (h.get('o')) state.dvOffset = Math.max(0, Number(h.get('o')) || 0);
 }
 
 function syncToolbar(){
@@ -225,6 +272,7 @@ function syncToolbar(){
   document.getElementById('toIn').value   = state.to;
   document.querySelectorAll('#presetGroup .chip').forEach(c => c.classList.toggle('active', c.dataset.preset === state.preset));
   document.querySelectorAll('#orgGroup .chip').forEach(c => c.classList.toggle('active', c.dataset.org === state.org));
+  document.querySelectorAll('#tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.tab === state.tab));
 }
 
 function wireToolbar(){
@@ -235,6 +283,10 @@ function wireToolbar(){
     setState({ from, to, preset: c.dataset.preset });
   }));
   document.querySelectorAll('#orgGroup .chip').forEach(c => c.addEventListener('click', () => setState({ org: c.dataset.org })));
+  document.querySelectorAll('#tabs .tab').forEach(t => t.addEventListener('click', () => {
+    if (state.tab === t.dataset.tab) return;
+    setState({ tab: t.dataset.tab });
+  }));
 }
 
 function kindBadge(k){
@@ -341,7 +393,7 @@ function renderDynamics(data){
   </div>`;
 }
 
-async function load(){
+async function loadOverview(){
   body.innerHTML = '<div class="loading">Завантаження…</div>';
   const params = new URLSearchParams({ action:'suppliers_overview', from:state.from, to:state.to });
   if (state.org) params.set('org', state.org);
@@ -357,6 +409,78 @@ async function load(){
     body.innerHTML = `<div class="error">Помилка: ${e.message}</div>`;
   }
 }
+
+function fmtCell(v){
+  if (v === null || v === undefined || v === '') return '<span class="null">null</span>';
+  if (typeof v === 'number') return new Intl.NumberFormat('uk-UA',{maximumFractionDigits:4}).format(v);
+  if (typeof v === 'string' && v.length > 48) return `<span title="${v.replace(/"/g,'&quot;')}">${v.slice(0,45)}…</span>`;
+  return String(v);
+}
+function isNumericCol(col){
+  return /_at$|count|amount|quantity|price|rate|deletion_mark|posted|is_service|line_number|scale/.test(col);
+}
+
+async function loadData(){
+  sub.textContent = `Дані · ${state.dvTable}`;
+  // Toolbar + container (render once, then refresh rows lazily)
+  body.innerHTML = `
+    <div class="dv-toolbar">
+      <select id="dvTable">${DV_TABLES.map(t => `<option value="${t}" ${t===state.dvTable?'selected':''}>${t}</option>`).join('')}</select>
+      <input type="text" id="dvSearch" placeholder="🔎 пошук по description/number/ref_key…" value="${state.dvSearch.replace(/"/g,'&quot;')}">
+      <button class="btn" id="dvPrev">← попередні</button>
+      <button class="btn" id="dvNext">наступні →</button>
+      <span class="meta" id="dvMeta"></span>
+    </div>
+    <div class="dv-wrap"><div class="loading">Завантаження…</div></div>`;
+  document.getElementById('dvTable').addEventListener('change', e => { state.dvTable = e.target.value; state.dvOffset = 0; saveUrl(); refreshRows(); });
+  const s = document.getElementById('dvSearch');
+  let debTimer = null;
+  s.addEventListener('input', e => {
+    clearTimeout(debTimer);
+    debTimer = setTimeout(() => { state.dvSearch = e.target.value; state.dvOffset = 0; saveUrl(); refreshRows(); }, 300);
+  });
+  document.getElementById('dvPrev').addEventListener('click', () => { if (state.dvOffset > 0) { state.dvOffset = Math.max(0, state.dvOffset - DV_LIMIT); saveUrl(); refreshRows(); } });
+  document.getElementById('dvNext').addEventListener('click', () => { state.dvOffset += DV_LIMIT; saveUrl(); refreshRows(); });
+  refreshRows();
+}
+
+async function refreshRows(){
+  const wrap = document.querySelector('.dv-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="loading">Завантаження…</div>';
+  const params = new URLSearchParams({ action:'db_inspect', table:state.dvTable, limit:String(DV_LIMIT), offset:String(state.dvOffset) });
+  if (state.dvSearch) params.set('search', state.dvSearch);
+  try{
+    const res = await fetch(`${API}/?${params}`);
+    if (!res.ok) throw new Error(`${res.status} ${await res.text().catch(()=>res.statusText)}`);
+    const d = await res.json();
+    if (d.error) throw new Error(d.error);
+    const cols = d.columns;
+    const rows = d.rows;
+    const to = Math.min(state.dvOffset + rows.length, d.total);
+    document.getElementById('dvMeta').textContent = `${state.dvOffset + 1}–${to} з ${new Intl.NumberFormat('uk-UA').format(d.total)}`;
+    document.getElementById('dvPrev').disabled = state.dvOffset <= 0;
+    document.getElementById('dvNext').disabled = state.dvOffset + DV_LIMIT >= d.total;
+    if (!rows.length) {
+      wrap.innerHTML = `<div class="empty">Нічого не знайдено</div>`;
+      return;
+    }
+    const thead = cols.map(c => `<th>${c}</th>`).join('');
+    const tbody = rows.map(r => {
+      const tds = cols.map(c => {
+        const v = r[c];
+        const cls = (v===null||v===undefined||v==='') ? '' : (typeof v === 'number' || isNumericCol(c) ? 'num' : '');
+        return `<td class="${cls}">${fmtCell(v)}</td>`;
+      }).join('');
+      return `<tr>${tds}</tr>`;
+    }).join('');
+    wrap.innerHTML = `<table class="dv-tbl"><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>`;
+  }catch(e){
+    wrap.innerHTML = `<div class="error">Помилка: ${e.message}</div>`;
+  }
+}
+
+function load(){ return state.tab === 'data' ? loadData() : loadOverview(); }
 
 Auth.require('admin').then(user => {
   AppHeader.mount({ active:'suppliers', user });
