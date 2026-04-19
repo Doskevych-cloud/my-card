@@ -84,6 +84,14 @@ a{color:inherit;text-decoration:none}
 .s-tbl td.amount.neg{color:var(--red)}
 .s-tbl td.muted{color:var(--text3)}
 .s-tbl td.cur{color:var(--text3);font-size:10px;font-weight:700;letter-spacing:.4px;text-align:left!important;width:44px}
+.s-tbl.s-tbl-cur3 thead th:not(:first-child):not(:nth-child(2)){text-align:right;width:28%}
+.s-tbl.s-tbl-cur3 tbody td.cur-stack-cell{text-align:right!important;padding:8px 12px;vertical-align:top;font-variant-numeric:tabular-nums}
+.s-tbl.s-tbl-cur3 tbody td.cur-stack-cell .cs-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;line-height:1.5}
+.s-tbl.s-tbl-cur3 tbody td.cur-stack-cell .cs-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;font-weight:600}
+.s-tbl.s-tbl-cur3 tbody td.cur-stack-cell .cs-bal{border-top:1px solid var(--border);padding-top:4px;margin-top:2px;font-weight:700}
+.s-tbl.s-tbl-cur3 tbody td.cur-stack-cell .pos{color:var(--green)}
+.s-tbl.s-tbl-cur3 tbody td.cur-stack-cell .neg{color:var(--red)}
+.s-tbl.s-tbl-cur3 tbody td.cur-stack-cell .muted{color:var(--text3)}
 .s-tbl tr.cur-sub td{background:transparent;border-bottom:1px dotted var(--border);padding-top:4px;padding-bottom:4px;color:var(--text2)}
 .s-tbl tr.cur-sub td.name .cur-indent{color:var(--text3);font-size:11px;padding-left:14px}
 .s-tbl tr.cur-sub .num,.s-tbl tr.cur-sub .name{color:var(--text3)}
@@ -372,60 +380,47 @@ function renderKpi(k){
 
 function renderTop(rows){
   if (!rows.length) return `<div class="sect"><div class="sect-head">Топ-постачальники</div><div class="empty">Немає даних у цьому періоді</div></div>`;
-  const CUR_ORDER = ['USD','EUR','UAH'];
-  const lines = [];
-  let i = 0;
-  for (const r of rows) {
-    i++;
-    // Об'єднуємо валюти з обороту (by_currency) і з залишку (balance_by_currency).
-    const actCurs = Object.keys(r.by_currency || {});
-    const balCurs = Object.keys(r.balance_by_currency || {});
-    const allCurs = [...new Set([...actCurs, ...balCurs])]
-      .sort((a,b) => CUR_ORDER.indexOf(a) - CUR_ORDER.indexOf(b));
-    // Primary: якщо вказаний backend — беремо; інакше валюта з найбільшим |balance|.
-    let primary = r.primary;
-    if (!primary && balCurs.length) {
-      let maxAbs = -1;
-      for (const c of balCurs) {
-        const v = Math.abs(Number((r.balance_by_currency || {})[c]) || 0);
-        if (v > maxAbs) { maxAbs = v; primary = c; }
-      }
-    }
-    if (!primary) primary = allCurs[0] || 'USD';
-    // Перестрибнемо primary у перший рядок
-    const ordered = [primary, ...allCurs.filter(c => c !== primary)];
-    ordered.forEach((cur, idx) => {
-      const act = (r.by_currency || {})[cur] || { r_cnt:0, r_period:0, p_cnt:0, p_period:0 };
-      const bal = Number((r.balance_by_currency || {})[cur]) || 0;
-      const balCls = bal < -0.01 ? 'neg' : (bal > 0.01 ? 'pos' : 'muted');
-      const balStr = Math.abs(bal) < 0.01 ? '—' : fmtCurSigned(bal, cur);
-      const isFirst = idx === 0;
-      lines.push(`
-      <tr class="${isFirst ? 'clickable' : 'cur-sub clickable'}" data-ref="${r.ref_key}">
-        <td class="num">${isFirst ? i : ''}</td>
-        <td class="name">${isFirst ? (r.description + kindBadge(r.kind)) : '<span class="cur-indent">↳ також у ' + cur + '</span>'}</td>
-        <td class="cur">${cur}</td>
-        <td>${fmtCnt(act.r_cnt)}</td>
-        <td class="amount">${Math.abs(act.r_period) < 0.01 ? '—' : fmtCur(act.r_period, cur)}</td>
-        <td>${fmtCnt(act.p_cnt)}</td>
-        <td class="amount">${Math.abs(act.p_period) < 0.01 ? '—' : fmtCur(act.p_period, cur)}</td>
-        <td class="amount ${balCls}">${balStr}</td>
-      </tr>`);
-    });
-  }
+  const CURS = ['USD','UAH','EUR'];
+  const renderCell = (act, bal, cur) => {
+    const hasAct = Math.abs(act.r_period) > 0.01 || Math.abs(act.p_period) > 0.01;
+    const hasBal = Math.abs(bal) > 0.01;
+    if (!hasAct && !hasBal) return `<td class="amount muted">—</td>`;
+    const balCls = bal < -0.01 ? 'neg' : (bal > 0.01 ? 'pos' : 'muted');
+    const balStr = hasBal ? fmtCurSigned(bal, cur) : '—';
+    const rStr = Math.abs(act.r_period) > 0.01 ? fmtCur(act.r_period, cur) : '—';
+    const pStr = Math.abs(act.p_period) > 0.01 ? fmtCur(act.p_period, cur) : '—';
+    return `<td class="cur-stack-cell">
+      <div class="cs-row"><span class="cs-lbl">закуплено</span><span>${rStr}</span></div>
+      <div class="cs-row"><span class="cs-lbl">оплачено</span><span>${pStr}</span></div>
+      <div class="cs-row cs-bal"><span class="cs-lbl">залишок</span><span class="${balCls}">${balStr}</span></div>
+    </td>`;
+  };
+  const lines = rows.map((r, idx) => {
+    const bbc = r.balance_by_currency || {};
+    const bc = r.by_currency || {};
+    const cells = CURS.map(cur => {
+      const act = bc[cur] || { r_period: 0, p_period: 0, r_cnt: 0, p_cnt: 0 };
+      const bal = Number(bbc[cur]) || 0;
+      return renderCell(act, bal, cur);
+    }).join('');
+    return `
+    <tr class="clickable" data-ref="${r.ref_key}">
+      <td class="num">${idx + 1}</td>
+      <td class="name">${r.description}${kindBadge(r.kind)}</td>
+      ${cells}
+    </tr>`;
+  }).join('');
   return `
   <div class="sect">
     <div class="sect-head">Топ-постачальники<span class="count">${rows.length}</span>
       <span style="margin-left:12px;font-weight:500;color:var(--text3)">залишок = оплачено − закуплено · +нам, −ми</span>
     </div>
-    <table class="s-tbl">
+    <table class="s-tbl s-tbl-cur3">
       <thead><tr>
-        <th>#</th><th>Постачальник</th><th>Вал</th>
-        <th>Надх.</th><th>Оборот</th>
-        <th>Плат.</th><th>Оплачено</th>
-        <th>Залишок</th>
+        <th>#</th><th>Постачальник</th>
+        <th>USD</th><th>UAH</th><th>EUR</th>
       </tr></thead>
-      <tbody>${lines.join('')}</tbody>
+      <tbody>${lines}</tbody>
     </table>
   </div>`;
 }
