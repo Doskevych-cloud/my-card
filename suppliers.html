@@ -123,6 +123,41 @@ a{color:inherit;text-decoration:none}
 .dv-tbl tbody td.null{color:var(--text3);font-style:italic}
 .dv-tbl tbody tr:hover td{background:var(--bg3)}
 
+/* Detail page — акт звірки */
+.detail-back{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;transition:all .12s;margin-bottom:14px}
+.detail-back:hover{background:var(--bg3);color:var(--text)}
+.detail-head{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:14px}
+.detail-head h2{font-size:18px;font-weight:700;letter-spacing:-.3px;margin-bottom:4px}
+.detail-head .meta{color:var(--text3);font-size:12px}
+
+/* Summary card: opening / + / − / = closing */
+.act-sum{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);overflow:hidden}
+.act-sum .cell{background:var(--surface2);padding:14px 18px}
+.act-sum .lbl{font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:6px}
+.act-sum .val{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.act-sum .val.pos{color:var(--green)}
+.act-sum .val.neg{color:var(--red)}
+.act-sum .val.muted{color:var(--text3)}
+.act-sum .sub{font-size:10.5px;color:var(--text3);margin-top:4px;font-variant-numeric:tabular-nums}
+.act-sum .cell.closing{background:var(--bg3)}
+.act-sum .cell.closing .val{font-size:24px}
+
+/* Хронологія акта */
+.s-tbl tr.act-row td{padding:8px 12px;font-size:12px;font-variant-numeric:tabular-nums}
+.s-tbl tr.act-row.increase td.inc{color:var(--red);font-weight:600}
+.s-tbl tr.act-row.decrease td.dec{color:var(--green);font-weight:600}
+.s-tbl tr.act-row td.doc{color:var(--text)}
+.s-tbl tr.act-row td.doc.link{cursor:default}
+.s-tbl tr.s-tbl-sub td{padding-top:2px;padding-bottom:2px;color:var(--text3);font-size:11px}
+
+/* Клікабельні рядки у топ-таблиці */
+.s-tbl tbody tr.clickable{cursor:pointer}
+.s-tbl tbody tr.clickable:hover td{background:var(--accent-bg);color:var(--text)}
+
+@media (max-width:900px){
+  .act-sum{grid-template-columns:repeat(2,1fr)}
+}
+
 .loading{padding:50px 20px;text-align:center;color:var(--text2);font-size:13px}
 .loading::after{content:'';display:block;width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:14px auto 0}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -201,7 +236,7 @@ const fmtCurSigned = (n, cur) => {
 const body = document.getElementById('body');
 const sub  = document.getElementById('subTitle');
 
-const state = { from:'', to:'', org:'', preset:'12m', q:'', tab:'overview', dvTable:'counterparties', dvSearch:'', dvOffset:0 };
+const state = { from:'', to:'', org:'', preset:'12m', q:'', detailRef:'', tab:'overview', dvTable:'counterparties', dvSearch:'', dvOffset:0 };
 const DV_TABLES = [
   'counterparties','purchase_orders','purchase_receipts','purchase_receipt_items',
   'payments_out','ap_movements',
@@ -247,6 +282,7 @@ function saveUrl(){
   if (state.org) h.set('org', state.org);
   if (state.preset) h.set('preset', state.preset);
   if (state.q) h.set('sq', state.q);
+  if (state.detailRef) h.set('ref', state.detailRef);
   if (state.tab && state.tab !== 'overview') h.set('tab', state.tab);
   if (state.tab === 'data') {
     if (state.dvTable) h.set('t', state.dvTable);
@@ -267,6 +303,7 @@ function readUrl(){
   }
   if (h.get('org')) state.org = h.get('org');
   if (h.get('sq') !== null) state.q = h.get('sq');
+  if (h.get('ref')) state.detailRef = h.get('ref');
   if (h.get('tab') === 'data') state.tab = 'data';
   if (h.get('t') && DV_TABLES.includes(h.get('t'))) state.dvTable = h.get('t');
   if (h.get('q')) state.dvSearch = h.get('q');
@@ -293,7 +330,7 @@ function wireToolbar(){
   document.querySelectorAll('#orgGroup .chip').forEach(c => c.addEventListener('click', () => setState({ org: c.dataset.org })));
   document.querySelectorAll('#tabs .tab').forEach(t => t.addEventListener('click', () => {
     if (state.tab === t.dataset.tab) return;
-    setState({ tab: t.dataset.tab });
+    setState({ tab: t.dataset.tab, detailRef: '' });
   }));
   let qTimer = null;
   document.getElementById('qIn').addEventListener('input', e => {
@@ -357,7 +394,7 @@ function renderTop(rows){
     const primary = r.primary || curs[0] || 'USD';
     const c0 = r.by_currency[primary] || { r_cnt:0, r_period:0, p_cnt:0, p_period:0 };
     lines.push(`
-    <tr>
+    <tr class="clickable" data-ref="${r.ref_key}">
       <td class="num">${i}</td>
       <td class="name">${r.description}${kindBadge(r.kind)}</td>
       <td class="cur">${primary}</td>
@@ -435,11 +472,10 @@ async function loadOverview(){
     if (d.error) throw new Error(d.error);
     sub.textContent = `${d.period.from} → ${d.period.to}${d.period.org ? ' · ' + d.period.org : ''}${d.period.q ? ' · q="' + d.period.q + '"' : ''}`;
     body.innerHTML = renderKpi(d.kpi) + renderTop(d.top) + renderDynamics(d.dynamics);
-    // Якщо є пошук і match ≤ 1 — підвантажимо повний drill-down
-    if (state.q && d.top.length >= 1) {
-      const detail = await loadDetail(d.top[0].ref_key);
-      if (detail) body.insertAdjacentHTML('beforeend', renderDetail(detail));
-    }
+    // Клік по рядку постачальника → відкриваємо акт звірки
+    body.querySelectorAll('tr.clickable[data-ref]').forEach(tr => {
+      tr.addEventListener('click', () => setState({ detailRef: tr.dataset.ref }));
+    });
   }catch(e){
     body.innerHTML = `<div class="error">Помилка: ${e.message}</div>`;
   }
@@ -455,8 +491,116 @@ async function loadDetail(refKey){
   }catch(e){ console.error('detail', e); return null; }
 }
 
-function renderDetail(d){
-  const { supplier, totals, totals_usd_ref, receipts, payments, orders, ap_movements, act_totals } = d;
+function renderDetailPage(d){
+  const { supplier, period, orders, ap_movements, act_totals } = d;
+  const actUsd = (act_totals && act_totals.USD) || { opening:0, increase:0, decrease:0, period_change:0, closing:0, count:0 };
+  const openCls = actUsd.opening < 0 ? 'neg' : (actUsd.opening > 0 ? 'pos' : 'muted');
+  const closeCls = actUsd.closing < 0 ? 'neg' : (actUsd.closing > 0 ? 'pos' : 'muted');
+
+  // Хронологія рухів — один рядок на документ
+  const actRows = (ap_movements || []).map(m => {
+    const val = Math.abs(m.amount_currency || 0) > 0.01 ? m.amount_currency : m.amount;
+    const isInc = m.record_type === 'Receipt';
+    return `
+    <tr class="act-row ${isInc ? 'increase' : 'decrease'}">
+      <td>${(m.doc_date || m.period || '').slice(0,10)}</td>
+      <td class="doc">${m.doc_title}</td>
+      <td class="cur">${m.currency}</td>
+      <td class="inc amount">${isInc ? fmtCur(val, m.currency) : '—'}</td>
+      <td class="dec amount">${isInc ? '—' : fmtCur(val, m.currency)}</td>
+      <td class="muted">${m.org_short || '—'}</td>
+    </tr>`;
+  }).join('');
+
+  const ordRows = (orders || []).map(r => `
+    <tr>
+      <td>${(r.doc_date || '').slice(0,10)}</td>
+      <td>${r.number || '—'}</td>
+      <td class="cur">${r.currency}</td>
+      <td class="amount">${fmtCur(r.amount, r.currency)}</td>
+      <td class="muted">${r.posted ? 'проведено' : 'чернетка'}</td>
+      <td class="muted">${r.org_short || r.org_name || '—'}</td>
+    </tr>`).join('');
+
+  return `
+  <button class="detail-back" onclick="goBack()">← Назад до списку постачальників</button>
+
+  <div class="detail-head">
+    <h2>${supplier.description}</h2>
+    <div class="meta">Акт звірки · ${period.from} → ${period.to} · ЕДРПОУ ${supplier.tax_id || '—'} · <span style="color:var(--text3)">+нам, −ми</span></div>
+  </div>
+
+  <div class="act-sum">
+    <div class="cell">
+      <div class="lbl">Початковий залишок</div>
+      <div class="val ${openCls}">${Math.abs(actUsd.opening) < 0.01 ? '0.00 $' : fmtCurSigned(actUsd.opening, 'USD')}</div>
+      <div class="sub">на ${period.from}</div>
+    </div>
+    <div class="cell">
+      <div class="lbl">+ Збільшення боргу</div>
+      <div class="val">${fmtCur(actUsd.increase, 'USD')}</div>
+      <div class="sub">надходження, послуги</div>
+    </div>
+    <div class="cell">
+      <div class="lbl">− Зменшення боргу</div>
+      <div class="val">${fmtCur(actUsd.decrease, 'USD')}</div>
+      <div class="sub">оплати</div>
+    </div>
+    <div class="cell closing">
+      <div class="lbl">= Кінцевий залишок</div>
+      <div class="val ${closeCls}">${Math.abs(actUsd.closing) < 0.01 ? '0.00 $' : fmtCurSigned(actUsd.closing, 'USD')}</div>
+      <div class="sub">на ${period.to}</div>
+    </div>
+  </div>
+
+  <div class="sect">
+    <div class="sect-head">Документи<span class="count">${fmtCnt(actUsd.count)}</span></div>
+    <div style="overflow:auto;max-height:calc(100vh - 440px)">
+    <table class="s-tbl">
+      <thead><tr>
+        <th>Дата</th><th>Документ</th><th>Вал</th><th>Збільшення</th><th>Зменшення</th><th>Орг</th>
+      </tr></thead>
+      <tbody>${actRows || '<tr><td colspan="6" class="muted" style="text-align:center;padding:30px">немає рухів у періоді</td></tr>'}</tbody>
+    </table>
+    </div>
+  </div>
+
+  ${(orders || []).length ? `
+  <details style="margin-top:14px">
+    <summary style="padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);list-style:none">
+      Замовлення постачальнику (${(orders||[]).length})
+    </summary>
+    <div class="sect" style="margin-top:6px;border-radius:12px">
+      <table class="s-tbl">
+        <thead><tr><th>Дата</th><th>№</th><th>Вал</th><th>Сума</th><th>Стан</th><th>Орг</th></tr></thead>
+        <tbody>${ordRows}</tbody>
+      </table>
+    </div>
+  </details>
+  ` : ''}
+  `;
+}
+
+function goBack(){
+  setState({ detailRef: '' });
+}
+
+async function loadDetailPage(){
+  body.innerHTML = '<div class="loading">Завантаження акту звірки…</div>';
+  sub.textContent = 'Акт звірки';
+  const p = new URLSearchParams({ action:'supplier_detail', ref_key:state.detailRef, from:state.from, to:state.to });
+  if (state.org) p.set('org', state.org);
+  try{
+    const res = await fetch(`${API}/?${p}`);
+    if (!res.ok) throw new Error(`${res.status} ${await res.text().catch(()=>res.statusText)}`);
+    const d = await res.json();
+    if (d.error) throw new Error(d.error);
+    body.innerHTML = renderDetailPage(d);
+  }catch(e){
+    body.innerHTML = `<div class="error">Помилка: ${e.message}</div>
+      <button class="detail-back" onclick="goBack()">← Назад</button>`;
+  }
+}
   const CUR_ORDER = ['USD','UAH','EUR'];
   const curs = Object.keys(totals).sort((a,b) => (CUR_ORDER.indexOf(a)+999)%1000 - (CUR_ORDER.indexOf(b)+999)%1000);
 
@@ -676,7 +820,11 @@ async function refreshRows(){
   }
 }
 
-function load(){ return state.tab === 'data' ? loadData() : loadOverview(); }
+function load(){
+  if (state.tab === 'data') return loadData();
+  if (state.detailRef) return loadDetailPage();
+  return loadOverview();
+}
 
 Auth.require('admin').then(user => {
   AppHeader.mount({ active:'suppliers', user });
