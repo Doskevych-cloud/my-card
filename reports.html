@@ -157,7 +157,12 @@ a{color:inherit;text-decoration:none}
       <button class="ptab active" data-cat="sales">📈 Продажі</button>
     </div>
     <div class="sub-tabs" id="subTabs">
-      <button class="stab active" data-rep="sheet">🎯 Воронка лідогенерації</button>
+      <button class="stab active" data-rep="funnel">🎯 Воронка</button>
+      <button class="stab" data-rep="channels">🌐 Канали</button>
+      <button class="stab" data-rep="managers">👥 Менеджери</button>
+      <button class="stab" data-rep="dynamics">📈 Динаміка</button>
+      <button class="stab" data-rep="abc">🏷️ ABC</button>
+      <button class="stab" data-rep="cycle">⏱️ Цикл</button>
     </div>
   </div>
 
@@ -216,13 +221,23 @@ function _lastOfMonthISO(){const d=new Date();return _localISO(new Date(d.getFul
 const state = {
   raw: null,            // sheet-aggregated payload
   source: 'sheet',
-  mode: 'period',       // 'period' | 'cumulative' | 'cohort'
+  report: 'funnel',     // 'funnel' | 'channels' | 'managers' | 'dynamics' | 'abc' | 'cycle'
+  mode: 'period',       // тільки для report='funnel': 'period' | 'cumulative' | 'cohort'
   from: _firstOfMonthISO(),
   to: _lastOfMonthISO(),
   preset: 'month',
   org: '',
   clientType: '',       // '' | 'private' | 'business'
   loading: false,
+};
+
+const REPORT_ACTION = {
+  funnel: 'sheet_funnel',
+  channels: 'sheet_channels',
+  managers: 'sheet_managers',
+  dynamics: 'sheet_dynamics',
+  abc: 'sheet_abc',
+  cycle: 'sheet_cycle',
 };
 let leadsSort = { col: 'changeDate', dir: 'desc' };
 
@@ -257,6 +272,7 @@ function saveStateToUrl() {
   if (state.source !== 'planfix') h.set('src', state.source);
   if (state.clientType) h.set('ct', state.clientType);
   if (state.mode && state.mode !== 'period') h.set('mode', state.mode);
+  if (state.report && state.report !== 'funnel') h.set('rep', state.report);
   history.replaceState(null, '', '#' + h.toString());
 }
 function hydrateFromHash() {
@@ -268,6 +284,7 @@ function hydrateFromHash() {
   if (h.get('src'))    state.source = h.get('src');
   if (h.get('ct'))     state.clientType = h.get('ct');
   if (h.get('mode'))   state.mode = h.get('mode');
+  if (h.get('rep'))    state.report = h.get('rep');
   if (!h.get('preset')) state.preset = detectPreset(state.from, state.to);
 }
 function detectPreset(from, to) {
@@ -363,34 +380,32 @@ function attachEvents() {
   document.getElementById('btnRefresh').addEventListener('click', () => load(true));
   document.querySelectorAll('#subTabs .stab').forEach(t => {
     t.addEventListener('click', () => {
-      state.source = t.dataset.rep || 'planfix';
+      state.report = t.dataset.rep || 'funnel';
       document.querySelectorAll('#subTabs .stab').forEach(x => x.classList.toggle('active', x === t));
-      // org-chip only works for Planfix (template id)
-      document.querySelectorAll('.chip[data-org]').forEach(c => {
-        c.style.opacity = state.source === 'sheet' ? .4 : 1;
-        c.style.pointerEvents = state.source === 'sheet' ? 'none' : '';
-      });
+      // Group "Режим" актуальний лише для воронки
+      const modeGroup = document.getElementById('modeGroup');
+      if (modeGroup) modeGroup.style.display = state.report === 'funnel' ? '' : 'none';
       saveStateToUrl(); load();
     });
   });
-  // Initial sync of sub-tab state
+  // Initial sync of sub-tab + mode-group visibility
   document.querySelectorAll('#subTabs .stab').forEach(t =>
-    t.classList.toggle('active', t.dataset.rep === state.source)
+    t.classList.toggle('active', t.dataset.rep === state.report)
   );
+  const mg = document.getElementById('modeGroup');
+  if (mg) mg.style.display = state.report === 'funnel' ? '' : 'none';
 }
 
 // ─── Data ───
 async function load(force = false) {
   state.loading = true;
-  const srcLabel = state.source === 'sheet' ? 'Google Sheets' : 'Planfix';
-  document.getElementById('content').innerHTML = `<div class="loading">Завантаження звіту з ${srcLabel}…</div>`;
+  document.getElementById('content').innerHTML = `<div class="loading">Завантаження звіту…</div>`;
   try {
-    const isSheet = state.source === 'sheet' || state.source === 'sheet-cum';
-    const action = isSheet ? 'sheet_funnel' : 'planfix_funnel';
+    const action = REPORT_ACTION[state.report] || 'sheet_funnel';
     const params = new URLSearchParams({ action, from: state.from, to: state.to });
-    if (isSheet) {
-      if (state.clientType) params.set('clientType', state.clientType);
-      if (state.mode && state.mode !== 'period') params.set('mode', state.mode);
+    if (state.clientType) params.set('clientType', state.clientType);
+    if (state.report === 'funnel' && state.mode && state.mode !== 'period') {
+      params.set('mode', state.mode);
     }
     if (force) params.set('_', Date.now());
     const res = await fetch(API + '?' + params.toString());
@@ -520,10 +535,152 @@ function updateInfoBanner() {
   el.style.display = html ? 'block' : 'none';
 }
 
+// Простий рендер таблиці з bar-індикатором у заголовку колонки
+function tableHTML({ title, hint, head, rows }) {
+  let h = `<div class="section-h"><h2>${title}</h2>${hint ? `<span class="hint">${hint}</span>` : ''}</div>`;
+  h += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr>`;
+  for (const c of head) h += `<th>${c}</th>`;
+  h += `</tr></thead><tbody>`;
+  for (const r of rows) {
+    h += `<tr>${r.map((c, i) => `<td${i === 0 ? '' : ' class="num"'}>${c == null ? '—' : c}</td>`).join('')}</tr>`;
+  }
+  h += `</tbody></table></div>`;
+  return h;
+}
+function fmtMoney(n) { return Number(n || 0).toLocaleString('uk-UA', { maximumFractionDigits: 0 }); }
+
+// 2. Канали реклами
+function renderChannelsReport(d) {
+  const t = d.totals || {};
+  let html = `
+  <div class="info-banner">
+    <span class="ib-tag">КАНАЛИ</span>
+    Когорта: <b>угоди створені у вибрані дні</b>. Конверсія = успішних / всіх. Виручка = сума бюджетів за успішними.
+  </div>
+  <div class="kpi">
+    <div class="kpi-card"><div class="lbl">Усього лідів</div><div class="val">${fmt(t.leads)}</div></div>
+    <div class="kpi-card c-success"><div class="lbl">Win</div><div class="val">${fmt(t.won)}</div><div class="sub">${pct(t.conversionRate)} конверсія</div></div>
+    <div class="kpi-card c-rate"><div class="lbl">Виручка</div><div class="val">${fmtMoney(t.revenue)} <span style="font-size:14px">$</span></div></div>
+    <div class="kpi-card"><div class="lbl">Серед. чек</div><div class="val">${fmtMoney(t.avgCheck)} <span style="font-size:14px">$</span></div></div>
+  </div>`;
+  const head = ['Канал', 'Лідів', 'Win', 'Провал', 'У роботі', 'Конверсія', 'Виручка $', 'Серед. чек $'];
+  const rows = d.channels.map(c => [
+    esc(c.name), fmt(c.leads), c.won ? fmt(c.won) : '—',
+    c.lost ? fmt(c.lost) : '—', c.inProgress ? fmt(c.inProgress) : '—',
+    pct(c.conversionRate), fmtMoney(c.revenue), c.avgCheck ? fmtMoney(c.avgCheck) : '—',
+  ]);
+  html += tableHTML({ title: '🌐 Канали реклами', hint: 'Сортовано за кількістю лідів', head, rows });
+  return html;
+}
+
+// 3. Менеджери
+function renderManagersReport(d) {
+  const t = d.totals || {};
+  let html = `
+  <div class="info-banner">
+    <span class="ib-tag">МЕНЕДЖЕРИ</span>
+    Когорта: <b>угоди створені у вибрані дні</b> + хто з менеджерів за них відповідав. Цикл = середні дні від створення до Win.
+  </div>
+  <div class="kpi">
+    <div class="kpi-card"><div class="lbl">Усього лідів</div><div class="val">${fmt(t.leads)}</div></div>
+    <div class="kpi-card c-success"><div class="lbl">Win</div><div class="val">${fmt(t.won)}</div><div class="sub">${pct(t.conversionRate)} конверсія</div></div>
+    <div class="kpi-card c-rate"><div class="lbl">Виручка</div><div class="val">${fmtMoney(t.revenue)} <span style="font-size:14px">$</span></div></div>
+    <div class="kpi-card"><div class="lbl">Серед. цикл</div><div class="val">${t.avgCycleDays != null ? t.avgCycleDays : '—'}<span style="font-size:14px"> дн</span></div></div>
+  </div>`;
+  const head = ['Менеджер', 'Лідів', 'Win', 'Провал', 'У роботі', 'Конверсія', 'Виручка $', 'Серед. чек $', 'Серед. цикл, дн'];
+  const rows = d.managers.map(m => [
+    esc(m.name), fmt(m.leads), m.won ? fmt(m.won) : '—',
+    m.lost ? fmt(m.lost) : '—', m.inProgress ? fmt(m.inProgress) : '—',
+    pct(m.conversionRate), fmtMoney(m.revenue), m.avgCheck ? fmtMoney(m.avgCheck) : '—',
+    m.avgCycleDays != null ? m.avgCycleDays : '—',
+  ]);
+  html += tableHTML({ title: '👥 Менеджери', hint: 'Сортовано за кількістю лідів. Дивіться конверсію + виручку, не тільки кількість.', head, rows });
+  return html;
+}
+
+// 4. Динаміка
+function renderDynamicsReport(d) {
+  const t = d.totals || {};
+  let html = `
+  <div class="info-banner">
+    <span class="ib-tag">ДИНАМІКА</span>
+    Нові ліди по даті створення, win/lost — по даті переходу у фінальний статус. Розбивка по тижнях.
+    Колонка <b>MA(4)</b> — ковзне середнє за 4 тижні (згладжує шум).
+  </div>
+  <div class="kpi">
+    <div class="kpi-card"><div class="lbl">Нових лідів</div><div class="val">${fmt(t.leads)}</div></div>
+    <div class="kpi-card c-success"><div class="lbl">Закрито Win</div><div class="val">${fmt(t.won)}</div></div>
+    <div class="kpi-card c-fail"><div class="lbl">Закрито Lost</div><div class="val">${fmt(t.lost)}</div></div>
+    <div class="kpi-card c-rate"><div class="lbl">Виручка</div><div class="val">${fmtMoney(t.revenue)} <span style="font-size:14px">$</span></div></div>
+  </div>`;
+  const head = ['Тиждень', 'Нових лідів', 'MA(4)', 'Win', 'MA(4)', 'Lost', 'Виручка $'];
+  const rows = d.series.map(p => [
+    esc(p.key), fmt(p.leads), fmt(p.leadsMA), fmt(p.wonClosed), fmt(p.wonMA),
+    p.lostClosed ? fmt(p.lostClosed) : '—', fmtMoney(p.revenue),
+  ]);
+  html += tableHTML({ title: '📈 Динаміка по тижнях', hint: 'Понеділки', head, rows });
+  return html;
+}
+
+// 5. ABC
+function renderAbcReport(d) {
+  let html = `
+  <div class="info-banner">
+    <span class="ib-tag">ABC</span>
+    Розподіл когорти за «Класом клієнта» (A/B/C). Класична гіпотеза: 20% клієнтів класу A приносять 80% виручки.
+    ${d.untaggedShare > 0.5 ? `<span style="color:var(--red)"> ⚠ <b>${pct(d.untaggedShare)}</b> лідів без класу — звіт буде неточним поки клас не проставлено.</span>` : ''}
+  </div>
+  <div class="kpi">
+    <div class="kpi-card"><div class="lbl">Усього лідів</div><div class="val">${fmt(d.totals.leads)}</div></div>
+    <div class="kpi-card c-fail"><div class="lbl">Без класу</div><div class="val">${fmt(d.untaggedCount)}</div><div class="sub">${pct(d.untaggedShare)} від усіх</div></div>
+  </div>`;
+  const head = ['Клас', 'Лідів', 'Win', 'Провал', 'Конверсія', 'Виручка $', 'Серед. чек $'];
+  const rows = d.classes.map(c => [
+    esc(c.name), fmt(c.leads), c.won ? fmt(c.won) : '—',
+    c.lost ? fmt(c.lost) : '—',
+    pct(c.conversionRate), fmtMoney(c.revenue), c.avgCheck ? fmtMoney(c.avgCheck) : '—',
+  ]);
+  html += tableHTML({ title: '🏷️ Розподіл по класу клієнта', head, rows });
+  return html;
+}
+
+// 6. Цикл
+function renderCycleReport(d) {
+  if (!d.totals.count) {
+    return `<div class="info-banner"><span class="ib-tag">ЦИКЛ</span> У вибраному періоді немає Win-угод для розрахунку циклу.</div>`;
+  }
+  const o = d.overall;
+  let html = `
+  <div class="info-banner">
+    <span class="ib-tag">ЦИКЛ</span>
+    Скільки днів проходить від створення угоди до фінального переходу у Win. Когорта: створено у вибрані дні + закрилось успішно за всю історію.
+  </div>
+  <div class="kpi">
+    <div class="kpi-card"><div class="lbl">Win-угод</div><div class="val">${fmt(o.count)}</div></div>
+    <div class="kpi-card c-rate"><div class="lbl">Серед. цикл</div><div class="val">${o.avg}<span style="font-size:14px"> дн</span></div></div>
+    <div class="kpi-card"><div class="lbl">Медіана</div><div class="val">${o.median}<span style="font-size:14px"> дн</span></div></div>
+    <div class="kpi-card"><div class="lbl">Min — Max</div><div class="val" style="font-size:18px">${o.min} — ${o.max}</div></div>
+  </div>`;
+  const mkRows = arr => arr.map(g => [esc(g.name), fmt(g.count), g.avg, g.median, `${g.min}–${g.max}`]);
+  const head = ['Розріз', 'Win', 'Серед. цикл, дн', 'Медіана', 'Min–Max'];
+  html += tableHTML({ title: '⏱️ Цикл по менеджерах', head, rows: mkRows(d.byManager) });
+  html += tableHTML({ title: '⏱️ Цикл по типу клієнта', head, rows: mkRows(d.byClientType) });
+  html += tableHTML({ title: '⏱️ Цикл по бюджету', head, rows: mkRows(d.byBudgetBucket) });
+  return html;
+}
+
 function render() {
   updateInfoBanner();
   if (!state.raw) return;
-  // sheet-* режими повертають уже агреговану структуру з worker
+
+  // Routing для нових звітів
+  if (state.report === 'channels') { document.getElementById('infoBanner').style.display='none'; document.getElementById('content').innerHTML = renderChannelsReport(state.raw); return; }
+  if (state.report === 'managers') { document.getElementById('infoBanner').style.display='none'; document.getElementById('content').innerHTML = renderManagersReport(state.raw); return; }
+  if (state.report === 'dynamics') { document.getElementById('infoBanner').style.display='none'; document.getElementById('content').innerHTML = renderDynamicsReport(state.raw); return; }
+  if (state.report === 'abc')      { document.getElementById('infoBanner').style.display='none'; document.getElementById('content').innerHTML = renderAbcReport(state.raw); return; }
+  if (state.report === 'cycle')    { document.getElementById('infoBanner').style.display='none'; document.getElementById('content').innerHTML = renderCycleReport(state.raw); return; }
+
+  // Воронка (default)
   const a = state.raw;
   const tasks = [];
   const maxStageTotal = Math.max(...a.funnel.map(f => f.total), 1);
