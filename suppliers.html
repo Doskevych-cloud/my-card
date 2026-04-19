@@ -267,7 +267,6 @@ function readUrl(){
   }
   if (h.get('org')) state.org = h.get('org');
   if (h.get('sq') !== null) state.q = h.get('sq');
-  else state.q = 'RichSun'; // DEV: фіксація тестового постачальника поки звіт стабілізується
   if (h.get('tab') === 'data') state.tab = 'data';
   if (h.get('t') && DV_TABLES.includes(h.get('t'))) state.dvTable = h.get('t');
   if (h.get('q')) state.dvSearch = h.get('q');
@@ -442,7 +441,7 @@ async function loadDetail(refKey){
 }
 
 function renderDetail(d){
-  const { supplier, totals, totals_usd_ref, receipts, payments } = d;
+  const { supplier, totals, totals_usd_ref, receipts, payments, orders, ap_movements } = d;
   const CUR_ORDER = ['USD','UAH','EUR'];
   const curs = Object.keys(totals).sort((a,b) => (CUR_ORDER.indexOf(a)+999)%1000 - (CUR_ORDER.indexOf(b)+999)%1000);
 
@@ -483,6 +482,31 @@ function renderDetail(d){
       <td class="muted" title="${(r.comment || '').replace(/"/g,'&quot;')}">${(r.cashflow_item || '').slice(0,40)}</td>
     </tr>`).join('');
 
+  const ordRows = (orders || []).map(r => `
+    <tr>
+      <td>${(r.doc_date || '').slice(0,10)}</td>
+      <td>${r.number || '—'}</td>
+      <td class="cur">${r.currency}</td>
+      <td class="amount">${fmtCur(r.amount, r.currency)}</td>
+      <td class="amount muted">${r.amount_usd ? fmtNum(r.amount_usd) + ' $' : '—'}</td>
+      <td class="muted">${r.posted ? 'так' : 'чернетка'}</td>
+      <td class="muted">${r.org_short || r.org_name || '—'}</td>
+    </tr>`).join('');
+
+  const apRows = (ap_movements || []).map(r => {
+    const sign = r.record_type === 'Receipt' ? '+' : '−';
+    const cls = r.record_type === 'Receipt' ? 'neg' : 'pos';
+    return `
+    <tr>
+      <td>${(r.period || '').slice(0,10)}</td>
+      <td class="muted">${r.recorder_short}</td>
+      <td class="cur">${r.currency}</td>
+      <td class="amount">${r.amount_currency ? fmtCur(r.amount_currency, r.currency) : fmtCur(r.amount, r.currency)}</td>
+      <td class="amount ${cls}">${sign}${fmtCur(Math.abs(r.amount_currency || r.amount), r.currency)}</td>
+      <td class="muted">${r.org_short || '—'}</td>
+    </tr>`;
+  }).join('');
+
   return `
   <div class="sect">
     <div class="sect-head">Деталі: ${supplier.description}<span class="count">USD-еквівалент (по NBU): borg=${fmtCurSigned(totals_usd_ref.balance_usd, 'USD')}</span></div>
@@ -512,6 +536,30 @@ function renderDetail(d){
         <th>Дата</th><th>№</th><th>Вал</th><th>Сума</th><th>у $ (NBU)</th><th>Тип</th><th>Орг</th><th>Стаття ДДС</th>
       </tr></thead>
       <tbody>${payRows || '<tr><td colspan="8" class="muted" style="text-align:center;padding:20px">немає</td></tr>'}</tbody>
+    </table>
+    </div>
+  </div>
+  <div class="sect">
+    <div class="sect-head">Замовлення постачальнику<span class="count">${(orders||[]).length}</span></div>
+    <div style="overflow:auto;max-height:300px">
+    <table class="s-tbl">
+      <thead><tr>
+        <th>Дата</th><th>№</th><th>Вал</th><th>Сума</th><th>у $ (NBU)</th><th>Проведено</th><th>Організація</th>
+      </tr></thead>
+      <tbody>${ordRows || '<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">немає</td></tr>'}</tbody>
+    </table>
+    </div>
+  </div>
+  <div class="sect">
+    <div class="sect-head">Рухи взаєморозрахунків<span class="count">${(ap_movements||[]).length}</span>
+      <span style="margin-left:12px;font-weight:500;color:var(--text3)">Receipt = збільшує борг, Expense = зменшує</span>
+    </div>
+    <div style="overflow:auto;max-height:440px">
+    <table class="s-tbl">
+      <thead><tr>
+        <th>Дата</th><th>Документ</th><th>Вал</th><th>Сума</th><th>Зміна боргу</th><th>Орг</th>
+      </tr></thead>
+      <tbody>${apRows || '<tr><td colspan="6" class="muted" style="text-align:center;padding:20px">немає</td></tr>'}</tbody>
     </table>
     </div>
   </div>`;
