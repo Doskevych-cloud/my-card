@@ -10,8 +10,8 @@
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
-<script src="auth.js?v=imp20260419"></script>
-<script src="header.js?v=imp20260419"></script>
+<script src="auth.js?v=arpnl20260419"></script>
+<script src="header.js?v=arpnl20260419"></script>
 <!-- html2pdf.js for real PDF file download (not browser print dialog) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <!-- SheetJS (xlsx) for Excel export -->
@@ -251,34 +251,7 @@ a{color:inherit;text-decoration:none}
 .gp-table .lvl-3 + .lvl-3 td,
 .gp-table .lvl-4 + .lvl-4 td{border-top:1px solid var(--border2)}
 
-/* ── AR tree table (same look as P&L) ── */
-.ar-wrap{overflow:auto;margin-bottom:20px;border:1px solid var(--border);border-radius:12px;background:var(--bg)}
-.ar-table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;min-width:700px}
-.ar-table th,.ar-table td{padding:11px 14px;text-align:right;white-space:nowrap;vertical-align:middle;line-height:1.25}
-.ar-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;background:var(--surface2);position:sticky;top:0;z-index:2;border-bottom:1px solid var(--border)}
-.ar-table th:first-child{text-align:left;position:sticky;left:0;z-index:3;background:var(--surface2);min-width:320px}
-.ar-table td:first-child{text-align:left;position:sticky;left:0;z-index:1;background:var(--bg)}
-.ar-table tbody tr{background:var(--bg)}
-.ar-table .ar-toggle{cursor:pointer;user-select:none}
-.ar-table .ar-toggle:hover{background:var(--surface2)}
-.ar-table .ar-chevron{display:inline-block;width:10px;margin-right:8px;font-size:9px;color:var(--text3);transition:transform .18s ease-out;text-align:center;line-height:1;vertical-align:1px;transform:rotate(-90deg)}
-.ar-table .ar-chevron.open{transform:rotate(0deg)}
-/* Row hierarchy: currency / client / contract → cat / sec / grp */
-.ar-table .ar-cur td{font-weight:800;font-size:14px;color:var(--text);border-top:1px solid var(--border);background:transparent}
-.ar-table .ar-cur td:first-child{padding-left:14px;background:var(--bg)}
-.ar-table .ar-cl td{font-weight:700;font-size:13px;color:var(--text);border-top:1px solid var(--border2);background:transparent}
-.ar-table .ar-cl td:first-child{padding-left:28px;background:var(--bg)}
-.ar-table .ar-ct td{font-weight:500;color:var(--text2);font-size:13px;background:transparent}
-.ar-table .ar-ct td:first-child{padding-left:44px;background:var(--bg)}
-.ar-table .ar-ct + .ar-ct td{border-top:1px solid var(--border2)}
-/* AR shipment box indicator */
-.ar-ship-cell{text-align:center !important;width:120px}
-.ar-box{display:inline-block;width:42px;height:22px;border-radius:5px;border:2px solid var(--border2);background:var(--bg3);position:relative;overflow:hidden;vertical-align:middle}
-.ar-box-fill{position:absolute;left:0;top:0;bottom:0;background:var(--green);transition:width .3s}
-.ar-box-lbl{font-size:10px;font-weight:700;color:var(--text2);margin-left:6px;vertical-align:middle}
-.ar-box.full{border-color:var(--green)}
-.ar-box.partial .ar-box-fill{opacity:.85}
-.ar-box.empty{border-color:var(--border)}
+/* AR tab тепер використовує .pnl-wrap + .pnl-table напряму (див. renderAr). */
 
 .view{display:none}
 .view.active{display:block}
@@ -1441,17 +1414,15 @@ function gpToggleAll(collapse) {
 }
 
 function arToggleAll(collapse) {
-  const tbl = document.querySelector('.ar-table');
+  const tbl = document.querySelector('#arBody .pnl-table');
   if (!tbl) return;
   tbl.querySelectorAll('tr[data-parent]').forEach(tr => {
     if (!tr.dataset.parent) return;
     tr.style.display = collapse ? 'none' : '';
   });
-  tbl.querySelectorAll('.ar-chevron').forEach(c => c.classList.toggle('open', !collapse));
-  if (typeof arOpenRows !== 'undefined') {
-    arOpenRows.clear();
-    if (!collapse) tbl.querySelectorAll('tr[data-id]').forEach(tr => arOpenRows.add(tr.dataset.id));
-  }
+  tbl.querySelectorAll('tr[data-collapsed]').forEach(tr => {
+    tr.setAttribute('data-collapsed', collapse ? 'true' : 'false');
+  });
   setToggleActive('#arToolbar .pnl-collapse-ctl', collapse);
   arState.collapsed = collapse; saveStateToUrl();
 }
@@ -2273,13 +2244,13 @@ function renderAr(data) {
     return '<span class="' + (v > 0 ? 'pos' : 'neg') + '">' + fmt(v, 2) + '</span>';
   }
 
-  // Build table (без прогрес-бар колонки — P&L стиль)
-  var html = '<div class="ar-wrap"><table class="ar-table"><thead>' +
+  // Build table — використовуємо .pnl-wrap + .pnl-table класи напряму для єдиного P&L-стилю
+  var html = '<div class="pnl-wrap"><table class="pnl-table"><thead>' +
     '<tr>' +
     '<th>Контрагент / Договір</th>' +
-    '<th>Сума замовлення</th>' +
-    '<th>Оплачено</th>' +
-    '<th>Залишок</th>' +
+    '<th class="col-total">Сума замовлення</th>' +
+    '<th class="col-total">Оплачено</th>' +
+    '<th class="col-total">Залишок</th>' +
     '</tr></thead><tbody>';
 
   var flatRows = [];
@@ -2287,27 +2258,33 @@ function renderAr(data) {
 
   filtered.forEach(cur => {
     var curId = 'ar' + (rowId++);
-    flatRows.push({ id: curId, parent: null, cls: 'ar-cur', name: cur.currency, d: derive(cur), hasChildren: cur.clients.length > 0 });
+    flatRows.push({ id: curId, parent: null, level: 'cur', name: cur.currency, d: derive(cur), hasChildren: cur.clients.length > 0 });
 
     cur.clients.forEach(cl => {
       var clId = 'ar' + (rowId++);
-      flatRows.push({ id: clId, parent: curId, cls: 'ar-cl', name: cl.name, d: derive(cl), hasChildren: cl.contracts.length > 0 });
+      flatRows.push({ id: clId, parent: curId, level: 'cl', name: cl.name, d: derive(cl), hasChildren: cl.contracts.length > 0 });
 
       cl.contracts.forEach(ct => {
-        flatRows.push({ id: 'ar' + (rowId++), parent: clId, cls: 'ar-ct', name: ct.name, d: derive(ct), hasChildren: false });
+        flatRows.push({ id: 'ar' + (rowId++), parent: clId, level: 'ct', name: ct.name, d: derive(ct), hasChildren: false });
       });
     });
   });
 
+  // Map AR level → P&L row class (cur→cat, cl→sec[data-cat], ct→itm)
   flatRows.forEach(r => {
     var hidden = r.parent ? ' style="display:none"' : '';
-    var chevron = r.hasChildren ? '<span class="ar-chevron" data-rid="' + r.id + '">&#9662;</span> ' : '<span style="display:inline-block;width:14px"></span> ';
-    var toggle = r.hasChildren ? ' class="ar-toggle"' : '';
-    html += '<tr class="' + r.cls + '" data-id="' + r.id + '" data-parent="' + (r.parent || '') + '"' + hidden + '>' +
-      '<td' + toggle + ' onclick="arToggle(\'' + r.id + '\')">' + chevron + esc(r.name) + '</td>' +
-      '<td>' + fmtV(r.d.orderAmt) + '</td>' +
-      '<td>' + fmtV(r.d.paid) + '</td>' +
-      '<td>' + fmtV(r.d.balance) + '</td>' +
+    var tri = r.hasChildren ? '<span class="tri">&#9662;</span> ' : '';
+    var cls, dataAttr = '';
+    if (r.level === 'cur') cls = 'cat';
+    else if (r.level === 'cl') { cls = 'sec'; dataAttr = ' data-cat="1"'; }
+    else cls = 'itm';
+    var dataCollapsed = r.hasChildren ? ' data-collapsed="true"' : '';
+    var onclickAttr = r.hasChildren ? ' onclick="arToggle(\'' + r.id + '\')"' : '';
+    html += '<tr class="' + cls + '"' + dataAttr + ' data-id="' + r.id + '" data-parent="' + (r.parent || '') + '"' + dataCollapsed + hidden + '>' +
+      '<td' + onclickAttr + '>' + tri + esc(r.name) + '</td>' +
+      '<td class="col-total">' + fmtV(r.d.orderAmt) + '</td>' +
+      '<td class="col-total">' + fmtV(r.d.paid) + '</td>' +
+      '<td class="col-total">' + fmtV(r.d.balance) + '</td>' +
       '</tr>';
   });
 
@@ -2318,28 +2295,24 @@ function renderAr(data) {
   else arToggleAll(true);
 }
 
-const arOpenRows = new Set();
-
 function arToggle(id) {
-  const isOpen = arOpenRows.has(id);
-  if (isOpen) {
-    arOpenRows.delete(id);
-    arCloseDescendants(id);
+  const tr = document.querySelector('#arBody .pnl-table tr[data-id="' + id + '"]');
+  if (!tr) return;
+  const isCollapsed = tr.getAttribute('data-collapsed') === 'true';
+  if (isCollapsed) {
+    tr.setAttribute('data-collapsed', 'false');
+    document.querySelectorAll('#arBody .pnl-table tr[data-parent="' + id + '"]').forEach(child => { child.style.display = ''; });
   } else {
-    arOpenRows.add(id);
-    document.querySelectorAll('.ar-table tr[data-parent="' + id + '"]').forEach(tr => { tr.style.display = ''; });
+    tr.setAttribute('data-collapsed', 'true');
+    arCloseDescendants(id);
   }
-  const chev = document.querySelector('.ar-chevron[data-rid="' + id + '"]');
-  if (chev) chev.classList.toggle('open', !isOpen);
 }
 
 function arCloseDescendants(id) {
-  document.querySelectorAll('.ar-table tr[data-parent="' + id + '"]').forEach(tr => {
+  document.querySelectorAll('#arBody .pnl-table tr[data-parent="' + id + '"]').forEach(tr => {
     const childId = tr.dataset.id;
     tr.style.display = 'none';
-    arOpenRows.delete(childId);
-    const chev = document.querySelector('.ar-chevron[data-rid="' + childId + '"]');
-    if (chev) chev.classList.remove('open');
+    if (tr.hasAttribute('data-collapsed')) tr.setAttribute('data-collapsed', 'true');
     arCloseDescendants(childId);
   });
 }
@@ -2348,7 +2321,6 @@ async function arLoad() {
   arState._loaded = true;
   document.getElementById('arBody').innerHTML = '<div class="loading">Завантаження...</div>';
   document.getElementById('arSummary').innerHTML = '';
-  arOpenRows.clear();
   try {
     const q = '?action=accounts_receivable&from=' + arState.from + '&to=' + arState.to + (arState.org ? '&org=' + encodeURIComponent(arState.org) : '');
     const data = await fetch(API_URL + q).then(r => r.json());
