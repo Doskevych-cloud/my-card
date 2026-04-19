@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Постачальники</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<script>
+  try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
+</script>
+<script src="auth.js?v=sup20260419"></script>
+<script src="header.js?v=sup20260419"></script>
+<style>
+:root{
+  --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
+  --surface:#141414; --surface2:#1c1c1c;
+  --border:#262626; --border2:#333;
+  --text:#f5f5f5; --text2:#a3a3a3; --text3:#737373;
+  --accent:#ff8319; --accent-bg:rgba(255,131,25,.12);
+  --red:#e74c3c; --red-bg:rgba(231,76,60,.12);
+  --green:#22c55e; --green-bg:rgba(34,197,94,.12);
+}
+:root[data-theme="light"]{
+  --bg:#f5f5f7; --bg2:#ffffff; --bg3:#ececef;
+  --surface:#ffffff; --surface2:#ffffff;
+  --border:#e5e5ea; --border2:#d1d1d6;
+  --text:#1c1c1e; --text2:#48484a; --text3:#8e8e93;
+  --accent:#e07017; --accent-bg:rgba(224,112,23,.12);
+  --red:#d93025; --red-bg:rgba(217,48,37,.10);
+  --green:#15803d; --green-bg:rgba(21,128,61,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+
+.wrap{max-width:1400px;margin:0 auto;padding:20px}
+.page-head{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
+.page-head h1{font-size:20px;font-weight:700;letter-spacing:-.4px}
+.page-head .sub{font-size:12px;color:var(--text3)}
+
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
+.toolbar input[type=date]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;color-scheme:dark;font-family:inherit}
+:root[data-theme="light"] .toolbar input[type=date]{color-scheme:light}
+.toolbar input[type=date]:focus{border-color:var(--accent)}
+.toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.toolbar .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .12s;user-select:none}
+.toolbar .chip:hover{background:var(--bg3);color:var(--text)}
+.toolbar .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 2px}
+.toolbar .group{display:inline-flex;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px}
+.toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
+.toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
+
+/* KPI row — без плашок/рамок, тільки число */
+.kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.kpi{background:var(--surface2);padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.kpi .label{font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .value{font-size:19px;font-weight:700;letter-spacing:-.3px;font-variant-numeric:tabular-nums;color:var(--text)}
+.kpi .value.pos{color:var(--green)}
+.kpi .value.neg{color:var(--red)}
+.kpi .sub{font-size:10.5px;color:var(--text3);font-variant-numeric:tabular-nums}
+
+/* Sections */
+.sect{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.sect-head{padding:12px 14px;font-size:12px;font-weight:700;color:var(--text);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sect-head .count{color:var(--text3);font-weight:500;font-size:11px;margin-left:auto}
+
+/* Top suppliers table */
+.s-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.s-tbl thead th{padding:11px 12px;background:var(--bg2);color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--border)}
+.s-tbl thead th:not(:first-child):not(:nth-child(2)){text-align:right}
+.s-tbl tbody td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.s-tbl tbody tr:last-child td{border-bottom:none}
+.s-tbl tbody td:not(:first-child):not(:nth-child(2)){text-align:right;font-variant-numeric:tabular-nums}
+.s-tbl tbody tr:hover td{background:var(--bg3)}
+.s-tbl .num{color:var(--text3);font-variant-numeric:tabular-nums;width:34px}
+.s-tbl .name{color:var(--text);font-weight:500}
+.s-tbl .kind-badge{display:inline-block;margin-left:6px;padding:1.5px 6px;font-size:9.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;border-radius:3px;color:var(--text3);background:var(--bg3)}
+.s-tbl .kind-both{color:var(--accent);background:var(--accent-bg)}
+.s-tbl td.amount{color:var(--text);font-weight:500}
+.s-tbl td.amount.pos{color:var(--green)}
+.s-tbl td.amount.neg{color:var(--red)}
+.s-tbl td.muted{color:var(--text3)}
+
+/* Dynamics bar chart */
+.dyn{padding:18px 18px 14px}
+.dyn-bars{display:flex;align-items:flex-end;gap:6px;height:160px;margin-bottom:10px}
+.dyn-bar{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;cursor:default}
+.dyn-bar .fill{width:100%;background:var(--accent);border-radius:3px 3px 0 0;min-height:2px;transition:opacity .15s}
+.dyn-bar:hover .fill{opacity:.75}
+.dyn-bar .mon{font-size:10px;color:var(--text3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dyn-bar .tip{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--text);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .1s;z-index:10;font-variant-numeric:tabular-nums}
+.dyn-bar:hover .tip{opacity:1}
+
+.loading{padding:50px 20px;text-align:center;color:var(--text2);font-size:13px}
+.loading::after{content:'';display:block;width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:14px auto 0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error{padding:20px;text-align:center;color:var(--red);background:var(--red-bg);border-radius:10px;font-size:12px;margin:20px 0}
+.empty{padding:40px 20px;text-align:center;color:var(--text3);font-size:12px}
+
+@media (max-width:1000px){
+  .kpi-row{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:640px){
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .toolbar{gap:8px;padding:10px}
+  .s-tbl thead th,.s-tbl tbody td{padding:8px 8px}
+  .s-tbl .kind-badge{display:none}
+}
+</style>
+</head>
+<body>
+
+<div id="appHeader"></div>
+<div id="app">
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Постачальники</h1>
+      <span class="sub" id="subTitle">—</span>
+    </div>
+
+    <div class="toolbar">
+      <span class="lbl">З</span>
+      <input type="date" id="fromIn">
+      <span class="lbl">По</span>
+      <input type="date" id="toIn">
+
+      <span class="group" id="presetGroup">
+        <span class="chip" data-preset="30d">30 днів</span>
+        <span class="chip" data-preset="90d">Квартал</span>
+        <span class="chip active" data-preset="12m">12 міс</span>
+        <span class="chip" data-preset="ytd">YTD</span>
+        <span class="chip" data-preset="3y">3 роки</span>
+      </span>
+
+      <span class="sep"></span>
+
+      <span class="group" id="orgGroup">
+        <span class="chip active" data-org="">Всі</span>
+        <span class="chip" data-org="react">Реакт</span>
+        <span class="chip" data-org="gen">Генерація</span>
+      </span>
+    </div>
+
+    <div id="body"><div class="loading">Завантаження…</div></div>
+  </div>
+</div>
+
+<script>
+const API = 'https://price-api.doskevich.workers.dev';
+const fmtGrn = n => new Intl.NumberFormat('uk-UA',{maximumFractionDigits:0}).format(Number(n)||0);
+const fmtCnt = n => new Intl.NumberFormat('uk-UA').format(Number(n)||0);
+const body = document.getElementById('body');
+const sub  = document.getElementById('subTitle');
+
+const state = { from:'', to:'', org:'', preset:'12m' };
+
+function todayIso(){ return new Date().toISOString().slice(0,10); }
+function shiftDays(iso, days){ const d=new Date(iso); d.setDate(d.getDate()+days); return d.toISOString().slice(0,10); }
+function applyPreset(p){
+  const to = todayIso();
+  const d = new Date();
+  if (p==='30d') return { from: shiftDays(to,-30), to };
+  if (p==='90d') return { from: shiftDays(to,-90), to };
+  if (p==='12m') { d.setFullYear(d.getFullYear()-1); return { from:d.toISOString().slice(0,10), to }; }
+  if (p==='ytd') return { from: `${new Date().getFullYear()}-01-01`, to };
+  if (p==='3y') { d.setFullYear(d.getFullYear()-3); return { from:d.toISOString().slice(0,10), to }; }
+  return { from: shiftDays(to,-365), to };
+}
+function detectPreset(f, t){
+  const today = todayIso();
+  if (t !== today) return null;
+  const diff = (new Date(t) - new Date(f)) / 86400000;
+  if (Math.abs(diff - 30)  < 2) return '30d';
+  if (Math.abs(diff - 90)  < 2) return '90d';
+  if (Math.abs(diff - 365) < 4) return '12m';
+  if (Math.abs(diff - 1095)< 5) return '3y';
+  if (f === `${new Date().getFullYear()}-01-01`) return 'ytd';
+  return null;
+}
+
+function setState(patch, {push=true}={}){
+  Object.assign(state, patch);
+  if (push) saveUrl();
+  syncToolbar();
+  load();
+}
+
+function saveUrl(){
+  const h = new URLSearchParams();
+  h.set('from', state.from); h.set('to', state.to);
+  if (state.org) h.set('org', state.org);
+  if (state.preset) h.set('preset', state.preset);
+  history.replaceState(null, '', '#' + h.toString());
+}
+function readUrl(){
+  const h = new URLSearchParams(location.hash.slice(1));
+  const p = h.get('preset');
+  if (h.get('from') && h.get('to')) {
+    state.from = h.get('from'); state.to = h.get('to');
+    state.preset = p || detectPreset(state.from, state.to) || '';
+  } else {
+    const { from, to } = applyPreset('12m');
+    state.from = from; state.to = to; state.preset = '12m';
+  }
+  if (h.get('org')) state.org = h.get('org');
+}
+
+function syncToolbar(){
+  document.getElementById('fromIn').value = state.from;
+  document.getElementById('toIn').value   = state.to;
+  document.querySelectorAll('#presetGroup .chip').forEach(c => c.classList.toggle('active', c.dataset.preset === state.preset));
+  document.querySelectorAll('#orgGroup .chip').forEach(c => c.classList.toggle('active', c.dataset.org === state.org));
+}
+
+function wireToolbar(){
+  document.getElementById('fromIn').addEventListener('change', e => setState({ from:e.target.value, preset: detectPreset(e.target.value, state.to) || '' }));
+  document.getElementById('toIn').addEventListener('change',   e => setState({ to:e.target.value,   preset: detectPreset(state.from, e.target.value) || '' }));
+  document.querySelectorAll('#presetGroup .chip').forEach(c => c.addEventListener('click', () => {
+    const { from, to } = applyPreset(c.dataset.preset);
+    setState({ from, to, preset: c.dataset.preset });
+  }));
+  document.querySelectorAll('#orgGroup .chip').forEach(c => c.addEventListener('click', () => setState({ org: c.dataset.org })));
+}
+
+function kindBadge(k){
+  if (k === 'both')     return '<span class="kind-badge kind-both">both</span>';
+  if (k === 'supplier') return '';
+  if (k === 'customer') return '<span class="kind-badge">cust</span>';
+  return '';
+}
+
+function renderKpi(k){
+  // balance_total > 0 → ми винні постачальникам → червоний
+  const owedCls = k.balance_total > 0 ? 'neg' : (k.balance_total < 0 ? 'pos' : '');
+  const owedLbl = k.balance_total > 0 ? 'Ми винні' : (k.balance_total < 0 ? 'Нам винні' : 'Баланс');
+  const avg = k.receipts_count > 0 ? k.turnover / k.receipts_count : 0;
+  return `
+  <div class="kpi-row">
+    <div class="kpi"><div class="label">Оборот закупівель, грн</div><div class="value">${fmtGrn(k.turnover)}</div><div class="sub">${fmtCnt(k.receipts_count)} надходжень</div></div>
+    <div class="kpi"><div class="label">Активних постачальників</div><div class="value">${fmtCnt(k.active_suppliers)}</div></div>
+    <div class="kpi"><div class="label">Середній приход, грн</div><div class="value">${fmtGrn(avg)}</div></div>
+    <div class="kpi"><div class="label">Оплачено, грн</div><div class="value pos">${fmtGrn(k.paid)}</div><div class="sub">${fmtCnt(k.payments_count)} платежів</div></div>
+    <div class="kpi"><div class="label">${owedLbl}, грн</div><div class="value ${owedCls}">${fmtGrn(Math.abs(k.balance_total))}</div></div>
+    <div class="kpi"><div class="label">Період</div><div class="value" style="font-size:14px">${state.from}<br>${state.to}</div></div>
+  </div>`;
+}
+
+function renderTop(rows){
+  if (!rows.length) return `<div class="sect"><div class="sect-head">Топ-постачальники</div><div class="empty">Немає даних у цьому періоді</div></div>`;
+  const body = rows.map((r,i)=>{
+    const balCls = r.balance > 1 ? 'neg' : (r.balance < -1 ? 'pos' : 'muted');
+    const balStr = Math.abs(r.balance) < 1 ? '—' : fmtGrn(Math.abs(r.balance));
+    return `
+    <tr>
+      <td class="num">${i+1}</td>
+      <td class="name">${r.description}${kindBadge(r.kind)}</td>
+      <td>${fmtCnt(r.receipts)}</td>
+      <td class="amount">${fmtGrn(r.turnover)}</td>
+      <td class="amount">${fmtGrn(r.payments)}</td>
+      <td class="amount ${balCls}">${balStr}</td>
+    </tr>`;
+  }).join('');
+  return `
+  <div class="sect">
+    <div class="sect-head">Топ-постачальники<span class="count">${rows.length}</span></div>
+    <table class="s-tbl">
+      <thead><tr>
+        <th>#</th><th>Постачальник</th>
+        <th>Надходжень</th><th>Оборот, грн</th><th>Оплачено, грн</th><th>Баланс, грн</th>
+      </tr></thead>
+      <tbody>${body}</tbody>
+    </table>
+  </div>`;
+}
+
+function renderDynamics(data){
+  if (!data.length) return '';
+  const max = Math.max(...data.map(d => d.turnover));
+  const bars = data.map(d => {
+    const h = max > 0 ? (d.turnover / max * 100) : 0;
+    return `
+    <div class="dyn-bar">
+      <div class="tip"><b>${d.month}</b><br>${fmtGrn(d.turnover)} грн · ${fmtCnt(d.receipts)} шт</div>
+      <div class="fill" style="height:${h}%"></div>
+      <div class="mon">${d.month.slice(2)}</div>
+    </div>`;
+  }).join('');
+  return `
+  <div class="sect">
+    <div class="sect-head">Динаміка по місяцях<span class="count">${data.length} міс</span></div>
+    <div class="dyn"><div class="dyn-bars">${bars}</div></div>
+  </div>`;
+}
+
+async function load(){
+  body.innerHTML = '<div class="loading">Завантаження…</div>';
+  const params = new URLSearchParams({ action:'suppliers_overview', from:state.from, to:state.to });
+  if (state.org) params.set('org', state.org);
+  params.set('limit', '30');
+  try{
+    const res = await fetch(`${API}/?${params}`, { headers: Auth.authHeaders() });
+    if (!res.ok) throw new Error(`${res.status} ${await res.text().catch(()=>res.statusText)}`);
+    const d = await res.json();
+    if (d.error) throw new Error(d.error);
+    sub.textContent = `${d.period.from} → ${d.period.to}${d.period.org ? ' · ' + d.period.org : ''}`;
+    body.innerHTML = renderKpi(d.kpi) + renderTop(d.top) + renderDynamics(d.dynamics);
+  }catch(e){
+    body.innerHTML = `<div class="error">Помилка: ${e.message}</div>`;
+  }
+}
+
+Auth.require('admin').then(user => {
+  AppHeader.mount({ active:'suppliers', user });
+  readUrl();
+  syncToolbar();
+  wireToolbar();
+  load();
+});
+</script>
+</body>
+</html>

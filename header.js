@@ -297,6 +297,7 @@
           <a href="/forecast.html"   class="${active==='forecast'   ? 'active' : ''}">📊 Закупівлі</a>
           <a href="/warehouses.html" class="${active==='warehouses' ? 'active' : ''}">📦 Склад</a>
           <a href="/sales.html"      class="${active==='sales'      ? 'active' : ''}">📈 Продажі</a>
+          ${isAdmin ? `<a href="/suppliers.html"  class="${active==='suppliers'  ? 'active' : ''}">🚚 Постачальники</a>` : ''}
           ${isAdmin ? `<a href="/finance.html"    class="${active==='finance'    ? 'active' : ''}">💰 Фінанси</a>` : ''}
           ${isAdmin ? `<a href="/reports.html"    class="${active==='reports'    ? 'active' : ''}">📑 Звіти</a>` : ''}
         </nav>
