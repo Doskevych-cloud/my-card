@@ -441,7 +441,7 @@ async function loadDetail(refKey){
 }
 
 function renderDetail(d){
-  const { supplier, totals, totals_usd_ref, receipts, payments, orders, ap_movements } = d;
+  const { supplier, totals, totals_usd_ref, receipts, payments, orders, ap_movements, act_totals } = d;
   const CUR_ORDER = ['USD','UAH','EUR'];
   const curs = Object.keys(totals).sort((a,b) => (CUR_ORDER.indexOf(a)+999)%1000 - (CUR_ORDER.indexOf(b)+999)%1000);
 
@@ -494,16 +494,32 @@ function renderDetail(d){
     </tr>`).join('');
 
   const apRows = (ap_movements || []).map(r => {
-    const sign = r.record_type === 'Receipt' ? '+' : '−';
-    const cls = r.record_type === 'Receipt' ? 'neg' : 'pos';
+    const val = Math.abs(r.amount_currency || 0) > 0.01 ? r.amount_currency : r.amount;
+    const isInc = r.record_type === 'Receipt';
     return `
     <tr>
-      <td>${(r.period || '').slice(0,10)}</td>
-      <td class="muted">${r.recorder_short}</td>
+      <td>${(r.doc_date || r.period || '').slice(0,10)}</td>
+      <td class="name">${r.doc_title}</td>
       <td class="cur">${r.currency}</td>
-      <td class="amount">${r.amount_currency ? fmtCur(r.amount_currency, r.currency) : fmtCur(r.amount, r.currency)}</td>
-      <td class="amount ${cls}">${sign}${fmtCur(Math.abs(r.amount_currency || r.amount), r.currency)}</td>
+      <td class="amount ${isInc ? 'neg' : 'muted'}">${isInc ? fmtCur(val, r.currency) : '—'}</td>
+      <td class="amount ${isInc ? 'muted' : 'pos'}">${isInc ? '—' : fmtCur(val, r.currency)}</td>
       <td class="muted">${r.org_short || '—'}</td>
+    </tr>`;
+  }).join('');
+
+  // Підсумок акту звірки: по валютах — збільшення / зменшення / баланс (знак 1С: +нам, −ми)
+  const CUR_ORDER_ACT = ['USD','UAH','EUR'];
+  const actCurs = Object.keys(act_totals || {}).sort((a,b) => (CUR_ORDER_ACT.indexOf(a)+99)%100 - (CUR_ORDER_ACT.indexOf(b)+99)%100);
+  const actTotalsRows = actCurs.map(cur => {
+    const t = act_totals[cur];
+    const balCls = t.balance < 0 ? 'neg' : (t.balance > 0 ? 'pos' : 'muted');
+    return `
+    <tr>
+      <td class="name"><b>${cur}</b></td>
+      <td>${fmtCnt(t.count)}</td>
+      <td class="amount">${fmtCur(t.increase, cur)}</td>
+      <td class="amount">${fmtCur(t.decrease, cur)}</td>
+      <td class="amount ${balCls}">${Math.abs(t.balance) < 0.01 ? '—' : fmtCurSigned(t.balance, cur)}</td>
     </tr>`;
   }).join('');
 
@@ -551,13 +567,22 @@ function renderDetail(d){
     </div>
   </div>
   <div class="sect">
-    <div class="sect-head">Рухи взаєморозрахунків<span class="count">${(ap_movements||[]).length}</span>
-      <span style="margin-left:12px;font-weight:500;color:var(--text3)">Receipt = збільшує борг, Expense = зменшує</span>
+    <div class="sect-head">Акт звірки · підсумок по валютах<span class="count">${actCurs.length}</span>
+      <span style="margin-left:12px;font-weight:500;color:var(--text3)">баланс: +нам, −ми</span>
     </div>
-    <div style="overflow:auto;max-height:440px">
     <table class="s-tbl">
       <thead><tr>
-        <th>Дата</th><th>Документ</th><th>Вал</th><th>Сума</th><th>Зміна боргу</th><th>Орг</th>
+        <th>Валюта</th><th>Рухів</th><th>Збільшення боргу</th><th>Зменшення боргу</th><th>Наш борг на кінець</th>
+      </tr></thead>
+      <tbody>${actTotalsRows || '<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">немає</td></tr>'}</tbody>
+    </table>
+  </div>
+  <div class="sect">
+    <div class="sect-head">Акт звірки · документи<span class="count">${(ap_movements||[]).length}</span></div>
+    <div style="overflow:auto;max-height:520px">
+    <table class="s-tbl">
+      <thead><tr>
+        <th>Дата</th><th>Документ</th><th>Вал</th><th>Збільшення</th><th>Зменшення</th><th>Орг</th>
       </tr></thead>
       <tbody>${apRows || '<tr><td colspan="6" class="muted" style="text-align:center;padding:20px">немає</td></tr>'}</tbody>
     </table>
