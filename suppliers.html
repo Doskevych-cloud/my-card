@@ -380,47 +380,56 @@ function renderKpi(k){
 
 function renderTop(rows){
   if (!rows.length) return `<div class="sect"><div class="sect-head">Топ-постачальники</div><div class="empty">Немає даних у цьому періоді</div></div>`;
-  const CURS = ['USD','UAH','EUR'];
-  const renderCell = (act, bal, cur) => {
-    const hasAct = Math.abs(act.r_period) > 0.01 || Math.abs(act.p_period) > 0.01;
-    const hasBal = Math.abs(bal) > 0.01;
-    if (!hasAct && !hasBal) return `<td class="amount muted">—</td>`;
-    const balCls = bal < -0.01 ? 'neg' : (bal > 0.01 ? 'pos' : 'muted');
-    const balStr = hasBal ? fmtCurSigned(bal, cur) : '—';
-    const rStr = Math.abs(act.r_period) > 0.01 ? fmtCur(act.r_period, cur) : '—';
-    const pStr = Math.abs(act.p_period) > 0.01 ? fmtCur(act.p_period, cur) : '—';
-    return `<td class="cur-stack-cell">
-      <div class="cs-row"><span class="cs-lbl">закуплено</span><span>${rStr}</span></div>
-      <div class="cs-row"><span class="cs-lbl">оплачено</span><span>${pStr}</span></div>
-      <div class="cs-row cs-bal"><span class="cs-lbl">залишок</span><span class="${balCls}">${balStr}</span></div>
-    </td>`;
-  };
-  const lines = rows.map((r, idx) => {
-    const bbc = r.balance_by_currency || {};
-    const bc = r.by_currency || {};
-    const cells = CURS.map(cur => {
-      const act = bc[cur] || { r_period: 0, p_period: 0, r_cnt: 0, p_cnt: 0 };
-      const bal = Number(bbc[cur]) || 0;
-      return renderCell(act, bal, cur);
-    }).join('');
-    return `
-    <tr class="clickable" data-ref="${r.ref_key}">
-      <td class="num">${idx + 1}</td>
-      <td class="name">${r.description}${kindBadge(r.kind)}</td>
-      ${cells}
-    </tr>`;
-  }).join('');
+  const CUR_ORDER = ['USD','UAH','EUR'];
+  const lines = [];
+  let i = 0;
+  for (const r of rows) {
+    i++;
+    const actCurs = Object.keys(r.by_currency || {});
+    const balCurs = Object.keys(r.balance_by_currency || {});
+    const allCurs = [...new Set([...actCurs, ...balCurs])]
+      .sort((a,b) => CUR_ORDER.indexOf(a) - CUR_ORDER.indexOf(b));
+    // primary — валюта з найбільшим |balance|, інакше перша з обороту
+    let primary = null;
+    let maxAbs = -1;
+    for (const c of balCurs) {
+      const v = Math.abs(Number((r.balance_by_currency || {})[c]) || 0);
+      if (v > maxAbs) { maxAbs = v; primary = c; }
+    }
+    if (!primary) primary = allCurs[0] || 'USD';
+    const ordered = [primary, ...allCurs.filter(c => c !== primary)];
+    ordered.forEach((cur, idx) => {
+      const act = (r.by_currency || {})[cur] || { r_cnt:0, r_period:0, p_cnt:0, p_period:0 };
+      const bal = Number((r.balance_by_currency || {})[cur]) || 0;
+      const balCls = bal < -0.01 ? 'neg' : (bal > 0.01 ? 'pos' : 'muted');
+      const balStr = Math.abs(bal) < 0.01 ? '—' : fmtCurSigned(bal, cur);
+      const isFirst = idx === 0;
+      lines.push(`
+      <tr class="${isFirst ? 'clickable' : 'cur-sub clickable'}" data-ref="${r.ref_key}">
+        <td class="num">${isFirst ? i : ''}</td>
+        <td class="name">${isFirst ? (r.description + kindBadge(r.kind)) : '<span class="cur-indent">↳ також у ' + cur + '</span>'}</td>
+        <td class="cur">${cur}</td>
+        <td>${fmtCnt(act.r_cnt)}</td>
+        <td class="amount">${Math.abs(act.r_period) < 0.01 ? '—' : fmtCur(act.r_period, cur)}</td>
+        <td>${fmtCnt(act.p_cnt)}</td>
+        <td class="amount">${Math.abs(act.p_period) < 0.01 ? '—' : fmtCur(act.p_period, cur)}</td>
+        <td class="amount ${balCls}">${balStr}</td>
+      </tr>`);
+    });
+  }
   return `
   <div class="sect">
     <div class="sect-head">Топ-постачальники<span class="count">${rows.length}</span>
       <span style="margin-left:12px;font-weight:500;color:var(--text3)">залишок = оплачено − закуплено · +нам, −ми</span>
     </div>
-    <table class="s-tbl s-tbl-cur3">
+    <table class="s-tbl">
       <thead><tr>
-        <th>#</th><th>Постачальник</th>
-        <th>USD</th><th>UAH</th><th>EUR</th>
+        <th>#</th><th>Постачальник</th><th>Вал</th>
+        <th>Надх.</th><th>Оборот</th>
+        <th>Плат.</th><th>Оплачено</th>
+        <th>Залишок</th>
       </tr></thead>
-      <tbody>${lines}</tbody>
+      <tbody>${lines.join('')}</tbody>
     </table>
   </div>`;
 }
