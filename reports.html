@@ -151,7 +151,8 @@ a{color:inherit;text-decoration:none}
       <button class="ptab active" data-cat="sales">📈 Продажі</button>
     </div>
     <div class="sub-tabs" id="subTabs">
-      <button class="stab active" data-rep="sheet">🎯 Воронка лідогенерації</button>
+      <button class="stab active" data-rep="sheet">🎯 Воронка (за період)</button>
+      <button class="stab" data-rep="sheet-cum">📈 Pipeline (кумулятивна)</button>
     </div>
   </div>
 
@@ -334,8 +335,8 @@ function attachEvents() {
       document.querySelectorAll('#subTabs .stab').forEach(x => x.classList.toggle('active', x === t));
       // org-chip only works for Planfix (template id)
       document.querySelectorAll('.chip[data-org]').forEach(c => {
-        c.style.opacity = state.source === 'sheet' ? .4 : 1;
-        c.style.pointerEvents = state.source === 'sheet' ? 'none' : '';
+        c.style.opacity = (state.source === 'sheet' || state.source === 'sheet-cum') ? .4 : 1;
+        c.style.pointerEvents = (state.source === 'sheet' || state.source === 'sheet-cum') ? 'none' : '';
       });
       saveStateToUrl(); load();
     });
@@ -349,12 +350,16 @@ function attachEvents() {
 // ─── Data ───
 async function load(force = false) {
   state.loading = true;
-  const srcLabel = state.source === 'sheet' ? 'Google Sheets' : 'Planfix';
+  const srcLabel = (state.source === 'sheet' || state.source === 'sheet-cum') ? 'Google Sheets' : 'Planfix';
   document.getElementById('content').innerHTML = `<div class="loading">Завантаження звіту з ${srcLabel}…</div>`;
   try {
-    const action = state.source === 'sheet' ? 'sheet_funnel' : 'planfix_funnel';
+    const isSheet = state.source === 'sheet' || state.source === 'sheet-cum';
+    const action = isSheet ? 'sheet_funnel' : 'planfix_funnel';
     const params = new URLSearchParams({ action, from: state.from, to: state.to });
-    if (state.source === 'sheet' && state.clientType) params.set('clientType', state.clientType);
+    if (isSheet) {
+      if (state.clientType) params.set('clientType', state.clientType);
+      if (state.source === 'sheet-cum') params.set('mode', 'cumulative');
+    }
     if (force) params.set('_', Date.now());
     const res = await fetch(API + '?' + params.toString());
     const data = await res.json();
@@ -362,7 +367,7 @@ async function load(force = false) {
     state.raw = data;
     state.loading = false;
     let label = '';
-    if (state.source === 'sheet') {
+    if ((state.source === 'sheet' || state.source === 'sheet-cum')) {
       label = `Джерело: <b>Google Sheets</b> · рядків у періоді: <b>${fmt(data._rowsInPeriod || 0)}</b>`;
     } else {
       const fresh = data.generatedAt ? data.generatedAt.replace('T',' ').slice(0,16) : '';
@@ -452,7 +457,7 @@ function fmtDateUA(iso){if(!iso)return '—';const d=iso.slice(0,10).split('-');
 function render() {
   if (!state.raw) return;
   let a, tasks = [];
-  if (state.source === 'sheet') {
+  if ((state.source === 'sheet' || state.source === 'sheet-cum')) {
     // Worker sheet_funnel already returns aggregated shape matching aggregate().
     a = state.raw;
   } else {
@@ -548,7 +553,7 @@ function render() {
   html += `</tbody></table></div>`;
 
   // Channels (тільки для sheet-режиму)
-  if (state.source === 'sheet' && a.channels && a.channels.length) {
+  if ((state.source === 'sheet' || state.source === 'sheet-cum') && a.channels && a.channels.length) {
     html += `
     <div class="section-h"><h2>🌐 Канали реклами</h2><span class="hint">Унікальні угоди по джерелу</span></div>
     <div class="mgr-wrap">
@@ -571,7 +576,7 @@ function render() {
   }
 
   // Усі ліди (sheet only) — сортовна таблиця
-  if (state.source === 'sheet' && a.leadsList && a.leadsList.length) {
+  if ((state.source === 'sheet' || state.source === 'sheet-cum') && a.leadsList && a.leadsList.length) {
     const list = [...a.leadsList].sort((x, y) => {
       const col = leadsSort.col;
       let va = x[col], vb = y[col];
@@ -622,7 +627,7 @@ function render() {
   }
 
   // Tasks — тільки для Planfix-режиму (у sheet rows агреговані, raw немає)
-  if (state.source !== 'sheet') {
+  if ((state.source !== 'sheet' && state.source !== 'sheet-cum')) {
   const uniqTasks = new Set(tasks.map(t => t.id)).size;
   html += `
   <div class="section-h"><h2>📋 Задачі (${fmt(uniqTasks)} унікальних, ${fmt(tasks.length)} проходжень)</h2><span class="hint">Останні зміни вгорі</span></div>
@@ -649,10 +654,10 @@ function render() {
     html += `<tr><td colspan="5" class="muted" style="text-align:center;padding:10px">… показано перші 200 з ${fmt(sorted.length)}</td></tr>`;
   }
   html += `</tbody></table></div>`;
-  } // end if (state.source !== 'sheet')
+  } // end if ((state.source !== 'sheet' && state.source !== 'sheet-cum'))
 
   // Footer
-  const srcDesc = state.source === 'sheet'
+  const srcDesc = (state.source === 'sheet' || state.source === 'sheet-cum')
     ? `Google Sheets (кожен рядок = подія переходу статусу, реальна дата зміни). Кеш 1 год.`
     : `Planfix звіт «${esc(state.raw.reportName)}» (items[5] = остання зміна задачі). Кеш 1 год.`;
   html += `
