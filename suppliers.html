@@ -375,16 +375,17 @@ function renderKpi(k){
   const owedToUs = Number(k.owed_to_us_usd) || 0;
   const weOwe = Number(k.we_owe_usd) || 0;
   const total = Number(k.balance_usd) || (owedToUs - weOwe);
-  const totalCls = total < 0 ? 'neg' : (total > 0 ? 'pos' : '');
+  // Інверсія: борги нам (дебіторка) = red (несплачено), наші борги = green (окей).
+  const totalCls = total < 0 ? 'pos' : (total > 0 ? 'neg' : '');
   return `
   <div class="kpi-row" style="grid-template-columns:repeat(3, 1fr)">
     <div class="kpi">
       <div class="label">Борги нам (постачальники винні)</div>
-      <div class="value pos">${fmtCur(owedToUs, 'USD')}</div>
+      <div class="value neg">${fmtCur(owedToUs, 'USD')}</div>
     </div>
     <div class="kpi">
       <div class="label">Борги наші (ми винні)</div>
-      <div class="value neg">${fmtCur(weOwe, 'USD')}</div>
+      <div class="value pos">${fmtCur(weOwe, 'USD')}</div>
     </div>
     <div class="kpi">
       <div class="label">Ітого</div>
@@ -414,7 +415,7 @@ function renderTop(rows){
     if (!primary) primary = allCurs[0] || 'USD';
     // Header-рядок постачальника (лише номер + назва); далі всі валюти — sub-рядками.
     const bUsd = Number(r.balance_usd) || 0;
-    const bUsdCls = bUsd < -0.01 ? 'neg' : (bUsd > 0.01 ? 'pos' : 'muted');
+    const bUsdCls = bUsd < -0.01 ? 'pos' : (bUsd > 0.01 ? 'neg' : 'muted');
     const bUsdStr = Math.abs(bUsd) < 0.01 ? '—' : fmtCurSigned(bUsd, 'USD');
     lines.push(`
     <tr class="clickable supplier-head" data-ref="${r.ref_key}">
@@ -426,7 +427,7 @@ function renderTop(rows){
     ordered.forEach(cur => {
       const act = (r.by_currency || {})[cur] || { r_cnt:0, r_period:0, p_cnt:0, p_period:0 };
       const bal = Number((r.balance_by_currency || {})[cur]) || 0;
-      const balCls = bal < -0.01 ? 'neg' : (bal > 0.01 ? 'pos' : 'muted');
+      const balCls = bal < -0.01 ? 'pos' : (bal > 0.01 ? 'neg' : 'muted');
       const balStr = Math.abs(bal) < 0.01 ? '—' : fmtCurSigned(bal, cur);
       lines.push(`
       <tr class="cur-sub clickable" data-ref="${r.ref_key}">
