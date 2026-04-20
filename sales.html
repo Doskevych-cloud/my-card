@@ -450,7 +450,7 @@ function renderSummaryGrid(managers) {
   const gPct = gTotal > 0 ? Math.round(gPaid / gTotal * 100) : 0;
   const money = (v, ok) => ok ? '$' + fmt(v) : '—';
 
-  // Grand total — широкий банер зверху з прогрес-баром і коротким бонусом
+  // Grand total — два блоки: Оплачено / Потенціал (без % готово)
   const grandBanner = `
     <div class="summary-grand">
       <div class="sg-paid">
@@ -462,23 +462,20 @@ function renderSummaryGrid(managers) {
         <span class="sg-lbl">Потенціал (всього)</span>
         <span class="v">${money(gTotal, allOk)}</span>
       </div>
-      <div class="sg-pct">
-        <span class="val">${allOk ? gPct + '% готово' : ''}</span>
-        <div class="sg-bar"><div class="sg-bar-fill" style="width:${gPct}%"></div></div>
-      </div>
     </div>`;
 
-  // Картки менеджерів — компактні: ім'я, оплачено (головне), прогрес-бар,
-  // футер-рядок з потенціалом і бонусом
+  // Картки менеджерів — шкала = paid / maxPaid (візуально показує хто скільки
+  // заробив відносно топ-менеджера за період).
+  const maxPaid = perMgr.reduce((m, d) => Math.max(m, d.ok ? d.paid : 0), 0) || 1;
   const mgrCards = perMgr.map(({ m, paid, remain, ok }) => {
     const isOpen = state.openKeys.has(`m:${m.name}`);
     const total = paid + remain;
-    const pct = ok && total > 0 ? Math.round(paid / total * 100) : 0;
+    const scalePct = ok && maxPaid > 0 ? Math.round(paid / maxPaid * 100) : 0;
     return `
       <div class="summary-card ${isOpen ? 'active' : ''}" data-key="m:${esc(m.name)}">
         <div class="name">${esc(m.name)}</div>
         <div class="paid">${money(paid, ok)}</div>
-        <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
+        <div class="bar" title="${ok ? fmt(paid) + ' $ = ' + scalePct + '% від топ-менеджера' : ''}"><div class="bar-fill" style="width:${scalePct}%"></div></div>
         <div class="foot">
           <span class="pot">пот. ${money(total, ok)}</span>
           <span class="bonus">бонус <b>${money(paid * BONUS_RATE, ok)}</b></span>
