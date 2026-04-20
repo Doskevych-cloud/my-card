@@ -234,6 +234,7 @@ a{color:inherit;text-decoration:none}
         <span class="chip active" data-role="suppliers">Постачальники</span>
         <span class="chip" data-role="customers">Покупці</span>
         <span class="chip" data-role="others">Інші</span>
+        <span class="chip" data-role="all">Всі</span>
       </span>
 
       <span class="sep"></span>
@@ -266,10 +267,11 @@ const body = document.getElementById('body');
 const sub  = document.getElementById('subTitle');
 
 const state = { from:'', to:'', org:'', preset:'12m', q:'', role:'suppliers', detailRef:'', tab:'overview', dvTable:'counterparties', dvSearch:'', dvOffset:0 };
-const ROLE_LABEL = { suppliers:'постачальник', customers:'покупець', others:'контрагент' };
-const ROLE_LABEL_COL = { suppliers:'Постачальник', customers:'Покупець', others:'Контрагент' };
-const ROLE_ENDPOINT = { suppliers:'suppliers_overview', customers:'customers_overview', others:'others_overview' };
-const ROLE_DETAIL_ENDPOINT = { suppliers:'supplier_detail', customers:'customer_detail', others:'other_detail' };
+const ROLE_LABEL = { suppliers:'постачальник', customers:'покупець', others:'контрагент', all:'контрагент' };
+const ROLE_LABEL_COL = { suppliers:'Постачальник', customers:'Покупець', others:'Контрагент', all:'Контрагент' };
+const ROLE_ENDPOINT = { suppliers:'suppliers_overview', customers:'customers_overview', others:'others_overview', all:'all_overview' };
+// other_detail зараз обробляє будь-який kind → для «Всі» теж використовуємо його.
+const ROLE_DETAIL_ENDPOINT = { suppliers:'supplier_detail', customers:'customer_detail', others:'other_detail', all:'other_detail' };
 const DV_TABLES = [
   'counterparties','purchase_orders','purchase_receipts','purchase_receipt_items',
   'payments_out','ap_movements',
@@ -461,7 +463,10 @@ function renderTop(rows){
     });
   }
   const colLabel = ROLE_LABEL_COL[state.role] || 'Контрагент';
-  const titleLabel = state.role === 'customers' ? 'Топ-покупці' : (state.role === 'suppliers' ? 'Топ-постачальники' : 'Контрагенти');
+  const titleLabel = state.role === 'customers' ? 'Топ-покупці'
+                   : state.role === 'suppliers' ? 'Топ-постачальники'
+                   : state.role === 'all' ? 'Топ-контрагенти (всі)'
+                   : 'Контрагенти';
   return `
   <div class="sect">
     <div class="sect-head">${titleLabel}<span class="count">${rows.length}</span>

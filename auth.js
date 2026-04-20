@@ -58,8 +58,6 @@
     sales: 'Продажі',
     finance: 'Фінанси',
     reports: 'Звіти',
-    suppliers: 'Постачальники',
-    customers: 'Покупці',
     counterparties: 'Контрагенти',
     admin: 'Адмін-панель',
   };
