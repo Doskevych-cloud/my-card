@@ -76,19 +76,6 @@ a{color:inherit;text-decoration:none}
 .summary-grand .sg-bonus,
 .summary-grand .sg-bar{display:none}
 
-/* Leaderboard (в стилі дашборда) — rank | name + sub | val + bar під ним */
-.sales-leader{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:4px 14px;margin-bottom:14px}
-.sales-leader .sl-head{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;padding:10px 0 6px;border-bottom:1px solid var(--border)}
-.sales-leader .sl-row{display:grid;grid-template-columns:24px 1fr auto auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);transition:background .15s}
-.sales-leader .sl-row:last-child{border-bottom:none}
-.sales-leader .sl-row:hover{background:var(--bg3)}
-.sales-leader .sl-rank{font-size:11px;color:var(--text3);font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
-.sales-leader .sl-name{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sales-leader .sl-sub{font-size:11px;color:var(--text3);font-weight:500;margin-left:6px}
-.sales-leader .sl-val{font-size:13px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;text-align:right}
-.sales-leader .sl-bar{grid-column:2 / -1;height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:4px}
-.sales-leader .sl-bar-fill{height:100%;background:linear-gradient(90deg,var(--green),rgba(34,197,94,.3));border-radius:2px;transition:width .6s ease}
-
 /* Grid менеджерів — компактні картки: ім'я + оплачено + прогрес + дрібна
    сервісна інформація (потенціал, бонус) однією лінією. */
 .summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:14px}
@@ -97,7 +84,8 @@ a{color:inherit;text-decoration:none}
 .summary-card.active{background:var(--accent-bg);border-color:var(--accent)}
 .summary-card .name{font-size:12px;color:var(--text2);font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .summary-card .paid{font-size:20px;font-weight:800;letter-spacing:-.3px;line-height:1;color:var(--text);font-variant-numeric:tabular-nums}
-.summary-card .bar{display:none}
+.summary-card .bar{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.summary-card .bar-fill{height:100%;background:linear-gradient(90deg,var(--green),rgba(34,197,94,.3));border-radius:2px;transition:width .6s ease}
 .summary-card .foot{display:flex;justify-content:space-between;gap:8px;font-size:10.5px;color:var(--text3)}
 .summary-card .foot .pot{font-weight:600}
 .summary-card .foot .bonus b{color:var(--text);font-weight:700;font-variant-numeric:tabular-nums}
@@ -496,21 +484,7 @@ function renderSummaryGrid(managers) {
       </div>`;
   }).join('');
 
-  // Leaderboard (dashboard-style) — ранжирований список менеджерів зі шкалою плану.
-  const leaderRows = perMgr.map(({ m, paid, ok }, i) => {
-    const planPct = ok ? Math.min(100, Math.round(paid / MGR_PLAN_USD * 100)) : 0;
-    return `
-      <div class="sl-row">
-        <div class="sl-rank">${i+1}</div>
-        <div class="sl-name" title="${esc(m.name)}">${esc(m.name)}</div>
-        <div class="sl-sub">${ok ? planPct + '% плану · бонус ' + money(paid * BONUS_RATE, ok) : ''}</div>
-        <div class="sl-val">${money(paid, ok)}</div>
-        <div class="sl-bar" title="${ok ? planPct + '% плану ($300k)' : ''}"><div class="sl-bar-fill" style="width:${planPct}%"></div></div>
-      </div>`;
-  }).join('');
-  const leaderboard = `<div class="sales-leader"><div class="sl-head">Рейтинг менеджерів · план $${fmt(MGR_PLAN_USD/1000)}k</div>${leaderRows}</div>`;
-
-  host.innerHTML = `${grandBanner}${leaderboard}<div class="summary-grid">${mgrCards}</div>`;
+  host.innerHTML = `${grandBanner}<div class="summary-grid">${mgrCards}</div>`;
 }
 
 function renderByManager(managers) {
