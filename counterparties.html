@@ -400,8 +400,8 @@ function renderKpi(k){
   const owedToUs = Number(k.owed_to_us_usd) || 0;
   const weOwe = Number(k.we_owe_usd) || 0;
   const total = Number(k.balance_usd) || (weOwe - owedToUs);
-  // Уніфікований знак 1С AP MXL: +ми винні → neg (червоний, наш пасив), -нам винні → pos (зелений, наш актив).
-  const totalCls = total > 0 ? 'neg' : (total < 0 ? 'pos' : '');
+  // Cashflow-сприйняття власника: +ми винні (гроші в нас) → pos (зелений), −нам винні (наші гроші заморожені) → neg (червоний).
+  const totalCls = total > 0 ? 'pos' : (total < 0 ? 'neg' : '');
   const byCur = k.balance_by_currency || {};
   const CUR_ORDER = ['USD','UAH','EUR'];
   const curs = Object.keys(byCur).sort((a,b) => CUR_ORDER.indexOf(a) - CUR_ORDER.indexOf(b));
@@ -461,7 +461,7 @@ function renderTop(rows){
     if (!primary) primary = allCurs[0] || 'USD';
     // Header-рядок постачальника (лише номер + назва); далі всі валюти — sub-рядками.
     const bUsd = Number(r.balance_usd) || 0;
-    const bUsdCls = bUsd < -0.01 ? 'pos' : (bUsd > 0.01 ? 'neg' : 'muted');
+    const bUsdCls = bUsd > 0.01 ? 'pos' : (bUsd < -0.01 ? 'neg' : 'muted');
     const bUsdStr = Math.abs(bUsd) < 0.01 ? '—' : fmtCurSigned(bUsd, 'USD');
     lines.push(`
     <tr class="clickable supplier-head" data-ref="${r.ref_key}">
@@ -567,9 +567,9 @@ async function loadDetail(refKey){
 function renderDetailPage(d){
   const { supplier, period, orders, ap_movements, act_totals } = d;
   const actUsd = (act_totals && act_totals.USD) || { opening:0, increase:0, decrease:0, period_change:0, closing:0, count:0 };
-  // 1С AP MXL знак: +ми винні → neg (червоний), -нам винні → pos (зелений).
-  const openCls  = actUsd.opening > 0 ? 'neg' : (actUsd.opening < 0 ? 'pos' : 'muted');
-  const closeCls = actUsd.closing > 0 ? 'neg' : (actUsd.closing < 0 ? 'pos' : 'muted');
+  // Cashflow-сприйняття: +ми винні → pos (зелений, гроші в нас), −нам винні → neg (червоний, наші гроші у контрагента).
+  const openCls  = actUsd.opening > 0 ? 'pos' : (actUsd.opening < 0 ? 'neg' : 'muted');
+  const closeCls = actUsd.closing > 0 ? 'pos' : (actUsd.closing < 0 ? 'neg' : 'muted');
 
   // Хронологія рухів — один рядок на документ
   const actRows = (ap_movements || []).map(m => {
