@@ -1097,19 +1097,16 @@ async function loadSales() {
     return;
   }
   const top = managers.slice(0, 6);
+  const max = Math.max(...managers.map(m => m.paidUsd), 1);
   const BONUS = 0.0008;
-  const MGR_PLAN_USD = 300000; // план на період (узгоджено з sales.html)
-  const rowHtml = (m, i) => {
-    const planPct = Math.min(100, Math.round(m.paidUsd / MGR_PLAN_USD * 100));
-    return `
+  const rowHtml = (m, i) => `
     <div class="leader-row mgr">
       <div class="leader-rank">${i+1}</div>
       <div class="leader-name" title="${esc(m.name)}">${esc(m.name)}${m.ok ? '' : ' <span class="leader-sub" style="color:var(--yellow)">~</span>'}</div>
-      <div class="leader-sub">${planPct}% плану · бонус ${fmtMoney(m.paidUsd * BONUS, '$')}</div>
+      <div class="leader-sub">бонус ${fmtMoney(m.paidUsd * BONUS, '$')}</div>
       <div class="leader-val">${fmtMoney(m.paidUsd, '$')}</div>
-      <div class="leader-bar" title="${planPct}% плану ($300k)"><div class="leader-bar-fill" style="width:${planPct}%"></div></div>
+      <div class="leader-bar"><div class="leader-bar-fill" style="width:${m.paidUsd/max*100}%"></div></div>
     </div>`;
-  };
   const topHtml = top.map(rowHtml).join('');
   const extraBtn = managers.length > top.length
     ? `<button class="more-btn" onclick="openManagersModal()">Переглянути всіх (${managers.length}) →</button>`
@@ -1123,21 +1120,18 @@ async function loadSales() {
 function openManagersModal() {
   const managers = state.managersAll || [];
   if (!managers.length) return;
+  const max = Math.max(...managers.map(m => m.paidUsd), 1);
   const BONUS = 0.0008;
-  const MGR_PLAN_USD = 300000;
   const totalPaid = managers.reduce((s, m) => s + m.paidUsd, 0);
   const totalBonus = totalPaid * BONUS;
-  const rows = managers.map((m, i) => {
-    const planPct = Math.min(100, Math.round(m.paidUsd / MGR_PLAN_USD * 100));
-    return `
+  const rows = managers.map((m, i) => `
     <div class="leader-row mgr">
       <div class="leader-rank">${i+1}</div>
       <div class="leader-name" title="${esc(m.name)}">${esc(m.name)}${m.ok ? '' : ' <span class="leader-sub" style="color:var(--yellow)">~</span>'}</div>
-      <div class="leader-sub">${planPct}% плану · бонус ${fmtMoney(m.paidUsd * BONUS, '$')}</div>
+      <div class="leader-sub">бонус ${fmtMoney(m.paidUsd * BONUS, '$')}</div>
       <div class="leader-val">${fmtMoney(m.paidUsd, '$')}</div>
-      <div class="leader-bar" title="${planPct}% плану ($300k)"><div class="leader-bar-fill" style="width:${planPct}%"></div></div>
-    </div>`;
-  }).join('');
+      <div class="leader-bar"><div class="leader-bar-fill" style="width:${m.paidUsd/max*100}%"></div></div>
+    </div>`).join('');
   openModal({
     title: '🏆 ТОП менеджерів',
     sub: `${managers.length} менеджерів · сума оплат ${fmtMoney(totalPaid, '$')} · бонус ${fmtMoney(totalBonus, '$')}`,
