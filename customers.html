@@ -405,7 +405,7 @@ function renderTop(rows){
     lines.push(`
     <tr class="clickable supplier-head" data-ref="${r.ref_key}">
       <td class="num">${i}</td>
-      <td class="name" colspan="6">${r.description}${kindBadge(r.kind)}</td>
+      <td class="name" colspan="5">${r.description}${kindBadge(r.kind)}</td>
       <td class="amount ${bUsdCls}" title="Підсумковий USD-еквівалент (з ap_movements, 1С-style)">${bUsdStr}</td>
     </tr>`);
     const ordered = [primary, ...allCurs.filter(c => c !== primary)];
@@ -419,7 +419,6 @@ function renderTop(rows){
         <td class="num"></td>
         <td class="name"><span class="cur-indent">↳ у ${cur}</span></td>
         <td class="cur">${cur}</td>
-        <td>${fmtCnt(act.r_cnt)}</td>
         <td class="amount">${Math.abs(act.r_period) < 0.01 ? '—' : fmtCur(act.r_period, cur)}</td>
         <td>${fmtCnt(act.p_cnt)}</td>
         <td class="amount">${Math.abs(act.p_period) < 0.01 ? '—' : fmtCur(act.p_period, cur)}</td>
@@ -430,12 +429,12 @@ function renderTop(rows){
   return `
   <div class="sect">
     <div class="sect-head">Топ-покупці<span class="count">${rows.length}</span>
-      <span style="margin-left:12px;font-weight:500;color:var(--text3)">залишок = оплачено − закуплено · +нам, −ми</span>
+      <span style="margin-left:12px;font-weight:500;color:var(--text3)">залишок = отримано − відвантажено · +нам, −ми</span>
     </div>
     <table class="s-tbl">
       <thead><tr>
         <th>#</th><th>Покупець</th><th>Вал</th>
-        <th>Продажів</th><th>Продано</th>
+        <th>Відвантажено</th>
         <th>Плат.</th><th>Отримано</th>
         <th>Залишок</th>
       </tr></thead>
