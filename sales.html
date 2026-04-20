@@ -464,20 +464,19 @@ function renderSummaryGrid(managers) {
       </div>
     </div>`;
 
-  // Картки менеджерів — шкала = paid / maxPaid (візуально показує хто скільки
-  // заробив відносно топ-менеджера за період).
-  const maxPaid = perMgr.reduce((m, d) => Math.max(m, d.ok ? d.paid : 0), 0) || 1;
+  // Картки менеджерів — шкала = paid / PLAN (фіксований план на період).
+  const MGR_PLAN_USD = 300000;
   const mgrCards = perMgr.map(({ m, paid, remain, ok }) => {
     const isOpen = state.openKeys.has(`m:${m.name}`);
     const total = paid + remain;
-    const scalePct = ok && maxPaid > 0 ? Math.round(paid / maxPaid * 100) : 0;
+    const planPct = ok ? Math.min(100, Math.round(paid / MGR_PLAN_USD * 100)) : 0;
     return `
       <div class="summary-card ${isOpen ? 'active' : ''}" data-key="m:${esc(m.name)}">
         <div class="name">${esc(m.name)}</div>
         <div class="paid">${money(paid, ok)}</div>
-        <div class="bar" title="${ok ? fmt(paid) + ' $ = ' + scalePct + '% від топ-менеджера' : ''}"><div class="bar-fill" style="width:${scalePct}%"></div></div>
+        <div class="bar" title="${ok ? planPct + '% плану ($300k)' : ''}"><div class="bar-fill" style="width:${planPct}%"></div></div>
         <div class="foot">
-          <span class="pot">пот. ${money(total, ok)}</span>
+          <span class="pot">${ok ? planPct + '% плану' : ''}</span>
           <span class="bonus">бонус <b>${money(paid * BONUS_RATE, ok)}</b></span>
         </div>
       </div>`;
