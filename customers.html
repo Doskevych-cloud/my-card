@@ -425,7 +425,8 @@ function renderTop(rows){
     ordered.forEach(cur => {
       const act = (r.by_currency || {})[cur] || { r_cnt:0, r_period:0, p_cnt:0, p_period:0 };
       const bal = Number((r.balance_by_currency || {})[cur]) || 0;
-      const balCls = bal < -0.01 ? 'pos' : (bal > 0.01 ? 'neg' : 'muted');
+      // Per-currency деталі — без кольору (акцент лише на сумарному залишку контрагента).
+      const balCls = Math.abs(bal) < 0.01 ? 'muted' : '';
       const balStr = Math.abs(bal) < 0.01 ? '—' : fmtCurSigned(bal, cur);
       lines.push(`
       <tr class="cur-sub clickable" data-ref="${r.ref_key}">
