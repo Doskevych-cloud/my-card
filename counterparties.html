@@ -400,8 +400,13 @@ function renderKpi(k){
   const owedToUs = Number(k.owed_to_us_usd) || 0;
   const weOwe = Number(k.we_owe_usd) || 0;
   const total = Number(k.balance_usd) || (owedToUs - weOwe);
-  // Інверсія: борги нам (дебіторка) = red, наші борги = green.
-  const totalCls = total < 0 ? 'pos' : (total > 0 ? 'neg' : '');
+  // Кольори:
+  //  - Постачальники (1С-style, + = ми винні): + зелений, − червоний.
+  //  - Покупці / Інші / Всі: + червоний (нам винні, дебіторка), − зелений (ми винні, буфер).
+  const sup = state.role === 'suppliers';
+  const totalCls = sup
+    ? (total > 0 ? 'pos' : (total < 0 ? 'neg' : ''))
+    : (total < 0 ? 'pos' : (total > 0 ? 'neg' : ''));
   const byCur = k.balance_by_currency || {};
   const CUR_ORDER = ['USD','UAH','EUR'];
   const curs = Object.keys(byCur).sort((a,b) => CUR_ORDER.indexOf(a) - CUR_ORDER.indexOf(b));
@@ -527,32 +532,6 @@ function renderDynamics(data){
   </div>`;
 }
 
-// Перетворює знаки AP на 1С-style: + = ми винні, − = передплата (нам винні).
-// Міняємо місцями owed_to_us ↔ we_owe у KPI / balance_by_currency, інвертуємо net balance.
-function invertAPSigns(d){
-  if (!d) return;
-  const k = d.kpi || {};
-  const owedUsd = Number(k.owed_to_us_usd) || 0;
-  const weOweUsd = Number(k.we_owe_usd) || 0;
-  k.owed_to_us_usd = weOweUsd;
-  k.we_owe_usd = owedUsd;
-  k.balance_usd = -(Number(k.balance_usd) || 0);
-  const bc = k.balance_by_currency || {};
-  for (const cur of Object.keys(bc)) {
-    const row = bc[cur] || {};
-    const o = Number(row.owed_to_us) || 0;
-    const w = Number(row.we_owe) || 0;
-    row.owed_to_us = w;
-    row.we_owe = o;
-    row.total = -(Number(row.total) || 0);
-  }
-  for (const r of (d.top || [])) {
-    r.balance_usd = -(Number(r.balance_usd) || 0);
-    const bbc = r.balance_by_currency || {};
-    for (const cur of Object.keys(bbc)) bbc[cur] = -(Number(bbc[cur]) || 0);
-  }
-}
-
 async function loadOverview(){
   body.innerHTML = '<div class="loading">Завантаження…</div>';
   const endpoint = ROLE_ENDPOINT[state.role];
@@ -569,9 +548,6 @@ async function loadOverview(){
     if (!res.ok) throw new Error(`${res.status} ${await res.text().catch(()=>res.statusText)}`);
     const d = await res.json();
     if (d.error) throw new Error(d.error);
-    // 1С-style знаки для ролі «Постачальники» (звіт «Розрахунки з постачальниками»):
-    //   + = ми винні (наш борг), − = нам винні (передплата). Інвертуємо всі знаки.
-    if (state.role === 'suppliers') invertAPSigns(d);
     sub.textContent = `${d.period.from} → ${d.period.to}${d.period.org ? ' · ' + d.period.org : ''}${d.period.q ? ' · q="' + d.period.q + '"' : ''}`;
     body.innerHTML = renderKpi(d.kpi) + renderTop(d.top) + renderDynamics(d.dynamics);
     // Клік по рядку постачальника → відкриваємо акт звірки
