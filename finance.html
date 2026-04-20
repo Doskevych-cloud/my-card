@@ -279,6 +279,7 @@ a{color:inherit;text-decoration:none}
       <span class="ptab" data-view="cf" onclick="switchTab(this)">Cash Flow</span>
       <span class="ptab" data-view="ar" onclick="switchTab(this)">Розрахунки з покупцями</span>
       <span class="ptab" data-view="ms" onclick="switchTab(this)">Взаєморозрахунки</span>
+      <span class="ptab" data-view="wh" onclick="switchTab(this)">Склад (вартість)</span>
       <span class="export-menu" style="margin-left:auto;position:relative">
         <button type="button" class="btn btn--secondary export-btn" onclick="toggleExportMenu(event)" title="Експортувати поточну вкладку">
           <span class="ic">⬇</span> Експорт <span style="opacity:.7">▾</span>
@@ -489,6 +490,34 @@ a{color:inherit;text-decoration:none}
       <div id="msSummary"></div>
       <div id="msBody"><div class="loading">Завантаження...</div></div>
     </div>
+
+    <!-- ═══ Warehouse Value View (Вартісна оцінка складу) ═══ -->
+    <div id="whView" class="view">
+      <div class="toolbar" id="whToolbar">
+        <span class="lbl">Станом на</span>
+        <input type="date" id="whDateIn">
+        <span class="group">
+          <span class="chip" onclick="whSetPreset('today')">Сьогодні</span>
+          <span class="chip" onclick="whSetPreset('meom')">Кінець місяця</span>
+          <span class="chip" onclick="whSetPreset('prevMeom')">Кінець попер. міс</span>
+        </span>
+        <div class="sep"></div>
+        <span class="group" id="whOrgGroup">
+          <span class="chip active" data-org="" onclick="whSetOrg(this)">Всі</span>
+          <span class="chip" data-org="Реакт" onclick="whSetOrg(this)">Реакт</span>
+          <span class="chip" data-org="Генерація" onclick="whSetOrg(this)">Ген.Одеса</span>
+          <span class="chip" data-org="Ген.Київ" onclick="whSetOrg(this)">Ген.Київ</span>
+        </span>
+        <div class="sep"></div>
+        <span class="group">
+          <span class="chip" id="whSyncBtn" onclick="whSyncSnapshot()" title="Перезавантажити знімок залишків на вибрану дату з 1С">
+            <span class="ic">↻</span> Оновити знімок
+          </span>
+        </span>
+      </div>
+      <div id="whSummary"></div>
+      <div id="whBody"><div class="loading">Завантаження...</div></div>
+    </div>
   </div>
 </div>
 
@@ -530,6 +559,7 @@ function switchTab(el) {
   if (v === 'cf' && !cfState._loaded) cfLoad();
   if (v === 'ar' && !arState._loaded) arLoad();
   if (v === 'ms' && !msState._loaded) { msSetPreset('today'); }
+  if (v === 'wh' && !whState._loaded) { whSetPreset('today'); }
   saveStateToUrl();
 }
 
@@ -2442,6 +2472,223 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /* ═══════════════════════════════════════════════════
+   WAREHOUSE VALUE TAB (Вартісна оцінка складу)
+   Дані з D1: stock_balances + weighted-avg cost per (nom × org)
+   ═══════════════════════════════════════════════════ */
+const whState = { on: '', org: '', _loaded: false, data: null, search: '', limit: 200 };
+
+function whSetPreset(p) {
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  let d;
+  if (p === 'today')        d = now;
+  else if (p === 'meom')    d = new Date(y, m + 1, 0);
+  else if (p === 'prevMeom') d = new Date(y, m, 0);
+  whState.on = _localISO(d);
+  document.getElementById('whDateIn').value = whState.on;
+  document.querySelectorAll('#whToolbar .group:first-of-type .chip').forEach(c => {
+    const tag = c.textContent.trim();
+    const match = (p === 'today' && tag === 'Сьогодні') ||
+                  (p === 'meom' && tag === 'Кінець місяця') ||
+                  (p === 'prevMeom' && tag === 'Кінець попер. міс');
+    c.classList.toggle('active', match);
+  });
+  whLoad();
+}
+function whSetOrg(el) {
+  whState.org = el.dataset.org;
+  el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  whRender();
+}
+
+async function whLoad() {
+  whState._loaded = true;
+  document.getElementById('whBody').innerHTML = '<div class="loading">Завантаження...</div>';
+  document.getElementById('whSummary').innerHTML = '';
+  try {
+    const q = '?action=warehouse_value_report&date=' + encodeURIComponent(whState.on);
+    const data = await fetch(API_URL + q).then(r => r.json());
+    if (data.error) throw new Error(data.error);
+    whState.data = data;
+    whRender();
+  } catch (e) {
+    document.getElementById('whBody').innerHTML = '<div class="error">' + esc(e.message) + '</div>';
+  }
+}
+
+async function whSyncSnapshot() {
+  const btn = document.getElementById('whSyncBtn');
+  if (btn) { btn.style.pointerEvents = 'none'; btn.style.opacity = '.6'; btn.textContent = 'Оновлюю…'; }
+  try {
+    // Admin-only endpoint. Користувач має бути admin-ом, бо warehouse_value_report у FINANCE_ADMIN_ONLY.
+    const q = '?action=_admin_sync_stock&date=' + encodeURIComponent(whState.on);
+    const r = await fetch(API_URL + q).then(x => x.json());
+    if (r.error) throw new Error(r.error);
+    await whLoad();
+  } catch (e) {
+    alert('Sync failed: ' + (e.message || e));
+  } finally {
+    if (btn) { btn.style.pointerEvents = ''; btn.style.opacity = ''; btn.innerHTML = '<span class="ic">↻</span> Оновити знімок'; }
+  }
+}
+
+function whRender() {
+  const data = whState.data;
+  if (!data) return;
+  if (data.empty) {
+    document.getElementById('whSummary').innerHTML = '';
+    document.getElementById('whBody').innerHTML =
+      '<div style="padding:30px;text-align:center;color:var(--text3)">' +
+        esc(data.message || 'Немає даних') +
+        '<div style="margin-top:12px"><span class="chip" onclick="whSyncSnapshot()" style="cursor:pointer"><span class="ic">↻</span> Зробити знімок зараз</span></div>' +
+      '</div>';
+    return;
+  }
+
+  // Фільтр по org (на клієнті — фільтруємо те, що прийшло).
+  // 'Генерація' = обʼєднання Ген.Одеса + Ген.Київ; 'Ген.Київ' — тільки Київ.
+  const orgFilter = whState.org;
+  const orgMatch = tag => {
+    if (!orgFilter) return true;
+    if (orgFilter === 'Генерація') return tag === 'Генерація' || tag === 'Ген.Київ';
+    return tag === orgFilter;
+  };
+  const items = (data.items || []).filter(it => orgMatch(it.organization_tag));
+  const byWh = (data.by_warehouse || []).filter(w => orgMatch(w.organization_tag));
+  const byOrg = (data.by_organization || []).filter(o => orgMatch(o.organization_tag));
+
+  // Сумарна вартість (з фільтра).
+  let totalValue = 0, totalQty = 0, unpricedQty = 0;
+  for (const it of items) {
+    totalQty += it.qty;
+    if (it.value_usd != null) totalValue += it.value_usd;
+    else unpricedQty += it.qty;
+  }
+
+  // ── Summary: 3 картки (без кольорових плашок) ──
+  const card = (lbl, val, sub, accent) => {
+    const cv = accent ? ' class="cv" style="color:var(--green)"' : ' class="cv"';
+    return '<div class="pnl-card">' +
+      '<span class="cl">' + esc(lbl) + '</span>' +
+      '<span' + cv + '>' + val + '</span>' +
+      (sub ? '<span class="cs">' + esc(sub) + '</span>' : '') +
+      '</div>';
+  };
+  const asOfPretty = data.as_of_date ? data.as_of_date.split('-').reverse().join('.') : '—';
+  document.getElementById('whSummary').innerHTML =
+    '<div class="pnl-summary">' +
+      card('Вартість запасів', fmt(totalValue, 0) + ' $', 'станом на ' + asOfPretty, true) +
+      card('Позицій на складі', fmt(items.length, 0), fmt(totalQty, 0) + ' од. сумарно') +
+      card('Без собівартості', fmt(unpricedQty, 0) + ' од.', items.filter(it=>it.value_usd==null).length + ' позицій не оцінено') +
+    '</div>';
+
+  // ── Таблиця: по складах ──
+  const whRows = byWh.length ? byWh.map(w =>
+    '<tr class="itm">' +
+      '<td>' + esc(w.warehouse_name) + '</td>' +
+      '<td>' + esc(w.organization_tag) + '</td>' +
+      '<td class="col-total">' + fmt(w.items_count, 0) + '</td>' +
+      '<td class="col-total">' + fmt(w.total_qty, 0) + '</td>' +
+      '<td class="col-total" style="color:var(--green)">' + fmt(w.total_value_usd, 0) + ' $</td>' +
+    '</tr>'
+  ).join('') : '<tr class="itm"><td colspan="5" style="text-align:center;color:var(--text3);padding:16px">— немає складів —</td></tr>';
+
+  const whTableHtml =
+    '<div class="pnl-wrap" style="margin-bottom:14px">' +
+      '<table class="pnl-table">' +
+        '<thead><tr>' +
+          '<th style="min-width:260px">Склад</th>' +
+          '<th>Організація</th>' +
+          '<th class="col-total">Позицій</th>' +
+          '<th class="col-total">К-сть</th>' +
+          '<th class="col-total">Вартість, USD</th>' +
+        '</tr></thead>' +
+        '<tbody>' + whRows + '</tbody>' +
+        '<tfoot><tr class="grd">' +
+          '<td>Разом</td><td></td>' +
+          '<td class="col-total">' + fmt(items.length, 0) + '</td>' +
+          '<td class="col-total">' + fmt(totalQty, 0) + '</td>' +
+          '<td class="col-total" style="color:var(--green)">' + fmt(totalValue, 0) + ' $</td>' +
+        '</tr></tfoot>' +
+      '</table>' +
+    '</div>';
+
+  // ── Таблиця: номенклатура (з пошуком і пагінацією) ──
+  const search = (whState.search || '').toLowerCase().trim();
+  const filtered = search
+    ? items.filter(it =>
+        (it.nomenclature_name || '').toLowerCase().includes(search) ||
+        (it.nomenclature_article || '').toLowerCase().includes(search) ||
+        (it.warehouse_name || '').toLowerCase().includes(search))
+    : items;
+  const sorted = filtered.slice().sort((a, b) => {
+    const va = a.value_usd ?? -1, vb = b.value_usd ?? -1;
+    return vb - va;
+  });
+  const shown = sorted.slice(0, whState.limit);
+  const more = sorted.length - shown.length;
+
+  const itemRows = shown.length ? shown.map(it => {
+    const cost = it.avg_cost_usd;
+    const val  = it.value_usd;
+    const unpriced = val == null;
+    const costStr = (cost != null) ? fmt(cost, 2) + ' $' : '<span style="color:var(--text3)">—</span>';
+    const valStr  = unpriced ? '<span style="color:var(--text3)">н/д</span>' : fmt(val, 0) + ' $';
+    const nameHtml = esc(it.nomenclature_name) +
+      (it.nomenclature_article ? '<span style="color:var(--text3);font-size:11px;margin-left:6px">' + esc(it.nomenclature_article) + '</span>' : '');
+    return '<tr class="itm">' +
+      '<td>' + nameHtml + '</td>' +
+      '<td>' + esc(it.warehouse_name) + '</td>' +
+      '<td>' + esc(it.organization_tag) + '</td>' +
+      '<td class="col-total">' + fmt(it.qty, it.qty < 100 ? 2 : 0) + '</td>' +
+      '<td class="col-total">' + costStr + '</td>' +
+      '<td class="col-total"' + (unpriced ? '' : ' style="color:var(--green)"') + '>' + valStr + '</td>' +
+      '</tr>';
+  }).join('') : '<tr class="itm"><td colspan="6" style="text-align:center;color:var(--text3);padding:16px">— немає позицій —</td></tr>';
+
+  const itemsTableHtml =
+    '<div class="pnl-wrap">' +
+      '<div style="padding:10px 14px;display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--border)">' +
+        '<input type="text" id="whSearchIn" placeholder="Пошук по назві, артикулу або складу" ' +
+          'value="' + esc(whState.search || '') + '" ' +
+          'style="flex:1;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:13px;outline:none">' +
+        '<span style="color:var(--text3);font-size:12px">показано ' + shown.length + ' з ' + sorted.length + (more > 0 ? ' · <span class="chip" onclick="whShowMore()" style="cursor:pointer">+' + Math.min(more, 300) + '</span>' : '') + '</span>' +
+      '</div>' +
+      '<table class="pnl-table">' +
+        '<thead><tr>' +
+          '<th style="min-width:260px">Номенклатура</th>' +
+          '<th>Склад</th>' +
+          '<th>Організація</th>' +
+          '<th class="col-total">К-сть</th>' +
+          '<th class="col-total">Сер.&nbsp;собів, USD</th>' +
+          '<th class="col-total">Вартість, USD</th>' +
+        '</tr></thead>' +
+        '<tbody>' + itemRows + '</tbody>' +
+      '</table>' +
+    '</div>';
+
+  document.getElementById('whBody').innerHTML = whTableHtml + itemsTableHtml;
+
+  // Привʼязуємо пошук (debounce)
+  const si = document.getElementById('whSearchIn');
+  if (si) {
+    let t;
+    si.addEventListener('input', function(e) {
+      clearTimeout(t);
+      t = setTimeout(() => { whState.search = e.target.value; whState.limit = 200; whRender(); const cur = document.getElementById('whSearchIn'); if (cur) { cur.focus(); cur.setSelectionRange(cur.value.length, cur.value.length); } }, 200);
+    });
+  }
+}
+function whShowMore() {
+  whState.limit = (whState.limit || 200) + 300;
+  whRender();
+}
+document.addEventListener('DOMContentLoaded', function() {
+  const dIn = document.getElementById('whDateIn');
+  if (dIn) dIn.addEventListener('change', function(e) { whState.on = e.target.value; whLoad(); });
+});
+
+/* ═══════════════════════════════════════════════════
    INIT
    ═══════════════════════════════════════════════════ */
 // Detect which preset (month/prevmonth/quarter/year) matches given from/to dates.
@@ -2585,6 +2832,9 @@ Auth.require('finance').then(function(user) {
     } else if (chosenTab === 'ms') {
       var msTabEl = document.querySelector('.ptab[data-view="ms"]');
       if (msTabEl) switchTab(msTabEl);
+    } else if (chosenTab === 'wh') {
+      var whTabEl = document.querySelector('.ptab[data-view="wh"]');
+      if (whTabEl) switchTab(whTabEl);
     }
     pnlLoad();
   } else {
@@ -2629,6 +2879,7 @@ Auth.require('finance').then(function(user) {
     else if (forcedTab === 'cf') { var t = document.querySelector('.ptab[data-view="cf"]'); if (t) switchTab(t); }
     else if (forcedTab === 'ar') { var t = document.querySelector('.ptab[data-view="ar"]'); if (t) switchTab(t); }
     else if (forcedTab === 'ms') { var t = document.querySelector('.ptab[data-view="ms"]'); if (t) switchTab(t); }
+    else if (forcedTab === 'wh') { var t = document.querySelector('.ptab[data-view="wh"]'); if (t) switchTab(t); }
   }
 });
 </script>
