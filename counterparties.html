@@ -399,19 +399,14 @@ function renderKpi(k){
   // 3 KPI-блоки у USD (management currency) + під кожним розбивка по валютах (native).
   const owedToUs = Number(k.owed_to_us_usd) || 0;
   const weOwe = Number(k.we_owe_usd) || 0;
-  const total = Number(k.balance_usd) || (owedToUs - weOwe);
-  // Кольори:
-  //  - Постачальники (1С-style, + = ми винні): + зелений, − червоний.
-  //  - Покупці / Інші / Всі: + червоний (нам винні, дебіторка), − зелений (ми винні, буфер).
-  const sup = state.role === 'suppliers';
-  const totalCls = sup
-    ? (total > 0 ? 'pos' : (total < 0 ? 'neg' : ''))
-    : (total < 0 ? 'pos' : (total > 0 ? 'neg' : ''));
+  const total = Number(k.balance_usd) || (weOwe - owedToUs);
+  // Уніфікований знак 1С AP MXL: +ми винні → neg (червоний, наш пасив), -нам винні → pos (зелений, наш актив).
+  const totalCls = total > 0 ? 'neg' : (total < 0 ? 'pos' : '');
   const byCur = k.balance_by_currency || {};
   const CUR_ORDER = ['USD','UAH','EUR'];
   const curs = Object.keys(byCur).sort((a,b) => CUR_ORDER.indexOf(a) - CUR_ORDER.indexOf(b));
   // Рядок розбивки — монохромний (акцент на головній цифрі зверху).
-  // Для "Ітого" показуємо зі знаком (+нам / −ми); для owed/we_owe — завжди позитив.
+  // Для "Ітого" показуємо зі знаком (+ми винні, −нам винні — 1С AP MXL); для owed/we_owe — завжди позитив.
   const breakdown = (field, signed) => {
     if (!curs.length) return '';
     const rows = curs
@@ -572,8 +567,9 @@ async function loadDetail(refKey){
 function renderDetailPage(d){
   const { supplier, period, orders, ap_movements, act_totals } = d;
   const actUsd = (act_totals && act_totals.USD) || { opening:0, increase:0, decrease:0, period_change:0, closing:0, count:0 };
-  const openCls = actUsd.opening < 0 ? 'neg' : (actUsd.opening > 0 ? 'pos' : 'muted');
-  const closeCls = actUsd.closing < 0 ? 'neg' : (actUsd.closing > 0 ? 'pos' : 'muted');
+  // 1С AP MXL знак: +ми винні → neg (червоний), -нам винні → pos (зелений).
+  const openCls  = actUsd.opening > 0 ? 'neg' : (actUsd.opening < 0 ? 'pos' : 'muted');
+  const closeCls = actUsd.closing > 0 ? 'neg' : (actUsd.closing < 0 ? 'pos' : 'muted');
 
   // Хронологія рухів — один рядок на документ
   const actRows = (ap_movements || []).map(m => {
@@ -605,7 +601,7 @@ function renderDetailPage(d){
 
   <div class="detail-head">
     <h2>${supplier.description}</h2>
-    <div class="meta">Акт звірки · ${period.from} → ${period.to} · ЕДРПОУ ${supplier.tax_id || '—'} · <span style="color:var(--text3)">+нам, −ми</span></div>
+    <div class="meta">Акт звірки · ${period.from} → ${period.to} · ЕДРПОУ ${supplier.tax_id || '—'} · <span style="color:var(--text3)">+ми винні, −нам винні</span></div>
   </div>
 
   <div class="act-sum">
