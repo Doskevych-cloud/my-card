@@ -464,7 +464,8 @@ function renderSummaryGrid(managers) {
       </div>
     </div>`;
 
-  // Картки менеджерів — шкала = paid / PLAN (фіксований план на період).
+  // Картки менеджерів — шкала = paid / PLAN (фіксований план $300k).
+  // Потенціал залишається у футері як і було раніше.
   const MGR_PLAN_USD = 300000;
   const mgrCards = perMgr.map(({ m, paid, remain, ok }) => {
     const isOpen = state.openKeys.has(`m:${m.name}`);
@@ -476,7 +477,7 @@ function renderSummaryGrid(managers) {
         <div class="paid">${money(paid, ok)}</div>
         <div class="bar" title="${ok ? planPct + '% плану ($300k)' : ''}"><div class="bar-fill" style="width:${planPct}%"></div></div>
         <div class="foot">
-          <span class="pot">${ok ? planPct + '% плану' : ''}</span>
+          <span class="pot">пот. ${money(total, ok)}${ok ? ' · ' + planPct + '% плану' : ''}</span>
           <span class="bonus">бонус <b>${money(paid * BONUS_RATE, ok)}</b></span>
         </div>
       </div>`;
