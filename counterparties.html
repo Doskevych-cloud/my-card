@@ -405,9 +405,8 @@ function renderKpi(k){
   const byCur = k.balance_by_currency || {};
   const CUR_ORDER = ['USD','UAH','EUR'];
   const curs = Object.keys(byCur).sort((a,b) => CUR_ORDER.indexOf(a) - CUR_ORDER.indexOf(b));
-  // Рядок розбивки — монохромний (акцент на головній цифрі зверху).
-  // Для "Ітого" показуємо зі знаком (+ми винні, −нам винні — 1С AP MXL); для owed/we_owe — завжди позитив.
-  const breakdown = (field, signed) => {
+  // Знак наклеюємо через sign ('+' — ми винні, гроші в нас; '−' — нам винні, гроші заморожені; 'signed' — знак уже у value).
+  const breakdown = (field, sign) => {
     if (!curs.length) return '';
     const rows = curs
       .map(cur => ({ cur, val: Number(byCur[cur][field]) || 0 }))
@@ -415,7 +414,10 @@ function renderKpi(k){
     if (!rows.length) return '';
     return '<div class="kpi-sub">' +
       rows.map(x => {
-        const str = signed ? fmtCurSigned(x.val, x.cur) : fmtCur(Math.abs(x.val), x.cur);
+        let str;
+        if (sign === 'signed')   str = fmtCurSigned(x.val, x.cur);
+        else if (sign === 'neg') str = fmtCurSigned(-Math.abs(x.val), x.cur);
+        else                     str = fmtCurSigned(Math.abs(x.val), x.cur);
         return `<div class="kpi-sub-row"><span class="kpi-sub-cur">${x.cur}</span><span class="kpi-sub-val">${str}</span></div>`;
       }).join('') +
       '</div>';
@@ -424,18 +426,18 @@ function renderKpi(k){
   <div class="kpi-row" style="grid-template-columns:repeat(3, 1fr)">
     <div class="kpi">
       <div class="label">Борги нам</div>
-      <div class="value neg">${fmtCurSigned(owedToUs, 'USD')}</div>
-      ${breakdown('owed_to_us', false)}
+      <div class="value neg">${fmtCurSigned(-owedToUs, 'USD')}</div>
+      ${breakdown('owed_to_us', 'neg')}
     </div>
     <div class="kpi">
       <div class="label">Борги наші</div>
-      <div class="value pos">${fmtCurSigned(-weOwe, 'USD')}</div>
-      ${breakdown('we_owe', false)}
+      <div class="value pos">${fmtCurSigned(weOwe, 'USD')}</div>
+      ${breakdown('we_owe', 'pos')}
     </div>
     <div class="kpi">
       <div class="label">Ітого</div>
       <div class="value ${totalCls}">${Math.abs(total) < 1 ? '0 $' : fmtCurSigned(total, 'USD')}</div>
-      ${breakdown('total', true)}
+      ${breakdown('total', 'signed')}
     </div>
   </div>`;
 }
