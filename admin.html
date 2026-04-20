@@ -118,6 +118,7 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
             <th style="text-align:center">Фінанси</th>
             <th style="text-align:center">Постачальники</th>
             <th style="text-align:center">Покупці</th>
+            <th style="text-align:center">Контрагенти</th>
             <th style="text-align:center">Адмін</th>
             <th style="text-align:center">Реакт</th>
             <th style="text-align:center">Генерація</th>
@@ -190,7 +191,7 @@ function userRow(u) {
           </div>
         </div>
       </td>
-      ${['dashboard','home','forecast','warehouses','sales','reports','finance','suppliers','customers','admin'].map(r => `
+      ${['dashboard','home','forecast','warehouses','sales','reports','finance','suppliers','customers','counterparties','admin'].map(r => `
         <td class="role-box"><input type="checkbox" ${u.roles && u.roles[r] ? 'checked' : ''} data-act="role" data-key="${r}"></td>
       `).join('')}
       ${['Реакт','Генерація'].map(o => `

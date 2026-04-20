@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Контрагенти</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<script>
+  try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
+</script>
+<script src="auth.js?v=sup20260419"></script>
+<script src="header.js?v=sup20260419"></script>
+<style>
+:root{
+  --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
+  --surface:#141414; --surface2:#1c1c1c;
+  --border:#262626; --border2:#333;
+  --text:#f5f5f5; --text2:#a3a3a3; --text3:#737373;
+  --accent:#ff8319; --accent-bg:rgba(255,131,25,.12);
+  --red:#e74c3c; --red-bg:rgba(231,76,60,.12);
+  --green:#22c55e; --green-bg:rgba(34,197,94,.12);
+}
+:root[data-theme="light"]{
+  --bg:#f5f5f7; --bg2:#ffffff; --bg3:#ececef;
+  --surface:#ffffff; --surface2:#ffffff;
+  --border:#e5e5ea; --border2:#d1d1d6;
+  --text:#1c1c1e; --text2:#48484a; --text3:#8e8e93;
+  --accent:#e07017; --accent-bg:rgba(224,112,23,.12);
+  --red:#d93025; --red-bg:rgba(217,48,37,.10);
+  --green:#15803d; --green-bg:rgba(21,128,61,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+
+.wrap{max-width:1400px;margin:0 auto;padding:20px}
+.page-head{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
+.page-head h1{font-size:20px;font-weight:700;letter-spacing:-.4px}
+.page-head .sub{font-size:12px;color:var(--text3)}
+
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
+.toolbar input[type=date]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;color-scheme:dark;font-family:inherit}
+:root[data-theme="light"] .toolbar input[type=date]{color-scheme:light}
+.toolbar input[type=date]:focus{border-color:var(--accent)}
+.toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.toolbar .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .12s;user-select:none}
+.toolbar .chip:hover{background:var(--bg3);color:var(--text)}
+.toolbar .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 2px}
+.toolbar .group{display:inline-flex;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px}
+.toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
+.toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
+
+/* KPI row — без плашок/рамок, тільки число */
+.kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.kpi{background:var(--surface2);padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.kpi .label{font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .value{font-size:19px;font-weight:700;letter-spacing:-.3px;font-variant-numeric:tabular-nums;color:var(--text)}
+.kpi .value.pos{color:var(--green)}
+.kpi .value.neg{color:var(--red)}
+.kpi .sub{font-size:10.5px;color:var(--text3);font-variant-numeric:tabular-nums}
+
+/* Sections */
+.sect{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.sect-head{padding:12px 14px;font-size:12px;font-weight:700;color:var(--text);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sect-head .count{color:var(--text3);font-weight:500;font-size:11px;margin-left:auto}
+
+/* Top suppliers table */
+.s-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.s-tbl thead th{padding:11px 12px;background:var(--bg2);color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--border)}
+.s-tbl thead th:not(:first-child):not(:nth-child(2)){text-align:right}
+.s-tbl tbody td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.s-tbl tbody tr:last-child td{border-bottom:none}
+.s-tbl tbody td:not(:first-child):not(:nth-child(2)){text-align:right;font-variant-numeric:tabular-nums}
+.s-tbl tbody tr:hover td{background:var(--bg3)}
+.s-tbl .num{color:var(--text3);font-variant-numeric:tabular-nums;width:34px}
+.s-tbl .name{color:var(--text);font-weight:500}
+.s-tbl .kind-badge{display:inline-block;margin-left:6px;padding:1.5px 6px;font-size:9.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;border-radius:3px;color:var(--text3);background:var(--bg3)}
+.s-tbl .kind-both{color:var(--accent);background:var(--accent-bg)}
+.s-tbl td.amount{color:var(--text);font-weight:500}
+.s-tbl td.amount.pos{color:var(--green)}
+.s-tbl td.amount.neg{color:var(--red)}
+.s-tbl td.muted{color:var(--text3)}
+.s-tbl td.cur{color:var(--text3);font-size:10px;font-weight:700;letter-spacing:.4px;text-align:right!important;width:42px;padding-right:6px}
+/* Компактні останні 4 колонки (Вал/Відвантажено/Оплачено/Залишок) — стикуються близько */
+.s-tbl thead th:nth-last-child(-n+4),
+.s-tbl tbody td:nth-last-child(-n+4){padding-left:8px;padding-right:10px}
+.s-tbl thead th:nth-child(2),
+.s-tbl tbody td:nth-child(2){width:100%}
+.s-tbl thead th:nth-last-child(1),
+.s-tbl tbody td:nth-last-child(1){width:140px}
+.s-tbl thead th:nth-last-child(2),
+.s-tbl tbody td:nth-last-child(2){width:130px}
+.s-tbl thead th:nth-last-child(3),
+.s-tbl tbody td:nth-last-child(3){width:130px}
+.s-tbl.s-tbl-cur3 thead th:not(:first-child):not(:nth-child(2)){text-align:right;width:28%}
+.s-tbl.s-tbl-cur3 tbody td.cur-stack-cell{text-align:right!important;padding:8px 12px;vertical-align:top;font-variant-numeric:tabular-nums}
+.s-tbl.s-tbl-cur3 tbody td.cur-stack-cell .cs-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;line-height:1.5}
+.s-tbl.s-tbl-cur3 tbody td.cur-stack-cell .cs-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;font-weight:600}
+.s-tbl.s-tbl-cur3 tbody td.cur-stack-cell .cs-bal{border-top:1px solid var(--border);padding-top:4px;margin-top:2px;font-weight:700}
+.s-tbl.s-tbl-cur3 tbody td.cur-stack-cell .pos{color:var(--green)}
+.s-tbl.s-tbl-cur3 tbody td.cur-stack-cell .neg{color:var(--red)}
+.s-tbl.s-tbl-cur3 tbody td.cur-stack-cell .muted{color:var(--text3)}
+.s-tbl tr.supplier-head td{background:var(--bg2);border-bottom:1px solid var(--border);font-weight:600;padding-top:10px;padding-bottom:10px}
+.s-tbl tr.cur-sub td{background:transparent;border-bottom:1px dotted var(--border);padding-top:4px;padding-bottom:4px;color:var(--text2)}
+.s-tbl tr.cur-sub td.name .cur-indent{color:var(--text3);font-size:11px;padding-left:14px}
+.s-tbl tr.cur-sub .num,.s-tbl tr.cur-sub .name{color:var(--text3)}
+
+/* Dynamics bar chart */
+.dyn{padding:18px 18px 14px}
+.dyn-bars{display:flex;align-items:flex-end;gap:6px;height:160px;margin-bottom:10px}
+.dyn-bar{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;cursor:default}
+.dyn-bar .fill{width:100%;background:var(--accent);border-radius:3px 3px 0 0;min-height:2px;transition:opacity .15s}
+.dyn-bar:hover .fill{opacity:.75}
+.dyn-bar .mon{font-size:10px;color:var(--text3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dyn-bar .tip{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--text);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .1s;z-index:10;font-variant-numeric:tabular-nums}
+.dyn-bar:hover .tip{opacity:1}
+
+/* Tabs */
+.tabs{display:flex;gap:2px;margin-bottom:14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:4px;width:fit-content}
+.tabs .tab{padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .12s;user-select:none}
+.tabs .tab:hover{color:var(--text);background:var(--bg3)}
+.tabs .tab.active{background:var(--accent-bg);color:var(--accent)}
+
+/* Data viewer */
+.dv-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.dv-toolbar select{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-family:inherit;outline:none;min-width:200px}
+.dv-toolbar select:focus{border-color:var(--accent)}
+.dv-toolbar input[type=text]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;min-width:220px}
+.dv-toolbar input[type=text]:focus{border-color:var(--accent)}
+.dv-toolbar .meta{margin-left:auto;color:var(--text3);font-size:11px;font-variant-numeric:tabular-nums}
+.dv-toolbar .btn{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .12s}
+.dv-toolbar .btn:hover{background:var(--bg3);color:var(--text)}
+.dv-toolbar .btn:disabled{opacity:.4;cursor:not-allowed}
+
+.dv-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:auto;max-height:calc(100vh - 260px)}
+.dv-tbl{width:100%;border-collapse:collapse;font-size:11.5px;font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+.dv-tbl thead th{padding:8px 10px;background:var(--bg2);color:var(--text3);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.3px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;white-space:nowrap}
+.dv-tbl tbody td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:top;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dv-tbl tbody td.num{text-align:right;font-variant-numeric:tabular-nums}
+.dv-tbl tbody td.null{color:var(--text3);font-style:italic}
+.dv-tbl tbody tr:hover td{background:var(--bg3)}
+
+/* Detail page — акт звірки */
+.detail-back{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;transition:all .12s;margin-bottom:14px}
+.detail-back:hover{background:var(--bg3);color:var(--text)}
+.detail-head{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:14px}
+.detail-head h2{font-size:18px;font-weight:700;letter-spacing:-.3px;margin-bottom:4px}
+.detail-head .meta{color:var(--text3);font-size:12px}
+
+/* Summary card: opening / + / − / = closing */
+.act-sum{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);overflow:hidden}
+.act-sum .cell{background:var(--surface2);padding:14px 18px}
+.act-sum .lbl{font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:6px}
+.act-sum .val{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.act-sum .val.pos{color:var(--green)}
+.act-sum .val.neg{color:var(--red)}
+.act-sum .val.muted{color:var(--text3)}
+.act-sum .sub{font-size:10.5px;color:var(--text3);margin-top:4px;font-variant-numeric:tabular-nums}
+.act-sum .cell.closing{background:var(--bg3)}
+.act-sum .cell.closing .val{font-size:24px}
+
+/* Хронологія акта */
+.s-tbl tr.act-row td{padding:8px 12px;font-size:12px;font-variant-numeric:tabular-nums}
+.s-tbl tr.act-row.increase td.inc{color:var(--red);font-weight:600}
+.s-tbl tr.act-row.decrease td.dec{color:var(--green);font-weight:600}
+.s-tbl tr.act-row td.doc{color:var(--text)}
+.s-tbl tr.act-row td.doc.link{cursor:default}
+.s-tbl tr.s-tbl-sub td{padding-top:2px;padding-bottom:2px;color:var(--text3);font-size:11px}
+
+/* Клікабельні рядки у топ-таблиці */
+.s-tbl tbody tr.clickable{cursor:pointer}
+.s-tbl tbody tr.clickable:hover td{background:var(--accent-bg);color:var(--text)}
+
+@media (max-width:900px){
+  .act-sum{grid-template-columns:repeat(2,1fr)}
+}
+
+.loading{padding:50px 20px;text-align:center;color:var(--text2);font-size:13px}
+.loading::after{content:'';display:block;width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:14px auto 0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error{padding:20px;text-align:center;color:var(--red);background:var(--red-bg);border-radius:10px;font-size:12px;margin:20px 0}
+.empty{padding:40px 20px;text-align:center;color:var(--text3);font-size:12px}
+
+@media (max-width:1000px){
+  .kpi-row{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:640px){
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .toolbar{gap:8px;padding:10px}
+  .s-tbl thead th,.s-tbl tbody td{padding:8px 8px}
+  .s-tbl .kind-badge{display:none}
+}
+</style>
+</head>
+<body>
+
+<div id="appHeader"></div>
+<div id="app">
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Контрагенти</h1>
+      <span class="sub" id="subTitle">—</span>
+    </div>
+
+    <div class="toolbar">
+      <span class="lbl">З</span>
+      <input type="date" id="fromIn">
+      <span class="lbl">По</span>
+      <input type="date" id="toIn">
+
+      <span class="group" id="presetGroup">
+        <span class="chip" data-preset="30d">30 днів</span>
+        <span class="chip" data-preset="90d">Квартал</span>
+        <span class="chip active" data-preset="12m">12 міс</span>
+        <span class="chip" data-preset="ytd">YTD</span>
+        <span class="chip" data-preset="3y">3 роки</span>
+      </span>
+
+      <span class="sep"></span>
+
+      <span class="group" id="orgGroup">
+        <span class="chip active" data-org="">Всі</span>
+        <span class="chip" data-org="react">Реакт</span>
+        <span class="chip" data-org="gen">Генерація</span>
+      </span>
+
+      <span class="sep"></span>
+
+      <span class="group" id="roleGroup">
+        <span class="chip active" data-role="suppliers">Постачальники</span>
+        <span class="chip" data-role="customers">Покупці</span>
+        <span class="chip" data-role="others">Інші</span>
+      </span>
+
+      <span class="sep"></span>
+
+      <input type="text" id="qIn" placeholder="🔎 контрагент (назва / ЕДРПОУ)" style="flex:1;min-width:220px;padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none">
+    </div>
+
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-tab="overview">Огляд</div>
+      <div class="tab" data-tab="data">Дані</div>
+    </div>
+
+    <div id="body"><div class="loading">Завантаження…</div></div>
+  </div>
+</div>
+
+<script>
+const API = 'https://price-api.doskevich.workers.dev';
+const CUR_SYM = { USD: '$', EUR: '€', UAH: '₴' };
+const fmtNum = n => new Intl.NumberFormat('uk-UA',{maximumFractionDigits:0}).format(Number(n)||0);
+const fmtCnt = n => new Intl.NumberFormat('uk-UA').format(Number(n)||0);
+const fmtCur = (n, cur) => { const s = CUR_SYM[cur] || ''; return `${fmtNum(n)} ${s}`.trim(); };
+const fmtCurSigned = (n, cur) => {
+  const v = Number(n) || 0;
+  const s = CUR_SYM[cur] || '';
+  const abs = fmtNum(Math.abs(v));
+  return (v < 0 ? '−' : (v > 0 ? '+' : '')) + abs + ' ' + s;
+};
+const body = document.getElementById('body');
+const sub  = document.getElementById('subTitle');
+
+const state = { from:'', to:'', org:'', preset:'12m', q:'', role:'suppliers', detailRef:'', tab:'overview', dvTable:'counterparties', dvSearch:'', dvOffset:0 };
+const ROLE_LABEL = { suppliers:'постачальник', customers:'покупець', others:'контрагент' };
+const ROLE_LABEL_COL = { suppliers:'Постачальник', customers:'Покупець', others:'Контрагент' };
+const ROLE_ENDPOINT = { suppliers:'suppliers_overview', customers:'customers_overview', others:null };
+const ROLE_DETAIL_ENDPOINT = { suppliers:'supplier_detail', customers:'customer_detail', others:null };
+const DV_TABLES = [
+  'counterparties','purchase_orders','purchase_receipts','purchase_receipt_items',
+  'payments_out','ap_movements',
+  'nomenclature','warehouses','employees','organizations','currencies',
+  'cashflow_items','contracts','fx_rates','sync_state','sync_log',
+];
+const DV_LIMIT = 100;
+
+function todayIso(){ return new Date().toISOString().slice(0,10); }
+function shiftDays(iso, days){ const d=new Date(iso); d.setDate(d.getDate()+days); return d.toISOString().slice(0,10); }
+function applyPreset(p){
+  const to = todayIso();
+  const d = new Date();
+  if (p==='30d') return { from: shiftDays(to,-30), to };
+  if (p==='90d') return { from: shiftDays(to,-90), to };
+  if (p==='12m') { d.setFullYear(d.getFullYear()-1); return { from:d.toISOString().slice(0,10), to }; }
+  if (p==='ytd') return { from: `${new Date().getFullYear()}-01-01`, to };
+  if (p==='3y') { d.setFullYear(d.getFullYear()-3); return { from:d.toISOString().slice(0,10), to }; }
+  return { from: shiftDays(to,-365), to };
+}
+function detectPreset(f, t){
+  const today = todayIso();
+  if (t !== today) return null;
+  const diff = (new Date(t) - new Date(f)) / 86400000;
+  if (Math.abs(diff - 30)  < 2) return '30d';
+  if (Math.abs(diff - 90)  < 2) return '90d';
+  if (Math.abs(diff - 365) < 4) return '12m';
+  if (Math.abs(diff - 1095)< 5) return '3y';
+  if (f === `${new Date().getFullYear()}-01-01`) return 'ytd';
+  return null;
+}
+
+function setState(patch, {push=true}={}){
+  Object.assign(state, patch);
+  if (push) saveUrl();
+  syncToolbar();
+  load();
+}
+
+function saveUrl(){
+  const h = new URLSearchParams();
+  h.set('from', state.from); h.set('to', state.to);
+  if (state.org) h.set('org', state.org);
+  if (state.preset) h.set('preset', state.preset);
+  if (state.q) h.set('sq', state.q);
+  if (state.role && state.role !== 'suppliers') h.set('role', state.role);
+  if (state.detailRef) h.set('ref', state.detailRef);
+  if (state.tab && state.tab !== 'overview') h.set('tab', state.tab);
+  if (state.tab === 'data') {
+    if (state.dvTable) h.set('t', state.dvTable);
+    if (state.dvSearch) h.set('q', state.dvSearch);
+    if (state.dvOffset) h.set('o', String(state.dvOffset));
+  }
+  history.replaceState(null, '', '#' + h.toString());
+}
+function readUrl(){
+  const h = new URLSearchParams(location.hash.slice(1));
+  const p = h.get('preset');
+  if (h.get('from') && h.get('to')) {
+    state.from = h.get('from'); state.to = h.get('to');
+    state.preset = p || detectPreset(state.from, state.to) || '';
+  } else {
+    const { from, to } = applyPreset('12m');
+    state.from = from; state.to = to; state.preset = '12m';
+  }
+  if (h.get('org')) state.org = h.get('org');
+  if (h.get('sq') !== null) state.q = h.get('sq');
+  if (h.get('role') && ROLE_ENDPOINT.hasOwnProperty(h.get('role'))) state.role = h.get('role');
+  if (h.get('ref')) state.detailRef = h.get('ref');
+  if (h.get('tab') === 'data') state.tab = 'data';
+  if (h.get('t') && DV_TABLES.includes(h.get('t'))) state.dvTable = h.get('t');
+  if (h.get('q')) state.dvSearch = h.get('q');
+  if (h.get('o')) state.dvOffset = Math.max(0, Number(h.get('o')) || 0);
+}
+
+function syncToolbar(){
+  document.getElementById('fromIn').value = state.from;
+  document.getElementById('toIn').value   = state.to;
+  const qEl = document.getElementById('qIn');
+  if (qEl && qEl.value !== state.q) qEl.value = state.q;
+  document.querySelectorAll('#presetGroup .chip').forEach(c => c.classList.toggle('active', c.dataset.preset === state.preset));
+  document.querySelectorAll('#orgGroup .chip').forEach(c => c.classList.toggle('active', c.dataset.org === state.org));
+  document.querySelectorAll('#roleGroup .chip').forEach(c => c.classList.toggle('active', c.dataset.role === state.role));
+  document.querySelectorAll('#tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.tab === state.tab));
+  const qEl2 = document.getElementById('qIn');
+  if (qEl2) qEl2.placeholder = '🔎 ' + (ROLE_LABEL[state.role] || 'контрагент') + ' (назва / ЕДРПОУ)';
+}
+
+function wireToolbar(){
+  document.getElementById('fromIn').addEventListener('change', e => setState({ from:e.target.value, preset: detectPreset(e.target.value, state.to) || '' }));
+  document.getElementById('toIn').addEventListener('change',   e => setState({ to:e.target.value,   preset: detectPreset(state.from, e.target.value) || '' }));
+  document.querySelectorAll('#presetGroup .chip').forEach(c => c.addEventListener('click', () => {
+    const { from, to } = applyPreset(c.dataset.preset);
+    setState({ from, to, preset: c.dataset.preset });
+  }));
+  document.querySelectorAll('#orgGroup .chip').forEach(c => c.addEventListener('click', () => setState({ org: c.dataset.org })));
+  document.querySelectorAll('#roleGroup .chip').forEach(c => c.addEventListener('click', () => {
+    if (state.role === c.dataset.role) return;
+    setState({ role: c.dataset.role, detailRef: '' });
+  }));
+  document.querySelectorAll('#tabs .tab').forEach(t => t.addEventListener('click', () => {
+    if (state.tab === t.dataset.tab) return;
+    setState({ tab: t.dataset.tab, detailRef: '' });
+  }));
+  let qTimer = null;
+  document.getElementById('qIn').addEventListener('input', e => {
+    const v = e.target.value;
+    clearTimeout(qTimer);
+    qTimer = setTimeout(() => setState({ q: v.trim() }), 250);
+  });
+}
+
+function kindBadge(k){
+  if (k === 'both')     return '<span class="kind-badge kind-both">both</span>';
+  if (k === 'supplier') return '';
+  if (k === 'customer') return '<span class="kind-badge">cust</span>';
+  return '';
+}
+
+function renderKpi(k){
+  // 3 KPI-блоки у USD (management currency). Per-currency залишки — у таблиці нижче.
+  const owedToUs = Number(k.owed_to_us_usd) || 0;
+  const weOwe = Number(k.we_owe_usd) || 0;
+  const total = Number(k.balance_usd) || (owedToUs - weOwe);
+  const totalCls = total < 0 ? 'neg' : (total > 0 ? 'pos' : '');
+  return `
+  <div class="kpi-row" style="grid-template-columns:repeat(3, 1fr)">
+    <div class="kpi">
+      <div class="label">Борги нам (клієнти винні)</div>
+      <div class="value pos">${fmtCur(owedToUs, 'USD')}</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Борги наші (ми винні)</div>
+      <div class="value neg">${fmtCur(weOwe, 'USD')}</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Ітого</div>
+      <div class="value ${totalCls}">${Math.abs(total) < 1 ? '0 $' : fmtCurSigned(total, 'USD')}</div>
+    </div>
+  </div>`;
+}
+
+function renderTop(rows){
+  if (!rows.length) return `<div class="sect"><div class="sect-head">Топ-покупці</div><div class="empty">Немає даних у цьому періоді</div></div>`;
+  const CUR_ORDER = ['USD','UAH','EUR'];
+  const lines = [];
+  let i = 0;
+  for (const r of rows) {
+    i++;
+    const actCurs = Object.keys(r.by_currency || {});
+    const balCurs = Object.keys(r.balance_by_currency || {});
+    const allCurs = [...new Set([...actCurs, ...balCurs])]
+      .sort((a,b) => CUR_ORDER.indexOf(a) - CUR_ORDER.indexOf(b));
+    // primary — валюта з найбільшим |balance|, інакше перша з обороту
+    let primary = null;
+    let maxAbs = -1;
+    for (const c of balCurs) {
+      const v = Math.abs(Number((r.balance_by_currency || {})[c]) || 0);
+      if (v > maxAbs) { maxAbs = v; primary = c; }
+    }
+    if (!primary) primary = allCurs[0] || 'USD';
+    // Header-рядок постачальника (лише номер + назва); далі всі валюти — sub-рядками.
+    const bUsd = Number(r.balance_usd) || 0;
+    const bUsdCls = bUsd < -0.01 ? 'neg' : (bUsd > 0.01 ? 'pos' : 'muted');
+    const bUsdStr = Math.abs(bUsd) < 0.01 ? '—' : fmtCurSigned(bUsd, 'USD');
+    lines.push(`
+    <tr class="clickable supplier-head" data-ref="${r.ref_key}">
+      <td class="num">${i}</td>
+      <td class="name" colspan="4">${r.description}${kindBadge(r.kind)}</td>
+      <td class="amount ${bUsdCls}" title="Підсумковий USD-еквівалент (з ap_movements, 1С-style)">${bUsdStr}</td>
+    </tr>`);
+    const ordered = [primary, ...allCurs.filter(c => c !== primary)];
+    ordered.forEach(cur => {
+      const act = (r.by_currency || {})[cur] || { r_cnt:0, r_period:0, p_cnt:0, p_period:0 };
+      const bal = Number((r.balance_by_currency || {})[cur]) || 0;
+      const balCls = bal < -0.01 ? 'neg' : (bal > 0.01 ? 'pos' : 'muted');
+      const balStr = Math.abs(bal) < 0.01 ? '—' : fmtCurSigned(bal, cur);
+      lines.push(`
+      <tr class="cur-sub clickable" data-ref="${r.ref_key}">
+        <td class="num"></td>
+        <td class="name"><span class="cur-indent">↳ у ${cur}</span></td>
+        <td class="cur">${cur}</td>
+        <td class="amount">${Math.abs(act.r_period) < 0.01 ? '—' : fmtCur(act.r_period, cur)}</td>
+        <td class="amount">${Math.abs(act.p_period) < 0.01 ? '—' : fmtCur(act.p_period, cur)}</td>
+        <td class="amount ${balCls}">${balStr}</td>
+      </tr>`);
+    });
+  }
+  const colLabel = ROLE_LABEL_COL[state.role] || 'Контрагент';
+  const titleLabel = state.role === 'customers' ? 'Топ-покупці' : (state.role === 'suppliers' ? 'Топ-постачальники' : 'Контрагенти');
+  return `
+  <div class="sect">
+    <div class="sect-head">${titleLabel}<span class="count">${rows.length}</span>
+      <span style="margin-left:12px;font-weight:500;color:var(--text3)">залишок = оплачено − відвантажено · +нам, −ми</span>
+    </div>
+    <table class="s-tbl">
+      <thead><tr>
+        <th>#</th><th>${colLabel}</th><th>Вал</th>
+        <th>Відвантажено</th>
+        <th>Оплачено</th>
+        <th>Залишок</th>
+      </tr></thead>
+      <tbody>${lines.join('')}</tbody>
+    </table>
+  </div>`;
+}
+
+function renderDynamics(data){
+  if (!data.length) return '';
+  const max = Math.max(...data.map(d => Number(d.turnover_usd) || 0));
+  const bars = data.map(d => {
+    const v = Number(d.turnover_usd) || 0;
+    const h = max > 0 ? (v / max * 100) : 0;
+    return `
+    <div class="dyn-bar">
+      <div class="tip"><b>${d.month}</b><br>$${fmtNum(v)} · ${fmtCnt(d.receipts)} шт</div>
+      <div class="fill" style="height:${h}%"></div>
+      <div class="mon">${d.month.slice(2)}</div>
+    </div>`;
+  }).join('');
+  return `
+  <div class="sect">
+    <div class="sect-head">Динаміка закупівель ($)<span class="count">${data.length} міс</span></div>
+    <div class="dyn"><div class="dyn-bars">${bars}</div></div>
+  </div>`;
+}
+
+async function loadOverview(){
+  body.innerHTML = '<div class="loading">Завантаження…</div>';
+  const endpoint = ROLE_ENDPOINT[state.role];
+  if (!endpoint) {
+    body.innerHTML = `<div class="empty">Для контрагентів виду «Інші» звіт поки не реалізований. Використайте «Постачальники» або «Покупці».</div>`;
+    return;
+  }
+  const params = new URLSearchParams({ action:endpoint, from:state.from, to:state.to });
+  if (state.org) params.set('org', state.org);
+  if (state.q) params.set('q', state.q);
+  params.set('limit', state.q ? '100' : '30');
+  try{
+    const res = await fetch(`${API}/?${params}`);
+    if (!res.ok) throw new Error(`${res.status} ${await res.text().catch(()=>res.statusText)}`);
+    const d = await res.json();
+    if (d.error) throw new Error(d.error);
+    sub.textContent = `${d.period.from} → ${d.period.to}${d.period.org ? ' · ' + d.period.org : ''}${d.period.q ? ' · q="' + d.period.q + '"' : ''}`;
+    body.innerHTML = renderKpi(d.kpi) + renderTop(d.top) + renderDynamics(d.dynamics);
+    // Клік по рядку постачальника → відкриваємо акт звірки
+    body.querySelectorAll('tr.clickable[data-ref]').forEach(tr => {
+      tr.addEventListener('click', () => setState({ detailRef: tr.dataset.ref }));
+    });
+  }catch(e){
+    body.innerHTML = `<div class="error">Помилка: ${e.message}</div>`;
+  }
+}
+
+async function loadDetail(refKey){
+  const p = new URLSearchParams({ action:(ROLE_DETAIL_ENDPOINT[state.role] || 'customer_detail'), ref_key:refKey, from:state.from, to:state.to });
+  if (state.org) p.set('org', state.org);
+  try{
+    const res = await fetch(`${API}/?${p}`);
+    if (!res.ok) throw new Error(`${res.status}`);
+    return await res.json();
+  }catch(e){ console.error('detail', e); return null; }
+}
+
+function renderDetailPage(d){
+  const { supplier, period, orders, ap_movements, act_totals } = d;
+  const actUsd = (act_totals && act_totals.USD) || { opening:0, increase:0, decrease:0, period_change:0, closing:0, count:0 };
+  const openCls = actUsd.opening < 0 ? 'neg' : (actUsd.opening > 0 ? 'pos' : 'muted');
+  const closeCls = actUsd.closing < 0 ? 'neg' : (actUsd.closing > 0 ? 'pos' : 'muted');
+
+  // Хронологія рухів — один рядок на документ
+  const actRows = (ap_movements || []).map(m => {
+    const val = Math.abs(m.amount_currency || 0) > 0.01 ? m.amount_currency : m.amount;
+    const isInc = m.record_type === 'Receipt';
+    return `
+    <tr class="act-row ${isInc ? 'increase' : 'decrease'}">
+      <td>${(m.doc_date || m.period || '').slice(0,10)}</td>
+      <td class="doc">${m.doc_title}</td>
+      <td class="cur">${m.currency}</td>
+      <td class="inc amount">${isInc ? fmtCur(val, m.currency) : '—'}</td>
+      <td class="dec amount">${isInc ? '—' : fmtCur(val, m.currency)}</td>
+      <td class="muted">${m.org_short || '—'}</td>
+    </tr>`;
+  }).join('');
+
+  const ordRows = (orders || []).map(r => `
+    <tr>
+      <td>${(r.doc_date || '').slice(0,10)}</td>
+      <td>${r.number || '—'}</td>
+      <td class="cur">${r.currency}</td>
+      <td class="amount">${fmtCur(r.amount, r.currency)}</td>
+      <td class="muted">${r.posted ? 'проведено' : 'чернетка'}</td>
+      <td class="muted">${r.org_short || r.org_name || '—'}</td>
+    </tr>`).join('');
+
+  return `
+  <button class="detail-back" onclick="goBack()">← Назад до списку покупців</button>
+
+  <div class="detail-head">
+    <h2>${supplier.description}</h2>
+    <div class="meta">Акт звірки · ${period.from} → ${period.to} · ЕДРПОУ ${supplier.tax_id || '—'} · <span style="color:var(--text3)">+нам, −ми</span></div>
+  </div>
+
+  <div class="act-sum">
+    <div class="cell">
+      <div class="lbl">Початковий залишок</div>
+      <div class="val ${openCls}">${Math.abs(actUsd.opening) < 0.01 ? '0.00 $' : fmtCurSigned(actUsd.opening, 'USD')}</div>
+      <div class="sub">на ${period.from}</div>
+    </div>
+    <div class="cell">
+      <div class="lbl">+ Збільшення боргу</div>
+      <div class="val">${fmtCur(actUsd.increase, 'USD')}</div>
+      <div class="sub">надходження, послуги</div>
+    </div>
+    <div class="cell">
+      <div class="lbl">− Зменшення боргу</div>
+      <div class="val">${fmtCur(actUsd.decrease, 'USD')}</div>
+      <div class="sub">оплати</div>
+    </div>
+    <div class="cell closing">
+      <div class="lbl">= Кінцевий залишок</div>
+      <div class="val ${closeCls}">${Math.abs(actUsd.closing) < 0.01 ? '0.00 $' : fmtCurSigned(actUsd.closing, 'USD')}</div>
+      <div class="sub">на ${period.to}</div>
+    </div>
+  </div>
+
+  <div class="sect">
+    <div class="sect-head">Документи<span class="count">${fmtCnt(actUsd.count)}</span></div>
+    <div style="overflow:auto;max-height:calc(100vh - 440px)">
+    <table class="s-tbl">
+      <thead><tr>
+        <th>Дата</th><th>Документ</th><th>Вал</th><th>Збільшення</th><th>Зменшення</th><th>Орг</th>
+      </tr></thead>
+      <tbody>${actRows || '<tr><td colspan="6" class="muted" style="text-align:center;padding:30px">немає рухів у періоді</td></tr>'}</tbody>
+    </table>
+    </div>
+  </div>
+
+  ${(orders || []).length ? `
+  <details style="margin-top:14px">
+    <summary style="padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);list-style:none">
+      Замовлення покупця (${(orders||[]).length})
+    </summary>
+    <div class="sect" style="margin-top:6px;border-radius:12px">
+      <table class="s-tbl">
+        <thead><tr><th>Дата</th><th>№</th><th>Вал</th><th>Сума</th><th>Стан</th><th>Орг</th></tr></thead>
+        <tbody>${ordRows}</tbody>
+      </table>
+    </div>
+  </details>
+  ` : ''}
+  `;
+}
+
+function goBack(){
+  setState({ detailRef: '' });
+}
+
+async function loadDetailPage(){
+  body.innerHTML = '<div class="loading">Завантаження акту звірки…</div>';
+  sub.textContent = 'Акт звірки';
+  const p = new URLSearchParams({ action:(ROLE_DETAIL_ENDPOINT[state.role] || 'customer_detail'), ref_key:state.detailRef, from:state.from, to:state.to });
+  if (state.org) p.set('org', state.org);
+  try{
+    const res = await fetch(`${API}/?${p}`);
+    if (!res.ok) throw new Error(`${res.status} ${await res.text().catch(()=>res.statusText)}`);
+    const d = await res.json();
+    if (d.error) throw new Error(d.error);
+    body.innerHTML = renderDetailPage(d);
+  }catch(e){
+    body.innerHTML = `<div class="error">Помилка: ${e.message}</div>
+      <button class="detail-back" onclick="goBack()">← Назад</button>`;
+  }
+}
+
+function fmtCell(v){
+  if (v === null || v === undefined || v === '') return '<span class="null">null</span>';
+  if (typeof v === 'number') return new Intl.NumberFormat('uk-UA',{maximumFractionDigits:4}).format(v);
+  if (typeof v === 'string' && v.length > 48) return `<span title="${v.replace(/"/g,'&quot;')}">${v.slice(0,45)}…</span>`;
+  return String(v);
+}
+function isNumericCol(col){
+  return /_at$|count|amount|quantity|price|rate|deletion_mark|posted|is_service|line_number|scale/.test(col);
+}
+
+async function loadData(){
+  sub.textContent = `Дані · ${state.dvTable}`;
+  // Toolbar + container (render once, then refresh rows lazily)
+  body.innerHTML = `
+    <div class="dv-toolbar">
+      <select id="dvTable">${DV_TABLES.map(t => `<option value="${t}" ${t===state.dvTable?'selected':''}>${t}</option>`).join('')}</select>
+      <input type="text" id="dvSearch" placeholder="🔎 пошук по description/number/ref_key…" value="${state.dvSearch.replace(/"/g,'&quot;')}">
+      <button class="btn" id="dvPrev">← попередні</button>
+      <button class="btn" id="dvNext">наступні →</button>
+      <span class="meta" id="dvMeta"></span>
+    </div>
+    <div class="dv-wrap"><div class="loading">Завантаження…</div></div>`;
+  document.getElementById('dvTable').addEventListener('change', e => { state.dvTable = e.target.value; state.dvOffset = 0; saveUrl(); refreshRows(); });
+  const s = document.getElementById('dvSearch');
+  let debTimer = null;
+  s.addEventListener('input', e => {
+    clearTimeout(debTimer);
+    debTimer = setTimeout(() => { state.dvSearch = e.target.value; state.dvOffset = 0; saveUrl(); refreshRows(); }, 300);
+  });
+  document.getElementById('dvPrev').addEventListener('click', () => { if (state.dvOffset > 0) { state.dvOffset = Math.max(0, state.dvOffset - DV_LIMIT); saveUrl(); refreshRows(); } });
+  document.getElementById('dvNext').addEventListener('click', () => { state.dvOffset += DV_LIMIT; saveUrl(); refreshRows(); });
+  refreshRows();
+}
+
+async function refreshRows(){
+  const wrap = document.querySelector('.dv-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="loading">Завантаження…</div>';
+  const params = new URLSearchParams({ action:'db_inspect', table:state.dvTable, limit:String(DV_LIMIT), offset:String(state.dvOffset) });
+  if (state.dvSearch) params.set('search', state.dvSearch);
+  try{
+    const res = await fetch(`${API}/?${params}`);
+    if (!res.ok) throw new Error(`${res.status} ${await res.text().catch(()=>res.statusText)}`);
+    const d = await res.json();
+    if (d.error) throw new Error(d.error);
+    const cols = d.columns;
+    const rows = d.rows;
+    const to = Math.min(state.dvOffset + rows.length, d.total);
+    document.getElementById('dvMeta').textContent = `${state.dvOffset + 1}–${to} з ${new Intl.NumberFormat('uk-UA').format(d.total)}`;
+    document.getElementById('dvPrev').disabled = state.dvOffset <= 0;
+    document.getElementById('dvNext').disabled = state.dvOffset + DV_LIMIT >= d.total;
+    if (!rows.length) {
+      wrap.innerHTML = `<div class="empty">Нічого не знайдено</div>`;
+      return;
+    }
+    const thead = cols.map(c => `<th>${c}</th>`).join('');
+    const tbody = rows.map(r => {
+      const tds = cols.map(c => {
+        const v = r[c];
+        const cls = (v===null||v===undefined||v==='') ? '' : (typeof v === 'number' || isNumericCol(c) ? 'num' : '');
+        return `<td class="${cls}">${fmtCell(v)}</td>`;
+      }).join('');
+      return `<tr>${tds}</tr>`;
+    }).join('');
+    wrap.innerHTML = `<table class="dv-tbl"><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>`;
+  }catch(e){
+    wrap.innerHTML = `<div class="error">Помилка: ${e.message}</div>`;
+  }
+}
+
+function load(){
+  if (state.tab === 'data') return loadData();
+  if (state.detailRef) return loadDetailPage();
+  return loadOverview();
+}
+
+Auth.require('counterparties').then(user => {
+  AppHeader.mount({ active:'counterparties', user });
+  readUrl();
+  syncToolbar();
+  wireToolbar();
+  load();
+});
+</script>
+</body>
+</html>
