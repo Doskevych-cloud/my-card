@@ -405,15 +405,19 @@ function renderKpi(k){
   const byCur = k.balance_by_currency || {};
   const CUR_ORDER = ['USD','UAH','EUR'];
   const curs = Object.keys(byCur).sort((a,b) => CUR_ORDER.indexOf(a) - CUR_ORDER.indexOf(b));
-  // Рядок розбивки — монохромний (акцент тільки на головній цифрі зверху).
-  const breakdown = (field) => {
+  // Рядок розбивки — монохромний (акцент на головній цифрі зверху).
+  // Для "Ітого" показуємо зі знаком (+нам / −ми); для owed/we_owe — завжди позитив.
+  const breakdown = (field, signed) => {
     if (!curs.length) return '';
     const rows = curs
       .map(cur => ({ cur, val: Number(byCur[cur][field]) || 0 }))
       .filter(x => Math.abs(x.val) > 0.5);
     if (!rows.length) return '';
     return '<div class="kpi-sub">' +
-      rows.map(x => `<div class="kpi-sub-row"><span class="kpi-sub-cur">${x.cur}</span><span class="kpi-sub-val">${fmtCur(Math.abs(x.val), x.cur)}</span></div>`).join('') +
+      rows.map(x => {
+        const str = signed ? fmtCurSigned(x.val, x.cur) : fmtCur(Math.abs(x.val), x.cur);
+        return `<div class="kpi-sub-row"><span class="kpi-sub-cur">${x.cur}</span><span class="kpi-sub-val">${str}</span></div>`;
+      }).join('') +
       '</div>';
   };
   return `
@@ -421,17 +425,17 @@ function renderKpi(k){
     <div class="kpi">
       <div class="label">Борги нам</div>
       <div class="value neg">${fmtCurSigned(owedToUs, 'USD')}</div>
-      ${breakdown('owed_to_us')}
+      ${breakdown('owed_to_us', false)}
     </div>
     <div class="kpi">
       <div class="label">Борги наші</div>
       <div class="value pos">${fmtCurSigned(-weOwe, 'USD')}</div>
-      ${breakdown('we_owe')}
+      ${breakdown('we_owe', false)}
     </div>
     <div class="kpi">
       <div class="label">Ітого</div>
       <div class="value ${totalCls}">${Math.abs(total) < 1 ? '0 $' : fmtCurSigned(total, 'USD')}</div>
-      ${breakdown('total')}
+      ${breakdown('total', true)}
     </div>
   </div>`;
 }
