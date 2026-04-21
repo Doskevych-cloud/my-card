@@ -364,16 +364,22 @@ function collectKeys() {
 }
 
 function managerTotalsUsd(m) {
-  if (!state.fx) return { paid: 0, remain: 0, ok: false };
-  let paid = 0, remain = 0;
-  for (const C of m.currencies) {
-    const p = toUsd(C.paid, C.currency);
-    const r = toUsd(C.remain, C.currency);
-    if (p == null || r == null) return { paid: 0, remain: 0, ok: false };
-    paid += p;
-    remain += r;
+  // V2: беремо paidUsd з бекенду (розраховано через fx_rates source=1c_doc —
+  //     курси самих 1С-документів). Для remain — конвертуємо через поточний
+  //     курс (бо remain — це майбутнє, 1С курс = поточному НБУ/Privatbank).
+  const paid = Number(m.paidUsd) || 0;
+  let remain = 0;
+  let ok = true;
+  if (state.fx) {
+    for (const C of m.currencies) {
+      const r = toUsd(C.remain, C.currency);
+      if (r == null) { ok = false; break; }
+      remain += r;
+    }
+  } else {
+    ok = false;
   }
-  return { paid, remain, ok: true };
+  return { paid, remain, ok };
 }
 
 function clientMatches(c) {
@@ -400,7 +406,7 @@ function getManagers() {
         merged[k] = { name: m.name, total: 0, paid: 0, remain: 0, currencies: {} };
       }
       const M = merged[k];
-      M.total += m.total; M.paid += m.paid; M.remain += m.remain;
+      M.total += m.total; M.paid += m.paid; M.paidUsd = (M.paidUsd || 0) + (m.paidUsd || 0); M.remain += m.remain;
       (m.currencies || []).forEach(C => {
         if (!M.currencies[C.currency]) {
           M.currencies[C.currency] = { currency: C.currency, total: 0, paid: 0, remain: 0, clients: {} };
