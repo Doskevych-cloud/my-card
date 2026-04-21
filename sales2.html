@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Продажі менеджерів</title>
+<title>Продажі менеджерів · V2 (D1)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
@@ -165,8 +165,8 @@ a{color:inherit;text-decoration:none}
 <div id="app">
   <div class="wrap">
     <div class="page-tabs">
-      <a href="/sales.html" class="ptab active">📈 Продажі менеджерів</a>
-      <a href="/sales2.html" class="ptab">🧪 V2 (D1)</a>
+      <a href="/sales.html" class="ptab">📈 Продажі менеджерів</a>
+      <a href="/sales2.html" class="ptab active">🧪 Продажі V2 (D1)</a>
       <a href="/osp.html" class="ptab">📋 Оплата та відвантаження</a>
       <a href="/ar_aging.html" class="ptab">⏱ Заборгованість покупців</a>
     </div>
@@ -285,7 +285,7 @@ async function load() {
   document.getElementById('curSummary').innerHTML = '';
   document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
   try {
-    const q = `?action=sales_report&from=${state.from}&to=${state.to}&org=${encodeURIComponent(state.org)}`;
+    const q = `?action=sales_report_d1&from=${state.from}&to=${state.to}&org=${encodeURIComponent(state.org)}`;
     const [salesRes, fxRes] = await Promise.all([
       fetch(API_URL + q).then(r => r.json()),
       fetch(API_URL + '?action=fx_rates').then(r => r.json()).catch(() => null),
