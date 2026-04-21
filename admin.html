@@ -386,23 +386,26 @@ const AUTOSYNC_LABELS = {
 };
 function autosyncStepText(s) {
   const label = AUTOSYNC_LABELS[s.step] || s.step;
-  if (!s.ok) return { label, info: 'помилка: ' + (s.error || 'невідомо'), err: true };
+  if (!s.ok) return { label, info: 'помилка: ' + (s.error || 'невідомо'), err: true, muted: false };
   const r = s.result || {};
   let info = '';
-  if (r.inserted !== undefined) {
-    info = `оновлено ${r.inserted}`;
-    if (r.total && r.total !== r.inserted) info += ` з ${r.total}`;
-  } else if (r.bank !== undefined || r.cash !== undefined) {
-    info = `всього ${r.total || 0} (банк ${r.bank || 0} · каса ${r.cash || 0})`;
+  let muted = false;
+  // Делта має пріоритет — показує реальну зміну кількості у вікні.
+  if (r.new !== undefined) {
+    if (r.new === 0) { info = 'без змін'; muted = true; }
+    else if (r.new > 0) info = `+${r.new} нових`;
+    else info = `−${-r.new} видалено`;
   } else if (r.rows !== undefined) {
-    info = `${r.rows} рядків (USD/EUR курсів)`;
+    info = `${r.rows} рядків курсів`;
+    if (!r.rows) muted = true;
   } else if (s.step === 'amount_usd_backfill') {
     const sum = Object.values(r).reduce((a, b) => a + (Number(b) || 0), 0);
-    info = `${sum.toLocaleString('uk-UA')} записів перераховано`;
+    if (sum === 0) { info = 'без змін'; muted = true; }
+    else info = `${sum.toLocaleString('uk-UA')} записів перераховано`;
   } else {
     info = 'готово';
   }
-  return { label, info, err: false };
+  return { label, info, err: false, muted };
 }
 
 async function runAutosync() {
@@ -423,13 +426,11 @@ async function runAutosync() {
     const rows = steps.map(s => {
       const p = autosyncStepText(s);
       const icon = p.err ? '<span style="color:var(--bad)">✗</span>' : '<span style="color:var(--ok)">✓</span>';
-      const info = p.err
-        ? `<span style="color:var(--bad)">${p.info}</span>`
-        : `<span style="color:var(--text)">${p.info}</span>`;
+      const color = p.err ? 'var(--bad)' : (p.muted ? 'var(--text3)' : 'var(--text)');
       return `<tr>
         <td style="padding:4px 12px 4px 0;width:1%">${icon}</td>
         <td style="padding:4px 16px 4px 0;color:var(--text2)">${p.label}</td>
-        <td style="padding:4px 0">${info}</td>
+        <td style="padding:4px 0;color:${color}">${p.info}</td>
       </tr>`;
     }).join('');
     out.innerHTML = `
