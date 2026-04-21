@@ -403,34 +403,37 @@ function getManagers() {
     (od.managers || []).forEach(m => {
       const k = m.name;
       if (!merged[k]) {
-        merged[k] = { name: m.name, total: 0, paid: 0, remain: 0, currencies: {} };
+        merged[k] = { name: m.name, total: 0, paid: 0, paidUsd: 0, remain: 0, currencies: {} };
       }
       const M = merged[k];
-      M.total += m.total; M.paid += m.paid; M.paidUsd = (M.paidUsd || 0) + (m.paidUsd || 0); M.remain += m.remain;
+      M.total += m.total; M.paid += m.paid; M.paidUsd += (m.paidUsd || 0); M.remain += m.remain;
       (m.currencies || []).forEach(C => {
         if (!M.currencies[C.currency]) {
-          M.currencies[C.currency] = { currency: C.currency, total: 0, paid: 0, remain: 0, clients: {} };
+          M.currencies[C.currency] = { currency: C.currency, total: 0, paid: 0, paidUsd: 0, remain: 0, clients: {} };
         }
         const CC = M.currencies[C.currency];
-        CC.total += C.total; CC.paid += C.paid; CC.remain += C.remain;
+        CC.total += C.total; CC.paid += C.paid; CC.paidUsd += (C.paidUsd || 0); CC.remain += C.remain;
         (C.clients || []).forEach(cl => {
           if (!CC.clients[cl.name]) {
-            CC.clients[cl.name] = { name: cl.name, total: 0, paid: 0, remain: 0, orders: [] };
+            CC.clients[cl.name] = { name: cl.name, total: 0, paid: 0, paidUsd: 0, remain: 0, orders: [] };
           }
           const CL = CC.clients[cl.name];
-          CL.total += cl.total; CL.paid += cl.paid; CL.remain += cl.remain;
+          CL.total += cl.total; CL.paid += cl.paid; CL.paidUsd += (cl.paidUsd || 0); CL.remain += cl.remain;
           CL.orders.push(...(cl.orders || []));
         });
       });
     });
   });
+  const CUR_ORDER = { USD: 1, EUR: 2, UAH: 3 };
+  const curSort = (a, b) => (CUR_ORDER[a.currency] || 99) - (CUR_ORDER[b.currency] || 99)
+                          || (a.currency || '').localeCompare(b.currency || '');
   return Object.values(merged).map(m => ({
     ...m,
     currencies: Object.values(m.currencies).map(C => ({
       ...C,
       clients: Object.values(C.clients).sort((a, b) => b.paid - a.paid),
-    })).sort((a, b) => b.paid - a.paid),
-  })).sort((a, b) => b.paid - a.paid);
+    })).sort(curSort),
+  })).sort((a, b) => b.paidUsd - a.paidUsd);
 }
 
 // ─── Render ───
