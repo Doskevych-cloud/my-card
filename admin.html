@@ -395,9 +395,6 @@ function autosyncStepText(s) {
     if (r.new === 0) { info = 'без змін'; muted = true; }
     else if (r.new > 0) info = `+${r.new} нових`;
     else info = `−${-r.new} видалено`;
-  } else if (r.rows !== undefined) {
-    info = `${r.rows} рядків курсів`;
-    if (!r.rows) muted = true;
   } else if (s.step === 'amount_usd_backfill') {
     const sum = Object.values(r).reduce((a, b) => a + (Number(b) || 0), 0);
     if (sum === 0) { info = 'без змін'; muted = true; }
