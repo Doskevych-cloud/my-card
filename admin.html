@@ -371,13 +371,47 @@ async function deleteUser(email) {
   } catch (e) { toast(e.message, 'err'); }
 }
 
+const AUTOSYNC_LABELS = {
+  sales_orders:        'Замовлення клієнтів',
+  sales_receipts:      'Видаткові накладні',
+  sales_order_items:   'Позиції замовлень',
+  ar_movements:        'Розрахунки з покупцями',
+  payments_in:         'Надходження коштів',
+  purchase_orders:     'Замовлення постачальникам',
+  purchase_receipts:   'Прибуткові накладні',
+  ap_movements:        'Розрахунки з постачальниками',
+  payments_out:        'Списання коштів',
+  fx_rates_1c:         'Курси валют',
+  amount_usd_backfill: 'Перерахунок у USD',
+};
+function autosyncStepText(s) {
+  const label = AUTOSYNC_LABELS[s.step] || s.step;
+  if (!s.ok) return { label, info: 'помилка: ' + (s.error || 'невідомо'), err: true };
+  const r = s.result || {};
+  let info = '';
+  if (r.inserted !== undefined) {
+    info = `оновлено ${r.inserted}`;
+    if (r.total && r.total !== r.inserted) info += ` з ${r.total}`;
+  } else if (r.bank !== undefined || r.cash !== undefined) {
+    info = `всього ${r.total || 0} (банк ${r.bank || 0} · каса ${r.cash || 0})`;
+  } else if (r.rows !== undefined) {
+    info = `${r.rows} рядків (USD/EUR курсів)`;
+  } else if (s.step === 'amount_usd_backfill') {
+    const sum = Object.values(r).reduce((a, b) => a + (Number(b) || 0), 0);
+    info = `${sum.toLocaleString('uk-UA')} записів перераховано`;
+  } else {
+    info = 'готово';
+  }
+  return { label, info, err: false };
+}
+
 async function runAutosync() {
   const btn = document.getElementById('btnAutosync');
   const out = document.getElementById('autosyncResult');
   btn.disabled = true;
   btn.textContent = '⏳ Синхронізація…';
   out.style.display = 'block';
-  out.textContent = 'Виконується…';
+  out.innerHTML = '<div style="color:var(--text3)">Виконується…</div>';
   const started = Date.now();
   try {
     const r = await Auth.apiFetch('_admin_run_autosync');
@@ -386,18 +420,26 @@ async function runAutosync() {
     const ok = steps.filter(s => s.ok).length;
     const fail = steps.filter(s => !s.ok);
     toast(`Готово за ${sec}s · ${ok}/${steps.length} кроків`, fail.length ? 'err' : 'ok');
-    out.innerHTML = '<pre style="white-space:pre-wrap;font-family:inherit;margin:0">' +
-      steps.map(s => {
-        const tag = s.ok ? '✓' : '✗';
-        const info = s.ok
-          ? (s.result && (s.result.inserted !== undefined ? `inserted=${s.result.inserted}` : JSON.stringify(s.result)))
-          : s.error;
-        return `${tag} ${s.step} — ${info || ''}`;
-      }).join('\n') + '</pre>' +
-      `<div style="margin-top:6px;color:var(--text3)">Вікно: ${r.window && r.window.from} → ${r.window && r.window.to}</div>`;
+    const rows = steps.map(s => {
+      const p = autosyncStepText(s);
+      const icon = p.err ? '<span style="color:var(--bad)">✗</span>' : '<span style="color:var(--ok)">✓</span>';
+      const info = p.err
+        ? `<span style="color:var(--bad)">${p.info}</span>`
+        : `<span style="color:var(--text)">${p.info}</span>`;
+      return `<tr>
+        <td style="padding:4px 12px 4px 0;width:1%">${icon}</td>
+        <td style="padding:4px 16px 4px 0;color:var(--text2)">${p.label}</td>
+        <td style="padding:4px 0">${info}</td>
+      </tr>`;
+    }).join('');
+    out.innerHTML = `
+      <div style="margin-bottom:8px;color:var(--text3)">
+        Вікно: ${r.window && r.window.from} → ${r.window && r.window.to} · ${sec}s
+      </div>
+      <table style="border-collapse:collapse">${rows}</table>`;
   } catch (e) {
     toast(e.message, 'err');
-    out.textContent = 'Помилка: ' + e.message;
+    out.innerHTML = '<span style="color:var(--bad)">Помилка: ' + e.message + '</span>';
   } finally {
     btn.disabled = false;
     btn.textContent = '🔄 Запустити autosync зараз';
