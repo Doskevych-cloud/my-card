@@ -10,8 +10,8 @@
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
-<script src="auth.js?v=leaderpot20260419"></script>
-<script src="header.js?v=leaderpot20260419"></script>
+<script src="auth.js?v=leaderpot2_20260419"></script>
+<script src="header.js?v=leaderpot2_20260419"></script>
 <style>
 :root{
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -476,12 +476,13 @@ function renderSummaryGrid(managers) {
   const maxPaid = Math.max(...sortedMgrs.map(d => d.paid), 1);
   const mgrRows = sortedMgrs.map(({ m, paid, remain, ok }, i) => {
     const isOpen = state.openKeys.has(`m:${m.name}`);
+    const total = paid + remain; // потенціал = сума ВСІХ замовлень (оплачених + неоплачених)
     return `
       <div class="leader-row mgr ${isOpen ? 'active' : ''}" data-key="m:${esc(m.name)}">
         <div class="leader-rank">${i + 1}</div>
         <div class="leader-name" title="${esc(m.name)}">${esc(m.name)}</div>
         <div class="leader-sub">бонус ${money(paid * BONUS_RATE, ok)}</div>
-        <div class="leader-pot">пот. <b>${money(remain, ok)}</b></div>
+        <div class="leader-pot">пот. <b>${money(total, ok)}</b></div>
         <div class="leader-val">${money(paid, ok)}</div>
         <div class="leader-bar"><div class="leader-bar-fill" style="width:${paid / maxPaid * 100}%"></div></div>
       </div>`;
