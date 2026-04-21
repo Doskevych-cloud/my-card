@@ -194,20 +194,19 @@ Auth.require('warehouses').then(user => {
   const userOrgs = user.orgs || {};
   const hasAnyOrg = Object.values(userOrgs).some(v => v);
   if (hasAnyOrg) {
+    const allowedOrgs = ['Реакт', 'Генерація'].filter(o => userOrgs[o]);
     const orgChips = document.querySelectorAll('.chip[data-org]');
-    let firstAllowed = null;
     orgChips.forEach(chip => {
       const org = chip.dataset.org;
-      if (!userOrgs[org]) {
-        chip.style.display = 'none';
-      } else if (!firstAllowed) {
-        firstAllowed = org;
+      if (org === '') {
+        if (allowedOrgs.length < 2) chip.style.display = 'none';
+      } else {
+        if (!userOrgs[org]) chip.style.display = 'none';
       }
     });
-    if (firstAllowed) {
-      state.org = firstAllowed;
-      orgChips.forEach(c => c.classList.toggle('active', c.dataset.org === firstAllowed));
-    }
+    const defaultOrg = allowedOrgs.length === 1 ? allowedOrgs[0] : '';
+    state.org = defaultOrg;
+    orgChips.forEach(c => c.classList.toggle('active', c.dataset.org === defaultOrg));
   }
   load();
 });

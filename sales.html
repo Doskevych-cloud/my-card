@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Продажі менеджерів</title>
+<title>Продажі менеджерів · V2 (D1)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
@@ -166,7 +166,6 @@ a{color:inherit;text-decoration:none}
   <div class="wrap">
     <div class="page-tabs">
       <a href="/sales.html" class="ptab active">📈 Продажі менеджерів</a>
-      <a href="/sales2.html" class="ptab">🧪 V2 (D1)</a>
       <a href="/osp.html" class="ptab">📋 Оплата та відвантаження</a>
       <a href="/ar_aging.html" class="ptab">⏱ Заборгованість покупців</a>
     </div>
@@ -212,20 +211,19 @@ Auth.require('sales').then(user => {
   const userOrgs = user.orgs || {};
   const hasAnyOrg = Object.values(userOrgs).some(v => v);
   if (hasAnyOrg) {
+    const allowedOrgs = ['Реакт', 'Генерація'].filter(o => userOrgs[o]);
     const orgChips = document.querySelectorAll('.chip[data-org]');
-    let firstAllowed = null;
     orgChips.forEach(chip => {
       const org = chip.dataset.org;
-      if (!userOrgs[org]) {
-        chip.style.display = 'none';
-      } else if (!firstAllowed) {
-        firstAllowed = org;
+      if (org === '') {
+        if (allowedOrgs.length < 2) chip.style.display = 'none';
+      } else {
+        if (!userOrgs[org]) chip.style.display = 'none';
       }
     });
-    if (firstAllowed) {
-      state.org = firstAllowed;
-      orgChips.forEach(c => c.classList.toggle('active', c.dataset.org === firstAllowed));
-    }
+    const defaultOrg = allowedOrgs.length === 1 ? allowedOrgs[0] : '';
+    state.org = defaultOrg;
+    orgChips.forEach(c => c.classList.toggle('active', c.dataset.org === defaultOrg));
   }
   setPreset('month');
 });
@@ -285,7 +283,7 @@ async function load() {
   document.getElementById('curSummary').innerHTML = '';
   document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
   try {
-    const q = `?action=sales_report&from=${state.from}&to=${state.to}&org=${encodeURIComponent(state.org)}`;
+    const q = `?action=sales_report_d1&from=${state.from}&to=${state.to}&org=${encodeURIComponent(state.org)}`;
     const [salesRes, fxRes] = await Promise.all([
       fetch(API_URL + q).then(r => r.json()),
       fetch(API_URL + '?action=fx_rates').then(r => r.json()).catch(() => null),
@@ -364,16 +362,22 @@ function collectKeys() {
 }
 
 function managerTotalsUsd(m) {
-  if (!state.fx) return { paid: 0, remain: 0, ok: false };
-  let paid = 0, remain = 0;
-  for (const C of m.currencies) {
-    const p = toUsd(C.paid, C.currency);
-    const r = toUsd(C.remain, C.currency);
-    if (p == null || r == null) return { paid: 0, remain: 0, ok: false };
-    paid += p;
-    remain += r;
+  // V2: беремо paidUsd з бекенду (розраховано через fx_rates source=1c_doc —
+  //     курси самих 1С-документів). Для remain — конвертуємо через поточний
+  //     курс (бо remain — це майбутнє, 1С курс = поточному НБУ/Privatbank).
+  const paid = Number(m.paidUsd) || 0;
+  let remain = 0;
+  let ok = true;
+  if (state.fx) {
+    for (const C of m.currencies) {
+      const r = toUsd(C.remain, C.currency);
+      if (r == null) { ok = false; break; }
+      remain += r;
+    }
+  } else {
+    ok = false;
   }
-  return { paid, remain, ok: true };
+  return { paid, remain, ok };
 }
 
 function clientMatches(c) {
@@ -397,34 +401,37 @@ function getManagers() {
     (od.managers || []).forEach(m => {
       const k = m.name;
       if (!merged[k]) {
-        merged[k] = { name: m.name, total: 0, paid: 0, remain: 0, currencies: {} };
+        merged[k] = { name: m.name, total: 0, paid: 0, paidUsd: 0, remain: 0, currencies: {} };
       }
       const M = merged[k];
-      M.total += m.total; M.paid += m.paid; M.remain += m.remain;
+      M.total += m.total; M.paid += m.paid; M.paidUsd += (m.paidUsd || 0); M.remain += m.remain;
       (m.currencies || []).forEach(C => {
         if (!M.currencies[C.currency]) {
-          M.currencies[C.currency] = { currency: C.currency, total: 0, paid: 0, remain: 0, clients: {} };
+          M.currencies[C.currency] = { currency: C.currency, total: 0, paid: 0, paidUsd: 0, remain: 0, clients: {} };
         }
         const CC = M.currencies[C.currency];
-        CC.total += C.total; CC.paid += C.paid; CC.remain += C.remain;
+        CC.total += C.total; CC.paid += C.paid; CC.paidUsd += (C.paidUsd || 0); CC.remain += C.remain;
         (C.clients || []).forEach(cl => {
           if (!CC.clients[cl.name]) {
-            CC.clients[cl.name] = { name: cl.name, total: 0, paid: 0, remain: 0, orders: [] };
+            CC.clients[cl.name] = { name: cl.name, total: 0, paid: 0, paidUsd: 0, remain: 0, orders: [] };
           }
           const CL = CC.clients[cl.name];
-          CL.total += cl.total; CL.paid += cl.paid; CL.remain += cl.remain;
+          CL.total += cl.total; CL.paid += cl.paid; CL.paidUsd += (cl.paidUsd || 0); CL.remain += cl.remain;
           CL.orders.push(...(cl.orders || []));
         });
       });
     });
   });
+  const CUR_ORDER = { USD: 1, EUR: 2, UAH: 3 };
+  const curSort = (a, b) => (CUR_ORDER[a.currency] || 99) - (CUR_ORDER[b.currency] || 99)
+                          || (a.currency || '').localeCompare(b.currency || '');
   return Object.values(merged).map(m => ({
     ...m,
     currencies: Object.values(m.currencies).map(C => ({
       ...C,
       clients: Object.values(C.clients).sort((a, b) => b.paid - a.paid),
-    })).sort((a, b) => b.paid - a.paid),
-  })).sort((a, b) => b.paid - a.paid);
+    })).sort(curSort),
+  })).sort((a, b) => b.paidUsd - a.paidUsd);
 }
 
 // ─── Render ───
