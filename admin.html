@@ -135,6 +135,20 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
     Новий користувач з'являється в таблиці після першого входу через Google. Також можна додати email вручну —
     тоді доступи застосуються, щойно він увійде.
   </p>
+
+  <div class="card" style="margin-top:24px">
+    <div class="card-head">
+      <h2>Обслуговування</h2>
+      <div class="spacer"></div>
+    </div>
+    <div style="padding:12px 4px 4px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn--primary" id="btnAutosync" onclick="runAutosync()">🔄 Запустити autosync зараз</button>
+      <span style="font-size:12px;color:var(--text3)">
+        Крон: щодня 05:05 Kyiv · window 7 днів · 11 таблиць (sales/purchase + movements + fx)
+      </span>
+    </div>
+    <div id="autosyncResult" style="margin-top:12px;font-size:12px;color:var(--text2);display:none"></div>
+  </div>
 </div>
 
 <div id="toastHost"></div>
@@ -355,6 +369,39 @@ async function deleteUser(email) {
     renderTable();
     toast('Видалено: ' + email, 'ok');
   } catch (e) { toast(e.message, 'err'); }
+}
+
+async function runAutosync() {
+  const btn = document.getElementById('btnAutosync');
+  const out = document.getElementById('autosyncResult');
+  btn.disabled = true;
+  btn.textContent = '⏳ Синхронізація…';
+  out.style.display = 'block';
+  out.textContent = 'Виконується…';
+  const started = Date.now();
+  try {
+    const r = await Auth.apiFetch('_admin_run_autosync');
+    const sec = ((Date.now() - started) / 1000).toFixed(1);
+    const steps = r.steps || [];
+    const ok = steps.filter(s => s.ok).length;
+    const fail = steps.filter(s => !s.ok);
+    toast(`Готово за ${sec}s · ${ok}/${steps.length} кроків`, fail.length ? 'err' : 'ok');
+    out.innerHTML = '<pre style="white-space:pre-wrap;font-family:inherit;margin:0">' +
+      steps.map(s => {
+        const tag = s.ok ? '✓' : '✗';
+        const info = s.ok
+          ? (s.result && (s.result.inserted !== undefined ? `inserted=${s.result.inserted}` : JSON.stringify(s.result)))
+          : s.error;
+        return `${tag} ${s.step} — ${info || ''}`;
+      }).join('\n') + '</pre>' +
+      `<div style="margin-top:6px;color:var(--text3)">Вікно: ${r.window && r.window.from} → ${r.window && r.window.to}</div>`;
+  } catch (e) {
+    toast(e.message, 'err');
+    out.textContent = 'Помилка: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔄 Запустити autosync зараз';
+  }
 }
 
 function toast(text, kind) {
