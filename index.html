@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=supp20260419"></script>
-<script src="header.js?v=supp20260419"></script>
+<script src="auth.js?v=gp20260422"></script>
+<script src="header.js?v=gp20260422"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -454,6 +454,7 @@ function buildKpiSkeleton() {
   const keyKpis = [];
   if (r.finance) {
     keyKpis.push({ id: 'kpiNet',     cls: 'c-net', lbl: 'Чистий прибуток' });
+    keyKpis.push({ id: 'kpiGp',      cls: 'c-gp',  lbl: 'Валовий прибуток' });
     keyKpis.push({ id: 'kpiRevenue', cls: 'c-rev', lbl: 'Оплачено за період' });
     keyKpis.push({ id: 'kpiAR',      cls: 'c-ar',  lbl: 'Дебіторка' });
     keyKpis.push({ id: 'kpiAP',      cls: 'c-ap',  lbl: 'Кредиторка' });
@@ -579,8 +580,15 @@ async function loadKey() {
   const qPnl      = `?action=pnl_accrual_report&from=${state.from}&to=${state.to}${orgQ}`;
   const qPnlP     = prev ? `?action=pnl_accrual_report&from=${prev.from}&to=${prev.to}${orgQ}` : null;
   const qPnlT     = `?action=pnl_accrual_report&from=${trendFrom}&to=${trendEnd}${orgQ}`;
+  // Gross profit — по-bucket'ного byMonth бек не дає, тож запит per-bucket
+  const qGp       = `?action=gross_profit_report&from=${state.from}&to=${state.to}${orgQ}`;
+  const qGpP      = prev ? `?action=gross_profit_report&from=${prev.from}&to=${prev.to}${orgQ}` : null;
+  const gpSparkReqs = trendBuckets.map(b =>
+    fetch(API_URL + `?action=gross_profit_report&from=${b.from}&to=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
+  );
+  const N_SPARK = trendBuckets.length;
 
-  const [salesR, salesPrevR, ms, msPrev, fx, pnl, pnlPrev, pnlTrend, ...sparkR] = await Promise.allSettled([
+  const _all = await Promise.allSettled([
     fetch(API_URL + qSales).then(r => r.json()),
     qSalesP ? fetch(API_URL + qSalesP).then(r => r.json()) : Promise.resolve(null),
     fetch(API_URL + qMS).then(r => r.json()),
@@ -589,8 +597,14 @@ async function loadKey() {
     fetch(API_URL + qPnl).then(r => r.json()),
     qPnlP ? fetch(API_URL + qPnlP).then(r => r.json()) : Promise.resolve(null),
     fetch(API_URL + qPnlT).then(r => r.json()),
+    fetch(API_URL + qGp).then(r => r.json()),
+    qGpP ? fetch(API_URL + qGpP).then(r => r.json()) : Promise.resolve(null),
     ...sparkReqs,
+    ...gpSparkReqs,
   ]);
+  const [salesR, salesPrevR, ms, msPrev, fx, pnl, pnlPrev, pnlTrend, gpR, gpPrevR] = _all;
+  const sparkR = _all.slice(10, 10 + N_SPARK);
+  const gpSparkR = _all.slice(10 + N_SPARK);
 
   // Ensure FX is ready for USD conversion (reuse if loadSales already set it)
   if (fx && fx.status === 'fulfilled' && fx.value && fx.value.rates) {
@@ -730,6 +744,29 @@ async function loadKey() {
   } else {
     const msg = pnl.status === 'fulfilled' ? (pnl.value.error || 'помилка') : pnl.reason.message;
     updateKpi('kpiNet', { val: 'Помилка', sub: esc(msg.slice(0, 80)), error: true });
+  }
+
+  // 5) ВАЛОВИЙ ПРИБУТОК = gross_profit_report.total.profit (USD)
+  if (gpR && gpR.status === 'fulfilled' && gpR.value && !gpR.value.error) {
+    const curGp = Number((gpR.value.total && gpR.value.total.profit) || 0);
+    const curRev = Number((gpR.value.total && gpR.value.total.revenue) || 0);
+    const curMargin = curRev ? (curGp / curRev) : 0;
+    let prevGp = null;
+    if (gpPrevR && gpPrevR.status === 'fulfilled' && gpPrevR.value && !gpPrevR.value.error) {
+      prevGp = Number((gpPrevR.value.total && gpPrevR.value.total.profit) || 0);
+    }
+    updateKpi('kpiGp', {
+      numeric: { target: curGp, format: kpiMoneyFmt('$') },
+      cls: curGp < 0 ? 'neg' : (curGp > 0 ? 'pos' : ''),
+      sub: `маржа ${curRev ? fmtPct(curMargin) : '—'} ${deltaHtml(curGp, prevGp)}`,
+    });
+    // Sparkline — 12 місяців (кожен bucket — окремий gross_profit_report)
+    const series = gpSparkR.map(r => (r.status === 'fulfilled' && r.value && r.value.total) ? Number(r.value.total.profit) || 0 : 0);
+    drawSparkline('kpiGpSpark', series, { color: 'var(--green)' });
+    wireKpiClick('kpiGp', openGpModal);
+  } else {
+    const msg = gpR && gpR.status === 'fulfilled' ? (gpR.value.error || 'помилка') : (gpR && gpR.reason ? gpR.reason.message : 'помилка');
+    updateKpi('kpiGp', { val: 'Помилка', sub: esc(String(msg).slice(0, 80)), error: true });
   }
 }
 
@@ -1220,6 +1257,7 @@ function sumBucketMonths(bucket, byM) {
 const METRIC_DEFS = {
   revenue: { title: '💵 Оплачено — динаміка', label: 'Оплачено', unit: '$' },
   net:     { title: '✅ Чистий прибуток — динаміка', label: 'Чистий', unit: '$' },
+  gp:      { title: '📈 Валовий прибуток — динаміка', label: 'Валовий', unit: '$' },
   ar:      { title: '⚠️ Дебіторка — динаміка', label: 'Дебіторка', unit: '$' },
   ap:      { title: '💳 Кредиторка — динаміка', label: 'Кредиторка', unit: '$' },
   leads:   { title: '🎯 Нові ліди — динаміка', label: 'Ліди', unit: '' },
@@ -1231,6 +1269,7 @@ const GRAN_COUNT = { month: 12, quarter: 6, year: 3 };
 
 function openRevenueModal() { openTrendModal('revenue'); }
 function openNetModal()     { openTrendModal('net'); }
+function openGpModal()      { openTrendModal('gp'); }
 function openArModal()      { openTrendModal('ar'); }
 function openApModal()      { openTrendModal('ap'); }
 function openLeadsModal()   { openTrendModal('leads'); }
@@ -1331,6 +1370,12 @@ async function reloadModalChart() {
       fetch(API_URL + `?action=suppliers_overview&from=${b.from}&to=${b.to}`).then(r => r.json()).catch(() => null)
     ));
     values = resps.map(d => (d && d.kpi && Number(d.kpi.we_owe_usd)) || 0);
+  } else if (metric === 'gp') {
+    // gross_profit_report per bucket — total.profit (Валовий прибуток USD)
+    const resps = await Promise.all(buckets.map(b =>
+      fetch(API_URL + `?action=gross_profit_report&from=${b.from}&to=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
+    ));
+    values = resps.map(d => (d && d.total && Number(d.total.profit)) || 0);
   }
 
   renderModalChart(buckets, values, gran, metric);
