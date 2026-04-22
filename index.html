@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=cache20260422"></script>
-<script src="header.js?v=cache20260422"></script>
+<script src="auth.js?v=stock20260422"></script>
+<script src="header.js?v=stock20260422"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -480,6 +480,7 @@ function buildKpiSkeleton() {
     keyKpis.push({ id: 'kpiRevenue', cls: 'c-rev', lbl: 'Оплачено за період' });
     keyKpis.push({ id: 'kpiAR',      cls: 'c-ar',  lbl: 'Борги нам' });
     keyKpis.push({ id: 'kpiAP',      cls: 'c-ap',  lbl: 'Наш борг' });
+    keyKpis.push({ id: 'kpiStock',   cls: 'c-stock', lbl: 'Вартість запасів' });
   }
   if (r.reports) {
     keyKpis.push({ id: 'kpiLeads', cls: 'c-lead',lbl: 'Нові ліди' });
@@ -683,7 +684,7 @@ async function loadKey() {
   if (msC.status === 'fulfilled' && !msC.value.error) {
     updateKpi('kpiAR', {
       numeric: { target: arCur, format: kpiMoneyFmt('$') },
-      cls: arCur < 0 ? 'neg' : 'pos',
+      cls: arCur > 0 ? 'pos' : (arCur < 0 ? 'neg' : ''),
       sub: `станом на сьогодні ${deltaHtml(arCur, arPrev, 'up')}`,
     });
     wireKpiClick('kpiAR', openArModal);
@@ -694,7 +695,7 @@ async function loadKey() {
   if (msS.status === 'fulfilled' && !msS.value.error) {
     updateKpi('kpiAP', {
       numeric: { target: apCur, format: kpiMoneyFmt('$') },
-      cls: apCur > 0 ? 'neg' : 'pos',
+      cls: apCur > 0 ? 'pos' : (apCur < 0 ? 'neg' : ''),
       sub: `станом на сьогодні ${deltaHtml(apCur, apPrev, 'down')}`,
     });
     wireKpiClick('kpiAP', openApModal);
@@ -798,6 +799,37 @@ async function loadKey() {
   } else {
     const msg = gpR && gpR.status === 'fulfilled' ? (gpR.value.error || 'помилка') : (gpR && gpR.reason ? gpR.reason.message : 'помилка');
     updateKpi('kpiGp', { val: 'Помилка', sub: esc(String(msg).slice(0, 80)), error: true });
+  }
+
+  // 6) ВАРТІСТЬ ЗАПАСІВ = warehouse_value_report.total_value_usd
+  loadStockKpi(trendBuckets, todayIso, monthAgoIso);
+}
+
+async function loadStockKpi(trendBuckets, todayIso, monthAgoIso) {
+  try {
+    const [curR, prevR, ...sparkR] = await Promise.all([
+      dashFetch(API_URL + `?action=warehouse_value_report&date=${todayIso}`).catch(() => null),
+      dashFetch(API_URL + `?action=warehouse_value_report&date=${monthAgoIso}`).catch(() => null),
+      ...trendBuckets.map(b =>
+        dashFetch(API_URL + `?action=warehouse_value_report&date=${b.to}`).catch(() => null)
+      ),
+    ]);
+    if (!curR || curR.error) {
+      const msg = (curR && curR.error) || 'немає даних';
+      updateKpi('kpiStock', { val: 'Помилка', sub: esc(String(msg).slice(0, 80)), error: true });
+      return;
+    }
+    const curVal = Number(curR.total_value_usd) || 0;
+    const prevVal = prevR && !prevR.error ? Number(prevR.total_value_usd) || 0 : null;
+    updateKpi('kpiStock', {
+      numeric: { target: curVal, format: kpiMoneyFmt('$') },
+      sub: `станом на ${todayIso} ${deltaHtml(curVal, prevVal)}`,
+    });
+    const series = sparkR.map(d => (d && !d.error) ? (Number(d.total_value_usd) || 0) : 0);
+    drawSparkline('kpiStockSpark', series, { color: 'var(--accent)' });
+    wireKpiClick('kpiStock', openStockModal);
+  } catch (e) {
+    updateKpi('kpiStock', { val: 'Помилка', sub: esc(e.message.slice(0, 80)), error: true });
   }
 }
 
@@ -1236,6 +1268,7 @@ const METRIC_DEFS = {
   gp:      { title: '📈 Валовий прибуток — динаміка', label: 'Валовий', unit: '$' },
   ar:      { title: '⚠️ Борги нам — динаміка', label: 'Борги нам', unit: '$' },
   ap:      { title: '💳 Наш борг — динаміка', label: 'Наш борг', unit: '$' },
+  stock:   { title: '📦 Вартість запасів — динаміка', label: 'Запаси', unit: '$' },
   leads:   { title: '🎯 Нові ліди — динаміка', label: 'Ліди', unit: '' },
   won:     { title: '🏆 Успішно реалізовано — динаміка', label: 'Успіх', unit: '' },
   conv:    { title: '📊 Кінцева конверсія — динаміка', label: 'Конверсія', unit: '%' },
@@ -1247,6 +1280,7 @@ function openNetModal()     { openTrendModal('net'); }
 function openGpModal()      { openTrendModal('gp'); }
 function openArModal()      { openTrendModal('ar'); }
 function openApModal()      { openTrendModal('ap'); }
+function openStockModal()   { openTrendModal('stock'); }
 function openLeadsModal()   { openTrendModal('leads'); }
 function openWonModal()     { openTrendModal('won'); }
 function openConvModal()    { openTrendModal('conv'); }
@@ -1319,13 +1353,20 @@ async function reloadModalChart() {
     const byM = pnlNetByMonth(p);
     values = buckets.map(b => sumBucketMonths(b, byM));
   } else if (metric === 'ar' || metric === 'ap') {
-    // Обидві беруться з all_overview (звіт Контрагенти) — closing баланс на bucket.to
+    // AR = customers_overview.balance_usd, AP = suppliers_overview.balance_usd
     const y = new Date().getFullYear();
     const janFirst = _localISO(new Date(y, 0, 1));
+    const action = metric === 'ar' ? 'customers_overview' : 'suppliers_overview';
     const resps = await Promise.all(buckets.map(b =>
-      dashFetch(API_URL + `?action=all_overview&from=${janFirst}&to=${b.to}${orgQ}`).catch(() => null)
+      dashFetch(API_URL + `?action=${action}&from=${janFirst}&to=${b.to}${orgQ}`).catch(() => null)
     ));
-    values = resps.map(metric === 'ar' ? coArTotal : coApTotal);
+    values = resps.map(coBalance);
+  } else if (metric === 'stock') {
+    // warehouse_value_report — point-in-time (bucket.to = дата знімка)
+    const resps = await Promise.all(buckets.map(b =>
+      dashFetch(API_URL + `?action=warehouse_value_report&date=${b.to}`).catch(() => null)
+    ));
+    values = resps.map(d => (d && Number(d.total_value_usd)) || 0);
   } else if (metric === 'leads' || metric === 'won' || metric === 'conv') {
     // sheet_funnel — per-bucket (period-based)
     const resps = await Promise.all(buckets.map(b =>
@@ -1340,12 +1381,6 @@ async function reloadModalChart() {
       // conv %: won / leads × 100
       return leads ? (won / leads * 100) : 0;
     });
-  } else if (metric === 'suppDebt') {
-    // suppliers_overview per bucket — we_owe_usd (борги наші постачальникам)
-    const resps = await Promise.all(buckets.map(b =>
-      dashFetch(API_URL + `?action=suppliers_overview&from=${b.from}&to=${b.to}`).catch(() => null)
-    ));
-    values = resps.map(d => (d && d.kpi && Number(d.kpi.we_owe_usd)) || 0);
   } else if (metric === 'gp') {
     // gross_profit_report per bucket — total.profit (Валовий прибуток USD)
     const resps = await Promise.all(buckets.map(b =>
