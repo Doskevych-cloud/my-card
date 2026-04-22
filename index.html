@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=co20260422"></script>
-<script src="header.js?v=co20260422"></script>
+<script src="auth.js?v=cache20260422"></script>
+<script src="header.js?v=cache20260422"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -287,6 +287,29 @@ a{color:inherit;text-decoration:none}
 <script>
 const API_URL = 'https://price-api.doskevich.workers.dev';
 
+// ── Client-side cache (stale-while-revalidate) ──────────────────────────────
+// Worker вже кешує response у KV на 1 год — а це ще один шар на клієнті (10 хв),
+// щоб при повторному відкритті/переключенні фільтрів дашборд не чекав жодного
+// round-trip-у. Спочатку віддаємо кеш, паралельно фетчимо свіже (оновить графік
+// коли прийде відповідь) — типова stale-while-revalidate стратегія.
+const DASH_CACHE_TTL = 10 * 60 * 1000; // 10 хвилин
+function dashFetch(url) {
+  const cacheKey = 'dashCache:' + url;
+  const now = Date.now();
+  let cached = null;
+  try { const raw = localStorage.getItem(cacheKey); if (raw) cached = JSON.parse(raw); } catch (_) {}
+  const network = fetch(url).then(r => r.json()).then(d => {
+    try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), d })); } catch (_) {}
+    return d;
+  });
+  if (cached && (now - cached.ts) < DASH_CACHE_TTL) {
+    // Fire-and-forget revalidation
+    network.catch(() => {});
+    return Promise.resolve(cached.d);
+  }
+  return network;
+}
+
 // ─── Session gate (dashboard role) + unified header ───
 Auth.require('dashboard').then(user => {
   window.__user = user;
@@ -443,7 +466,6 @@ function reloadAll() {
   loadKey();
   loadSales();
   loadConversion();
-  loadSuppliersKpi();
 }
 
 // ─── 3 ключові KPI: Оплачено за період · Дебіторка · Кредиторка ───
@@ -463,9 +485,6 @@ function buildKpiSkeleton() {
     keyKpis.push({ id: 'kpiLeads', cls: 'c-lead',lbl: 'Нові ліди' });
     keyKpis.push({ id: 'kpiWon',   cls: 'c-won', lbl: 'Успішно реалізовано' });
     keyKpis.push({ id: 'kpiConv',  cls: 'c-conv',lbl: 'Кінцева конверсія' });
-  }
-  if (r.suppliers) {
-    keyKpis.push({ id: 'kpiSuppDebt', cls: 'c-supp', lbl: 'Борги наші (постачальники)' });
   }
 
   const kpiHtml = c => `<div class="kpi ${c.cls} ldg" id="${c.id}">
@@ -561,20 +580,22 @@ async function loadKey() {
   const todayIso = _localISO(todayDate);
   const trendBuckets = buildYtdBuckets(todayDate, todayIso);
   const sparkReqs = trendBuckets.map(b =>
-    fetch(API_URL + `?action=sales_report&from=${b.from}&to=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
+    dashFetch(API_URL + `?action=sales_report&from=${b.from}&to=${b.to}${orgQ}`).catch(() => null)
   );
 
   const qSales   = `?action=sales_report&from=${state.from}&to=${state.to}${orgQ}`;
   const qSalesP  = prev ? `?action=sales_report&from=${prev.from}&to=${prev.to}${orgQ}` : null;
-  // all_overview (звіт «Контрагенти») — сумарні борги обох сторін:
-  //   d.kpi.owed_to_us_usd — нам винні (клієнти + аванси постачальникам)
-  //   d.kpi.we_owe_usd     — ми винні (постачальники + аванси від клієнтів)
-  // Поточний — YTD до сьогодні, попередній — YTD до місяць тому (для delta).
+  // customers_overview + suppliers_overview — точно ті самі ITOGO що у customers.html/suppliers.html
+  //   customers.kpi.balance_usd — позитив = клієнти нам винні (зелений)
+  //   suppliers.kpi.balance_usd — позитив = ми винні постачальникам; негатив = вони нам винні
+  // YTD до сьогодні + YTD до місяць тому (для delta).
   const janFirst = _localISO(new Date(todayDate.getFullYear(), 0, 1));
   const monthAgoIso = (() => { const d = new Date(todayDate); d.setMonth(d.getMonth() - 1); return _localISO(d); })();
-  const qMS      = `?action=all_overview&from=${janFirst}&to=${todayIso}${orgQ}`;
-  const qMSp     = `?action=all_overview&from=${janFirst}&to=${monthAgoIso}${orgQ}`;
-  const qFx      = state.fx ? Promise.resolve({ rates: state.fx }) : fetch(API_URL + '?action=fx_rates').then(r => r.json()).catch(() => null);
+  const qMSc     = `?action=customers_overview&from=${janFirst}&to=${todayIso}${orgQ}`;
+  const qMSs     = `?action=suppliers_overview&from=${janFirst}&to=${todayIso}${orgQ}`;
+  const qMScp    = `?action=customers_overview&from=${janFirst}&to=${monthAgoIso}${orgQ}`;
+  const qMSsp    = `?action=suppliers_overview&from=${janFirst}&to=${monthAgoIso}${orgQ}`;
+  const qFx      = state.fx ? Promise.resolve({ rates: state.fx }) : dashFetch(API_URL + '?action=fx_rates').catch(() => null);
   // P&L (accrual) — один запит на весь trend-діапазон дає byMonth для всіх
   // потрібних місяців (дешевше ніж 6-12 окремих викликів).
   const trendFrom = trendBuckets[0].from;
@@ -586,27 +607,29 @@ async function loadKey() {
   const qGp       = `?action=gross_profit_report&from=${state.from}&to=${state.to}${orgQ}`;
   const qGpP      = prev ? `?action=gross_profit_report&from=${prev.from}&to=${prev.to}${orgQ}` : null;
   const gpSparkReqs = trendBuckets.map(b =>
-    fetch(API_URL + `?action=gross_profit_report&from=${b.from}&to=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
+    dashFetch(API_URL + `?action=gross_profit_report&from=${b.from}&to=${b.to}${orgQ}`).catch(() => null)
   );
   const N_SPARK = trendBuckets.length;
 
   const _all = await Promise.allSettled([
-    fetch(API_URL + qSales).then(r => r.json()),
-    qSalesP ? fetch(API_URL + qSalesP).then(r => r.json()) : Promise.resolve(null),
-    fetch(API_URL + qMS).then(r => r.json()),
-    qMSp ? fetch(API_URL + qMSp).then(r => r.json()) : Promise.resolve(null),
+    dashFetch(API_URL + qSales),
+    qSalesP ? dashFetch(API_URL + qSalesP) : Promise.resolve(null),
+    dashFetch(API_URL + qMSc),   // customers current
+    dashFetch(API_URL + qMSs),   // suppliers current
+    dashFetch(API_URL + qMScp),  // customers prev
+    dashFetch(API_URL + qMSsp),  // suppliers prev
     qFx,
-    fetch(API_URL + qPnl).then(r => r.json()),
-    qPnlP ? fetch(API_URL + qPnlP).then(r => r.json()) : Promise.resolve(null),
-    fetch(API_URL + qPnlT).then(r => r.json()),
-    fetch(API_URL + qGp).then(r => r.json()),
-    qGpP ? fetch(API_URL + qGpP).then(r => r.json()) : Promise.resolve(null),
+    dashFetch(API_URL + qPnl),
+    qPnlP ? dashFetch(API_URL + qPnlP) : Promise.resolve(null),
+    dashFetch(API_URL + qPnlT),
+    dashFetch(API_URL + qGp),
+    qGpP ? dashFetch(API_URL + qGpP) : Promise.resolve(null),
     ...sparkReqs,
     ...gpSparkReqs,
   ]);
-  const [salesR, salesPrevR, ms, msPrev, fx, pnl, pnlPrev, pnlTrend, gpR, gpPrevR] = _all;
-  const sparkR = _all.slice(10, 10 + N_SPARK);
-  const gpSparkR = _all.slice(10 + N_SPARK);
+  const [salesR, salesPrevR, msC, msS, msCp, msSp, fx, pnl, pnlPrev, pnlTrend, gpR, gpPrevR] = _all;
+  const sparkR = _all.slice(12, 12 + N_SPARK);
+  const gpSparkR = _all.slice(12 + N_SPARK);
 
   // Ensure FX is ready for USD conversion (reuse if loadSales already set it)
   if (fx && fx.status === 'fulfilled' && fx.value && fx.value.rates) {
@@ -648,33 +671,39 @@ async function loadKey() {
     updateKpi('kpiRevenue', { val: 'Помилка', sub: esc(msg.slice(0, 80)), error: true });
   }
 
-  // 2+3) БОРГИ НАМ + НАШ БОРГ — з одного all_overview payload (звіт Контрагенти)
-  if (ms.status === 'fulfilled' && !ms.value.error) {
-    const d = ms.value;
-    const arCur = Number((d.kpi && d.kpi.owed_to_us_usd) || 0);
-    const apCur = Number((d.kpi && d.kpi.we_owe_usd) || 0);
-    let arPrev = null, apPrev = null;
-    if (msPrev && msPrev.status === 'fulfilled' && msPrev.value && !msPrev.value.error) {
-      arPrev = Number((msPrev.value.kpi && msPrev.value.kpi.owed_to_us_usd) || 0);
-      apPrev = Number((msPrev.value.kpi && msPrev.value.kpi.we_owe_usd) || 0);
-    }
+  // 2+3) БОРГИ НАМ (клієнти) + НАШ БОРГ (постачальники)
+  //   customers_overview.kpi.balance_usd — ITOGO на customers.html (позитив = нам винні)
+  //   suppliers_overview.kpi.balance_usd — ITOGO на suppliers.html (позитив = ми винні)
+  const cVal = (r) => (r && r.status === 'fulfilled' && r.value && !r.value.error)
+    ? Number((r.value.kpi && r.value.kpi.balance_usd) || 0) : null;
+  const arCur = cVal(msC) ?? 0;
+  const apCur = cVal(msS) ?? 0;
+  const arPrev = cVal(msCp);
+  const apPrev = cVal(msSp);
+  if (msC.status === 'fulfilled' && !msC.value.error) {
     updateKpi('kpiAR', {
       numeric: { target: arCur, format: kpiMoneyFmt('$') },
-      sub: `станом на сьогодні ${deltaHtml(arCur, arPrev, 'down')}`,
+      cls: arCur < 0 ? 'neg' : 'pos',
+      sub: `станом на сьогодні ${deltaHtml(arCur, arPrev, 'up')}`,
     });
+    wireKpiClick('kpiAR', openArModal);
+  } else {
+    const msg = msC.status === 'fulfilled' ? (msC.value.error || 'помилка') : msC.reason.message;
+    updateKpi('kpiAR', { val: 'Помилка', sub: esc(msg.slice(0, 80)), error: true });
+  }
+  if (msS.status === 'fulfilled' && !msS.value.error) {
     updateKpi('kpiAP', {
       numeric: { target: apCur, format: kpiMoneyFmt('$') },
+      cls: apCur > 0 ? 'neg' : 'pos',
       sub: `станом на сьогодні ${deltaHtml(apCur, apPrev, 'down')}`,
     });
-    // Один спільний набір mutual_settlements викликів для обох sparkline-ів
-    fetchMsSparklines(trendBuckets, orgQ);
-    wireKpiClick('kpiAR', openArModal);
     wireKpiClick('kpiAP', openApModal);
   } else {
-    const msg = ms.status === 'fulfilled' ? (ms.value.error || 'помилка') : ms.reason.message;
-    updateKpi('kpiAR', { val: 'Помилка', sub: esc(msg.slice(0, 80)), error: true });
+    const msg = msS.status === 'fulfilled' ? (msS.value.error || 'помилка') : msS.reason.message;
     updateKpi('kpiAP', { val: 'Помилка', sub: esc(msg.slice(0, 80)), error: true });
   }
+  // Sparkline — окремі per-bucket виклики customers/suppliers_overview
+  fetchArApSparklines(trendBuckets, orgQ);
 
   // 4) ЧИСТИЙ ПРИБУТОК = P&L accrual → (revenue + otherIncome) − cogs − totalExpenses
   function netFromPnl(p) {
@@ -882,24 +911,19 @@ function wireKpiClick(kpiId, openFn) {
   el._clickWired = true;
 }
 
-// Підсумки з all_overview (Контрагенти) payload:
-//   owed_to_us_usd — нам винні (обидва сторони + аванси)
-//   we_owe_usd     — ми винні
-function coArTotal(d) { return Number((d && d.kpi && d.kpi.owed_to_us_usd) || 0); }
-function coApTotal(d) { return Number((d && d.kpi && d.kpi.we_owe_usd) || 0); }
+// kpi.balance_usd з customers_overview / suppliers_overview
+function coBalance(d) { return Number((d && d.kpi && d.kpi.balance_usd) || 0); }
 
-// Один спільний набір запитів all_overview для AR + AP sparkline.
-// Викликаємо per-bucket (from=Jan1 to=bucket.to) — щомісячні closing-snapshot.
-async function fetchMsSparklines(buckets, orgQ) {
+// AR (customers) + AP (suppliers) sparklines — per-bucket окремі запити
+async function fetchArApSparklines(buckets, orgQ) {
   const y = new Date().getFullYear();
   const janFirst = _localISO(new Date(y, 0, 1));
-  const resps = await Promise.all(buckets.map(b =>
-    fetch(API_URL + `?action=all_overview&from=${janFirst}&to=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
-  ));
-  const arSeries = resps.map(coArTotal);
-  const apSeries = resps.map(coApTotal);
-  drawSparkline('kpiARSpark', arSeries, { color: 'var(--red)' });
-  drawSparkline('kpiAPSpark', apSeries, { color: 'var(--red)' });
+  const [arR, apR] = await Promise.all([
+    Promise.all(buckets.map(b => dashFetch(API_URL + `?action=customers_overview&from=${janFirst}&to=${b.to}${orgQ}`).catch(() => null))),
+    Promise.all(buckets.map(b => dashFetch(API_URL + `?action=suppliers_overview&from=${janFirst}&to=${b.to}${orgQ}`).catch(() => null))),
+  ]);
+  drawSparkline('kpiARSpark', arR.map(coBalance), { color: 'var(--green)' });
+  drawSparkline('kpiAPSpark', apR.map(coBalance), { color: 'var(--red)' });
 }
 
 function drawSparkline(canvasId, series, opts = {}) {
@@ -970,12 +994,12 @@ async function loadConversion() {
   // Sparkline: 12 місяців поточного року (як у інших ключових KPI)
   const trendBuckets = buildYtdBuckets(todayDate, todayIso);
   const sparkReqs = trendBuckets.map(b =>
-    fetch(API_URL + `?action=sheet_funnel&from=${b.from}&to=${b.to}`).then(r => r.json()).catch(() => null)
+    dashFetch(API_URL + `?action=sheet_funnel&from=${b.from}&to=${b.to}`).catch(() => null)
   );
 
   const [curR, prevR, ...sparkR] = await Promise.allSettled([
-    fetch(API_URL + qCur).then(r => r.json()),
-    qPrev ? fetch(API_URL + qPrev).then(r => r.json()) : Promise.resolve(null),
+    dashFetch(API_URL + qCur),
+    qPrev ? dashFetch(API_URL + qPrev) : Promise.resolve(null),
     ...sparkReqs,
   ]);
 
@@ -1023,53 +1047,6 @@ async function loadConversion() {
   wireKpiClick('kpiConv',  openConvModal);
 }
 
-// ─── SUPPLIERS (борги наші постачальникам) ───
-async function loadSuppliersKpi() {
-  const u = window.__user;
-  if (!u.roles || !u.roles.suppliers) return;
-
-  const todayDate = new Date();
-  const todayIso = _localISO(todayDate);
-  const monthAgo = (() => { const d = new Date(todayDate); d.setMonth(d.getMonth() - 1); return _localISO(d); })();
-  const yearAgo = (() => { const d = new Date(todayDate); d.setFullYear(d.getFullYear() - 1); return _localISO(d); })();
-
-  // Поточний — з початку року до сьогодні, попередній — з рік тому до місяць тому (для delta)
-  const qCur  = `?action=suppliers_overview&from=${_localISO(new Date(todayDate.getFullYear(), 0, 1))}&to=${todayIso}`;
-  const qPrev = `?action=suppliers_overview&from=${yearAgo}&to=${monthAgo}`;
-
-  const trendBuckets = buildYtdBuckets(todayDate, todayIso);
-  const sparkReqs = trendBuckets.map(b =>
-    fetch(API_URL + `?action=suppliers_overview&from=${b.from}&to=${b.to}`).then(r => r.json()).catch(() => null)
-  );
-
-  const [curR, prevR, ...sparkR] = await Promise.allSettled([
-    fetch(API_URL + qCur).then(r => r.json()),
-    fetch(API_URL + qPrev).then(r => r.json()),
-    ...sparkReqs,
-  ]);
-
-  const cur = (curR.status === 'fulfilled' && curR.value && !curR.value.error) ? curR.value : null;
-  const prev = (prevR.status === 'fulfilled' && prevR.value && !prevR.value.error) ? prevR.value : null;
-
-  if (!cur) {
-    const msg = curR.status === 'fulfilled' ? (curR.value.error || 'помилка') : curR.reason?.message;
-    updateKpi('kpiSuppDebt', { val: 'Помилка', sub: esc(String(msg).slice(0, 80)), error: true });
-    return;
-  }
-
-  const curVal = Number((cur.kpi && cur.kpi.we_owe_usd) || 0);
-  const prevVal = prev ? Number((prev.kpi && prev.kpi.we_owe_usd) || 0) : null;
-
-  updateKpi('kpiSuppDebt', {
-    numeric: { target: curVal, format: kpiMoneyFmt('$') },
-    sub: `станом на сьогодні ${deltaHtml(curVal, prevVal, 'down')}`,
-  });
-
-  const series = sparkR.map(r => (r.status === 'fulfilled' && r.value && r.value.kpi) ? (Number(r.value.kpi.we_owe_usd) || 0) : 0);
-  drawSparkline('kpiSuppDebtSpark', series, { color: 'var(--red)' });
-  wireKpiClick('kpiSuppDebt', openSuppDebtModal);
-}
-
 // ─── SALES ───
 async function loadSales() {
   const u = window.__user;
@@ -1081,8 +1058,8 @@ async function loadSales() {
 
   // Also fetch fx_rates for potential conversion
   const [salesR, fxR] = await Promise.allSettled([
-    fetch(API_URL + q).then(r => r.json()),
-    state.fx ? Promise.resolve({ rates: state.fx }) : fetch(API_URL + '?action=fx_rates').then(r => r.json()),
+    dashFetch(API_URL + q),
+    state.fx ? Promise.resolve({ rates: state.fx }) : dashFetch(API_URL + '?action=fx_rates'),
   ]);
 
   if (fxR.status === 'fulfilled' && fxR.value && fxR.value.rates) state.fx = fxR.value.rates;
@@ -1262,7 +1239,6 @@ const METRIC_DEFS = {
   leads:   { title: '🎯 Нові ліди — динаміка', label: 'Ліди', unit: '' },
   won:     { title: '🏆 Успішно реалізовано — динаміка', label: 'Успіх', unit: '' },
   conv:    { title: '📊 Кінцева конверсія — динаміка', label: 'Конверсія', unit: '%' },
-  suppDebt:{ title: '🏭 Борги постачальникам — динаміка', label: 'Борг', unit: '$' },
 };
 const GRAN_COUNT = { month: 12, quarter: 6, year: 3 };
 
@@ -1274,7 +1250,6 @@ function openApModal()      { openTrendModal('ap'); }
 function openLeadsModal()   { openTrendModal('leads'); }
 function openWonModal()     { openTrendModal('won'); }
 function openConvModal()    { openTrendModal('conv'); }
-function openSuppDebtModal(){ openTrendModal('suppDebt'); }
 
 function openTrendModal(metric) {
   const def = METRIC_DEFS[metric];
@@ -1330,7 +1305,7 @@ async function reloadModalChart() {
   let values = [];
   if (metric === 'revenue') {
     const resps = await Promise.all(buckets.map(b =>
-      fetch(API_URL + `?action=sales_report&from=${b.from}&to=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
+      dashFetch(API_URL + `?action=sales_report&from=${b.from}&to=${b.to}${orgQ}`).catch(() => null)
     ));
     values = resps.map(p => {
       const v = salesPaidUsd(p, state.org);
@@ -1340,7 +1315,7 @@ async function reloadModalChart() {
     // Один запит pnl_accrual_report на увесь діапазон + агрегація по buckets
     const from = buckets[0].from;
     const to = buckets[buckets.length - 1].to;
-    const p = await fetch(API_URL + `?action=pnl_accrual_report&from=${from}&to=${to}${orgQ}`).then(r => r.json()).catch(() => null);
+    const p = await dashFetch(API_URL + `?action=pnl_accrual_report&from=${from}&to=${to}${orgQ}`).catch(() => null);
     const byM = pnlNetByMonth(p);
     values = buckets.map(b => sumBucketMonths(b, byM));
   } else if (metric === 'ar' || metric === 'ap') {
@@ -1348,13 +1323,13 @@ async function reloadModalChart() {
     const y = new Date().getFullYear();
     const janFirst = _localISO(new Date(y, 0, 1));
     const resps = await Promise.all(buckets.map(b =>
-      fetch(API_URL + `?action=all_overview&from=${janFirst}&to=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
+      dashFetch(API_URL + `?action=all_overview&from=${janFirst}&to=${b.to}${orgQ}`).catch(() => null)
     ));
     values = resps.map(metric === 'ar' ? coArTotal : coApTotal);
   } else if (metric === 'leads' || metric === 'won' || metric === 'conv') {
     // sheet_funnel — per-bucket (period-based)
     const resps = await Promise.all(buckets.map(b =>
-      fetch(API_URL + `?action=sheet_funnel&from=${b.from}&to=${b.to}`).then(r => r.json()).catch(() => null)
+      dashFetch(API_URL + `?action=sheet_funnel&from=${b.from}&to=${b.to}`).catch(() => null)
     ));
     values = resps.map(d => {
       if (!d || d.error) return 0;
@@ -1368,13 +1343,13 @@ async function reloadModalChart() {
   } else if (metric === 'suppDebt') {
     // suppliers_overview per bucket — we_owe_usd (борги наші постачальникам)
     const resps = await Promise.all(buckets.map(b =>
-      fetch(API_URL + `?action=suppliers_overview&from=${b.from}&to=${b.to}`).then(r => r.json()).catch(() => null)
+      dashFetch(API_URL + `?action=suppliers_overview&from=${b.from}&to=${b.to}`).catch(() => null)
     ));
     values = resps.map(d => (d && d.kpi && Number(d.kpi.we_owe_usd)) || 0);
   } else if (metric === 'gp') {
     // gross_profit_report per bucket — total.profit (Валовий прибуток USD)
     const resps = await Promise.all(buckets.map(b =>
-      fetch(API_URL + `?action=gross_profit_report&from=${b.from}&to=${b.to}${orgQ}`).then(r => r.json()).catch(() => null)
+      dashFetch(API_URL + `?action=gross_profit_report&from=${b.from}&to=${b.to}${orgQ}`).catch(() => null)
     ));
     values = resps.map(d => (d && d.total && Number(d.total.profit)) || 0);
   }
