@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=abs20260422"></script>
-<script src="header.js?v=abs20260422"></script>
+<script src="auth.js?v=abs2-20260422"></script>
+<script src="header.js?v=abs2-20260422"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -684,7 +684,7 @@ async function loadKey() {
   if (msC.status === 'fulfilled' && !msC.value.error) {
     updateKpi('kpiAR', {
       numeric: { target: Math.abs(arCur), format: kpiMoneyFmt('$') },
-      cls: 'pos',
+      cls: arCur > 0 ? 'pos' : (arCur < 0 ? 'neg' : ''),
       sub: `станом на сьогодні ${deltaHtml(arCur, arPrev, 'up')}`,
     });
     wireKpiClick('kpiAR', openArModal);
@@ -695,7 +695,7 @@ async function loadKey() {
   if (msS.status === 'fulfilled' && !msS.value.error) {
     updateKpi('kpiAP', {
       numeric: { target: Math.abs(apCur), format: kpiMoneyFmt('$') },
-      cls: 'pos',
+      cls: apCur > 0 ? 'pos' : (apCur < 0 ? 'neg' : ''),
       sub: `станом на сьогодні ${deltaHtml(apCur, apPrev, 'down')}`,
     });
     wireKpiClick('kpiAP', openApModal);
