@@ -2733,32 +2733,32 @@ function cbRender() {
 
   const CUR_SYM = { USD: '$', EUR: '€', UAH: '₴' };
   const sym = c => CUR_SYM[c] || c;
+  const CUR_ORDER = ['USD','UAH','EUR'];
 
-  // ── Summary: Ітого USD + breakdown по валютах ──
+  // ── Summary: Ітого + per-currency totals як окремі картки ──
   const totalUsd = Number(data.total_usd) || 0;
   const bc = data.by_currency || {};
-  const CUR_ORDER = ['USD','UAH','EUR'];
   const curs = Object.keys(bc).sort((a,b) => CUR_ORDER.indexOf(a) - CUR_ORDER.indexOf(b));
-  const breakdown = curs
-    .filter(c => Math.abs(Number(bc[c]) || 0) > 0.5)
-    .map(c => `<div class="kpi-sub-row"><span class="kpi-sub-cur">${c}</span><span class="kpi-sub-val">${fmt(Math.abs(Number(bc[c])||0), 0)} ${sym(c)}</span></div>`)
-    .join('');
-
   const asOfPretty = data.on_date ? data.on_date.split('-').reverse().join('.') : '—';
-  document.getElementById('cbSummary').innerHTML =
-    '<div class="pnl-summary" style="grid-template-columns:repeat(2, 1fr)">' +
-      '<div class="pnl-card">' +
-        '<span class="cl">Усього коштів</span>' +
-        '<span class="cv" style="color:var(--green)">' + fmt(totalUsd, 0) + ' $</span>' +
-        '<span class="cs">станом на ' + esc(asOfPretty) + '</span>' +
-      '</div>' +
-      '<div class="pnl-card">' +
-        '<span class="cl">Розбивка по валютах</span>' +
-        (breakdown ? '<div class="kpi-sub" style="margin-top:4px">' + breakdown + '</div>' : '<span class="cs">—</span>') +
-      '</div>' +
-    '</div>';
 
-  // ── Таблиця рахунків ──
+  const sumCards = [
+    '<div class="pnl-card">' +
+      '<span class="cl">Усього коштів</span>' +
+      '<span class="cv" style="color:var(--green)">' + fmt(totalUsd, 0) + ' $</span>' +
+      '<span class="cs">станом на ' + esc(asOfPretty) + '</span>' +
+    '</div>',
+    ...curs
+      .filter(c => Math.abs(Number(bc[c])||0) > 0.5)
+      .map(c => '<div class="pnl-card">' +
+        '<span class="cl">У ' + c + '</span>' +
+        '<span class="cv">' + fmt(Math.abs(Number(bc[c])||0), 0) + ' ' + sym(c) + '</span>' +
+        '<span class="cs">на ' + esc(asOfPretty) + '</span>' +
+      '</div>')
+  ];
+  document.getElementById('cbSummary').innerHTML =
+    '<div class="pnl-summary">' + sumCards.join('') + '</div>';
+
+  // ── Картки рахунків (замість таблиць) ──
   const accounts = data.accounts || [];
   if (!accounts.length) {
     document.getElementById('cbBody').innerHTML =
@@ -2766,65 +2766,47 @@ function cbRender() {
     return;
   }
 
-  // Сортуємо: банки зверху, каси знизу; всередині — за USD-еквівалентом.
   const banks = accounts.filter(a => a.account_type === 'bank');
   const cash  = accounts.filter(a => a.account_type !== 'bank');
 
-  const typeLabel = { bank: 'Банк', cash: 'Каса' };
-  const rowHtml = (a) => {
+  const cardHtml = (a) => {
     const cursA = Object.keys(a.by_currency || {}).sort((x,y) => CUR_ORDER.indexOf(x) - CUR_ORDER.indexOf(y));
-    // Основний рядок: назва + організація + ітого USD
-    const lines = [];
-    const totalStr = fmt(a.total_usd, 0) + ' $';
-    const totalCls = a.total_usd < -0.5 ? 'color:var(--red)' : (a.total_usd > 0.5 ? 'color:var(--green)' : 'color:var(--text3)');
-    const typeBadge = `<span class="kpi-sub-cur" style="font-size:9.5px;color:var(--text3);margin-right:6px">${typeLabel[a.account_type] || a.account_type}</span>`;
-    const orgStr = a.org_short ? `<span style="color:var(--text3);font-size:11px;margin-left:6px">${esc(a.org_short)}</span>` : '';
-    lines.push(
-      '<tr class="itm">' +
-        '<td>' + typeBadge + esc(a.description) + orgStr + '</td>' +
-        '<td class="col-total"></td>' +
-        '<td class="col-total"></td>' +
-        '<td class="col-total" style="font-weight:700;' + totalCls + '">' + totalStr + '</td>' +
-      '</tr>'
-    );
-    // Під-рядки по валютах
-    cursA.forEach(cur => {
-      const bb = a.by_currency[cur] || {};
-      const bal = Number(bb.balance) || 0;
-      const balUsd = Number(bb.balance_usd) || 0;
-      if (Math.abs(bal) < 0.005) return;
-      lines.push(
-        '<tr class="cur-sub">' +
-          '<td style="padding-left:28px;color:var(--text2);font-size:12px">↳ у ' + cur + '</td>' +
-          '<td class="col-total" style="color:var(--text2)">' + cur + '</td>' +
-          '<td class="col-total" style="color:var(--text2)">' + fmt(bal, 2) + ' ' + sym(cur) + '</td>' +
-          '<td class="col-total" style="color:var(--text3);font-size:12px">' + fmt(balUsd, 0) + ' $</td>' +
-        '</tr>'
-      );
-    });
-    return lines.join('');
+    const totalUsd = Number(a.total_usd) || 0;
+    const totalCls = totalUsd < -0.5 ? 'color:var(--red)' : (totalUsd > 0.5 ? 'color:var(--green)' : 'color:var(--text3)');
+    const breakdown = cursA
+      .filter(cur => Math.abs(Number((a.by_currency[cur]||{}).balance) || 0) > 0.005)
+      .map(cur => {
+        const bb = a.by_currency[cur] || {};
+        const bal = Number(bb.balance) || 0;
+        return `<div class="kpi-sub-row"><span class="kpi-sub-cur">${cur}</span><span class="kpi-sub-val">${fmt(bal, 2)} ${sym(cur)}</span></div>`;
+      }).join('');
+    // Організація — окремо як under-cs; тип рахунку — лишаю у лейблі, маленьким шрифтом.
+    const orgStr = a.org_short ? esc(a.org_short) : '';
+    return '<div class="pnl-card">' +
+      '<span class="cl">' + esc(a.description) + '</span>' +
+      '<span class="cv" style="' + totalCls + '">' + fmt(totalUsd, 0) + ' $</span>' +
+      (orgStr ? '<span class="cs">' + orgStr + '</span>' : '') +
+      (breakdown ? '<div class="kpi-sub" style="margin-top:6px">' + breakdown + '</div>' : '') +
+    '</div>';
   };
 
-  const tableHtml = (title, rows) => {
+  const sectionHtml = (title, rows) => {
     if (!rows.length) return '';
     const sum = rows.reduce((s, r) => s + (Number(r.total_usd) || 0), 0);
-    return '<div class="pnl-wrap" style="margin-bottom:14px">' +
-      '<table class="pnl-table">' +
-        '<thead><tr>' +
-          '<th style="min-width:320px">' + title + '<span style="color:var(--text3);font-weight:500;font-size:11px;margin-left:8px">' + rows.length + ' рах.</span></th>' +
-          '<th class="col-total">Вал</th>' +
-          '<th class="col-total">Залишок</th>' +
-          '<th class="col-total">Усього, USD</th>' +
-        '</tr></thead>' +
-        '<tbody>' + rows.map(rowHtml).join('') + '</tbody>' +
-        '<tfoot><tr class="grd"><td>Разом</td><td></td><td></td><td class="col-total" style="color:var(--green)">' + fmt(sum, 0) + ' $</td></tr></tfoot>' +
-      '</table>' +
+    return '<div style="margin-bottom:18px">' +
+      '<div style="display:flex;align-items:baseline;gap:10px;margin:8px 0 10px 2px">' +
+        '<span style="font-size:14px;font-weight:700;color:var(--text)">' + title + '</span>' +
+        '<span style="font-size:11.5px;color:var(--text3)">' + rows.length + ' рах. · ' + fmt(sum, 0) + ' $</span>' +
+      '</div>' +
+      '<div class="pnl-summary" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">' +
+        rows.map(cardHtml).join('') +
+      '</div>' +
     '</div>';
   };
 
   document.getElementById('cbBody').innerHTML =
-    tableHtml('Банківські рахунки', banks) +
-    tableHtml('Каси', cash);
+    sectionHtml('Банківські рахунки', banks) +
+    sectionHtml('Каси', cash);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
