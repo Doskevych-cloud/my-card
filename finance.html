@@ -10,8 +10,8 @@
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
-<script src="auth.js?v=cblogo20260422"></script>
-<script src="header.js?v=cblogo20260422"></script>
+<script src="auth.js?v=cbclean20260422"></script>
+<script src="header.js?v=cbclean20260422"></script>
 <!-- html2pdf.js for real PDF file download (not browser print dialog) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <!-- SheetJS (xlsx) for Excel export -->
@@ -2784,6 +2784,20 @@ function cbRender() {
   const banks = accounts.filter(a => a.account_type === 'bank');
   const cash  = accounts.filter(a => a.account_type !== 'bank');
 
+  // Чистка опису рахунку від номера/IBAN — лишаємо тільки людську назву банку/каси
+  function cbCleanDescription(d) {
+    if (!d) return '';
+    return String(d)
+      .replace(/\bUA\d{25,29}\b/gi, '')   // IBAN
+      .replace(/\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, '')  // картки 16 цифр
+      .replace(/№\s*\d+/g, '')             // «№ 123...»
+      .replace(/\b\d{8,}\b/g, '')          // довгі цифрові блоки (рахунки)
+      .replace(/[·,\-—]{1,}\s*$/g, '')    // кінцеві розділювачі
+      .replace(/^\s*[·,\-—]{1,}/g, '')    // початкові розділювачі
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
   // Детектор банку за описом → домен для favicon. Повертає null для кас/невідомих.
   function cbBankDomain(description, accType) {
     if (accType !== 'bank') return null;
@@ -2827,8 +2841,9 @@ function cbRender() {
     const logoHtml = dom
       ? '<img class="cb-logo" src="https://www.google.com/s2/favicons?domain=' + dom + '&sz=64" alt="" loading="lazy" onerror="this.outerHTML=\'<span class=cb-logo-fallback>' + firstChar + '</span>\'">'
       : '<span class="cb-logo-fallback">' + firstChar + '</span>';
+    const titleClean = cbCleanDescription(a.description) || a.description || '';
     return '<div class="pnl-card">' +
-      '<div class="cb-card-head">' + logoHtml + '<span class="cl">' + esc(a.description) + '</span></div>' +
+      '<div class="cb-card-head">' + logoHtml + '<span class="cl">' + esc(titleClean) + '</span></div>' +
       '<span class="cv" style="' + totalCls + '">' + fmt(totalUsd, 0) + ' $</span>' +
       (orgStr ? '<span class="cs">' + orgStr + '</span>' : '') +
       (breakdown ? '<div class="cb-breakdown">' + breakdown + '</div>' : '') +
