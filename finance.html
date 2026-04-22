@@ -10,8 +10,8 @@
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
-<script src="auth.js?v=gppnl20260422"></script>
-<script src="header.js?v=gppnl20260422"></script>
+<script src="auth.js?v=cblogo20260422"></script>
+<script src="header.js?v=cblogo20260422"></script>
 <!-- html2pdf.js for real PDF file download (not browser print dialog) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <!-- SheetJS (xlsx) for Excel export -->
@@ -223,6 +223,21 @@ a{color:inherit;text-decoration:none}
 /* GP tab тепер використовує .pnl-wrap + .pnl-table напряму (див. renderGp). */
 
 /* AR tab тепер використовує .pnl-wrap + .pnl-table напряму (див. renderAr). */
+
+/* ─── CB (Кошти) — секційні заголовки, грід карток, логотипи банків, per-currency breakdown ─── */
+.cb-section{margin-bottom:18px}
+.cb-section-head{display:flex;align-items:baseline;gap:10px;margin:8px 0 10px 2px}
+.cb-section-title{font-size:14px;font-weight:700;color:var(--text)}
+.cb-section-meta{font-size:11.5px;color:var(--text3);font-weight:500}
+.cb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.cb-card-head{display:flex;align-items:center;gap:8px;margin-bottom:4px;min-height:20px}
+.cb-logo{width:20px;height:20px;border-radius:4px;flex-shrink:0;background:var(--surface);object-fit:contain;padding:2px;border:1px solid var(--border)}
+.cb-logo-fallback{width:20px;height:20px;border-radius:4px;flex-shrink:0;background:var(--bg3);color:var(--text2);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;border:1px solid var(--border)}
+.cb-card-head .cl{margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cb-breakdown{display:flex;flex-direction:column;gap:2px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)}
+.cb-breakdown-row{display:flex;justify-content:space-between;align-items:baseline;font-size:11.5px;font-variant-numeric:tabular-nums}
+.cb-breakdown-cur{color:var(--text3);font-weight:600;letter-spacing:.3px}
+.cb-breakdown-val{color:var(--text2);font-weight:500}
 
 .view{display:none}
 .view.active{display:block}
@@ -2769,6 +2784,31 @@ function cbRender() {
   const banks = accounts.filter(a => a.account_type === 'bank');
   const cash  = accounts.filter(a => a.account_type !== 'bank');
 
+  // Детектор банку за описом → домен для favicon. Повертає null для кас/невідомих.
+  function cbBankDomain(description, accType) {
+    if (accType !== 'bank') return null;
+    const d = String(description || '').toLowerCase();
+    const map = [
+      { re: /приват|privat/, dom: 'privatbank.ua' },
+      { re: /ощад|oschad/, dom: 'oschadbank.ua' },
+      { re: /укрсиб|ukrsib/, dom: 'ukrsibbank.com' },
+      { re: /raiffeisen|райфф|райф/, dom: 'raiffeisen.ua' },
+      { re: /пумб|pumb/, dom: 'pumb.ua' },
+      { re: /mono|моно/, dom: 'monobank.ua' },
+      { re: /укргаз|ukrgas/, dom: 'ukrgasbank.com' },
+      { re: /otp|отп/, dom: 'otpbank.com.ua' },
+      { re: /credit agricole|кредит агріколь|агриколь/, dom: 'credit-agricole.ua' },
+      { re: /sens|сенс/, dom: 'sensebank.com.ua' },
+      { re: /taskom|таском/, dom: 'taskombank.ua' },
+      { re: /ukreximbank|укрексім/, dom: 'eximb.com' },
+      { re: /a-?bank|а-?банк/, dom: 'a-bank.com.ua' },
+      { re: /ing/, dom: 'ingbank.com.ua' },
+      { re: /citibank|сіті/, dom: 'citigroup.com' },
+    ];
+    for (const b of map) if (b.re.test(d)) return b.dom;
+    return null;
+  }
+
   const cardHtml = (a) => {
     const cursA = Object.keys(a.by_currency || {}).sort((x,y) => CUR_ORDER.indexOf(x) - CUR_ORDER.indexOf(y));
     const totalUsd = Number(a.total_usd) || 0;
@@ -2778,29 +2818,32 @@ function cbRender() {
       .map(cur => {
         const bb = a.by_currency[cur] || {};
         const bal = Number(bb.balance) || 0;
-        return `<div class="kpi-sub-row"><span class="kpi-sub-cur">${cur}</span><span class="kpi-sub-val">${fmt(bal, 2)} ${sym(cur)}</span></div>`;
+        return '<div class="cb-breakdown-row"><span class="cb-breakdown-cur">' + cur + '</span><span class="cb-breakdown-val">' + fmt(bal, 2) + ' ' + sym(cur) + '</span></div>';
       }).join('');
-    // Організація — окремо як under-cs; тип рахунку — лишаю у лейблі, маленьким шрифтом.
     const orgStr = a.org_short ? esc(a.org_short) : '';
+    // Іконка: favicon з домену банку або літерний fallback
+    const dom = cbBankDomain(a.description, a.account_type);
+    const firstChar = esc(String(a.description || '?').trim().charAt(0).toUpperCase() || '?');
+    const logoHtml = dom
+      ? '<img class="cb-logo" src="https://www.google.com/s2/favicons?domain=' + dom + '&sz=64" alt="" loading="lazy" onerror="this.outerHTML=\'<span class=cb-logo-fallback>' + firstChar + '</span>\'">'
+      : '<span class="cb-logo-fallback">' + firstChar + '</span>';
     return '<div class="pnl-card">' +
-      '<span class="cl">' + esc(a.description) + '</span>' +
+      '<div class="cb-card-head">' + logoHtml + '<span class="cl">' + esc(a.description) + '</span></div>' +
       '<span class="cv" style="' + totalCls + '">' + fmt(totalUsd, 0) + ' $</span>' +
       (orgStr ? '<span class="cs">' + orgStr + '</span>' : '') +
-      (breakdown ? '<div class="kpi-sub" style="margin-top:6px">' + breakdown + '</div>' : '') +
+      (breakdown ? '<div class="cb-breakdown">' + breakdown + '</div>' : '') +
     '</div>';
   };
 
   const sectionHtml = (title, rows) => {
     if (!rows.length) return '';
     const sum = rows.reduce((s, r) => s + (Number(r.total_usd) || 0), 0);
-    return '<div style="margin-bottom:18px">' +
-      '<div style="display:flex;align-items:baseline;gap:10px;margin:8px 0 10px 2px">' +
-        '<span style="font-size:14px;font-weight:700;color:var(--text)">' + title + '</span>' +
-        '<span style="font-size:11.5px;color:var(--text3)">' + rows.length + ' рах. · ' + fmt(sum, 0) + ' $</span>' +
+    return '<div class="cb-section">' +
+      '<div class="cb-section-head">' +
+        '<span class="cb-section-title">' + title + '</span>' +
+        '<span class="cb-section-meta">' + rows.length + ' рах. · ' + fmt(sum, 0) + ' $</span>' +
       '</div>' +
-      '<div class="pnl-summary" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">' +
-        rows.map(cardHtml).join('') +
-      '</div>' +
+      '<div class="cb-grid">' + rows.map(cardHtml).join('') + '</div>' +
     '</div>';
   };
 
