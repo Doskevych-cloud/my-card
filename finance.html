@@ -10,8 +10,8 @@
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
-<script src="auth.js?v=arpnl20260419"></script>
-<script src="header.js?v=arpnl20260419"></script>
+<script src="auth.js?v=gppnl20260422"></script>
+<script src="header.js?v=gppnl20260422"></script>
 <!-- html2pdf.js for real PDF file download (not browser print dialog) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <!-- SheetJS (xlsx) for Excel export -->
@@ -220,36 +220,7 @@ a{color:inherit;text-decoration:none}
    (монохром, тонкі лінії, без accent-фону, трикутники ▾)
    ═══════════════════════════════════════════════════ */
 
-/* ── GP tree table (same look as P&L) ── */
-.gp-wrap{overflow:auto;margin-bottom:20px;border:1px solid var(--border);border-radius:12px;background:var(--bg)}
-.gp-table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;min-width:600px}
-.gp-table th,.gp-table td{padding:11px 14px;text-align:right;white-space:nowrap;vertical-align:middle;line-height:1.25}
-.gp-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;background:var(--surface2);position:sticky;top:0;z-index:2;border-bottom:1px solid var(--border)}
-.gp-table th:first-child{text-align:left;position:sticky;left:0;z-index:3;background:var(--surface2);min-width:340px}
-.gp-table td:first-child{text-align:left;position:sticky;left:0;z-index:1;background:var(--bg)}
-.gp-table tbody tr{background:var(--bg)}
-/* Row hierarchy — mirrors P&L levels */
-.gp-table .lvl-0 td{font-weight:800;font-size:14px;color:var(--text);border-top:1px solid var(--border);background:transparent}
-.gp-table .lvl-0 td:first-child{padding-left:14px;background:var(--bg)}
-.gp-table .lvl-1 td{font-weight:700;font-size:13px;color:var(--text);border-top:1px solid var(--border2);background:transparent}
-.gp-table .lvl-1 td:first-child{padding-left:28px;background:var(--bg)}
-.gp-table .lvl-2 td{font-weight:600;font-size:12.5px;color:var(--text);background:transparent}
-.gp-table .lvl-2 td:first-child{padding-left:44px;background:var(--bg)}
-.gp-table .lvl-3 td{color:var(--text2);font-weight:400;font-size:13px;background:transparent}
-.gp-table .lvl-3 td:first-child{padding-left:58px;background:var(--bg)}
-.gp-table .lvl-4 td{color:var(--text3);font-size:12px;background:transparent}
-.gp-table .lvl-4 td:first-child{padding-left:72px;background:var(--bg)}
-/* Grand total row */
-.gp-table .gp-total td{font-weight:800;font-size:14px;color:var(--text);border-top:2px solid var(--border2);background:var(--surface2) !important}
-.gp-table .gp-total td:first-child{padding-left:14px;background:var(--surface2) !important}
-/* Toggle + triangle — identical to P&L .tri */
-.gp-table .gp-toggle{cursor:pointer;user-select:none}
-.gp-table .gp-toggle:hover{background:var(--surface2)}
-.gp-table .gp-chevron{display:inline-block;width:10px;margin-right:8px;font-size:9px;color:var(--text3);transition:transform .18s ease-out;text-align:center;line-height:1;vertical-align:1px;transform:rotate(-90deg)}
-.gp-table .gp-chevron.open{transform:rotate(0deg)}
-/* Subtle separators between sibling leaves */
-.gp-table .lvl-3 + .lvl-3 td,
-.gp-table .lvl-4 + .lvl-4 td{border-top:1px solid var(--border2)}
+/* GP tab тепер використовує .pnl-wrap + .pnl-table напряму (див. renderGp). */
 
 /* AR tab тепер використовує .pnl-wrap + .pnl-table напряму (див. renderAr). */
 
@@ -261,8 +232,6 @@ a{color:inherit;text-decoration:none}
   .pnl-table{font-size:11px}
   .pnl-table th,.pnl-table td{padding:5px 8px}
   .pnl-table td:first-child,.pnl-table th:first-child{min-width:180px}
-  .gp-table{font-size:11px}
-  .gp-table th,.gp-table td{padding:5px 8px}
 }
 </style>
 </head>
@@ -1428,17 +1397,15 @@ function setToggleActive(groupSelector, collapse) {
 
 // Tree-based collapse/expand for GP and AR (show only top-level / all).
 function gpToggleAll(collapse) {
-  const tbl = document.querySelector('.gp-table');
+  const tbl = document.querySelector('#gpBody .pnl-table');
   if (!tbl) return;
   tbl.querySelectorAll('tr[data-parent]').forEach(tr => {
     if (!tr.dataset.parent) return;
     tr.style.display = collapse ? 'none' : '';
   });
-  tbl.querySelectorAll('.gp-chevron').forEach(c => c.classList.toggle('open', !collapse));
-  if (typeof gpOpenRows !== 'undefined') {
-    gpOpenRows.clear();
-    if (!collapse) tbl.querySelectorAll('tr[data-id]').forEach(tr => gpOpenRows.add(tr.dataset.id));
-  }
+  tbl.querySelectorAll('tr[data-collapsed]').forEach(tr => {
+    tr.setAttribute('data-collapsed', collapse ? 'true' : 'false');
+  });
   setToggleActive('#gpToolbar .pnl-collapse-ctl', collapse);
   gpState.collapsed = collapse; saveStateToUrl();
 }
@@ -2092,30 +2059,45 @@ function renderGp(data) {
     return '<span class="' + (v > 0 ? 'pos' : v < 0 ? 'neg' : 'zr') + '">' + v.toFixed(2) + '%</span>';
   }
 
-  let html = '<div class="gp-wrap"><table class="gp-table"><thead><tr>' +
+  // Будуємо у P&L стилі — .pnl-wrap + .pnl-table + .cat/.sec[data-cat]/.grp/.itm/.itm[data-grp] + .tri з data-collapsed
+  let html = '<div class="pnl-wrap"><table class="pnl-table"><thead><tr>' +
     '<th>Покупець / Договір / Замовлення / Номенклатура</th>' +
-    '<th>Кількість</th><th>Виручка, $</th><th>Собівартість, $</th><th>Валовий прибуток, $</th><th>Рентабельність</th>' +
+    '<th class="col-total">Кількість</th>' +
+    '<th class="col-total">Виручка, $</th>' +
+    '<th class="col-total">Собівартість, $</th>' +
+    '<th class="col-total">Валовий прибуток, $</th>' +
+    '<th class="col-total">Рентабельність</th>' +
     '</tr></thead><tbody>';
 
-  // Grand total row at top
-  html += '<tr class="gp-total"><td>Разом</td>' +
-    '<td>' + fmt(ft.qty, 0) + '</td>' +
-    '<td>' + fmtV(ft.revenue) + '</td>' +
-    '<td>' + fmtV(ft.cogs) + '</td>' +
-    '<td>' + fmtV(ft.profit) + '</td>' +
-    '<td>' + fmtM(ft.margin) + '</td></tr>';
+  // Разом — поверх, у стилі P&L grand-row (.grd)
+  html += '<tr class="grd"><td>Разом</td>' +
+    '<td class="col-total">' + fmt(ft.qty, 0) + '</td>' +
+    '<td class="col-total">' + fmtV(ft.revenue) + '</td>' +
+    '<td class="col-total">' + fmtV(ft.cogs) + '</td>' +
+    '<td class="col-total">' + fmtV(ft.profit) + '</td>' +
+    '<td class="col-total">' + fmtM(ft.margin) + '</td></tr>';
 
+  // Map GP level → P&L row class: 0→cat, 1→sec[data-cat], 2→grp, 3→itm, 4→itm[data-grp]
+  const lvlMap = [
+    { cls: 'cat', dataAttr: '' },
+    { cls: 'sec', dataAttr: ' data-cat="1"' },
+    { cls: 'grp', dataAttr: '' },
+    { cls: 'itm', dataAttr: '' },
+    { cls: 'itm', dataAttr: ' data-grp="1"' }
+  ];
   flatRows.forEach(r => {
     const hidden = r.parent ? ' style="display:none"' : '';
-    const chevron = r.hasChildren ? '<span class="gp-chevron" data-rid="' + r.id + '">&#9662;</span> ' : '<span style="display:inline-block;width:14px"></span> ';
-    const toggle = r.hasChildren ? ' class="gp-toggle"' : '';
-    html += '<tr class="lvl-' + r.level + '" data-id="' + r.id + '" data-parent="' + (r.parent || '') + '"' + hidden + '>' +
-      '<td' + toggle + ' onclick="gpToggle(\'' + r.id + '\')">' + chevron + esc(r.name) + '</td>' +
-      '<td>' + fmt(r.qty, 0) + '</td>' +
-      '<td>' + fmtV(r.revenue) + '</td>' +
-      '<td>' + fmtV(r.cogs) + '</td>' +
-      '<td>' + fmtV(r.profit) + '</td>' +
-      '<td>' + fmtM(r.margin) + '</td></tr>';
+    const tri = r.hasChildren ? '<span class="tri">&#9662;</span> ' : '';
+    const m = lvlMap[r.level] || lvlMap[3];
+    const dataCollapsed = r.hasChildren ? ' data-collapsed="true"' : '';
+    const onclickAttr = r.hasChildren ? ' onclick="gpToggle(\'' + r.id + '\')"' : '';
+    html += '<tr class="' + m.cls + '"' + m.dataAttr + ' data-id="' + r.id + '" data-parent="' + (r.parent || '') + '"' + dataCollapsed + hidden + '>' +
+      '<td' + onclickAttr + '>' + tri + esc(r.name) + '</td>' +
+      '<td class="col-total">' + fmt(r.qty, 0) + '</td>' +
+      '<td class="col-total">' + fmtV(r.revenue) + '</td>' +
+      '<td class="col-total">' + fmtV(r.cogs) + '</td>' +
+      '<td class="col-total">' + fmtV(r.profit) + '</td>' +
+      '<td class="col-total">' + fmtM(r.margin) + '</td></tr>';
   });
 
   html += '</tbody></table></div>';
@@ -2125,35 +2107,24 @@ function renderGp(data) {
   else gpToggleAll(true);
 }
 
-// Track open state
-const gpOpenRows = new Set();
-
 function gpToggle(id) {
-  const isOpen = gpOpenRows.has(id);
-  if (isOpen) {
-    gpOpenRows.delete(id);
-    // Hide all descendants
-    gpCloseDescendants(id);
+  const tr = document.querySelector('#gpBody .pnl-table tr[data-id="' + id + '"]');
+  if (!tr) return;
+  const isCollapsed = tr.getAttribute('data-collapsed') === 'true';
+  if (isCollapsed) {
+    tr.setAttribute('data-collapsed', 'false');
+    document.querySelectorAll('#gpBody .pnl-table tr[data-parent="' + id + '"]').forEach(child => { child.style.display = ''; });
   } else {
-    gpOpenRows.add(id);
-    // Show direct children only
-    document.querySelectorAll('.gp-table tr[data-parent="' + id + '"]').forEach(tr => {
-      tr.style.display = '';
-    });
+    tr.setAttribute('data-collapsed', 'true');
+    gpCloseDescendants(id);
   }
-  // Update chevron
-  const chev = document.querySelector('.gp-chevron[data-rid="' + id + '"]');
-  if (chev) chev.classList.toggle('open', !isOpen);
 }
 
 function gpCloseDescendants(id) {
-  document.querySelectorAll('.gp-table tr[data-parent="' + id + '"]').forEach(tr => {
+  document.querySelectorAll('#gpBody .pnl-table tr[data-parent="' + id + '"]').forEach(tr => {
     const childId = tr.dataset.id;
     tr.style.display = 'none';
-    gpOpenRows.delete(childId);
-    // Update chevron
-    const chev = document.querySelector('.gp-chevron[data-rid="' + childId + '"]');
-    if (chev) chev.classList.remove('open');
+    if (tr.hasAttribute('data-collapsed')) tr.setAttribute('data-collapsed', 'true');
     gpCloseDescendants(childId);
   });
 }
