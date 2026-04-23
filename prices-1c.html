@@ -90,6 +90,10 @@ a { color: inherit; text-decoration: none; }
   text-transform: uppercase; letter-spacing: 0.12em;
   margin-bottom: 16px; font-weight: 500;
 }
+.refresh-ico {
+  width: 12px; height: 12px; vertical-align: -2px;
+  margin: 0 4px; color: var(--ink-3);
+}
 .hero h1 {
   margin: 0; font-size: clamp(36px, 6vw, 72px);
   font-weight: 800; letter-spacing: -0.04em; line-height: 0.95;
@@ -510,9 +514,17 @@ function renderCatalog() {
       </div>
     `;
 
+    // Для категорій з unit='$/Вт' — ділимо ціну на кількість Вт зі специ.
+    const wattsForSpec = spec => {
+      const m = spec ? String(spec).match(/([\d.,]+)\s*Вт/i) : null;
+      return m ? parseFloat(m[1].replace(',', '.')) : null;
+    };
     c.items.forEach(it => {
-      const p1raw = it.no_vat && it.no_vat.price != null ? Number(it.no_vat.price) : null;
-      const p2raw = it.with_vat && it.with_vat.price != null ? Number(it.with_vat.price) : null;
+      const w = (c.unit === '$/Вт') ? wattsForSpec(it.spec) : null;
+      const p1raw = it.no_vat && it.no_vat.price != null
+        ? (w ? Number(it.no_vat.price) / w : Number(it.no_vat.price)) : null;
+      const p2raw = it.with_vat && it.with_vat.price != null
+        ? (w ? Number(it.with_vat.price) / w : Number(it.with_vat.price)) : null;
 
       const cur = c.unit || '$';
       const p1str = fmtPrice(p1raw);
@@ -557,8 +569,9 @@ function renderCatalog() {
 function setHeroDate() {
   const d = new Date();
   const months = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
-  document.getElementById('heroDate').textContent =
-    `Прайс оновлено · ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  const refreshIco = `<svg class="refresh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-label="оновлено"><polyline points="21 4 21 10 15 10"/><polyline points="3 20 3 14 9 14"/><path d="M20 9a8 8 0 0 0-14.5-2.5L3 10"/><path d="M4 15a8 8 0 0 0 14.5 2.5L21 14"/></svg>`;
+  document.getElementById('heroDate').innerHTML =
+    `Прайс ${refreshIco} · ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 async function loadAll() {
