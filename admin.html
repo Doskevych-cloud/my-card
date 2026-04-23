@@ -117,6 +117,7 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
             <th style="text-align:center">Звіти</th>
             <th style="text-align:center">Фінанси</th>
             <th style="text-align:center">Контрагенти</th>
+            <th style="text-align:center">Прайс</th>
             <th style="text-align:center">Адмін</th>
             <th style="text-align:center">Реакт</th>
             <th style="text-align:center">Генерація</th>
@@ -125,7 +126,7 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
           </tr>
         </thead>
         <tbody id="tbody">
-          <tr><td colspan="14" class="loading">Завантаження…</td></tr>
+          <tr><td colspan="15" class="loading">Завантаження…</td></tr>
         </tbody>
       </table>
     </div>
@@ -203,7 +204,7 @@ function userRow(u) {
           </div>
         </div>
       </td>
-      ${['dashboard','home','forecast','warehouses','sales','reports','finance','counterparties','admin'].map(r => `
+      ${['dashboard','home','forecast','warehouses','sales','reports','finance','counterparties','prices','admin'].map(r => `
         <td class="role-box"><input type="checkbox" ${u.roles && u.roles[r] ? 'checked' : ''} data-act="role" data-key="${r}"></td>
       `).join('')}
       ${['Реакт','Генерація'].map(o => `
@@ -267,6 +268,7 @@ function renderTable() {
         <td class="role-box"><input type="checkbox" id="inv_reports"></td>
         <td class="role-box"><input type="checkbox" id="inv_finance"></td>
         <td class="role-box"><input type="checkbox" id="inv_suppliers"></td>
+        <td class="role-box"><input type="checkbox" id="inv_prices"></td>
         <td class="role-box"><input type="checkbox" id="inv_admin"></td>
         <td class="role-box"><input type="checkbox" id="inv_org_react" checked></td>
         <td class="role-box"><input type="checkbox" id="inv_org_gen"></td>
@@ -279,7 +281,7 @@ function renderTable() {
     `;
   }
   if (!filtered.length) {
-    html += `<tr><td colspan="14" class="empty">Нічого не знайдено</td></tr>`;
+    html += `<tr><td colspan="15" class="empty">Нічого не знайдено</td></tr>`;
   } else {
     html += filtered.map(userRow).join('');
   }
@@ -311,6 +313,7 @@ async function saveInvite() {
     reports: document.getElementById('inv_reports').checked,
     finance: document.getElementById('inv_finance').checked,
     suppliers: document.getElementById('inv_suppliers').checked,
+    prices: document.getElementById('inv_prices').checked,
     admin: document.getElementById('inv_admin').checked,
   };
   const orgs = {

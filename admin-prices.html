@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Адмінка прайсу · React</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<script>
+  try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
+</script>
+<script src="auth.js?v=hfref20260423"></script>
+<script src="header.js?v=hfref20260423"></script>
+<style>
+:root {
+  --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
+  --surface:#141414; --surface2:#1c1c1c;
+  --border:#262626; --border2:#333;
+  --text:#f5f5f5; --text2:#a3a3a3; --text3:#737373;
+  --accent:#ff8319; --accent-bg:rgba(255,131,25,.12);
+  --red:#e74c3c; --green:#22c55e;
+}
+:root[data-theme="light"] {
+  --bg:#f5f5f7; --bg2:#ffffff; --bg3:#ececef;
+  --surface:#ffffff; --surface2:#ffffff;
+  --border:#e5e5ea; --border2:#d1d1d6;
+  --text:#1c1c1e; --text2:#48484a; --text3:#8e8e93;
+  --accent:#e07017; --accent-bg:rgba(224,112,23,.12);
+  --red:#d93025; --green:#15803d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+
+.wrap{max-width:1280px;margin:0 auto;padding:20px}
+.page-head{display:flex;align-items:baseline;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+.page-head h1{font-size:22px;font-weight:700;letter-spacing:-.4px}
+.page-head .sub{font-size:12px;color:var(--text3)}
+.page-head .spacer{flex:1}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;background:transparent;color:var(--text);border:1px solid var(--border);transition:all .12s}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn--primary{background:var(--accent);color:#111;border-color:var(--accent)}
+.btn--primary:hover{background:#ff9540;color:#111}
+.btn--sm{padding:5px 10px;font-size:11px}
+.btn--danger{color:var(--red);border-color:rgba(231,76,60,.4)}
+.btn--danger:hover{background:rgba(231,76,60,.1);border-color:var(--red)}
+.btn--ghost{border-color:transparent;color:var(--text3)}
+.btn--ghost:hover{color:var(--text);background:var(--bg3);border-color:transparent}
+
+.cat-section{background:var(--surface2);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.cat-head{padding:12px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);background:var(--bg2)}
+.cat-head h2{font-size:14px;font-weight:600;letter-spacing:-.2px}
+.cat-head .meta{font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums}
+.cat-head .spacer{flex:1}
+
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl thead th{padding:9px 12px;background:var(--bg2);color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl tbody td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl tbody tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover{background:var(--bg2)}
+.tbl .right{text-align:right}
+.tbl .muted{color:var(--text3);font-size:11px}
+.tbl .nom1c-missing{color:var(--red);font-size:11px}
+
+.empty{padding:20px;text-align:center;color:var(--text3);font-size:12px}
+.loader{padding:60px 20px;text-align:center;color:var(--text3);font-size:12px}
+
+.toast{position:fixed;bottom:20px;right:20px;padding:10px 16px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:12.5px;z-index:300;opacity:0;transition:opacity .2s;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.toast.show{opacity:1}
+.toast.ok{border-color:var(--green);color:var(--green)}
+.toast.err{border-color:var(--red);color:var(--red)}
+
+/* Modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-backdrop.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+.modal-head{padding:14px 18px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;display:flex;align-items:center}
+.modal-head .spacer{flex:1}
+.modal-head .x{background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;line-height:1;padding:0 4px}
+.modal-head .x:hover{color:var(--text)}
+.modal-body{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.modal-foot{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.field input, .field select, .field textarea{padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font:inherit;font-size:12.5px;outline:none}
+.field input:focus, .field select:focus, .field textarea:focus{border-color:var(--accent)}
+.field .hint{font-size:10.5px;color:var(--text3)}
+.field .hint.err{color:var(--red)}
+
+/* Autocomplete */
+.ac-wrap{position:relative}
+.ac-list{position:absolute;top:100%;left:0;right:0;margin-top:2px;background:var(--surface);border:1px solid var(--border);border-radius:6px;max-height:240px;overflow-y:auto;z-index:10;display:none;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.ac-list.open{display:block}
+.ac-item{padding:8px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)}
+.ac-item:last-child{border-bottom:none}
+.ac-item:hover, .ac-item.active{background:var(--bg2)}
+.ac-item .art{font-size:10.5px;color:var(--text3);margin-top:2px}
+.ac-item .empty-row{color:var(--text3);font-style:italic}
+.ac-chosen{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;font-size:11px;margin-top:4px}
+.ac-chosen .art{color:var(--text3)}
+.ac-chosen .clear{background:none;border:none;color:var(--text3);cursor:pointer;padding:0 2px}
+.ac-chosen .clear:hover{color:var(--red)}
+</style>
+</head>
+<body>
+
+<div id="appHeader"></div>
+
+<div class="wrap">
+  <div class="page-head">
+    <h1>Адмінка прайсу</h1>
+    <span class="sub">редагує <a href="/prices-1c.html" target="_blank" style="border-bottom:1px dotted var(--text3)">публічний прайс</a></span>
+    <div class="spacer"></div>
+    <button class="btn btn--primary" onclick="openItemModal()">+ Додати позицію</button>
+  </div>
+
+  <div id="content"><div class="loader">Завантаження…</div></div>
+</div>
+
+<!-- Item modal -->
+<div class="modal-backdrop" id="itemModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span id="modalTitle">Нова позиція</span>
+      <div class="spacer"></div>
+      <button class="x" onclick="closeItemModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Категорія</label>
+        <select id="f_category"></select>
+      </div>
+      <div class="field ac-wrap">
+        <label>Товар з 1С</label>
+        <input id="f_nom1c_search" placeholder="Почни вводити назву або артикул…" autocomplete="off">
+        <div class="ac-list" id="ac_list"></div>
+        <div class="hint">Оберіть товар щоб привʼязати ціну. Якщо не обрано — ціна не тягнеться.</div>
+        <div id="f_nom1c_chosen"></div>
+      </div>
+      <div class="field">
+        <label>Назва на прайсі</label>
+        <input id="f_display_name" placeholder="Напр. Deye SUN-12K">
+        <div class="hint">Порожньо → буде назва з 1С.</div>
+      </div>
+      <div class="field">
+        <label>Підпис (spec)</label>
+        <input id="f_display_spec" placeholder="Напр. 12 кВт · 3-фазний · низьковольтний">
+      </div>
+      <div class="field">
+        <label>Наявність</label>
+        <select id="f_stock">
+          <option>в наявності</option>
+          <option>в дорозі</option>
+          <option>під замовлення</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Datasheet URL</label>
+        <input id="f_datasheet_url" placeholder="https://... (поки зовнішній URL; R2 upload згодом)">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn--ghost" onclick="closeItemModal()">Скасувати</button>
+      <button class="btn btn--danger" id="deleteBtn" style="display:none" onclick="deleteItem()">Видалити</button>
+      <button class="btn btn--primary" onclick="saveItem()">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'https://price-api.doskevich.workers.dev';
+const PT_NO_VAT   = '36084004-bfb6-11f0-86f2-107c6149f3d7';
+const PT_WITH_VAT = '6a417c18-3eec-11f1-870a-107c6149f3d7';
+
+let STATE = { categories: [] };
+let EDIT_ID = null;
+let CHOSEN_NOM = null;
+
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function toast(msg, kind) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (kind || '');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function apiCall(action, opts = {}) {
+  const url = `${API}/?action=${action}${opts.qs ? '&' + opts.qs : ''}`;
+  const init = {
+    method: opts.method || 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  };
+  if (opts.body) init.body = JSON.stringify(opts.body);
+  const res = await fetch(url, init);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || res.status);
+  return data;
+}
+
+async function load() {
+  const qs = `pt_no=${encodeURIComponent(PT_NO_VAT)}&pt_with=${encodeURIComponent(PT_WITH_VAT)}`;
+  STATE = await apiCall('price_list_get', { qs });
+  render();
+}
+
+function render() {
+  const content = document.getElementById('content');
+  if (!STATE.categories || !STATE.categories.length) {
+    content.innerHTML = `<div class="empty">Прайс порожній. Натисніть «+ Додати позицію».</div>`;
+    populateCategorySelect();
+    return;
+  }
+  content.innerHTML = STATE.categories.map(c => `
+    <div class="cat-section">
+      <div class="cat-head">
+        <h2>${esc(c.title)}</h2>
+        <span class="meta">${c.unit ? esc(c.unit) + ' · ' : ''}${c.items.length} поз.</span>
+        <div class="spacer"></div>
+        <button class="btn btn--sm" onclick="openItemModal(null, ${JSON.stringify(c.slug)})">+ Додати</button>
+      </div>
+      ${c.items.length ? `
+        <table class="tbl">
+          <thead><tr>
+            <th>Назва на прайсі</th>
+            <th>Товар 1С</th>
+            <th>Spec</th>
+            <th>Наявність</th>
+            <th>Без ПДВ</th>
+            <th>З ПДВ</th>
+            <th></th>
+          </tr></thead>
+          <tbody>
+            ${c.items.map(it => `
+              <tr>
+                <td>${esc(it.display_name || '—')}</td>
+                <td>${it.nom1c_ref_key
+                    ? `<span class="muted">${esc((it.nom1c_description || '').slice(0, 60))}${(it.nom1c_description||'').length > 60 ? '…' : ''}</span>`
+                    : '<span class="nom1c-missing">не привʼязано</span>'}</td>
+                <td class="muted">${esc(it.display_spec || '')}</td>
+                <td>${esc(it.stock || '')}</td>
+                <td class="right">${it.no_vat && it.no_vat.price != null ? `$${Number(it.no_vat.price).toFixed(Number(it.no_vat.price) < 1 ? 3 : 0)}` : '<span class="muted">—</span>'}</td>
+                <td class="right">${it.with_vat && it.with_vat.price != null ? `$${Number(it.with_vat.price).toFixed(Number(it.with_vat.price) < 1 ? 3 : 0)}` : '<span class="muted">—</span>'}</td>
+                <td class="right"><button class="btn btn--sm" onclick='openItemModal(${JSON.stringify(it)}, ${JSON.stringify(c.slug)})'>✎</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      ` : `<div class="empty">Немає позицій</div>`}
+    </div>
+  `).join('');
+  populateCategorySelect();
+}
+
+function populateCategorySelect() {
+  const sel = document.getElementById('f_category');
+  sel.innerHTML = (STATE.categories || []).map(c =>
+    `<option value="${esc(c.slug)}">${esc(c.title)}</option>`
+  ).join('');
+}
+
+function openItemModal(item, preSlug) {
+  EDIT_ID = (item && item.id) || null;
+  CHOSEN_NOM = item && item.nom1c_ref_key ? { ref_key: item.nom1c_ref_key, description: item.nom1c_description, article: '' } : null;
+  document.getElementById('modalTitle').textContent = EDIT_ID ? 'Редагувати позицію' : 'Нова позиція';
+  document.getElementById('f_category').value = (item && item.category_slug) || preSlug || (STATE.categories[0] && STATE.categories[0].slug) || '';
+  document.getElementById('f_nom1c_search').value = '';
+  document.getElementById('f_display_name').value = (item && item.display_name) || '';
+  document.getElementById('f_display_spec').value = (item && item.display_spec) || '';
+  document.getElementById('f_stock').value = (item && item.stock) || 'в наявності';
+  document.getElementById('f_datasheet_url').value = (item && item.datasheet_url) || '';
+  document.getElementById('deleteBtn').style.display = EDIT_ID ? '' : 'none';
+  renderChosenNom();
+  document.getElementById('ac_list').classList.remove('open');
+  document.getElementById('itemModal').classList.add('open');
+  setTimeout(() => document.getElementById('f_nom1c_search').focus(), 50);
+}
+
+function closeItemModal() {
+  document.getElementById('itemModal').classList.remove('open');
+  EDIT_ID = null;
+  CHOSEN_NOM = null;
+}
+
+function renderChosenNom() {
+  const el = document.getElementById('f_nom1c_chosen');
+  if (!CHOSEN_NOM) { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <div class="ac-chosen">
+      <span>${esc(CHOSEN_NOM.description)}</span>
+      ${CHOSEN_NOM.article ? `<span class="art">· ${esc(CHOSEN_NOM.article)}</span>` : ''}
+      <button class="clear" onclick="clearChosenNom()" title="Прибрати">×</button>
+    </div>
+  `;
+}
+function clearChosenNom() { CHOSEN_NOM = null; renderChosenNom(); }
+
+// Debounced autocomplete
+let _acTimer = null;
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('f_nom1c_search');
+  inp.addEventListener('input', () => {
+    clearTimeout(_acTimer);
+    const q = inp.value.trim();
+    if (q.length < 2) { document.getElementById('ac_list').classList.remove('open'); return; }
+    _acTimer = setTimeout(() => runSearch(q), 250);
+  });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.ac-wrap')) document.getElementById('ac_list').classList.remove('open');
+  });
+});
+
+async function runSearch(q) {
+  try {
+    const data = await apiCall('nomenclature_search', { qs: 'q=' + encodeURIComponent(q) + '&limit=15' });
+    const list = document.getElementById('ac_list');
+    if (!data.results || !data.results.length) {
+      list.innerHTML = `<div class="ac-item"><span class="empty-row">Нічого не знайдено</span></div>`;
+    } else {
+      list.innerHTML = data.results.map(r => `
+        <div class="ac-item" onclick='pickNom(${JSON.stringify(r)})'>
+          <div>${esc(r.description)}</div>
+          ${r.article ? `<div class="art">арт. ${esc(r.article)}</div>` : ''}
+        </div>
+      `).join('');
+    }
+    list.classList.add('open');
+  } catch (e) {
+    toast('Пошук: ' + e.message, 'err');
+  }
+}
+
+function pickNom(nom) {
+  CHOSEN_NOM = nom;
+  renderChosenNom();
+  document.getElementById('ac_list').classList.remove('open');
+  // Автопрефіл display_name якщо він пустий
+  const nameInp = document.getElementById('f_display_name');
+  if (!nameInp.value.trim()) nameInp.value = nom.description;
+  document.getElementById('f_nom1c_search').value = '';
+}
+
+async function saveItem() {
+  const body = {
+    id: EDIT_ID || undefined,
+    category_slug: document.getElementById('f_category').value,
+    nom1c_ref_key: CHOSEN_NOM ? CHOSEN_NOM.ref_key : null,
+    nom1c_description: CHOSEN_NOM ? CHOSEN_NOM.description : null,
+    display_name: document.getElementById('f_display_name').value.trim() || null,
+    display_spec: document.getElementById('f_display_spec').value.trim() || null,
+    stock: document.getElementById('f_stock').value,
+    datasheet_url: document.getElementById('f_datasheet_url').value.trim() || null,
+    sort_order: 0, // поки без drag-reorder
+  };
+  if (!body.category_slug) { toast('Оберіть категорію', 'err'); return; }
+  try {
+    await apiCall('price_list_upsert_item', { method: 'POST', body });
+    toast('Збережено', 'ok');
+    closeItemModal();
+    await load();
+  } catch (e) { toast('Помилка: ' + e.message, 'err'); }
+}
+
+async function deleteItem() {
+  if (!EDIT_ID) return;
+  if (!confirm('Видалити позицію?')) return;
+  try {
+    await apiCall('price_list_delete_item', { qs: 'id=' + EDIT_ID });
+    toast('Видалено', 'ok');
+    closeItemModal();
+    await load();
+  } catch (e) { toast('Помилка: ' + e.message, 'err'); }
+}
+
+Auth.require('prices').then(user => {
+  AppHeader.mount({ active: 'prices-admin', user });
+  load().catch(e => {
+    document.getElementById('content').innerHTML = `<div class="empty" style="color:var(--red)">Помилка: ${esc(e.message)}</div>`;
+  });
+});
+</script>
+</body>
+</html>

@@ -115,10 +115,17 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ---------- CATEGORY NAV ---------- */
+/* Sticky під .topbar. top = висота topbar (112px desktop / 80px mobile).
+   full-width bg + backdrop-filter щоб контент під час скролу не просвічувався. */
 .catnav {
-  max-width: 1280px; margin: 0 auto; padding: 0 32px 16px;
+  position: sticky; top: 112px; z-index: 40;
+  margin: 0; padding: 12px 32px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
   display: flex; gap: 6px; flex-wrap: wrap;
+  justify-content: center; max-width: none;
 }
+.catnav > * { flex: 0 0 auto; }
 .catnav a {
   padding: 8px 14px; border: 1px solid var(--line);
   font-size: 12px; color: var(--ink-2); background: var(--bg-elev);
@@ -217,7 +224,7 @@ footer { border-top: 2px solid var(--ink); padding: 32px; margin-top: 40px; back
   .btn span.hide-sm { display: none; }
   .hero { padding: 36px 18px 24px; }
   .hero-meta { gap: 18px; padding-top: 20px; margin-top: 20px; }
-  .catnav { padding: 0 18px 12px; gap: 6px; }
+  .catnav { top: 80px; padding: 8px 18px; gap: 6px; }
   main { padding: 12px 18px 56px; }
   .category { margin-top: 36px; }
   .cat-head h2 { font-size: 19px; }
@@ -409,63 +416,9 @@ const API = 'https://price-api.doskevich.workers.dev';
 const PT_NO_VAT   = '36084004-bfb6-11f0-86f2-107c6149f3d7'; // Гуртова ціна, без ПДВ
 const PT_WITH_VAT = '6a417c18-3eec-11f1-870a-107c6149f3d7'; // Гуртова ціна, з ПДВ
 
-// Структура прайсу. ВАЖЛИВО: `nom1c` має точно збігатися з Description товару
-// в 1С (Catalog_Номенклатура) — саме за ним робиться маппінг цін.
-// `name` / `spec` — для візуалу. `ds` — чи є datasheet (PDF додамо пізніше).
-const DATA = [
-  {
-    cat: "PV-модулі", slug: "pv", unit: "$/Вт",
-    items: [
-      { nom1c: "Tongwei TWMNH-66HD - 625 Вт",   name: "Tongwei TWMNH-66HD",   spec: "625 Вт · моно N-type", stock: "в дорозі",     ds: true },
-      { nom1c: "Tongwei TWMNH-66HD - 630 Вт",   name: "Tongwei TWMNH-66HD",   spec: "630 Вт · моно N-type", stock: "в дорозі",     ds: true },
-      { nom1c: "Hanersun HN18N-72HT - 585 Вт",  name: "Hanersun HN18N-72HT",  spec: "585 Вт · моно N-type", stock: "в наявності",  ds: true },
-    ]
-  },
-  {
-    cat: "Гібридні інвертори", slug: "inverters", unit: "$",
-    items: [
-      { nom1c: "Deye SUN-6K-SG05LP1-EU-AM2-P",  name: "Deye SUN-6K-SG05LP1-EU-AM2-P",  spec: "6 кВт · 1-фазний · низьковольтний",  stock: "в наявності", ds: true },
-      { nom1c: "Deye SUN-8K-SG05LP1-EU-AM2-P",  name: "Deye SUN-8K-SG05LP1-EU-AM2-P",  spec: "8 кВт · 1-фазний · низьковольтний",  stock: "в наявності", ds: true },
-      { nom1c: "Deye SUN-10K-SG02LP1-EU-AM3",   name: "Deye SUN-10K-SG02LP1-EU-AM3",   spec: "10 кВт · 1-фазний · низьковольтний", stock: "в наявності", ds: true },
-      { nom1c: "Deye SUN-10K-SG05LP3-EU-SM2",   name: "Deye SUN-10K-SG05LP3-EU-SM2",   spec: "10 кВт · 3-фазний · низьковольтний", stock: "в наявності", ds: true },
-      { nom1c: "Deye SUN-12K-SG02LP1-EU-AM3",   name: "Deye SUN-12K-SG02LP1-EU-AM3",   spec: "12 кВт · 1-фазний · низьковольтний", stock: "в наявності", ds: true },
-      { nom1c: "Deye SUN-12K-SG05LP3-EU-SM2",   name: "Deye SUN-12K-SG05LP3-EU-SM2",   spec: "12 кВт · 3-фазний · низьковольтний", stock: "в наявності", ds: true },
-      { nom1c: "Deye SUN-12K-SG01HP3-EU-AM2",   name: "Deye SUN-12K-SG01HP3-EU-AM2",   spec: "12 кВт · 3-фазний · високовольтний", stock: "в наявності", ds: true },
-      { nom1c: "Deye SUN-15K-SG05LP3-EU-SM2",   name: "Deye SUN-15K-SG05LP3-EU-SM2",   spec: "15 кВт · 3-фазний · низьковольтний", stock: "в наявності", ds: true },
-      { nom1c: "Deye SUN-15K-SG01HP3-EU",       name: "Deye SUN-15K-SG01HP3-EU",       spec: "15 кВт · 3-фазний · високовольтний", stock: "в наявності", ds: true },
-      { nom1c: "Deye SUN-20K-SG05LP3-EU",       name: "Deye SUN-20K-SG05LP3-EU",       spec: "20 кВт · 3-фазний · низьковольтний", stock: "в наявності", ds: true },
-      { nom1c: "Deye SUN-20K-SG01HP3-EU-AM2",   name: "Deye SUN-20K-SG01HP3-EU-AM2",   spec: "20 кВт · 3-фазний · високовольтний", stock: "в наявності", ds: true },
-      { nom1c: "Deye SUN-30K-SG02HP3-EU-AM3",   name: "Deye SUN-30K-SG02HP3-EU-AM3",   spec: "30 кВт · 3-фазний · високовольтний", stock: "в наявності", ds: true },
-      { nom1c: "Deye SUN-50K-SG01HP3-EU-BM4",   name: "Deye SUN-50K-SG01HP3-EU-BM4",   spec: "50 кВт · 3-фазний · високовольтний", stock: "в дорозі",    ds: true },
-      { nom1c: "Deye SUN-80K-SG02HP3-EU-EM6",   name: "Deye SUN-80K-SG02HP3-EU-EM6",   spec: "80 кВт · 3-фазний · високовольтний", stock: "в дорозі",    ds: true },
-    ]
-  },
-  {
-    cat: "Низьковольтні акумулятори", slug: "lv-batt", unit: "$",
-    items: [
-      { nom1c: "Deye SE-G5.1 Pro-B",  name: "Deye SE-G5.1 Pro-B",  spec: "5.12 кВт·год · настінний", stock: "в наявності", ds: true },
-      { nom1c: "Deye SE-F5 Pro-C",    name: "Deye SE-F5 Pro-C",    spec: "5.12 кВт·год · стійковий", stock: "в наявності", ds: true },
-      { nom1c: "Dah DHN-LVWES05-G1",  name: "Dah DHN-LVWES05-G1",  spec: "5.12 кВт·год · настінний", stock: "в наявності", ds: true },
-      { nom1c: "Pylontech US5000",    name: "Pylontech US5000",    spec: "4.8 кВт·год · стійковий",  stock: "в наявності", ds: true },
-    ]
-  },
-  {
-    cat: "Високовольтні акумулятори", slug: "hv-batt", unit: "$",
-    items: [
-      { nom1c: "Deye BOS-G PRO",                                              name: "Deye BOS-G PRO",              spec: "5.12 кВт·год · модуль",        stock: "в наявності", ds: true },
-      { nom1c: "Deye BOS-G-PDU-2 (BMS для BOS-G PRO)",                        name: "Deye BOS-G-PDU-2",            spec: "BMS для BOS-G PRO",            stock: "в наявності", ds: true },
-      { nom1c: 'Стійка 19" Deye 3U-HRACK (12 акб + 1 блок керування)',        name: 'Стійка 19" Deye 3U-HRACK',    spec: "12 акб + 1 блок керування",    stock: "в наявності", ds: true },
-      { nom1c: "Deye HV BOS-B-Pack16-A3-Pro",                                 name: "Deye HV BOS-B-Pack16-A3-Pro", spec: "HV акумуляторний пакет",       stock: "в дорозі",    ds: true },
-      { nom1c: "Deye BOS-B-PDU-2-А (BMS для BOS-B-Pack16-A3-Pro)",            name: "Deye BOS-B-PDU-2-А",          spec: "BMS для BOS-B-Pack16-A3-Pro",  stock: "в дорозі",    ds: true },
-    ]
-  },
-  {
-    cat: "PV-кабель", slug: "cable", unit: "",
-    items: [
-      { nom1c: "KBE 6 мм (червоний / чорний), бухта (500 м)", name: "KBE 6 мм²", spec: "червоний / чорний · бухта 500 м", stock: "в дорозі", ds: false },
-    ]
-  },
-];
+// DATA тягнеться з API action=price_list_get — редагується в /admin-prices.html.
+// Формат item: {id, name, spec, stock, ds_url, no_vat:{price,currency_code}, with_vat:{...}}.
+let DATA = [];
 
 // ============================================================
 // UTILS
@@ -512,9 +465,13 @@ function buildCatNav() {
   });
 }
 
-function renderCatalog(priceByNom1c) {
+function renderCatalog() {
   const catalog = document.getElementById('catalog');
   catalog.innerHTML = '';
+  if (!DATA.length) {
+    catalog.innerHTML = `<div class="loader">Прайс порожній. Додайте позиції в <a href="/admin-prices.html" style="border-bottom:1px solid var(--line)">адмінці</a>.</div>`;
+    return;
+  }
 
   DATA.forEach(c => {
     const sec = document.createElement('section');
@@ -534,9 +491,8 @@ function renderCatalog(priceByNom1c) {
     `;
 
     c.items.forEach(it => {
-      const mapped = priceByNom1c.get(it.nom1c);
-      const p1raw = mapped && mapped.no_vat && mapped.no_vat.price != null ? Number(mapped.no_vat.price) : null;
-      const p2raw = mapped && mapped.with_vat && mapped.with_vat.price != null ? Number(mapped.with_vat.price) : null;
+      const p1raw = it.no_vat && it.no_vat.price != null ? Number(it.no_vat.price) : null;
+      const p2raw = it.with_vat && it.with_vat.price != null ? Number(it.with_vat.price) : null;
 
       const cur = c.unit || '$';
       const p1str = fmtPrice(p1raw);
@@ -545,6 +501,9 @@ function renderCatalog(priceByNom1c) {
       const p2 = p2str != null ? `<span>${esc(p2str)}</span><span class="cur"> ${esc(cur)}</span>` : '—';
 
       const stockClass = it.stock === 'в наявності' ? '' : 'wait';
+      const dsLink = it.ds_url
+        ? `<a class="ds-link" href="${esc(it.ds_url)}" target="_blank" rel="noopener">PDF →</a>`
+        : '<span class="ds-link none">—</span>';
 
       const row = document.createElement('div');
       row.className = 'row';
@@ -556,13 +515,13 @@ function renderCatalog(priceByNom1c) {
         <div class="price desktop-only${p1str == null ? ' empty' : ''}">${p1}</div>
         <div class="price desktop-only${p2str == null ? ' empty' : ''}">${p2}</div>
         <div class="desktop-only"><span class="stock ${stockClass}"><span class="led"></span>${esc(it.stock)}</span></div>
-        <div class="desktop-only">${it.ds ? '<a class="ds-link" href="#" onclick="event.preventDefault()">PDF →</a>' : '<span class="ds-link none">—</span>'}</div>
+        <div class="desktop-only">${dsLink}</div>
 
         <div class="meta mobile-meta">
           ${p1str != null ? `<div class="price"><span class="meta-label">без ПДВ</span>${p1}</div>` : ''}
           ${p2str != null ? `<div class="price"><span class="meta-label">з ПДВ</span>${p2}</div>` : ''}
           ${p1str == null && p2str == null ? `<div class="price empty">ціну уточнюйте</div>` : ''}
-          ${it.ds ? '<a class="ds-link" href="#" onclick="event.preventDefault()">Datasheet →</a>' : ''}
+          ${it.ds_url ? `<a class="ds-link" href="${esc(it.ds_url)}" target="_blank" rel="noopener">Datasheet →</a>` : ''}
         </div>
         <span class="stock mobile-meta ${stockClass}"><span class="led"></span>${esc(it.stock)}</span>
       `;
@@ -582,93 +541,50 @@ function setHeroDate() {
     `Прайс · ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-async function loadPrices() {
-  const items = [];
-  DATA.forEach(c => c.items.forEach(it => items.push({ name: it.nom1c, category: c.cat })));
-
+async function loadAll() {
   const qs = `pt_no=${encodeURIComponent(PT_NO_VAT)}&pt_with=${encodeURIComponent(PT_WITH_VAT)}`;
-  const res = await fetch(`${API}/?action=prices_1c_list&${qs}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ items }),
-  });
+  const res = await fetch(`${API}/?action=price_list_get&${qs}`);
   const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data && data.error) || ('HTTP ' + res.status));
 
-  if (!res.ok) {
-    renderCatalog(new Map()); // рендер без цін
-    showNotice('Не вдалося завантажити ціни: ' + ((data && data.error) || res.status), true);
-    return;
-  }
-
-  const byName = new Map();
-  for (const it of (data.items || [])) if (it && it.name) byName.set(it.name, it);
-  CURRENT_DATA_WITH_PRICES.map = byName;
-  renderCatalog(byName);
+  // API → локальний формат (cat/slug/unit/items).
+  DATA = (data.categories || []).map(c => ({
+    cat: c.title, slug: c.slug, unit: c.unit || '',
+    items: (c.items || []).map(it => ({
+      name: it.display_name || it.nom1c_description || '',
+      spec: it.display_spec || '',
+      stock: it.stock || 'в наявності',
+      ds_url: it.datasheet_url || null,
+      no_vat: it.no_vat,
+      with_vat: it.with_vat,
+    })),
+  }));
+  buildCatNav();
+  renderCatalog();
 }
 
 setHeroDate();
-buildCatNav();
-loadPrices().catch(err => {
-  renderCatalog(new Map());
+loadAll().catch(err => {
+  document.getElementById('catnav').innerHTML = '';
+  document.getElementById('catalog').innerHTML = '';
   showNotice('Помилка: ' + err.message, true);
 });
 
 // ============================================================
-// PDF DOWNLOAD — plain-text прайс-лист через jsPDF (lazy-load).
-// Стандартний табличний вигляд як у дистриб'юторських прайсах:
-//   заголовок, адреси/контакти, для кожної категорії — таблиця
-//   [Назва | Без ПДВ | З ПДВ | Наявність]. Без декору, моно-шрифт,
-//   компактно на A4. Підтримує кирилицю через вбудований шрифт.
+// PDF DOWNLOAD — screenshot сторінки через html2pdf.js (кирилиця з браузера,
+// наш print-CSS автоматично застосовується через клас body.print-view).
 // ============================================================
-const CURRENT_DATA_WITH_PRICES = { map: new Map() };
-
-let _jsPdfPromise = null;
-function loadJsPDF() {
-  if (_jsPdfPromise) return _jsPdfPromise;
-  _jsPdfPromise = new Promise((resolve, reject) => {
-    const loadOne = (src, nextSrc) => {
-      const s = document.createElement('script');
-      s.src = src;
-      s.onload = () => {
-        if (nextSrc) loadOne(nextSrc);
-        else resolve(window.jspdf && window.jspdf.jsPDF || window.jsPDF);
-      };
-      s.onerror = () => reject(new Error('CDN jsPDF недоступний'));
-      document.head.appendChild(s);
-    };
-    // jsPDF core + шрифт з кирилицею (Roboto Regular, base64)
-    loadOne(
-      'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-      'https://cdn.jsdelivr.net/gh/MrRio/jsPDF@master/examples/js/basic.js'
-    );
-  }).catch(() => {
-    // Fallback — тільки jsPDF без шрифту (кирилиця може не рендеритись).
-    return new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-      s.onload = () => resolve(window.jspdf.jsPDF);
-      s.onerror = () => reject(new Error('jsPDF CDN недоступний'));
-      document.head.appendChild(s);
-    });
+let _pdfLibPromise = null;
+function loadPdfLib() {
+  if (_pdfLibPromise) return _pdfLibPromise;
+  _pdfLibPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    s.onload = () => resolve(window.html2pdf);
+    s.onerror = () => reject(new Error('CDN html2pdf недоступний'));
+    document.head.appendChild(s);
   });
-  return _jsPdfPromise;
-}
-
-// Мінімальний набір гліфів WinAnsi — без шрифта з кирилицею jsPDF не
-// рендерить укр.літери. Вирішуємо транслітерацією на латиницю для PDF.
-const TRANSLIT = {
-  'а':'a','б':'b','в':'v','г':'h','ґ':'g','д':'d','е':'e','є':'ie','ж':'zh','з':'z',
-  'и':'y','і':'i','ї':'i','й':'i','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p',
-  'р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'shch',
-  'ь':'','ю':'iu','я':'ia','\u0027':'\u0027','’':'\u0027',
-};
-function translit(s) {
-  return String(s || '').split('').map(ch => {
-    const lower = ch.toLowerCase();
-    const t = TRANSLIT[lower];
-    if (t === undefined) return ch;
-    return ch === lower ? t : (t.charAt(0).toUpperCase() + t.slice(1));
-  }).join('');
+  return _pdfLibPromise;
 }
 
 async function downloadPDF() {
@@ -678,104 +594,27 @@ async function downloadPDF() {
   btn.disabled = true;
   if (label) label.textContent = 'Готуємо PDF…';
 
+  document.body.classList.add('print-view');
   try {
-    const jsPDF = await loadJsPDF();
-    const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-
-    // Cyrillic support: спроба підключити вбудований у basic.js "Roboto".
-    // Якщо немає — транслітеруємо. Детект — через наявність getFontList().Roboto.
-    let useCyr = false;
-    try {
-      const fonts = doc.getFontList();
-      if (fonts && fonts.Roboto) { doc.setFont('Roboto'); useCyr = true; }
-    } catch (_) {}
-    const txt = s => useCyr ? String(s || '') : translit(s);
-
-    const PAGE_W = 210, PAGE_H = 297, M = 14;
-    let y = M;
-
-    // ── Шапка ──
-    doc.setFontSize(16);
-    doc.text(txt('REACT — Прайс-лист'), M, y); y += 6;
-    doc.setFontSize(9);
+    const html2pdf = await loadPdfLib();
     const today = new Date();
-    const dmy = `${String(today.getDate()).padStart(2,'0')}.${String(today.getMonth()+1).padStart(2,'0')}.${today.getFullYear()}`;
-    doc.text(txt(`Станом на ${dmy}  ·  ціни в USD, умовно у гуртовому прайсі`), M, y); y += 5;
-
-    doc.setFontSize(8);
-    doc.text(txt('Офіс: м. Одеса, вул. Велика Арнаутська, 15'), M, y); y += 3.5;
-    doc.text(txt('Склад Київ: м. Вишневе, вул. Промислова, 10   ·   Склад Одеса: вул. Чигиринська, 21'), M, y); y += 3.5;
-    doc.text(txt('Катерина: +380 67 577 73 40   ·   Олександра: +380 63 325 61 10'), M, y); y += 4;
-
-    // ── Категорії ──
-    const COL_NAME = M;
-    const COL_P1   = 130;
-    const COL_P2   = 155;
-    const COL_ST   = 180;
-
-    DATA.forEach(c => {
-      if (y > PAGE_H - 30) { doc.addPage(); y = M; }
-
-      // Заголовок категорії
-      y += 4;
-      doc.setFontSize(11);
-      if (useCyr) doc.setFont('Roboto', 'bold'); else doc.setFont(undefined, 'bold');
-      doc.text(txt(c.cat), COL_NAME, y); y += 1.5;
-      doc.setDrawColor(0, 0, 0);
-      doc.setLineWidth(0.5);
-      doc.line(M, y, PAGE_W - M, y); y += 4;
-
-      // Шапка таблиці
-      doc.setFontSize(7.5);
-      if (useCyr) doc.setFont('Roboto', 'normal'); else doc.setFont(undefined, 'normal');
-      doc.setTextColor(100);
-      doc.text(txt('НАЗВА'), COL_NAME, y);
-      doc.text(txt(`БЕЗ ПДВ${c.unit ? ', ' + c.unit : ', $'}`), COL_P1, y, { align: 'right' });
-      doc.text(txt(`З ПДВ${c.unit ? ', ' + c.unit : ', $'}`), COL_P2 + 18, y, { align: 'right' });
-      doc.text(txt('НАЯВНІСТЬ'), COL_ST, y);
-      y += 2;
-      doc.setDrawColor(180);
-      doc.setLineWidth(0.2);
-      doc.line(M, y, PAGE_W - M, y); y += 3;
-      doc.setTextColor(0);
-      doc.setFontSize(9);
-
-      c.items.forEach(it => {
-        if (y > PAGE_H - M - 6) { doc.addPage(); y = M; }
-
-        const mapped = CURRENT_DATA_WITH_PRICES.map.get(it.nom1c);
-        const p1 = mapped && mapped.no_vat && mapped.no_vat.price != null ? Number(mapped.no_vat.price) : null;
-        const p2 = mapped && mapped.with_vat && mapped.with_vat.price != null ? Number(mapped.with_vat.price) : null;
-        const fm = v => v == null ? '—' : (Math.abs(v) < 1 ? v.toFixed(3).replace(/\.?0+$/,'') : v.toLocaleString('uk-UA', { maximumFractionDigits: 0 }));
-
-        // Назва (+ spec у дужках, коротко)
-        const nameLine = it.spec ? `${it.name}  (${it.spec})` : it.name;
-        const nameTxt = txt(nameLine);
-        const nameMaxW = COL_P1 - COL_NAME - 2;
-        const nameSplit = doc.splitTextToSize(nameTxt, nameMaxW);
-        doc.text(nameSplit, COL_NAME, y);
-
-        doc.text(txt(fm(p1)), COL_P1 + 18, y, { align: 'right' });
-        doc.text(txt(fm(p2)), COL_P2 + 18, y, { align: 'right' });
-        doc.text(txt(it.stock || '—'), COL_ST, y);
-
-        y += Math.max(4.5, nameSplit.length * 4.2);
-      });
-    });
-
-    // ── Підпис у футері останньої сторінки ──
-    if (y > PAGE_H - M - 10) { doc.addPage(); y = M; }
-    y += 6;
-    doc.setFontSize(7.5);
-    doc.setTextColor(120);
-    doc.text(txt('Ціни вказані у доларах США. Остаточна вартість формується за курсом АТ КБ "Приватбанк" на день оплати.'), M, y);
-
     const yyyymmdd = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-    doc.save(`React-Price-${yyyymmdd}.pdf`);
+    await html2pdf()
+      .from(document.body)
+      .set({
+        filename:    `React-Прайс-${yyyymmdd}.pdf`,
+        margin:      [8, 8, 8, 8],
+        image:       { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 1200 },
+        jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:   { mode: ['css', 'avoid-all'] },
+      })
+      .save();
   } catch (e) {
     showNotice('Не вдалося згенерувати PDF: ' + e.message + '. Відкриваю системний діалог друку.', true);
     window.print();
   } finally {
+    document.body.classList.remove('print-view');
     btn.disabled = false;
     if (label) label.textContent = origLabel;
   }
