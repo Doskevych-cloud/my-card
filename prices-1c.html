@@ -91,6 +91,11 @@ a{color:inherit;text-decoration:none}
 <script>
 const API = 'https://price-api.doskevich.workers.dev';
 
+// Ref_Key видів цін з 1С (Catalog_ВидыЦен) — зафіксовано, щоб не залежати
+// від fuzzy-regex у воркері при появі нових видів з подібними назвами.
+const PT_NO_VAT   = '36084004-bfb6-11f0-86f2-107c6149f3d7'; // «Гуртова ціна, без ПДВ» · USD
+const PT_WITH_VAT = '6a417c18-3eec-11f1-870a-107c6149f3d7'; // «Гуртова ціна, з ПДВ»  · USD
+
 // Список товарів з прайсу (джерело: Google Sheets dev.generacia.energy).
 const PRICE_LIST = [
   { category: 'PV-модулі', items: [
@@ -218,7 +223,8 @@ async function load(){
   for (const grp of PRICE_LIST) {
     for (const name of grp.items) items.push({ name, category: grp.category });
   }
-  const res = await fetch(`${API}/?action=prices_1c_list`, {
+  const qs = `pt_no=${encodeURIComponent(PT_NO_VAT)}&pt_with=${encodeURIComponent(PT_WITH_VAT)}`;
+  const res = await fetch(`${API}/?action=prices_1c_list&${qs}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ items }),
