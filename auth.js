@@ -163,6 +163,27 @@
     location.href = 'login.html?return=' + ret;
   }
 
+  // Пріоритетна мапа: перша доступна сторінка для юзера. Використовуємо
+  // і для brand-лінка в шапці, і для deny-екрана («← На головну»), щоб
+  // юзер без ролі «dashboard» не зациклювався на denyScreen.
+  const HOME_PAGES = [
+    { role: 'dashboard', href: 'index.html' },
+    { role: 'home',          href: 'prices.html' },
+    { role: 'sales',         href: 'sales.html' },
+    { role: 'forecast',      href: 'forecast.html' },
+    { role: 'warehouses',    href: 'warehouses.html' },
+    { role: 'counterparties',href: 'counterparties.html' },
+    { role: 'reports',       href: 'reports.html' },
+  ];
+  function homeHref(user) {
+    const u = user || cachedUser();
+    if (!u) return 'login.html';
+    const roles = u.roles || {};
+    if (roles.admin) return 'index.html';
+    for (const p of HOME_PAGES) if (roles[p.role]) return p.href;
+    return 'login.html'; // жодної ролі — кидаємо на логін
+  }
+
   // HTML escape (used by showDenyScreen). Tiny duplicate of header.js/esc().
   function _dEsc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -222,7 +243,9 @@
             ${imp
               ? `<button class="imp-back" onclick="AppHeader && AppHeader.stopImpersonate && AppHeader.stopImpersonate()">← Повернутись як адмін</button>
                  <a class="btn ghost" href="/admin.html">До адмін-панелі</a>`
-              : `<a class="btn" href="index.html">← На головну</a>`}
+              : (homeHref(user) === 'login.html'
+                  ? `<a class="btn" href="#" onclick="Auth.logout();return false">Вийти</a>`
+                  : `<a class="btn" href="${homeHref(user)}">← На головну</a>`)}
           </div>
           ${user && !imp ? `<div class="muted"><a href="#" onclick="Auth.logout();return false" style="color:#6b7280">Вийти з акаунта</a></div>` : ''}
         </div>
@@ -276,6 +299,7 @@
 
   global.Auth = {
     API,
+    homeHref,
     getToken, setToken, clearToken,
     fetchMe, loginWithIdToken, logout,
     apiFetch,
