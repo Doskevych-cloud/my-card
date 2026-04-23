@@ -126,6 +126,13 @@ a{color:inherit;text-decoration:none}
     <button class="btn btn--primary" onclick="openItemModal()">+ Додати позицію</button>
   </div>
 
+  <details id="pricesRef" style="margin-bottom:16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:12px">
+    <summary style="cursor:pointer;color:var(--text2);font-weight:500">Типи цін з 1С (довідка)</summary>
+    <div id="pricesRefList" style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:8px">
+      <span class="muted">завантаження…</span>
+    </div>
+  </details>
+
   <div id="content"><div class="loader">Завантаження…</div></div>
 </div>
 
@@ -213,7 +220,25 @@ async function apiCall(action, opts = {}) {
   return data;
 }
 
+async function loadPriceTypesRef() {
+  try {
+    const d = await apiCall('prices_1c_types');
+    const list = (d.types || []).filter(t => !t.deletion_mark);
+    const el = document.getElementById('pricesRefList');
+    if (!list.length) { el.innerHTML = '<span class="muted">—</span>'; return; }
+    el.innerHTML = list.map(t => `
+      <div style="padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px">
+        <div style="font-weight:500">${esc(t.description)} ${t.currency_name ? `<span class="muted" style="font-weight:400">· ${esc(t.currency_name)}</span>` : ''}</div>
+        <div class="muted" style="font-family:monospace;font-size:10.5px;margin-top:3px;word-break:break-all;cursor:pointer" onclick="navigator.clipboard.writeText('${esc(t.ref_key)}'); toast('ref_key скопійовано', 'ok')" title="клікни щоб скопіювати">${esc(t.ref_key)}</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    document.getElementById('pricesRefList').innerHTML = `<span class="muted">Помилка: ${esc(e.message)}</span>`;
+  }
+}
+
 async function load() {
+  loadPriceTypesRef();
   const qs = `pt_no=${encodeURIComponent(PT_NO_VAT)}&pt_with=${encodeURIComponent(PT_WITH_VAT)}`;
   STATE = await apiCall('price_list_get', { qs });
   // Паралельно вантажимо залишки Реакту (по nom1c_ref_key).
