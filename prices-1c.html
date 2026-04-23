@@ -6,67 +6,268 @@
 <title>Прайс Реакт — ціни з 1С</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="auth.js?v=hfref20260423"></script>
 <script src="header.js?v=hfref20260423"></script>
 <style>
-:root{
-  --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
-  --surface:#141414; --surface2:#1c1c1c;
-  --border:#262626; --border2:#333;
-  --text:#f5f5f5; --text2:#a3a3a3; --text3:#737373;
-  --accent:#ff8319; --accent-bg:rgba(255,131,25,.12);
-  --red:#e74c3c;   --green:#22c55e;
+/* ==========================================================
+   THEME TOKENS — light/dark variants
+   ========================================================== */
+:root {
+  --bg: #0a0a0a;
+  --bg-elev: #141414;
+  --ink: #f5f5f5;
+  --ink-2: #d4d4d4;
+  --ink-3: #a3a3a3;
+  --ink-4: #525252;
+  --line: #262626;
+  --line-2: #1f1f1f;
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  --accent: #ff8319;
 }
-:root[data-theme="light"]{
-  --bg:#f5f5f7; --bg2:#ffffff; --bg3:#ececef;
-  --surface:#ffffff; --surface2:#ffffff;
-  --border:#e5e5ea; --border2:#d1d1d6;
-  --text:#1c1c1e; --text2:#48484a; --text3:#8e8e93;
-  --accent:#e07017; --accent-bg:rgba(224,112,23,.12);
-  --red:#d93025;   --green:#15803d;
+:root[data-theme="light"] {
+  --bg: #fafaf7;
+  --bg-elev: #ffffff;
+  --ink: #1a1a1a;
+  --ink-2: #3a3a3a;
+  --ink-3: #707070;
+  --ink-4: #a8a8a8;
+  --line: #e2e2e0;
+  --line-2: #ededeb;
+  --accent: #e07017;
 }
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
-a{color:inherit;text-decoration:none}
 
-.wrap{max-width:1100px;margin:0 auto;padding:20px}
-.page-head{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;flex-wrap:wrap}
-.page-head h1{font-size:20px;font-weight:700;letter-spacing:-.4px}
-.page-head .sub{font-size:12px;color:var(--text3)}
-.page-head .meta{margin-left:auto;font-size:11.5px;color:var(--text3);font-variant-numeric:tabular-nums}
-.page-head .meta b{color:var(--text2);font-weight:600}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-weight: 400;
+  color: var(--ink);
+  background: var(--bg);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.005em;
+}
+a { color: inherit; text-decoration: none; }
 
-.notice{margin-bottom:14px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:12px;color:var(--text2);display:none}
-.notice.show{display:block}
-.notice.err{color:var(--red);border-color:color-mix(in srgb,var(--red) 30%,var(--border))}
+/* ==========================================================
+   PAGE SHELL
+   ========================================================== */
+.wrap {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 24px 32px 72px;
+}
 
-.sect{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
-.sect-head{padding:11px 14px;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border);background:var(--bg2)}
+/* Hero / page header */
+.page-hero {
+  padding: 28px 0 20px;
+}
+.hero-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+.page-hero h1 {
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin-bottom: 8px;
+}
+.page-hero .sub {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.page-hero .meta {
+  margin-top: 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.page-hero .meta b { color: var(--ink); font-weight: 600; }
 
-.p-tbl{width:100%;border-collapse:collapse;font-size:13px}
-.p-tbl thead th{padding:10px 12px;background:var(--bg2);color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
-.p-tbl thead th.num{text-align:right}
-.p-tbl tbody td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
-.p-tbl tbody tr:last-child td{border-bottom:none}
-.p-tbl tbody td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
-.p-tbl tbody td.name{max-width:420px}
-.p-tbl tbody tr.nomatch td.name{color:var(--text3)}
-.p-tbl tbody tr.nomatch td.num{color:var(--text3);font-weight:400}
-.p-tbl tbody td .m-hint{font-size:10.5px;color:var(--text3);margin-top:2px;display:block}
-.dash{color:var(--text3)}
-.loader{padding:40px;text-align:center;color:var(--text3);font-size:12px}
+/* Notice banner */
+.notice {
+  margin: 12px 0 16px;
+  padding: 12px 14px;
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--ink-2);
+  display: none;
+  white-space: pre-wrap;
+}
+.notice.show { display: block; }
+.notice.err {
+  color: #d93025;
+  border-color: #d93025;
+  border-left-width: 3px;
+}
+:root[data-theme="dark"] .notice.err { color: #ff6b5b; border-color: #e74c3c; }
 
-@media (max-width:640px){
-  .wrap{padding:12px}
-  .page-head{gap:8px}
-  .page-head h1{font-size:17px}
-  .page-head .meta{width:100%;margin-left:0;margin-top:4px}
-  .p-tbl thead th,.p-tbl tbody td{padding:8px 9px;font-size:12px}
-  .p-tbl tbody td.name{max-width:none}
+/* Loader */
+.loader {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ==========================================================
+   CATEGORIES
+   ========================================================== */
+.category {
+  margin-top: 40px;
+}
+.category:first-child { margin-top: 20px; }
+.cat-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 2px;
+}
+.cat-head .num {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-3);
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+.cat-head h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ==========================================================
+   TABLE ROWS
+   ========================================================== */
+.row-head, .row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px 150px 140px;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--line-2);
+}
+.row-head {
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--line);
+}
+.row-head div {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.row-head .num-col { text-align: right; }
+
+.row { transition: background .15s ease; }
+.row:hover { background: var(--bg-elev); }
+.row.nomatch { opacity: 0.55; }
+
+.prod-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+  min-width: 0;
+}
+.prod-sub {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 3px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.price {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: right;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.price .cur { color: var(--ink-3); font-weight: 400; margin-right: 2px; }
+.price.empty { color: var(--ink-4); font-weight: 400; }
+
+.stock {
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: transparent;
+  border: 1px solid var(--ink);
+  width: 130px;
+  box-sizing: border-box;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.stock .led { width: 8px; height: 8px; background: var(--ink); flex-shrink: 0; }
+.stock.wait {
+  color: var(--ink-3);
+  border-color: var(--ink-4);
+}
+.stock.wait .led { background: var(--ink-3); }
+
+/* ==========================================================
+   MOBILE
+   ========================================================== */
+@media (max-width: 860px) {
+  .wrap { padding: 12px 18px 48px; }
+  .page-hero { padding: 14px 0 12px; }
+  .page-hero h1 { font-size: 22px; }
+  .category { margin-top: 32px; }
+  .cat-head h2 { font-size: 18px; }
+
+  .row-head { display: none; }
+  .row {
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    padding: 14px 0;
+    grid-auto-flow: row;
+    grid-template-areas:
+      "name stock"
+      "meta meta";
+  }
+  .row > .prod-name { grid-area: name; }
+  .row > .stock { grid-area: stock; justify-self: end; align-self: start; }
+  .row > .meta { grid-area: meta; display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+  .row > .meta .price { text-align: left; }
+  .row > .meta .meta-label {
+    font-family: var(--mono); font-size: 10px; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: 0.08em; margin-right: 4px; font-weight: 500;
+  }
+  .row .desktop-only { display: none; }
+  .row .mobile-meta { display: flex; }
+}
+@media (min-width: 861px) {
+  .row .mobile-meta { display: none; }
 }
 </style>
 </head>
@@ -75,9 +276,10 @@ a{color:inherit;text-decoration:none}
 <div id="appHeader"></div>
 
 <div class="wrap">
-  <div class="page-head">
+  <div class="page-hero">
+    <div class="hero-label">Прайс · ціни з 1С</div>
     <h1>Прайс Реакт</h1>
-    <span class="sub">ціни з 1С (регістр «ЦеныНоменклатуры»)</span>
+    <div class="sub">Регістр «ЦеныНоменклатуры»</div>
     <div class="meta" id="pmeta"></div>
   </div>
 
@@ -91,140 +293,169 @@ a{color:inherit;text-decoration:none}
 <script>
 const API = 'https://price-api.doskevich.workers.dev';
 
-// Ref_Key видів цін з 1С (Catalog_ВидыЦен) — зафіксовано, щоб не залежати
-// від fuzzy-regex у воркері при появі нових видів з подібними назвами.
-const PT_NO_VAT   = '36084004-bfb6-11f0-86f2-107c6149f3d7'; // «Гуртова ціна, без ПДВ» · USD
-const PT_WITH_VAT = '6a417c18-3eec-11f1-870a-107c6149f3d7'; // «Гуртова ціна, з ПДВ»  · USD
-
-// Список товарів з прайсу (джерело: Google Sheets dev.generacia.energy).
+// Структура прайсу — категорії + специфікації (друга строка під назвою).
+// ВАЖЛИВО: поле `name` має точно збігатися з назвою в 1С для маппінгу.
 const PRICE_LIST = [
   { category: 'PV-модулі', items: [
-    'Tongwei TWMNH-66HD - 625 Вт',
-    'Tongwei TWMNH-66HD - 630 Вт',
-    'Hanersun HN18N-72HT - 585 Вт',
+    { name: 'Tongwei TWMNH-66HD - 625 Вт', spec: '625 Вт · моно N-type' },
+    { name: 'Tongwei TWMNH-66HD - 630 Вт', spec: '630 Вт · моно N-type' },
+    { name: 'Hanersun HN18N-72HT - 585 Вт', spec: '585 Вт · моно N-type' },
   ]},
   { category: 'Гібридні інвертори', items: [
-    'Deye SUN-6K-SG05LP1-EU-AM2-P',
-    'Deye SUN-8K-SG05LP1-EU-AM2-P',
-    'Deye SUN-10K-SG02LP1-EU-AM3',
-    'Deye SUN-10K-SG05LP3-EU-SM2',
-    'Deye SUN-12K-SG02LP1-EU-AM3',
-    'Deye SUN-12K-SG05LP3-EU-SM2',
-    'Deye SUN-12K-SG01HP3-EU-AM2',
-    'Deye SUN-15K-SG05LP3-EU-SM2',
-    'Deye SUN-15K-SG01HP3-EU',
-    'Deye SUN-20K-SG05LP3-EU',
-    'Deye SUN-20K-SG01HP3-EU-AM2',
-    'Deye SUN-30K-SG02HP3-EU-AM3',
-    'Deye SUN-50K-SG01HP3-EU-BM4',
-    'Deye SUN-80K-SG02HP3-EU-EM6',
+    { name: 'Deye SUN-6K-SG05LP1-EU-AM2-P',  spec: '6 кВт · 1-фазний · низьковольтний' },
+    { name: 'Deye SUN-8K-SG05LP1-EU-AM2-P',  spec: '8 кВт · 1-фазний · низьковольтний' },
+    { name: 'Deye SUN-10K-SG02LP1-EU-AM3',   spec: '10 кВт · 1-фазний · низьковольтний' },
+    { name: 'Deye SUN-10K-SG05LP3-EU-SM2',   spec: '10 кВт · 3-фазний · низьковольтний' },
+    { name: 'Deye SUN-12K-SG02LP1-EU-AM3',   spec: '12 кВт · 1-фазний · низьковольтний' },
+    { name: 'Deye SUN-12K-SG05LP3-EU-SM2',   spec: '12 кВт · 3-фазний · низьковольтний' },
+    { name: 'Deye SUN-12K-SG01HP3-EU-AM2',   spec: '12 кВт · 3-фазний · високовольтний' },
+    { name: 'Deye SUN-15K-SG05LP3-EU-SM2',   spec: '15 кВт · 3-фазний · низьковольтний' },
+    { name: 'Deye SUN-15K-SG01HP3-EU',       spec: '15 кВт · 3-фазний · високовольтний' },
+    { name: 'Deye SUN-20K-SG05LP3-EU',       spec: '20 кВт · 3-фазний · низьковольтний' },
+    { name: 'Deye SUN-20K-SG01HP3-EU-AM2',   spec: '20 кВт · 3-фазний · високовольтний' },
+    { name: 'Deye SUN-30K-SG02HP3-EU-AM3',   spec: '30 кВт · 3-фазний · високовольтний' },
+    { name: 'Deye SUN-50K-SG01HP3-EU-BM4',   spec: '50 кВт · 3-фазний · високовольтний' },
+    { name: 'Deye SUN-80K-SG02HP3-EU-EM6',   spec: '80 кВт · 3-фазний · високовольтний' },
   ]},
   { category: 'Низьковольтні акумулятори', items: [
-    'Deye SE-G5.1 Pro-B',
-    'Deye SE-F5 Pro-C',
-    'Dah DHN-LVWES05-G1',
-    'Pylontech US5000',
+    { name: 'Deye SE-G5.1 Pro-B',  spec: '5.12 кВт·год · настінний' },
+    { name: 'Deye SE-F5 Pro-C',    spec: '5.12 кВт·год · стійковий' },
+    { name: 'Dah DHN-LVWES05-G1',  spec: '5.12 кВт·год · настінний' },
+    { name: 'Pylontech US5000',    spec: '4.8 кВт·год · стійковий' },
   ]},
   { category: 'Високовольтні акумулятори', items: [
-    'Deye BOS-G PRO',
-    'Deye BOS-G-PDU-2 (BMS для BOS-G PRO)',
-    'Стійка 19" Deye 3U-HRACK (12 акб + 1 блок керування)',
-    'Deye HV BOS-B-Pack16-A3-Pro',
-    'Deye BOS-B-PDU-2-А (BMS для BOS-B-Pack16-A3-Pro)',
+    { name: 'Deye BOS-G PRO',                                               spec: '5.12 кВт·год · модуль' },
+    { name: 'Deye BOS-G-PDU-2 (BMS для BOS-G PRO)',                         spec: 'BMS для BOS-G PRO' },
+    { name: 'Стійка 19" Deye 3U-HRACK (12 акб + 1 блок керування)',         spec: '12 акб + 1 блок керування' },
+    { name: 'Deye HV BOS-B-Pack16-A3-Pro',                                  spec: 'HV акумуляторний пакет' },
+    { name: 'Deye BOS-B-PDU-2-А (BMS для BOS-B-Pack16-A3-Pro)',             spec: 'BMS для BOS-B-Pack16-A3-Pro' },
   ]},
   { category: 'PV-кабель', items: [
-    'KBE 6 мм (червоний / чорний), бухта (500 м)',
+    { name: 'KBE 6 мм (червоний / чорний), бухта (500 м)', spec: 'червоний / чорний · бухта 500 м' },
   ]},
 ];
 
-// ISO 4217 numeric → символ
+// ISO 4217 → символ
 const CUR_SYMBOL = { '840':'$', '978':'€', '980':'₴', 'USD':'$', 'EUR':'€', 'UAH':'₴' };
-function curSym(code){ return CUR_SYMBOL[String(code || '').trim()] || ''; }
+const curSym = code => CUR_SYMBOL[String(code || '').trim()] || '';
 
-function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])
+);
 
-// Формат ціни: "$1 250" або "$0.165" для малих значень
-function fmtPrice(p){
-  if (!p || p.price == null) return '<span class="dash">—</span>';
+function fmtPrice(p) {
+  if (!p || p.price == null) return '<span class="empty">—</span>';
   const v = Number(p.price);
-  if (!isFinite(v)) return '<span class="dash">—</span>';
+  if (!isFinite(v)) return '<span class="empty">—</span>';
   const sym = curSym(p.currency_code);
   const abs = Math.abs(v);
   let body;
   if (abs > 0 && abs < 1) {
-    body = v.toFixed(3).replace('.', ',');
+    body = v.toFixed(3).replace(/\.?0+$/, '').replace('.', ',');
   } else {
-    body = v.toFixed(v % 1 === 0 ? 0 : 2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ').replace('.', ',');
+    body = v.toFixed(v % 1 === 0 ? 0 : 2)
+            .replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+            .replace('.', ',');
   }
-  return esc(sym + body);
+  return `<span class="cur">${esc(sym)}</span>${esc(body)}`;
 }
 
-function showNotice(msg, isErr){
+function showNotice(msg, isErr) {
   const el = document.getElementById('notice');
   el.textContent = msg;
   el.className = 'notice show' + (isErr ? ' err' : '');
 }
 
-function render(data){
+function render(data) {
   const byName = new Map();
   for (const it of (data.items || [])) byName.set(it.name, it);
 
   const pt = data.price_types || {};
   const metaEl = document.getElementById('pmeta');
-  metaEl.innerHTML = `
-    Без ПДВ: <b>${esc(pt.no_vat && pt.no_vat.name || '—')}</b> &nbsp;·&nbsp;
-    З ПДВ: <b>${esc(pt.with_vat && pt.with_vat.name || '—')}</b>
-  `;
+  let metaHtml = `Без ПДВ: <b>${esc(pt.no_vat && pt.no_vat.name || '—')}</b> &nbsp;·&nbsp; З ПДВ: <b>${esc(pt.with_vat && pt.with_vat.name || '—')}</b>`;
 
   const parts = [];
   let totalMatched = 0, totalItems = 0;
-  for (const grp of PRICE_LIST) {
-    const rows = grp.items.map(name => {
+
+  PRICE_LIST.forEach((grp, idx) => {
+    const num = String(idx + 1).padStart(2, '0');
+    const rows = grp.items.map(item => {
       totalItems++;
-      const it = byName.get(name);
+      const it = byName.get(item.name);
+
+      // "Наявність" за замовчуванням — по matched (є в 1С = в наявності)
+      const inStock = it && it.matched;
+      const stockText = inStock ? 'в наявності' : 'в дорозі';
+      const stockClass = inStock ? '' : 'wait';
+
       if (!it || !it.matched) {
-        return `<tr class="nomatch">
-          <td class="name">${esc(name)}<span class="m-hint">не знайдено в 1С</span></td>
-          <td class="num"><span class="dash">—</span></td>
-          <td class="num"><span class="dash">—</span></td>
-        </tr>`;
+        return `
+        <div class="row nomatch">
+          <div class="prod-name">
+            <span>${esc(item.name)}</span>
+            ${item.spec ? `<span class="prod-sub">${esc(item.spec)}</span>` : ''}
+          </div>
+          <div class="price desktop-only empty">—</div>
+          <div class="price desktop-only empty">—</div>
+          <div class="desktop-only"><span class="stock ${stockClass}"><span class="led"></span>${stockText}</span></div>
+
+          <div class="meta mobile-meta">
+            <div class="price empty">не знайдено в 1С</div>
+          </div>
+          <span class="stock mobile-meta ${stockClass}"><span class="led"></span>${stockText}</span>
+        </div>`;
       }
+
       totalMatched++;
-      const hint = it.matched_name && it.matched_name !== name
-        ? `<span class="m-hint">1С: ${esc(it.matched_name)}${it.matched_article ? ' · арт. ' + esc(it.matched_article) : ''}</span>`
-        : (it.matched_article ? `<span class="m-hint">арт. ${esc(it.matched_article)}</span>` : '');
-      return `<tr>
-        <td class="name">${esc(name)}${hint}</td>
-        <td class="num">${fmtPrice(it.no_vat)}</td>
-        <td class="num">${fmtPrice(it.with_vat)}</td>
-      </tr>`;
+      const matchHint = it.matched_name && it.matched_name !== item.name
+        ? `1С: ${it.matched_name}${it.matched_article ? ' · арт. ' + it.matched_article : ''}`
+        : (it.matched_article ? `арт. ${it.matched_article}` : item.spec);
+
+      return `
+      <div class="row">
+        <div class="prod-name">
+          <span>${esc(item.name)}</span>
+          ${matchHint ? `<span class="prod-sub">${esc(matchHint)}</span>` : ''}
+        </div>
+        <div class="price desktop-only">${fmtPrice(it.no_vat)}</div>
+        <div class="price desktop-only">${fmtPrice(it.with_vat)}</div>
+        <div class="desktop-only"><span class="stock ${stockClass}"><span class="led"></span>${stockText}</span></div>
+
+        <div class="meta mobile-meta">
+          <div class="price"><span class="meta-label">без ПДВ</span>${fmtPrice(it.no_vat)}</div>
+          <div class="price"><span class="meta-label">з ПДВ</span>${fmtPrice(it.with_vat)}</div>
+        </div>
+        <span class="stock mobile-meta ${stockClass}"><span class="led"></span>${stockText}</span>
+      </div>`;
     }).join('');
+
     parts.push(`
-      <div class="sect">
-        <div class="sect-head">${esc(grp.category)}</div>
-        <table class="p-tbl">
-          <thead><tr>
-            <th>Товар</th>
-            <th class="num">Гуртова без ПДВ</th>
-            <th class="num">Гуртова з ПДВ</th>
-          </tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
+      <section class="category">
+        <div class="cat-head">
+          <span class="num">${num}</span>
+          <h2>${esc(grp.category)}</h2>
+        </div>
+        <div class="row-head">
+          <div>Назва</div>
+          <div class="num-col">Ціна без ПДВ</div>
+          <div class="num-col">Ціна з ПДВ</div>
+          <div>Наявність</div>
+        </div>
+        ${rows}
+      </section>
     `);
-  }
+  });
 
   document.getElementById('content').innerHTML = parts.join('');
-  metaEl.innerHTML += ` &nbsp;·&nbsp; знайдено <b>${totalMatched}/${totalItems}</b>`;
+  metaEl.innerHTML = metaHtml + ` &nbsp;·&nbsp; знайдено <b>${totalMatched}/${totalItems}</b>`;
 }
 
-async function load(){
+async function load() {
   const items = [];
   for (const grp of PRICE_LIST) {
-    for (const name of grp.items) items.push({ name, category: grp.category });
+    for (const item of grp.items) items.push({ name: item.name, category: grp.category });
   }
-  const qs = `pt_no=${encodeURIComponent(PT_NO_VAT)}&pt_with=${encodeURIComponent(PT_WITH_VAT)}`;
-  const res = await fetch(`${API}/?action=prices_1c_list&${qs}`, {
+  const res = await fetch(`${API}/?action=prices_1c_list`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ items }),
@@ -233,7 +464,12 @@ async function load(){
   if (!res.ok) {
     if (data && data.error === 'price_types_not_found') {
       const types = (data.all_types || []).map(t => `• ${t.description}`).join('\n');
-      showNotice('У 1С не знайдено видів цін «Гуртова без ПДВ» / «Гуртова з ПДВ». Виправ назву в 1С або передай ?pt_no=<ref>&pt_with=<ref>.\n\nДоступні види:\n' + types, true);
+      showNotice(
+        'У 1С не знайдено видів цін «Гуртова без ПДВ» / «Гуртова з ПДВ». ' +
+        'Виправ назву в 1С або передай ?pt_no=<ref>&pt_with=<ref>.\n\n' +
+        'Доступні види:\n' + types,
+        true
+      );
       document.getElementById('content').innerHTML = '';
       return;
     }
