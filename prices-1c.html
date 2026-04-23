@@ -245,12 +245,86 @@ footer { border-top: 2px solid var(--ink); padding: 32px; margin-top: 40px; back
 }
 @media (min-width: 861px) { .row .mobile-meta { display: none; } }
 
+/* Print / PDF mode — компактний A4. Правила дублюються для @media print
+   і body.pdf-mode (останній використовується html2pdf для snapshot). */
+@page { size: A4; margin: 10mm; }
+
+.print-view .topbar,
+.print-view .catnav,
+.print-view footer,
+.print-view .btn,
+.print-view .notice,
+.print-view .loader { display: none !important; }
+
+.print-view,
+.print-view .hero,
+.print-view main { background: #fff !important; }
+
+.print-view .hero { padding: 0 0 10px !important; max-width: none; }
+.print-view .hero h1 { display: none; }
+.print-view .hero-label { font-size: 10px !important; margin-bottom: 6px !important; }
+.print-view .hero-meta { gap: 10px !important; max-width: none !important; margin-top: 8px !important; }
+.print-view .hero-meta .label { font-size: 8.5px !important; margin-bottom: 2px !important; }
+.print-view .hero-meta .value { font-size: 10.5px !important; line-height: 1.3 !important; }
+.print-view .hero-meta.primary { grid-template-columns: repeat(3, 1fr) !important; }
+.print-view .hero-meta.contacts { margin-top: 8px !important; padding-top: 6px !important; max-width: none !important; }
+.print-view .tg-icon { width: 18px !important; height: 18px !important; }
+.print-view .tg-icon svg { width: 10px !important; height: 10px !important; }
+
+.print-view main { padding: 0 !important; max-width: none !important; }
+.print-view .category { margin-top: 10px !important; break-inside: avoid-page; page-break-inside: avoid; }
+.print-view .category:first-child { margin-top: 4px !important; }
+.print-view .cat-head { padding-bottom: 3px !important; margin-bottom: 0 !important; border-bottom-width: 1.5px !important; }
+.print-view .cat-head h2 { font-size: 12.5px !important; }
+.print-view .cat-head .num { font-size: 9.5px !important; }
+.print-view .row-head, .print-view .row {
+  grid-template-columns: minmax(0, 1fr) 70px 70px 80px 50px !important;
+  gap: 6px !important; padding: 4px 2px !important;
+}
+.print-view .row-head div { font-size: 8px !important; letter-spacing: 0.02em !important; }
+.print-view .prod-name { font-size: 10px !important; }
+.print-view .prod-sub { font-size: 8.5px !important; margin-top: 1px !important; }
+.print-view .price { font-size: 10px !important; }
+.print-view .stock { width: auto !important; padding: 1px 6px !important; font-size: 9px !important; border-width: 1px !important; }
+.print-view .stock .led { width: 5px !important; height: 5px !important; }
+.print-view .ds-link { font-size: 8.5px !important; }
+.print-view .row .mobile-meta { display: none !important; }
+.print-view .row .desktop-only { display: block !important; }
+
+/* Auto-apply всі `.print-view`-правила у @media print та з .pdf-mode на body. */
+@media print { body { --print: 1; } }
 @media print {
-  .topbar, .catnav, footer, .btn { display: none !important; }
-  body { background: #fff; }
-  .hero { padding: 20px 0; }
-  .category { break-inside: avoid; margin-top: 24px; }
-  .row { padding: 8px 0; page-break-inside: avoid; }
+  .topbar, .catnav, footer, .btn, .notice, .loader { display: none !important; }
+  body, .hero, main { background: #fff !important; }
+  .hero { padding: 0 0 10px !important; max-width: none; }
+  .hero h1 { display: none; }
+  .hero-label { font-size: 10px !important; margin-bottom: 6px !important; }
+  .hero-meta { gap: 10px !important; max-width: none !important; margin-top: 8px !important; }
+  .hero-meta .label { font-size: 8.5px !important; margin-bottom: 2px !important; }
+  .hero-meta .value { font-size: 10.5px !important; line-height: 1.3 !important; }
+  .hero-meta.primary { grid-template-columns: repeat(3, 1fr) !important; }
+  .hero-meta.contacts { margin-top: 8px !important; padding-top: 6px !important; max-width: none !important; }
+  .tg-icon { width: 18px !important; height: 18px !important; }
+  .tg-icon svg { width: 10px !important; height: 10px !important; }
+  main { padding: 0 !important; max-width: none !important; }
+  .category { margin-top: 10px !important; break-inside: avoid-page; page-break-inside: avoid; }
+  .category:first-child { margin-top: 4px !important; }
+  .cat-head { padding-bottom: 3px !important; margin-bottom: 0 !important; border-bottom-width: 1.5px !important; }
+  .cat-head h2 { font-size: 12.5px !important; }
+  .cat-head .num { font-size: 9.5px !important; }
+  .row-head, .row {
+    grid-template-columns: minmax(0, 1fr) 70px 70px 80px 50px !important;
+    gap: 6px !important; padding: 4px 2px !important;
+  }
+  .row-head div { font-size: 8px !important; letter-spacing: 0.02em !important; }
+  .prod-name { font-size: 10px !important; }
+  .prod-sub { font-size: 8.5px !important; margin-top: 1px !important; }
+  .price { font-size: 10px !important; }
+  .stock { width: auto !important; padding: 1px 6px !important; font-size: 9px !important; border-width: 1px !important; }
+  .stock .led { width: 5px !important; height: 5px !important; }
+  .ds-link { font-size: 8.5px !important; }
+  .row .mobile-meta { display: none !important; }
+  .row .desktop-only { display: block !important; }
 }
 </style>
 </head>
@@ -264,7 +338,7 @@ footer { border-top: 2px solid var(--ink); padding: 32px; margin-top: 40px; back
     </a>
     <div class="topbar-spacer"></div>
     <div class="topbar-actions">
-      <button class="btn" onclick="window.print()">
+      <button class="btn" id="pdfBtn" onclick="downloadPDF()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         <span class="hide-sm">Завантажити PDF</span>
       </button>
@@ -442,14 +516,12 @@ function renderCatalog(priceByNom1c) {
   const catalog = document.getElementById('catalog');
   catalog.innerHTML = '';
 
-  DATA.forEach((c, idx) => {
+  DATA.forEach(c => {
     const sec = document.createElement('section');
     sec.className = 'category';
     sec.id = c.slug;
-    const num = String(idx + 1).padStart(2, '0');
     sec.innerHTML = `
       <div class="cat-head">
-        <span class="num">${num}</span>
         <h2>${esc(c.cat)}</h2>
       </div>
       <div class="row-head">
@@ -539,6 +611,55 @@ loadPrices().catch(err => {
   renderCatalog(new Map());
   showNotice('Помилка: ' + err.message, true);
 });
+
+// ============================================================
+// PDF DOWNLOAD (lazy-load html2pdf.js з CDN при першому кліку)
+// ============================================================
+let _pdfLibPromise = null;
+function loadPdfLib() {
+  if (_pdfLibPromise) return _pdfLibPromise;
+  _pdfLibPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    s.onload = () => resolve(window.html2pdf);
+    s.onerror = () => reject(new Error('CDN html2pdf недоступний'));
+    document.head.appendChild(s);
+  });
+  return _pdfLibPromise;
+}
+
+async function downloadPDF() {
+  const btn = document.getElementById('pdfBtn');
+  const label = btn.querySelector('.hide-sm');
+  const origLabel = label ? label.textContent : '';
+  btn.disabled = true;
+  if (label) label.textContent = 'Готуємо PDF…';
+  document.body.classList.add('print-view');
+  try {
+    const html2pdf = await loadPdfLib();
+    const today = new Date();
+    const yyyymmdd = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    await html2pdf()
+      .from(document.body)
+      .set({
+        filename:    `React-Прайс-${yyyymmdd}.pdf`,
+        margin:      [10, 10, 10, 10],
+        image:       { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 1200 },
+        jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:   { mode: ['css', 'avoid-all'] },
+      })
+      .save();
+  } catch (e) {
+    // Fallback — стандартний print dialog (у ньому є «Зберегти як PDF»).
+    showNotice('Не вдалося згенерувати PDF автоматично — відкриваємо системний діалог друку.', false);
+    window.print();
+  } finally {
+    document.body.classList.remove('print-view');
+    btn.disabled = false;
+    if (label) label.textContent = origLabel;
+  }
+}
 </script>
 
 </body>
