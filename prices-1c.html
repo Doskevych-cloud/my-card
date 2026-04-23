@@ -115,17 +115,34 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ---------- CATEGORY NAV ---------- */
-/* Sticky під .topbar. top = висота topbar (112px desktop / 80px mobile).
-   full-width bg + backdrop-filter щоб контент під час скролу не просвічувався. */
-.catnav {
+/* Sticky bar з full-width фоном. Внутрішній .catnav тримає max-width 1280px
+   (як topbar-inner) і вирівнюється по лівому краю. */
+.catnav-bar {
   position: sticky; top: 112px; z-index: 40;
-  margin: 0; padding: 12px 32px;
   background: var(--bg);
   border-bottom: 1px solid var(--line);
+}
+.catnav {
+  max-width: 1280px; margin: 0 auto;
+  padding: 12px 32px;
   display: flex; gap: 6px; flex-wrap: wrap;
-  justify-content: center; max-width: none;
 }
 .catnav > * { flex: 0 0 auto; }
+
+/* Global sticky table header — показується разом з catnav, підписує колонки. */
+.col-head {
+  max-width: 1320px; margin: 0 auto;
+  padding: 8px 36px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 130px 130px 140px 90px;
+  align-items: center; gap: 16px;
+  border-top: 1px solid var(--line);
+}
+.col-head > div {
+  font-size: 10.5px; color: var(--ink-3); font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap;
+}
+.col-head .num-col { text-align: right; }
 .catnav a {
   padding: 8px 14px; border: 1px solid var(--line);
   font-size: 12px; color: var(--ink-2); background: var(--bg-elev);
@@ -136,7 +153,7 @@ a { color: inherit; text-decoration: none; }
 
 /* ---------- CATALOG ---------- */
 main { max-width: 1320px; margin: 0 auto; padding: 16px 32px 72px; }
-.category { margin-top: 44px; scroll-margin-top: 100px; }
+.category { margin-top: 44px; scroll-margin-top: 220px; }
 .category:first-child { margin-top: 24px; }
 .cat-head {
   display: flex; align-items: baseline; gap: 14px;
@@ -224,9 +241,11 @@ footer { border-top: 2px solid var(--ink); padding: 32px; margin-top: 40px; back
   .btn span.hide-sm { display: none; }
   .hero { padding: 36px 18px 24px; }
   .hero-meta { gap: 18px; padding-top: 20px; margin-top: 20px; }
-  .catnav { top: 80px; padding: 8px 18px; gap: 6px; }
+  .catnav-bar { top: 80px; }
+  .catnav { padding: 8px 18px; gap: 6px; }
+  .col-head { display: none; }
   main { padding: 12px 18px 56px; }
-  .category { margin-top: 36px; }
+  .category { margin-top: 36px; scroll-margin-top: 130px; }
   .cat-head h2 { font-size: 19px; }
   .cat-head { padding-bottom: 10px; }
   .cat-head .count { font-size: 10px; }
@@ -387,7 +406,16 @@ footer { border-top: 2px solid var(--ink); padding: 32px; margin-top: 40px; back
   </div>
 </section>
 
-<nav class="catnav" id="catnav"></nav>
+<div class="catnav-bar">
+  <nav class="catnav" id="catnav"></nav>
+  <div class="col-head">
+    <div>Назва</div>
+    <div class="num-col">Ціна без ПДВ</div>
+    <div class="num-col">Ціна з ПДВ</div>
+    <div>Наявність</div>
+    <div>Datasheet</div>
+  </div>
+</div>
 
 <div id="notice" class="notice"></div>
 <main id="catalog"><div class="loader">Завантаження цін…</div></main>
@@ -458,8 +486,8 @@ function buildCatNav() {
       const el = document.getElementById(id);
       if (el) {
         e.preventDefault();
-        const y = el.getBoundingClientRect().top + window.pageYOffset - 80;
-        window.scrollTo({ top: y, behavior: 'smooth' });
+        // scroll-margin-top на .category дасть правильний offset під sticky topbar+catnav.
+        el.scrollIntoView({ block: 'start', behavior: 'smooth' });
       }
     });
   });
@@ -480,13 +508,6 @@ function renderCatalog() {
     sec.innerHTML = `
       <div class="cat-head">
         <h2>${esc(c.cat)}</h2>
-      </div>
-      <div class="row-head">
-        <div>Назва</div>
-        <div class="num-col">Ціна без ПДВ${c.unit ? ', ' + esc(c.unit) : ''}</div>
-        <div class="num-col">Ціна з ПДВ${c.unit ? ', ' + esc(c.unit) : ''}</div>
-        <div>Наявність</div>
-        <div>Datasheet</div>
       </div>
     `;
 
