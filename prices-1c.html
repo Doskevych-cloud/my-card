@@ -1,32 +1,14 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="uk">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Прайс Реакт — ціни з 1С</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Прайс-лист · Сонячне обладнання · React</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
-<script>
-  try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
-</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* ==========================================================
-   THEME TOKENS — light/dark variants
-   ========================================================== */
 :root {
-  --bg: #0a0a0a;
-  --bg-elev: #141414;
-  --ink: #f5f5f5;
-  --ink-2: #d4d4d4;
-  --ink-3: #a3a3a3;
-  --ink-4: #525252;
-  --line: #262626;
-  --line-2: #1f1f1f;
-  --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
-  --accent: #ff8319;
-}
-:root[data-theme="light"] {
   --bg: #fafaf7;
   --bg-elev: #ffffff;
   --ink: #1a1a1a;
@@ -35,10 +17,11 @@
   --ink-4: #a8a8a8;
   --line: #e2e2e0;
   --line-2: #ededeb;
-  --accent: #e07017;
+  --ok: #2a2a2a;
+  --wait: #9a9a9a;
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
 }
-
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -52,314 +35,377 @@ body {
 }
 a { color: inherit; text-decoration: none; }
 
-/* ==========================================================
-   PAGE SHELL
-   ========================================================== */
-.wrap {
-  max-width: 1320px;
-  margin: 0 auto;
-  padding: 24px 32px 72px;
+.contact-row { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+.contact-row a { display: inline-flex; align-items: center; }
+.tg-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px;
+  border: 1px solid var(--ink); color: var(--ink);
+  transition: background .15s ease, color .15s ease;
+  flex-shrink: 0;
 }
+.tg-icon:hover { background: var(--ink); color: #fff; }
+.tg-icon svg { width: 13px; height: 13px; display: block; }
 
-/* Hero / page header */
-.page-hero {
-  padding: 28px 0 20px;
+/* ---------- HEADER ---------- */
+.topbar {
+  border-bottom: 1px solid var(--line);
+  background: rgba(250,250,247,0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  position: sticky; top: 0; z-index: 50;
 }
+.topbar-inner {
+  max-width: 1280px; margin: 0 auto;
+  padding: 20px 32px;
+  display: flex; align-items: center; gap: 24px;
+}
+.brand { display: flex; align-items: center; gap: 16px; }
+.brand img { height: 72px; width: auto; display: block; }
+.brand small {
+  color: var(--ink-3); font-weight: 500; font-size: 11px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  border-left: 1px solid var(--line); padding-left: 14px;
+}
+.topbar-spacer { flex: 1; }
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 18px; border-radius: 0;
+  font-size: 13px; font-weight: 600;
+  border: 1.5px solid var(--ink);
+  background: transparent; color: var(--ink); cursor: pointer;
+  transition: transform .08s ease, background .15s ease, color .15s ease;
+  white-space: nowrap; font-family: inherit; letter-spacing: -0.005em;
+}
+.btn:hover { background: var(--ink); color: #fff; }
+.btn:active { transform: translate(1px, 1px); }
+.btn svg { width: 14px; height: 14px; }
+
+/* ---------- HERO ---------- */
+.hero { max-width: 1280px; margin: 0 auto; padding: 40px 32px 28px; }
 .hero-label {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--ink-3);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  margin-bottom: 12px;
-  font-weight: 500;
+  font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: 0.12em;
+  margin-bottom: 16px; font-weight: 500;
 }
-.page-hero h1 {
-  font-size: clamp(24px, 3vw, 32px);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
-  margin-bottom: 8px;
+.hero h1 {
+  margin: 0; font-size: clamp(36px, 6vw, 72px);
+  font-weight: 800; letter-spacing: -0.04em; line-height: 0.95;
+  color: var(--ink); max-width: 900px;
 }
-.page-hero .sub {
-  font-size: 13px;
-  color: var(--ink-3);
+.hero-meta {
+  margin-top: 28px; display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px; max-width: 1000px;
 }
-.page-hero .meta {
-  margin-top: 14px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--ink-3);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
+.hero-meta .label {
+  font-family: var(--mono); font-size: 10px; color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: 0.1em;
+  margin-bottom: 6px; font-weight: 500;
 }
-.page-hero .meta b { color: var(--ink); font-weight: 600; }
-
-/* Notice banner */
-.notice {
-  margin: 12px 0 16px;
-  padding: 12px 14px;
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  font-size: 13px;
-  color: var(--ink-2);
-  display: none;
-  white-space: pre-wrap;
-}
-.notice.show { display: block; }
-.notice.err {
-  color: #d93025;
-  border-color: #d93025;
-  border-left-width: 3px;
-}
-:root[data-theme="dark"] .notice.err { color: #ff6b5b; border-color: #e74c3c; }
-
-/* Loader */
-.loader {
-  padding: 60px 20px;
-  text-align: center;
-  color: var(--ink-3);
-  font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.hero-meta .value { font-size: 14px; color: var(--ink); font-weight: 500; line-height: 1.45; }
+.hero-meta .value a:not(.tg-icon) { border-bottom: 1px solid var(--ink-4); }
+.hero-meta .value a:not(.tg-icon):hover { border-color: var(--ink); }
+.hero-meta.primary { grid-template-columns: repeat(3, minmax(200px, 1fr)); margin-top: 0; }
+.hero-meta.contacts {
+  margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); max-width: 700px;
 }
 
-/* ==========================================================
-   CATEGORIES
-   ========================================================== */
-.category {
-  margin-top: 40px;
+/* ---------- CATEGORY NAV ---------- */
+.catnav {
+  max-width: 1280px; margin: 0 auto; padding: 0 32px 16px;
+  display: flex; gap: 6px; flex-wrap: wrap;
 }
-.category:first-child { margin-top: 20px; }
+.catnav a {
+  padding: 8px 14px; border: 1px solid var(--line);
+  font-size: 12px; color: var(--ink-2); background: var(--bg-elev);
+  transition: all .15s ease; font-weight: 500; letter-spacing: -0.005em;
+}
+.catnav a:hover { border-color: var(--ink); color: var(--ink); }
+.catnav a .cnt { color: var(--ink-4); margin-left: 6px; font-family: var(--mono); font-size: 11px; font-weight: 400; }
+
+/* ---------- CATALOG ---------- */
+main { max-width: 1320px; margin: 0 auto; padding: 16px 32px 72px; }
+.category { margin-top: 44px; scroll-margin-top: 100px; }
+.category:first-child { margin-top: 24px; }
 .cat-head {
-  display: flex;
-  align-items: baseline;
-  gap: 14px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid var(--ink);
-  margin-bottom: 2px;
+  display: flex; align-items: baseline; gap: 14px;
+  padding-bottom: 10px; border-bottom: 2px solid var(--ink); margin-bottom: 2px;
 }
-.cat-head .num {
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--ink-3);
-  letter-spacing: 0.05em;
-  font-weight: 500;
-}
-.cat-head h2 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
+.cat-head .num { font-family: var(--mono); font-size: 12px; color: var(--ink-3); letter-spacing: 0.05em; font-weight: 500; }
+.cat-head h2 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.025em; }
+.cat-head .count { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--ink-3); font-weight: 500; }
 
-/* ==========================================================
-   TABLE ROWS
-   ========================================================== */
 .row-head, .row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 150px 150px 140px;
-  align-items: center;
-  gap: 16px;
-  padding: 12px 4px;
+  grid-template-columns: minmax(0, 1fr) 130px 130px 140px 90px;
+  align-items: center; gap: 16px; padding: 12px 4px;
   border-bottom: 1px solid var(--line-2);
 }
-.row-head {
-  padding: 10px 4px;
-  border-bottom: 1px solid var(--line);
-}
+.row-head { padding: 10px 4px; border-bottom: 1px solid var(--line); }
 .row-head div {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ink-3);
-  font-weight: 500;
-  white-space: nowrap;
+  font-family: 'Inter', system-ui, sans-serif; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3);
+  font-weight: 500; white-space: nowrap; word-spacing: -0.1em;
 }
 .row-head .num-col { text-align: right; }
-
 .row { transition: background .15s ease; }
 .row:hover { background: var(--bg-elev); }
-.row.nomatch { opacity: 0.55; }
 
-.prod-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ink);
-  letter-spacing: -0.005em;
-  min-width: 0;
-}
+.prod-name { font-size: 14px; font-weight: 600; color: var(--ink); letter-spacing: -0.005em; min-width: 0; }
 .prod-sub {
-  display: block;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--ink-3);
-  margin-top: 3px;
-  font-weight: 400;
-  letter-spacing: 0;
+  display: block; font-family: var(--mono); font-size: 11px;
+  color: var(--ink-3); margin-top: 2px; letter-spacing: 0; font-weight: 400;
 }
 
 .price {
-  font-family: var(--mono);
-  font-size: 14px;
-  font-weight: 500;
-  text-align: right;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
+  font-family: var(--mono); font-size: 14px; font-weight: 500;
+  text-align: right; color: var(--ink); font-variant-numeric: tabular-nums;
 }
-.price .cur { color: var(--ink-3); font-weight: 400; margin-right: 2px; }
 .price.empty { color: var(--ink-4); font-weight: 400; }
+.price .cur { color: var(--ink-3); font-weight: 400; margin-left: 2px; }
 
 .stock {
-  font-size: 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 12px;
-  background: transparent;
-  border: 1px solid var(--ink);
-  width: 130px;
-  box-sizing: border-box;
-  font-weight: 500;
-  white-space: nowrap;
-  color: var(--ink);
+  font-size: 12px; display: inline-flex; align-items: center; gap: 8px;
+  padding: 4px 12px; background: transparent; border: 1px solid var(--ink);
+  width: 120px; box-sizing: border-box; font-weight: 500; white-space: nowrap;
+  color: var(--ink); justify-content: flex-start;
 }
-.stock .led { width: 8px; height: 8px; background: var(--ink); flex-shrink: 0; }
-.stock.wait {
-  color: var(--ink-3);
-  border-color: var(--ink-4);
-}
+.stock .led { width: 8px; height: 8px; background: var(--ink); flex-shrink: 0; border-radius: 0; }
+.stock.wait { color: var(--ink-3); border-color: var(--ink-4); }
 .stock.wait .led { background: var(--ink-3); }
 
-/* ==========================================================
-   MOBILE
-   ========================================================== */
+.ds-link {
+  font-size: 12px; color: var(--ink-3);
+  display: inline-flex; align-items: center; gap: 5px;
+  border-bottom: 1px solid var(--line); padding-bottom: 1px;
+  width: fit-content; font-weight: 500;
+}
+.ds-link:hover { color: var(--ink); border-color: var(--ink); }
+.ds-link.none { color: var(--ink-4); border: none; font-weight: 400; }
+
+/* ---------- FOOTER ---------- */
+footer { border-top: 2px solid var(--ink); padding: 32px; margin-top: 40px; background: var(--bg-elev); }
+.footer-inner { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 1fr auto; gap: 40px; align-items: start; }
+.footer-inner .muted { font-family: var(--mono); font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500; }
+.footer-inner p { margin: 6px 0 0; font-size: 13px; color: var(--ink-2); }
+.footer-inner a { border-bottom: 1px solid var(--line); }
+.footer-inner a:hover { border-color: var(--ink); }
+
+/* ---------- LOADER / NOTICE ---------- */
+.loader {
+  max-width: 1280px; margin: 0 auto; padding: 40px 32px;
+  font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: 0.12em; text-align: center;
+}
+.notice {
+  max-width: 1280px; margin: 12px auto; padding: 12px 16px;
+  border: 1px solid var(--ink-4); font-size: 13px; color: var(--ink-2);
+  display: none; white-space: pre-wrap;
+}
+.notice.show { display: block; }
+.notice.err { border-color: #d93025; color: #d93025; border-left-width: 3px; }
+
+/* ---------- MOBILE ---------- */
 @media (max-width: 860px) {
-  .wrap { padding: 12px 18px 48px; }
-  .page-hero { padding: 14px 0 12px; }
-  .page-hero h1 { font-size: 22px; }
-  .category { margin-top: 32px; }
-  .cat-head h2 { font-size: 18px; }
+  .topbar-inner { padding: 14px 18px; gap: 12px; }
+  .brand img { height: 52px; }
+  .brand small { display: none; }
+  .btn span.hide-sm { display: none; }
+  .hero { padding: 36px 18px 24px; }
+  .hero-meta { gap: 18px; padding-top: 20px; margin-top: 20px; }
+  .catnav { padding: 0 18px 12px; gap: 6px; }
+  main { padding: 12px 18px 56px; }
+  .category { margin-top: 36px; }
+  .cat-head h2 { font-size: 19px; }
+  .cat-head { padding-bottom: 10px; }
+  .cat-head .count { font-size: 10px; }
 
   .row-head { display: none; }
   .row {
-    grid-template-columns: 1fr auto;
-    gap: 8px;
-    padding: 14px 0;
+    grid-template-columns: 1fr auto; gap: 8px; padding: 14px 0;
     grid-auto-flow: row;
-    grid-template-areas:
-      "name stock"
-      "meta meta";
+    grid-template-areas: "name stock" "meta meta";
   }
   .row > .prod-name { grid-area: name; }
+  .row > .prod-name .prod-sub { margin-top: 3px; font-size: 11px; color: var(--ink-3); }
   .row > .stock { grid-area: stock; justify-self: end; align-self: start; }
   .row > .meta { grid-area: meta; display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
   .row > .meta .price { text-align: left; }
   .row > .meta .meta-label {
     font-family: var(--mono); font-size: 10px; color: var(--ink-3);
-    text-transform: uppercase; letter-spacing: 0.08em; margin-right: 4px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.1em; margin-right: 4px; font-weight: 500;
   }
+  .row > .meta .ds-link { font-size: 11px; }
   .row .desktop-only { display: none; }
   .row .mobile-meta { display: flex; }
 }
-@media (min-width: 861px) {
-  .row .mobile-meta { display: none; }
+@media (min-width: 861px) { .row .mobile-meta { display: none; } }
+
+@media print {
+  .topbar, .catnav, footer, .btn { display: none !important; }
+  body { background: #fff; }
+  .hero { padding: 20px 0; }
+  .category { break-inside: avoid; margin-top: 24px; }
+  .row { padding: 8px 0; page-break-inside: avoid; }
 }
 </style>
 </head>
 <body>
 
-<div class="wrap">
-  <div class="page-hero">
-    <div class="hero-label">Прайс · ціни з 1С</div>
-    <h1>Прайс Реакт</h1>
-    <div class="sub">Регістр «ЦеныНоменклатуры»</div>
-    <div class="meta" id="pmeta"></div>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="#" class="brand">
+      <img src="assets/logo-transparent.png" alt="React">
+      <small class="hide-sm">швидка дистрибуція обладнання з альтернативної енергетики</small>
+    </a>
+    <div class="topbar-spacer"></div>
+    <div class="topbar-actions">
+      <button class="btn" onclick="window.print()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        <span class="hide-sm">Завантажити PDF</span>
+      </button>
+    </div>
   </div>
+</header>
 
-  <div id="notice" class="notice"></div>
-
-  <div id="content">
-    <div class="loader">Завантаження…</div>
+<section class="hero">
+  <div class="hero-label" id="heroDate">Прайс</div>
+  <div class="hero-meta primary">
+    <div>
+      <div class="label">Офіс</div>
+      <div class="value">м. Одеса,<br>вул. Велика Арнаутська, 15</div>
+    </div>
+    <div>
+      <div class="label">Склад · Київ</div>
+      <div class="value">м. Вишневе,<br>вул. Промислова, 10</div>
+    </div>
+    <div>
+      <div class="label">Склад · Одеса</div>
+      <div class="value">вул. Чигиринська, 21</div>
+    </div>
   </div>
-</div>
+  <div class="hero-meta contacts">
+    <div>
+      <div class="label">Катерина</div>
+      <div class="value contact-row">
+        <a href="tel:+380675777340">+380 67 577 73 40</a>
+        <a class="tg-icon" href="https://t.me/kateryna_react" target="_blank" aria-label="Telegram"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg></a>
+      </div>
+    </div>
+    <div>
+      <div class="label">Олександра</div>
+      <div class="value contact-row">
+        <a href="tel:+380633256110">+380 63 325 61 10</a>
+        <a class="tg-icon" href="https://t.me/oleksandra_react" target="_blank" aria-label="Telegram"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<nav class="catnav" id="catnav"></nav>
+
+<div id="notice" class="notice"></div>
+<main id="catalog"><div class="loader">Завантаження цін з 1С…</div></main>
+
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="muted">Умови</div>
+      <p>Ціни вказані у доларах США (USD). Остаточна вартість формується за курсом АТ КБ "Приватбанк" на день оплати.</p>
+    </div>
+    <div>
+      <div class="muted">© 2026 React</div>
+      <p style="text-align:right">Швидка дистрибуція<br>альтернативної енергетики</p>
+    </div>
+  </div>
+</footer>
 
 <script>
+// ============================================================
+// КОНФІГ
+// ============================================================
 const API = 'https://price-api.doskevich.workers.dev';
 
-// Ref_Key видів цін з 1С (Catalog_ВидыЦен) — хардкод, щоб не залежати від
-// fuzzy-regex у воркері при інших "Гуртова..." у довіднику.
+// Види цін з 1С (Catalog_ВидыЦен).
+// Менеджери наповнять пізніше — якщо зараз пусто, сторінка покаже «—».
 const PT_NO_VAT   = '36084004-bfb6-11f0-86f2-107c6149f3d7'; // Гуртова ціна, без ПДВ
 const PT_WITH_VAT = '6a417c18-3eec-11f1-870a-107c6149f3d7'; // Гуртова ціна, з ПДВ
 
-// Структура прайсу — категорії + специфікації (друга строка під назвою).
-// ВАЖЛИВО: поле `name` має точно збігатися з назвою в 1С для маппінгу.
-const PRICE_LIST = [
-  { category: 'PV-модулі', items: [
-    { name: 'Tongwei TWMNH-66HD - 625 Вт', spec: '625 Вт · моно N-type' },
-    { name: 'Tongwei TWMNH-66HD - 630 Вт', spec: '630 Вт · моно N-type' },
-    { name: 'Hanersun HN18N-72HT - 585 Вт', spec: '585 Вт · моно N-type' },
-  ]},
-  { category: 'Гібридні інвертори', items: [
-    { name: 'Deye SUN-6K-SG05LP1-EU-AM2-P',  spec: '6 кВт · 1-фазний · низьковольтний' },
-    { name: 'Deye SUN-8K-SG05LP1-EU-AM2-P',  spec: '8 кВт · 1-фазний · низьковольтний' },
-    { name: 'Deye SUN-10K-SG02LP1-EU-AM3',   spec: '10 кВт · 1-фазний · низьковольтний' },
-    { name: 'Deye SUN-10K-SG05LP3-EU-SM2',   spec: '10 кВт · 3-фазний · низьковольтний' },
-    { name: 'Deye SUN-12K-SG02LP1-EU-AM3',   spec: '12 кВт · 1-фазний · низьковольтний' },
-    { name: 'Deye SUN-12K-SG05LP3-EU-SM2',   spec: '12 кВт · 3-фазний · низьковольтний' },
-    { name: 'Deye SUN-12K-SG01HP3-EU-AM2',   spec: '12 кВт · 3-фазний · високовольтний' },
-    { name: 'Deye SUN-15K-SG05LP3-EU-SM2',   spec: '15 кВт · 3-фазний · низьковольтний' },
-    { name: 'Deye SUN-15K-SG01HP3-EU',       spec: '15 кВт · 3-фазний · високовольтний' },
-    { name: 'Deye SUN-20K-SG05LP3-EU',       spec: '20 кВт · 3-фазний · низьковольтний' },
-    { name: 'Deye SUN-20K-SG01HP3-EU-AM2',   spec: '20 кВт · 3-фазний · високовольтний' },
-    { name: 'Deye SUN-30K-SG02HP3-EU-AM3',   spec: '30 кВт · 3-фазний · високовольтний' },
-    { name: 'Deye SUN-50K-SG01HP3-EU-BM4',   spec: '50 кВт · 3-фазний · високовольтний' },
-    { name: 'Deye SUN-80K-SG02HP3-EU-EM6',   spec: '80 кВт · 3-фазний · високовольтний' },
-  ]},
-  { category: 'Низьковольтні акумулятори', items: [
-    { name: 'Deye SE-G5.1 Pro-B',  spec: '5.12 кВт·год · настінний' },
-    { name: 'Deye SE-F5 Pro-C',    spec: '5.12 кВт·год · стійковий' },
-    { name: 'Dah DHN-LVWES05-G1',  spec: '5.12 кВт·год · настінний' },
-    { name: 'Pylontech US5000',    spec: '4.8 кВт·год · стійковий' },
-  ]},
-  { category: 'Високовольтні акумулятори', items: [
-    { name: 'Deye BOS-G PRO',                                               spec: '5.12 кВт·год · модуль' },
-    { name: 'Deye BOS-G-PDU-2 (BMS для BOS-G PRO)',                         spec: 'BMS для BOS-G PRO' },
-    { name: 'Стійка 19" Deye 3U-HRACK (12 акб + 1 блок керування)',         spec: '12 акб + 1 блок керування' },
-    { name: 'Deye HV BOS-B-Pack16-A3-Pro',                                  spec: 'HV акумуляторний пакет' },
-    { name: 'Deye BOS-B-PDU-2-А (BMS для BOS-B-Pack16-A3-Pro)',             spec: 'BMS для BOS-B-Pack16-A3-Pro' },
-  ]},
-  { category: 'PV-кабель', items: [
-    { name: 'KBE 6 мм (червоний / чорний), бухта (500 м)', spec: 'червоний / чорний · бухта 500 м' },
-  ]},
+// Структура прайсу. ВАЖЛИВО: `nom1c` має точно збігатися з Description товару
+// в 1С (Catalog_Номенклатура) — саме за ним робиться маппінг цін.
+// `name` / `spec` — для візуалу. `ds` — чи є datasheet (PDF додамо пізніше).
+const DATA = [
+  {
+    cat: "PV-модулі", slug: "pv", unit: "$/Вт",
+    items: [
+      { nom1c: "Tongwei TWMNH-66HD - 625 Вт",   name: "Tongwei TWMNH-66HD",   spec: "625 Вт · моно N-type", stock: "в дорозі",     ds: true },
+      { nom1c: "Tongwei TWMNH-66HD - 630 Вт",   name: "Tongwei TWMNH-66HD",   spec: "630 Вт · моно N-type", stock: "в дорозі",     ds: true },
+      { nom1c: "Hanersun HN18N-72HT - 585 Вт",  name: "Hanersun HN18N-72HT",  spec: "585 Вт · моно N-type", stock: "в наявності",  ds: true },
+    ]
+  },
+  {
+    cat: "Гібридні інвертори", slug: "inverters", unit: "$",
+    items: [
+      { nom1c: "Deye SUN-6K-SG05LP1-EU-AM2-P",  name: "Deye SUN-6K-SG05LP1-EU-AM2-P",  spec: "6 кВт · 1-фазний · низьковольтний",  stock: "в наявності", ds: true },
+      { nom1c: "Deye SUN-8K-SG05LP1-EU-AM2-P",  name: "Deye SUN-8K-SG05LP1-EU-AM2-P",  spec: "8 кВт · 1-фазний · низьковольтний",  stock: "в наявності", ds: true },
+      { nom1c: "Deye SUN-10K-SG02LP1-EU-AM3",   name: "Deye SUN-10K-SG02LP1-EU-AM3",   spec: "10 кВт · 1-фазний · низьковольтний", stock: "в наявності", ds: true },
+      { nom1c: "Deye SUN-10K-SG05LP3-EU-SM2",   name: "Deye SUN-10K-SG05LP3-EU-SM2",   spec: "10 кВт · 3-фазний · низьковольтний", stock: "в наявності", ds: true },
+      { nom1c: "Deye SUN-12K-SG02LP1-EU-AM3",   name: "Deye SUN-12K-SG02LP1-EU-AM3",   spec: "12 кВт · 1-фазний · низьковольтний", stock: "в наявності", ds: true },
+      { nom1c: "Deye SUN-12K-SG05LP3-EU-SM2",   name: "Deye SUN-12K-SG05LP3-EU-SM2",   spec: "12 кВт · 3-фазний · низьковольтний", stock: "в наявності", ds: true },
+      { nom1c: "Deye SUN-12K-SG01HP3-EU-AM2",   name: "Deye SUN-12K-SG01HP3-EU-AM2",   spec: "12 кВт · 3-фазний · високовольтний", stock: "в наявності", ds: true },
+      { nom1c: "Deye SUN-15K-SG05LP3-EU-SM2",   name: "Deye SUN-15K-SG05LP3-EU-SM2",   spec: "15 кВт · 3-фазний · низьковольтний", stock: "в наявності", ds: true },
+      { nom1c: "Deye SUN-15K-SG01HP3-EU",       name: "Deye SUN-15K-SG01HP3-EU",       spec: "15 кВт · 3-фазний · високовольтний", stock: "в наявності", ds: true },
+      { nom1c: "Deye SUN-20K-SG05LP3-EU",       name: "Deye SUN-20K-SG05LP3-EU",       spec: "20 кВт · 3-фазний · низьковольтний", stock: "в наявності", ds: true },
+      { nom1c: "Deye SUN-20K-SG01HP3-EU-AM2",   name: "Deye SUN-20K-SG01HP3-EU-AM2",   spec: "20 кВт · 3-фазний · високовольтний", stock: "в наявності", ds: true },
+      { nom1c: "Deye SUN-30K-SG02HP3-EU-AM3",   name: "Deye SUN-30K-SG02HP3-EU-AM3",   spec: "30 кВт · 3-фазний · високовольтний", stock: "в наявності", ds: true },
+      { nom1c: "Deye SUN-50K-SG01HP3-EU-BM4",   name: "Deye SUN-50K-SG01HP3-EU-BM4",   spec: "50 кВт · 3-фазний · високовольтний", stock: "в дорозі",    ds: true },
+      { nom1c: "Deye SUN-80K-SG02HP3-EU-EM6",   name: "Deye SUN-80K-SG02HP3-EU-EM6",   spec: "80 кВт · 3-фазний · високовольтний", stock: "в дорозі",    ds: true },
+    ]
+  },
+  {
+    cat: "Низьковольтні акумулятори", slug: "lv-batt", unit: "$",
+    items: [
+      { nom1c: "Deye SE-G5.1 Pro-B",  name: "Deye SE-G5.1 Pro-B",  spec: "5.12 кВт·год · настінний", stock: "в наявності", ds: true },
+      { nom1c: "Deye SE-F5 Pro-C",    name: "Deye SE-F5 Pro-C",    spec: "5.12 кВт·год · стійковий", stock: "в наявності", ds: true },
+      { nom1c: "Dah DHN-LVWES05-G1",  name: "Dah DHN-LVWES05-G1",  spec: "5.12 кВт·год · настінний", stock: "в наявності", ds: true },
+      { nom1c: "Pylontech US5000",    name: "Pylontech US5000",    spec: "4.8 кВт·год · стійковий",  stock: "в наявності", ds: true },
+    ]
+  },
+  {
+    cat: "Високовольтні акумулятори", slug: "hv-batt", unit: "$",
+    items: [
+      { nom1c: "Deye BOS-G PRO",                                              name: "Deye BOS-G PRO",              spec: "5.12 кВт·год · модуль",        stock: "в наявності", ds: true },
+      { nom1c: "Deye BOS-G-PDU-2 (BMS для BOS-G PRO)",                        name: "Deye BOS-G-PDU-2",            spec: "BMS для BOS-G PRO",            stock: "в наявності", ds: true },
+      { nom1c: 'Стійка 19" Deye 3U-HRACK (12 акб + 1 блок керування)',        name: 'Стійка 19" Deye 3U-HRACK',    spec: "12 акб + 1 блок керування",    stock: "в наявності", ds: true },
+      { nom1c: "Deye HV BOS-B-Pack16-A3-Pro",                                 name: "Deye HV BOS-B-Pack16-A3-Pro", spec: "HV акумуляторний пакет",       stock: "в дорозі",    ds: true },
+      { nom1c: "Deye BOS-B-PDU-2-А (BMS для BOS-B-Pack16-A3-Pro)",            name: "Deye BOS-B-PDU-2-А",          spec: "BMS для BOS-B-Pack16-A3-Pro",  stock: "в дорозі",    ds: true },
+    ]
+  },
+  {
+    cat: "PV-кабель", slug: "cable", unit: "",
+    items: [
+      { nom1c: "KBE 6 мм (червоний / чорний), бухта (500 м)", name: "KBE 6 мм²", spec: "червоний / чорний · бухта 500 м", stock: "в дорозі", ds: false },
+    ]
+  },
 ];
 
-// ISO 4217 → символ
-const CUR_SYMBOL = { '840':'$', '978':'€', '980':'₴', 'USD':'$', 'EUR':'€', 'UAH':'₴' };
-const curSym = code => CUR_SYMBOL[String(code || '').trim()] || '';
-
+// ============================================================
+// UTILS
+// ============================================================
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
   ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])
 );
 
-function fmtPrice(p) {
-  if (!p || p.price == null) return '<span class="empty">—</span>';
-  const v = Number(p.price);
-  if (!isFinite(v)) return '<span class="empty">—</span>';
-  const sym = curSym(p.currency_code);
-  const abs = Math.abs(v);
-  let body;
-  if (abs > 0 && abs < 1) {
-    body = v.toFixed(3).replace(/\.?0+$/, '').replace('.', ',');
-  } else {
-    body = v.toFixed(v % 1 === 0 ? 0 : 2)
-            .replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
-            .replace('.', ',');
-  }
-  return `<span class="cur">${esc(sym)}</span>${esc(body)}`;
-}
+// Числовий форматер: дрібні < 1 → 3 знаки без хвостових 0, цілі — без десяткових.
+const fmtPrice = v => {
+  if (v == null || !isFinite(v)) return null;
+  if (Math.abs(v) < 1) return v.toFixed(3).replace(/\.?0+$/, '');
+  return v.toLocaleString('uk-UA', { maximumFractionDigits: 0 });
+};
 
 function showNotice(msg, isErr) {
   const el = document.getElementById('notice');
@@ -367,95 +413,107 @@ function showNotice(msg, isErr) {
   el.className = 'notice show' + (isErr ? ' err' : '');
 }
 
-function render(data) {
-  const byName = new Map();
-  for (const it of (data.items || [])) byName.set(it.name, it);
-
-  const pt = data.price_types || {};
-  const metaEl = document.getElementById('pmeta');
-  let metaHtml = `Без ПДВ: <b>${esc(pt.no_vat && pt.no_vat.name || '—')}</b> &nbsp;·&nbsp; З ПДВ: <b>${esc(pt.with_vat && pt.with_vat.name || '—')}</b>`;
-
-  const parts = [];
-  let totalMatched = 0, totalItems = 0;
-
-  PRICE_LIST.forEach((grp, idx) => {
-    const num = String(idx + 1).padStart(2, '0');
-    const rows = grp.items.map(item => {
-      totalItems++;
-      const it = byName.get(item.name);
-
-      // "Наявність" за замовчуванням — по matched (є в 1С = в наявності)
-      const inStock = it && it.matched;
-      const stockText = inStock ? 'в наявності' : 'в дорозі';
-      const stockClass = inStock ? '' : 'wait';
-
-      if (!it || !it.matched) {
-        return `
-        <div class="row nomatch">
-          <div class="prod-name">
-            <span>${esc(item.name)}</span>
-            ${item.spec ? `<span class="prod-sub">${esc(item.spec)}</span>` : ''}
-          </div>
-          <div class="price desktop-only empty">—</div>
-          <div class="price desktop-only empty">—</div>
-          <div class="desktop-only"><span class="stock ${stockClass}"><span class="led"></span>${stockText}</span></div>
-
-          <div class="meta mobile-meta">
-            <div class="price empty">не знайдено в 1С</div>
-          </div>
-          <span class="stock mobile-meta ${stockClass}"><span class="led"></span>${stockText}</span>
-        </div>`;
-      }
-
-      totalMatched++;
-      const matchHint = it.matched_name && it.matched_name !== item.name
-        ? `1С: ${it.matched_name}${it.matched_article ? ' · арт. ' + it.matched_article : ''}`
-        : (it.matched_article ? `арт. ${it.matched_article}` : item.spec);
-
-      return `
-      <div class="row">
-        <div class="prod-name">
-          <span>${esc(item.name)}</span>
-          ${matchHint ? `<span class="prod-sub">${esc(matchHint)}</span>` : ''}
-        </div>
-        <div class="price desktop-only">${fmtPrice(it.no_vat)}</div>
-        <div class="price desktop-only">${fmtPrice(it.with_vat)}</div>
-        <div class="desktop-only"><span class="stock ${stockClass}"><span class="led"></span>${stockText}</span></div>
-
-        <div class="meta mobile-meta">
-          <div class="price"><span class="meta-label">без ПДВ</span>${fmtPrice(it.no_vat)}</div>
-          <div class="price"><span class="meta-label">з ПДВ</span>${fmtPrice(it.with_vat)}</div>
-        </div>
-        <span class="stock mobile-meta ${stockClass}"><span class="led"></span>${stockText}</span>
-      </div>`;
-    }).join('');
-
-    parts.push(`
-      <section class="category">
-        <div class="cat-head">
-          <span class="num">${num}</span>
-          <h2>${esc(grp.category)}</h2>
-        </div>
-        <div class="row-head">
-          <div>Назва</div>
-          <div class="num-col">Ціна без ПДВ</div>
-          <div class="num-col">Ціна з ПДВ</div>
-          <div>Наявність</div>
-        </div>
-        ${rows}
-      </section>
-    `);
+// ============================================================
+// RENDER
+// ============================================================
+function buildCatNav() {
+  const catnav = document.getElementById('catnav');
+  catnav.innerHTML = '';
+  DATA.forEach(c => {
+    const a = document.createElement('a');
+    a.href = '#' + c.slug;
+    a.innerHTML = esc(c.cat) + '<span class="cnt">' + String(c.items.length).padStart(2, '0') + '</span>';
+    catnav.appendChild(a);
   });
-
-  document.getElementById('content').innerHTML = parts.join('');
-  metaEl.innerHTML = metaHtml + ` &nbsp;·&nbsp; знайдено <b>${totalMatched}/${totalItems}</b>`;
+  document.querySelectorAll('.catnav a').forEach(a => {
+    a.addEventListener('click', e => {
+      const id = a.getAttribute('href').slice(1);
+      const el = document.getElementById(id);
+      if (el) {
+        e.preventDefault();
+        const y = el.getBoundingClientRect().top + window.pageYOffset - 80;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    });
+  });
 }
 
-async function load() {
+function renderCatalog(priceByNom1c) {
+  const catalog = document.getElementById('catalog');
+  catalog.innerHTML = '';
+
+  DATA.forEach((c, idx) => {
+    const sec = document.createElement('section');
+    sec.className = 'category';
+    sec.id = c.slug;
+    const num = String(idx + 1).padStart(2, '0');
+    sec.innerHTML = `
+      <div class="cat-head">
+        <span class="num">${num}</span>
+        <h2>${esc(c.cat)}</h2>
+      </div>
+      <div class="row-head">
+        <div>Назва</div>
+        <div class="num-col">Ціна без ПДВ${c.unit ? ', ' + esc(c.unit) : ''}</div>
+        <div class="num-col">Ціна з ПДВ${c.unit ? ', ' + esc(c.unit) : ''}</div>
+        <div>Наявність</div>
+        <div>Datasheet</div>
+      </div>
+    `;
+
+    c.items.forEach(it => {
+      const mapped = priceByNom1c.get(it.nom1c);
+      const p1raw = mapped && mapped.no_vat && mapped.no_vat.price != null ? Number(mapped.no_vat.price) : null;
+      const p2raw = mapped && mapped.with_vat && mapped.with_vat.price != null ? Number(mapped.with_vat.price) : null;
+
+      const cur = c.unit || '$';
+      const p1str = fmtPrice(p1raw);
+      const p2str = fmtPrice(p2raw);
+      const p1 = p1str != null ? `<span>${esc(p1str)}</span><span class="cur"> ${esc(cur)}</span>` : '—';
+      const p2 = p2str != null ? `<span>${esc(p2str)}</span><span class="cur"> ${esc(cur)}</span>` : '—';
+
+      const stockClass = it.stock === 'в наявності' ? '' : 'wait';
+
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = `
+        <div class="prod-name">
+          <span>${esc(it.name)}</span>
+          ${it.spec ? `<span class="prod-sub">${esc(it.spec)}</span>` : ''}
+        </div>
+        <div class="price desktop-only${p1str == null ? ' empty' : ''}">${p1}</div>
+        <div class="price desktop-only${p2str == null ? ' empty' : ''}">${p2}</div>
+        <div class="desktop-only"><span class="stock ${stockClass}"><span class="led"></span>${esc(it.stock)}</span></div>
+        <div class="desktop-only">${it.ds ? '<a class="ds-link" href="#" onclick="event.preventDefault()">PDF →</a>' : '<span class="ds-link none">—</span>'}</div>
+
+        <div class="meta mobile-meta">
+          ${p1str != null ? `<div class="price"><span class="meta-label">без ПДВ</span>${p1}</div>` : ''}
+          ${p2str != null ? `<div class="price"><span class="meta-label">з ПДВ</span>${p2}</div>` : ''}
+          ${p1str == null && p2str == null ? `<div class="price empty">ціну уточнюйте</div>` : ''}
+          ${it.ds ? '<a class="ds-link" href="#" onclick="event.preventDefault()">Datasheet →</a>' : ''}
+        </div>
+        <span class="stock mobile-meta ${stockClass}"><span class="led"></span>${esc(it.stock)}</span>
+      `;
+      sec.appendChild(row);
+    });
+    catalog.appendChild(sec);
+  });
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+function setHeroDate() {
+  const d = new Date();
+  const months = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+  document.getElementById('heroDate').textContent =
+    `Прайс · ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+async function loadPrices() {
   const items = [];
-  for (const grp of PRICE_LIST) {
-    for (const item of grp.items) items.push({ name: item.name, category: grp.category });
-  }
+  DATA.forEach(c => c.items.forEach(it => items.push({ name: it.nom1c, category: c.cat })));
+
   const qs = `pt_no=${encodeURIComponent(PT_NO_VAT)}&pt_with=${encodeURIComponent(PT_WITH_VAT)}`;
   const res = await fetch(`${API}/?action=prices_1c_list&${qs}`, {
     method: 'POST',
@@ -463,26 +521,25 @@ async function load() {
     body: JSON.stringify({ items }),
   });
   const data = await res.json().catch(() => ({}));
+
   if (!res.ok) {
-    if (data && data.error === 'price_types_not_found') {
-      const types = (data.all_types || []).map(t => `• ${t.description}`).join('\n');
-      showNotice(
-        'У 1С не знайдено видів цін «Гуртова без ПДВ» / «Гуртова з ПДВ». ' +
-        'Виправ назву в 1С або передай ?pt_no=<ref>&pt_with=<ref>.\n\n' +
-        'Доступні види:\n' + types,
-        true
-      );
-      document.getElementById('content').innerHTML = '';
-      return;
-    }
-    showNotice('Помилка: ' + ((data && data.error) || res.status), true);
-    document.getElementById('content').innerHTML = '';
+    renderCatalog(new Map()); // рендер без цін
+    showNotice('Не вдалося завантажити ціни: ' + ((data && data.error) || res.status), true);
     return;
   }
-  render(data);
+
+  const byName = new Map();
+  for (const it of (data.items || [])) if (it && it.name) byName.set(it.name, it);
+  renderCatalog(byName);
 }
 
-load().catch(err => showNotice('Не вдалося завантажити: ' + err.message, true));
+setHeroDate();
+buildCatNav();
+loadPrices().catch(err => {
+  renderCatalog(new Map());
+  showNotice('Помилка: ' + err.message, true);
+});
 </script>
+
 </body>
 </html>
