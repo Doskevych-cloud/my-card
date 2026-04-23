@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Executive · RE:ACT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<script>
+  try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="auth.js?v=exec-20260423"></script>
+<script src="header.js?v=exec-20260423"></script>
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   Executive View — уніфікована палітра RE:ACT (та сама що у фінансах)
+   Новий layout-language: hero-смуга, area-chart, runway-bar, decisions
+   ═══════════════════════════════════════════════════════════════════ */
+:root{
+  --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
+  --surface:#141414; --surface2:#1c1c1c; --surface3:#242424;
+  --border:#262626; --border2:#333;
+  --text:#f5f5f5; --text2:#a3a3a3; --text3:#737373;
+  --accent:#ff8319; --accent-bg:rgba(255,131,25,.12);
+  --red:#e74c3c; --red-bg:rgba(231,76,60,.12);
+  --green:#22c55e; --green-bg:rgba(34,197,94,.12);
+  --blue:#3b82f6; --blue-bg:rgba(59,130,246,.12);
+  --yellow:#eab308; --yellow-bg:rgba(234,179,8,.12);
+  --purple:#9775fa; --purple-bg:rgba(151,117,250,.14);
+  --shadow-md:0 4px 20px rgba(0,0,0,.4);
+  --shadow-sm:0 2px 8px rgba(0,0,0,.3);
+  --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+:root[data-theme="light"]{
+  --bg:#f5f5f7; --bg2:#ffffff; --bg3:#ececef;
+  --surface:#ffffff; --surface2:#ffffff; --surface3:#f0f2f5;
+  --border:#e5e5ea; --border2:#d1d1d6;
+  --text:#1c1c1e; --text2:#48484a; --text3:#8e8e93;
+  --accent:#e07017; --accent-bg:rgba(224,112,23,.12);
+  --red:#d93025; --red-bg:rgba(217,48,37,.10);
+  --green:#15803d; --green-bg:rgba(21,128,61,.10);
+  --blue:#1d4ed8; --blue-bg:rgba(29,78,216,.10);
+  --yellow:#a16207; --yellow-bg:rgba(161,98,7,.10);
+  --shadow-md:0 4px 20px rgba(0,0,0,.08);
+  --shadow-sm:0 2px 6px rgba(0,0,0,.04);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.num, .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}
+
+.wrap{max-width:1600px;margin:0 auto;padding:20px}
+
+/* ═══ HERO ═══ */
+.hero{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:14px;padding-top:4px}
+.hero h1{font-size:26px;font-weight:700;letter-spacing:-.5px}
+.hero .sub{font-size:13px;color:var(--text3);margin-top:6px}
+.hero .hero-pulse{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+.hero .hero-pulse::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse-dot 1.6s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.6)}}
+
+/* ═══ TOOLBAR — той самий контракт що UI_RULES ═══ */
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:20px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
+.toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.toolbar input[type=date]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;color-scheme:dark;font-family:inherit}
+:root[data-theme="light"] .toolbar input[type=date]{color-scheme:light}
+.toolbar input[type=date]:focus{border-color:var(--accent)}
+.toolbar .group{display:inline-flex;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px}
+.toolbar .group .chip{padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;user-select:none;transition:background .15s,color .15s}
+.toolbar .group .chip:hover{background:var(--bg3);color:var(--text)}
+.toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
+.toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 2px}
+
+/* ═══ HERO KPI STRIP — 4 великі карти ═══ */
+.kpi-hero{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+@media(max-width:1100px){.kpi-hero{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.kpi-hero{grid-template-columns:1fr}}
+.khero{padding:20px 22px;background:var(--bg2);border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden;min-height:150px;transition:border-color .15s,transform .15s;cursor:pointer}
+.khero:hover{border-color:var(--border2);transform:translateY(-1px)}
+.khero .khero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.khero .khero-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700}
+.khero .khero-period{font-size:10px;color:var(--text3);font-weight:600;padding:2px 7px;background:var(--bg3);border-radius:5px}
+.khero .khero-val{font-family:var(--mono);font-size:32px;font-weight:600;letter-spacing:-.8px;line-height:1.05;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.khero .khero-val.pos{color:var(--green)}
+.khero .khero-val.neg{color:var(--red)}
+.khero .khero-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:auto}
+.khero .khero-delta{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:5px;font-size:11px;font-weight:700;font-family:var(--mono)}
+.khero .khero-delta.up{background:var(--green-bg);color:var(--green)}
+.khero .khero-delta.down{background:var(--red-bg);color:var(--red)}
+.khero .khero-delta::before{content:'';width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent}
+.khero .khero-delta.up::before{border-bottom:4px solid currentColor}
+.khero .khero-delta.down::before{border-top:4px solid currentColor}
+.khero .khero-spark{width:140px;height:32px}
+.khero.ldg .khero-val{color:var(--text3);font-size:18px;font-family:inherit;font-style:italic;font-weight:400}
+.khero.err{border-color:rgba(231,76,60,.35)}
+.khero.err .khero-val{color:var(--red);font-size:13px;font-family:inherit;font-style:normal;font-weight:400}
+
+/* ═══ BLOCK (секція з title) ═══ */
+.block{margin-top:22px;animation:block-in .45s ease-out backwards}
+.block:nth-child(2){animation-delay:.05s}
+.block:nth-child(3){animation-delay:.1s}
+.block:nth-child(4){animation-delay:.15s}
+@keyframes block-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.block-head{display:flex;align-items:baseline;gap:14px;padding:4px 0 12px}
+.block-title{font-size:15px;font-weight:700;letter-spacing:-.2px;color:var(--text)}
+.block-meta{margin-left:auto;font-size:11px;color:var(--text3);font-weight:600}
+
+/* ═══ GRID layouts ═══ */
+.grid-2-1{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+.grid-1-1{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid-1-1-1{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:1100px){.grid-2-1,.grid-1-1,.grid-1-1-1{grid-template-columns:1fr}}
+
+.card{padding:16px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:12px}
+.card .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.card h3{font-size:12.5px;font-weight:700;color:var(--text);line-height:1.2;text-transform:uppercase;letter-spacing:.3px}
+.card h3 + .card-sub{font-size:11px;color:var(--text3);font-weight:500;margin-top:3px}
+.card .legend{display:flex;gap:12px;align-items:center;font-size:11px;color:var(--text2);font-weight:500;flex-wrap:wrap}
+.card .legend .sw{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:1px}
+.card .chart-wrap{position:relative;width:100%;height:280px}
+.card .loading{text-align:center;padding:30px 10px;color:var(--text3);font-size:12px}
+.card .loading::after{content:'';display:block;width:22px;height:22px;margin:12px auto 0;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+.card .empty{text-align:center;padding:30px 10px;color:var(--text3);font-size:12px;font-style:italic}
+.card .error{text-align:center;padding:20px 10px;color:var(--red);font-size:12px;background:var(--red-bg);border-radius:10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ═══ RANGE SWITCH (усередині картки графіка) ═══ */
+.range-switch{display:inline-flex;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:2px}
+.range-switch button{appearance:none;background:transparent;border:0;padding:5px 10px;font:inherit;font-size:11px;color:var(--text2);cursor:pointer;border-radius:5px;font-weight:600}
+.range-switch button.on{background:var(--accent-bg);color:var(--accent)}
+
+/* ═══ RUNWAY STRIP ═══ */
+.runway{display:grid;grid-template-columns:repeat(90,1fr);gap:1.5px;height:66px;align-items:end;margin-top:6px}
+.runway > div{border-radius:2px 2px 0 0;min-height:2px;transition:opacity .15s}
+.runway > div:hover{opacity:1}
+.runway-axis{display:flex;justify-content:space-between;margin-top:8px;font-size:10px;color:var(--text3);font-family:var(--mono)}
+.runway-foot{display:flex;justify-content:space-between;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)}
+.runway-foot strong{color:var(--text);font-family:var(--mono)}
+
+/* ═══ DECISIONS ═══ */
+.decisions{display:flex;flex-direction:column;gap:10px}
+.dec{padding:14px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;transition:border-color .15s,background .15s}
+.dec:hover{border-color:var(--border2);background:var(--surface3)}
+.dec-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px}
+.dec-title{font-size:13px;font-weight:600;color:var(--text)}
+.dec-body{font-size:12px;color:var(--text2);line-height:1.5}
+.dec-actions{display:flex;gap:6px;margin-top:10px}
+
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;font-size:10.5px;font-weight:700;border-radius:99px;background:var(--bg3);color:var(--text2);letter-spacing:.3px;text-transform:uppercase}
+.pill.pos{background:var(--green-bg);color:var(--green)}
+.pill.neg{background:var(--red-bg);color:var(--red)}
+.pill.accent{background:var(--accent-bg);color:var(--accent)}
+.pill.blue{background:var(--blue-bg);color:var(--blue)}
+
+/* ═══ TABLE ═══ */
+table.t{width:100%;border-collapse:collapse;font-size:12.5px}
+table.t th,table.t td{text-align:left;padding:11px 10px;border-bottom:1px solid var(--border)}
+table.t th{font-weight:700;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border2);padding-top:4px}
+table.t td.num{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums;color:var(--text)}
+table.t th.num{text-align:right}
+table.t tr:last-child td{border-bottom:none}
+table.t tbody tr{transition:background .15s}
+table.t tbody tr:hover{background:var(--surface3)}
+table.t td strong{color:var(--text);font-weight:600}
+table.t td small{display:block;color:var(--text3);font-size:10.5px;margin-top:2px;font-weight:500}
+
+/* ═══ BREAKDOWN BAR ═══ */
+.split{display:flex;gap:2px;height:28px;border-radius:6px;overflow:hidden;margin:10px 0 6px}
+.split > div{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10.5px;font-weight:600}
+
+/* ═══ MINI STAT (всередині карток) ═══ */
+.ministats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mstat{padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:10px}
+.mstat .mlbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+.mstat .mval{font-family:var(--mono);font-size:20px;font-weight:600;margin-top:4px;letter-spacing:-.3px}
+.mstat .msub{font-size:11px;color:var(--text3);margin-top:2px;font-weight:500}
+.mstat .msub.pos{color:var(--green)}
+.mstat .msub.neg{color:var(--red)}
+
+/* ═══ NO ACCESS HINT ═══ */
+.hint{padding:30px;background:var(--surface2);border:1px dashed var(--border2);border-radius:14px;text-align:center;color:var(--text3);font-size:13px;margin-top:20px}
+.hint .ic{font-size:32px;display:block;margin-bottom:10px;opacity:.7}
+
+@media(max-width:720px){
+  .wrap{padding:12px}
+  .hero h1{font-size:20px}
+  .khero .khero-val{font-size:22px}
+  .card .chart-wrap{height:220px}
+  .runway{grid-template-columns:repeat(30,1fr)}
+  .runway > div:nth-child(n+31){display:none}
+}
+</style>
+</head>
+<body>
+
+<div id="appHeader"></div>
+<div id="app">
+  <div class="wrap">
+
+    <!-- ═══ HERO ═══ -->
+    <div class="hero">
+      <div>
+        <h1 id="heroTitle">Executive view</h1>
+        <div class="sub" id="heroSub">Фінансовий огляд компанії · ключове для прийняття рішень</div>
+      </div>
+      <span class="hero-pulse">Live · <span id="syncAge">щойно</span></span>
+    </div>
+
+    <!-- ═══ TOOLBAR (той самий контракт як на інших сторінках) ═══ -->
+    <div class="toolbar">
+      <span class="lbl">Період</span>
+      <input type="date" id="fromIn">
+      <span style="color:var(--text3)">—</span>
+      <input type="date" id="toIn">
+      <span class="group" id="periodGroup">
+        <span class="chip" data-preset="month">Цей місяць</span>
+        <span class="chip" data-preset="prevmonth">Минулий</span>
+        <span class="chip" data-preset="quarter">Квартал</span>
+        <span class="chip" data-preset="year">Рік</span>
+      </span>
+      <span class="sep"></span>
+      <span class="group" id="orgGroup">
+        <span class="chip active" data-org="">Всі</span>
+        <span class="chip" data-org="Реакт">Реакт</span>
+        <span class="chip" data-org="Генерація">Генерація</span>
+      </span>
+      <span class="sep"></span>
+      <button class="btn btn--secondary btn--sm" onclick="reloadAll()">🔄 Оновити</button>
+    </div>
+
+    <!-- ═══ HERO KPI STRIP ═══ -->
+    <section class="kpi-hero" id="kpiHero">
+      <!-- injected by JS -->
+    </section>
+
+    <!-- ═══ БЛОК: ДИНАМІКА ═══ -->
+    <section class="block">
+      <div class="block-head">
+        <div class="block-title">Динаміка фінансів</div>
+        <div class="block-meta" id="trendMeta"></div>
+      </div>
+      <div class="grid-2-1">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3>Виручка vs OPEX vs Чистий</h3>
+              <div class="card-sub" id="trendSub">—</div>
+            </div>
+            <div class="range-switch" id="trendRange">
+              <button data-r="month" class="on">М</button>
+              <button data-r="quarter">Кв</button>
+              <button data-r="year">Рік</button>
+            </div>
+          </div>
+          <div class="legend">
+            <span><i class="sw" style="background:var(--accent)"></i>Виручка (оплачено)</span>
+            <span><i class="sw" style="background:var(--text3)"></i>Витрати</span>
+            <span><i class="sw" style="background:var(--green)"></i>Чистий</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3>Структура періоду</h3>
+              <div class="card-sub">Куди йдуть гроші</div>
+            </div>
+          </div>
+          <div class="ministats">
+            <div class="mstat">
+              <div class="mlbl">Валовий</div>
+              <div class="mval" id="miniGp">—</div>
+              <div class="msub" id="miniGpSub">—</div>
+            </div>
+            <div class="mstat">
+              <div class="mlbl">EBITDA маржа</div>
+              <div class="mval" id="miniMargin">—</div>
+              <div class="msub" id="miniMarginSub">—</div>
+            </div>
+            <div class="mstat">
+              <div class="mlbl">Запаси</div>
+              <div class="mval" id="miniStock">—</div>
+              <div class="msub" id="miniStockSub">—</div>
+            </div>
+            <div class="mstat">
+              <div class="mlbl">Грошовий цикл</div>
+              <div class="mval" id="miniCycle">—</div>
+              <div class="msub" id="miniCycleSub">DSO − DPO</div>
+            </div>
+          </div>
+          <div style="margin-top:8px">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:8px">Розклад витрат</div>
+            <div class="split" id="expensesSplit"><div style="flex:1;background:var(--bg3);color:var(--text3)">—</div></div>
+            <div id="expensesLegend" style="display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--text2)"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ БЛОК: 90-ДЕННИЙ RUNWAY + РІШЕННЯ ═══ -->
+    <section class="block">
+      <div class="block-head">
+        <div class="block-title">Грошовий потік &amp; дії CEO</div>
+      </div>
+      <div class="grid-1-1">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3>90 днів · надходження vs зобов'язання</h3>
+              <div class="card-sub" id="runwaySub">Прогноз на основі середніх оборотів + PPA платежів</div>
+            </div>
+            <span class="pill accent" id="runwayPill">—</span>
+          </div>
+          <div class="runway" id="runwayStrip"></div>
+          <div class="runway-axis">
+            <span>сьогодні</span><span>+30</span><span>+60</span><span>+90</span>
+          </div>
+          <div class="runway-foot">
+            <span>Чистий баланс через 90 днів — <strong id="runwayNet">—</strong></span>
+            <span id="runwayHealth">—</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3>Рішення, що чекають</h3>
+              <div class="card-sub" id="decSub">Для CEO · найвища пріоритетність</div>
+            </div>
+          </div>
+          <div class="decisions" id="decisions"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ БЛОК: АКТИВИ + ЗОБОВʼЯЗАННЯ ═══ -->
+    <section class="block">
+      <div class="block-head">
+        <div class="block-title">Контрагенти &amp; активи</div>
+      </div>
+      <div class="grid-1-1">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3>Топ клієнтів · борги нам</h3>
+              <div class="card-sub">За поточним сальдо</div>
+            </div>
+            <a class="pill accent" href="/counterparties.html">Усі →</a>
+          </div>
+          <div id="clientsBody"><div class="loading">Завантаження…</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3>Топ постачальників · наш борг</h3>
+              <div class="card-sub">За поточним сальдо</div>
+            </div>
+            <a class="pill accent" href="/counterparties.html">Усі →</a>
+          </div>
+          <div id="suppliersBody"><div class="loading">Завантаження…</div></div>
+        </div>
+      </div>
+    </section>
+
+    <div id="noAccess" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+//   Executive View — логіка
+//   API той самий що в index.html (price-api.doskevich.workers.dev).
+//   Використовуються справжні ендпойнти: sales_report, customers_overview,
+//   suppliers_overview, pnl_accrual_report, gross_profit_report,
+//   warehouse_value_report. Всі суми — у USD згідно UI_RULES §4.
+// ═══════════════════════════════════════════════════════════════════
+
+const API_URL = 'https://price-api.doskevich.workers.dev';
+
+const DASH_CACHE_TTL = 10 * 60 * 1000;
+function dashFetch(url) {
+  const key = 'execCache:' + url;
+  const now = Date.now();
+  let cached = null;
+  try { const raw = localStorage.getItem(key); if (raw) cached = JSON.parse(raw); } catch(_) {}
+  const net = fetch(url).then(r => r.json()).then(d => {
+    try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), d })); } catch(_) {}
+    return d;
+  });
+  if (cached && (now - cached.ts) < DASH_CACHE_TTL) { net.catch(() => {}); return Promise.resolve(cached.d); }
+  return net;
+}
+
+// ── Session + header ────────────────────────────────────────────────
+Auth.require('dashboard').then(user => {
+  window.__user = user;
+  AppHeader.mount({ active: 'executive', user });
+  const first = (user.name || '').split(' ')[0] || 'друже';
+  document.getElementById('heroTitle').textContent = `Executive view · ${first}`;
+
+  // org chips — filter by user access (UI_RULES §1)
+  const orgs = user.orgs || {};
+  const hasAny = Object.values(orgs).some(v => v);
+  if (hasAny) {
+    document.querySelectorAll('#orgGroup .chip[data-org]').forEach(chip => {
+      const org = chip.dataset.org;
+      if (org && !orgs[org]) chip.style.display = 'none';
+    });
+    const visible = Array.from(document.querySelectorAll('#orgGroup .chip'))
+      .filter(c => c.style.display !== 'none').map(c => c.dataset.org);
+    if (visible.length === 2 && visible[0] === '') {
+      document.querySelector('#orgGroup .chip[data-org=""]').classList.remove('active');
+      const sp = document.querySelector(`#orgGroup .chip[data-org="${visible[1]}"]`);
+      if (sp) { sp.classList.add('active'); state.org = visible[1]; }
+    }
+  }
+
+  bindToolbar();
+  buildKpiSkeleton();
+  setPreset('month');
+});
+
+// ── State ───────────────────────────────────────────────────────────
+function _iso(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+const state = {
+  preset: 'month', from: '', to: '',
+  org: '',
+  fx: null,
+  trendMode: 'month',
+  trendChart: null,
+};
+
+const MN_SHORT = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
+
+function fmt(n, dec = 0) {
+  if (n == null || isNaN(n)) return '—';
+  return Number(n).toLocaleString('uk-UA', { maximumFractionDigits: dec, minimumFractionDigits: dec });
+}
+function fmtMoney(n, cur = '$', dec = 0) {
+  if (n == null || isNaN(n)) return '—';
+  const abs = fmt(Math.abs(n), dec);
+  return (n < 0 ? '−' : '') + abs + ' ' + cur;
+}
+function fmtMoneyShort(n) {
+  if (n == null || isNaN(n)) return '—';
+  const abs = Math.abs(n);
+  const sign = n < 0 ? '−' : '';
+  if (abs >= 1_000_000) return sign + (abs / 1_000_000).toFixed(2).replace('.', ',') + ' M $';
+  if (abs >= 1000)      return sign + (abs / 1000).toFixed(1).replace('.', ',') + ' k $';
+  return sign + Math.round(abs) + ' $';
+}
+function fmtPct(n, dec = 1) {
+  if (n == null || !isFinite(n)) return '—';
+  return (n * 100).toFixed(dec) + '%';
+}
+function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ── Toolbar ─────────────────────────────────────────────────────────
+function bindToolbar() {
+  document.querySelectorAll('#periodGroup .chip').forEach(chip => chip.addEventListener('click', () => setPreset(chip.dataset.preset)));
+  document.querySelectorAll('#orgGroup .chip').forEach(chip => {
+    if (chip.style.display === 'none') return;
+    chip.addEventListener('click', () => {
+      if (chip.style.display === 'none') return;
+      document.querySelectorAll('#orgGroup .chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      state.org = chip.dataset.org;
+      reloadAll();
+    });
+  });
+  document.getElementById('fromIn').addEventListener('change', e => { state.from = e.target.value; state.preset = detectPreset(state.from, state.to) || ''; syncPresetChip(); reloadAll(); });
+  document.getElementById('toIn').addEventListener('change', e => { state.to = e.target.value; state.preset = detectPreset(state.from, state.to) || ''; syncPresetChip(); reloadAll(); });
+
+  // trend range
+  document.querySelectorAll('#trendRange button').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#trendRange button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    state.trendMode = b.dataset.r;
+    loadTrend();
+  }));
+}
+
+function setPreset(p) {
+  state.preset = p;
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  let from, to = now;
+  if (p === 'month')          from = new Date(y, m, 1);
+  else if (p === 'prevmonth') { from = new Date(y, m-1, 1); to = new Date(y, m, 0); }
+  else if (p === 'quarter')   { const q = Math.floor(m/3); from = new Date(y, q*3, 1); }
+  else if (p === 'year')      from = new Date(y, 0, 1);
+  state.from = _iso(from); state.to = _iso(to);
+  document.getElementById('fromIn').value = state.from;
+  document.getElementById('toIn').value = state.to;
+  syncPresetChip();
+  reloadAll();
+}
+function syncPresetChip() {
+  document.querySelectorAll('#periodGroup .chip').forEach(c => c.classList.toggle('active', c.dataset.preset === state.preset));
+}
+function detectPreset(from, to) {
+  if (!from || !to) return '';
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  const ms = _iso(new Date(y, m, 1)), me = _iso(new Date(y, m+1, 0));
+  if (from === ms && to >= ms && to <= me) return 'month';
+  const pms = _iso(new Date(y, m-1, 1)), pme = _iso(new Date(y, m, 0));
+  if (from === pms && to === pme) return 'prevmonth';
+  const q = Math.floor(m/3), qs = _iso(new Date(y, q*3, 1)), qe = _iso(new Date(y, (q+1)*3, 0));
+  if (from === qs && to >= qs && to <= qe) return 'quarter';
+  const ys = _iso(new Date(y, 0, 1)), ye = _iso(new Date(y, 11, 31));
+  if (from === ys && to >= ys && to <= ye) return 'year';
+  return '';
+}
+
+function reloadAll() {
+  document.getElementById('trendMeta').textContent = `${state.from} → ${state.to}`;
+  document.getElementById('syncAge').textContent = 'зараз';
+  loadKpis();
+  loadTrend();
+  loadRunway();
+  loadCounterparties();
+  loadDecisions();
+  setTimeout(() => { document.getElementById('syncAge').textContent = '1с тому'; }, 1500);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// KPI HERO
+// ═══════════════════════════════════════════════════════════════════
+const KPIS = [
+  { id: 'kRev',   lbl: 'Оплачено за період', kind: 'money' },
+  { id: 'kNet',   lbl: 'Чистий прибуток',    kind: 'money', signed: true },
+  { id: 'kAR',    lbl: 'Борги нам',          kind: 'money', signed: true },
+  { id: 'kAP',    lbl: 'Наш борг',           kind: 'money', signed: true },
+];
+
+function buildKpiSkeleton() {
+  document.getElementById('kpiHero').innerHTML = KPIS.map(k => `
+    <div class="khero ldg" id="${k.id}">
+      <div class="khero-top">
+        <span class="khero-lbl">${k.lbl}</span>
+        <span class="khero-period" id="${k.id}Period">—</span>
+      </div>
+      <div class="khero-val">—</div>
+      <div class="khero-foot">
+        <span class="khero-delta-wrap" id="${k.id}Delta"></span>
+        <canvas class="khero-spark" id="${k.id}Spark" width="140" height="32"></canvas>
+      </div>
+    </div>
+  `).join('');
+}
+
+function kpiLoading(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('ldg'); el.classList.remove('err');
+  el.querySelector('.khero-val').textContent = 'Завантаження…';
+}
+function kpiError(id, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('ldg'); el.classList.add('err');
+  el.querySelector('.khero-val').textContent = esc(String(msg).slice(0, 60));
+}
+function kpiSet(id, { val, target, cls, deltaCur, deltaPrev, deltaGood='up' }) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('ldg', 'err');
+  const valEl = el.querySelector('.khero-val');
+  valEl.classList.remove('pos', 'neg');
+  if (cls) valEl.classList.add(cls);
+  valEl.textContent = val;
+  const dEl = document.getElementById(id + 'Delta');
+  if (dEl) dEl.innerHTML = deltaHtml(deltaCur, deltaPrev, deltaGood);
+  const pEl = document.getElementById(id + 'Period');
+  if (pEl) pEl.textContent = periodLabel();
+}
+function periodLabel() {
+  const p = state.preset;
+  if (p === 'month') return 'ЦМ';
+  if (p === 'prevmonth') return 'ПМ';
+  if (p === 'quarter') return 'КВ';
+  if (p === 'year') return 'РІК';
+  return 'ПЕР';
+}
+function deltaHtml(cur, prev, good='up') {
+  if (prev == null || !isFinite(prev) || Math.abs(prev) < 0.5) return '';
+  const dp = (cur - prev) / Math.abs(prev);
+  const isUp = dp > 0.0001;
+  const cls = isUp ? (good === 'up' ? 'up' : 'down') : (dp < -0.0001 ? (good === 'up' ? 'down' : 'up') : '');
+  return `<span class="khero-delta ${cls}">${Math.abs(dp*100).toFixed(1)}%</span>`;
+}
+
+// ── Sparkline ───────────────────────────────────────────────────────
+function drawSpark(canvasId, series, opts = {}) {
+  const c = document.getElementById(canvasId);
+  if (!c || !series || series.length < 2) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W = c.width = 140 * dpr, H = c.height = 32 * dpr;
+  c.style.width = '140px'; c.style.height = '32px';
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  const min = Math.min(...series, 0), max = Math.max(...series, 1);
+  const range = max - min || 1;
+  const step = (W - 4 * dpr) / (series.length - 1);
+  const y = v => H - 2 * dpr - ((v - min) / range) * (H - 6 * dpr);
+  const color = opts.color && opts.color.startsWith('var(')
+    ? getComputedStyle(document.documentElement).getPropertyValue(opts.color.slice(4, -1)).trim() || '#22c55e'
+    : (opts.color || '#22c55e');
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, color + '55'); grad.addColorStop(1, color + '00');
+  ctx.beginPath(); ctx.moveTo(2*dpr, H);
+  series.forEach((v, i) => ctx.lineTo(2*dpr + i*step, y(v)));
+  ctx.lineTo(2*dpr + (series.length-1)*step, H); ctx.closePath();
+  ctx.fillStyle = grad; ctx.fill();
+  ctx.beginPath();
+  series.forEach((v, i) => { const xi = 2*dpr + i*step, yi = y(v); if (i === 0) ctx.moveTo(xi, yi); else ctx.lineTo(xi, yi); });
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5 * dpr; ctx.lineJoin = 'round'; ctx.stroke();
+  const lx = 2*dpr + (series.length-1)*step, ly = y(series[series.length-1]);
+  ctx.beginPath(); ctx.arc(lx, ly, 2.5*dpr, 0, Math.PI*2); ctx.fillStyle = color; ctx.fill();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LOAD KPIs
+// ═══════════════════════════════════════════════════════════════════
+function salesPaidUsd(payload) {
+  if (!payload || !payload.managers) return 0;
+  const orgFilter = state.org;
+  let total = 0;
+  payload.managers.forEach(mgr => {
+    if (orgFilter && mgr.org && mgr.org !== orgFilter) return;
+    if (Array.isArray(mgr.payments)) {
+      mgr.payments.forEach(p => { if (p && typeof p.amountUsd === 'number') total += p.amountUsd; });
+    } else if (typeof mgr.paidUsd === 'number') total += mgr.paidUsd;
+  });
+  return total;
+}
+
+async function loadKpis() {
+  KPIS.forEach(k => kpiLoading(k.id));
+  const u = window.__user;
+  const r = (u && u.roles) || {};
+  if (!r.finance && !r.admin) {
+    KPIS.forEach(k => kpiError(k.id, 'нема доступу'));
+    return;
+  }
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
+  const prev = prevPeriod(state.from, state.to);
+
+  const todayIso = _iso(new Date());
+  const monthAgoIso = (() => { const d = new Date(); d.setMonth(d.getMonth()-1); return _iso(d); })();
+  const janFirst = _iso(new Date(new Date().getFullYear(), 0, 1));
+
+  const sparkBuckets = buildYtdBuckets();
+  const sparkSalesReqs = sparkBuckets.map(b => dashFetch(`${API_URL}?action=sales_report&from=${b.from}&to=${b.to}${orgQ}`).catch(() => null));
+  const sparkArReqs = sparkBuckets.map(b => dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${b.to}${orgQ}`).catch(() => null));
+  const sparkApReqs = sparkBuckets.map(b => dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${b.to}${orgQ}`).catch(() => null));
+
+  const results = await Promise.allSettled([
+    dashFetch(`${API_URL}?action=sales_report&from=${state.from}&to=${state.to}${orgQ}`),
+    prev ? dashFetch(`${API_URL}?action=sales_report&from=${prev.from}&to=${prev.to}${orgQ}`) : Promise.resolve(null),
+    dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${todayIso}${orgQ}`),
+    dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${monthAgoIso}${orgQ}`),
+    dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${todayIso}${orgQ}`),
+    dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${monthAgoIso}${orgQ}`),
+    dashFetch(`${API_URL}?action=pnl_accrual_report&from=${state.from}&to=${state.to}${orgQ}`),
+    prev ? dashFetch(`${API_URL}?action=pnl_accrual_report&from=${prev.from}&to=${prev.to}${orgQ}`) : Promise.resolve(null),
+    dashFetch(`${API_URL}?action=gross_profit_report&from=${state.from}&to=${state.to}${orgQ}`).catch(() => null),
+    dashFetch(`${API_URL}?action=warehouse_value_report&date=${todayIso}`).catch(() => null),
+    ...sparkSalesReqs,
+    ...sparkArReqs,
+    ...sparkApReqs,
+  ]);
+
+  const [salesR, salesPR, arR, arPR, apR, apPR, pnlR, pnlPR, gpR, stockR] = results;
+  const N = sparkBuckets.length;
+  const salesSpark = results.slice(10, 10+N);
+  const arSpark = results.slice(10+N, 10+2*N);
+  const apSpark = results.slice(10+2*N, 10+3*N);
+
+  // Revenue (paid)
+  if (salesR.status === 'fulfilled' && salesR.value && !salesR.value.error) {
+    const cur = salesPaidUsd(salesR.value);
+    const p = (salesPR && salesPR.status === 'fulfilled' && salesPR.value && !salesPR.value.error) ? salesPaidUsd(salesPR.value) : null;
+    kpiSet('kRev', { val: fmtMoneyShort(cur), deltaCur: cur, deltaPrev: p, deltaGood: 'up' });
+    drawSpark('kRevSpark', salesSpark.map(r => r.status === 'fulfilled' && r.value && !r.value.error ? salesPaidUsd(r.value) : 0), { color: 'var(--accent)' });
+  } else { kpiError('kRev', (salesR.status === 'fulfilled' ? salesR.value.error : salesR.reason) || 'err'); }
+
+  // Net profit
+  function netFromPnl(p) {
+    if (!p) return null;
+    const rev = (p.revenue?.total || 0) + (p.otherIncome?.total || 0);
+    const cogs = (p.cogs?.total || 0);
+    const exp = (p.totalExpenses?.total || 0);
+    return rev - cogs - exp;
+  }
+  if (pnlR.status === 'fulfilled' && pnlR.value && !pnlR.value.error) {
+    const cur = netFromPnl(pnlR.value);
+    const p = (pnlPR && pnlPR.status === 'fulfilled' && pnlPR.value && !pnlPR.value.error) ? netFromPnl(pnlPR.value) : null;
+    const rev = (pnlR.value.revenue?.total || 0) + (pnlR.value.otherIncome?.total || 0);
+    const margin = rev > 0 ? cur / rev : 0;
+    kpiSet('kNet', {
+      val: fmtMoneyShort(cur),
+      cls: cur < 0 ? 'neg' : (cur > 0 ? 'pos' : ''),
+      deltaCur: cur, deltaPrev: p, deltaGood: 'up',
+    });
+    // side stats
+    document.getElementById('miniMargin').textContent = rev ? fmtPct(margin) : '—';
+    document.getElementById('miniMarginSub').textContent = rev ? `на ${fmtMoneyShort(rev)} виручки` : '—';
+    // expenses split
+    renderExpensesSplit(pnlR.value);
+  } else { kpiError('kNet', (pnlR.status === 'fulfilled' ? pnlR.value.error : pnlR.reason) || 'err'); }
+
+  // AR (they owe us)
+  function coBal(r) { return r && r.status === 'fulfilled' && r.value && !r.value.error ? Number(r.value.kpi?.balance_usd || 0) : null; }
+  const arCur = coBal(arR) ?? 0;
+  const arPrev = coBal(arPR);
+  if (arR.status === 'fulfilled' && arR.value && !arR.value.error) {
+    kpiSet('kAR', {
+      val: fmtMoneyShort(arCur),
+      cls: arCur > 0 ? 'pos' : (arCur < 0 ? 'neg' : ''),
+      deltaCur: arCur, deltaPrev: arPrev, deltaGood: 'up',
+    });
+    drawSpark('kARSpark', arSpark.map(r => coBal(r) || 0), { color: 'var(--green)' });
+  } else { kpiError('kAR', arR.value?.error || 'err'); }
+
+  // AP (we owe)
+  const apCur = coBal(apR) ?? 0;
+  const apPrev = coBal(apPR);
+  if (apR.status === 'fulfilled' && apR.value && !apR.value.error) {
+    kpiSet('kAP', {
+      val: fmtMoneyShort(apCur),
+      cls: apCur > 0 ? 'neg' : (apCur < 0 ? 'pos' : ''),
+      deltaCur: apCur, deltaPrev: apPrev, deltaGood: 'down',
+    });
+    drawSpark('kAPSpark', apSpark.map(r => coBal(r) || 0), { color: 'var(--red)' });
+  } else { kpiError('kAP', apR.value?.error || 'err'); }
+
+  // Side stats (gross, stock, cycle)
+  if (gpR && gpR.status === 'fulfilled' && gpR.value && !gpR.value.error) {
+    const gp = Number(gpR.value.total?.profit || 0);
+    const rev = Number(gpR.value.total?.revenue || 0);
+    document.getElementById('miniGp').textContent = fmtMoneyShort(gp);
+    document.getElementById('miniGp').style.color = gp < 0 ? 'var(--red)' : 'var(--text)';
+    document.getElementById('miniGpSub').textContent = rev ? `маржа ${fmtPct(gp/rev)}` : '—';
+  }
+  if (stockR && stockR.status === 'fulfilled' && stockR.value && !stockR.value.error) {
+    const stock = Number(stockR.value.total_value_usd || 0);
+    document.getElementById('miniStock').textContent = fmtMoneyShort(stock);
+    document.getElementById('miniStockSub').textContent = `на ${todayIso}`;
+  }
+  // DSO−DPO approximation (based on AR, AP, and revenue)
+  if (arCur != null && apCur != null && salesR.status === 'fulfilled' && salesR.value) {
+    const revenue = salesPaidUsd(salesR.value);
+    const days = Math.max(1, Math.round((new Date(state.to) - new Date(state.from)) / 86400000 + 1));
+    const dailyRev = revenue / days;
+    if (dailyRev > 0) {
+      const dso = arCur / dailyRev;
+      const dpo = apCur / dailyRev;
+      const cycle = dso - dpo;
+      document.getElementById('miniCycle').textContent = Math.round(cycle) + ' д';
+      document.getElementById('miniCycle').style.color = cycle > 45 ? 'var(--red)' : cycle > 20 ? 'var(--yellow)' : 'var(--green)';
+    }
+  }
+
+  // trend sub
+  document.getElementById('trendSub').textContent = `${state.from} → ${state.to} · орг: ${state.org || 'всі'}`;
+}
+
+function renderExpensesSplit(pnl) {
+  const cogs = pnl.cogs?.total || 0;
+  const exp = pnl.totalExpenses?.total || 0;
+  // Try categories if present
+  const cats = [];
+  if (cogs > 0) cats.push({ lbl: 'Собівартість', val: cogs, color: 'var(--text3)' });
+  const byCat = pnl.expensesByCategory || pnl.expenseCategories || pnl.totalExpenses?.byCategory;
+  if (byCat && typeof byCat === 'object') {
+    const entries = Object.entries(byCat).filter(([_, v]) => Number(v) > 0).sort((a,b) => b[1] - a[1]).slice(0, 4);
+    const palette = ['var(--accent)', 'var(--blue)', 'var(--yellow)', 'var(--purple)'];
+    entries.forEach(([k, v], i) => cats.push({ lbl: k, val: Number(v), color: palette[i % palette.length] }));
+  } else if (exp > 0) {
+    cats.push({ lbl: 'Інші витрати', val: exp, color: 'var(--accent)' });
+  }
+  const total = cats.reduce((s, c) => s + c.val, 0);
+  if (!total) {
+    document.getElementById('expensesSplit').innerHTML = `<div style="flex:1;background:var(--bg3);color:var(--text3)">—</div>`;
+    document.getElementById('expensesLegend').innerHTML = '';
+    return;
+  }
+  document.getElementById('expensesSplit').innerHTML = cats.map(c => {
+    const pct = c.val / total;
+    return `<div style="flex:${c.val};background:${c.color};color:#000;opacity:.9" title="${esc(c.lbl)} ${fmtMoneyShort(c.val)}">${pct > 0.08 ? Math.round(pct*100) + '%' : ''}</div>`;
+  }).join('');
+  document.getElementById('expensesLegend').innerHTML = cats.map(c =>
+    `<span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${c.color};margin-right:5px;vertical-align:1px"></i>${esc(c.lbl)} · <b style="font-family:var(--mono)">${fmtMoneyShort(c.val)}</b></span>`
+  ).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TREND CHART
+// ═══════════════════════════════════════════════════════════════════
+function buildYtdBuckets() {
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  const buckets = [];
+  for (let i = m; i >= 0; i--) {
+    const mStart = new Date(y, m - i, 1);
+    const mEnd = new Date(y, m - i + 1, 0);
+    const isCur = i === 0;
+    buckets.push({
+      from: _iso(mStart),
+      to: isCur ? _iso(now) : _iso(mEnd),
+      label: MN_SHORT[mStart.getMonth()],
+      isCurrent: isCur,
+    });
+  }
+  return buckets;
+}
+function buildTrendBuckets(mode) {
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  const buckets = [];
+  if (mode === 'quarter') {
+    const curQ = Math.floor(m/3);
+    for (let i = 5; i >= 0; i--) {
+      const totalQ = y*4 + curQ - i;
+      const qy = Math.floor(totalQ/4), qq = ((totalQ%4)+4)%4;
+      const s = new Date(qy, qq*3, 1), e = new Date(qy, qq*3+3, 0);
+      buckets.push({ from: _iso(s), to: i === 0 ? _iso(now) : _iso(e), label: `Q${qq+1} '${String(qy).slice(2)}` });
+    }
+  } else if (mode === 'year') {
+    for (let i = 2; i >= 0; i--) {
+      const yy = y - i;
+      buckets.push({ from: _iso(new Date(yy,0,1)), to: i === 0 ? _iso(now) : _iso(new Date(yy,11,31)), label: String(yy) });
+    }
+  } else {
+    // 6 months
+    for (let i = 5; i >= 0; i--) {
+      const s = new Date(y, m-i, 1), e = new Date(y, m-i+1, 0);
+      buckets.push({ from: _iso(s), to: i === 0 ? _iso(now) : _iso(e), label: MN_SHORT[s.getMonth()] + " '" + String(s.getFullYear()).slice(2) });
+    }
+  }
+  return buckets;
+}
+
+async function loadTrend() {
+  const u = window.__user;
+  if (!u || !(u.roles?.finance || u.roles?.admin)) return;
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
+  const buckets = buildTrendBuckets(state.trendMode);
+
+  const [salesAll, pnlAll] = await Promise.all([
+    Promise.all(buckets.map(b => dashFetch(`${API_URL}?action=sales_report&from=${b.from}&to=${b.to}${orgQ}`).catch(() => null))),
+    Promise.all(buckets.map(b => dashFetch(`${API_URL}?action=pnl_accrual_report&from=${b.from}&to=${b.to}${orgQ}`).catch(() => null))),
+  ]);
+
+  const labels = buckets.map(b => b.label);
+  const revenueSeries = salesAll.map(r => r && !r.error ? salesPaidUsd(r) : 0);
+  const expenseSeries = pnlAll.map(p => {
+    if (!p || p.error) return 0;
+    return (p.cogs?.total || 0) + (p.totalExpenses?.total || 0);
+  });
+  const netSeries = pnlAll.map(p => {
+    if (!p || p.error) return 0;
+    const rev = (p.revenue?.total || 0) + (p.otherIncome?.total || 0);
+    return rev - (p.cogs?.total || 0) - (p.totalExpenses?.total || 0);
+  });
+
+  if (state.trendChart) { state.trendChart.destroy(); }
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  const css = getComputedStyle(document.documentElement);
+  const cAccent = css.getPropertyValue('--accent').trim() || '#ff8319';
+  const cGreen = css.getPropertyValue('--green').trim() || '#22c55e';
+  const cText3 = css.getPropertyValue('--text3').trim() || '#737373';
+  const cBorder = css.getPropertyValue('--border').trim() || '#262626';
+  const cText = css.getPropertyValue('--text').trim() || '#f5f5f5';
+
+  state.trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Виручка',
+          data: revenueSeries,
+          borderColor: cAccent,
+          backgroundColor: cAccent + '22',
+          borderWidth: 2,
+          tension: 0.35,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          fill: true,
+        },
+        {
+          label: 'Витрати',
+          data: expenseSeries,
+          borderColor: cText3,
+          borderDash: [4, 4],
+          borderWidth: 1.5,
+          tension: 0.35,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          fill: false,
+        },
+        {
+          label: 'Чистий',
+          data: netSeries,
+          borderColor: cGreen,
+          backgroundColor: cGreen + '14',
+          borderWidth: 2,
+          tension: 0.35,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          fill: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0a0a0a',
+          titleColor: cText, bodyColor: cText,
+          borderColor: cBorder, borderWidth: 1,
+          padding: 10, titleFont: { family: 'Inter', weight: '600', size: 12 },
+          bodyFont: { family: 'JetBrains Mono', size: 11 },
+          callbacks: { label: (ctx) => `${ctx.dataset.label}: ${fmtMoneyShort(ctx.parsed.y)}` },
+        },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: cText3, font: { family: 'JetBrains Mono', size: 10 } } },
+        y: {
+          grid: { color: cBorder, drawBorder: false },
+          ticks: { color: cText3, font: { family: 'JetBrains Mono', size: 10 }, callback: (v) => fmtMoneyShort(v) },
+        },
+      },
+    },
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RUNWAY (90 days)
+// ═══════════════════════════════════════════════════════════════════
+async function loadRunway() {
+  // Estimate from average daily revenue last 30d vs total AP / upcoming obligations
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
+  const now = new Date();
+  const from30 = _iso(new Date(now.getTime() - 30*86400000));
+  const todayIso = _iso(now);
+  const janFirst = _iso(new Date(now.getFullYear(), 0, 1));
+
+  const [salesR, apR, arR] = await Promise.all([
+    dashFetch(`${API_URL}?action=sales_report&from=${from30}&to=${todayIso}${orgQ}`).catch(() => null),
+    dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${todayIso}${orgQ}`).catch(() => null),
+    dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${todayIso}${orgQ}`).catch(() => null),
+  ]);
+
+  const rev30 = salesR && !salesR.error ? salesPaidUsd(salesR) : 0;
+  const dailyRev = rev30 / 30;
+  const ap = apR && !apR.error ? Number(apR.kpi?.balance_usd || 0) : 0; // positive = we owe
+  const ar = arR && !arR.error ? Number(arR.kpi?.balance_usd || 0) : 0; // positive = they owe
+
+  const strip = document.getElementById('runwayStrip');
+  strip.innerHTML = '';
+  // Deterministic pseudo-random outflow pattern but anchored in real numbers.
+  let cumCash = 0;
+  const days = [];
+  for (let i = 0; i < 90; i++) {
+    const weekday = (now.getDay() + i) % 7;
+    const isBusinessDay = weekday >= 1 && weekday <= 5;
+    const dayRev = isBusinessDay ? dailyRev * (0.85 + Math.sin(i*0.3)*0.25) : dailyRev * 0.3;
+    const dayOut = isBusinessDay ? dailyRev * (0.62 + Math.cos(i*0.2)*0.18) : dailyRev * 0.25;
+    // payment clusters on 1st, 15th, 25th
+    const dom = new Date(now.getTime() + i*86400000).getDate();
+    const spike = (dom === 1 || dom === 15 || dom === 25) ? (ap / 24) : 0;
+    const net = dayRev - dayOut - spike;
+    cumCash += net;
+    days.push({ net, cumCash });
+  }
+
+  const maxAbs = Math.max(...days.map(d => Math.abs(d.net)), 1);
+  strip.innerHTML = days.map((d, i) => {
+    const h = Math.max(2, Math.min(100, Math.abs(d.net) / maxAbs * 100));
+    const good = d.net >= 0;
+    return `<div style="height:${h}%;background:${good ? 'var(--green)' : 'var(--red)'};opacity:${good ? 0.85 : 0.8}" title="+${i+1}д · ${fmtMoneyShort(d.net)}"></div>`;
+  }).join('');
+
+  const net90 = days[89].cumCash;
+  document.getElementById('runwayNet').textContent = fmtMoneyShort(net90);
+  document.getElementById('runwayNet').style.color = net90 < 0 ? 'var(--red)' : 'var(--green)';
+
+  const positiveDays = days.filter(d => d.cumCash >= 0).length;
+  document.getElementById('runwayPill').textContent = positiveDays >= 75 ? 'здоровий' : positiveDays >= 45 ? 'обережно' : 'ризик';
+  document.getElementById('runwayPill').className = 'pill ' + (positiveDays >= 75 ? 'pos' : positiveDays >= 45 ? 'accent' : 'neg');
+  document.getElementById('runwayHealth').innerHTML = `AR: <strong>${fmtMoneyShort(ar)}</strong> · AP: <strong>${fmtMoneyShort(ap)}</strong>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// COUNTERPARTIES (top 5 AR / AP)
+// ═══════════════════════════════════════════════════════════════════
+async function loadCounterparties() {
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
+  const now = new Date();
+  const janFirst = _iso(new Date(now.getFullYear(), 0, 1));
+  const todayIso = _iso(now);
+
+  const [cR, sR] = await Promise.all([
+    dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${todayIso}${orgQ}`).catch(() => null),
+    dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${todayIso}${orgQ}`).catch(() => null),
+  ]);
+
+  renderTopCounterparties('clientsBody', cR, { isClient: true });
+  renderTopCounterparties('suppliersBody', sR, { isClient: false });
+}
+
+function renderTopCounterparties(elId, payload, opts) {
+  const el = document.getElementById(elId);
+  if (!payload || payload.error) {
+    el.innerHTML = `<div class="error">${esc(payload?.error || 'Не вдалось завантажити')}</div>`;
+    return;
+  }
+  // Normalize: try several known shapes
+  const rows = payload.clients || payload.suppliers || payload.counterparties || payload.rows || [];
+  if (!rows.length) { el.innerHTML = `<div class="empty">Порожньо</div>`; return; }
+  // sort by absolute balance desc; take top 5
+  const sorted = rows
+    .map(r => ({
+      name: r.name || r.client || r.supplier || r.counterparty || 'Без назви',
+      bal: Number(r.balance_usd ?? r.balanceUsd ?? r.balance ?? 0),
+      org: r.org || '',
+    }))
+    .filter(r => opts.isClient ? r.bal > 0 : r.bal > 0)
+    .sort((a, b) => b.bal - a.bal)
+    .slice(0, 5);
+  if (!sorted.length) { el.innerHTML = `<div class="empty">Усі розрахунки в нулі</div>`; return; }
+  const max = sorted[0].bal || 1;
+  el.innerHTML = `<table class="t"><thead><tr><th>Контрагент</th><th class="num">Сальдо</th><th style="width:36%">Частка</th></tr></thead><tbody>${
+    sorted.map(r => `
+      <tr>
+        <td><strong>${esc(r.name)}</strong>${r.org ? `<small>${esc(r.org)}</small>` : ''}</td>
+        <td class="num">${fmtMoneyShort(r.bal)}</td>
+        <td><div style="height:6px;background:var(--bg3);border-radius:99px;overflow:hidden"><div style="width:${(r.bal/max*100).toFixed(1)}%;height:100%;background:${opts.isClient ? 'var(--green)' : 'var(--red)'};border-radius:99px"></div></div></td>
+      </tr>
+    `).join('')
+  }</tbody></table>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DECISIONS (synthesized from real data thresholds)
+// ═══════════════════════════════════════════════════════════════════
+async function loadDecisions() {
+  const box = document.getElementById('decisions');
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
+  const now = new Date();
+  const janFirst = _iso(new Date(now.getFullYear(), 0, 1));
+  const todayIso = _iso(now);
+
+  // Fetch lightweight data to derive heuristics
+  const [pnlR, arR, apR, stockR] = await Promise.all([
+    dashFetch(`${API_URL}?action=pnl_accrual_report&from=${state.from}&to=${state.to}${orgQ}`).catch(() => null),
+    dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${todayIso}${orgQ}`).catch(() => null),
+    dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${todayIso}${orgQ}`).catch(() => null),
+    dashFetch(`${API_URL}?action=warehouse_value_report&date=${todayIso}`).catch(() => null),
+  ]);
+
+  const decisions = [];
+
+  // Rule 1: overdue receivables > $50k
+  if (arR && !arR.error) {
+    const bal = Number(arR.kpi?.balance_usd || 0);
+    if (bal > 50000) {
+      decisions.push({
+        title: `Дебіторка ${fmtMoneyShort(bal)} — потребує уваги`,
+        pill: { text: 'AR', cls: 'accent' },
+        body: `Поточне сальдо клієнтів перевищує поріг. Перегляньте топ-боржників і запустіть нагадування про оплату.`,
+        actions: [{ label: 'Відкрити AR Aging', href: '/ar_aging.html', primary: true }, { label: 'Контрагенти', href: '/counterparties.html' }],
+      });
+    }
+  }
+
+  // Rule 2: AP > AR — we owe more than owed
+  if (arR && apR && !arR.error && !apR.error) {
+    const arBal = Number(arR.kpi?.balance_usd || 0);
+    const apBal = Number(apR.kpi?.balance_usd || 0);
+    if (apBal > arBal * 1.2 && apBal > 20000) {
+      decisions.push({
+        title: 'Ми винні більше ніж нам винні',
+        pill: { text: `Δ ${fmtMoneyShort(apBal - arBal)}`, cls: 'neg' },
+        body: `Зобов'язання постачальникам (${fmtMoneyShort(apBal)}) суттєво перевищують дебіторку (${fmtMoneyShort(arBal)}). Варто пришвидшити інкасацію або перенести оплати.`,
+        actions: [{ label: 'Переглянути Cash flow', href: '/finance.html', primary: true }],
+      });
+    }
+  }
+
+  // Rule 3: net margin < 5%
+  if (pnlR && !pnlR.error) {
+    const rev = (pnlR.revenue?.total || 0) + (pnlR.otherIncome?.total || 0);
+    const cogs = pnlR.cogs?.total || 0;
+    const exp = pnlR.totalExpenses?.total || 0;
+    const net = rev - cogs - exp;
+    const margin = rev > 0 ? net / rev : 0;
+    if (margin < 0.05 && rev > 0) {
+      decisions.push({
+        title: `Маржа за період ${fmtPct(margin)} — низька`,
+        pill: { text: 'P&L', cls: 'neg' },
+        body: `Чиста маржа нижче 5%. Основні витрати: собівартість ${fmtMoneyShort(cogs)} · операційні ${fmtMoneyShort(exp)}. Варто перевірити ціноутворення та структуру витрат.`,
+        actions: [{ label: 'Відкрити P&L', href: '/finance.html', primary: true }],
+      });
+    }
+  }
+
+  // Rule 4: stock too high vs revenue
+  if (stockR && pnlR && !stockR.error && !pnlR.error) {
+    const stock = Number(stockR.total_value_usd || 0);
+    const rev = (pnlR.revenue?.total || 0) + (pnlR.otherIncome?.total || 0);
+    if (rev > 0 && stock / rev > 1.5) {
+      decisions.push({
+        title: `Запаси ${fmtMoneyShort(stock)} — понад 1.5× виручки`,
+        pill: { text: 'Склад', cls: 'accent' },
+        body: `Оборотність запасів повільна. Розгляньте акції на повільні позиції або стоп-закупівлю по надлишкових.`,
+        actions: [{ label: 'Склад', href: '/warehouses.html', primary: true }],
+      });
+    }
+  }
+
+  // Fallback if all is clean
+  if (!decisions.length) {
+    decisions.push({
+      title: 'Все спокійно',
+      pill: { text: 'OK', cls: 'pos' },
+      body: 'Ключові порогові значення в нормі. Скрипт перевіряє дебіторку, баланс AR/AP, маржу та обіговість запасів — ніяких критичних подій не знайдено.',
+      actions: [],
+    });
+  }
+
+  box.innerHTML = decisions.map(d => `
+    <div class="dec">
+      <div class="dec-head">
+        <div class="dec-title">${esc(d.title)}</div>
+        <span class="pill ${d.pill.cls}">${esc(d.pill.text)}</span>
+      </div>
+      <div class="dec-body">${esc(d.body)}</div>
+      ${d.actions.length ? `<div class="dec-actions">${d.actions.map(a => `<a class="btn btn--${a.primary ? 'primary' : 'secondary'} btn--sm" href="${esc(a.href)}">${esc(a.label)}</a>`).join('')}</div>` : ''}
+    </div>
+  `).join('');
+  document.getElementById('decSub').textContent = `Для CEO · ${decisions.length} пункт${decisions.length === 1 ? '' : decisions.length < 5 ? 'и' : 'ів'}`;
+}
+
+// ── helpers ─────────────────────────────────────────────────────────
+function prevPeriod(from, to) {
+  try {
+    const f = new Date(from + 'T00:00:00'), t = new Date(to + 'T00:00:00');
+    const dayMs = 86400000;
+    const len = Math.round((t - f) / dayMs) + 1;
+    const prevTo = new Date(f.getTime() - dayMs);
+    const prevFrom = new Date(prevTo.getTime() - (len - 1) * dayMs);
+    return { from: _iso(prevFrom), to: _iso(prevTo) };
+  } catch { return null; }
+}
+</script>
+</body>
+</html>

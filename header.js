@@ -296,6 +296,7 @@
         </a>
         <nav class="nav">
           ${can('dashboard')  ? `<a href="/"                class="${active==='dashboard'  ? 'active' : ''}">🧭 Дашборд</a>` : ''}
+          ${isAdmin           ? `<a href="/executive.html"  class="${active==='executive'  ? 'active' : ''}">💼 Executive</a>` : ''}
           ${can('home')       ? `<a href="/prices.html"     class="${active==='home'       ? 'active' : ''}">🏠 Порівняння цін</a>` : ''}
           ${can('forecast')   ? `<a href="/forecast.html"   class="${active==='forecast'   ? 'active' : ''}">📊 Закупівлі</a>` : ''}
           ${can('warehouses') ? `<a href="/warehouses.html" class="${active==='warehouses' ? 'active' : ''}">📦 Склад</a>` : ''}
