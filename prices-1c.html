@@ -519,6 +519,7 @@ function renderCatalog() {
       const m = spec ? String(spec).match(/([\d.,]+)\s*Вт/i) : null;
       return m ? parseFloat(m[1].replace(',', '.')) : null;
     };
+    const curSym = name => name === 'USD' ? '$' : (name === 'EUR' ? '€' : (name || '$'));
     c.items.forEach(it => {
       const w = (c.unit === '$/Вт') ? wattsForSpec(it.spec) : null;
       const p1raw = it.no_vat && it.no_vat.price != null
@@ -526,7 +527,11 @@ function renderCatalog() {
       const p2raw = it.with_vat && it.with_vat.price != null
         ? (w ? Number(it.with_vat.price) / w : Number(it.with_vat.price)) : null;
 
-      const cur = c.unit || '$';
+      // Валюта — з ціни (per-item), або unit категорії (для $/Вт), або default $.
+      const itemCur = (it.no_vat && it.no_vat.currency_name) || (it.with_vat && it.with_vat.currency_name) || null;
+      const cur = c.unit === '$/Вт' ? '$/Вт'
+                : itemCur ? curSym(itemCur)
+                : c.unit || '$';
       const p1str = fmtPrice(p1raw);
       const p2str = fmtPrice(p2raw);
       const p1 = p1str != null ? `<span>${esc(p1str)}</span><span class="cur"> ${esc(cur)}</span>` : '—';
@@ -689,6 +694,7 @@ function buildPdfDocDefinition() {
     { text: `Прайс · оновлено ${dateStr}`, style: 'dateLine', margin: [0, 0, 0, 14] },
   ];
 
+  const curSym = name => name === 'USD' ? '$' : (name === 'EUR' ? '€' : (name || '$'));
   DATA.forEach(c => {
     if (!c.items.length) return;
     const isW = c.unit === '$/Вт';
@@ -701,7 +707,8 @@ function buildPdfDocDefinition() {
     ]];
     c.items.forEach(it => {
       const w = isW ? wattsFromSpec(it.spec) : null;
-      const cur = c.unit || '$';
+      const itemCur = (it.no_vat && it.no_vat.currency_name) || (it.with_vat && it.with_vat.currency_name) || null;
+      const cur = isW ? '$/Вт' : (itemCur ? curSym(itemCur) : (c.unit || '$'));
       const p1raw = it.no_vat && it.no_vat.price != null ? Number(it.no_vat.price) : null;
       const p2raw = it.with_vat && it.with_vat.price != null ? Number(it.with_vat.price) : null;
       const p1 = p1raw != null ? (w ? p1raw / w : p1raw) : null;
