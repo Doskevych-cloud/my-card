@@ -295,9 +295,12 @@ function render() {
                     return `<div class="pr"><span class="val">${esc(fmtNum(p.price))}${cur ? ' ' + esc(cur) : ''}</span><span class="type">${esc(p.type_name || '')}</span></div>`;
                   }).join('')}</div>`
                 : '<span class="muted">—</span>';
+              const dsBadge = it.datasheet_url
+                ? ` <a href="${esc(it.datasheet_url)}" target="_blank" rel="noopener" style="display:inline-block;padding:1px 6px;margin-left:4px;font-size:10px;border:1px solid var(--border2);border-radius:4px;color:var(--text2);text-decoration:none;vertical-align:middle" onclick="event.stopPropagation()">PDF ↗</a>`
+                : '';
               return `
               <tr>
-                <td class="prod-cell"><div class="name">${esc(it.display_name || '—')}</div></td>
+                <td class="prod-cell"><div class="name">${esc(it.display_name || '—')}${dsBadge}</div></td>
                 <td class="prod-cell"><div class="muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nomLine}</div>${specLine}</td>
                 <td>${esc(it.stock || '')}</td>
                 <td class="right ${stockN > 0 ? '' : 'muted'}">${stockN != null ? stockN : '<span class="muted">—</span>'}</td>
