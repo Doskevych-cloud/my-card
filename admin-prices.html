@@ -207,6 +207,19 @@ async function apiCall(action, opts = {}) {
 async function load() {
   const qs = `pt_no=${encodeURIComponent(PT_NO_VAT)}&pt_with=${encodeURIComponent(PT_WITH_VAT)}`;
   STATE = await apiCall('price_list_get', { qs });
+  // Паралельно вантажимо залишки Реакту (по nom1c_ref_key).
+  const refs = [];
+  for (const c of (STATE.categories || [])) for (const it of (c.items || [])) {
+    if (it.nom1c_ref_key) refs.push(it.nom1c_ref_key);
+  }
+  try {
+    const s = await apiCall('price_list_stocks', { method: 'POST', body: { ref_keys: refs } });
+    const stocks = s.stocks || {};
+    STATE._stocks_as_of = s.as_of_date;
+    for (const c of STATE.categories) for (const it of c.items) {
+      it._stock = stocks[it.nom1c_ref_key] || null;
+    }
+  } catch (_) {}
   render();
 }
 
@@ -232,12 +245,18 @@ function render() {
             <th>Товар 1С</th>
             <th>Spec</th>
             <th>Наявність</th>
+            <th class="right">На складі</th>
+            <th class="right">В дорозі</th>
             <th>Без ПДВ</th>
             <th>З ПДВ</th>
             <th></th>
           </tr></thead>
           <tbody>
-            ${c.items.map(it => `
+            ${c.items.map(it => {
+              const st = it._stock;
+              const stockN = st ? Math.round(Number(st.stock) || 0) : null;
+              const transitN = st ? Math.round(Number(st.transit) || 0) : null;
+              return `
               <tr>
                 <td>${esc(it.display_name || '—')}</td>
                 <td>${it.nom1c_ref_key
@@ -245,11 +264,13 @@ function render() {
                     : '<span class="nom1c-missing">не привʼязано</span>'}</td>
                 <td class="muted">${esc(it.display_spec || '')}</td>
                 <td>${esc(it.stock || '')}</td>
+                <td class="right ${stockN > 0 ? '' : 'muted'}">${stockN != null ? stockN : '<span class="muted">—</span>'}</td>
+                <td class="right ${transitN > 0 ? '' : 'muted'}">${transitN != null ? transitN : '<span class="muted">—</span>'}</td>
                 <td class="right">${it.no_vat && it.no_vat.price != null ? `$${Number(it.no_vat.price).toFixed(Number(it.no_vat.price) < 1 ? 3 : 0)}` : '<span class="muted">—</span>'}</td>
                 <td class="right">${it.with_vat && it.with_vat.price != null ? `$${Number(it.with_vat.price).toFixed(Number(it.with_vat.price) < 1 ? 3 : 0)}` : '<span class="muted">—</span>'}</td>
-                <td class="right"><button class="btn btn--sm" onclick='openItemModal(${JSON.stringify(it)}, ${JSON.stringify(c.slug)})'>✎</button></td>
-              </tr>
-            `).join('')}
+                <td class="right"><button class="btn btn--sm" onclick='openItemModal(${JSON.stringify(it).replace(/'/g,"&#39;")}, ${JSON.stringify(c.slug)})'>✎</button></td>
+              </tr>`;
+            }).join('')}
           </tbody>
         </table>
       ` : `<div class="empty">Немає позицій</div>`}
