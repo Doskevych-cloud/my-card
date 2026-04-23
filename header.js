@@ -287,19 +287,16 @@
         <button class="imp-exit" onclick="AppHeader.stopImpersonate()">← Повернутись як адмін</button>
       </div>` : '';
 
-    // Smart brand-лінк: веде на першу доступну сторінку юзера (щоб лого не
-    // приводило на dashboard, якщо юзер не має цієї ролі).
-    const brandHref = (global.Auth && global.Auth.homeHref) ? global.Auth.homeHref(user) : '/';
-
     host.innerHTML = `
       ${impBanner}
       <header class="app-topbar">
-        <a class="brand" href="${brandHref}" title="REACT">
+        <a class="brand" href="/" title="REACT">
           <span class="logo">R</span>
           <span class="name">REACT</span>
         </a>
         <nav class="nav">
           ${can('dashboard')  ? `<a href="/"                class="${active==='dashboard'  ? 'active' : ''}">🧭 Дашборд</a>` : ''}
+          ${isAdmin           ? `<a href="/executive.html"  class="${active==='executive'  ? 'active' : ''}">💼 Executive</a>` : ''}
           ${can('home')       ? `<a href="/prices.html"     class="${active==='home'       ? 'active' : ''}">🏠 Порівняння цін</a>` : ''}
           ${can('forecast')   ? `<a href="/forecast.html"   class="${active==='forecast'   ? 'active' : ''}">📊 Закупівлі</a>` : ''}
           ${can('warehouses') ? `<a href="/warehouses.html" class="${active==='warehouses' ? 'active' : ''}">📦 Склад</a>` : ''}
