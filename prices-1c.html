@@ -580,12 +580,18 @@ async function loadAll() {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error((data && data.error) || ('HTTP ' + res.status));
 
-  // API → локальний формат (cat/slug/unit/items). Нульові позиції
-  // ("немає в наявності") в публічному прайсі не показуємо; в адмінці є.
+  // API → локальний формат (cat/slug/unit/items). У публічному прайсі ховаємо
+  // позиції з stock='немає в наявності' та ті, де обидві ціни нульові/порожні.
+  // В адмінці все видно.
   DATA = (data.categories || []).map(c => ({
     cat: c.title, slug: c.slug, unit: c.unit || '',
     items: (c.items || [])
-      .filter(it => (it.stock || '') !== 'немає в наявності')
+      .filter(it => {
+        if ((it.stock || '') === 'немає в наявності') return false;
+        const p1 = it.no_vat && it.no_vat.price;
+        const p2 = it.with_vat && it.with_vat.price;
+        return (p1 != null && Number(p1) > 0) || (p2 != null && Number(p2) > 0);
+      })
       .map(it => ({
         name: it.display_name || it.nom1c_description || '',
         spec: it.display_spec || '',
