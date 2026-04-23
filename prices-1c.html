@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Прайс Реакт — ціни з 1С</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<script>
+  try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
+</script>
+<script src="auth.js?v=hfref20260423"></script>
+<script src="header.js?v=hfref20260423"></script>
+<style>
+:root{
+  --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
+  --surface:#141414; --surface2:#1c1c1c;
+  --border:#262626; --border2:#333;
+  --text:#f5f5f5; --text2:#a3a3a3; --text3:#737373;
+  --accent:#ff8319; --accent-bg:rgba(255,131,25,.12);
+  --red:#e74c3c;   --green:#22c55e;
+}
+:root[data-theme="light"]{
+  --bg:#f5f5f7; --bg2:#ffffff; --bg3:#ececef;
+  --surface:#ffffff; --surface2:#ffffff;
+  --border:#e5e5ea; --border2:#d1d1d6;
+  --text:#1c1c1e; --text2:#48484a; --text3:#8e8e93;
+  --accent:#e07017; --accent-bg:rgba(224,112,23,.12);
+  --red:#d93025;   --green:#15803d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+
+.wrap{max-width:1100px;margin:0 auto;padding:20px}
+.page-head{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.page-head h1{font-size:20px;font-weight:700;letter-spacing:-.4px}
+.page-head .sub{font-size:12px;color:var(--text3)}
+.page-head .meta{margin-left:auto;font-size:11.5px;color:var(--text3);font-variant-numeric:tabular-nums}
+.page-head .meta b{color:var(--text2);font-weight:600}
+
+.notice{margin-bottom:14px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:12px;color:var(--text2);display:none}
+.notice.show{display:block}
+.notice.err{color:var(--red);border-color:color-mix(in srgb,var(--red) 30%,var(--border))}
+
+.sect{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.sect-head{padding:11px 14px;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border);background:var(--bg2)}
+
+.p-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.p-tbl thead th{padding:10px 12px;background:var(--bg2);color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+.p-tbl thead th.num{text-align:right}
+.p-tbl tbody td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.p-tbl tbody tr:last-child td{border-bottom:none}
+.p-tbl tbody td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.p-tbl tbody td.name{max-width:420px}
+.p-tbl tbody tr.nomatch td.name{color:var(--text3)}
+.p-tbl tbody tr.nomatch td.num{color:var(--text3);font-weight:400}
+.p-tbl tbody td .m-hint{font-size:10.5px;color:var(--text3);margin-top:2px;display:block}
+.dash{color:var(--text3)}
+.loader{padding:40px;text-align:center;color:var(--text3);font-size:12px}
+
+@media (max-width:640px){
+  .wrap{padding:12px}
+  .page-head{gap:8px}
+  .page-head h1{font-size:17px}
+  .page-head .meta{width:100%;margin-left:0;margin-top:4px}
+  .p-tbl thead th,.p-tbl tbody td{padding:8px 9px;font-size:12px}
+  .p-tbl tbody td.name{max-width:none}
+}
+</style>
+</head>
+<body>
+
+<div id="appHeader"></div>
+
+<div class="wrap">
+  <div class="page-head">
+    <h1>Прайс Реакт</h1>
+    <span class="sub">ціни з 1С (регістр «ЦеныНоменклатуры»)</span>
+    <div class="meta" id="pmeta"></div>
+  </div>
+
+  <div id="notice" class="notice"></div>
+
+  <div id="content">
+    <div class="loader">Завантаження…</div>
+  </div>
+</div>
+
+<script>
+const API = 'https://price-api.doskevich.workers.dev';
+
+// Список товарів з прайсу (джерело: Google Sheets dev.generacia.energy).
+const PRICE_LIST = [
+  { category: 'PV-модулі', items: [
+    'Tongwei TWMNH-66HD - 625 Вт',
+    'Tongwei TWMNH-66HD - 630 Вт',
+    'Hanersun HN18N-72HT - 585 Вт',
+  ]},
+  { category: 'Гібридні інвертори', items: [
+    'Deye SUN-6K-SG05LP1-EU-AM2-P',
+    'Deye SUN-8K-SG05LP1-EU-AM2-P',
+    'Deye SUN-10K-SG02LP1-EU-AM3',
+    'Deye SUN-10K-SG05LP3-EU-SM2',
+    'Deye SUN-12K-SG02LP1-EU-AM3',
+    'Deye SUN-12K-SG05LP3-EU-SM2',
+    'Deye SUN-12K-SG01HP3-EU-AM2',
+    'Deye SUN-15K-SG05LP3-EU-SM2',
+    'Deye SUN-15K-SG01HP3-EU',
+    'Deye SUN-20K-SG05LP3-EU',
+    'Deye SUN-20K-SG01HP3-EU-AM2',
+    'Deye SUN-30K-SG02HP3-EU-AM3',
+    'Deye SUN-50K-SG01HP3-EU-BM4',
+    'Deye SUN-80K-SG02HP3-EU-EM6',
+  ]},
+  { category: 'Низьковольтні акумулятори', items: [
+    'Deye SE-G5.1 Pro-B',
+    'Deye SE-F5 Pro-C',
+    'Dah DHN-LVWES05-G1',
+    'Pylontech US5000',
+  ]},
+  { category: 'Високовольтні акумулятори', items: [
+    'Deye BOS-G PRO',
+    'Deye BOS-G-PDU-2 (BMS для BOS-G PRO)',
+    'Стійка 19" Deye 3U-HRACK (12 акб + 1 блок керування)',
+    'Deye HV BOS-B-Pack16-A3-Pro',
+    'Deye BOS-B-PDU-2-А (BMS для BOS-B-Pack16-A3-Pro)',
+  ]},
+  { category: 'PV-кабель', items: [
+    'KBE 6 мм (червоний / чорний), бухта (500 м)',
+  ]},
+];
+
+// ISO 4217 numeric → символ
+const CUR_SYMBOL = { '840':'$', '978':'€', '980':'₴', 'USD':'$', 'EUR':'€', 'UAH':'₴' };
+function curSym(code){ return CUR_SYMBOL[String(code || '').trim()] || ''; }
+
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// Формат ціни: "$1 250" або "$0.165" для малих значень
+function fmtPrice(p){
+  if (!p || p.price == null) return '<span class="dash">—</span>';
+  const v = Number(p.price);
+  if (!isFinite(v)) return '<span class="dash">—</span>';
+  const sym = curSym(p.currency_code);
+  const abs = Math.abs(v);
+  let body;
+  if (abs > 0 && abs < 1) {
+    body = v.toFixed(3).replace('.', ',');
+  } else {
+    body = v.toFixed(v % 1 === 0 ? 0 : 2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ').replace('.', ',');
+  }
+  return esc(sym + body);
+}
+
+function showNotice(msg, isErr){
+  const el = document.getElementById('notice');
+  el.textContent = msg;
+  el.className = 'notice show' + (isErr ? ' err' : '');
+}
+
+function render(data){
+  const byName = new Map();
+  for (const it of (data.items || [])) byName.set(it.name, it);
+
+  const pt = data.price_types || {};
+  const metaEl = document.getElementById('pmeta');
+  metaEl.innerHTML = `
+    Без ПДВ: <b>${esc(pt.no_vat && pt.no_vat.name || '—')}</b> &nbsp;·&nbsp;
+    З ПДВ: <b>${esc(pt.with_vat && pt.with_vat.name || '—')}</b>
+  `;
+
+  const parts = [];
+  let totalMatched = 0, totalItems = 0;
+  for (const grp of PRICE_LIST) {
+    const rows = grp.items.map(name => {
+      totalItems++;
+      const it = byName.get(name);
+      if (!it || !it.matched) {
+        return `<tr class="nomatch">
+          <td class="name">${esc(name)}<span class="m-hint">не знайдено в 1С</span></td>
+          <td class="num"><span class="dash">—</span></td>
+          <td class="num"><span class="dash">—</span></td>
+        </tr>`;
+      }
+      totalMatched++;
+      const hint = it.matched_name && it.matched_name !== name
+        ? `<span class="m-hint">1С: ${esc(it.matched_name)}${it.matched_article ? ' · арт. ' + esc(it.matched_article) : ''}</span>`
+        : (it.matched_article ? `<span class="m-hint">арт. ${esc(it.matched_article)}</span>` : '');
+      return `<tr>
+        <td class="name">${esc(name)}${hint}</td>
+        <td class="num">${fmtPrice(it.no_vat)}</td>
+        <td class="num">${fmtPrice(it.with_vat)}</td>
+      </tr>`;
+    }).join('');
+    parts.push(`
+      <div class="sect">
+        <div class="sect-head">${esc(grp.category)}</div>
+        <table class="p-tbl">
+          <thead><tr>
+            <th>Товар</th>
+            <th class="num">Гуртова без ПДВ</th>
+            <th class="num">Гуртова з ПДВ</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `);
+  }
+
+  document.getElementById('content').innerHTML = parts.join('');
+  metaEl.innerHTML += ` &nbsp;·&nbsp; знайдено <b>${totalMatched}/${totalItems}</b>`;
+}
+
+async function load(){
+  const items = [];
+  for (const grp of PRICE_LIST) {
+    for (const name of grp.items) items.push({ name, category: grp.category });
+  }
+  const res = await fetch(`${API}/?action=prices_1c_list`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    if (data && data.error === 'price_types_not_found') {
+      const types = (data.all_types || []).map(t => `• ${t.description}`).join('\n');
+      showNotice('У 1С не знайдено видів цін «Гуртова без ПДВ» / «Гуртова з ПДВ». Виправ назву в 1С або передай ?pt_no=<ref>&pt_with=<ref>.\n\nДоступні види:\n' + types, true);
+      document.getElementById('content').innerHTML = '';
+      return;
+    }
+    showNotice('Помилка: ' + ((data && data.error) || res.status), true);
+    document.getElementById('content').innerHTML = '';
+    return;
+  }
+  render(data);
+}
+
+Auth.require('home').then(user => {
+  AppHeader.mount({ active: 'prices-1c', user });
+  load().catch(err => showNotice('Не вдалося завантажити: ' + err.message, true));
+});
+</script>
+</body>
+</html>
