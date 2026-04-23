@@ -10,7 +10,6 @@
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
-<script src="auth.js?v=hfref20260423"></script>
 <style>
 /* ==========================================================
    THEME TOKENS — light/dark variants
@@ -290,6 +289,11 @@ a { color: inherit; text-decoration: none; }
 <script>
 const API = 'https://price-api.doskevich.workers.dev';
 
+// Ref_Key видів цін з 1С (Catalog_ВидыЦен) — хардкод, щоб не залежати від
+// fuzzy-regex у воркері при інших "Гуртова..." у довіднику.
+const PT_NO_VAT   = '36084004-bfb6-11f0-86f2-107c6149f3d7'; // Гуртова ціна, без ПДВ
+const PT_WITH_VAT = '6a417c18-3eec-11f1-870a-107c6149f3d7'; // Гуртова ціна, з ПДВ
+
 // Структура прайсу — категорії + специфікації (друга строка під назвою).
 // ВАЖЛИВО: поле `name` має точно збігатися з назвою в 1С для маппінгу.
 const PRICE_LIST = [
@@ -452,7 +456,8 @@ async function load() {
   for (const grp of PRICE_LIST) {
     for (const item of grp.items) items.push({ name: item.name, category: grp.category });
   }
-  const res = await fetch(`${API}/?action=prices_1c_list`, {
+  const qs = `pt_no=${encodeURIComponent(PT_NO_VAT)}&pt_with=${encodeURIComponent(PT_WITH_VAT)}`;
+  const res = await fetch(`${API}/?action=prices_1c_list&${qs}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ items }),
@@ -477,9 +482,7 @@ async function load() {
   render(data);
 }
 
-Auth.require('home').then(() => {
-  load().catch(err => showNotice('Не вдалося завантажити: ' + err.message, true));
-});
+load().catch(err => showNotice('Не вдалося завантажити: ' + err.message, true));
 </script>
 </body>
 </html>
