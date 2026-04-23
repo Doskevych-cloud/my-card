@@ -237,6 +237,9 @@ footer { border-top: 2px solid var(--ink); padding: 22px; margin-top: 28px; back
   .btn span.hide-sm { display: none; }
   .hero { padding: 36px 18px 24px; }
   .hero-meta { gap: 18px; padding-top: 20px; margin-top: 20px; }
+  .hero-meta, .hero-meta.primary, .hero-meta.contacts {
+    grid-template-columns: 1fr 1fr;
+  }
   .catnav-bar { top: 80px; }
   .catnav { padding: 8px 18px; gap: 6px; }
   .col-head { display: none; }
@@ -564,18 +567,21 @@ async function loadAll() {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error((data && data.error) || ('HTTP ' + res.status));
 
-  // API → локальний формат (cat/slug/unit/items).
+  // API → локальний формат (cat/slug/unit/items). Нульові позиції
+  // ("немає в наявності") в публічному прайсі не показуємо; в адмінці є.
   DATA = (data.categories || []).map(c => ({
     cat: c.title, slug: c.slug, unit: c.unit || '',
-    items: (c.items || []).map(it => ({
-      name: it.display_name || it.nom1c_description || '',
-      spec: it.display_spec || '',
-      stock: it.stock || 'в наявності',
-      ds_url: it.datasheet_url || null,
-      no_vat: it.no_vat,
-      with_vat: it.with_vat,
-    })),
-  }));
+    items: (c.items || [])
+      .filter(it => (it.stock || '') !== 'немає в наявності')
+      .map(it => ({
+        name: it.display_name || it.nom1c_description || '',
+        spec: it.display_spec || '',
+        stock: it.stock || 'в наявності',
+        ds_url: it.datasheet_url || null,
+        no_vat: it.no_vat,
+        with_vat: it.with_vat,
+      })),
+  })).filter(c => c.items.length > 0);
   buildCatNav();
   renderCatalog();
 }
