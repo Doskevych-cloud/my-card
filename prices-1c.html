@@ -399,157 +399,270 @@ footer {
   .row .mobile-foot { display: none; }
 }
 
+/* екран — print-doc схований */
+.print-doc { display: none !important; }
+
 @media print {
-  @page { size: A4; margin: 12mm 10mm; }
+  @page { size: A4; margin: 12mm 12mm 14mm 12mm; }
 
-  .topbar, footer, .fx-pill, .btn, .copy-btn,
-  .tg-icon, .avatar, .row .mobile-meta, .mobile-foot { display: none !important; }
-
+  /* --- глобальний reset --- */
   html, body {
     background: #fff !important;
     color: #000 !important;
     font-family: 'Times New Roman', Times, serif !important;
-    font-size: 10pt !important;
-    line-height: 1.3 !important;
+    font-size: 9.5pt !important;
+    line-height: 1.25 !important;
     letter-spacing: 0 !important;
   }
-
   a { color: #000 !important; text-decoration: none !important; }
+  b, strong { font-weight: 700; }
 
-  .hero {
-    max-width: none; margin: 0; padding: 0 0 8mm 0;
-    border-bottom: 1px solid #000;
+  /* прибираємо екранні елементи */
+  .topbar, footer, .fx-pill, .topbar-contacts, .btn, .copy-btn,
+  .tg-icon, .avatar, .hero, .row .mobile-meta, .mobile-foot,
+  .mobile-prices, .ds-link, .row-head-wrap { display: none !important; }
+
+  .print-doc { display: block !important; }
+
+  /* --- ШАПКА: ліворуч реквізити, праворуч блок "Прайс № від …" --- */
+  .print-header {
+    display: grid !important;
+    grid-template-columns: 1fr auto;
+    gap: 10mm;
+    align-items: flex-start;
     margin-bottom: 4mm;
   }
-  .hero-date {
-    font-family: inherit !important;
-    font-size: 11pt !important;
+  .print-header .print-org {
+    font-size: 13pt;
+    font-weight: 700;
+  }
+  .print-header .print-org-sub {
+    font-size: 9pt;
+    margin-top: 0.8mm;
     color: #000 !important;
-    text-transform: none !important;
-    letter-spacing: 0 !important;
-    font-weight: 700 !important;
-    margin-bottom: 4mm !important;
+    font-weight: 400;
+  }
+  .print-header .print-meta {
+    font-size: 9pt;
+    text-align: right;
+    line-height: 1.4;
+    font-weight: 400;
+    border: 1px solid #000;
+    padding: 2mm 3mm;
+    min-width: 52mm;
+  }
+  .print-header .print-meta b { font-weight: 700; }
+  .print-header .print-meta > div + div { margin-top: 0.8mm; }
+
+  /* --- ЗАГОЛОВОК --- */
+  .print-title {
+    text-align: center;
+    font-size: 13pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5pt;
+    margin: 3mm 0 4mm 0;
   }
 
-  .contacts-row, .info-grid {
-    display: block !important;
-    margin: 0 0 2mm 0 !important;
+  /* --- РЕКВІЗИТИ / КОНТАКТИ --- */
+  .print-info {
+    margin-bottom: 4mm;
+    font-size: 9pt;
+    line-height: 1.45;
+    font-weight: 400;
   }
-  .contacts-row .info-card, .info-grid .info-card {
-    display: inline !important;
-    margin-right: 6mm;
-  }
-  .contact-card-inner, .contact-body { display: inline !important; }
-  .info-card .k {
-    font-family: inherit !important;
-    font-size: 10pt !important;
-    font-weight: 700 !important;
-    color: #000 !important;
-    text-transform: none !important;
-    letter-spacing: 0 !important;
-    margin: 0 4px 0 0 !important;
-    display: inline !important;
-  }
-  .info-card .k::after { content: ':'; }
-  .info-card .k svg { display: none !important; }
-  .info-card .v {
-    display: inline !important;
-    font-size: 10pt !important;
-    font-weight: 400 !important;
-    color: #000 !important;
-  }
-  .info-card .v-text { font-size: 10pt !important; }
-  .contact-row { display: inline !important; }
+  .print-info .row-line { margin-bottom: 0.3mm; }
+  .print-info b { font-weight: 700; }
 
-  .row-head-wrap {
-    position: static !important;
-    border-bottom: 1px solid #000 !important;
-    background: #fff !important;
-  }
-  .row-head {
-    max-width: none !important;
-    margin: 0 !important;
-    padding: 2mm 0 !important;
-    grid-template-columns: minmax(0, 1fr) 22mm 22mm 22mm !important;
-    gap: 4mm !important;
-  }
-  .row-head div {
-    font-family: inherit !important;
-    font-size: 9pt !important;
-    font-weight: 700 !important;
-    color: #000 !important;
-    text-transform: none !important;
-    letter-spacing: 0 !important;
-  }
-  .row-head .head-ds { display: none !important; }
-
+  /* --- ТАБЛИЦЯ --- */
   .table-wrap { max-width: none !important; margin: 0 !important; padding: 0 !important; }
   main { padding: 0 !important; }
 
-  .category {
-    margin: 4mm 0 0 0 !important;
-    border-top: none !important;
-    padding-top: 2mm !important;
-    break-inside: auto;
+  .print-table-head {
+    display: grid !important;
+    grid-template-columns: 9mm minmax(0, 1fr) 22mm 22mm 24mm !important;
+    gap: 0 !important;
+    border: 0.75pt solid #000;
+    background: #fff !important;
+    font-size: 9pt;
+    font-weight: 700;
+    text-align: center;
   }
-  .category:first-child { margin-top: 2mm !important; }
-  .cat-head { padding: 0 0 1mm 0 !important; }
+  .print-table-head > div {
+    padding: 1.4mm 2mm;
+    border-right: 0.75pt solid #000;
+  }
+  .print-table-head > div:last-child { border-right: none; }
+  .print-table-head .th-num,
+  .print-table-head .th-p,
+  .print-table-head .th-stock { text-align: center; }
+
+  /* категорії — підзаголовок на всю ширину таблиці */
+  .category { margin: 0 !important; border: none !important; padding: 0 !important; }
+  .cat-head {
+    padding: 1.5mm 2mm !important;
+    border-left: 0.75pt solid #000 !important;
+    border-right: 0.75pt solid #000 !important;
+    border-top: 0.75pt solid #000 !important;
+    background: #fff !important;
+    page-break-after: avoid;
+  }
   .cat-head h2 {
     font-family: inherit !important;
-    font-size: 11pt !important;
+    font-size: 9.5pt !important;
     font-weight: 700 !important;
     letter-spacing: 0 !important;
-    border-bottom: 1px solid #000;
-    padding-bottom: 1mm;
+    text-transform: uppercase !important;
+    color: #000 !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .cat-head .cat-count { display: none !important; }
+
+  /* рядки товарів */
+  .row {
+    display: grid !important;
+    grid-template-columns: 9mm minmax(0, 1fr) 22mm 22mm 24mm !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    border-left: 0.75pt solid #000 !important;
+    border-right: 0.75pt solid #000 !important;
+    border-top: 0.75pt solid #000 !important;
+    page-break-inside: avoid;
+    align-items: stretch !important;
+    counter-increment: rownum;
+  }
+  .row > * {
+    padding: 1mm 2mm !important;
+    border-right: 0.5pt solid #666 !important;
+    font-family: inherit !important;
+  }
+  .row > *:last-child { border-right: none !important; }
+  .row::before {
+    content: counter(rownum);
+    padding: 1mm 2mm !important;
+    border-right: 0.5pt solid #666 !important;
+    text-align: center;
+    font-size: 9pt;
   }
 
-  .row {
-    grid-template-columns: minmax(0, 1fr) 22mm 22mm 22mm !important;
-    gap: 4mm !important;
-    padding: 1.2mm 0 !important;
-    border-bottom: 1px dotted #999 !important;
-    page-break-inside: avoid;
-  }
   .row .desktop-only { display: block !important; }
+
   .prod-name {
-    font-family: inherit !important;
-    font-size: 10pt !important;
-    font-weight: 600 !important;
+    font-size: 9.5pt !important;
+    font-weight: 400 !important;
     color: #000 !important;
   }
   .prod-sub {
-    font-family: inherit !important;
-    font-size: 9pt !important;
-    color: #333 !important;
+    font-size: 8pt !important;
+    color: #000 !important;
     font-weight: 400 !important;
-    margin-top: 0 !important;
+    margin-top: 0.2mm !important;
+    font-family: inherit !important;
+    font-style: italic;
   }
   .price {
     font-family: inherit !important;
-    font-size: 10pt !important;
-    font-weight: 500 !important;
+    font-size: 9.5pt !important;
+    font-weight: 400 !important;
     color: #000 !important;
     text-align: right !important;
+    white-space: nowrap !important;
   }
-  .price.empty { color: #888 !important; }
-  .price .cur { color: #000 !important; }
+  .price.empty { color: #000 !important; text-align: center !important; }
+  .price.empty::before { content: '—'; }
+  .price .cur { color: #000 !important; font-size: 8.5pt !important; margin-left: 1mm; }
 
   .stock {
     font-family: inherit !important;
     font-size: 9pt !important;
     color: #000 !important;
     font-weight: 400 !important;
-    padding: 0 !important;
     width: auto !important;
+    padding: 0 !important;
+    display: block !important;
+    text-align: center !important;
+    background: transparent !important;
+    border: none !important;
   }
   .stock .led { display: none !important; }
-  .ds-link { display: none !important; }
 
-  thead, .row-head-wrap { display: table-header-group; }
+  /* замикаюча лінія таблиці */
+  main > .category:last-of-type .row:last-of-type {
+    border-bottom: 0.75pt solid #000 !important;
+  }
+
+  /* --- ПІДВАЛ: умови + підписи --- */
+  .print-foot {
+    margin-top: 5mm;
+    font-size: 9pt;
+    line-height: 1.45;
+    page-break-inside: avoid;
+  }
+  .print-foot .foot-note > div + div { margin-top: 1mm; }
+
+  .print-signature {
+    margin-top: 12mm;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 12mm;
+    font-size: 9.5pt;
+  }
+  .print-signature .sig-block {
+    font-size: 9pt;
+  }
+  .print-signature .sig-label {
+    margin-bottom: 8mm;
+    font-weight: 400;
+  }
+  .print-signature .sig-line {
+    border-top: 0.75pt solid #000;
+    padding-top: 1mm;
+    text-align: center;
+    font-size: 8.5pt;
+    color: #000 !important;
+  }
+
+  /* наскрізна нумерація */
+  body { counter-reset: rownum; }
+
+  .print-only { display: block !important; }
 }
 </style>
 </head>
 <body>
+
+<!-- Друкована шапка (видно лише при друку) -->
+<div class="print-doc print-only">
+  <div class="print-header">
+    <div>
+      <div class="print-org">ТОВ «Реакт»</div>
+      <div class="print-org-sub">Дистрибуція обладнання для сонячних електростанцій</div>
+    </div>
+    <div class="print-meta">
+      <div><b>Прайс-лист</b> № <span id="printDocNo">—</span></div>
+      <div>від <span id="printDocDate">—</span></div>
+    </div>
+  </div>
+
+  <div class="print-title">Прайс-лист на обладнання</div>
+
+  <div class="print-info">
+    <div class="row-line"><b>Офіс:</b> Одеса, вул. Велика Арнаутська, 15</div>
+    <div class="row-line"><b>Склади:</b> Одеса, вул. Чигиринська, 21 · Київ, Вишневе, вул. Промислова, 10</div>
+    <div class="row-line"><b>Контакти:</b> Катерина +380 67 577 73 40 · Олександра +380 63 325 61 10</div>
+    <div class="row-line"><b>Курс:</b> USD/UAH <span id="printFxUsd">—</span> · EUR/UAH <span id="printFxEur">—</span></div>
+  </div>
+
+  <div class="print-table-head">
+    <div class="th-num">№</div>
+    <div>Найменування</div>
+    <div class="th-p">Без ПДВ, $</div>
+    <div class="th-p">З ПДВ, $</div>
+    <div class="th-stock">Наявність</div>
+  </div>
+</div>
 
 <header class="topbar">
   <div class="topbar-inner">
@@ -636,6 +749,27 @@ footer {
   <main id="catalog"><div class="loader">Завантаження цін…</div></main>
 </div>
 
+<!-- Друкований підвал (видно лише при друку) -->
+<div class="print-doc print-only">
+  <div class="print-foot">
+    <div class="foot-note">
+      <div><b>Умови:</b> ціни вказані у доларах США (USD) без урахування доставки. Остаточна вартість в UAH формується за курсом АТ КБ «Приватбанк» на день оплати.</div>
+      <div><b>Термін дії прайса:</b> 3 (три) банківські дні з моменту формування документа.</div>
+      <div><b>Форма оплати:</b> безготівковий розрахунок. Податок: загальна система, платник ПДВ.</div>
+    </div>
+    <div class="print-signature">
+      <div class="sig-block">
+        <div class="sig-label"><b>Від Постачальника:</b></div>
+        <div class="sig-line">підпис / П.І.Б. / М.П.</div>
+      </div>
+      <div class="sig-block">
+        <div class="sig-label"><b>Від Покупця:</b></div>
+        <div class="sig-line">підпис / П.І.Б. / М.П.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <footer>
   <div class="footer-inner">
     <p>Ціни вказані у доларах США (USD). Остаточна вартість формується за курсом <a href="https://privatbank.ua/peverodi-swift" target="_blank" rel="noopener">SWIFT</a> АТ КБ «Приватбанк» на день оплати.</p>
@@ -677,6 +811,15 @@ function setHeroDate() {
   const months = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
   document.getElementById('heroDate').textContent =
     `Оновлено · ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+
+  // Друкована шапка: дата + номер документа (yyyymmdd)
+  const pd = document.getElementById('printDocDate');
+  if (pd) pd.textContent = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} р.`;
+  const pn = document.getElementById('printDocNo');
+  if (pn) {
+    const yyyymmdd = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+    pn.textContent = yyyymmdd;
+  }
 }
 
 // ============================================================
@@ -792,8 +935,16 @@ async function loadFxSwift() {
     if (!d.rates) return;
     const usd = d.rates.USD, eur = d.rates.EUR;
     const fmtUah = v => v != null && isFinite(v) ? v.toFixed(2).replace('.', ',') : '—';
-    if (usd && usd.sell) document.getElementById('fxUsd').textContent = fmtUah(usd.sell);
-    if (eur && eur.sell) document.getElementById('fxEur').textContent = fmtUah(eur.sell);
+    if (usd && usd.sell) {
+      const v = fmtUah(usd.sell);
+      document.getElementById('fxUsd').textContent = v;
+      const p = document.getElementById('printFxUsd'); if (p) p.textContent = v;
+    }
+    if (eur && eur.sell) {
+      const v = fmtUah(eur.sell);
+      document.getElementById('fxEur').textContent = v;
+      const p = document.getElementById('printFxEur'); if (p) p.textContent = v;
+    }
     document.getElementById('fxPill').style.display = 'inline-flex';
   } catch (_) { /* silent */ }
 }
