@@ -96,6 +96,7 @@ a { color: inherit; text-decoration: none; }
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 28px 40px;
+  margin-bottom: 56px;
 }
 .contacts-row {
   display: grid;
@@ -380,6 +381,7 @@ footer {
   .info-grid {
     grid-template-columns: 1fr 1fr;
     gap: 22px 18px;
+    margin-bottom: 36px;
   }
   .contacts-row {
     grid-template-columns: 1fr 1fr;
@@ -459,12 +461,156 @@ footer {
 }
 
 @media print {
-  .topbar, footer, .btn, .fx-pill, .topbar-contacts { display: none !important; }
-  .row-head { position: static; }
-  body { background: #fff; }
-  .hero { padding: 20px 0; }
-  .category { break-inside: avoid; margin-top: 24px; }
-  .row { padding: 8px 0; page-break-inside: avoid; }
+  @page { size: A4; margin: 12mm 10mm; }
+
+  /* прибираємо все декоративне */
+  .topbar, footer, .fx-pill, .topbar-contacts, .btn, .copy-btn,
+  .tg-icon, .avatar, .row .mobile-meta, .mobile-foot { display: none !important; }
+
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    font-family: 'Times New Roman', Times, serif !important;
+    font-size: 10pt !important;
+    line-height: 1.3 !important;
+    letter-spacing: 0 !important;
+  }
+
+  a { color: #000 !important; text-decoration: none !important; }
+
+  /* шапка-документ */
+  .hero {
+    max-width: none; margin: 0; padding: 0 0 8mm 0;
+    border-bottom: 1px solid #000;
+    margin-bottom: 4mm;
+  }
+  .hero-date {
+    font-family: inherit !important;
+    font-size: 11pt !important;
+    color: #000 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    font-weight: 700 !important;
+    margin-bottom: 4mm !important;
+  }
+
+  .contacts-row, .info-grid {
+    display: block !important;
+    margin: 0 0 2mm 0 !important;
+  }
+  .contacts-row .info-card, .info-grid .info-card {
+    display: inline !important;
+    margin-right: 6mm;
+  }
+  .contact-card-inner, .contact-body { display: inline !important; }
+  .info-card .k {
+    font-family: inherit !important;
+    font-size: 10pt !important;
+    font-weight: 700 !important;
+    color: #000 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    margin: 0 4px 0 0 !important;
+    display: inline !important;
+  }
+  .info-card .k::after { content: ':'; }
+  .info-card .k svg { display: none !important; }
+  .info-card .v {
+    display: inline !important;
+    font-size: 10pt !important;
+    font-weight: 400 !important;
+    color: #000 !important;
+  }
+  .info-card .v-text { font-size: 10pt !important; }
+  .contact-row { display: inline !important; }
+
+  /* таблиця */
+  .row-head-wrap {
+    position: static !important;
+    border-bottom: 1px solid #000 !important;
+    background: #fff !important;
+  }
+  .row-head {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 2mm 0 !important;
+    grid-template-columns: minmax(0, 1fr) 22mm 22mm 22mm !important;
+    gap: 4mm !important;
+  }
+  .row-head div {
+    font-family: inherit !important;
+    font-size: 9pt !important;
+    font-weight: 700 !important;
+    color: #000 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+  }
+  .row-head .head-ds { display: none !important; }
+
+  .table-wrap { max-width: none !important; margin: 0 !important; padding: 0 !important; }
+  main { padding: 0 !important; }
+
+  .category {
+    margin: 4mm 0 0 0 !important;
+    border-top: none !important;
+    padding-top: 2mm !important;
+    break-inside: auto;
+  }
+  .category:first-child { margin-top: 2mm !important; }
+  .cat-head { padding: 0 0 1mm 0 !important; }
+  .cat-head h2 {
+    font-family: inherit !important;
+    font-size: 11pt !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+    border-bottom: 1px solid #000;
+    padding-bottom: 1mm;
+  }
+
+  .row {
+    grid-template-columns: minmax(0, 1fr) 22mm 22mm 22mm !important;
+    gap: 4mm !important;
+    padding: 1.2mm 0 !important;
+    border-bottom: 1px dotted #999 !important;
+    page-break-inside: avoid;
+  }
+  .row .desktop-only { display: block !important; }
+  .prod-name {
+    font-family: inherit !important;
+    font-size: 10pt !important;
+    font-weight: 600 !important;
+    color: #000 !important;
+  }
+  .prod-sub {
+    font-family: inherit !important;
+    font-size: 9pt !important;
+    color: #333 !important;
+    font-weight: 400 !important;
+    margin-top: 0 !important;
+  }
+  .price {
+    font-family: inherit !important;
+    font-size: 10pt !important;
+    font-weight: 500 !important;
+    color: #000 !important;
+    text-align: right !important;
+  }
+  .price.empty { color: #888 !important; }
+  .price .cur { color: #000 !important; }
+
+  .stock {
+    font-family: inherit !important;
+    font-size: 9pt !important;
+    color: #000 !important;
+    font-weight: 400 !important;
+    padding: 0 !important;
+    width: auto !important;
+  }
+  .stock .led { display: none !important; }
+  .ds-link { display: none !important; }
+
+  /* повторювати заголовок на кожній сторінці */
+  thead, .row-head-wrap { display: table-header-group; }
 }
 </style>
 </head>
@@ -517,24 +663,24 @@ footer {
   </div>
   <div class="info-grid">
     <div class="info-card">
-      <div class="k">Офіс</div>
+      <div class="k">Офіс · Одеса</div>
       <div class="v">
-        <span class="v-text">Одеса, вул. Велика Арнаутська, 15</span>
+        <span class="v-text">вул. Велика Арнаутська, 15</span>
         <button class="copy-btn" data-copy="Одеса, вул. Велика Арнаутська, 15" aria-label="Копіювати"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="1"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
-      </div>
-    </div>
-    <div class="info-card">
-      <div class="k">Склад · Київ</div>
-      <div class="v">
-        <span class="v-text">Вишневе, вул. Промислова, 10</span>
-        <button class="copy-btn" data-copy="Вишневе, вул. Промислова, 10" aria-label="Копіювати"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="1"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
       </div>
     </div>
     <div class="info-card">
       <div class="k">Склад · Одеса</div>
       <div class="v">
-        <span class="v-text">Одеса, вул. Чигиринська, 21</span>
+        <span class="v-text">вул. Чигиринська, 21</span>
         <button class="copy-btn" data-copy="Одеса, вул. Чигиринська, 21" aria-label="Копіювати"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="1"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+      </div>
+    </div>
+    <div class="info-card">
+      <div class="k">Склад · Київ</div>
+      <div class="v">
+        <span class="v-text">вул. Промислова, 10, Вишневе</span>
+        <button class="copy-btn" data-copy="Київ, Вишневе, вул. Промислова, 10" aria-label="Копіювати"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="1"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
       </div>
     </div>
   </div>
@@ -547,7 +693,7 @@ footer {
     <div class="num-col head-p1">Ціна без ПДВ</div>
     <div class="num-col head-p2">Ціна з ПДВ</div>
     <div class="head-stock">Наявність</div>
-    <div class="head-ds">Datasheet</div>
+    <div class="head-ds">Даташит</div>
   </div>
 </div>
 <div class="table-wrap">
@@ -640,11 +786,11 @@ DATA.forEach(c => {
       <div class="desktop-only">${dsCell}</div>
 
       <div class="mobile-prices mobile-meta">
-        ${it.p2 != null
-          ? `<div class="price-line"><span class="lbl">з ПДВ</span><span class="price">${renderP(it.p2)}</span></div>`
-          : ''}
         ${it.p1 != null
           ? `<div class="price-line"><span class="lbl">без ПДВ</span><span class="price">${renderP(it.p1)}</span></div>`
+          : ''}
+        ${it.p2 != null
+          ? `<div class="price-line"><span class="lbl">з ПДВ</span><span class="price">${renderP(it.p2)}</span></div>`
           : ''}
         ${it.p1 == null && it.p2 == null
           ? `<div class="price-line empty"><span class="lbl">ціна</span><span class="price">${it.priceNote || '—'}</span></div>`
