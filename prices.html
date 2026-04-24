@@ -625,9 +625,9 @@ function cyr(s) {
 const KNOWN_BRANDS = [
   'DEYE','GROWATT','HUAWEI','VICTRON','MUST','SOFAR','GOODWE','SUNGROW','FRONIUS','SMA',
   'SOLAX','FOXESS','AFORE','AZZURRO','SERMATEC','SACOLAR',
-  'LONGI','TRINA','JINKO','CANADIAN','JA SOLAR','JASOLAR','RISEN','AIKO','LEAPTON',
+  'LONGI','TRINA','JINKO','CANADIAN','JA SOLAR','JASOLAR','RISEN','AIKO','LEAPTON','ULICA',
   'PYLONTECH','DYNESS','BYD','LUNA','FORTRESS',
-  'KBE'
+  'FOX','KBE'
 ];
 
 // ═══════════════════════════════════════════════
@@ -654,6 +654,10 @@ function extractBrand(name) {
   if (/\bHSM-/.test(u)) return 'LONGI';
   if (/\bCS[67]\d/.test(u)) return 'CANADIAN';
   if (/\bDHN-/.test(u)) return 'JINKO';
+  // FOX ESS: H1/H3 (гібридні), M1 (мікро), EP (акумулятори), AIO (all-in-one)
+  if (/\bFOX\s+[HM]\d/.test(u) || /\bFOX\s+EP\d/.test(u) || /\bFOX\s+AIO/.test(u) || /\b[HM]\d-[\d.]+-[A-Z]/.test(u) && u.includes('FOX')) return 'FOX';
+  if (/\bJKM\d+/.test(u)) return 'JINKO';
+  if (/\bUL-\d+M/.test(u)) return 'ULICA';
   return null;
 }
 
@@ -766,6 +770,15 @@ const MODEL_PATTERNS = [
   /US\d{4}/,
   /3U-[A-Z]+/,
   /HVB[\d\-V/A]+/,
+  // FOX ESS: H1-3.0-E, H3-PRO-30.0, M1-1000, EP12, AIO-H1
+  /FOX\s*H\d[-.\d]*[A-Z0-9\-]*/,
+  /FOX\s*M\d+-\d+[A-Z0-9\-]*/,
+  /FOX\s*EP\d+/,
+  /FOX\s*AIO[A-Z0-9\-]*/,
+  // Jinko panel models (JKM455N-48HL4M-DB, etc.)
+  /JKM\d+[A-Z]?-[\dA-Z\-]+/,
+  // Ulica panel models (UL-610M-132DDGN)
+  /UL-\d+[A-Z]+-[\dA-Z]+/,
 ];
 
 function extractModel(nameRaw) {
