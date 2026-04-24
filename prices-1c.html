@@ -315,10 +315,11 @@ footer {
   .fx-pill { font-size: 10px; gap: 12px; }
   .btn span.hide-sm { display: none; }
 
-  .hero { padding: 26px 16px 40px; }
+  .hero { padding: 26px 16px 22px; }
   .info-grid {
     grid-template-columns: 1fr 1fr;
     gap: 22px 18px;
+    margin-bottom: 36px;
   }
   .contacts-row {
     grid-template-columns: 1fr 1fr;
@@ -326,13 +327,15 @@ footer {
     margin-bottom: 36px;
   }
 
-  .table-wrap { padding: 0 16px 48px; }
+  .table-wrap { padding: 0 16px; }
   .row-head-wrap { top: 0; }
+  main { padding: 0 16px 48px; }
   .category { margin-top: 32px; scroll-margin-top: 140px; }
   .cat-head h2 { font-size: 17px; }
 
   .row-head { padding: 12px 16px; grid-template-columns: 1fr 90px; gap: 10px; }
-  .row-head .head-p1, .row-head .head-p2, .row-head .head-ds, .row-head .head-stock { display: none; }
+  .row-head .head-p1, .row-head .head-p2, .row-head .head-ds { display: none; }
+  .row-head .head-stock { display: none; }
   .row-head::after {
     content: 'Ціна';
     font-family: var(--mono); font-size: 11px; font-weight: 500;
@@ -341,45 +344,208 @@ footer {
   }
 
   .row {
-    grid-template-columns: 1fr auto;
-    gap: 6px 8px;
-    padding: 14px 0;
-    grid-template-areas:
-      "name price"
-      "meta meta"
-      "ds   ds";
-  }
-  .row > .prod-name { grid-area: name; }
-  .row > .mobile-price { grid-area: price; justify-self: end; text-align: right; }
-  .row > .meta { grid-area: meta; display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-top: 4px; }
-  .row > .mobile-ds { grid-area: ds; margin-top: 2px; }
-  .row > .meta .stock { margin-right: auto; }
-  .row > .meta .meta-label {
-    font-family: var(--mono); font-size: 10px; color: var(--ink-3);
-    text-transform: uppercase; letter-spacing: 0.09em; margin-right: 4px; font-weight: 500;
+    display: block;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line);
   }
   .row .desktop-only { display: none; }
   .row .mobile-meta { display: flex; }
-  .row .mobile-price { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-  .row .mobile-price .price { font-size: 15px; font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; }
-  .row .mobile-price .price .cur { color: var(--ink-3); margin-left: 2px; }
-  .row .mobile-price .price-vat { font-family: var(--mono); font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em; }
+  .row > .prod-name { margin-bottom: 14px; }
+
+  .row .mobile-prices {
+    display: flex;
+    gap: 28px;
+    margin-bottom: 12px;
+  }
+  .row .mobile-prices .price-line {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .row .mobile-prices .price-line .lbl {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 500;
+  }
+  .row .mobile-prices .price-line .price {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+    text-align: left;
+  }
+  .row .mobile-prices .price-line .price .cur { color: var(--ink-3); margin-left: 3px; font-weight: 400; }
+  .row .mobile-prices .price-line.empty .price { color: var(--ink-4); font-weight: 400; font-size: 13px; }
+
+  .row > .mobile-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
 
   footer { padding: 24px 16px 32px; margin-top: 48px; }
   .footer-inner { flex-direction: column; gap: 14px; }
   .footer-inner .copyright { text-align: left; }
 }
 @media (min-width: 861px) {
-  .row .mobile-meta, .row .mobile-price, .row .mobile-ds { display: none; }
+  .row .mobile-meta { display: none; }
+  .row .mobile-prices { display: none; }
+  .row .mobile-foot { display: none; }
 }
 
 @media print {
-  .topbar, footer, .btn, .fx-pill { display: none !important; }
-  .row-head { position: static; }
-  body { background: #fff; }
-  .hero { padding: 20px 0; }
-  .category { break-inside: avoid; margin-top: 24px; }
-  .row { padding: 8px 0; page-break-inside: avoid; }
+  @page { size: A4; margin: 12mm 10mm; }
+
+  .topbar, footer, .fx-pill, .btn, .copy-btn,
+  .tg-icon, .avatar, .row .mobile-meta, .mobile-foot { display: none !important; }
+
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    font-family: 'Times New Roman', Times, serif !important;
+    font-size: 10pt !important;
+    line-height: 1.3 !important;
+    letter-spacing: 0 !important;
+  }
+
+  a { color: #000 !important; text-decoration: none !important; }
+
+  .hero {
+    max-width: none; margin: 0; padding: 0 0 8mm 0;
+    border-bottom: 1px solid #000;
+    margin-bottom: 4mm;
+  }
+  .hero-date {
+    font-family: inherit !important;
+    font-size: 11pt !important;
+    color: #000 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    font-weight: 700 !important;
+    margin-bottom: 4mm !important;
+  }
+
+  .contacts-row, .info-grid {
+    display: block !important;
+    margin: 0 0 2mm 0 !important;
+  }
+  .contacts-row .info-card, .info-grid .info-card {
+    display: inline !important;
+    margin-right: 6mm;
+  }
+  .contact-card-inner, .contact-body { display: inline !important; }
+  .info-card .k {
+    font-family: inherit !important;
+    font-size: 10pt !important;
+    font-weight: 700 !important;
+    color: #000 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    margin: 0 4px 0 0 !important;
+    display: inline !important;
+  }
+  .info-card .k::after { content: ':'; }
+  .info-card .k svg { display: none !important; }
+  .info-card .v {
+    display: inline !important;
+    font-size: 10pt !important;
+    font-weight: 400 !important;
+    color: #000 !important;
+  }
+  .info-card .v-text { font-size: 10pt !important; }
+  .contact-row { display: inline !important; }
+
+  .row-head-wrap {
+    position: static !important;
+    border-bottom: 1px solid #000 !important;
+    background: #fff !important;
+  }
+  .row-head {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 2mm 0 !important;
+    grid-template-columns: minmax(0, 1fr) 22mm 22mm 22mm !important;
+    gap: 4mm !important;
+  }
+  .row-head div {
+    font-family: inherit !important;
+    font-size: 9pt !important;
+    font-weight: 700 !important;
+    color: #000 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+  }
+  .row-head .head-ds { display: none !important; }
+
+  .table-wrap { max-width: none !important; margin: 0 !important; padding: 0 !important; }
+  main { padding: 0 !important; }
+
+  .category {
+    margin: 4mm 0 0 0 !important;
+    border-top: none !important;
+    padding-top: 2mm !important;
+    break-inside: auto;
+  }
+  .category:first-child { margin-top: 2mm !important; }
+  .cat-head { padding: 0 0 1mm 0 !important; }
+  .cat-head h2 {
+    font-family: inherit !important;
+    font-size: 11pt !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+    border-bottom: 1px solid #000;
+    padding-bottom: 1mm;
+  }
+
+  .row {
+    grid-template-columns: minmax(0, 1fr) 22mm 22mm 22mm !important;
+    gap: 4mm !important;
+    padding: 1.2mm 0 !important;
+    border-bottom: 1px dotted #999 !important;
+    page-break-inside: avoid;
+  }
+  .row .desktop-only { display: block !important; }
+  .prod-name {
+    font-family: inherit !important;
+    font-size: 10pt !important;
+    font-weight: 600 !important;
+    color: #000 !important;
+  }
+  .prod-sub {
+    font-family: inherit !important;
+    font-size: 9pt !important;
+    color: #333 !important;
+    font-weight: 400 !important;
+    margin-top: 0 !important;
+  }
+  .price {
+    font-family: inherit !important;
+    font-size: 10pt !important;
+    font-weight: 500 !important;
+    color: #000 !important;
+    text-align: right !important;
+  }
+  .price.empty { color: #888 !important; }
+  .price .cur { color: #000 !important; }
+
+  .stock {
+    font-family: inherit !important;
+    font-size: 9pt !important;
+    color: #000 !important;
+    font-weight: 400 !important;
+    padding: 0 !important;
+    width: auto !important;
+  }
+  .stock .led { display: none !important; }
+  .ds-link { display: none !important; }
+
+  thead, .row-head-wrap { display: table-header-group; }
 }
 </style>
 </head>
@@ -439,17 +605,17 @@ footer {
       </div>
     </div>
     <div class="info-card">
-      <div class="k">Склад · Київ</div>
+      <div class="k">Склад · Одеса</div>
       <div class="v">
-        <span class="v-text">Вишневе, вул. Промислова, 10</span>
-        <button class="copy-btn" data-copy="Вишневе, вул. Промислова, 10" aria-label="Копіювати"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="1"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+        <span class="v-text">вул. Чигиринська, 21</span>
+        <button class="copy-btn" data-copy="Одеса, вул. Чигиринська, 21" aria-label="Копіювати"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="1"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
       </div>
     </div>
     <div class="info-card">
-      <div class="k">Склад · Одеса</div>
+      <div class="k">Склад · Київ</div>
       <div class="v">
-        <span class="v-text">Одеса, вул. Чигиринська, 21</span>
-        <button class="copy-btn" data-copy="Одеса, вул. Чигиринська, 21" aria-label="Копіювати"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="1"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+        <span class="v-text">вул. Промислова, 10, Вишневе</span>
+        <button class="copy-btn" data-copy="Київ, Вишневе, вул. Промислова, 10" aria-label="Копіювати"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="1"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
       </div>
     </div>
   </div>
@@ -461,7 +627,7 @@ footer {
     <div class="num-col head-p1">Ціна без ПДВ</div>
     <div class="num-col head-p2">Ціна з ПДВ</div>
     <div class="head-stock">Наявність</div>
-    <div class="head-ds">Datasheet</div>
+    <div class="head-ds">Даташит</div>
   </div>
 </div>
 
@@ -557,14 +723,6 @@ function renderCatalog() {
         ? `<a class="ds-link" href="${esc(it.ds_url)}" target="_blank" rel="noopener">${dsIcon}PDF</a>`
         : '<span class="ds-link none">—</span>';
 
-      // Мобільна ціна: показуємо з-ПДВ якщо є, інакше без-ПДВ, інакше —.
-      const mobileMain =
-        p2str != null ? `<div class="price">${p2}</div><div class="price-vat">з ПДВ</div>`
-      : p1str != null ? `<div class="price">${p1}</div><div class="price-vat">без ПДВ</div>`
-      : '<div class="price empty">—</div>';
-      const mobileSecondary = (p1str != null && p2str != null)
-        ? `<div class="price"><span class="meta-label">без ПДВ</span>${p1}</div>` : '';
-
       const row = document.createElement('div');
       row.className = 'row';
       row.innerHTML = `
@@ -577,12 +735,15 @@ function renderCatalog() {
         <div class="desktop-only"><span class="stock ${stockClass}"><span class="led"></span>${esc(it.stock)}</span></div>
         <div class="desktop-only">${dsCell}</div>
 
-        <div class="mobile-price mobile-meta">${mobileMain}</div>
-        <div class="meta mobile-meta">
-          <span class="stock ${stockClass}"><span class="led"></span>${esc(it.stock)}</span>
-          ${mobileSecondary}
+        <div class="mobile-prices mobile-meta">
+          ${p2str != null ? `<div class="price-line"><span class="lbl">з ПДВ</span><span class="price">${p2}</span></div>` : ''}
+          ${p1str != null ? `<div class="price-line"><span class="lbl">без ПДВ</span><span class="price">${p1}</span></div>` : ''}
+          ${p1str == null && p2str == null ? `<div class="price-line empty"><span class="lbl">ціна</span><span class="price">—</span></div>` : ''}
         </div>
-        ${it.ds_url ? `<a class="ds-link mobile-ds mobile-meta" href="${esc(it.ds_url)}" target="_blank" rel="noopener">${dsIcon}PDF</a>` : ''}
+        <div class="mobile-foot mobile-meta">
+          <span class="stock ${stockClass}"><span class="led"></span>${esc(it.stock)}</span>
+          ${it.ds_url ? `<a class="ds-link" href="${esc(it.ds_url)}" target="_blank" rel="noopener">${dsIcon}PDF</a>` : ''}
+        </div>
       `;
       sec.appendChild(row);
     });
