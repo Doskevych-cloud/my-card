@@ -346,9 +346,11 @@ footer {
   .row {
     display: grid;
     grid-template-columns: 1fr auto;
+    grid-template-rows: auto;
     column-gap: 16px;
+    row-gap: 0;
     align-items: start;
-    padding: 16px 0;
+    padding: 14px 0;
     border-bottom: 1px solid var(--line);
   }
   .row .desktop-only { display: none; }
@@ -357,16 +359,17 @@ footer {
     grid-column: 1;
     grid-row: 1;
     margin-bottom: 0;
-    align-self: center;
+    align-self: start;
   }
 
   .row .mobile-prices {
     grid-column: 2;
-    grid-row: 1 / span 2;
+    grid-row: 1;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 6px;
+    justify-content: flex-start;
+    gap: 4px;
     margin-bottom: 0;
     min-width: 96px;
   }
@@ -379,10 +382,10 @@ footer {
   }
   .row .mobile-prices .price-line .lbl {
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: 9.5px;
     color: var(--ink-3);
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     font-weight: 500;
   }
   .row .mobile-prices .price-line .price {
@@ -394,11 +397,21 @@ footer {
     text-align: right;
     letter-spacing: -0.01em;
   }
-  .row .mobile-prices .price-line .price .cur { color: var(--ink-3); margin-left: 3px; font-weight: 400; }
-  .row .mobile-prices .price-line.empty .price { color: var(--ink-4); font-weight: 400; font-size: 13px; text-align: right; }
+  .row .mobile-prices .price-line .price .cur {
+    color: var(--ink-3);
+    margin-left: 2px;
+    font-weight: 400;
+    font-size: 11px;
+  }
+  .row .mobile-prices .price-line.empty .price {
+    color: var(--ink-4);
+    font-weight: 400;
+    font-size: 13px;
+    text-align: right;
+  }
 
   .row > .mobile-foot {
-    grid-column: 1;
+    grid-column: 1 / -1;
     grid-row: 2;
     margin-top: 10px;
     display: flex;
@@ -406,6 +419,9 @@ footer {
     justify-content: flex-start;
     gap: 16px;
   }
+  .row > .mobile-foot .stock { font-size: 11px; }
+  .row > .mobile-foot .stock .led { width: 6px; height: 6px; }
+  .row > .mobile-foot .ds-link { font-size: 11px; }
 
   footer { padding: 24px 16px 32px; margin-top: 48px; }
   .footer-inner { flex-direction: column; gap: 14px; }
@@ -814,7 +830,7 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
 const fmtPrice = v => {
   if (v == null || !isFinite(v)) return null;
   if (Math.abs(v) < 1) return v.toFixed(3).replace(/\.?0+$/, '').replace('.', ',');
-  return v.toLocaleString('uk-UA', { maximumFractionDigits: 0 });
+  return v.toLocaleString('uk-UA', { maximumFractionDigits: 0 }).replace(/\s/g, '\u202F');
 };
 const curSym = name => name === 'USD' ? '$' : (name === 'EUR' ? '€' : (name || '$'));
 
@@ -876,8 +892,8 @@ function renderCatalog() {
 
       const p1str = fmtPrice(p1raw);
       const p2str = fmtPrice(p2raw);
-      const p1 = p1str != null ? `<span>${esc(p1str)}</span><span class="cur"> ${esc(cur)}</span>` : '—';
-      const p2 = p2str != null ? `<span>${esc(p2str)}</span><span class="cur"> ${esc(cur)}</span>` : '—';
+      const p1 = p1str != null ? `<span>${esc(p1str)}</span><span class="cur">${esc(cur)}</span>` : '—';
+      const p2 = p2str != null ? `<span>${esc(p2str)}</span><span class="cur">${esc(cur)}</span>` : '—';
 
       const stockClass = it.stock === 'в наявності' ? '' : 'wait';
       const dsCell = it.ds_url
