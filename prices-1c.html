@@ -333,7 +333,7 @@ footer {
   .category { margin-top: 32px; scroll-margin-top: 140px; }
   .cat-head h2 { font-size: 17px; }
 
-  .row-head { padding: 12px 16px; grid-template-columns: 1fr 90px; gap: 10px; }
+  .row-head { padding: 12px 16px; grid-template-columns: 1fr 96px; gap: 16px; }
   .row-head .head-p1, .row-head .head-p2, .row-head .head-ds { display: none; }
   .row-head .head-stock { display: none; }
   .row-head::after {
@@ -344,23 +344,38 @@ footer {
   }
 
   .row {
-    display: block;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 16px;
+    align-items: start;
     padding: 16px 0;
     border-bottom: 1px solid var(--line);
   }
   .row .desktop-only { display: none; }
   .row .mobile-meta { display: flex; }
-  .row > .prod-name { margin-bottom: 14px; }
+  .row > .prod-name {
+    grid-column: 1;
+    grid-row: 1;
+    margin-bottom: 0;
+    align-self: center;
+  }
 
   .row .mobile-prices {
+    grid-column: 2;
+    grid-row: 1 / span 2;
     display: flex;
-    gap: 28px;
-    margin-bottom: 12px;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    margin-bottom: 0;
+    min-width: 96px;
   }
   .row .mobile-prices .price-line {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 8px;
   }
   .row .mobile-prices .price-line .lbl {
     font-family: var(--mono);
@@ -376,17 +391,20 @@ footer {
     color: var(--ink);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+    text-align: right;
     letter-spacing: -0.01em;
-    text-align: left;
   }
   .row .mobile-prices .price-line .price .cur { color: var(--ink-3); margin-left: 3px; font-weight: 400; }
-  .row .mobile-prices .price-line.empty .price { color: var(--ink-4); font-weight: 400; font-size: 13px; }
+  .row .mobile-prices .price-line.empty .price { color: var(--ink-4); font-weight: 400; font-size: 13px; text-align: right; }
 
   .row > .mobile-foot {
+    grid-column: 1;
+    grid-row: 2;
+    margin-top: 10px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+    justify-content: flex-start;
+    gap: 16px;
   }
 
   footer { padding: 24px 16px 32px; margin-top: 48px; }
