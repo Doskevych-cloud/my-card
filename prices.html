@@ -32,6 +32,7 @@
   --sup-gen:#5c6bc0;--sup-hel:#a1887f;--sup-dol:#66bb6a;--sup-se:#ce93d8;--sup-atm:#ffb74d;
   --sup-pe:#4db6ac;--sup-pe-bg:rgba(77,182,172,.12);
   --sup-sv:#42a5f5;--sup-sv-bg:rgba(66,165,245,.12);
+  --sup-iso:#ef5350;--sup-iso-bg:rgba(239,83,80,.12);--sup-iso-bg2:rgba(239,83,80,.07);
   --sup-gen-bg:rgba(92,107,192,.12);--sup-hel-bg:rgba(161,136,127,.12);--sup-dol-bg:rgba(102,187,106,.12);
   --sup-se-bg:rgba(206,147,216,.12);--sup-sv-bg2:rgba(66,165,245,.07);--sup-atm-bg:rgba(255,183,77,.12);
   --delta-bg:rgba(255,255,255,.02);--delta-bg2:rgba(255,255,255,.04);
@@ -102,6 +103,7 @@ body{font-family:'Inter',-apple-system,'Segoe UI',sans-serif;background:var(--bg
 .slot-se{border-color:rgba(206,147,216,.4)}.slot-se.has-file{border-color:var(--sup-se);background:var(--sup-se-bg)}
 .slot-pe{border-color:rgba(77,182,172,.4)}.slot-pe.has-file{border-color:#4db6ac;background:rgba(77,182,172,.12)}
 .slot-sv{border-color:rgba(66,165,245,.4)}.slot-sv.has-file{border-color:var(--sup-sv);background:var(--sup-sv-bg)}
+.slot-iso{border-color:rgba(239,83,80,.4)}.slot-iso.has-file{border-color:var(--sup-iso);background:var(--sup-iso-bg)}
 .slot-atm{border-color:rgba(255,183,77,.4)}.slot-atm.has-file{border-color:var(--sup-atm);background:var(--sup-atm-bg)}
 .btn-run{display:block;margin:0 auto;padding:10px 40px;background:var(--btn-bg);color:var(--btn-text);border:none;border-radius:4px;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s}
 .btn-run:hover{background:var(--btn-hover)}
@@ -123,6 +125,7 @@ thead tr:last-child th{top:30px}
 .gh-se{background:var(--sup-se)}.gh-atm{background:var(--sup-atm)}
 .gh-pe{background:#4db6ac}
 .gh-sv{background:#42a5f5}
+.gh-iso{background:var(--sup-iso)}
 .gh-best{background:var(--accent);color:#0b0e11}
 [data-theme="light"] .gh-tovar{background:#f5f5f5;color:var(--text)}
 [data-theme="light"] .gh{color:#fff}
@@ -132,6 +135,7 @@ thead tr:last-child th{top:30px}
 .sh-dol{background:var(--sup-dol-bg)}.sh-se{background:var(--sup-se-bg)}.sh-atm{background:var(--sup-atm-bg)}
 .sh-pe{background:rgba(77,182,172,.1)}
 .sh-sv{background:rgba(66,165,245,.1)}
+.sh-iso{background:var(--sup-iso-bg2)}
 .sh-best{background:var(--best-bg)}
 .t-tovar{background:var(--row-odd);color:var(--text)}.t-tovar.even{background:var(--row-even)}
 .t-gen{background:var(--row-odd)}.t-gen.even{background:var(--row-even)}
@@ -140,6 +144,7 @@ thead tr:last-child th{top:30px}
 .t-se{background:var(--row-odd)}.t-se.even{background:var(--row-even)}
 .t-pe{background:var(--row-odd)}.t-pe.even{background:var(--row-even)}
 .t-sv{background:var(--row-odd)}.t-sv.even{background:var(--row-even)}
+.t-iso{background:var(--row-odd)}.t-iso.even{background:var(--row-even)}
 .t-atm{background:var(--row-odd)}.t-atm.even{background:var(--row-even)}
 .t-best{background:var(--best-bg)}.t-best.even{background:var(--best-bg2)}
 .d-hel{background:var(--delta-bg)}.d-hel.even{background:var(--delta-bg2)}
@@ -147,6 +152,7 @@ thead tr:last-child th{top:30px}
 .d-se{background:var(--delta-bg)}.d-se.even{background:var(--delta-bg2)}
 .d-pe{background:var(--delta-bg)}.d-pe.even{background:var(--delta-bg2)}
 .d-sv{background:var(--delta-bg)}.d-sv.even{background:var(--delta-bg2)}
+.d-iso{background:var(--delta-bg)}.d-iso.even{background:var(--delta-bg2)}
 .d-atm{background:var(--delta-bg)}.d-atm.even{background:var(--delta-bg2)}
 .t-sig{background:var(--row-odd)}.t-sig.even{background:var(--row-even)}
 .d-sig{background:var(--delta-bg)}.d-sig.even{background:var(--delta-bg2)}
@@ -180,6 +186,7 @@ thead tr:last-child th{top:30px}
 .ct-chip.ct-se.active{background:var(--sup-se);border-color:var(--sup-se)}
 .ct-chip.ct-pe.active{background:#4db6ac;border-color:#4db6ac}
 .ct-chip.ct-sv.active{background:#42a5f5;border-color:#42a5f5}
+.ct-chip.ct-iso.active{background:var(--sup-iso);border-color:var(--sup-iso)}
 .ct-chip.ct-atm.active{background:var(--sup-atm);border-color:var(--sup-atm)}
 .ct-chip.ct-sig.active{background:#8e24aa;border-color:#8e24aa}
 .ct-chip.ct-ssj.active{background:#00897b;border-color:#00897b}
@@ -189,6 +196,7 @@ table.hide-dol .gh-dol,table.hide-dol .sh-dol,table.hide-dol .t-dol,table.hide-d
 table.hide-se .gh-se,table.hide-se .sh-se,table.hide-se .t-se,table.hide-se .d-se{display:none}
 table.hide-pe .gh-pe,table.hide-pe .sh-pe,table.hide-pe .t-pe,table.hide-pe .d-pe{display:none}
 table.hide-sv .gh-sv,table.hide-sv .sh-sv,table.hide-sv .t-sv,table.hide-sv .d-sv{display:none}
+table.hide-iso .gh-iso,table.hide-iso .sh-iso,table.hide-iso .t-iso,table.hide-iso .d-iso{display:none}
 table.hide-atm .gh-atm,table.hide-atm .sh-atm,table.hide-atm .t-atm,table.hide-atm .d-atm{display:none}
 table.hide-sig .gh-sig,table.hide-sig .sh-sig,table.hide-sig .t-sig,table.hide-sig .d-sig{display:none}
 table.hide-ssj .gh-ssj,table.hide-ssj .sh-ssj,table.hide-ssj .t-ssj,table.hide-ssj .d-ssj{display:none}
@@ -442,6 +450,12 @@ tr:hover td{background:var(--bg3) !important}
       <div class="hint">Google Sheets (авто)</div>
       <div class="file-name" id="svStatus"></div>
     </div>
+    <div class="supplier-slot slot-iso" data-supplier="iso" id="isoSlot" style="cursor:default">
+      <div class="icon">🌐</div>
+      <div class="label">iSolar</div>
+      <div class="hint">SharePoint (авто)</div>
+      <div class="file-name" id="isoStatus"></div>
+    </div>
     <div class="supplier-slot slot-atm" data-supplier="atm" onclick="triggerUpload(this)">
       <div class="icon">📁</div>
       <div class="label">Атмосфера</div>
@@ -507,6 +521,7 @@ tr:hover td{background:var(--bg3) !important}
     <span class="ct-chip ct-se active" onclick="toggleCol('se',this)">SE</span>
     <span class="ct-chip ct-pe active" onclick="toggleCol('pe',this)">ПЕ</span>
     <span class="ct-chip ct-sv active" onclick="toggleCol('sv',this)">SV</span>
+    <span class="ct-chip ct-iso active" onclick="toggleCol('iso',this)">iSolar</span>
     <span class="ct-chip ct-atm active" onclick="toggleCol('atm',this)">Атмосфера</span>
     <span class="ct-chip ct-sig active" onclick="toggleCol('sig',this)">СІГ</span>
     <span class="ct-chip ct-ssj active" onclick="toggleCol('ssj',this)">SSJ</span>
@@ -522,6 +537,7 @@ tr:hover td{background:var(--bg3) !important}
           <th class="gh gh-se bl" colspan="5">SE (se.net.ua)</th>
           <th class="gh gh-pe bl" colspan="5">ПЕ</th>
           <th class="gh gh-sv bl" colspan="5">Solar Verse</th>
+          <th class="gh gh-iso bl" colspan="5">iSolar</th>
           <th class="gh gh-atm bl" colspan="5">Атмосфера</th>
           <th class="gh gh-sig bl" colspan="5">СІГ</th>
           <th class="gh gh-ssj bl" colspan="5">SSJ</th>
@@ -535,6 +551,7 @@ tr:hover td{background:var(--bg3) !important}
           <th class="sh sh-se bl">Статус</th><th class="sh sh-se">Ціна без ПДВ</th><th class="sh sh-se">&Delta;%</th><th class="sh sh-se">Ціна з ПДВ</th><th class="sh sh-se">&Delta;%</th>
           <th class="sh sh-pe bl">Статус</th><th class="sh sh-pe">Ціна без ПДВ</th><th class="sh sh-pe">&Delta;%</th><th class="sh sh-pe">Ціна з ПДВ</th><th class="sh sh-pe">&Delta;%</th>
           <th class="sh sh-sv bl">Статус</th><th class="sh sh-sv">Ціна без ПДВ</th><th class="sh sh-sv">&Delta;%</th><th class="sh sh-sv">Ціна з ПДВ</th><th class="sh sh-sv">&Delta;%</th>
+          <th class="sh sh-iso bl">Статус</th><th class="sh sh-iso">Ціна без ПДВ</th><th class="sh sh-iso">&Delta;%</th><th class="sh sh-iso">Ціна з ПДВ</th><th class="sh sh-iso">&Delta;%</th>
           <th class="sh sh-atm bl">Статус</th><th class="sh sh-atm">Ціна без ПДВ</th><th class="sh sh-atm">&Delta;%</th><th class="sh sh-atm">Ціна з ПДВ</th><th class="sh sh-atm">&Delta;%</th>
           <th class="sh sh-sig bl">Статус</th><th class="sh sh-sig">Ціна без ПДВ</th><th class="sh sh-sig">&Delta;%</th><th class="sh sh-sig">Ціна з ПДВ</th><th class="sh sh-sig">&Delta;%</th>
           <th class="sh sh-ssj bl">Статус</th><th class="sh sh-ssj">Ціна без ПДВ</th><th class="sh sh-ssj">&Delta;%</th><th class="sh sh-ssj">Ціна з ПДВ</th><th class="sh sh-ssj">&Delta;%</th>
@@ -542,7 +559,7 @@ tr:hover td{background:var(--bg3) !important}
         </tr>
       </thead>
       <tbody id="data"></tbody>
-      <tfoot><tr><td colspan="44">&nbsp;</td></tr></tfoot>
+      <tfoot><tr><td colspan="49">&nbsp;</td></tr></tfoot>
     </table>
   </div>
 </div>
@@ -1561,12 +1578,12 @@ function findStock(name, model, stockMap) {
   return null;
 }
 
-function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds, atmProds, sigProds, ssjProds, stockMap) {
+function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds, isoProds, atmProds, sigProds, ssjProds, stockMap) {
   const categories = ['ІНВЕРТОРИ', 'АКУМУЛЯТОРИ', 'МОДУЛІ', 'КАБЕЛІ'];
   const rows = [];
 
   // Pre-compute identities for all supplier products
-  for (const list of [genProds, helProds, dolProds, seProds, peProds, svProds, atmProds, sigProds, ssjProds]) {
+  for (const list of [genProds, helProds, dolProds, seProds, peProds, svProds, isoProds, atmProds, sigProds, ssjProds]) {
     for (const p of list) {
       if (!p._identity) p._identity = buildIdentity(p.name, p.model, p.category || guessCategory(p.name));
     }
@@ -1584,6 +1601,7 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds
       const sm = findMatch(gp.model, gp.name, gpPrice, seProds, isPanel, gId);
       const pm = findMatch(gp.model, gp.name, gpPrice, peProds, isPanel, gId);
       const vm = findMatch(gp.model, gp.name, gpPrice, svProds, isPanel, gId);
+      const lm = findMatch(gp.model, gp.name, gpPrice, isoProds, isPanel, gId);
       const am = findMatch(gp.model, gp.name, gpPrice, atmProds, isPanel, gId);
       const im = findMatch(gp.model, gp.name, gpPrice, sigProds, isPanel, gId);
       const jm = findMatch(gp.model, gp.name, gpPrice, ssjProds, isPanel, gId);
@@ -1601,13 +1619,15 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds
         pV: pm ? pm.price_vat : null, pC: pm ? (pm.currency || 'USD') : 'USD',
         vSt: vm ? vm.status : null, vNV: vm ? vm.price_no_vat : null,
         vV: vm ? vm.price_vat : null, vC: vm ? (vm.currency || 'USD') : 'USD',
+        lSt: lm ? lm.status : null, lNV: lm ? lm.price_no_vat : null,
+        lV: lm ? lm.price_vat : null, lC: lm ? (lm.currency || 'USD') : 'USD',
         aSt: am ? (am.status || null) : null, aNV: am ? am.price_no_vat : null,
         aV: am ? (am.price_vat || null) : null, aC: am ? (am.currency || 'USD') : 'USD',
         iSt: im ? im.status : null, iNV: im ? im.price_no_vat : null,
         iV: im ? im.price_vat : null, iC: im ? (im.currency || 'USD') : 'USD',
         jSt: jm ? jm.status : null, jNV: jm ? jm.price_no_vat : null,
         jV: jm ? jm.price_vat : null, jC: jm ? (jm.currency || 'USD') : 'USD',
-        _hm: hm, _dm: dm, _sm: sm, _pm: pm, _vm: vm, _am: am, _im: im, _jm: jm,
+        _hm: hm, _dm: dm, _sm: sm, _pm: pm, _vm: vm, _lm: lm, _am: am, _im: im, _jm: jm,
       });
     }
   }
@@ -1618,10 +1638,11 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds
   const usedS = new Set(rows.filter(r=>r._sm).map(r=>r._sm));
   const usedP = new Set(rows.filter(r=>r._pm).map(r=>r._pm));
   const usedV = new Set(rows.filter(r=>r._vm).map(r=>r._vm));
+  const usedL = new Set(rows.filter(r=>r._lm).map(r=>r._lm));
   const usedA = new Set(rows.filter(r=>r._am).map(r=>r._am));
   const usedI = new Set(rows.filter(r=>r._im).map(r=>r._im));
   const usedJ = new Set(rows.filter(r=>r._jm).map(r=>r._jm));
-  rows.forEach(r => { delete r._hm; delete r._dm; delete r._sm; delete r._pm; delete r._vm; delete r._am; delete r._im; delete r._jm; });
+  rows.forEach(r => { delete r._hm; delete r._dm; delete r._sm; delete r._pm; delete r._vm; delete r._lm; delete r._am; delete r._im; delete r._jm; });
 
   const panelSources = [
     {prods: helProds, used: usedH, key: 'h'},
@@ -1629,6 +1650,7 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds
     {prods: seProds, used: usedS, key: 's'},
     {prods: peProds, used: usedP, key: 'p'},
     {prods: svProds, used: usedV, key: 'v'},
+    {prods: isoProds, used: usedL, key: 'l'},
     {prods: atmProds, used: usedA, key: 'a'},
     {prods: sigProds, used: usedI, key: 'i'},
     {prods: ssjProds, used: usedJ, key: 'j'},
@@ -1644,12 +1666,12 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds
       if (!nm) continue;
       let entry = null;
       for (const [k, v] of extraPanels) { if (fuzzyMatch(k, nm)) { entry = v; break; } }
-      if (!entry) { entry = {name: p.name, model: nm, h:null, d:null, s:null, p:null, v:null, a:null, i:null, j:null}; extraPanels.set(nm, entry); }
+      if (!entry) { entry = {name: p.name, model: nm, h:null, d:null, s:null, p:null, v:null, l:null, a:null, i:null, j:null}; extraPanels.set(nm, entry); }
       if (!entry[key]) entry[key] = p;
     }
   }
   for (const ex of extraPanels.values()) {
-    const hm = ex.h, dm = ex.d, sm = ex.s, pm = ex.p, vm = ex.v, am = ex.a, imx = ex.i, jmx = ex.j;
+    const hm = ex.h, dm = ex.d, sm = ex.s, pm = ex.p, vm = ex.v, lm = ex.l, am = ex.a, imx = ex.i, jmx = ex.j;
     rows.push({
       cat: 'МОДУЛІ', name: ex.name, model: ex.model,
       gSt: null, gNV: null, gV: null, gC: 'USD', gStock: null,
@@ -1663,6 +1685,8 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds
       pV: pm ? pm.price_vat : null, pC: pm ? (pm.currency || 'USD') : 'USD',
       vSt: vm ? vm.status : null, vNV: vm ? vm.price_no_vat : null,
       vV: vm ? vm.price_vat : null, vC: vm ? (vm.currency || 'USD') : 'USD',
+      lSt: lm ? lm.status : null, lNV: lm ? lm.price_no_vat : null,
+      lV: lm ? lm.price_vat : null, lC: lm ? (lm.currency || 'USD') : 'USD',
       aSt: am ? (am.status || null) : null, aNV: am ? am.price_no_vat : null,
       aV: am ? (am.price_vat || null) : null, aC: am ? (am.currency || 'USD') : 'USD',
       iSt: imx ? imx.status : null, iNV: imx ? imx.price_no_vat : null,
@@ -1706,13 +1730,13 @@ function renderTable(rows) {
   for (const rd of rows) {
     if (rd.cat !== currentCat) {
       currentCat = rd.cat;
-      tb.innerHTML += `<tr class="cat"><td colspan="44"><span class="cat-label">${currentCat}</span></td></tr>`;
+      tb.innerHTML += `<tr class="cat"><td colspan="49"><span class="cat-label">${currentCat}</span></td></tr>`;
     }
     n++;
     const e = n % 2 === 0 ? 'even' : '';
     const r = rd;
     // Best price
-    const prices = [['Генерація',r.gNV,r.gC],['Helius',r.hNV,r.hC],['Dolya',r.dNV,r.dC],['SE',r.sNV,r.sC],['ПЕ',r.pNV,r.pC],['SV',r.vNV,r.vC],['Атмосфера',r.aNV,r.aC],['СІГ',r.iNV,r.iC],['SSJ',r.jNV,r.jC]].filter(p=>p[1]!=null);
+    const prices = [['Генерація',r.gNV,r.gC],['Helius',r.hNV,r.hC],['Dolya',r.dNV,r.dC],['SE',r.sNV,r.sC],['ПЕ',r.pNV,r.pC],['SV',r.vNV,r.vC],['iSolar',r.lNV,r.lC],['Атмосфера',r.aNV,r.aC],['СІГ',r.iNV,r.iC],['SSJ',r.jNV,r.jC]].filter(p=>p[1]!=null);
     const best = prices.length ? prices.reduce((a,b) => b[1] < a[1] ? b : a) : null;
     const bestWho = best ? prices.filter(p => p[1] === best[1]).map(p => p[0]).join(' / ') : '';
     const bestP = best ? best[1] : null;
@@ -1751,6 +1775,11 @@ function renderTable(rows) {
       <td class="d-sv ${e}">${delta(r.vNV,r.gNV)}</td>
       <td class="t-sv ${e}">${fmt(r.vV,r.vC)}</td>
       <td class="d-sv ${e}">${delta(r.vV,r.gV)}</td>
+      <td class="t-iso ${e} bl status">${r.lSt||''}</td>
+      <td class="t-iso ${e}">${fmt(r.lNV,r.lC)}</td>
+      <td class="d-iso ${e}">${delta(r.lNV,r.gNV)}</td>
+      <td class="t-iso ${e}">${fmt(r.lV,r.lC)}</td>
+      <td class="d-iso ${e}">${delta(r.lV,r.gV)}</td>
       <td class="t-atm ${e} bl status">${r.aSt||''}</td>
       <td class="t-atm ${e}">${fmt(r.aNV,r.aC)}</td>
       <td class="d-atm ${e}">${delta(r.aNV,r.gNV)}</td>
@@ -1991,14 +2020,15 @@ async function loadAllSupplierProds() {
         return [];
       }
     };
-    const [genRaw, helRaw, dolRaw, seRaw, peRaw, svRaw] = await Promise.all([
+    const [genRaw, helRaw, dolRaw, seRaw, peRaw, svRaw, isoRaw] = await Promise.all([
       fetchProds('gen_data'), fetchProds('hel_data'), fetchProds('dolya_data'),
       fetchProds('se_proxy'), fetchProds('pe_data'),  fetchProds('sv_data'),
+      fetchProds('isolar_data'),
     ]);
     // Hydrate model + category
     for (const p of genRaw) { p.model = extractModel(p.name); p.category = guessCategory(p.name); }
     const gen = genRaw.filter(p => p.category);
-    for (const list of [helRaw, dolRaw, seRaw, peRaw, svRaw]) {
+    for (const list of [helRaw, dolRaw, seRaw, peRaw, svRaw, isoRaw]) {
       for (const p of list) { p.model = extractModel(p.name); }
     }
     // Local sources (file/text) — лише якщо користувач їх ввів у цій сесії
@@ -2006,7 +2036,7 @@ async function loadAllSupplierProds() {
     if (files.atm) { try { atm = await parseAtmosfera(files.atm); } catch(e){} }
     const sig = sigRawText ? parseSIG(sigRawText) : [];
     const ssj = ssjRawText ? parseSSJ(ssjRawText) : [];
-    return { gen, hel: helRaw, dol: dolRaw, se: seRaw, pe: peRaw, sv: svRaw, atm, sig, ssj, _errors: errors };
+    return { gen, hel: helRaw, dol: dolRaw, se: seRaw, pe: peRaw, sv: svRaw, iso: isoRaw, atm, sig, ssj, _errors: errors };
   })();
   try {
     const out = await __loadingSupProds;
@@ -2039,7 +2069,7 @@ async function customSearch() {
   const S = window.__supProds;
 
   // Pre-compute identities — потрібні для findMatch як у головному порівнянні
-  for (const list of [S.gen, S.hel, S.dol, S.se, S.pe, S.sv, S.atm, S.sig, S.ssj]) {
+  for (const list of [S.gen, S.hel, S.dol, S.se, S.pe, S.sv, S.iso || [], S.atm, S.sig, S.ssj]) {
     for (const p of list) {
       if (!p._identity) p._identity = buildIdentity(p.name, p.model, p.category || guessCategory(p.name));
     }
@@ -2052,18 +2082,19 @@ async function customSearch() {
   const qIdentity = buildIdentity(q, qModel, qCat);
   const isPanel = qCat === 'МОДУЛІ';
 
-  const match = (list) => findMatch(qModel, q, null, list, isPanel, qIdentity);
+  const match = (list) => findMatch(qModel, q, null, list || [], isPanel, qIdentity);
   const gm = match(S.gen);
   const hm = match(S.hel);
   const dm = match(S.dol);
   const sm = match(S.se);
   const pm = match(S.pe);
   const vm = match(S.sv);
+  const lm = match(S.iso);
   const am = match(S.atm);
   const im = match(S.sig);
   const jm = match(S.ssj);
 
-  const anyMatch = gm || hm || dm || sm || pm || vm || am || im || jm;
+  const anyMatch = gm || hm || dm || sm || pm || vm || lm || am || im || jm;
   if (!anyMatch) {
     if (host) host.innerHTML = `<div class="cs-empty">Нічого не знайдено для «<b>${escapeHtml(q)}</b>» у жодного постачальника. Спробуйте змінити запит (модель або бренд + потужність).</div>`;
     return;
@@ -2083,6 +2114,7 @@ async function customSearch() {
     sSt: sm ? sm.status : null, sNV: sm ? sm.price_no_vat : null, sV: sm ? sm.price_vat : null, sC: sm ? (sm.currency || 'USD') : 'USD',
     pSt: pm ? pm.status : null, pNV: pm ? pm.price_no_vat : null, pV: pm ? pm.price_vat : null, pC: pm ? (pm.currency || 'USD') : 'USD',
     vSt: vm ? vm.status : null, vNV: vm ? vm.price_no_vat : null, vV: vm ? vm.price_vat : null, vC: vm ? (vm.currency || 'USD') : 'USD',
+    lSt: lm ? lm.status : null, lNV: lm ? lm.price_no_vat : null, lV: lm ? lm.price_vat : null, lC: lm ? (lm.currency || 'USD') : 'USD',
     aSt: am ? am.status : null, aNV: am ? am.price_no_vat : null, aV: am ? am.price_vat : null, aC: am ? (am.currency || 'USD') : 'USD',
     iSt: im ? im.status : null, iNV: im ? im.price_no_vat : null, iV: im ? im.price_vat : null, iC: im ? (im.currency || 'USD') : 'USD',
     jSt: jm ? jm.status : null, jNV: jm ? jm.price_no_vat : null, jV: jm ? jm.price_vat : null, jC: jm ? (jm.currency || 'USD') : 'USD',
@@ -2210,6 +2242,20 @@ async function runComparison() {
       if (!svProds.length) warnings.push('Solar Verse: 0 товарів — перевірте Google Sheet або GAS');
     } catch(e) { console.warn('SV auto-fetch error', e); warnings.push('Solar Verse: помилка завантаження — ' + e.message); }
 
+    // Auto-fetch iSolar from SharePoint
+    let isoProds = [];
+    progText.textContent = 'Завантаження: iSolar (SharePoint)...';
+    progBar.style.width = '74%';
+    try {
+      const isoData = await Auth.apiFetch('isolar_data');
+      isoProds = (isoData.products || []).map(p => ({...p, model: extractModel(p.name)}));
+      if (isoProds.length) {
+        document.getElementById('isoStatus').textContent = isoProds.length + ' товарів';
+        document.getElementById('isoSlot').classList.add('has-file');
+      }
+      if (!isoProds.length) warnings.push('iSolar: 0 товарів — перевірте SharePoint-прайс');
+    } catch(e) { console.warn('iSolar auto-fetch error', e); warnings.push('iSolar: помилка завантаження — ' + e.message); }
+
     // Parse Атмосфера (file upload)
     let atmProds = [];
     if (files.atm) {
@@ -2259,12 +2305,12 @@ async function runComparison() {
     if (warnings.length) alert('Увага!\n\n' + warnings.join('\n'));
 
     // Cache raw supplier lists for custom search (user typing arbitrary product names)
-    window.__supProds = { gen: genProds, hel: helProds, dol: dolProds, se: seProds, pe: peProds, sv: svProds, atm: atmProds, sig: sigProds, ssj: ssjProds };
+    window.__supProds = { gen: genProds, hel: helProds, dol: dolProds, se: seProds, pe: peProds, sv: svProds, iso: isoProds, atm: atmProds, sig: sigProds, ssj: ssjProds };
 
     // Match
     progText.textContent = 'Зіставлення моделей...';
     progBar.style.width = '90%';
-    const rows = buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds, atmProds, sigProds, ssjProds, stockMap);
+    const rows = buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds, isoProds, atmProds, sigProds, ssjProds, stockMap);
 
     // Render
     progText.textContent = 'Побудова таблиці...';
@@ -2277,7 +2323,7 @@ async function runComparison() {
       'Оновлено: ' + today.toLocaleDateString('uk-UA');
     document.getElementById('results').style.display = 'block';
     progBar.style.width = '100%';
-    progText.textContent = `Готово! ${rows.length} товарів, ${rows.filter(r=>r.hNV||r.dNV||r.sNV||r.pNV||r.vNV||r.aNV||r.iNV||r.jNV).length} зі збігами`;
+    progText.textContent = `Готово! ${rows.length} товарів, ${rows.filter(r=>r.hNV||r.dNV||r.sNV||r.pNV||r.vNV||r.lNV||r.aNV||r.iNV||r.jNV).length} зі збігами`;
 
     // Save to history
     const supplierFiles = [{key:'gen',name:'Генерація'}];
@@ -2286,10 +2332,11 @@ async function runComparison() {
     if (seProds.length) supplierFiles.push({key:'se',name:'SE'});
     if (peProds.length) supplierFiles.push({key:'pe',name:'ПЕ'});
     if (svProds.length) supplierFiles.push({key:'sv',name:'Solar Verse'});
+    if (isoProds.length) supplierFiles.push({key:'iso',name:'iSolar'});
     if (files.atm) supplierFiles.push({key:'atm',name:'Атмосфера'});
     if (sigProds.length) supplierFiles.push({key:'sig',name:'СІГ'});
     if (ssjProds.length) supplierFiles.push({key:'ssj',name:'SSJ'});
-    saveComparison(rows, {hel:helProds.length,dol:dolProds.length,se:seProds.length,pe:peProds.length,sv:svProds.length,atm:atmProds.length,sig:sigProds.length,ssj:ssjProds.length}, supplierFiles);
+    saveComparison(rows, {hel:helProds.length,dol:dolProds.length,se:seProds.length,pe:peProds.length,sv:svProds.length,iso:isoProds.length,atm:atmProds.length,sig:sigProds.length,ssj:ssjProds.length}, supplierFiles);
 
     // Scroll to results
     setTimeout(() => {
@@ -2334,7 +2381,7 @@ async function saveComparison(rows, counts, supplierFiles) {
     id,
     date: new Date().toLocaleString('uk-UA'),
     totalItems: rows.length,
-    matches: rows.filter(r => r.hNV || r.dNV || r.sNV || r.pNV || r.vNV || r.aNV || r.iNV || r.jNV).length,
+    matches: rows.filter(r => r.hNV || r.dNV || r.sNV || r.pNV || r.vNV || r.lNV || r.aNV || r.iNV || r.jNV).length,
     suppliers: supplierFiles,
     rows,
     counts
