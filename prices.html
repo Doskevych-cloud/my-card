@@ -2330,6 +2330,33 @@ async function runComparison() {
     progBar.style.width = '95%';
     renderTable(rows);
 
+    // Per-supplier match counts vs Генерація — додаємо в статус плиток
+    const matchCounts = {
+      hel: rows.filter(r => r.hNV != null || r.hV != null).length,
+      dol: rows.filter(r => r.dNV != null || r.dV != null).length,
+      se:  rows.filter(r => r.sNV != null || r.sV != null).length,
+      pe:  rows.filter(r => r.pNV != null || r.pV != null).length,
+      sv:  rows.filter(r => r.vNV != null || r.vV != null).length,
+      iso: rows.filter(r => r.lNV != null || r.lV != null).length,
+      atm: rows.filter(r => r.aNV != null || r.aV != null).length,
+      sig: rows.filter(r => r.iNV != null || r.iV != null).length,
+      ssj: rows.filter(r => r.jNV != null || r.jV != null).length,
+    };
+    const setSlotStatus = (slotKey, prodsCount, matchCount) => {
+      const el = document.getElementById(slotKey + 'Status');
+      if (!el) return;
+      if (!prodsCount) { el.textContent = ''; return; }
+      el.innerHTML = `${prodsCount} товарів <span style="color:var(--ink-3,#747474);font-weight:400">· ${matchCount} збігів з Ген</span>`;
+    };
+    setSlotStatus('hel', helProds.length, matchCounts.hel);
+    setSlotStatus('dol', dolProds.length, matchCounts.dol);
+    setSlotStatus('se',  seProds.length,  matchCounts.se);
+    setSlotStatus('pe',  peProds.length,  matchCounts.pe);
+    setSlotStatus('sv',  svProds.length,  matchCounts.sv);
+    setSlotStatus('iso', isoProds.length, matchCounts.iso);
+    setSlotStatus('sig', sigProds.length, matchCounts.sig);
+    setSlotStatus('ssj', ssjProds.length, matchCounts.ssj);
+
     // Show
     const today = new Date();
     document.getElementById('dateLabel').textContent =
