@@ -88,7 +88,20 @@ a { color: inherit; text-decoration: none; }
 .hero-label {
   font-family: var(--mono); font-size: 11px; color: var(--ink-3);
   text-transform: uppercase; letter-spacing: 0.12em;
-  margin-bottom: 16px; font-weight: 500;
+  margin-bottom: 6px; font-weight: 500;
+}
+.fx-inline {
+  display: flex; gap: 14px; align-items: baseline;
+  font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+  letter-spacing: 0.04em; margin-bottom: 16px;
+}
+.fx-inline b {
+  color: var(--ink-2); font-weight: 500;
+  font-variant-numeric: tabular-nums; margin-left: 6px;
+}
+.fx-inline .fx-note {
+  color: var(--ink-4); font-size: 10px; letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 .refresh-ico {
   width: 12px; height: 12px; vertical-align: -2px;
@@ -377,6 +390,11 @@ footer { border-top: 2px solid var(--ink); padding: 22px; margin-top: 28px; back
 
 <section class="hero">
   <div class="hero-label" id="heroDate">Прайс</div>
+  <div class="fx-inline" id="fxInline" style="display:none">
+    <span>USD/UAH<b id="fxUsd">—</b></span>
+    <span>EUR/UAH<b id="fxEur">—</b></span>
+    <span class="fx-note">SWIFT · Приватбанк</span>
+  </div>
   <div class="hero-meta primary">
     <div>
       <div class="label">Офіс</div>
@@ -579,6 +597,19 @@ function setHeroDate() {
     `Прайс ${refreshIco} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+async function loadFxSwift() {
+  try {
+    const r = await fetch(`${API}/?action=fx_swift`);
+    const d = await r.json();
+    if (!d.rates) return;
+    const usd = d.rates.USD, eur = d.rates.EUR;
+    const fmt = v => v != null && isFinite(v) ? v.toFixed(2).replace('.', ',') : '—';
+    if (usd) document.getElementById('fxUsd').textContent = fmt(usd.sell);
+    if (eur) document.getElementById('fxEur').textContent = fmt(eur.sell);
+    document.getElementById('fxInline').style.display = 'flex';
+  } catch (_) { /* silent */ }
+}
+
 async function loadAll() {
   const qs = `pt_no=${encodeURIComponent(PT_NO_VAT)}&pt_with=${encodeURIComponent(PT_WITH_VAT)}`;
   const res = await fetch(`${API}/?action=price_list_get&${qs}`);
@@ -611,6 +642,7 @@ async function loadAll() {
 }
 
 setHeroDate();
+loadFxSwift();
 loadAll().catch(err => {
   document.getElementById('catnav').innerHTML = '';
   document.getElementById('catalog').innerHTML = '';
