@@ -79,7 +79,7 @@ a { color: inherit; text-decoration: none; }
 .hero {
   max-width: 1240px;
   margin: 0 auto;
-  padding: 36px 28px 28px;
+  padding: 36px 28px 56px;
 }
 .hero-date {
   font-family: var(--mono);
@@ -315,7 +315,7 @@ footer {
   .fx-pill { font-size: 10px; gap: 12px; }
   .btn span.hide-sm { display: none; }
 
-  .hero { padding: 26px 16px 22px; }
+  .hero { padding: 26px 16px 40px; }
   .info-grid {
     grid-template-columns: 1fr 1fr;
     gap: 22px 18px;
@@ -393,7 +393,7 @@ footer {
     <div class="topbar-spacer"></div>
     <div class="fx-pill" id="fxPill" style="display:none">
       <span>USD/UAH<b id="fxUsd">—</b></span>
-      <span>EUR/USD<b id="fxEur">—</b></span>
+      <span>EUR/UAH<b id="fxEur">—</b></span>
     </div>
     <button class="btn" id="pdfBtn" onclick="downloadPDF()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -631,11 +631,8 @@ async function loadFxSwift() {
     if (!d.rates) return;
     const usd = d.rates.USD, eur = d.rates.EUR;
     const fmtUah = v => v != null && isFinite(v) ? v.toFixed(2).replace('.', ',') : '—';
-    const fmtCross = v => v != null && isFinite(v) ? v.toFixed(4).replace('.', ',') : '—';
     if (usd && usd.sell) document.getElementById('fxUsd').textContent = fmtUah(usd.sell);
-    if (usd && eur && usd.sell && eur.sell) {
-      document.getElementById('fxEur').textContent = fmtCross(eur.sell / usd.sell);
-    }
+    if (eur && eur.sell) document.getElementById('fxEur').textContent = fmtUah(eur.sell);
     document.getElementById('fxPill').style.display = 'inline-flex';
   } catch (_) { /* silent */ }
 }
