@@ -47,6 +47,25 @@ a { color: inherit; text-decoration: none; }
 .tg-icon:hover { background: var(--ink); color: #fff; }
 .tg-icon svg { width: 13px; height: 13px; display: block; }
 
+.address-row { display: flex; align-items: flex-start; gap: 10px; }
+.address-row > span { flex: 1; min-width: 0; }
+.addr-copy {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; flex-shrink: 0;
+  border: 1px solid var(--ink); background: transparent; color: var(--ink);
+  cursor: pointer; padding: 0;
+  transition: background .15s ease, color .15s ease;
+  position: relative;
+}
+.addr-copy:hover { background: var(--ink); color: #fff; }
+.addr-copy svg { width: 13px; height: 13px; display: block; }
+.addr-copy.copied::after {
+  content: 'скопійовано'; position: absolute; top: calc(100% + 6px); right: 0;
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink-2); white-space: nowrap;
+  background: var(--bg-elev); padding: 3px 6px; border: 1px solid var(--line);
+}
+
 /* ---------- HEADER ---------- */
 .topbar {
   border-bottom: 1px solid var(--line);
@@ -94,17 +113,12 @@ a { color: inherit; text-decoration: none; }
   display: flex; gap: 14px; align-items: baseline;
   font-family: var(--mono); font-size: 11px; color: var(--ink-3);
   letter-spacing: 0.04em;
-  padding-bottom: 20px; margin-bottom: 24px;
-  border-bottom: 1px solid var(--line);
 }
 .fx-inline b {
   color: var(--ink-2); font-weight: 500;
   font-variant-numeric: tabular-nums; margin-left: 6px;
 }
-.fx-inline .fx-note {
-  color: var(--ink-4); font-size: 10px; letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
+@media (max-width: 860px) { .fx-inline { display: none !important; } }
 .refresh-ico {
   width: 12px; height: 12px; vertical-align: -2px;
   margin: 0 4px; color: var(--ink-3);
@@ -381,6 +395,10 @@ footer { border-top: 2px solid var(--ink); padding: 22px; margin-top: 28px; back
       <small class="hide-sm">швидка дистрибуція обладнання з альтернативної енергетики</small>
     </a>
     <div class="topbar-spacer"></div>
+    <div class="fx-inline" id="fxInline" style="display:none">
+      <span>USD/UAH<b id="fxUsd">—</b></span>
+      <span>EUR/UAH<b id="fxEur">—</b></span>
+    </div>
     <div class="topbar-actions">
       <button class="btn" id="pdfBtn" onclick="downloadPDF()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -392,22 +410,27 @@ footer { border-top: 2px solid var(--ink); padding: 22px; margin-top: 28px; back
 
 <section class="hero">
   <div class="hero-label" id="heroDate">Прайс</div>
-  <div class="fx-inline" id="fxInline" style="display:none">
-    <span>USD/UAH<b id="fxUsd">—</b></span>
-    <span>EUR/UAH<b id="fxEur">—</b></span>
-  </div>
   <div class="hero-meta primary">
     <div>
       <div class="label">Офіс</div>
-      <div class="value">м. Одеса,<br>вул. Велика Арнаутська, 15</div>
+      <div class="value address-row">
+        <span>м. Одеса,<br>вул. Велика Арнаутська, 15</span>
+        <button class="addr-copy" data-copy="Одеса&#10;вул. Велика Арнаутська, 15" aria-label="Скопіювати адресу"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+      </div>
     </div>
     <div>
       <div class="label">Склад · Київ</div>
-      <div class="value">м. Вишневе,<br>вул. Промислова, 10</div>
+      <div class="value address-row">
+        <span>м. Вишневе,<br>вул. Промислова, 10</span>
+        <button class="addr-copy" data-copy="Вишневе&#10;вул. Промислова, 10" aria-label="Скопіювати адресу"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+      </div>
     </div>
     <div>
       <div class="label">Склад · Одеса</div>
-      <div class="value">вул. Чигиринська, 21</div>
+      <div class="value address-row">
+        <span>вул. Чигиринська, 21</span>
+        <button class="addr-copy" data-copy="Одеса&#10;вул. Чигиринська, 21" aria-label="Скопіювати адресу"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+      </div>
     </div>
   </div>
   <div class="hero-meta contacts">
@@ -644,6 +667,16 @@ async function loadAll() {
 
 setHeroDate();
 loadFxSwift();
+
+document.querySelectorAll('.addr-copy').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(btn.dataset.copy || '');
+      btn.classList.add('copied');
+      setTimeout(() => btn.classList.remove('copied'), 1500);
+    } catch (_) {}
+  });
+});
 loadAll().catch(err => {
   document.getElementById('catnav').innerHTML = '';
   document.getElementById('catalog').innerHTML = '';
