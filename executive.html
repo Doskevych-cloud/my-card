@@ -485,22 +485,16 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
       <div class="block-head">
         <span class="block-num">04</span>
         <span class="block-title">Оборотний капітал · дебіторка</span>
-        <span class="block-meta" id="b4Meta">DSO/DPO/CCC — live · решта <span class="mock-tag">умовно</span></span>
+        <span class="block-meta" id="b4Meta">з 1С Регістр розрахунків з покупцями</span>
       </div>
 
       <div class="g-2-1">
         <div class="card">
           <div class="card-head">
-            <div><h3>Старіння дебіторки<span class="mock-tag">умовно</span></h3><div class="card-sub">Розклад потребує підключення ar_aging endpoint</div></div>
-            <span class="card-meta">DSO live · інше — 1С</span>
+            <div><h3>Старіння дебіторки</h3><div class="card-sub" id="b4AgingSub">live з OData</div></div>
+            <span class="card-meta" id="b4AgingMeta">—</span>
           </div>
-          <div class="aging-stack">
-            <div class="b1" style="flex:0.42">42%</div>
-            <div class="b2" style="flex:0.20">20%</div>
-            <div class="b3" style="flex:0.20">20%</div>
-            <div class="b4" style="flex:0.10">10%</div>
-            <div class="b5" style="flex:0.08">8%</div>
-          </div>
+          <div class="aging-stack" id="b4AgingStack"><div style="flex:1;background:var(--bg3);color:var(--text3);display:flex;align-items:center;justify-content:center">Завантаження…</div></div>
           <div class="aging-legend">
             <span><i class="sw" style="background:#22c55e"></i>До 7д</span>
             <span><i class="sw" style="background:#3b82f6"></i>8–14д</span>
@@ -530,27 +524,19 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
 
         <div class="card">
           <div class="card-head">
-            <div><h3>Топ-боржники</h3><div class="card-sub">За поточним сальдо · live</div></div>
+            <div><h3>Топ боржники</h3><div class="card-sub">Прострочка &gt; 30 днів · live</div></div>
             <a class="pill accent" href="/counterparties.html">Усі →</a>
           </div>
-          <div id="clientsBody"><div class="loading">Завантаження…</div></div>
+          <div id="b4TopOverdue"><div class="loading">Завантаження…</div></div>
         </div>
       </div>
 
       <div class="card" style="margin-top:14px">
         <div class="card-head">
-          <div><h3>Кредитні ліміти · топ-12 клієнтів<span class="mock-tag">умовно</span></h3><div class="card-sub">Утилізація встановленого ліміту</div></div>
+          <div><h3>Кредитні ліміти</h3><div class="card-sub" id="b4LimitsSub">Утилізація встановленого ліміту</div></div>
+          <span class="card-meta" id="b4LimitsMeta">—</span>
         </div>
-        <div class="gauges">
-          <div class="gauge"><div class="gname">ТОВ Solar Tech<small>$ 80k / $ 80k</small></div><div class="gtrack"><i class="crit" style="width:99%"></i></div><div class="gnum">99%</div></div>
-          <div class="gauge"><div class="gname">ТОВ Геліос-Інсталяції<small>$ 53k / $ 60k</small></div><div class="gtrack"><i class="warn" style="width:88%"></i></div><div class="gnum">88%</div></div>
-          <div class="gauge"><div class="gname">ФОП Петренко<small>$ 60k / $ 80k</small></div><div class="gtrack"><i class="warn" style="width:75%"></i></div><div class="gnum">75%</div></div>
-          <div class="gauge"><div class="gname">ТОВ Сонячна Енергія<small>$ 80k / $ 120k</small></div><div class="gtrack"><i style="width:67%"></i></div><div class="gnum">67%</div></div>
-          <div class="gauge"><div class="gname">ТОВ Енерджі-Про<small>$ 42k / $ 80k</small></div><div class="gtrack"><i style="width:53%"></i></div><div class="gnum">53%</div></div>
-          <div class="gauge"><div class="gname">ТОВ Watt &amp; Co<small>$ 31k / $ 60k</small></div><div class="gtrack"><i style="width:52%"></i></div><div class="gnum">52%</div></div>
-          <div class="gauge"><div class="gname">ФОП Іваненко<small>$ 18k / $ 50k</small></div><div class="gtrack"><i style="width:36%"></i></div><div class="gnum">36%</div></div>
-          <div class="gauge"><div class="gname">ТОВ Зелена Хвиля<small>$ 14k / $ 40k</small></div><div class="gtrack"><i style="width:35%"></i></div><div class="gnum">35%</div></div>
-        </div>
+        <div id="b4Limits"><div class="loading">Завантаження…</div></div>
       </div>
     </section>
 
@@ -994,6 +980,7 @@ function reloadAll() {
   loadDecisions();
   loadSalesBreakdown();
   loadMarginBreakdown();
+  loadArAging();
   setTimeout(() => { document.getElementById('syncAge').textContent = '1с тому'; }, 1500);
 }
 
@@ -1668,6 +1655,78 @@ async function loadMarginBreakdown() {
           <div class="v neg" style="font-size:12px">${fmtPct(s.margin)}</div>
         </div>
       `).join('')}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// AR AGING (block 04 — live з 1С Регістр расчетов с покупателями)
+// ═══════════════════════════════════════════════════════════════════
+async function loadArAging() {
+  const u = window.__user;
+  if (!u || !(u.roles?.finance || u.roles?.admin)) return;
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
+  const r = await dashFetch(`${API_URL}?action=executive_ar_aging${orgQ}`).catch(e => ({ error: String(e) }));
+  if (!r || r.error) {
+    document.getElementById('b4AgingStack').innerHTML = `<div style="flex:1;background:var(--bg3);color:var(--red);display:flex;align-items:center;justify-content:center;font-size:11px">${esc(r?.error || 'не вдалось завантажити')}</div>`;
+    document.getElementById('b4TopOverdue').innerHTML = `<div class="error">${esc(r?.error || 'не вдалось')}</div>`;
+    document.getElementById('b4Limits').innerHTML = `<div class="error">${esc(r?.error || 'не вдалось')}</div>`;
+    return;
+  }
+
+  // Aging stack
+  const b = r.buckets_usd || {};
+  const total = Number(r.total_usd || 0);
+  if (total <= 0) {
+    document.getElementById('b4AgingStack').innerHTML = `<div style="flex:1;background:var(--bg3);color:var(--text3);display:flex;align-items:center;justify-content:center;font-size:11px">Всі розрахунки в нулі</div>`;
+  } else {
+    const fmtBucket = (val, cls) => {
+      const pct = total > 0 ? val / total : 0;
+      if (val < 1) return '';
+      return `<div class="${cls}" style="flex:${val}">${pct >= 0.05 ? fmtMoneyShort(val) : ''}</div>`;
+    };
+    document.getElementById('b4AgingStack').innerHTML = [
+      fmtBucket(b.d7, 'b1'),
+      fmtBucket(b.d14, 'b2'),
+      fmtBucket(b.d30, 'b3'),
+      fmtBucket(b.d60, 'b4'),
+      fmtBucket(b.d61p, 'b5'),
+    ].filter(Boolean).join('');
+  }
+  document.getElementById('b4AgingSub').textContent = `Загальна ДЗ ${fmtMoneyShort(total)} · прострочка ${fmtMoneyShort(r.overdue_usd)} (${fmtPct(r.overdue_share || 0)})`;
+  document.getElementById('b4AgingMeta').textContent = `на ${r.on_date} · ${r.customers_count} клієнтів`;
+
+  // Top overdue
+  const top = r.top_overdue || [];
+  if (!top.length) {
+    document.getElementById('b4TopOverdue').innerHTML = `<div class="empty">Немає прострочки &gt; 30 днів</div>`;
+  } else {
+    document.getElementById('b4TopOverdue').innerHTML = `<div class="list">${top.map(c => `
+      <div class="row">
+        <div class="name">${esc(c.name)}<small>${c.max_days} днів макс</small></div>
+        <div class="v neg">${fmtMoneyShort(c.total_usd)}</div>
+      </div>
+    `).join('')}</div>`;
+  }
+
+  // Credit limits
+  const limits = r.credit_limits || [];
+  if (!limits.length) {
+    document.getElementById('b4Limits').innerHTML = `<div class="empty" style="padding:24px 12px">
+      Кредитні ліміти ще не задані.<br>
+      <span style="font-size:11px;color:var(--text3)">Заповнити можна через API <code style="background:var(--bg3);padding:1px 5px;border-radius:3px;font-size:11px">_admin_set_credit_limit</code> або в адмінці (буде додано).</span>
+    </div>`;
+    document.getElementById('b4LimitsMeta').textContent = '0 заданих лімітів';
+  } else {
+    document.getElementById('b4Limits').innerHTML = `<div class="gauges">${limits.map(l => {
+      const u = Math.max(0, Math.min(1, l.utilization));
+      const cls = u >= 0.95 ? 'crit' : u >= 0.75 ? 'warn' : '';
+      return `<div class="gauge">
+        <div class="gname">${esc(l.name)}<small>${fmtMoneyShort(l.used_usd)} / ${fmtMoneyShort(l.limit_usd)}</small></div>
+        <div class="gtrack"><i class="${cls}" style="width:${(u*100).toFixed(0)}%"></i></div>
+        <div class="gnum">${(u*100).toFixed(0)}%</div>
+      </div>`;
+    }).join('')}</div>`;
+    document.getElementById('b4LimitsMeta').textContent = `${limits.length} лімітів задано`;
   }
 }
 
