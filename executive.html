@@ -596,22 +596,16 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
       <div class="block-head">
         <span class="block-num">06</span>
         <span class="block-title">Постачальники · закупівля</span>
-        <span class="block-meta">топ-сальдо — live · решта <span class="mock-tag">умовно</span></span>
+        <span class="block-meta" id="b6Meta">з purchase_receipts · live</span>
       </div>
 
       <div class="g-1-1">
         <div class="card">
-          <div class="card-head"><div><h3>Концентрація закупівель<span class="mock-tag">умовно</span></h3><div class="card-sub">Топ-2 = 64% — ризик</div></div></div>
-          <div class="donut-wrap">
-            <div class="donut" style="background:conic-gradient(#a3a3a3 0 38%,#737373 38% 64%,#525252 64% 78%,#404040 78% 88%,#2a2a2a 88% 100%)"></div>
-            <div class="donut-legend">
-              <div><span><i class="sw" style="background:#a3a3a3"></i>Huawei</span><span class="v">38%</span></div>
-              <div><span><i class="sw" style="background:#737373"></i>JA Solar</span><span class="v">26%</span></div>
-              <div><span><i class="sw" style="background:#525252"></i>Deye</span><span class="v">14%</span></div>
-              <div><span><i class="sw" style="background:#404040"></i>Pylontech</span><span class="v">10%</span></div>
-              <div><span><i class="sw" style="background:#2a2a2a"></i>Інші (8 пост.)</span><span class="v">12%</span></div>
-            </div>
+          <div class="card-head">
+            <div><h3>Концентрація закупівель</h3><div class="card-sub" id="b6ConcSub">за період</div></div>
+            <span class="card-meta" id="b6ConcMeta">—</span>
           </div>
+          <div id="b6Concentration"><div class="loading">Завантаження…</div></div>
         </div>
 
         <div class="card">
@@ -625,19 +619,10 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
 
       <div class="card" style="margin-top:14px">
         <div class="card-head">
-          <div><h3>Тренд закупівельних цін · топ-5 SKU<span class="mock-tag">умовно</span></h3><div class="card-sub">Це джерело тиску на маржу</div></div>
+          <div><h3>Тренд закупівельних цін · топ-5 SKU</h3><div class="card-sub">Сер. ціна по періодах для топ-обсягу SKU</div></div>
           <span class="card-meta">6 місяців</span>
         </div>
-        <table class="t">
-          <thead><tr><th>SKU</th><th>Категорія</th><th class="num">Зараз</th><th class="num">3 міс тому</th><th class="num">6 міс тому</th><th class="num">Δ 6м</th><th>Тренд</th></tr></thead>
-          <tbody>
-            <tr><td>Huawei SUN2000-12KTL</td><td>Інвертор</td><td class="num">$ 1 124</td><td class="num">$ 1 086</td><td class="num">$ 982</td><td class="num" style="color:var(--red)">+14.5%</td><td><svg viewBox="0 0 80 20" class="spark" style="width:80px;height:20px"><path d="M0,18 L20,15 L40,10 L60,7 L80,2" stroke="#e74c3c" stroke-width="1.5" fill="none"/></svg></td></tr>
-            <tr><td>JA Solar JAM72S30 545W</td><td>Панель</td><td class="num">$ 84.20</td><td class="num">$ 82.40</td><td class="num">$ 78.10</td><td class="num" style="color:var(--red)">+7.8%</td><td><svg viewBox="0 0 80 20" class="spark" style="width:80px;height:20px"><path d="M0,16 L20,14 L40,11 L60,8 L80,5" stroke="#e74c3c" stroke-width="1.5" fill="none"/></svg></td></tr>
-            <tr><td>Pylontech US3000C</td><td>Акумулятор</td><td class="num">$ 612</td><td class="num">$ 624</td><td class="num">$ 638</td><td class="num" style="color:var(--green)">−4.1%</td><td><svg viewBox="0 0 80 20" class="spark" style="width:80px;height:20px"><path d="M0,4 L20,6 L40,9 L60,12 L80,14" stroke="#22c55e" stroke-width="1.5" fill="none"/></svg></td></tr>
-            <tr><td>Deye SUN-12K-SG04LP3</td><td>Інвертор</td><td class="num">$ 1 248</td><td class="num">$ 1 184</td><td class="num">$ 1 092</td><td class="num" style="color:var(--red)">+14.3%</td><td><svg viewBox="0 0 80 20" class="spark" style="width:80px;height:20px"><path d="M0,17 L20,14 L40,10 L60,6 L80,3" stroke="#e74c3c" stroke-width="1.5" fill="none"/></svg></td></tr>
-            <tr><td>K2 SingleRail набір 4 пан.</td><td>Монтаж</td><td class="num">$ 142</td><td class="num">$ 138</td><td class="num">$ 138</td><td class="num">+2.9%</td><td><svg viewBox="0 0 80 20" class="spark" style="width:80px;height:20px"><path d="M0,12 L20,12 L40,11 L60,11 L80,10" stroke="#a3a3a3" stroke-width="1.5" fill="none"/></svg></td></tr>
-          </tbody>
-        </table>
+        <div id="b6PriceTrends"><div class="loading">Завантаження…</div></div>
       </div>
     </section>
 
@@ -959,6 +944,7 @@ function reloadAll() {
   loadMarginBreakdown();
   loadArAging();
   loadWarehouseBreakdown();
+  loadSuppliersBreakdown();
   setTimeout(() => { document.getElementById('syncAge').textContent = '1с тому'; }, 1500);
 }
 
@@ -1779,6 +1765,64 @@ async function loadWarehouseBreakdown() {
         <div class="v">${fmtMoneyShort(s.stock_usd)}</div>
       </div>`;
     }).join('')}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SUPPLIERS BREAKDOWN (block 06 — live)
+// ═══════════════════════════════════════════════════════════════════
+async function loadSuppliersBreakdown() {
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
+  const r = await dashFetch(`${API_URL}?action=executive_suppliers_breakdown&from=${state.from}&to=${state.to}${orgQ}`).catch(e => ({ error: String(e) }));
+  if (!r || r.error) {
+    ['b6Concentration','b6PriceTrends'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = `<div class="error">${esc(r?.error || 'не вдалось')}</div>`;
+    });
+    return;
+  }
+
+  // Concentration: показуємо як список рядків з частками (donut можна, але список читабельніший)
+  const top = (r.suppliers || []).slice(0, 8);
+  if (!top.length) {
+    document.getElementById('b6Concentration').innerHTML = `<div class="empty">Немає закупівель за період</div>`;
+  } else {
+    const max = top[0].amount_usd || 1;
+    document.getElementById('b6Concentration').innerHTML = `<div class="list">${top.map(s => {
+      const lead = s.avg_lead_days != null ? `${s.avg_lead_days}д lead` : '—';
+      return `<div class="row">
+        <div class="name">${esc(s.name)}<small>${s.receipts_count} приходів · ${lead}</small></div>
+        <div class="v">${fmtMoneyShort(s.amount_usd)}<small>${(s.share*100).toFixed(1)}%</small></div>
+      </div>`;
+    }).join('')}</div>`;
+  }
+  document.getElementById('b6ConcSub').textContent = `Загальний обсяг: ${fmtMoneyShort(r.total_purchases_usd)}`;
+  document.getElementById('b6ConcMeta').textContent = `топ-2 = ${(r.top2_share*100).toFixed(0)}% · топ-5 = ${(r.top5_share*100).toFixed(0)}%`;
+
+  // Price trends
+  const trends = r.price_trends || [];
+  if (!trends.length) {
+    document.getElementById('b6PriceTrends').innerHTML = `<div class="empty">Немає даних по топ-SKU</div>`;
+  } else {
+    const fmtP = v => v == null ? '—' : '$ ' + (v >= 1000 ? (v/1000).toFixed(1) + 'k' : v.toFixed(2));
+    document.getElementById('b6PriceTrends').innerHTML = `<table class="t">
+      <thead><tr>
+        <th>SKU</th><th>Категорія</th>
+        <th class="num">Зараз</th><th class="num">3 міс тому</th><th class="num">6 міс тому</th><th class="num">Δ 6м</th>
+      </tr></thead>
+      <tbody>${trends.map(t => {
+        const cls = t.delta_6m == null ? '' : t.delta_6m > 0.05 ? 'style="color:var(--red)"' : t.delta_6m < -0.05 ? 'style="color:var(--green)"' : '';
+        const dlt = t.delta_6m == null ? '—' : (t.delta_6m > 0 ? '+' : '') + (t.delta_6m * 100).toFixed(1) + '%';
+        return `<tr>
+          <td><strong>${esc(t.name).slice(0, 50)}</strong>${t.article ? `<small>${esc(t.article)}</small>` : ''}</td>
+          <td>${esc(t.category)}</td>
+          <td class="num">${fmtP(t.price_now)}</td>
+          <td class="num">${fmtP(t.price_3m_ago)}</td>
+          <td class="num">${fmtP(t.price_6m_ago)}</td>
+          <td class="num" ${cls}>${dlt}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
   }
 }
 
