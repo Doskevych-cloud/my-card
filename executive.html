@@ -397,57 +397,56 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         </div>
       </div>
 
-      <!-- УМОВНО — структура та воронка -->
+      <!-- LIVE — воронка + категорії -->
       <div class="g-2" style="margin-top:14px">
         <div class="card">
           <div class="card-head">
             <div>
-              <h3>Воронка продажів<span class="mock-tag">умовно</span></h3>
-              <div class="card-sub">Ліди → оплата · 30 днів</div>
+              <h3>Воронка продажів</h3>
+              <div class="card-sub">Замовлення → Відвантаження → Оплата · period</div>
             </div>
-            <span class="card-meta">конверсія загальна 15%</span>
+            <span class="card-meta" id="b2FunnelMeta">—</span>
           </div>
-          <div class="funnel">
-            <div class="f-step s1"><div class="f-name">Ліди</div><div class="f-bar"><i></i></div><div class="f-num">412</div><div class="f-conv">100%</div></div>
-            <div class="f-step s2"><div class="f-name">Запити</div><div class="f-bar"><i></i></div><div class="f-num">256</div><div class="f-conv">62%</div></div>
-            <div class="f-step s3"><div class="f-name">КП</div><div class="f-bar"><i></i></div><div class="f-num">141</div><div class="f-conv">55%</div></div>
-            <div class="f-step s4"><div class="f-name">Замовлення</div><div class="f-bar"><i></i></div><div class="f-num">86</div><div class="f-conv">61%</div></div>
-            <div class="f-step s5"><div class="f-name">Відвантаження</div><div class="f-bar"><i></i></div><div class="f-num">74</div><div class="f-conv">86%</div></div>
-            <div class="f-step s6"><div class="f-name">Оплата</div><div class="f-bar"><i></i></div><div class="f-num">62</div><div class="f-conv">84%</div></div>
-          </div>
-          <div style="display:flex;gap:14px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)">
-            <span>Сер. цикл лід→оплата · <strong style="color:var(--text);font-family:var(--mono)">21 день</strong></span>
-            <span>Найслабший · <strong style="color:var(--red)">КП → Замовлення (61%)</strong></span>
-          </div>
+          <div class="funnel" id="b2Funnel"><div class="loading">Завантаження…</div></div>
+          <div id="b2FunnelFoot" style="display:flex;gap:14px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)"></div>
         </div>
 
         <div class="card">
           <div class="card-head">
             <div>
-              <h3>По категоріях<span class="mock-tag">умовно</span></h3>
-              <div class="card-sub">Розклад виторгу</div>
+              <h3>Виторг по категоріях</h3>
+              <div class="card-sub">Розклад відвантажень за період</div>
             </div>
+            <span class="card-meta" id="b2CategoryMeta">—</span>
           </div>
-          <div class="list">
-            <div class="row compact"><div class="name">Інвертори<div class="bar"><i style="width:42%"></i></div></div><div class="v">42%</div></div>
-            <div class="row compact"><div class="name">Сонячні панелі<div class="bar"><i style="width:28%"></i></div></div><div class="v">28%</div></div>
-            <div class="row compact"><div class="name">Акумулятори<div class="bar"><i style="width:14%"></i></div></div><div class="v">14%</div></div>
-            <div class="row compact"><div class="name">Монтажні системи<div class="bar"><i style="width:9%"></i></div></div><div class="v">9%</div></div>
-            <div class="row compact"><div class="name">Кабель + комплект.<div class="bar"><i style="width:7%"></i></div></div><div class="v">7%</div></div>
-          </div>
-          <div style="font-size:11px;color:var(--text3);padding-top:8px;border-top:1px solid var(--border)">
-            Для розбивки по категоріях треба підключити <code style="color:var(--text2);background:var(--bg3);padding:1px 4px;border-radius:3px;font-size:10.5px">sales_receipt_items</code> + 1С номенклатуру.
-          </div>
+          <div id="b2Category"><div class="loading">Завантаження…</div></div>
         </div>
       </div>
 
-      <div class="g-4" style="margin-top:14px">
-        <div class="mstat"><div class="mlbl">Backlog<span class="mock-tag">умовно</span></div><div class="mval">$ 1.84M</div><div class="msub">62 замовлення</div></div>
-        <div class="mstat"><div class="mlbl">Сер. чек<span class="mock-tag">умовно</span></div><div class="mval">$ 6.2k</div><div class="msub pos">+4.8% вс/міс</div></div>
-        <div class="mstat"><div class="mlbl">Нові клієнти<span class="mock-tag">умовно</span></div><div class="mval">14</div><div class="msub">$ 142k</div></div>
-        <div class="mstat"><div class="mlbl">Повторні<span class="mock-tag">умовно</span></div><div class="mval">48</div><div class="msub">$ 3.70M · 96%</div></div>
-        <div class="mstat"><div class="mlbl">Менеджерів<span class="mock-tag">умовно</span></div><div class="mval">7</div><div class="msub">топ — Бондар $ 612k</div></div>
-        <div class="mstat"><div class="mlbl">Регіонів<span class="mock-tag">умовно</span></div><div class="mval">14</div><div class="msub">Київ · Дніпро · Львів</div></div>
+      <!-- LIVE: топ-10 клієнтів + менеджери -->
+      <div class="g-2" style="margin-top:14px">
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Топ-10 клієнтів</h3><div class="card-sub">За виторгом за період</div></div>
+            <a class="pill accent" href="/counterparties.html">Усі →</a>
+          </div>
+          <div id="b2TopCustomers"><div class="loading">Завантаження…</div></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Топ менеджерів</h3><div class="card-sub">Виторг + клієнти</div></div>
+          </div>
+          <div id="b2TopManagers"><div class="loading">Завантаження…</div></div>
+        </div>
+      </div>
+
+      <div class="g-4" style="margin-top:14px" id="b2Kpis">
+        <div class="mstat"><div class="mlbl">Backlog</div><div class="mval" id="b2KpiBacklog">—</div><div class="msub" id="b2KpiBacklogSub">—</div></div>
+        <div class="mstat"><div class="mlbl">Сер. замовлення</div><div class="mval" id="b2KpiAov">—</div><div class="msub" id="b2KpiAovSub">за період</div></div>
+        <div class="mstat"><div class="mlbl">Нові клієнти</div><div class="mval" id="b2KpiNew">—</div><div class="msub" id="b2KpiNewSub">перша покупка</div></div>
+        <div class="mstat"><div class="mlbl">Повторні</div><div class="mval" id="b2KpiRepeat">—</div><div class="msub" id="b2KpiRepeatSub">—</div></div>
+        <div class="mstat"><div class="mlbl">Менеджерів</div><div class="mval" id="b2KpiManagers">—</div><div class="msub" id="b2KpiManagersSub">з продажами</div></div>
+        <div class="mstat"><div class="mlbl">Замовлень</div><div class="mval" id="b2KpiOrders">—</div><div class="msub" id="b2KpiOrdersSub">за період</div></div>
       </div>
     </section>
 
@@ -1038,6 +1037,7 @@ function reloadAll() {
   loadRunway();
   loadCounterparties();
   loadDecisions();
+  loadSalesBreakdown();
   setTimeout(() => { document.getElementById('syncAge').textContent = '1с тому'; }, 1500);
 }
 
@@ -1535,6 +1535,102 @@ async function loadDecisions() {
       ${a.act ? `<a class="act" href="${esc(a.act.href || '#')}">${esc(a.act.lbl)} →</a>` : ''}
     </div>
   `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SALES BREAKDOWN (block 02 — live)
+// ═══════════════════════════════════════════════════════════════════
+async function loadSalesBreakdown() {
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
+  const r = await dashFetch(`${API_URL}?action=executive_sales_breakdown&from=${state.from}&to=${state.to}${orgQ}`).catch(e => ({ error: String(e) }));
+  if (!r || r.error) {
+    ['b2Funnel','b2Category','b2TopCustomers','b2TopManagers'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = `<div class="error">${esc(r?.error || 'не вдалось завантажити')}</div>`;
+    });
+    return;
+  }
+
+  // Воронка: orders → shipments → paid
+  const f = r.funnel || {};
+  const ord = f.orders || { count: 0, usd: 0 };
+  const ship = f.shipments || { count: 0, usd: 0 };
+  const paid = f.paid || { count: 0, usd: 0, customers: 0 };
+  const maxUsd = Math.max(ord.usd, ship.usd, paid.usd, 1);
+  const w = (v) => Math.max(2, Math.min(100, v / maxUsd * 100));
+  const conv = (cur, prev) => prev > 0 ? `${Math.round(cur/prev*100)}%` : '—';
+  document.getElementById('b2Funnel').innerHTML = `
+    <div class="f-step"><div class="f-name">Замовлення</div><div class="f-bar"><i style="width:${w(ord.usd)}%"></i></div><div class="f-num">${fmtMoneyShort(ord.usd)}</div><div class="f-conv">${ord.count} док</div></div>
+    <div class="f-step"><div class="f-name">Відвантаження</div><div class="f-bar"><i style="width:${w(ship.usd)}%"></i></div><div class="f-num">${fmtMoneyShort(ship.usd)}</div><div class="f-conv">${ship.count} док · ${conv(ship.usd, ord.usd)}</div></div>
+    <div class="f-step"><div class="f-name">Оплата</div><div class="f-bar"><i style="width:${w(paid.usd)}%"></i></div><div class="f-num">${fmtMoneyShort(paid.usd)}</div><div class="f-conv">${paid.count} плт · ${conv(paid.usd, ship.usd)}</div></div>
+  `;
+  document.getElementById('b2FunnelMeta').textContent = ord.usd > 0 ? `конверсія ${conv(paid.usd, ord.usd)}` : '—';
+  const cycleNote = ord.usd && ship.usd
+    ? `Замовлено → відвантажено · <strong style="color:var(--text);font-family:var(--mono)">${conv(ship.usd, ord.usd)}</strong>`
+    : '';
+  const paidNote = ship.usd && paid.usd
+    ? `Відвантажено → оплачено · <strong style="color:var(--text);font-family:var(--mono)">${conv(paid.usd, ship.usd)}</strong>`
+    : '';
+  document.getElementById('b2FunnelFoot').innerHTML = [cycleNote, paidNote].filter(Boolean).map(s => `<span>${s}</span>`).join('');
+
+  // Категорії
+  const cats = (r.by_category || []).slice(0, 8);
+  const catTotal = cats.reduce((s, c) => s + Number(c.revenue_usd || 0), 0);
+  if (!cats.length) {
+    document.getElementById('b2Category').innerHTML = `<div class="empty">Немає продажів за період</div>`;
+  } else {
+    const max = cats[0].revenue_usd || 1;
+    document.getElementById('b2Category').innerHTML = `<div class="list">${cats.map(c => `
+      <div class="row compact">
+        <div class="name">${esc(c.category)}<div class="bar"><i style="width:${(c.revenue_usd/max*100).toFixed(1)}%"></i></div></div>
+        <div class="v">${fmtMoneyShort(c.revenue_usd)}<small>${(c.share*100).toFixed(1)}%</small></div>
+      </div>
+    `).join('')}</div>`;
+  }
+  document.getElementById('b2CategoryMeta').textContent = `${cats.length} груп · ${fmtMoneyShort(catTotal)}`;
+
+  // Топ клієнти
+  const top = r.top_customers || [];
+  if (!top.length) {
+    document.getElementById('b2TopCustomers').innerHTML = `<div class="empty">Немає продажів за період</div>`;
+  } else {
+    const max = top[0].revenue_usd || 1;
+    document.getElementById('b2TopCustomers').innerHTML = `<div class="list">${top.map(c => `
+      <div class="row">
+        <div class="name">${esc(c.name)}<small>${c.receipts_count} док · ${(c.share*100).toFixed(1)}%</small></div>
+        <div class="v pos">${fmtMoneyShort(c.revenue_usd)}<small style="color:var(--text3)">${((c.revenue_usd/max)*100).toFixed(0)}%</small></div>
+      </div>
+    `).join('')}</div>`;
+  }
+
+  // Топ менеджери
+  const mgrs = (r.by_manager || []).slice(0, 10);
+  if (!mgrs.length) {
+    document.getElementById('b2TopManagers').innerHTML = `<div class="empty">Немає даних по менеджерах</div>`;
+  } else {
+    const maxM = mgrs[0].revenue_usd || 1;
+    document.getElementById('b2TopManagers').innerHTML = `<div class="list">${mgrs.map(m => `
+      <div class="row">
+        <div class="name">${esc(m.name)}<small>${m.receipts_count} док · ${m.customers_count} клієнтів</small></div>
+        <div class="v">${fmtMoneyShort(m.revenue_usd)}<small style="color:var(--text3)">${((m.revenue_usd/maxM)*100).toFixed(0)}%</small></div>
+      </div>
+    `).join('')}</div>`;
+  }
+
+  // KPI ministats
+  const k = r.kpis || {};
+  document.getElementById('b2KpiBacklog').textContent = fmtMoneyShort(k.backlog_usd);
+  document.getElementById('b2KpiBacklogSub').textContent = `${k.backlog_count || 0} замовлень без відвантаж.`;
+  document.getElementById('b2KpiAov').textContent = fmtMoneyShort(k.avg_order_value_usd);
+  document.getElementById('b2KpiAovSub').textContent = `по ${ord.count} замовленнях`;
+  document.getElementById('b2KpiNew').textContent = String(k.new_customers || 0);
+  document.getElementById('b2KpiNewSub').textContent = 'у періоді';
+  document.getElementById('b2KpiRepeat').textContent = String(k.repeat_customers || 0);
+  document.getElementById('b2KpiRepeatSub').textContent = `з ${k.total_customers || 0} активних`;
+  document.getElementById('b2KpiManagers').textContent = String(k.managers_count || 0);
+  document.getElementById('b2KpiManagersSub').textContent = 'з продажами';
+  document.getElementById('b2KpiOrders').textContent = String(ord.count);
+  document.getElementById('b2KpiOrdersSub').textContent = `на ${fmtMoneyShort(ord.usd)}`;
 }
 
 // ── helpers ─────────────────────────────────────────────────────────
