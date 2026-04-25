@@ -948,16 +948,29 @@ function deltaHtml(cur, prev, good='up') {
 // LOAD KPIs
 // ═══════════════════════════════════════════════════════════════════
 function salesPaidUsd(payload) {
-  if (!payload || !payload.managers) return 0;
+  if (!payload) return 0;
   const orgFilter = state.org;
-  let total = 0;
-  payload.managers.forEach(mgr => {
-    if (orgFilter && mgr.org && mgr.org !== orgFilter) return;
-    if (Array.isArray(mgr.payments)) {
-      mgr.payments.forEach(p => { if (p && typeof p.amountUsd === 'number') total += p.amountUsd; });
-    } else if (typeof mgr.paidUsd === 'number') total += mgr.paidUsd;
-  });
-  return total;
+  // sales_report_d1 (поточний з 21.04.2026): { byOrg: { 'Реакт': { managers: [{ paidUsd, ... }] }, ... } }
+  if (payload.byOrg && typeof payload.byOrg === 'object') {
+    let total = 0;
+    Object.entries(payload.byOrg).forEach(([orgName, data]) => {
+      if (orgFilter && orgName !== orgFilter) return;
+      (data.managers || []).forEach(m => { total += Number(m.paidUsd || 0); });
+    });
+    return total;
+  }
+  // Legacy sales_report: { managers: [{ org, paidUsd, payments: [{ amountUsd }] }] }
+  if (Array.isArray(payload.managers)) {
+    let total = 0;
+    payload.managers.forEach(mgr => {
+      if (orgFilter && mgr.org && mgr.org !== orgFilter) return;
+      if (Array.isArray(mgr.payments)) {
+        mgr.payments.forEach(p => { if (p && typeof p.amountUsd === 'number') total += p.amountUsd; });
+      } else if (typeof mgr.paidUsd === 'number') total += mgr.paidUsd;
+    });
+    return total;
+  }
+  return 0;
 }
 
 async function loadKpis() {
@@ -973,8 +986,8 @@ async function loadKpis() {
   const janFirst = _iso(new Date(new Date().getFullYear(), 0, 1));
 
   const results = await Promise.allSettled([
-    dashFetch(`${API_URL}?action=sales_report&from=${state.from}&to=${state.to}${orgQ}`),
-    prev ? dashFetch(`${API_URL}?action=sales_report&from=${prev.from}&to=${prev.to}${orgQ}`) : Promise.resolve(null),
+    dashFetch(`${API_URL}?action=sales_report_d1&from=${state.from}&to=${state.to}${orgQ}`),
+    prev ? dashFetch(`${API_URL}?action=sales_report_d1&from=${prev.from}&to=${prev.to}${orgQ}`) : Promise.resolve(null),
     dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${todayIso}${orgQ}`),
     dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${monthAgoIso}${orgQ}`),
     dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${todayIso}${orgQ}`),
@@ -1172,7 +1185,7 @@ async function loadTrend() {
   const buckets = buildTrendBuckets(state.trendMode);
 
   const [salesAll, pnlAll] = await Promise.all([
-    Promise.all(buckets.map(b => dashFetch(`${API_URL}?action=sales_report&from=${b.from}&to=${b.to}${orgQ}`).catch(() => null))),
+    Promise.all(buckets.map(b => dashFetch(`${API_URL}?action=sales_report_d1&from=${b.from}&to=${b.to}${orgQ}`).catch(() => null))),
     Promise.all(buckets.map(b => dashFetch(`${API_URL}?action=pnl_accrual_report&from=${b.from}&to=${b.to}${orgQ}`).catch(() => null))),
   ]);
 
@@ -1234,7 +1247,7 @@ async function loadRunway() {
   const janFirst = _iso(new Date(now.getFullYear(), 0, 1));
 
   const [salesR, apR, arR] = await Promise.all([
-    dashFetch(`${API_URL}?action=sales_report&from=${from30}&to=${todayIso}${orgQ}`).catch(() => null),
+    dashFetch(`${API_URL}?action=sales_report_d1&from=${from30}&to=${todayIso}${orgQ}`).catch(() => null),
     dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${todayIso}${orgQ}`).catch(() => null),
     dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${todayIso}${orgQ}`).catch(() => null),
   ]);
