@@ -1037,13 +1037,16 @@ async function loadKpis() {
 
   // AR
   function coBal(r) { return r && r.status === 'fulfilled' && r.value && !r.value.error ? Number(r.value.kpi?.balance_usd || 0) : null; }
+  // AR/AP: balance_usd у cashflow знаку (як в counterparties.html):
+  //   + = ми винні (наш пасив, гроші в нас → зелений для CF)
+  //   − = нам винні (наш актив, гроші заморожені → червоний для CF)
+  // KPI «Борги нам» / «Наш борг» — використовуємо ту саму семантику що counterparties.html.
   const arCur = coBal(arR) ?? 0;
   const arPrev = coBal(arPR);
   if (arR.status === 'fulfilled' && arR.value && !arR.value.error) {
     kpiSet('kAR', { val: fmtMoneyShort(arCur), cls: arCur > 0 ? 'pos' : (arCur < 0 ? 'neg' : ''), sub: 'YTD', deltaCur: arCur, deltaPrev: arPrev, deltaGood: 'up' });
   } else { kpiError('kAR', arR.value?.error || 'err'); }
 
-  // AP
   const apCur = coBal(apR) ?? 0;
   const apPrev = coBal(apPR);
   if (apR.status === 'fulfilled' && apR.value && !apR.value.error) {
@@ -1316,10 +1319,18 @@ async function loadCounterparties() {
 function renderTopCounterparties(elId, payload, opts) {
   const el = document.getElementById(elId); if (!el) return;
   if (!payload || payload.error) { el.innerHTML = `<div class="error">${esc(payload?.error || 'Не вдалось завантажити')}</div>`; return; }
-  const rows = payload.clients || payload.suppliers || payload.counterparties || payload.rows || [];
+  // suppliers_overview / customers_overview повертають масив у полі `top`.
+  const rows = payload.top || payload.clients || payload.suppliers || payload.counterparties || payload.rows || [];
   if (!rows.length) { el.innerHTML = `<div class="empty">Порожньо</div>`; return; }
+  // Знак balance_usd: 1С MXL для AP — «+ми винні» (хочемо show), для AR — інверсний (нам винні = негативне cashflow → інвертуємо).
   const sorted = rows
-    .map(r => ({ name: r.name || r.client || r.supplier || r.counterparty || 'Без назви', bal: Number(r.balance_usd ?? r.balanceUsd ?? r.balance ?? 0), org: r.org || '' }))
+    .map(r => ({
+      name: r.description || r.name || r.client || r.supplier || r.counterparty || 'Без назви',
+      bal: opts.isClient
+        ? -Number(r.balance_usd ?? r.balance ?? 0)  // AR: інверсія cashflow → +нам винні
+        : Number(r.balance_usd ?? r.balance ?? 0),  // AP: +ми винні (як є)
+      org: r.org || '',
+    }))
     .filter(r => r.bal > 0)
     .sort((a, b) => b.bal - a.bal)
     .slice(0, 8);
