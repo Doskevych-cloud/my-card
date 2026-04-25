@@ -1778,19 +1778,27 @@ async function loadFxPosition() {
     return;
   }
 
-  // Rates
+  // Rates: основний — SWIFT PrivatBank (sell), референс — 1c_doc
   const rt = r.rates || {};
-  document.getElementById('b7RatesSub').textContent = `Джерело: ${rt.source || '—'} · станом на ${rt.date || '—'}`;
+  const sw = rt.swift || {};
+  const doc = rt.doc_1c || {};
+  document.getElementById('b7RatesSub').textContent = `${rt.source || '—'} · станом на ${rt.date || '—'}`;
+  const fmtS = v => v != null && isFinite(v) ? v.toFixed(2).replace('.', ',') : '—';
   document.getElementById('b7Rates').innerHTML = `
     <div class="fx-row">
-      <div class="fx-cur">USD</div>
-      <div><div style="color:var(--text);font-weight:600;font-size:13px">долар США</div><div class="fx-name">UAH per USD</div></div>
-      <div><div class="fx-val">${rt.usd_uah ? rt.usd_uah.toFixed(2) + ' ₴' : '—'}</div></div>
+      <div class="fx-cur">USD<small style="display:block;font-size:9px;color:var(--text3);font-weight:500;margin-top:1px">SWIFT</small></div>
+      <div><div style="color:var(--text);font-weight:600;font-size:13px">долар США</div><div class="fx-name">PrivatBank · купівля ${fmtS(sw.usd_buy)} / продаж ${fmtS(sw.usd_sell)}</div></div>
+      <div><div class="fx-val">${fmtS(sw.usd_sell)} ₴</div></div>
     </div>
     <div class="fx-row">
-      <div class="fx-cur">EUR</div>
-      <div><div style="color:var(--text);font-weight:600;font-size:13px">євро</div><div class="fx-name">UAH per EUR</div></div>
-      <div><div class="fx-val">${rt.eur_uah ? rt.eur_uah.toFixed(2) + ' ₴' : '—'}</div></div>
+      <div class="fx-cur">EUR<small style="display:block;font-size:9px;color:var(--text3);font-weight:500;margin-top:1px">SWIFT</small></div>
+      <div><div style="color:var(--text);font-weight:600;font-size:13px">євро</div><div class="fx-name">PrivatBank · купівля ${fmtS(sw.eur_buy)} / продаж ${fmtS(sw.eur_sell)}</div></div>
+      <div><div class="fx-val">${fmtS(sw.eur_sell)} ₴</div></div>
+    </div>
+    <div class="fx-row">
+      <div class="fx-cur" style="font-size:10px;color:var(--text3)">1С</div>
+      <div><div style="color:var(--text2);font-weight:500;font-size:12px">з документів 1С</div><div class="fx-name">USD ${fmtS(doc.usd_uah)} · EUR ${fmtS(doc.eur_uah)} · референс</div></div>
+      <div><div class="fx-val" style="font-size:11.5px;color:var(--text3)">довідково</div></div>
     </div>
     <div class="fx-row">
       <div class="fx-cur">EUR/USD</div>
