@@ -805,6 +805,14 @@ const state = {
 
 const MN_SHORT = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
 
+// orgQ для counterparties endpoints (вони приймають lowercase code, а не 'Реакт'/'Генерація')
+function cpOrgQ() {
+  if (!state.org) return '';
+  const map = { 'Реакт': 'react', 'Генерація': 'gen', 'Ген.Київ': 'gen_ky', 'Ген.Одеса': 'gen_od' };
+  const code = map[state.org] || '';
+  return code ? '&org=' + encodeURIComponent(code) : '';
+}
+
 function fmt(n, dec = 0) { if (n == null || isNaN(n)) return '—'; return Number(n).toLocaleString('uk-UA', { maximumFractionDigits: dec, minimumFractionDigits: dec }); }
 function fmtMoneyShort(n) {
   if (n == null || isNaN(n)) return '—';
@@ -988,10 +996,10 @@ async function loadKpis() {
   const results = await Promise.allSettled([
     dashFetch(`${API_URL}?action=sales_report_d1&from=${state.from}&to=${state.to}${orgQ}`),
     prev ? dashFetch(`${API_URL}?action=sales_report_d1&from=${prev.from}&to=${prev.to}${orgQ}`) : Promise.resolve(null),
-    dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${todayIso}${orgQ}`),
-    dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${monthAgoIso}${orgQ}`),
-    dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${todayIso}${orgQ}`),
-    dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${monthAgoIso}${orgQ}`),
+    dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${todayIso}${cpOrgQ()}`),
+    dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${monthAgoIso}${cpOrgQ()}`),
+    dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${todayIso}${cpOrgQ()}`),
+    dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${monthAgoIso}${cpOrgQ()}`),
     dashFetch(`${API_URL}?action=pnl_accrual_report&from=${state.from}&to=${state.to}${orgQ}`),
     prev ? dashFetch(`${API_URL}?action=pnl_accrual_report&from=${prev.from}&to=${prev.to}${orgQ}`) : Promise.resolve(null),
     dashFetch(`${API_URL}?action=gross_profit_report&from=${state.from}&to=${state.to}${orgQ}`).catch(() => null),
@@ -1223,7 +1231,7 @@ async function loadTrend() {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#0a0a0a', titleColor: cText, bodyColor: cText, borderColor: cBorder, borderWidth: 1, padding: 10,
+          backgroundColor: 'rgba(20,20,20,0.96)', titleColor: '#f5f5f5', bodyColor: '#f5f5f5', borderColor: '#333', borderWidth: 1, padding: 10,
           titleFont: { family: 'Inter', weight: '600', size: 12 }, bodyFont: { family: 'JetBrains Mono', size: 11 },
           callbacks: { label: (ctx) => `${ctx.dataset.label}: ${fmtMoneyShort(ctx.parsed.y)}` },
         },
@@ -1248,8 +1256,8 @@ async function loadRunway() {
 
   const [salesR, apR, arR] = await Promise.all([
     dashFetch(`${API_URL}?action=sales_report_d1&from=${from30}&to=${todayIso}${orgQ}`).catch(() => null),
-    dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${todayIso}${orgQ}`).catch(() => null),
-    dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${todayIso}${orgQ}`).catch(() => null),
+    dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${todayIso}${cpOrgQ()}`).catch(() => null),
+    dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${todayIso}${cpOrgQ()}`).catch(() => null),
   ]);
 
   const rev30 = salesR && !salesR.error ? salesPaidUsd(salesR) : 0;
@@ -1298,8 +1306,8 @@ async function loadCounterparties() {
   const janFirst = _iso(new Date(now.getFullYear(), 0, 1));
   const todayIso = _iso(now);
   const [cR, sR] = await Promise.all([
-    dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${todayIso}${orgQ}`).catch(() => null),
-    dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${todayIso}${orgQ}`).catch(() => null),
+    dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${todayIso}${cpOrgQ()}`).catch(() => null),
+    dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${todayIso}${cpOrgQ()}`).catch(() => null),
   ]);
   renderTopCounterparties('clientsBody', cR, { isClient: true });
   renderTopCounterparties('suppliersBody', sR, { isClient: false });
@@ -1337,8 +1345,8 @@ async function loadDecisions() {
 
   const [pnlR, arR, apR, stockR] = await Promise.all([
     dashFetch(`${API_URL}?action=pnl_accrual_report&from=${state.from}&to=${state.to}${orgQ}`).catch(() => null),
-    dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${todayIso}${orgQ}`).catch(() => null),
-    dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${todayIso}${orgQ}`).catch(() => null),
+    dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${todayIso}${cpOrgQ()}`).catch(() => null),
+    dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${todayIso}${cpOrgQ()}`).catch(() => null),
     dashFetch(`${API_URL}?action=warehouse_value_report&date=${todayIso}`).catch(() => null),
   ]);
 
