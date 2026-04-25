@@ -681,17 +681,17 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
     <section class="block">
       <div class="block-head">
         <span class="block-num">09</span>
-        <span class="block-title">Операційна ефективність<span class="mock-tag lg">умовно</span></span>
-        <span class="block-meta">SLA · якість · логістика</span>
+        <span class="block-title">Операційна ефективність</span>
+        <span class="block-meta" id="b9Meta">час order→shipment з sales_orders + sales_receipts</span>
       </div>
 
       <div class="g-4">
-        <div class="mstat"><div class="mlbl">Замовлення → відвантаження</div><div class="mval">1.4 д</div><div class="msub pos">SLA ≤ 2д · 94%</div></div>
-        <div class="mstat"><div class="mlbl">Точність комплектації</div><div class="mval pos">98.6%</div><div class="msub">14 помилок з 1062</div></div>
-        <div class="mstat"><div class="mlbl">Повернення (RMA)</div><div class="mval">2.4%</div><div class="msub">42 з 1726 поз.</div></div>
-        <div class="mstat"><div class="mlbl">Логістика / виторг</div><div class="mval">3.8%</div><div class="msub">$ 146k міс</div></div>
-        <div class="mstat"><div class="mlbl">Продуктивність складу</div><div class="mval">62</div><div class="msub">пік/зміну</div></div>
-        <div class="mstat"><div class="mlbl">Запитів підтримки</div><div class="mval">128</div><div class="msub">сер. 38хв</div></div>
+        <div class="mstat"><div class="mlbl">Замовлення → відвантаження</div><div class="mval" id="b9TtsAvg">—</div><div class="msub" id="b9TtsAvgSub">—</div></div>
+        <div class="mstat"><div class="mlbl">SLA ≤ 2 днів</div><div class="mval" id="b9Sla2d">—</div><div class="msub" id="b9Sla2dSub">—</div></div>
+        <div class="mstat"><div class="mlbl">SLA ≤ 5 днів</div><div class="mval" id="b9Sla5d">—</div><div class="msub" id="b9Sla5dSub">—</div></div>
+        <div class="mstat"><div class="mlbl">Відвантажень</div><div class="mval" id="b9Shipments">—</div><div class="msub" id="b9ShipmentsSub">—</div></div>
+        <div class="mstat"><div class="mlbl">Замовлень</div><div class="mval" id="b9Orders">—</div><div class="msub">за період</div></div>
+        <div class="mstat"><div class="mlbl">RMA / точність<span class="mock-tag">N/A</span></div><div class="mval" style="color:var(--text3);font-style:italic;font-size:14px">нема в 1С</div><div class="msub">потрібен окремий облік</div></div>
       </div>
     </section>
 
@@ -893,6 +893,7 @@ function reloadAll() {
   loadSuppliersBreakdown();
   loadFxPosition();
   loadCustomersCrm();
+  loadOps();
   setTimeout(() => { document.getElementById('syncAge').textContent = '1с тому'; }, 1500);
 }
 
@@ -1899,6 +1900,38 @@ async function loadCustomersCrm() {
     `).join('')}</div>`;
   }
   document.getElementById('b8SignalsMeta').textContent = `${sigs.length} клієнтів`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// OPS METRICS (block 09 — live)
+// ═══════════════════════════════════════════════════════════════════
+async function loadOps() {
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
+  const r = await dashFetch(`${API_URL}?action=executive_ops&from=${state.from}&to=${state.to}${orgQ}`).catch(e => ({ error: String(e) }));
+  if (!r || r.error) {
+    ['b9TtsAvg','b9Sla2d','b9Sla5d','b9Shipments','b9Orders'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.textContent = '—';
+    });
+    return;
+  }
+  const tts = r.time_to_ship || {};
+  document.getElementById('b9TtsAvg').textContent = tts.shipments_count > 0 ? tts.avg_days + ' д' : '—';
+  document.getElementById('b9TtsAvgSub').textContent = tts.shipments_count > 0 ? `${tts.min_days}–${tts.max_days} д діапазон` : 'нема даних';
+  document.getElementById('b9TtsAvg').classList.toggle('pos', tts.avg_days <= 2);
+  document.getElementById('b9TtsAvg').classList.toggle('neg', tts.avg_days > 5);
+
+  document.getElementById('b9Sla2d').textContent = tts.shipments_count > 0 ? fmtPct(tts.sla_2d_share) : '—';
+  document.getElementById('b9Sla2dSub').textContent = tts.shipments_count > 0 ? `${Math.round(tts.shipments_count * tts.sla_2d_share)} з ${tts.shipments_count}` : '—';
+  document.getElementById('b9Sla2d').classList.toggle('pos', tts.sla_2d_share >= 0.8);
+  document.getElementById('b9Sla2d').classList.toggle('neg', tts.sla_2d_share < 0.5);
+
+  document.getElementById('b9Sla5d').textContent = tts.shipments_count > 0 ? fmtPct(tts.sla_5d_share) : '—';
+  document.getElementById('b9Sla5dSub').textContent = tts.shipments_count > 0 ? `${Math.round(tts.shipments_count * tts.sla_5d_share)} з ${tts.shipments_count}` : '—';
+  document.getElementById('b9Sla5d').classList.toggle('pos', tts.sla_5d_share >= 0.95);
+
+  document.getElementById('b9Shipments').textContent = tts.shipments_count || 0;
+  document.getElementById('b9ShipmentsSub').textContent = 'із order_ref_key';
+  document.getElementById('b9Orders').textContent = r.orders_total || 0;
 }
 
 // ── helpers ─────────────────────────────────────────────────────────
