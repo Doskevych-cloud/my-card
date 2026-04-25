@@ -630,57 +630,24 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
     <section class="block">
       <div class="block-head">
         <span class="block-num">07</span>
-        <span class="block-title">Валюта · макрофактори<span class="mock-tag lg">умовно</span></span>
-        <span class="block-meta">пов'язано з fx_rates · показ умовний</span>
+        <span class="block-title">Валюта · макрофактори</span>
+        <span class="block-meta" id="b7Meta">з fx_rates + cash + warehouse + AR/AP</span>
       </div>
 
       <div class="g-1-1-1">
         <div class="card">
-          <div class="card-head"><div><h3>Курси<span class="mock-tag">умовно</span></h3><div class="card-sub">НБУ · ПриватБанк Swift</div></div></div>
-          <div class="fx-row">
-            <div class="fx-cur">USD</div>
-            <div><div style="color:var(--text);font-weight:600;font-size:13px">долар США</div><div class="fx-name">купівля 41.18 / продаж 41.62</div></div>
-            <div><div class="fx-val">41.42 ₴</div><div class="fx-delta up">+0.8% / 7д</div></div>
-          </div>
-          <div class="fx-row">
-            <div class="fx-cur">EUR</div>
-            <div><div style="color:var(--text);font-weight:600;font-size:13px">євро</div><div class="fx-name">купівля 44.20 / продаж 44.78</div></div>
-            <div><div class="fx-val">44.48 ₴</div><div class="fx-delta up">+1.2% / 7д</div></div>
-          </div>
-          <div class="fx-row">
-            <div class="fx-cur">USD<small style="display:block;font-size:9px;color:var(--text3);font-weight:500;margin-top:1px">SWIFT</small></div>
-            <div><div style="color:var(--text);font-weight:600;font-size:13px">PrivatBank SWIFT</div><div class="fx-name">для інвойсингу</div></div>
-            <div><div class="fx-val">41.84 ₴</div><div class="fx-delta up">+0.6% / 7д</div></div>
-          </div>
+          <div class="card-head"><div><h3>Курси</h3><div class="card-sub" id="b7RatesSub">—</div></div></div>
+          <div id="b7Rates"><div class="loading">Завантаження…</div></div>
         </div>
 
         <div class="card">
-          <div class="card-head"><div><h3>Валютна позиція<span class="mock-tag">умовно</span></h3><div class="card-sub">USD · позиція довга / коротка</div></div></div>
-          <div style="display:flex;flex-direction:column;gap:0;font-size:12.5px">
-            <div style="display:grid;grid-template-columns:1fr auto;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">USD на рахунках</span><span class="num pos" style="font-weight:600">+ 184k</span></div>
-            <div style="display:grid;grid-template-columns:1fr auto;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">USD у запасах</span><span class="num pos" style="font-weight:600">+ 1 412k</span></div>
-            <div style="display:grid;grid-template-columns:1fr auto;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">USD дебіторка</span><span class="num pos" style="font-weight:600">+ 386k</span></div>
-            <div style="display:grid;grid-template-columns:1fr auto;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">USD кредиторка</span><span class="num neg" style="font-weight:600">− 612k</span></div>
-            <div style="display:grid;grid-template-columns:1fr auto;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">USD відкриті PO</span><span class="num neg" style="font-weight:600">− 412k</span></div>
-            <div style="display:grid;grid-template-columns:1fr auto;padding:11px 0 0;font-size:14px"><span style="color:var(--text);font-weight:700">Чиста позиція</span><span class="num pos" style="font-weight:700">+ 958k</span></div>
-          </div>
-          <div style="padding:9px 11px;background:var(--bg3);border-radius:8px;font-size:11px;color:var(--text2);margin-top:6px">
-            Позиція <strong style="color:var(--green)">довга</strong>. Ослаблення гривні підвищує гривневу вартість запасів і дебіторки.
-          </div>
+          <div class="card-head"><div><h3>Валютна позиція</h3><div class="card-sub">USD · довга / коротка</div></div></div>
+          <div id="b7Position"><div class="loading">Завантаження…</div></div>
         </div>
 
         <div class="card">
-          <div class="card-head"><div><h3>Чутливість маржі<span class="mock-tag">умовно</span></h3><div class="card-sub">Зміна USD/UAH → маржа місяця</div></div></div>
-          <table class="t" style="margin-top:6px">
-            <thead><tr><th>Сценарій</th><th class="num">Курс</th><th class="num">Маржа</th><th class="num">Δ</th></tr></thead>
-            <tbody>
-              <tr><td>−5% укріплення</td><td class="num">39.35</td><td class="num">$ 138k</td><td class="num" style="color:var(--red)">−$ 46k</td></tr>
-              <tr><td>−2%</td><td class="num">40.59</td><td class="num">$ 165k</td><td class="num" style="color:var(--red)">−$ 19k</td></tr>
-              <tr style="background:var(--surface3)"><td><strong>Поточний</strong></td><td class="num"><strong>41.42</strong></td><td class="num"><strong>$ 184k</strong></td><td class="num">—</td></tr>
-              <tr><td>+2%</td><td class="num">42.25</td><td class="num">$ 202k</td><td class="num" style="color:var(--green)">+$ 18k</td></tr>
-              <tr><td>+5% девальвація</td><td class="num">43.49</td><td class="num">$ 232k</td><td class="num" style="color:var(--green)">+$ 48k</td></tr>
-            </tbody>
-          </table>
+          <div class="card-head"><div><h3>Чутливість позиції</h3><div class="card-sub">Δ USD/UAH → чиста позиція в UAH</div></div></div>
+          <div id="b7Sensitivity"><div class="loading">Завантаження…</div></div>
         </div>
       </div>
     </section>
@@ -945,6 +912,7 @@ function reloadAll() {
   loadArAging();
   loadWarehouseBreakdown();
   loadSuppliersBreakdown();
+  loadFxPosition();
   setTimeout(() => { document.getElementById('syncAge').textContent = '1с тому'; }, 1500);
 }
 
@@ -1820,6 +1788,92 @@ async function loadSuppliersBreakdown() {
           <td class="num">${fmtP(t.price_3m_ago)}</td>
           <td class="num">${fmtP(t.price_6m_ago)}</td>
           <td class="num" ${cls}>${dlt}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// FX POSITION (block 07 — live)
+// ═══════════════════════════════════════════════════════════════════
+async function loadFxPosition() {
+  const u = window.__user;
+  if (!u || !(u.roles?.finance || u.roles?.admin)) return;
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
+  const r = await dashFetch(`${API_URL}?action=executive_fx_position${orgQ}`).catch(e => ({ error: String(e) }));
+  if (!r || r.error) {
+    ['b7Rates','b7Position','b7Sensitivity'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = `<div class="error">${esc(r?.error || 'не вдалось')}</div>`;
+    });
+    return;
+  }
+
+  // Rates
+  const rt = r.rates || {};
+  document.getElementById('b7RatesSub').textContent = `Джерело: ${rt.source || '—'} · станом на ${rt.date || '—'}`;
+  document.getElementById('b7Rates').innerHTML = `
+    <div class="fx-row">
+      <div class="fx-cur">USD</div>
+      <div><div style="color:var(--text);font-weight:600;font-size:13px">долар США</div><div class="fx-name">UAH per USD</div></div>
+      <div><div class="fx-val">${rt.usd_uah ? rt.usd_uah.toFixed(2) + ' ₴' : '—'}</div></div>
+    </div>
+    <div class="fx-row">
+      <div class="fx-cur">EUR</div>
+      <div><div style="color:var(--text);font-weight:600;font-size:13px">євро</div><div class="fx-name">UAH per EUR</div></div>
+      <div><div class="fx-val">${rt.eur_uah ? rt.eur_uah.toFixed(2) + ' ₴' : '—'}</div></div>
+    </div>
+    <div class="fx-row">
+      <div class="fx-cur">EUR/USD</div>
+      <div><div style="color:var(--text);font-weight:600;font-size:13px">кросс-курс</div><div class="fx-name">EUR per 1 USD</div></div>
+      <div><div class="fx-val">${rt.eur_usd ? rt.eur_usd.toFixed(4) : '—'}</div></div>
+    </div>
+  `;
+
+  // Position
+  const pos = r.position_usd || {};
+  const fmtRow = (lbl, val, neg) => `<div style="display:grid;grid-template-columns:1fr auto;padding:8px 0;border-bottom:1px solid var(--border)">
+    <span style="color:var(--text2)">${lbl}</span>
+    <span class="num ${neg ? 'neg' : (val > 0 ? 'pos' : '')}" style="font-weight:600">${neg ? '−' : (val > 0 ? '+' : '')} ${fmtMoneyShort(Math.abs(val))}</span>
+  </div>`;
+  const positionLabel = pos.net > 0 ? 'довга' : pos.net < 0 ? 'коротка' : 'нейтральна';
+  const positionCls = pos.net > 0 ? 'green' : 'red';
+  document.getElementById('b7Position').innerHTML = `
+    <div style="font-size:12.5px">
+      ${fmtRow('USD на рахунках', pos.cash, false)}
+      ${fmtRow('USD у запасах', pos.inventory, false)}
+      ${fmtRow('USD у дорозі', pos.transit, false)}
+      ${fmtRow('USD дебіторка', pos.ar, false)}
+      ${fmtRow('USD кредиторка', pos.ap, true)}
+      <div style="display:grid;grid-template-columns:1fr auto;padding:11px 0 0;font-size:14px">
+        <span style="color:var(--text);font-weight:700">Чиста позиція</span>
+        <span class="num ${pos.net > 0 ? 'pos' : (pos.net < 0 ? 'neg' : '')}" style="font-weight:700">${(pos.net >= 0 ? '+ ' : '−')} ${fmtMoneyShort(Math.abs(pos.net))}</span>
+      </div>
+    </div>
+    <div style="padding:9px 11px;background:var(--bg3);border-radius:8px;font-size:11px;color:var(--text2);margin-top:8px">
+      Позиція <strong style="color:var(--${positionCls})">${positionLabel}</strong>. ${pos.net > 0 ? 'Ослаблення гривні підвищує гривневу вартість запасів і дебіторки.' : 'Зміцнення гривні допомагає, бо USD-зобов\'язання дорожчають менше.'}
+    </div>
+  `;
+
+  // Sensitivity
+  const sens = r.sensitivity || [];
+  if (!sens.length) {
+    document.getElementById('b7Sensitivity').innerHTML = `<div class="empty">—</div>`;
+  } else {
+    document.getElementById('b7Sensitivity').innerHTML = `<table class="t">
+      <thead><tr><th>Сценарій</th><th class="num">Курс</th><th class="num">Позиція UAH</th><th class="num">Δ UAH</th></tr></thead>
+      <tbody>${sens.map(s => {
+        const isCur = s.pct === 0;
+        const cls = s.pct > 0 ? (s.delta_uah > 0 ? 'color:var(--green)' : 'color:var(--red)')
+                  : s.pct < 0 ? (s.delta_uah < 0 ? 'color:var(--red)' : 'color:var(--green)')
+                  : '';
+        const lbl = s.pct === 0 ? 'Поточний' : (s.pct > 0 ? `+${s.pct}% девальвація` : `${s.pct}% укріплення`);
+        return `<tr ${isCur ? 'style="background:var(--surface3)"' : ''}>
+          <td>${isCur ? '<strong>' : ''}${lbl}${isCur ? '</strong>' : ''}</td>
+          <td class="num">${s.rate_uah_per_usd}</td>
+          <td class="num">${fmt(s.position_uah / 1_000_000, 2)} M ₴</td>
+          <td class="num" style="${cls}">${isCur ? '—' : (s.delta_uah > 0 ? '+' : '') + fmt(s.delta_uah / 1_000_000, 2) + ' M ₴'}</td>
         </tr>`;
       }).join('')}</tbody>
     </table>`;
