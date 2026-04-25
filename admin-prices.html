@@ -84,6 +84,8 @@ a{color:inherit;text-decoration:none}
 .chip:hover{border-color:var(--border2);color:var(--text)}
 .chip.active{background:var(--accent-bg);color:var(--accent);border-color:transparent}
 .chip .cnt{font-variant-numeric:tabular-nums;font-size:10.5px;color:inherit;opacity:.75}
+.chip--alt{margin-left:8px;border-style:dashed}
+.chip--alt::before{content:'';display:inline-block;width:1px;height:14px;background:var(--border);margin-right:8px;margin-left:-8px;vertical-align:middle}
 
 .toolbar .right-ctl{margin-left:auto;display:flex;gap:6px}
 
@@ -224,6 +226,22 @@ a{color:inherit;text-decoration:none}
 .cat-body{overflow-x:auto}
 .cat-body .tbl{min-width:860px}
 
+/* Missing-in-price mode */
+.missing-section{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.missing-head{padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);background:var(--bg2)}
+.missing-head h2{font-size:14px;font-weight:600;letter-spacing:-.2px}
+.missing-head .meta{font-size:11px;color:var(--text3)}
+.missing-head .spacer{flex:1}
+.missing-body{overflow-x:auto}
+.missing-body .tbl{min-width:780px}
+.missing-body .tbl col.c-mname{width:auto}
+.missing-body .tbl col.c-mart{width:160px}
+.missing-body .tbl col.c-mgrp{width:200px}
+.missing-body .tbl col.c-mnum{width:90px}
+.missing-body .tbl col.c-mact{width:130px}
+.missing-body .tbl .grp{color:var(--text3);font-size:11px}
+.missing-body .tbl .art{color:var(--text2);font-size:11.5px;font-variant-numeric:tabular-nums}
+
 @media (max-width: 860px) {
   .wrap{padding:14px}
   .page-head{gap:8px;margin-bottom:10px}
@@ -246,6 +264,10 @@ a{color:inherit;text-decoration:none}
   .modal{max-height:94vh;border-radius:14px 14px 0 0;border-bottom:none}
   .modal.sm{max-width:none}
   .seg button{font-size:11px;padding:6px 4px}
+  .missing-head{flex-wrap:wrap;gap:6px}
+  .missing-head .meta:last-child{display:none}
+  .chip--alt{margin-left:0}
+  .chip--alt::before{display:none}
 }
 </style>
 </head>
@@ -292,6 +314,7 @@ a{color:inherit;text-decoration:none}
       <span class="chip" data-filter="instock">В наявності <span class="cnt" id="cnt_instock">0</span></span>
       <span class="chip" data-filter="intransit">В дорозі <span class="cnt" id="cnt_intransit">0</span></span>
       <span class="chip" data-filter="none">Немає <span class="cnt" id="cnt_none">0</span></span>
+      <span class="chip chip--alt" data-filter="missing" title="Товари є на складі Реакту, але не додані в прайс">Немає в прайсі <span class="cnt" id="cnt_missing">·</span></span>
     </div>
     <div class="right-ctl">
       <button class="btn btn--sm" onclick="toggleAllCats()" id="collapseBtn">Згорнути всі</button>
@@ -404,12 +427,13 @@ const PT_NO_VAT   = '36084004-bfb6-11f0-86f2-107c6149f3d7';
 const PT_WITH_VAT = '6a417c18-3eec-11f1-870a-107c6149f3d7';
 
 let STATE = { categories: [] };
+let MISSING = null;              // { items: [...], as_of_date, count } — товари на складі без позиції в прайсі
 let EDIT_ID = null;
-let EDIT_CAT = null;          // slug if editing existing category
+let EDIT_CAT = null;             // slug if editing existing category
 let CHOSEN_NOM = null;
 let FILTER = 'all';
 let SEARCH = '';
-let COLLAPSED = new Set();     // category slugs
+let COLLAPSED = new Set();       // category slugs
 
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const slugify = s => String(s || '').toLowerCase()
@@ -454,7 +478,21 @@ async function load() {
       it._stock = stocks[it.nom1c_ref_key] || null;
     }
   } catch (_) {}
+  // Завантажуємо «немає в прайсі» паралельно — щоб одразу був лічильник на чіпі.
+  loadMissing().catch(() => {});
   render();
+}
+
+async function loadMissing() {
+  try {
+    MISSING = await apiCall('price_list_missing');
+    const cnt = MISSING && Array.isArray(MISSING.items) ? MISSING.items.length : 0;
+    const el = document.getElementById('cnt_missing');
+    if (el) el.textContent = cnt;
+    if (FILTER === 'missing') render();
+  } catch (e) {
+    MISSING = { items: [], error: e.message };
+  }
 }
 
 function itemIssues(it) {
@@ -507,6 +545,10 @@ function renderStats() {
   document.getElementById('cnt_instock').textContent = instock;
   document.getElementById('cnt_intransit').textContent = intransit;
   document.getElementById('cnt_none').textContent = none;
+  // cnt_missing — оновлюється з loadMissing(); якщо MISSING вже є, синхронізуємо.
+  if (MISSING && Array.isArray(MISSING.items)) {
+    document.getElementById('cnt_missing').textContent = MISSING.items.length;
+  }
   document.getElementById('toolbar').style.display = '';
 }
 
@@ -537,6 +579,12 @@ function matchesFilter(it, cSlug) {
 function render() {
   renderStats();
   const content = document.getElementById('content');
+  // Окремий режим: «Немає в прайсі» — показуємо номенклатуру з залишком, що ще НЕ в прайсі
+  if (FILTER === 'missing') {
+    populateCategorySelect();
+    content.innerHTML = renderMissing();
+    return;
+  }
   if (!STATE.categories || !STATE.categories.length) {
     content.innerHTML = `
       <div class="empty" style="padding:50px 20px">
@@ -682,6 +730,109 @@ function renderRow(it, c) {
         </div>
       </td>
     </tr>`;
+}
+
+function renderMissing() {
+  if (!MISSING) {
+    return `<div class="loader">Завантаження…</div>`;
+  }
+  if (MISSING.error) {
+    return `<div class="empty" style="color:var(--red)">Помилка: ${esc(MISSING.error)}</div>`;
+  }
+  let items = MISSING.items || [];
+  if (SEARCH) {
+    items = items.filter(it => {
+      const hay = [it.description, it.article, it.product_group].filter(Boolean).join(' ').toLowerCase();
+      return hay.includes(SEARCH);
+    });
+  }
+  const asof = MISSING.as_of_date;
+  const hint = `Товари з залишком на складах Реакту, що ще НЕ додані в прайс. Натисніть «+ Додати в прайс», оберіть категорію — і позиція зʼявиться на публічному прайсі${asof ? ` · залишки на ${formatDate(asof)}` : ''}.`;
+  if (!items.length) {
+    return `
+      <div class="missing-section">
+        <div class="missing-head">
+          <h2>Немає в прайсі</h2>
+          <span class="meta">${MISSING.items.length} всього${SEARCH ? ` · показано 0` : ''}</span>
+        </div>
+        <div class="empty">
+          ${SEARCH ? `Нічого не знайдено за запитом «${esc(SEARCH)}»` : 'Все на складі вже в прайсі — клас!'}
+        </div>
+      </div>`;
+  }
+  return `
+    <div class="missing-section">
+      <div class="missing-head">
+        <h2>Немає в прайсі</h2>
+        <span class="meta">${MISSING.items.length} всього${SEARCH ? ` · показано ${items.length}` : ''}</span>
+        <div class="spacer"></div>
+        <span class="meta" style="max-width:480px;text-align:right;line-height:1.4">${esc(hint)}</span>
+      </div>
+      <div class="missing-body">
+        <table class="tbl">
+          <colgroup>
+            <col class="c-mname">
+            <col class="c-mart">
+            <col class="c-mgrp">
+            <col class="c-mnum">
+            <col class="c-mnum">
+            <col class="c-mact">
+          </colgroup>
+          <thead><tr>
+            <th>Номенклатура 1С</th>
+            <th>Артикул</th>
+            <th>Група</th>
+            <th class="right">Склад</th>
+            <th class="right">В дорозі</th>
+            <th></th>
+          </tr></thead>
+          <tbody>
+            ${items.map(it => {
+              const stockN = Math.round(Number(it.stock) || 0);
+              const transitN = Math.round(Number(it.transit) || 0);
+              const nomJson = JSON.stringify({ ref_key: it.ref_key, description: it.description, article: it.article || '' }).replace(/'/g,"&#39;");
+              return `
+              <tr>
+                <td class="prod-cell"><div class="name">${esc(it.description || '—')}</div></td>
+                <td><span class="art">${esc(it.article || '—')}</span></td>
+                <td><span class="grp">${esc(it.product_group || '—')}</span></td>
+                <td class="right ${stockN > 0 ? '' : 'muted'}">${stockN || '—'}</td>
+                <td class="right ${transitN > 0 ? '' : 'muted'}">${transitN || '—'}</td>
+                <td class="right">
+                  <button class="btn btn--sm btn--primary" onclick='addMissingToPrice(${nomJson})'>+ Додати в прайс</button>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// Додати товар з missing-list в прайс — відкриваємо item-modal з пре-привʼязаним 1С.
+function addMissingToPrice(nom) {
+  // Якщо немає категорій — спочатку треба створити.
+  if (!STATE.categories || !STATE.categories.length) {
+    toast('Спочатку створіть категорію', 'err');
+    openCatModal();
+    return;
+  }
+  CHOSEN_NOM = nom;
+  EDIT_ID = null;
+  document.getElementById('modalTitle').textContent = 'Нова позиція';
+  document.getElementById('modalSub').textContent = '';
+  document.getElementById('f_category').value = (STATE.categories[0] && STATE.categories[0].slug) || '';
+  document.getElementById('f_nom1c_search').value = '';
+  document.getElementById('f_display_name').value = nom.description || '';
+  document.getElementById('f_display_spec').value = '';
+  setSegStock('в наявності');
+  document.getElementById('f_datasheet_url').value = '';
+  document.getElementById('deleteBtn').style.display = 'none';
+  renderChosenNom();
+  updatePreview();
+  document.getElementById('ac_list').classList.remove('open');
+  document.getElementById('itemModal').classList.add('open');
+  setTimeout(() => document.getElementById('f_category').focus(), 50);
 }
 
 function populateCategorySelect() {
