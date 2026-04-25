@@ -33,90 +33,220 @@
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
 a{color:inherit;text-decoration:none}
 
-.wrap{max-width:1280px;margin:0 auto;padding:20px}
-.page-head{display:flex;align-items:baseline;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+.wrap{max-width:1440px;margin:0 auto;padding:20px 24px 60px}
+
+/* ─── Page head ─── */
+.page-head{display:flex;align-items:baseline;gap:14px;margin-bottom:14px;flex-wrap:wrap}
 .page-head h1{font-size:22px;font-weight:700;letter-spacing:-.4px}
 .page-head .sub{font-size:12px;color:var(--text3)}
+.page-head .sub a{border-bottom:1px dotted var(--text3)}
+.page-head .sub a:hover{color:var(--accent);border-color:var(--accent)}
 .page-head .spacer{flex:1}
+.page-head .actions{display:flex;gap:8px;flex-wrap:wrap}
 
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;background:transparent;color:var(--text);border:1px solid var(--border);transition:all .12s}
+/* ─── Buttons ─── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:8px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;background:transparent;color:var(--text);border:1px solid var(--border);transition:all .12s;white-space:nowrap}
 .btn:hover{border-color:var(--accent);color:var(--accent)}
 .btn--primary{background:var(--accent);color:#111;border-color:var(--accent)}
 .btn--primary:hover{background:#ff9540;color:#111}
-.btn--sm{padding:5px 10px;font-size:11px}
+.btn--sm{padding:4px 9px;font-size:11px;border-radius:6px}
+.btn--icon{padding:5px 7px;font-size:12px}
 .btn--danger{color:var(--red);border-color:rgba(231,76,60,.4)}
 .btn--danger:hover{background:rgba(231,76,60,.1);border-color:var(--red)}
 .btn--ghost{border-color:transparent;color:var(--text3)}
 .btn--ghost:hover{color:var(--text);background:var(--bg3);border-color:transparent}
 
-.cat-section{background:var(--surface2);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}
-.cat-head{padding:12px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);background:var(--bg2)}
+/* ─── Summary / stats bar ─── */
+.stats{display:flex;gap:22px;padding:10px 14px;margin-bottom:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap;align-items:center;font-size:12px}
+.stats .stat{display:inline-flex;align-items:baseline;gap:6px}
+.stats .stat .num{font-variant-numeric:tabular-nums;font-weight:600;font-size:13.5px}
+.stats .stat .lbl{color:var(--text3);font-size:11.5px}
+.stats .stat.warn .num{color:var(--red)}
+.stats .sep{width:1px;height:16px;background:var(--border)}
+.stats .spacer{flex:1}
+.stats .as-of{color:var(--text3);font-size:11.5px}
+.stats .as-of b{color:var(--text2);font-weight:500}
+
+/* ─── Toolbar ─── */
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.search{position:relative;flex:1;min-width:240px;max-width:420px}
+.search input{width:100%;padding:8px 12px 8px 34px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font:inherit;font-size:12.5px;outline:none}
+.search input:focus{border-color:var(--accent)}
+.search .ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none}
+.search .kbd{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--text3);border:1px solid var(--border);padding:1px 5px;border-radius:4px;font-family:ui-monospace,monospace}
+.search .clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0 4px;display:none}
+.search.has-val .kbd{display:none}
+.search.has-val .clear{display:inline-block}
+.search .clear:hover{color:var(--red)}
+
+.chips{display:flex;gap:5px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;background:var(--surface);border:1px solid var(--border);border-radius:7px;font-size:11.5px;font-weight:500;cursor:pointer;color:var(--text2);transition:all .12s;user-select:none}
+.chip:hover{border-color:var(--border2);color:var(--text)}
+.chip.active{background:var(--accent-bg);color:var(--accent);border-color:transparent}
+.chip .cnt{font-variant-numeric:tabular-nums;font-size:10.5px;color:inherit;opacity:.75}
+
+.toolbar .right-ctl{margin-left:auto;display:flex;gap:6px}
+
+/* ─── Category sections ─── */
+.cat-section{background:var(--surface2);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden}
+.cat-section.hidden{display:none}
+.cat-section.collapsed .cat-body{display:none}
+.cat-head{padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);background:var(--bg2);cursor:pointer;user-select:none}
+.cat-section.collapsed .cat-head{border-bottom:none}
+.cat-head:hover{background:var(--bg3)}
+.cat-head .caret{color:var(--text3);font-size:10px;transition:transform .15s;width:12px;text-align:center}
+.cat-section.collapsed .cat-head .caret{transform:rotate(-90deg)}
 .cat-head h2{font-size:14px;font-weight:600;letter-spacing:-.2px}
 .cat-head .meta{font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums}
+.cat-head .meta .warn{color:var(--red)}
 .cat-head .spacer{flex:1}
+.cat-head .cat-actions{display:flex;gap:4px;opacity:.85}
+.cat-head .cat-actions button{background:transparent;border:1px solid transparent;color:var(--text3);cursor:pointer;padding:3px 7px;border-radius:5px;font:inherit;font-size:11px;transition:all .12s}
+.cat-head .cat-actions button:hover{color:var(--text);background:var(--bg3)}
+.cat-head .cat-actions button.danger:hover{color:var(--red)}
 
+/* ─── Table ─── */
 .tbl{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed}
-.tbl thead th{padding:9px 10px;background:var(--bg2);color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl thead th{padding:8px 10px;background:var(--bg2);color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
 .tbl tbody td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top;overflow:hidden;text-overflow:ellipsis}
 .tbl tbody tr:last-child td{border-bottom:none}
 .tbl tbody tr:hover{background:var(--bg2)}
+.tbl tbody tr.row-hidden{display:none}
+.tbl tbody tr.row-warn td:first-child{box-shadow:inset 2px 0 0 transparent}
 .tbl .right{text-align:right;white-space:nowrap}
-.tbl .muted{color:var(--text3);font-size:11px}
-.tbl .nom1c-missing{color:var(--red);font-size:11px}
-.tbl .prod-cell{min-width:0}
-.tbl .prod-cell .name{font-weight:500}
+.tbl .muted{color:var(--text3)}
+.tbl .nowrap{white-space:nowrap}
+
+/* column widths */
+.tbl col.c-name{width:22%}
+.tbl col.c-1c{width:26%}
+.tbl col.c-stock{width:110px}
+.tbl col.c-num{width:80px}
+.tbl col.c-price{width:100px}
+.tbl col.c-act{width:72px}
+
+.tbl .prod-cell .name{font-weight:500;display:flex;align-items:center;gap:6px}
 .tbl .prod-cell .sub{font-size:10.5px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* Column widths: auto-flex на перших двох, фіксовані на числових і status */
-.tbl col.c-name{width:20%}
-.tbl col.c-1c{width:24%}
-.tbl col.c-stock-str{width:90px}
-.tbl col.c-num{width:72px}
-.tbl col.c-prices{width:auto}
-.tbl col.c-act{width:42px}
-.tbl .prices-list{display:flex;flex-direction:column;gap:3px;font-size:11.5px}
-.tbl .prices-list .pr{display:flex;gap:6px;align-items:baseline;white-space:nowrap}
-.tbl .prices-list .pr .type{color:var(--text3);font-size:10.5px;overflow:hidden;text-overflow:ellipsis;max-width:180px}
-.tbl .prices-list .pr .val{font-variant-numeric:tabular-nums;font-weight:500}
+.tbl .nom-cell{min-width:0;font-size:11.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbl .nom-cell.missing{color:var(--red);font-size:11px}
 
-.empty{padding:20px;text-align:center;color:var(--text3);font-size:12px}
-.loader{padding:60px 20px;text-align:center;color:var(--text3);font-size:12px}
+/* stock status pill */
+.stock-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2px 7px;border-radius:5px;border:1px solid var(--border);color:var(--text2);white-space:nowrap}
+.stock-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--text3)}
+.stock-pill.instock .dot{background:var(--green)}
+.stock-pill.intransit .dot{background:#d0a43c}
+.stock-pill.none .dot{background:var(--text3)}
+.stock-pill.none{opacity:.7}
 
+/* price cells */
+.tbl .price{font-variant-numeric:tabular-nums;font-weight:500}
+.tbl .price .cur{color:var(--text3);font-size:11px;font-weight:400;margin-left:2px}
+
+/* warn icon */
+.warn-ico{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(231,76,60,.14);color:var(--red);font-size:10px;font-weight:700;cursor:help}
+
+/* row action buttons */
+.tbl .row-act{display:flex;gap:4px;justify-content:flex-end}
+.tbl .row-act button{background:transparent;border:1px solid transparent;color:var(--text3);cursor:pointer;padding:3px 6px;border-radius:5px;font:inherit;font-size:12px;transition:all .12s}
+.tbl .row-act button:hover{color:var(--text);background:var(--bg3);border-color:var(--border)}
+.tbl .row-act button.danger:hover{color:var(--red);border-color:rgba(231,76,60,.3)}
+
+/* PDF link badge */
+.ds-link{display:inline-flex;align-items:center;padding:1px 5px;font-size:10px;border:1px solid var(--border2);border-radius:4px;color:var(--text2);text-decoration:none;vertical-align:middle}
+.ds-link:hover{color:var(--accent);border-color:var(--accent)}
+
+.empty{padding:24px;text-align:center;color:var(--text3);font-size:12.5px}
+.empty .hint{font-size:11px;color:var(--text3);margin-top:6px}
+.loader{padding:80px 20px;text-align:center;color:var(--text3);font-size:12.5px}
+.no-results{padding:40px 20px;text-align:center;color:var(--text3);font-size:12.5px}
+
+/* toast */
 .toast{position:fixed;bottom:20px;right:20px;padding:10px 16px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:12.5px;z-index:300;opacity:0;transition:opacity .2s;box-shadow:0 4px 16px rgba(0,0,0,.4)}
 .toast.show{opacity:1}
 .toast.ok{border-color:var(--green);color:var(--green)}
 .toast.err{border-color:var(--red);color:var(--red)}
 
-/* Modal */
+/* modals */
 .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
 .modal-backdrop.open{display:flex}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
-.modal-head{padding:14px 18px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;display:flex;align-items:center}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,.4)}
+.modal.sm{max-width:440px}
+.modal-head{padding:14px 18px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;display:flex;align-items:center;gap:10px}
 .modal-head .spacer{flex:1}
-.modal-head .x{background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;line-height:1;padding:0 4px}
+.modal-head .sub{font-size:11px;color:var(--text3);font-weight:400}
+.modal-head .x{background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer;line-height:1;padding:0 4px}
 .modal-head .x:hover{color:var(--text)}
-.modal-body{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
-.modal-foot{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+.modal-body{padding:16px 18px;display:flex;flex-direction:column;gap:14px}
+.modal-foot{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;align-items:center}
+.modal-foot .hint{flex:1;font-size:11px;color:var(--text3)}
+.modal-foot .hint kbd{display:inline-block;padding:1px 5px;border:1px solid var(--border);border-radius:4px;font:inherit;font-size:10px;font-family:ui-monospace,monospace;color:var(--text2)}
 
-.field{display:flex;flex-direction:column;gap:4px}
+/* field */
+.field{display:flex;flex-direction:column;gap:5px}
 .field label{font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
 .field input, .field select, .field textarea{padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font:inherit;font-size:12.5px;outline:none}
 .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--accent)}
 .field .hint{font-size:10.5px;color:var(--text3)}
 .field .hint.err{color:var(--red)}
+.field.row{flex-direction:row;gap:10px;align-items:flex-end}
+.field.row > *{flex:1}
 
-/* Autocomplete */
+/* segmented control (for stock status) */
+.seg{display:flex;gap:0;border:1px solid var(--border);border-radius:7px;overflow:hidden;background:var(--bg2)}
+.seg button{flex:1;padding:7px 8px;background:transparent;border:none;color:var(--text2);font:inherit;font-size:11.5px;font-weight:500;cursor:pointer;border-right:1px solid var(--border);transition:all .12s}
+.seg button:last-child{border-right:none}
+.seg button:hover{color:var(--text);background:var(--bg3)}
+.seg button.active{background:var(--accent-bg);color:var(--accent)}
+
+/* autocomplete */
 .ac-wrap{position:relative}
-.ac-list{position:absolute;top:100%;left:0;right:0;margin-top:2px;background:var(--surface);border:1px solid var(--border);border-radius:6px;max-height:240px;overflow-y:auto;z-index:10;display:none;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.ac-list{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:7px;max-height:260px;overflow-y:auto;z-index:10;display:none;box-shadow:0 8px 20px rgba(0,0,0,.4)}
 .ac-list.open{display:block}
 .ac-item{padding:8px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)}
 .ac-item:last-child{border-bottom:none}
 .ac-item:hover, .ac-item.active{background:var(--bg2)}
 .ac-item .art{font-size:10.5px;color:var(--text3);margin-top:2px}
+.ac-item mark{background:var(--accent-bg);color:var(--accent);padding:0;border-radius:2px}
 .ac-item .empty-row{color:var(--text3);font-style:italic}
-.ac-chosen{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;font-size:11px;margin-top:4px}
-.ac-chosen .art{color:var(--text3)}
-.ac-chosen .clear{background:none;border:none;color:var(--text3);cursor:pointer;padding:0 2px}
+.ac-chosen{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;font-size:11.5px;margin-top:6px}
+.ac-chosen .txt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ac-chosen .art{color:var(--text3);font-size:10.5px}
+.ac-chosen .clear{background:none;border:none;color:var(--text3);cursor:pointer;padding:2px 4px;font-size:14px;line-height:1}
 .ac-chosen .clear:hover{color:var(--red)}
+
+/* preview card in modal */
+.preview-card{padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:7px;margin-top:4px}
+.preview-card .lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600}
+.preview-card .pv-name{font-weight:500;font-size:13px}
+.preview-card .pv-spec{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* Responsive */
+.cat-body{overflow-x:auto}
+.cat-body .tbl{min-width:860px}
+
+@media (max-width: 860px) {
+  .wrap{padding:14px}
+  .page-head{gap:8px;margin-bottom:10px}
+  .page-head h1{font-size:18px}
+  .page-head .actions{width:100%;margin-top:4px}
+  .page-head .actions .btn{flex:1}
+  .stats{gap:10px 14px;padding:8px 12px}
+  .stats .sep{display:none}
+  .toolbar{gap:8px}
+  .search{min-width:100%;max-width:none}
+  .toolbar .right-ctl{margin-left:0}
+  .cat-head{padding:9px 12px}
+  .cat-head .meta{font-size:10.5px}
+  .cat-head .cat-actions{gap:2px}
+  /* horizontal scroll hint on mobile tables */
+  .cat-body{position:relative}
+  .cat-body::after{content:'';position:absolute;top:0;right:0;bottom:0;width:24px;background:linear-gradient(to right, transparent, var(--surface2) 80%);pointer-events:none;opacity:.7}
+  /* modal edge-to-edge */
+  .modal-backdrop{padding:0;align-items:flex-end}
+  .modal{max-height:94vh;border-radius:14px 14px 0 0;border-bottom:none}
+  .modal.sm{max-width:none}
+  .seg button{font-size:11px;padding:6px 4px}
+}
 </style>
 </head>
 <body>
@@ -126,9 +256,46 @@ a{color:inherit;text-decoration:none}
 <div class="wrap">
   <div class="page-head">
     <h1>Адмінка прайсу</h1>
-    <span class="sub">редагує <a href="/prices-1c.html" target="_blank" style="border-bottom:1px dotted var(--text3)">публічний прайс</a></span>
+    <span class="sub">редагує <a href="/prices-1c.html" target="_blank">публічний прайс ↗</a></span>
     <div class="spacer"></div>
-    <button class="btn btn--primary" onclick="openItemModal()">+ Додати позицію</button>
+    <div class="actions">
+      <button class="btn" onclick="openCatModal()">+ Категорія</button>
+      <button class="btn btn--primary" onclick="openItemModal()">+ Позиція</button>
+    </div>
+  </div>
+
+  <div class="stats" id="stats" style="display:none">
+    <div class="stat"><span class="num" id="s_items">–</span><span class="lbl">позицій</span></div>
+    <div class="sep"></div>
+    <div class="stat"><span class="num" id="s_cats">–</span><span class="lbl">категорій</span></div>
+    <div class="sep"></div>
+    <div class="stat" id="s_no1c_wrap"><span class="num" id="s_no1c">–</span><span class="lbl">без привʼязки 1С</span></div>
+    <div class="sep"></div>
+    <div class="stat" id="s_noprice_wrap"><span class="num" id="s_noprice">–</span><span class="lbl">без ціни</span></div>
+    <div class="spacer"></div>
+    <div class="as-of" id="s_asof"></div>
+  </div>
+
+  <div class="toolbar" id="toolbar" style="display:none">
+    <div class="search" id="searchBox">
+      <span class="ico">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      </span>
+      <input id="searchInput" placeholder="Пошук за назвою, 1С, артикулом…" autocomplete="off">
+      <span class="kbd">/</span>
+      <button class="clear" onclick="clearSearch()" title="Очистити">×</button>
+    </div>
+    <div class="chips" id="filterChips">
+      <span class="chip active" data-filter="all">Всі <span class="cnt" id="cnt_all">0</span></span>
+      <span class="chip" data-filter="no1c">Без 1С <span class="cnt" id="cnt_no1c">0</span></span>
+      <span class="chip" data-filter="noprice">Без ціни <span class="cnt" id="cnt_noprice">0</span></span>
+      <span class="chip" data-filter="instock">В наявності <span class="cnt" id="cnt_instock">0</span></span>
+      <span class="chip" data-filter="intransit">В дорозі <span class="cnt" id="cnt_intransit">0</span></span>
+      <span class="chip" data-filter="none">Немає <span class="cnt" id="cnt_none">0</span></span>
+    </div>
+    <div class="right-ctl">
+      <button class="btn btn--sm" onclick="toggleAllCats()" id="collapseBtn">Згорнути всі</button>
+    </div>
   </div>
 
   <div id="content"><div class="loader">Завантаження…</div></div>
@@ -139,8 +306,9 @@ a{color:inherit;text-decoration:none}
   <div class="modal">
     <div class="modal-head">
       <span id="modalTitle">Нова позиція</span>
+      <span class="sub" id="modalSub"></span>
       <div class="spacer"></div>
-      <button class="x" onclick="closeItemModal()">×</button>
+      <button class="x" onclick="closeItemModal()" title="Esc">×</button>
     </div>
     <div class="modal-body">
       <div class="field">
@@ -148,16 +316,15 @@ a{color:inherit;text-decoration:none}
         <select id="f_category"></select>
       </div>
       <div class="field ac-wrap">
-        <label>Товар з 1С</label>
-        <input id="f_nom1c_search" placeholder="Почни вводити назву або артикул…" autocomplete="off">
+        <label>Товар з 1С <span class="hint" style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--text3);margin-left:4px">— для ціни і залишків</span></label>
+        <input id="f_nom1c_search" placeholder="Почніть вводити назву або артикул…" autocomplete="off">
         <div class="ac-list" id="ac_list"></div>
-        <div class="hint">Оберіть товар щоб привʼязати ціну. Якщо не обрано — ціна не тягнеться.</div>
         <div id="f_nom1c_chosen"></div>
       </div>
       <div class="field">
         <label>Назва на прайсі</label>
         <input id="f_display_name" placeholder="Напр. Deye SUN-12K">
-        <div class="hint">Порожньо → буде назва з 1С.</div>
+        <div class="hint">Порожньо → візьмеметься назва з 1С</div>
       </div>
       <div class="field">
         <label>Підпис (spec)</label>
@@ -165,21 +332,66 @@ a{color:inherit;text-decoration:none}
       </div>
       <div class="field">
         <label>Наявність</label>
-        <select id="f_stock">
-          <option>в наявності</option>
-          <option>в дорозі</option>
-          <option>під замовлення</option>
-        </select>
+        <div class="seg" id="f_stock_seg">
+          <button type="button" data-val="в наявності">В наявності</button>
+          <button type="button" data-val="в дорозі">В дорозі</button>
+          <button type="button" data-val="під замовлення">Під замовлення</button>
+        </div>
+        <div class="hint">Автоматично перезаписується з 1С при синхронізації залишків</div>
       </div>
       <div class="field">
         <label>Datasheet URL</label>
-        <input id="f_datasheet_url" placeholder="https://... (поки зовнішній URL; R2 upload згодом)">
+        <input id="f_datasheet_url" placeholder="https://...">
+      </div>
+      <div class="preview-card" id="pvCard" style="display:none">
+        <div class="lbl">Так буде виглядати на прайсі</div>
+        <div class="pv-name" id="pv_name">—</div>
+        <div class="pv-spec" id="pv_spec"></div>
       </div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn--ghost" onclick="closeItemModal()">Скасувати</button>
+      <span class="hint"><kbd>⌘</kbd>+<kbd>↵</kbd> — зберегти · <kbd>Esc</kbd> — закрити</span>
       <button class="btn btn--danger" id="deleteBtn" style="display:none" onclick="deleteItem()">Видалити</button>
+      <button class="btn btn--ghost" onclick="closeItemModal()">Скасувати</button>
       <button class="btn btn--primary" onclick="saveItem()">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<!-- Category modal -->
+<div class="modal-backdrop" id="catModal">
+  <div class="modal sm">
+    <div class="modal-head">
+      <span id="catModalTitle">Нова категорія</span>
+      <div class="spacer"></div>
+      <button class="x" onclick="closeCatModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Назва</label>
+        <input id="cf_title" placeholder="Напр. Інвертори">
+      </div>
+      <div class="field">
+        <label>Slug (URL-ідентифікатор)</label>
+        <input id="cf_slug" placeholder="inverters">
+        <div class="hint">Тільки латиниця, цифри, дефіс. Після створення не змінювати.</div>
+      </div>
+      <div class="field row">
+        <div class="field" style="gap:5px">
+          <label>Одиниця (unit)</label>
+          <input id="cf_unit" placeholder="$ / $/Вт / €">
+        </div>
+        <div class="field" style="gap:5px">
+          <label>Порядок</label>
+          <input id="cf_sort" type="number" placeholder="0" value="0">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn--danger" id="catDeleteBtn" style="display:none" onclick="deleteCategory()">Видалити</button>
+      <span style="flex:1"></span>
+      <button class="btn btn--ghost" onclick="closeCatModal()">Скасувати</button>
+      <button class="btn btn--primary" onclick="saveCategory()">Зберегти</button>
     </div>
   </div>
 </div>
@@ -193,9 +405,18 @@ const PT_WITH_VAT = '6a417c18-3eec-11f1-870a-107c6149f3d7';
 
 let STATE = { categories: [] };
 let EDIT_ID = null;
+let EDIT_CAT = null;          // slug if editing existing category
 let CHOSEN_NOM = null;
+let FILTER = 'all';
+let SEARCH = '';
+let COLLAPSED = new Set();     // category slugs
 
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const slugify = s => String(s || '').toLowerCase()
+  .replace(/[àáâäãåā]/g,'a').replace(/[èéêëē]/g,'e').replace(/[ìíîïī]/g,'i')
+  .replace(/[òóôöõø]/g,'o').replace(/[ùúûüū]/g,'u').replace(/[ñ]/g,'n').replace(/[ç]/g,'c')
+  .replace(/[а-яёіїєґ]/g, ch => ({'а':'a','б':'b','в':'v','г':'g','ґ':'g','д':'d','е':'e','є':'ie','ё':'e','ж':'zh','з':'z','и':'y','і':'i','ї':'i','й':'i','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'shch','ъ':'','ы':'y','ь':'','э':'e','ю':'iu','я':'ia'}[ch] || ''))
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
 function toast(msg, kind) {
   const t = document.getElementById('toast');
@@ -221,7 +442,6 @@ async function apiCall(action, opts = {}) {
 async function load() {
   const qs = `pt_no=${encodeURIComponent(PT_NO_VAT)}&pt_with=${encodeURIComponent(PT_WITH_VAT)}`;
   STATE = await apiCall('price_list_get', { qs });
-  // Паралельно вантажимо залишки Реакту (по nom1c_ref_key).
   const refs = [];
   for (const c of (STATE.categories || [])) for (const it of (c.items || [])) {
     if (it.nom1c_ref_key) refs.push(it.nom1c_ref_key);
@@ -237,84 +457,231 @@ async function load() {
   render();
 }
 
+function itemIssues(it) {
+  const flags = {
+    no1c: !it.nom1c_ref_key,
+    noprice: !(it.no_vat && it.no_vat.price) && !(it.with_vat && it.with_vat.price),
+  };
+  return flags;
+}
+
+function itemStockKind(it, cSlug) {
+  const st = it._stock;
+  if (!st) return 'none';
+  const stockN = Math.round(Number(st.stock) || 0);
+  const transitN = Math.round(Number(st.transit) || 0);
+  const eff = (cSlug === 'cable' && stockN < 500) ? 0 : stockN;
+  if (eff > 0) return 'instock';
+  if (transitN > 0) return 'intransit';
+  return 'none';
+}
+
+function renderStats() {
+  let items = 0, no1c = 0, noprice = 0, instock = 0, intransit = 0, none = 0;
+  for (const c of (STATE.categories || [])) {
+    for (const it of (c.items || [])) {
+      items++;
+      const flags = itemIssues(it);
+      if (flags.no1c) no1c++;
+      if (flags.noprice) noprice++;
+      const k = itemStockKind(it, c.slug);
+      if (k === 'instock') instock++;
+      else if (k === 'intransit') intransit++;
+      else none++;
+    }
+  }
+  document.getElementById('s_items').textContent = items;
+  document.getElementById('s_cats').textContent = (STATE.categories || []).length;
+  document.getElementById('s_no1c').textContent = no1c;
+  document.getElementById('s_noprice').textContent = noprice;
+  document.getElementById('s_no1c_wrap').classList.toggle('warn', no1c > 0);
+  document.getElementById('s_noprice_wrap').classList.toggle('warn', noprice > 0);
+  const asof = STATE._stocks_as_of;
+  document.getElementById('s_asof').innerHTML = asof
+    ? `залишки на <b>${formatDate(asof)}</b>` : '';
+  document.getElementById('stats').style.display = '';
+
+  document.getElementById('cnt_all').textContent = items;
+  document.getElementById('cnt_no1c').textContent = no1c;
+  document.getElementById('cnt_noprice').textContent = noprice;
+  document.getElementById('cnt_instock').textContent = instock;
+  document.getElementById('cnt_intransit').textContent = intransit;
+  document.getElementById('cnt_none').textContent = none;
+  document.getElementById('toolbar').style.display = '';
+}
+
+function formatDate(iso) {
+  if (!iso) return '';
+  const d = iso.slice(0, 10);
+  const [y, m, dd] = d.split('-');
+  return `${dd}.${m}.${y}`;
+}
+
+function matchesFilter(it, cSlug) {
+  const flags = itemIssues(it);
+  const kind = itemStockKind(it, cSlug);
+  if (FILTER === 'no1c' && !flags.no1c) return false;
+  if (FILTER === 'noprice' && !flags.noprice) return false;
+  if (FILTER === 'instock' && kind !== 'instock') return false;
+  if (FILTER === 'intransit' && kind !== 'intransit') return false;
+  if (FILTER === 'none' && kind !== 'none') return false;
+  if (SEARCH) {
+    const hay = [
+      it.display_name, it.display_spec, it.nom1c_description,
+    ].filter(Boolean).join(' ').toLowerCase();
+    if (!hay.includes(SEARCH)) return false;
+  }
+  return true;
+}
+
 function render() {
+  renderStats();
   const content = document.getElementById('content');
   if (!STATE.categories || !STATE.categories.length) {
-    content.innerHTML = `<div class="empty">Прайс порожній. Натисніть «+ Додати позицію».</div>`;
+    content.innerHTML = `
+      <div class="empty" style="padding:50px 20px">
+        Прайс порожній
+        <div class="hint">Почніть з категорії — тоді можна буде додавати позиції</div>
+        <button class="btn btn--primary" style="margin-top:14px" onclick="openCatModal()">+ Створити першу категорію</button>
+      </div>`;
     populateCategorySelect();
     return;
   }
-  content.innerHTML = STATE.categories.map(c => `
-    <div class="cat-section">
-      <div class="cat-head">
+  const hasAnyMatch = STATE.categories.some(c => c.items.some(it => matchesFilter(it, c.slug)));
+  content.innerHTML = STATE.categories.map(c => {
+    let no1c = 0, noprice = 0;
+    for (const it of c.items) {
+      const f = itemIssues(it);
+      if (f.no1c) no1c++;
+      if (f.noprice) noprice++;
+    }
+    const visible = c.items.filter(it => matchesFilter(it, c.slug)).length;
+    const isCollapsed = COLLAPSED.has(c.slug);
+    const hiddenCat = (SEARCH || FILTER !== 'all') && visible === 0;
+    const metaParts = [
+      `${c.items.length} поз${(SEARCH || FILTER !== 'all') ? ` · показано ${visible}` : ''}`,
+    ];
+    if (c.unit) metaParts.unshift(esc(c.unit));
+    const warns = [];
+    if (no1c) warns.push(`<span class="warn">${no1c} без 1С</span>`);
+    if (noprice) warns.push(`<span class="warn">${noprice} без ціни</span>`);
+    return `
+    <div class="cat-section ${isCollapsed ? 'collapsed' : ''} ${hiddenCat ? 'hidden' : ''}" data-slug="${esc(c.slug)}">
+      <div class="cat-head" onclick="toggleCat(event, '${esc(c.slug)}')">
+        <span class="caret">▾</span>
         <h2>${esc(c.title)}</h2>
-        <span class="meta">${c.unit ? esc(c.unit) + ' · ' : ''}${c.items.length} поз.</span>
+        <span class="meta">${metaParts.join(' · ')}${warns.length ? ' · ' + warns.join(' · ') : ''}</span>
         <div class="spacer"></div>
-        <button class="btn btn--sm" onclick="openItemModal(null, ${JSON.stringify(c.slug)})">+ Додати</button>
+        <div class="cat-actions" onclick="event.stopPropagation()">
+          <button onclick="openCatModal('${esc(c.slug)}')" title="Редагувати категорію">Ред.</button>
+          <button onclick="openItemModal(null, '${esc(c.slug)}')" title="Додати позицію">+ Позиція</button>
+        </div>
       </div>
-      ${c.items.length ? `
-        <table class="tbl">
-          <colgroup>
-            <col class="c-name">
-            <col class="c-1c">
-            <col class="c-stock-str">
-            <col class="c-num">
-            <col class="c-num">
-            <col class="c-num">
-            <col class="c-num">
-            <col class="c-act">
-          </colgroup>
-          <thead><tr>
-            <th>Назва на прайсі</th>
-            <th>Товар 1С</th>
-            <th>Статус</th>
-            <th class="right">На складі</th>
-            <th class="right">В дорозі</th>
-            <th class="right">Без ПДВ</th>
-            <th class="right">З ПДВ</th>
-            <th></th>
-          </tr></thead>
-          <tbody>
-            ${c.items.map(it => {
-              const st = it._stock;
-              const stockN = st ? Math.round(Number(st.stock) || 0) : null;
-              const transitN = st ? Math.round(Number(st.transit) || 0) : null;
-              const nomLine = it.nom1c_ref_key
-                ? esc((it.nom1c_description || '').slice(0, 80)) + ((it.nom1c_description||'').length > 80 ? '…' : '')
-                : '<span class="nom1c-missing">не привʼязано</span>';
-              const specLine = it.display_spec ? `<div class="sub">${esc(it.display_spec)}</div>` : '';
-              // Для категорій з unit='$/Вт' — ділимо ціну на кількість Вт зі специ.
-              const wattsM = (c.unit === '$/Вт' && it.display_spec) ? String(it.display_spec).match(/([\d.,]+)\s*Вт/i) : null;
-              const watts = wattsM ? parseFloat(wattsM[1].replace(',', '.')) : null;
-              const curSym = name => name === 'USD' ? '$' : (name === 'EUR' ? '€' : (name || '$'));
-              const itemCur = (it.no_vat && it.no_vat.currency_name) || (it.with_vat && it.with_vat.currency_name) || null;
-              const unitStr = c.unit === '$/Вт' ? '$/Вт' : (itemCur ? curSym(itemCur) : (c.unit || '$'));
-              const fmtPrice = v => {
-                if (v == null) return '<span class="muted">—</span>';
-                const n = watts ? Number(v) / watts : Number(v);
-                return `${n.toFixed(n < 1 ? 3 : 0)} ${unitStr}`;
-              };
-              const dsBadge = it.datasheet_url
-                ? ` <a href="${esc(it.datasheet_url)}" target="_blank" rel="noopener" style="display:inline-block;padding:1px 6px;margin-left:4px;font-size:10px;border:1px solid var(--border2);border-radius:4px;color:var(--text2);text-decoration:none;vertical-align:middle" onclick="event.stopPropagation()">PDF ↗</a>`
-                : '';
-              return `
-              <tr>
-                <td class="prod-cell"><div class="name">${esc(it.display_name || '—')}${dsBadge}</div>${specLine}</td>
-                <td class="prod-cell"><div class="muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nomLine}</div></td>
-                <td>${esc(it.stock || '')}</td>
-                <td class="right ${stockN > 0 ? '' : 'muted'}">${stockN != null ? stockN : '<span class="muted">—</span>'}</td>
-                <td class="right ${transitN > 0 ? '' : 'muted'}">${transitN != null ? transitN : '<span class="muted">—</span>'}</td>
-                <td class="right">${fmtPrice(it.no_vat && it.no_vat.price)}</td>
-                <td class="right">${fmtPrice(it.with_vat && it.with_vat.price)}</td>
-                <td class="right"><button class="btn btn--sm" onclick='openItemModal(${JSON.stringify(it).replace(/'/g,"&#39;")}, ${JSON.stringify(c.slug)})'>✎</button></td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
-      ` : `<div class="empty">Немає позицій</div>`}
-    </div>
-  `).join('');
+      <div class="cat-body">
+        ${c.items.length ? renderCatTable(c) : `
+          <div class="empty">Немає позицій
+            <div class="hint">
+              <button class="btn btn--sm" style="margin-top:8px" onclick="openItemModal(null, '${esc(c.slug)}')">+ Додати першу</button>
+            </div>
+          </div>`}
+      </div>
+    </div>`;
+  }).join('') + (!hasAnyMatch && (SEARCH || FILTER !== 'all') ? `
+    <div class="no-results">
+      Нічого не знайдено${SEARCH ? ' за запитом «' + esc(SEARCH) + '»' : ''}
+      ${FILTER !== 'all' || SEARCH ? `<div style="margin-top:10px"><button class="btn btn--sm" onclick="resetFilters()">Скинути фільтри</button></div>` : ''}
+    </div>` : '');
   populateCategorySelect();
+}
+
+function renderCatTable(c) {
+  return `
+    <table class="tbl">
+      <colgroup>
+        <col class="c-name">
+        <col class="c-1c">
+        <col class="c-stock">
+        <col class="c-num">
+        <col class="c-num">
+        <col class="c-price">
+        <col class="c-price">
+        <col class="c-act">
+      </colgroup>
+      <thead><tr>
+        <th>Назва на прайсі</th>
+        <th class="h-1c">Товар 1С</th>
+        <th>Наявність</th>
+        <th class="right">Склад</th>
+        <th class="right">В дорозі</th>
+        <th class="right">Без ПДВ</th>
+        <th class="right">З ПДВ</th>
+        <th></th>
+      </tr></thead>
+      <tbody>
+        ${c.items.map(it => renderRow(it, c)).join('')}
+      </tbody>
+    </table>`;
+}
+
+function renderRow(it, c) {
+  const st = it._stock;
+  const stockN = st ? Math.round(Number(st.stock) || 0) : null;
+  const transitN = st ? Math.round(Number(st.transit) || 0) : null;
+  const flags = itemIssues(it);
+  const kind = itemStockKind(it, c.slug);
+  const hidden = !matchesFilter(it, c.slug);
+
+  const nomLine = it.nom1c_ref_key
+    ? `<span title="${esc(it.nom1c_description || '')}">${esc((it.nom1c_description || '').slice(0, 70))}${(it.nom1c_description||'').length > 70 ? '…' : ''}</span>`
+    : `<span class="missing">не привʼязано</span>`;
+
+  const wattsM = (c.unit === '$/Вт' && it.display_spec) ? String(it.display_spec).match(/([\d.,]+)\s*Вт/i) : null;
+  const watts = wattsM ? parseFloat(wattsM[1].replace(',', '.')) : null;
+  const curSym = name => name === 'USD' ? '$' : (name === 'EUR' ? '€' : (name || '$'));
+  const itemCur = (it.no_vat && it.no_vat.currency_name) || (it.with_vat && it.with_vat.currency_name) || null;
+  const unitStr = c.unit === '$/Вт' ? '$/Вт' : (itemCur ? curSym(itemCur) : (c.unit || '$'));
+  const fmtPrice = v => {
+    if (v == null) return '<span class="muted">—</span>';
+    const n = watts ? Number(v) / watts : Number(v);
+    return `<span class="price">${n.toFixed(n < 1 ? 3 : 0)}<span class="cur"> ${unitStr}</span></span>`;
+  };
+
+  const dsBadge = it.datasheet_url
+    ? ` <a href="${esc(it.datasheet_url)}" target="_blank" rel="noopener" class="ds-link" onclick="event.stopPropagation()">PDF ↗</a>`
+    : '';
+
+  const warnIco = flags.no1c
+    ? `<span class="warn-ico" title="Не привʼязано до 1С — ціна і залишки не тягнуться">!</span>`
+    : flags.noprice
+      ? `<span class="warn-ico" title="Немає ціни в 1С для цього типу цін">!</span>`
+      : '';
+
+  const stockPill = kind === 'instock' ? `<span class="stock-pill instock"><span class="dot"></span>В наявності</span>`
+                  : kind === 'intransit' ? `<span class="stock-pill intransit"><span class="dot"></span>В дорозі</span>`
+                  : `<span class="stock-pill none"><span class="dot"></span>Немає</span>`;
+
+  const specLine = it.display_spec ? `<div class="sub">${esc(it.display_spec)}</div>` : '';
+
+  const itemJson = JSON.stringify(it).replace(/'/g,"&#39;");
+
+  return `
+    <tr class="${hidden ? 'row-hidden' : ''}" data-id="${it.id}">
+      <td class="prod-cell">
+        <div class="name">${warnIco}${esc(it.display_name || '—')}${dsBadge}</div>
+        ${specLine}
+      </td>
+      <td class="c-1c-cell"><div class="nom-cell ${flags.no1c ? 'missing' : ''}">${nomLine}</div></td>
+      <td>${stockPill}</td>
+      <td class="right ${stockN > 0 ? '' : 'muted'}">${stockN != null ? stockN : '—'}</td>
+      <td class="right ${transitN > 0 ? '' : 'muted'}">${transitN != null ? transitN : '—'}</td>
+      <td class="right">${fmtPrice(it.no_vat && it.no_vat.price)}</td>
+      <td class="right">${fmtPrice(it.with_vat && it.with_vat.price)}</td>
+      <td class="right">
+        <div class="row-act">
+          <button onclick='openItemModal(${itemJson}, "${esc(c.slug)}")' title="Редагувати">✎</button>
+        </div>
+      </td>
+    </tr>`;
 }
 
 function populateCategorySelect() {
@@ -324,56 +691,168 @@ function populateCategorySelect() {
   ).join('');
 }
 
+// ─── Filters / search / collapse ───
+function setFilter(f) {
+  FILTER = f;
+  document.querySelectorAll('#filterChips .chip').forEach(c =>
+    c.classList.toggle('active', c.dataset.filter === f));
+  render();
+}
+function onSearch(v) {
+  SEARCH = (v || '').trim().toLowerCase();
+  document.getElementById('searchBox').classList.toggle('has-val', !!SEARCH);
+  render();
+}
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  onSearch('');
+}
+function resetFilters() {
+  clearSearch();
+  setFilter('all');
+}
+function toggleCat(e, slug) {
+  if (COLLAPSED.has(slug)) COLLAPSED.delete(slug);
+  else COLLAPSED.add(slug);
+  render();
+}
+function toggleAllCats() {
+  const allSlugs = (STATE.categories || []).map(c => c.slug);
+  const allCollapsed = allSlugs.every(s => COLLAPSED.has(s));
+  COLLAPSED = new Set(allCollapsed ? [] : allSlugs);
+  document.getElementById('collapseBtn').textContent = allCollapsed ? 'Згорнути всі' : 'Розгорнути всі';
+  render();
+}
+
+// ─── Item modal ───
 function openItemModal(item, preSlug) {
   EDIT_ID = (item && item.id) || null;
   CHOSEN_NOM = item && item.nom1c_ref_key ? { ref_key: item.nom1c_ref_key, description: item.nom1c_description, article: '' } : null;
   document.getElementById('modalTitle').textContent = EDIT_ID ? 'Редагувати позицію' : 'Нова позиція';
+  const cat = (STATE.categories || []).find(c => c.slug === ((item && item.category_slug) || preSlug));
+  document.getElementById('modalSub').textContent = cat ? '· ' + cat.title : '';
   document.getElementById('f_category').value = (item && item.category_slug) || preSlug || (STATE.categories[0] && STATE.categories[0].slug) || '';
   document.getElementById('f_nom1c_search').value = '';
   document.getElementById('f_display_name').value = (item && item.display_name) || '';
   document.getElementById('f_display_spec').value = (item && item.display_spec) || '';
-  document.getElementById('f_stock').value = (item && item.stock) || 'в наявності';
+  setSegStock((item && item.stock) || 'в наявності');
   document.getElementById('f_datasheet_url').value = (item && item.datasheet_url) || '';
   document.getElementById('deleteBtn').style.display = EDIT_ID ? '' : 'none';
   renderChosenNom();
+  updatePreview();
   document.getElementById('ac_list').classList.remove('open');
   document.getElementById('itemModal').classList.add('open');
-  setTimeout(() => document.getElementById('f_nom1c_search').focus(), 50);
+  setTimeout(() => {
+    const target = CHOSEN_NOM ? document.getElementById('f_display_name') : document.getElementById('f_nom1c_search');
+    target.focus();
+  }, 50);
 }
-
 function closeItemModal() {
   document.getElementById('itemModal').classList.remove('open');
   EDIT_ID = null;
   CHOSEN_NOM = null;
 }
-
+function setSegStock(val) {
+  document.querySelectorAll('#f_stock_seg button').forEach(b =>
+    b.classList.toggle('active', b.dataset.val === val));
+}
+function getSegStock() {
+  const b = document.querySelector('#f_stock_seg button.active');
+  return b ? b.dataset.val : 'в наявності';
+}
 function renderChosenNom() {
   const el = document.getElementById('f_nom1c_chosen');
   if (!CHOSEN_NOM) { el.innerHTML = ''; return; }
   el.innerHTML = `
     <div class="ac-chosen">
-      <span>${esc(CHOSEN_NOM.description)}</span>
-      ${CHOSEN_NOM.article ? `<span class="art">· ${esc(CHOSEN_NOM.article)}</span>` : ''}
+      <span class="txt">${esc(CHOSEN_NOM.description)}${CHOSEN_NOM.article ? ` <span class="art">· ${esc(CHOSEN_NOM.article)}</span>` : ''}</span>
       <button class="clear" onclick="clearChosenNom()" title="Прибрати">×</button>
     </div>
   `;
 }
-function clearChosenNom() { CHOSEN_NOM = null; renderChosenNom(); }
+function clearChosenNom() { CHOSEN_NOM = null; renderChosenNom(); updatePreview(); }
+function updatePreview() {
+  const name = (document.getElementById('f_display_name').value || '').trim() || (CHOSEN_NOM && CHOSEN_NOM.description) || '—';
+  const spec = (document.getElementById('f_display_spec').value || '').trim();
+  const pv = document.getElementById('pvCard');
+  pv.style.display = '';
+  document.getElementById('pv_name').textContent = name;
+  document.getElementById('pv_spec').textContent = spec;
+}
 
-// Debounced autocomplete
-let _acTimer = null;
+// ─── Autocomplete ───
+let _acTimer = null, _acQuery = '';
 document.addEventListener('DOMContentLoaded', () => {
   const inp = document.getElementById('f_nom1c_search');
   inp.addEventListener('input', () => {
     clearTimeout(_acTimer);
     const q = inp.value.trim();
+    _acQuery = q;
     if (q.length < 2) { document.getElementById('ac_list').classList.remove('open'); return; }
     _acTimer = setTimeout(() => runSearch(q), 250);
   });
   document.addEventListener('click', e => {
     if (!e.target.closest('.ac-wrap')) document.getElementById('ac_list').classList.remove('open');
   });
+
+  // preview live-update
+  ['f_display_name', 'f_display_spec'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updatePreview);
+  });
+
+  // stock segmented
+  document.querySelectorAll('#f_stock_seg button').forEach(b => {
+    b.addEventListener('click', () => setSegStock(b.dataset.val));
+  });
+
+  // global search shortcut
+  document.getElementById('searchInput').addEventListener('input', e => onSearch(e.target.value));
+  document.addEventListener('keydown', e => {
+    // Esc — close modals
+    if (e.key === 'Escape') {
+      if (document.getElementById('itemModal').classList.contains('open')) closeItemModal();
+      if (document.getElementById('catModal').classList.contains('open')) closeCatModal();
+      return;
+    }
+    // "/" focus search (when not in input)
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (e.key === '/' && tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+      e.preventDefault();
+      document.getElementById('searchInput').focus();
+      return;
+    }
+    // Cmd+Enter / Ctrl+Enter — save modal
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      if (document.getElementById('itemModal').classList.contains('open')) { e.preventDefault(); saveItem(); }
+      else if (document.getElementById('catModal').classList.contains('open')) { e.preventDefault(); saveCategory(); }
+    }
+  });
+
+  // cat modal — auto-slug from title on empty slug
+  document.getElementById('cf_title').addEventListener('input', e => {
+    const slugEl = document.getElementById('cf_slug');
+    if (!slugEl.dataset.touched) slugEl.value = slugify(e.target.value);
+  });
+  document.getElementById('cf_slug').addEventListener('input', e => {
+    e.target.dataset.touched = '1';
+  });
+
+  // click outside modal closes it
+  document.getElementById('itemModal').addEventListener('click', e => {
+    if (e.target.id === 'itemModal') closeItemModal();
+  });
+  document.getElementById('catModal').addEventListener('click', e => {
+    if (e.target.id === 'catModal') closeCatModal();
+  });
 });
+
+function hl(text, q) {
+  if (!q) return esc(text);
+  const t = String(text || '');
+  const i = t.toLowerCase().indexOf(q.toLowerCase());
+  if (i < 0) return esc(t);
+  return esc(t.slice(0, i)) + '<mark>' + esc(t.slice(i, i + q.length)) + '</mark>' + esc(t.slice(i + q.length));
+}
 
 async function runSearch(q) {
   try {
@@ -384,8 +863,8 @@ async function runSearch(q) {
     } else {
       list.innerHTML = data.results.map(r => `
         <div class="ac-item" onclick='pickNom(${JSON.stringify(r)})'>
-          <div>${esc(r.description)}</div>
-          ${r.article ? `<div class="art">арт. ${esc(r.article)}</div>` : ''}
+          <div>${hl(r.description, q)}</div>
+          ${r.article ? `<div class="art">арт. ${hl(r.article, q)}</div>` : ''}
         </div>
       `).join('');
     }
@@ -399,10 +878,12 @@ function pickNom(nom) {
   CHOSEN_NOM = nom;
   renderChosenNom();
   document.getElementById('ac_list').classList.remove('open');
-  // Автопрефіл display_name якщо він пустий
   const nameInp = document.getElementById('f_display_name');
   if (!nameInp.value.trim()) nameInp.value = nom.description;
   document.getElementById('f_nom1c_search').value = '';
+  updatePreview();
+  // auto-focus display_name for further edits
+  setTimeout(() => nameInp.focus(), 20);
 }
 
 async function saveItem() {
@@ -413,9 +894,9 @@ async function saveItem() {
     nom1c_description: CHOSEN_NOM ? CHOSEN_NOM.description : null,
     display_name: document.getElementById('f_display_name').value.trim() || null,
     display_spec: document.getElementById('f_display_spec').value.trim() || null,
-    stock: document.getElementById('f_stock').value,
+    stock: getSegStock(),
     datasheet_url: document.getElementById('f_datasheet_url').value.trim() || null,
-    sort_order: 0, // поки без drag-reorder
+    sort_order: 0,
   };
   if (!body.category_slug) { toast('Оберіть категорію', 'err'); return; }
   try {
@@ -428,7 +909,8 @@ async function saveItem() {
 
 async function deleteItem() {
   if (!EDIT_ID) return;
-  if (!confirm('Видалити позицію?')) return;
+  const name = document.getElementById('f_display_name').value.trim() || 'позицію';
+  if (!confirm(`Видалити «${name}»?`)) return;
   try {
     await apiCall('price_list_delete_item', { qs: 'id=' + EDIT_ID });
     toast('Видалено', 'ok');
@@ -436,6 +918,62 @@ async function deleteItem() {
     await load();
   } catch (e) { toast('Помилка: ' + e.message, 'err'); }
 }
+
+// ─── Category modal ───
+function openCatModal(slug) {
+  EDIT_CAT = slug || null;
+  const cat = slug ? (STATE.categories || []).find(c => c.slug === slug) : null;
+  document.getElementById('catModalTitle').textContent = EDIT_CAT ? 'Редагувати категорію' : 'Нова категорія';
+  document.getElementById('cf_title').value = cat ? cat.title : '';
+  document.getElementById('cf_slug').value = cat ? cat.slug : '';
+  document.getElementById('cf_slug').dataset.touched = EDIT_CAT ? '1' : '';
+  document.getElementById('cf_slug').disabled = !!EDIT_CAT;
+  document.getElementById('cf_unit').value = (cat && cat.unit) || '';
+  document.getElementById('cf_sort').value = (cat && (cat.sort_order != null ? cat.sort_order : 0)) || 0;
+  document.getElementById('catDeleteBtn').style.display = EDIT_CAT ? '' : 'none';
+  document.getElementById('catModal').classList.add('open');
+  setTimeout(() => document.getElementById('cf_title').focus(), 50);
+}
+function closeCatModal() {
+  document.getElementById('catModal').classList.remove('open');
+  EDIT_CAT = null;
+}
+async function saveCategory() {
+  const title = document.getElementById('cf_title').value.trim();
+  const slug = document.getElementById('cf_slug').value.trim();
+  const unit = document.getElementById('cf_unit').value.trim();
+  const sort = Number(document.getElementById('cf_sort').value) || 0;
+  if (!title) { toast('Вкажіть назву', 'err'); return; }
+  if (!slug) { toast('Вкажіть slug', 'err'); return; }
+  if (!/^[a-z0-9-]+$/.test(slug)) { toast('Slug: лише a-z, 0-9, -', 'err'); return; }
+  try {
+    await apiCall('price_list_upsert_category', { method: 'POST', body: { slug, title, unit: unit || null, sort_order: sort } });
+    toast('Збережено', 'ok');
+    closeCatModal();
+    await load();
+  } catch (e) { toast('Помилка: ' + e.message, 'err'); }
+}
+async function deleteCategory() {
+  if (!EDIT_CAT) return;
+  const cat = (STATE.categories || []).find(c => c.slug === EDIT_CAT);
+  const n = cat ? cat.items.length : 0;
+  const msg = n > 0
+    ? `Видалити категорію «${cat.title}» разом з ${n} позицією${n >= 5 ? '' : ''}?\n\nЦе необоротно.`
+    : `Видалити категорію «${(cat && cat.title) || EDIT_CAT}»?`;
+  if (!confirm(msg)) return;
+  try {
+    await apiCall('price_list_delete_category', { qs: 'slug=' + encodeURIComponent(EDIT_CAT) });
+    toast('Видалено', 'ok');
+    closeCatModal();
+    await load();
+  } catch (e) { toast('Помилка: ' + e.message, 'err'); }
+}
+
+// ─── Filter chip clicks ───
+document.addEventListener('click', e => {
+  const chip = e.target.closest('#filterChips .chip');
+  if (chip) setFilter(chip.dataset.filter);
+});
 
 Auth.require('prices').then(user => {
   AppHeader.mount({ active: 'prices-admin', user });
