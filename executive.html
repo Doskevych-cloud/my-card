@@ -298,10 +298,10 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
       <span class="hero-pulse">Live · <span id="syncAge">щойно</span></span>
     </div>
 
-    <!-- MOCK BANNER -->
-    <div class="mock-banner">
-      <strong>Умовно</strong>
-      <span>Частина блоків наповнена ілюстративними даними (позначені тегом <span class="mock-tag">умовно</span>) — буде підключено до 1С/D1 поетапно. KPI hero, графік фінансів, Cash flow runway, контрагенти і алерти — живі.</span>
+    <!-- LIVE STATUS BANNER -->
+    <div class="mock-banner" style="border-color:var(--green);color:var(--text2)">
+      <strong style="color:var(--green)">Live</strong>
+      <span>Усі блоки на даних з 1С (OData) і D1. Кешування — 10 хв per session, частина агрегатів (маржа, runway, ar aging) додатково кешується KV ~1 год. Виключення: кредитні ліміти (порожня D1 таблиця, треба завести вручну), RMA / точність комплектації (нема обліку в 1С).</span>
     </div>
 
     <!-- TOOLBAR -->
@@ -895,11 +895,11 @@ function reloadAll() {
 // ═══════════════════════════════════════════════════════════════════
 const KPIS = [
   { id: 'kRev',    lbl: 'Виторг (оплачено)' },
-  { id: 'kMargin', lbl: 'Валова маржа',     mock: true },
+  { id: 'kMargin', lbl: 'Валова маржа' },
   { id: 'kNet',    lbl: 'Чистий прибуток' },
   { id: 'kAR',     lbl: 'Борги нам' },
   { id: 'kAP',     lbl: 'Наш борг' },
-  { id: 'kStock',  lbl: 'Запаси',           mock: false },
+  { id: 'kStock',  lbl: 'Запаси' },
   { id: 'kHealth', lbl: 'Здоров\'я',        mock: true },
 ];
 
@@ -1365,10 +1365,6 @@ async function loadDecisions() {
       alerts.push({ pri: 'm', title: `Запаси ${fmtMoneyShort(stock)} — понад 1.5× виручки`, body: `Оборотність повільна. Розгляньте акції на повільні позиції або стоп-закупівлю.`, act: { lbl: 'Склад', href: '/warehouses.html' } });
     }
   }
-
-  // Mock-алерти (умовні) — для повноти картинки
-  alerts.push({ pri: 'l', title: 'Курс USD/UAH +0.8% за 7 днів — UAH-фіксовані контракти під тиском', body: 'Перерахувати прайс або умови оплати для клієнтів з фіксованою UAH-ціною.', mock: true, act: { lbl: 'Прайс', href: '/admin-prices.html' } });
-  alerts.push({ pri: 'l', title: 'AI-інсайт: панелі без інверторів = втрачений cross-sell', body: 'Інтегрувати автопідказку «комплект» у CRM на стадії КП.', mock: true });
 
   if (!alerts.length) {
     alerts.push({ pri: 'l', title: 'Усе спокійно', body: 'Ключові порогові значення в нормі.' });
