@@ -1239,8 +1239,16 @@ async function loadKpis() {
   if (healthScore >= 4) healthCls = 'ok';
   else if (healthScore >= 3) healthCls = 'warn';
   else healthCls = 'bad';
-  const dot = `<span class="health-dot ${healthCls}"></span>`;
-  kpiSet('kHealth', { val: dot + healthScore + ' / 5', sub: healthDetails.length ? 'нюанс: ' + healthDetails.slice(0,2).join(', ') : 'усе зелене' });
+  (function renderHealth(){
+    const el = document.getElementById('kHealth');
+    if (!el) return;
+    el.classList.remove('ldg','err');
+    const valEl = el.querySelector('.kpi-val');
+    valEl.classList.remove('pos','neg');
+    valEl.innerHTML = `<span class="health-dot ${healthCls}"></span>${healthScore} / 5`;
+    const subEl = document.getElementById('kHealthSub');
+    if (subEl) subEl.textContent = healthDetails.length ? 'нюанс: ' + healthDetails.slice(0,2).join(', ') : 'усе зелене';
+  })();
 
   document.getElementById('trendSub').textContent = `${state.from} → ${state.to} · орг: ${state.org || 'всі'}`;
 }
