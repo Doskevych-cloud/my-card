@@ -700,7 +700,7 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
       <div class="block-head">
         <span class="block-num">10</span>
         <span class="block-title">Прогнози · cash flow</span>
-        <span class="block-meta">runway live · продажі <span class="mock-tag">умовно</span></span>
+        <span class="block-meta">runway з реального AR/AP · продажі з історії 3 роки</span>
       </div>
 
       <div class="g-2-1">
@@ -718,18 +718,10 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         </div>
 
         <div class="card">
-          <div class="card-head"><div><h3>Прогноз продажів<span class="mock-tag">умовно</span></h3><div class="card-sub">Сезонність + тренд + backlog</div></div></div>
-          <div class="list">
-            <div class="row"><div class="name">Травень 2026<small>пік сонячного сезону</small></div><div class="v pos">$ 4.6M</div></div>
-            <div class="row"><div class="name">Червень<small>+12% LY</small></div><div class="v pos">$ 5.1M</div></div>
-            <div class="row"><div class="name">Липень<small>пік року</small></div><div class="v pos">$ 5.4M</div></div>
-          </div>
-          <div style="font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-top:10px;margin-bottom:4px">Ризики stockout</div>
-          <div class="list">
-            <div class="row"><div class="name">Інвертори Huawei 12kW<small>прогноз 64 шт · буде 24</small></div><div class="v neg">−40 шт</div></div>
-            <div class="row"><div class="name">JA Solar 545W<small>прогноз 540 · буде 312</small></div><div class="v neg">−228 шт</div></div>
-            <div class="row"><div class="name">Pylontech US3000C<small>прогноз 88 · буде 78</small></div><div class="v neg">−10 шт</div></div>
-          </div>
+          <div class="card-head"><div><h3>Прогноз продажів</h3><div class="card-sub" id="b10ForecastSub">сезонність × середній денний 90д</div></div></div>
+          <div id="b10Forecast"><div class="loading">Завантаження…</div></div>
+          <div style="font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-top:10px;margin-bottom:4px">Ризики stockout (топ-A)</div>
+          <div id="b10StockoutRisks"><div class="loading">Завантаження…</div></div>
         </div>
       </div>
     </section>
@@ -894,6 +886,7 @@ function reloadAll() {
   loadFxPosition();
   loadCustomersCrm();
   loadOps();
+  loadForecast();
   setTimeout(() => { document.getElementById('syncAge').textContent = '1с тому'; }, 1500);
 }
 
@@ -1932,6 +1925,50 @@ async function loadOps() {
   document.getElementById('b9Shipments').textContent = tts.shipments_count || 0;
   document.getElementById('b9ShipmentsSub').textContent = 'із order_ref_key';
   document.getElementById('b9Orders').textContent = r.orders_total || 0;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// FORECAST (block 10 — live)
+// ═══════════════════════════════════════════════════════════════════
+async function loadForecast() {
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
+  const r = await dashFetch(`${API_URL}?action=executive_forecast${orgQ}`).catch(e => ({ error: String(e) }));
+  if (!r || r.error) {
+    ['b10Forecast','b10StockoutRisks'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.innerHTML = `<div class="error">${esc(r?.error || 'не вдалось')}</div>`;
+    });
+    return;
+  }
+
+  document.getElementById('b10ForecastSub').textContent = `базис ${fmtMoneyShort(r.daily_avg_90d_usd * 30)}/міс × сезонність`;
+
+  const fc = r.forecast || [];
+  if (!fc.length) {
+    document.getElementById('b10Forecast').innerHTML = `<div class="empty">Недостатньо історії</div>`;
+  } else {
+    document.getElementById('b10Forecast').innerHTML = `<div class="list">${fc.map(f => {
+      const factor = f.seasonality_factor;
+      const note = factor > 1.15 ? 'високий сезон' : factor < 0.85 ? 'низький сезон' : 'нейтральний';
+      const cls = factor > 1.15 ? 'pos' : factor < 0.85 ? 'neg' : '';
+      return `<div class="row">
+        <div class="name">${esc(f.month_label)}<small>сезонність ×${factor.toFixed(2)} · ${note}</small></div>
+        <div class="v ${cls}">${fmtMoneyShort(f.projected_usd)}</div>
+      </div>`;
+    }).join('')}</div>`;
+  }
+
+  const risks = r.stockout_risks || [];
+  if (!risks.length) {
+    document.getElementById('b10StockoutRisks').innerHTML = `<div class="empty" style="font-size:11px;padding:8px">Немає критичних ризиків</div>`;
+  } else {
+    document.getElementById('b10StockoutRisks').innerHTML = `<div class="list">${risks.slice(0, 5).map(s => {
+      const days = s.doh_days_qty != null ? Math.round(s.doh_days_qty) + ' д' : 'stockout';
+      return `<div class="row">
+        <div class="name" style="font-size:11.5px">${esc(s.name).slice(0, 38)}<small>${s.qty_onhand} шт · ${Math.round(s.qty_30d)}/30д</small></div>
+        <div class="v neg">${days}</div>
+      </div>`;
+    }).join('')}</div>`;
+  }
 }
 
 // ── helpers ─────────────────────────────────────────────────────────
