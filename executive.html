@@ -1003,7 +1003,7 @@ async function loadKpis() {
     dashFetch(`${API_URL}?action=pnl_accrual_report&from=${state.from}&to=${state.to}${orgQ}`),
     prev ? dashFetch(`${API_URL}?action=pnl_accrual_report&from=${prev.from}&to=${prev.to}${orgQ}`) : Promise.resolve(null),
     dashFetch(`${API_URL}?action=gross_profit_report&from=${state.from}&to=${state.to}${orgQ}`).catch(() => null),
-    dashFetch(`${API_URL}?action=warehouse_value_report&date=${todayIso}`).catch(() => null),
+    dashFetch(`${API_URL}?action=warehouse_value_report&date=${todayIso}${orgQ}`).catch(() => null),
   ]);
 
   const [salesR, salesPR, arR, arPR, apR, apPR, pnlR, pnlPR, gpR, stockR] = results;
@@ -1347,7 +1347,7 @@ async function loadDecisions() {
     dashFetch(`${API_URL}?action=pnl_accrual_report&from=${state.from}&to=${state.to}${orgQ}`).catch(() => null),
     dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${todayIso}${cpOrgQ()}`).catch(() => null),
     dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${todayIso}${cpOrgQ()}`).catch(() => null),
-    dashFetch(`${API_URL}?action=warehouse_value_report&date=${todayIso}`).catch(() => null),
+    dashFetch(`${API_URL}?action=warehouse_value_report&date=${todayIso}${orgQ}`).catch(() => null),
   ]);
 
   const alerts = [];
