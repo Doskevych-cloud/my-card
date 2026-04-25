@@ -964,10 +964,8 @@ async function loadKpis() {
   KPIS.forEach(k => kpiLoading(k.id));
   const u = window.__user;
   const r = (u && u.roles) || {};
-  if (!r.finance && !r.admin) {
-    KPIS.forEach(k => kpiError(k.id, 'нема доступу'));
-    return;
-  }
+  // Кожен endpoint сам перевіряє роль; якщо немає — повернеться 403 і ми покажемо помилку на конкретному KPI.
+  // Виторг (sales_report) доступний з role='sales'/'dashboard', тому не блокуємо весь блок на finance.
   const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
   const prev = prevPeriod(state.from, state.to);
   const todayIso = _iso(new Date());
