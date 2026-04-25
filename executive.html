@@ -545,71 +545,48 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
       <div class="block-head">
         <span class="block-num">05</span>
         <span class="block-title">Склад · запаси</span>
-        <span class="block-meta">загальна вартість — live · решта <span class="mock-tag">умовно</span></span>
+        <span class="block-meta" id="b5Meta">live з stock_balances + sales/purchase items</span>
       </div>
 
       <div class="g-1-1-1">
         <div class="card">
-          <div class="card-head"><div><h3>Вартість запасів</h3><div class="card-sub">Всі склади · live з 1С</div></div></div>
+          <div class="card-head"><div><h3>Вартість запасів</h3><div class="card-sub" id="b5StockSub">Всі склади · live з 1С</div></div></div>
           <div class="ministats">
             <div class="mstat">
-              <div class="mlbl">USD</div>
+              <div class="mlbl">USD на руках</div>
               <div class="mval" id="b5StockUsd">—</div>
               <div class="msub" id="b5StockUsdSub">—</div>
             </div>
             <div class="mstat">
-              <div class="mlbl">UAH<span class="mock-tag">~</span></div>
+              <div class="mlbl">UAH</div>
               <div class="mval" id="b5StockUah">—</div>
               <div class="msub">за поточним курсом</div>
             </div>
-          </div>
-          <div style="height:80px">
-            <svg viewBox="0 0 300 80" preserveAspectRatio="none" style="width:100%;height:100%">
-              <defs>
-                <linearGradient id="gs" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0" stop-color="#a3a3a3" stop-opacity=".25"/>
-                  <stop offset="1" stop-color="#a3a3a3" stop-opacity="0"/>
-                </linearGradient>
-              </defs>
-              <path d="M0,60 L50,55 L100,52 L150,46 L200,42 L250,38 L300,32 L300,80 L0,80 Z" fill="url(#gs)"/>
-              <path d="M0,60 L50,55 L100,52 L150,46 L200,42 L250,38 L300,32" stroke="#a3a3a3" stroke-width="1.5" fill="none"/>
-            </svg>
-            <div style="font-size:10px;color:var(--text3);text-align:right;margin-top:-2px">
-              тренд 6 міс <span class="mock-tag">умовно</span>
+            <div class="mstat">
+              <div class="mlbl">У дорозі</div>
+              <div class="mval" id="b5Transit">—</div>
+              <div class="msub">склади «В дорозі»</div>
+            </div>
+            <div class="mstat">
+              <div class="mlbl">Унікальних SKU</div>
+              <div class="mval" id="b5SkuTotal">—</div>
+              <div class="msub" id="b5SkuTotalSub">—</div>
             </div>
           </div>
         </div>
 
         <div class="card">
-          <div class="card-head"><div><h3>Оборотність<span class="mock-tag">умовно</span></h3><div class="card-sub">Days of inventory on hand</div></div></div>
-          <div class="list">
-            <div class="row compact"><div class="name">Інвертори<div class="bar"><i style="width:40%"></i></div></div><div class="v">42 д</div></div>
-            <div class="row compact"><div class="name">Сонячні панелі<div class="bar"><i style="width:55%"></i></div></div><div class="v">58 д</div></div>
-            <div class="row compact"><div class="name">Акумулятори<div class="bar"><i style="width:30%"></i></div></div><div class="v pos">31 д</div></div>
-            <div class="row compact"><div class="name">Монтажні системи<div class="bar"><i style="width:78%"></i></div></div><div class="v neg">82 д</div></div>
-            <div class="row compact"><div class="name">Кабель та аксесуари<div class="bar"><i style="width:88%"></i></div></div><div class="v neg">94 д</div></div>
-            <div class="row compact"><div class="name">Допоміжне<div class="bar"><i style="width:60%"></i></div></div><div class="v">62 д</div></div>
-          </div>
-          <div style="font-size:11px;color:var(--text3);padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between">
-            <span>ABC: <strong style="color:var(--text)">22 SKU</strong> = 80% обороту</span>
-            <span>Всього <strong style="color:var(--text)">468 SKU</strong></span>
-          </div>
+          <div class="card-head"><div><h3>Оборотність по групах</h3><div class="card-sub">Days of inventory · 30д продажів</div></div></div>
+          <div id="b5ByCategory"><div class="loading">Завантаження…</div></div>
+          <div id="b5Abc" style="font-size:11px;color:var(--text3);padding-top:8px;border-top:1px solid var(--border)"></div>
         </div>
 
         <div class="card">
-          <div class="card-head"><div><h3>Алерти запасів<span class="mock-tag">умовно</span></h3><div class="card-sub">Stockouts vs dead stock</div></div></div>
-          <div style="font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:4px">Stockouts (група A)</div>
-          <div class="list">
-            <div class="row"><div class="name">Huawei SUN2000-12KTL<small>залишок 3 шт · продаж 22/міс</small></div><div class="v neg">4 дні</div></div>
-            <div class="row"><div class="name">Deye SUN-12K-SG04LP3<small>0 на складі</small></div><div class="v neg">stockout</div></div>
-            <div class="row"><div class="name">JA Solar JAM72S30 545W<small>78 шт · продаж 220/міс</small></div><div class="v neg">10 днів</div></div>
-          </div>
-          <div style="font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-top:10px;margin-bottom:4px">Dead stock (&gt; 180 днів)</div>
-          <div class="list">
-            <div class="row"><div class="name">Solis 5K-2G (старе)<small>14 шт · 247 днів</small></div><div class="v">$ 12.4k</div></div>
-            <div class="row"><div class="name">SMA Sunny Boy 3.6<small>6 шт · 312 днів</small></div><div class="v">$ 8.2k</div></div>
-            <div class="row"><div class="name">Кабель 4mm² (брак)<small>1.2km · 198 днів</small></div><div class="v">$ 1.8k</div></div>
-          </div>
+          <div class="card-head"><div><h3>Алерти запасів</h3><div class="card-sub">Stockouts vs dead stock</div></div></div>
+          <div style="font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:4px">Stockouts (група A · &lt;14 днів)</div>
+          <div id="b5Stockouts"><div class="loading">Завантаження…</div></div>
+          <div style="font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-top:10px;margin-bottom:4px">Dead stock (0 продажів 180д)</div>
+          <div id="b5DeadStock"><div class="loading">Завантаження…</div></div>
         </div>
       </div>
     </section>
@@ -981,6 +958,7 @@ function reloadAll() {
   loadSalesBreakdown();
   loadMarginBreakdown();
   loadArAging();
+  loadWarehouseBreakdown();
   setTimeout(() => { document.getElementById('syncAge').textContent = '1с тому'; }, 1500);
 }
 
@@ -1727,6 +1705,80 @@ async function loadArAging() {
       </div>`;
     }).join('')}</div>`;
     document.getElementById('b4LimitsMeta').textContent = `${limits.length} лімітів задано`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// WAREHOUSE BREAKDOWN (block 05 — live)
+// ═══════════════════════════════════════════════════════════════════
+async function loadWarehouseBreakdown() {
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
+  const r = await dashFetch(`${API_URL}?action=executive_warehouse_breakdown${orgQ}`).catch(e => ({ error: String(e) }));
+  if (!r || r.error) {
+    ['b5ByCategory','b5Stockouts','b5DeadStock'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = `<div class="error">${esc(r?.error || 'не вдалось завантажити')}</div>`;
+    });
+    return;
+  }
+
+  // Stock totals
+  document.getElementById('b5Transit').textContent = fmtMoneyShort(r.transit_usd);
+  document.getElementById('b5SkuTotal').textContent = String(r.sku_total || 0);
+  document.getElementById('b5SkuTotalSub').textContent = `на ${r.as_of_date}`;
+  document.getElementById('b5StockSub').textContent = `Всі склади · станом на ${r.as_of_date}`;
+
+  // ABC summary
+  const abc = r.abc_summary || {};
+  document.getElementById('b5Abc').innerHTML = `
+    <div style="display:flex;justify-content:space-between">
+      <span>ABC: <strong style="color:var(--text)">${abc.a_count || 0}</strong> SKU = ${fmtPct(abc.a_share || 0)} обороту</span>
+      <span>B/C: <strong style="color:var(--text)">${abc.b_count || 0} / ${abc.c_count || 0}</strong></span>
+    </div>
+  `;
+
+  // By category
+  const cats = r.by_category || [];
+  if (!cats.length) {
+    document.getElementById('b5ByCategory').innerHTML = `<div class="empty">Немає запасів</div>`;
+  } else {
+    const max = cats[0].stock_usd || 1;
+    document.getElementById('b5ByCategory').innerHTML = `<div class="list">${cats.map(c => {
+      const dohClass = c.doh_days == null ? '' : c.doh_days > 90 ? 'neg' : c.doh_days < 30 ? 'pos' : '';
+      const dohText = c.doh_days == null ? 'нема продажів' : `${c.doh_days} д`;
+      return `<div class="row compact">
+        <div class="name">${esc(c.category).slice(0, 38)}<div class="bar"><i style="width:${(c.stock_usd/max*100).toFixed(0)}%"></i></div></div>
+        <div class="v ${dohClass}">${dohText}<small>${fmtMoneyShort(c.stock_usd)}</small></div>
+      </div>`;
+    }).join('')}</div>`;
+  }
+
+  // Stockouts
+  const stockouts = r.stockouts || [];
+  if (!stockouts.length) {
+    document.getElementById('b5Stockouts').innerHTML = `<div class="empty" style="font-size:11px;padding:10px">Немає критичних stockouts</div>`;
+  } else {
+    document.getElementById('b5Stockouts').innerHTML = `<div class="list">${stockouts.slice(0, 6).map(s => {
+      const days = s.doh_days_qty != null ? Math.round(s.doh_days_qty) + ' д' : 'stockout';
+      return `<div class="row">
+        <div class="name" style="font-size:11.5px">${esc(s.name).slice(0, 42)}<small>${s.qty_onhand} шт · ${Math.round(s.qty_30d)} продаж/30д</small></div>
+        <div class="v neg">${days}</div>
+      </div>`;
+    }).join('')}</div>`;
+  }
+
+  // Dead stock
+  const dead = r.dead_stock || [];
+  if (!dead.length) {
+    document.getElementById('b5DeadStock').innerHTML = `<div class="empty" style="font-size:11px;padding:10px">Немає мертвого стоку</div>`;
+  } else {
+    document.getElementById('b5DeadStock').innerHTML = `<div class="list">${dead.slice(0, 6).map(s => {
+      const days = s.days_since_sale != null ? `${s.days_since_sale}д` : '180+ д';
+      return `<div class="row">
+        <div class="name" style="font-size:11.5px">${esc(s.name).slice(0, 42)}<small>${s.qty_onhand} шт · ${days}</small></div>
+        <div class="v">${fmtMoneyShort(s.stock_usd)}</div>
+      </div>`;
+    }).join('')}</div>`;
   }
 }
 
