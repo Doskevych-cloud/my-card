@@ -242,6 +242,21 @@ a{color:inherit;text-decoration:none}
 .cb-breakdown-cur{color:var(--text3);font-weight:600;letter-spacing:.3px}
 .cb-breakdown-val{color:var(--text2);font-weight:500}
 
+/* Cash Balance — табличний вигляд (як 1С звіт «Залишки коштів») */
+.cb-tbl-section{margin-bottom:18px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.cb-tbl-head{display:flex;align-items:baseline;gap:12px;padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.cb-tbl-head .cur{font-size:14px;font-weight:700;color:var(--text);letter-spacing:.3px}
+.cb-tbl-head .meta{font-size:11.5px;color:var(--text3);font-weight:500}
+.cb-tbl-head .tot{margin-left:auto;font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.cb-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.cb-tbl tr{border-bottom:1px solid var(--border)}
+.cb-tbl tr:last-child{border-bottom:none}
+.cb-tbl td{padding:8px 16px;color:var(--text2)}
+.cb-tbl td.name{color:var(--text)}
+.cb-tbl td.org{color:var(--text3);font-size:11px;text-align:left;width:120px}
+.cb-tbl td.bal{text-align:right;font-variant-numeric:tabular-nums;color:var(--text);font-weight:600;width:160px}
+.cb-tbl tr:hover td{background:var(--bg3)}
+
 .view{display:none}
 .view.active{display:block}
 
@@ -521,6 +536,11 @@ a{color:inherit;text-decoration:none}
           <span class="chip" data-org="Реакт" onclick="cbSetOrg(this)">Реакт</span>
           <span class="chip" data-org="Генерація" onclick="cbSetOrg(this)">Генерація</span>
           <span class="chip" data-org="Без організації" onclick="cbSetOrg(this)">Без орг.</span>
+        </span>
+        <div class="sep"></div>
+        <span class="group" id="cbViewGroup">
+          <span class="chip active" data-view="cards" onclick="cbSetView(this)">Картки</span>
+          <span class="chip" data-view="table" onclick="cbSetView(this)">Таблиця</span>
         </span>
       </div>
       <div id="cbSummary"></div>
@@ -2722,7 +2742,14 @@ document.addEventListener('DOMContentLoaded', function() {
 /* ═══════════════════════════════════════════════════
    CASH BALANCE TAB — залишки по касах / банках
    ═══════════════════════════════════════════════════ */
-const cbState = { on: '', org: '', _loaded: false, data: null };
+const cbState = { on: '', org: '', view: 'cards', _loaded: false, data: null };
+
+function cbSetView(el) {
+  cbState.view = el.dataset.view;
+  el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  if (cbState.data) cbRender();
+}
 
 function cbSetPreset(p) {
   const now = new Date(), y = now.getFullYear(), m = now.getMonth();
@@ -2892,7 +2919,51 @@ function cbRender() {
     '</div>';
   };
 
-  // Групуємо: org → { banks, cash, total }
+  // ── Табличний вигляд: секції за валютами як в 1С ──
+  if (cbState.view === 'table') {
+    const ROWS = [];
+    for (const a of accounts) {
+      const cs = Object.keys(a.by_currency || {});
+      for (const c of cs) {
+        const b = Number((a.by_currency[c] || {}).balance) || 0;
+        if (Math.abs(b) < 0.005) continue;
+        ROWS.push({ name: a.description || '—', org: a.org_short || '—',
+                    type: a.account_type, cur: c, bal: b });
+      }
+    }
+    const sections = {};
+    for (const r of ROWS) {
+      if (!sections[r.cur]) sections[r.cur] = { rows: [], total: 0 };
+      sections[r.cur].rows.push(r);
+      sections[r.cur].total += r.bal;
+    }
+    const order = ['EUR','UAH','USD'].filter(c => sections[c]);
+    for (const c of Object.keys(sections)) if (!order.includes(c)) order.push(c);
+    let html = '';
+    for (const cur of order) {
+      const s = sections[cur];
+      s.rows.sort((x, y) => Math.abs(y.bal) - Math.abs(x.bal));
+      const sm = sym(cur);
+      html += '<div class="cb-tbl-section">' +
+        '<div class="cb-tbl-head">' +
+          '<span class="cur">' + cur + '</span>' +
+          '<span class="meta">' + s.rows.length + ' рах.</span>' +
+          '<span class="tot">' + fmt(s.total, 2) + ' ' + sm + '</span>' +
+        '</div>' +
+        '<table class="cb-tbl"><tbody>' +
+        s.rows.map(r => '<tr>' +
+          '<td class="name">' + esc(r.name) + '</td>' +
+          '<td class="org">' + esc(r.org) + '</td>' +
+          '<td class="bal">' + fmt(r.bal, 2) + ' ' + sm + '</td>' +
+        '</tr>').join('') +
+        '</tbody></table>' +
+      '</div>';
+    }
+    document.getElementById('cbBody').innerHTML = html;
+    return;
+  }
+
+  // ── Картковий вигляд (за замовчуванням): org → banks/cash → cards ──
   const groups = {};
   accounts.forEach(a => {
     const org = a.org_short || 'Без організації';
