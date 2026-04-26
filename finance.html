@@ -257,6 +257,20 @@ a{color:inherit;text-decoration:none}
 .cb-tbl td.bal{text-align:right;font-variant-numeric:tabular-nums;color:var(--text);font-weight:600;width:160px}
 .cb-tbl tr:hover td{background:var(--bg3)}
 
+/* Drill-down transactions panel under account card */
+.cb-card-clickable{cursor:pointer;transition:border-color .15s,background .15s}
+.cb-card-clickable:hover{border-color:var(--accent);background:var(--bg3)}
+.cb-tx-host{grid-column:1/-1}
+.cb-tx-host:empty{display:none}
+.cb-tx-tbl{width:100%;border-collapse:collapse;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:-2px}
+.cb-tx-tbl thead th{padding:8px 10px;background:var(--bg2);color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:600;text-align:left;white-space:nowrap;border-bottom:1px solid var(--border)}
+.cb-tx-tbl thead th.num{text-align:right}
+.cb-tx-tbl tbody td{padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text2);white-space:nowrap}
+.cb-tx-tbl tbody tr:last-child td{border-bottom:none}
+.cb-tx-tbl tbody tr:hover td{background:var(--bg3)}
+.cb-tx-tbl td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--text)}
+.cb-tx-tbl td.doc{color:var(--text);max-width:380px;overflow:hidden;text-overflow:ellipsis}
+
 .view{display:none}
 .view.active{display:block}
 
@@ -536,11 +550,6 @@ a{color:inherit;text-decoration:none}
           <span class="chip" data-org="Реакт" onclick="cbSetOrg(this)">Реакт</span>
           <span class="chip" data-org="Генерація" onclick="cbSetOrg(this)">Генерація</span>
           <span class="chip" data-org="Без організації" onclick="cbSetOrg(this)">Без орг.</span>
-        </span>
-        <div class="sep"></div>
-        <span class="group" id="cbViewGroup">
-          <span class="chip active" data-view="cards" onclick="cbSetView(this)">Картки</span>
-          <span class="chip" data-view="table" onclick="cbSetView(this)">Таблиця</span>
         </span>
       </div>
       <div id="cbSummary"></div>
@@ -2744,11 +2753,45 @@ document.addEventListener('DOMContentLoaded', function() {
    ═══════════════════════════════════════════════════ */
 const cbState = { on: '', org: '', view: 'cards', _loaded: false, data: null };
 
-function cbSetView(el) {
-  cbState.view = el.dataset.view;
-  el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  if (cbState.data) cbRender();
+// Drill-down: при кліку на картку рахунку показуємо рухи цього account_ref_key.
+async function cbToggleAccount(ref, hostId) {
+  const host = document.getElementById(hostId);
+  if (!host) return;
+  if (host.dataset.open === '1') {
+    host.dataset.open = '0';
+    host.innerHTML = '';
+    return;
+  }
+  host.dataset.open = '1';
+  host.innerHTML = '<div class="loading" style="padding:14px">Завантаження рухів…</div>';
+  try {
+    const onTo = cbState.on || new Date().toISOString().slice(0,10);
+    // Auth-токен auto-attach у всі fetch через auth.js (interceptor).
+    const u = API_URL + '?action=cash_movements_by_account&ref=' + encodeURIComponent(ref) + '&to=' + onTo;
+    const r = await fetch(u).then(x => x.json());
+    if (r.error) throw new Error(r.error);
+    const rows = r.rows || [];
+    if (!rows.length) { host.innerHTML = '<div class="empty" style="padding:14px">Немає рухів</div>'; return; }
+    const fmtAmt = (v, t) => (t === 'Receipt' ? '+' : '−') + fmt(Math.abs(Number(v)||0), 2);
+    let html = '<table class="cb-tx-tbl"><thead><tr>' +
+      '<th>Дата</th><th>Тип</th><th>Документ</th><th class="num">Сума</th><th>Вал.</th><th class="num">Баланс</th><th>Орг.</th>' +
+      '</tr></thead><tbody>';
+    for (const r of rows) {
+      html += '<tr>' +
+        '<td>' + esc((r.period || '').replace('T',' ').slice(0,16)) + '</td>' +
+        '<td style="color:' + (r.type === 'Receipt' ? 'var(--green)' : 'var(--red)') + '">' + (r.type === 'Receipt' ? '↑' : '↓') + '</td>' +
+        '<td class="doc">' + esc(r.doc || '—') + '</td>' +
+        '<td class="num">' + fmtAmt(r.amount_currency != null ? r.amount_currency : r.amount, r.type) + '</td>' +
+        '<td>' + esc(r.cur || '') + '</td>' +
+        '<td class="num" style="color:var(--text2)">' + fmt(Number(r.running)||0, 2) + '</td>' +
+        '<td style="color:var(--text3);font-size:11px">' + esc(r.org || '—') + '</td>' +
+      '</tr>';
+    }
+    html += '</tbody></table>';
+    host.innerHTML = html;
+  } catch (e) {
+    host.innerHTML = '<div class="error" style="padding:14px">Помилка: ' + esc(e.message) + '</div>';
+  }
 }
 
 function cbSetPreset(p) {
@@ -2917,57 +2960,16 @@ function cbRender() {
       ? '<img class="cb-logo" src="https://www.google.com/s2/favicons?domain=' + dom + '&sz=64" alt="" loading="lazy" onerror="this.outerHTML=\'<span class=cb-logo-fallback>' + firstChar + '</span>\'">'
       : '<span class="cb-logo-fallback">' + firstChar + '</span>';
     const titleClean = cbCleanDescription(a.description) || a.description || '';
-    return '<div class="pnl-card">' +
+    const txHostId = 'cb-tx-' + a.ref_key;
+    return '<div class="pnl-card cb-card-clickable" onclick="cbToggleAccount(' + JSON.stringify(a.ref_key) + ',' + JSON.stringify(txHostId) + ')" title="Клік — показати транзакції">' +
       '<div class="cb-card-head">' + logoHtml + '<span class="cl">' + esc(titleClean) + '</span></div>' +
       mainHtml +
       usdSub +
       (breakdown ? '<div class="cb-breakdown">' + breakdown + '</div>' : '') +
-    '</div>';
+    '</div>' +
+    '<div id="' + txHostId + '" class="cb-tx-host" data-open="0"></div>';
   };
 
-  // ── Табличний вигляд: секції за валютами як в 1С ──
-  if (cbState.view === 'table') {
-    const ROWS = [];
-    for (const a of accounts) {
-      const cs = Object.keys(a.by_currency || {});
-      for (const c of cs) {
-        const b = Number((a.by_currency[c] || {}).balance) || 0;
-        if (Math.abs(b) < 0.005) continue;
-        ROWS.push({ name: a.description || '—', org: a.org_short || '—',
-                    type: a.account_type, cur: c, bal: b });
-      }
-    }
-    const sections = {};
-    for (const r of ROWS) {
-      if (!sections[r.cur]) sections[r.cur] = { rows: [], total: 0 };
-      sections[r.cur].rows.push(r);
-      sections[r.cur].total += r.bal;
-    }
-    const order = ['EUR','UAH','USD'].filter(c => sections[c]);
-    for (const c of Object.keys(sections)) if (!order.includes(c)) order.push(c);
-    let html = '';
-    for (const cur of order) {
-      const s = sections[cur];
-      s.rows.sort((x, y) => Math.abs(y.bal) - Math.abs(x.bal));
-      const sm = sym(cur);
-      html += '<div class="cb-tbl-section">' +
-        '<div class="cb-tbl-head">' +
-          '<span class="cur">' + cur + '</span>' +
-          '<span class="meta">' + s.rows.length + ' рах.</span>' +
-          '<span class="tot">' + fmt(s.total, 2) + ' ' + sm + '</span>' +
-        '</div>' +
-        '<table class="cb-tbl"><tbody>' +
-        s.rows.map(r => '<tr>' +
-          '<td class="name">' + esc(r.name) + '</td>' +
-          '<td class="org">' + esc(r.org) + '</td>' +
-          '<td class="bal">' + fmt(r.bal, 2) + ' ' + sm + '</td>' +
-        '</tr>').join('') +
-        '</tbody></table>' +
-      '</div>';
-    }
-    document.getElementById('cbBody').innerHTML = html;
-    return;
-  }
 
   // Нормалізуємо орг: «Ген.ОД» / «Ген.КЕ» / «Ген.Київ» → «Генерація», все «Реакт*» → «Реакт»
   const cbNormOrg = (s) => {
