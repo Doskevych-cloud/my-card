@@ -150,6 +150,55 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
     </div>
     <div id="autosyncResult" style="margin-top:12px;font-size:12px;color:var(--text2);display:none"></div>
   </div>
+
+  <div class="card" style="margin-top:24px">
+    <div class="card-head">
+      <h2>Ручний sync — обери що оновити</h2>
+      <div class="spacer"></div>
+    </div>
+    <div style="padding:12px 4px 4px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <label style="font-size:12px;color:var(--text3)">Період (для рухів)</label>
+      <input type="date" id="manSyncFrom" style="padding:6px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;color-scheme:dark">
+      <span style="color:var(--text3)">—</span>
+      <input type="date" id="manSyncTo" style="padding:6px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;color-scheme:dark">
+      <span style="font-size:11px;color:var(--text3)">довідники ігнорують період</span>
+    </div>
+    <div style="padding:12px 4px 4px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:6px 18px;font-size:12.5px">
+        <!-- Master / довідники -->
+        <label><input type="checkbox" data-act="_admin_sync_master"> Майстер-дані (контрагенти, номенклатура, валюти, одиниці…)</label>
+        <label><input type="checkbox" data-act="_admin_sync_cash_accounts"> Каси та банк-рахунки</label>
+        <!-- Sales -->
+        <label><input type="checkbox" data-act="_admin_sync_sales_orders"> Замовлення покупців</label>
+        <label><input type="checkbox" data-act="_admin_sync_sales_order_items"> Позиції замовлень</label>
+        <label><input type="checkbox" data-act="_admin_sync_sales_receipts"> Видаткові накладні</label>
+        <label><input type="checkbox" data-act="_admin_sync_sales_receipt_items"> Позиції видаткових</label>
+        <label><input type="checkbox" data-act="_admin_sync_order_managers"> Менеджери замовлень</label>
+        <!-- AR -->
+        <label><input type="checkbox" data-act="_admin_sync_ar_movements"> Розрахунки з покупцями</label>
+        <label><input type="checkbox" data-act="_admin_sync_payments_in"> Платежі вхідні</label>
+        <!-- Purchase -->
+        <label><input type="checkbox" data-act="_admin_sync_purchase_orders"> Замовлення постачальникам</label>
+        <label><input type="checkbox" data-act="_admin_sync_purchase_receipts"> Прибуткові накладні</label>
+        <label><input type="checkbox" data-act="_admin_sync_purchase_receipt_items"> Позиції прибуткових</label>
+        <label><input type="checkbox" data-act="_admin_sync_ap_movements"> Розрахунки з постачальниками</label>
+        <label><input type="checkbox" data-act="_admin_sync_payments_out"> Платежі вихідні</label>
+        <!-- Cash -->
+        <label><input type="checkbox" data-act="_admin_sync_cash_movements"> Рухи коштів (каси/банки)</label>
+        <!-- FX / stock -->
+        <label><input type="checkbox" data-act="_admin_sync_fx_1c"> Курси валют (1С)</label>
+        <label><input type="checkbox" data-act="_admin_sync_stock"> Залишки складу</label>
+        <label><input type="checkbox" data-act="_admin_backfill_usd"> Backfill amount_usd</label>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:10px;align-items:center">
+        <button class="btn btn--primary" id="btnManSync" onclick="runManualSync()">▶ Запустити вибрані</button>
+        <button class="btn btn--ghost" onclick="manSyncToggleAll(true)">Обрати всі</button>
+        <button class="btn btn--ghost" onclick="manSyncToggleAll(false)">Очистити</button>
+        <span style="font-size:12px;color:var(--text3)" id="manSyncHint">Без періоду — за замовчуванням останній рік</span>
+      </div>
+    </div>
+    <div id="manSyncResult" style="margin-top:12px;font-size:12px;color:var(--text2);display:none"></div>
+  </div>
 </div>
 
 <div id="toastHost"></div>
@@ -445,6 +494,92 @@ async function runAutosync() {
     btn.disabled = false;
     btn.textContent = '🔄 Запустити autosync зараз';
   }
+}
+
+// ── Ручний вибірковий sync ──────────────────────────────────────────────
+function manSyncToggleAll(on) {
+  document.querySelectorAll('#manSyncResult, #btnManSync').forEach(() => {});
+  document.querySelectorAll('input[type=checkbox][data-act^="_admin_"]').forEach(c => c.checked = !!on);
+}
+
+// Які actions приймають from/to
+const SYNC_NEEDS_RANGE = new Set([
+  '_admin_sync_sales_orders','_admin_sync_sales_receipts',
+  '_admin_sync_purchase_orders','_admin_sync_purchase_receipts',
+  '_admin_sync_ar_movements','_admin_sync_payments_in',
+  '_admin_sync_ap_movements','_admin_sync_payments_out',
+  '_admin_sync_cash_movements','_admin_sync_fx_1c',
+  '_admin_backfill_usd','_admin_sync_sales_order_items',
+]);
+
+async function runManualSync() {
+  const checked = Array.from(document.querySelectorAll('input[type=checkbox][data-act^="_admin_"]:checked'));
+  if (!checked.length) { toast('Нічого не обрано', 'err'); return; }
+  const from = document.getElementById('manSyncFrom').value;
+  const to   = document.getElementById('manSyncTo').value;
+  // Дефолт: рік назад → сьогодні (для сутностей з range, якщо юзер не вказав)
+  const today = new Date();
+  const yAgo = new Date(today); yAgo.setFullYear(today.getFullYear() - 1);
+  const defaultFrom = from || yAgo.toISOString().slice(0,10);
+  const defaultTo   = to   || today.toISOString().slice(0,10);
+
+  const btn = document.getElementById('btnManSync');
+  const out = document.getElementById('manSyncResult');
+  btn.disabled = true;
+  out.style.display = 'block';
+  out.innerHTML = '';
+
+  const results = [];
+  for (const cb of checked) {
+    const act = cb.dataset.act;
+    const label = cb.parentElement.textContent.trim();
+    const startedAt = Date.now();
+    out.innerHTML += `<div style="color:var(--text3)">⏳ ${escapeHtml(label)}…</div>`;
+    try {
+      // Auth.js auto-attach Bearer-токен у всі fetch — використовуємо raw fetch
+      // щоб мати query-параметри (apiFetch їх не приймає).
+      const API = 'https://price-api.doskevich.workers.dev';
+      const qs = SYNC_NEEDS_RANGE.has(act) ? `?action=${act}&from=${defaultFrom}&to=${defaultTo}` : `?action=${act}`;
+      const res = await fetch(API + '/' + qs);
+      const r = await res.json();
+      if (!res.ok || r.error) throw new Error(r.error || ('HTTP ' + res.status));
+      const sec = ((Date.now() - startedAt) / 1000).toFixed(1);
+      const summary = formatSyncResult(r);
+      results.push({ act, label, ok: true, sec, summary });
+    } catch (e) {
+      const sec = ((Date.now() - startedAt) / 1000).toFixed(1);
+      results.push({ act, label, ok: false, sec, summary: e.message });
+    }
+  }
+
+  out.innerHTML = `
+    <table style="border-collapse:collapse;width:100%">
+      ${results.map(r => `
+        <tr>
+          <td style="padding:4px 12px 4px 0;width:1%">${r.ok ? '<span style="color:var(--ok)">✓</span>' : '<span style="color:var(--bad)">✗</span>'}</td>
+          <td style="padding:4px 16px 4px 0;color:var(--text2)">${escapeHtml(r.label)}</td>
+          <td style="padding:4px 16px 4px 0;color:var(--text3)">${r.sec}s</td>
+          <td style="padding:4px 0;color:${r.ok ? 'var(--text)' : 'var(--bad)'}">${escapeHtml(r.summary || '')}</td>
+        </tr>`).join('')}
+    </table>`;
+  toast(`Готово: ${results.filter(r=>r.ok).length}/${results.length} OK`, results.every(r=>r.ok) ? 'ok' : 'err');
+  btn.disabled = false;
+}
+
+function formatSyncResult(r) {
+  if (!r || typeof r !== 'object') return JSON.stringify(r);
+  if (r.error) return r.error;
+  // Топ корисні поля
+  const parts = [];
+  if (r.entity)   parts.push(r.entity);
+  if (r.inserted != null) parts.push(`inserted=${r.inserted}`);
+  if (r.total != null && r.total !== r.inserted) parts.push(`total=${r.total}`);
+  if (r.scanned != null) parts.push(`scanned=${r.scanned}`);
+  if (r.skipped_no_nomenclature != null && r.skipped_no_nomenclature > 0) parts.push(`skipped_nom=${r.skipped_no_nomenclature}`);
+  if (r.remaining != null) parts.push(`remaining=${r.remaining}`);
+  if (r.counts) parts.push(Object.entries(r.counts).map(([k,v]) => `${k}=${v}`).join(' · '));
+  if (r.from && r.to) parts.push(`[${String(r.from).slice(0,10)}..${String(r.to).slice(0,10)}]`);
+  return parts.length ? parts.join(' · ') : JSON.stringify(r).slice(0, 200);
 }
 
 function toast(text, kind) {
