@@ -278,109 +278,6 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
 
 .foot-note{margin-top:36px;padding:14px 0;border-top:1px solid var(--border);font-size:11px;color:var(--text3);text-align:center}
 
-/* ─── Wireframe v2 components ─── */
-/* Section divider title (level 1/2/3) */
-.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin:22px 0 10px 4px;display:flex;align-items:center;gap:10px}
-.section-title::before{content:'';width:3px;height:14px;background:var(--text2)}
-.section-title .upd{font-size:10px;color:var(--text3);font-weight:500;text-transform:none;letter-spacing:0;margin-left:auto}
-
-/* KPI owner tag (КД / ФД / CEO) — top-right corner of every KPI */
-.kpi .owner{position:absolute;top:10px;right:10px;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
-
-/* Bullet bar — fact vs target (vs LY) */
-.bullet{margin-top:6px}
-.bullet .bar-bg{background:var(--bg3);height:6px;border-radius:3px;position:relative;overflow:hidden}
-.bullet .bar-fill{height:100%;border-radius:3px;background:var(--text2);transition:width .3s}
-.bullet .bar-fill.green{background:var(--green)}
-.bullet .bar-fill.amber{background:var(--accent)}
-.bullet .bar-fill.red{background:var(--red)}
-.bullet .marker{position:absolute;top:-2px;width:2px;height:10px;background:var(--text)}
-.bullet .bullet-lbl{display:flex;justify-content:space-between;font-size:9.5px;color:var(--text3);margin-top:3px;font-family:var(--mono)}
-
-/* Health-KPI gradient — only one celebrated tile */
-.kpi.health{background:linear-gradient(135deg,#1a6b32,#22c55e);border-color:#22c55e}
-.kpi.health .kpi-lbl,.kpi.health .kpi-val,.kpi.health .kpi-foot,.kpi.health .owner{color:#fff}
-.kpi.health .kpi-lbl,.kpi.health .owner,.kpi.health .kpi-foot{color:rgba(255,255,255,0.85)}
-
-/* 3-column alerts: critical / warning / insights */
-.alerts-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-@media(max-width:1100px){.alerts-3col{grid-template-columns:1fr}}
-.alert-col{border-radius:12px;padding:14px 16px;border:1px solid var(--border);background:var(--bg2)}
-.alert-col.critical{border-color:rgba(231,76,60,.28)}
-.alert-col.warning{border-color:rgba(234,179,8,.28)}
-.alert-col.insight{border-color:rgba(59,130,246,.28)}
-.alert-col h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;gap:7px}
-.alert-col.critical h4{color:var(--red)}
-.alert-col.warning h4{color:var(--yellow)}
-.alert-col.insight h4{color:var(--blue)}
-.alert-col h4 .cnt{font-family:var(--mono);font-size:11px;color:var(--text3);font-weight:600;margin-left:auto}
-.alert-item{font-size:12.5px;padding:9px 0;border-top:1px dashed var(--border);color:var(--text)}
-.alert-item:first-of-type{border-top:none;padding-top:0}
-.alert-item .action{display:block;margin-top:4px;font-size:11px;color:var(--text3);font-style:italic}
-
-/* Block question — single line italic under block title */
-.q-line{font-size:11.5px;color:var(--text3);font-style:italic;padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid var(--border)}
-
-/* Block tag freshness */
-.block-tags{display:flex;gap:6px;align-items:center;margin-left:auto}
-.block-tag{font-size:9px;background:var(--bg3);color:var(--text3);padding:2px 7px;border-radius:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600;white-space:nowrap}
-.block-tag.fresh{background:var(--green-bg);color:var(--green)}
-.drill-link{font-size:10px;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
-.drill-link::after{content:' →';font-size:11px}
-
-/* Sub-block — second-level group inside a block (e.g. AR+AP inside working-capital) */
-.sub-block{border-top:2px dashed var(--border);margin-top:14px;padding-top:12px}
-.sub-block .sub-title{font-size:11px;font-weight:700;color:var(--text);margin-bottom:9px;text-transform:uppercase;letter-spacing:.5px}
-
-/* Mini-metrics grid (2/3/4 cols) — neutral surface, no colored borders */
-.mgrid{display:grid;gap:8px;margin-bottom:8px}
-.mgrid.c2{grid-template-columns:1fr 1fr}
-.mgrid.c3{grid-template-columns:1fr 1fr 1fr}
-.mgrid.c4{grid-template-columns:1fr 1fr 1fr 1fr}
-.mmini{background:var(--bg3);padding:9px 11px;border-radius:7px;border:1px solid var(--border)}
-.mmini .l{font-size:9.5px;text-transform:uppercase;color:var(--text3);letter-spacing:.4px;font-weight:600}
-.mmini .v{font-family:var(--mono);font-size:14px;font-weight:600;margin-top:3px;color:var(--text);font-variant-numeric:tabular-nums}
-.mmini .v.red{color:var(--red)}
-.mmini .v.green{color:var(--green)}
-.mmini .v.amber{color:var(--accent)}
-.mmini .d{font-size:10px;color:var(--text3);margin-top:2px}
-.mmini.dark{background:var(--text);color:var(--bg);border-color:var(--text)}
-.mmini.dark .l{color:rgba(0,0,0,.55)}
-.mmini.dark .v{color:var(--bg)}
-.mmini.dark .d{color:rgba(0,0,0,.55)}
-
-/* Funnel — 6-step horizontal */
-.funnel-h{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:6px}
-.funnel-h .fstep{background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 5px;text-align:center}
-.funnel-h .fstep .n{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--text)}
-.funnel-h .fstep .l{color:var(--text3);font-size:9.5px;margin-top:2px;letter-spacing:.3px}
-.funnel-h .fstep .c{color:var(--green);font-size:9.5px;font-family:var(--mono)}
-.funnel-h .fstep .t{color:var(--accent);font-size:9.5px;margin-top:2px;font-family:var(--mono);font-weight:600}
-
-/* Signal row — early churn signals */
-.signal-row{display:flex;align-items:center;gap:8px;padding:7px 9px;background:var(--bg3);border-left:3px solid var(--accent);border-radius:5px;margin-bottom:5px;font-size:11.5px}
-.signal-row .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0}
-
-/* AI recommendations dark gradient block */
-.recommend-block{background:linear-gradient(135deg,var(--surface),var(--surface2));border:1px solid var(--border2);border-radius:14px;padding:18px 20px;margin-top:14px}
-.recommend-block h3{color:var(--text);font-size:14px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:9px;text-transform:uppercase;letter-spacing:.5px}
-.recommend-block .ai-badge{background:var(--green);color:#000;font-size:9px;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:700}
-.reco-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
-@media(max-width:900px){.reco-grid{grid-template-columns:1fr}}
-.reco{background:var(--bg2);border-left:3px solid var(--green);padding:11px 13px;border-radius:5px;font-size:12.5px;color:var(--text)}
-.reco .why{font-size:10.5px;color:var(--text3);margin-top:5px;font-style:italic}
-
-/* Block-question / drill-down — small drill icon next to block title */
-.block-head-v2{display:flex;align-items:center;gap:10px;margin-bottom:5px}
-.block-head-v2 h3{font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
-.block-head-v2 h3 .ic{font-size:16px}
-
-/* Toolbar action buttons (export/email) */
-.tb-act{padding:6px 12px;background:var(--accent);border:1px solid var(--accent);border-radius:7px;color:#000;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.3px}
-.tb-act:hover{opacity:.92}
-.tb-act.ghost{background:transparent;color:var(--text);border-color:var(--border2)}
-.tb-act.ghost:hover{border-color:var(--accent);color:var(--accent)}
-
 @media(max-width:720px){
   .wrap{padding:12px}
   .hero h1{font-size:20px}
@@ -404,6 +301,12 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
       <span class="hero-pulse">Live · <span id="syncAge">щойно</span></span>
     </div>
 
+    <!-- LIVE STATUS BANNER -->
+    <div class="mock-banner" style="border-color:var(--green);color:var(--text2)">
+      <strong style="color:var(--green)">Live</strong>
+      <span>Усі блоки на даних з 1С (OData) і D1. Кешування — 10 хв per session, частина агрегатів (маржа, runway, ar aging) додатково кешується KV ~1 год. Виключення: кредитні ліміти (порожня D1 таблиця, треба завести вручну), RMA / точність комплектації (нема обліку в 1С).</span>
+    </div>
+
     <!-- TOOLBAR -->
     <div class="toolbar">
       <span class="lbl">Період</span>
@@ -423,164 +326,191 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="chip" data-org="Генерація">Генерація</span>
       </span>
       <span class="sep"></span>
-      <button class="tb-act ghost" onclick="reloadAll()">↻ Оновити</button>
-      <button class="tb-act ghost" onclick="exportPdf()">⤓ Експорт</button>
-      <button class="tb-act ghost" onclick="sendByEmail()">✉ Надіслати</button>
+      <button class="btn btn--secondary btn--sm" onclick="reloadAll()">Оновити</button>
     </div>
 
-    <!-- ─── РІВЕНЬ 1 · ПУЛЬС БІЗНЕСУ ─── -->
-    <div class="section-title">Рівень 1 · Пульс бізнесу за 30 секунд <span class="upd">оновлено: <span id="upd1">—</span></span></div>
+    <!-- HERO KPI STRIP — 7 цифр (4 з API + 3 умовні) -->
     <section class="kpi-row" id="kpiHero"></section>
 
-    <!-- ─── РІВЕНЬ 2 · ЩО РОБИТИ ПРЯМО ЗАРАЗ ─── -->
-    <div class="section-title">Рівень 2 · Що робити прямо зараз <span class="upd">оновлено: <span id="upd2">—</span></span></div>
-    <div class="alerts-3col">
-      <div class="alert-col critical">
-        <h4>Критичне<span class="cnt" id="cntCritical">—</span></h4>
-        <div id="alertsCritical"><div class="loading" style="font-size:11px;padding:14px 0">Завантаження…</div></div>
+    <!-- ═══ БЛОК 02 — ПРОДАЖІ ═══ -->
+    <section class="block">
+      <div class="block-head">
+        <span class="block-num">02</span>
+        <span class="block-title">Продажі та комерція</span>
+        <span class="block-meta" id="trendMeta"></span>
       </div>
-      <div class="alert-col warning">
-        <h4>Попередження<span class="cnt" id="cntWarning">—</span></h4>
-        <div id="alertsWarning"><div class="loading" style="font-size:11px;padding:14px 0">Завантаження…</div></div>
-      </div>
-      <div class="alert-col insight">
-        <h4>AI-інсайти<span class="cnt" id="cntInsight">—</span></h4>
-        <div id="alertsInsight"><div class="loading" style="font-size:11px;padding:14px 0">Завантаження…</div></div>
-      </div>
-    </div>
-    <!-- legacy id для loadDecisions() — приховуємо -->
-    <div id="alertsBox" style="display:none"></div>
 
-    <!-- ─── РІВЕНЬ 3 · ДІАГНОСТИКА ─── -->
-    <div class="section-title">Рівень 3 · Діагностика по напрямках</div>
-
-    <!-- Pair 1: Sales + Margin -->
-    <div class="g-1-1" style="margin-top:8px">
-
-      <!-- БЛОК 02 — ПРОДАЖІ -->
-      <section class="block">
-        <div class="block-head-v2">
-          <h3><span class="ic">📊</span>Продажі та воронка</h3>
-          <span class="block-tags">
-            <span class="block-tag fresh">щодня</span>
-            <a class="drill-link" href="/sales.html">drill-down</a>
-          </span>
-        </div>
-        <div class="q-line">Звідки прийшов виторг і де ми його втрачаємо?</div>
-
-        <div class="mgrid c4">
-          <div class="mmini"><div class="l">Виторг (оплачено)</div><div class="v" id="b2KpiOrders">—</div><div class="d" id="b2KpiOrdersSub">за період</div></div>
-          <div class="mmini"><div class="l">Сер. чек</div><div class="v" id="b2KpiAov">—</div><div class="d" id="b2KpiAovSub">по замовленнях</div></div>
-          <div class="mmini"><div class="l">Backlog</div><div class="v" id="b2KpiBacklog">—</div><div class="d" id="b2KpiBacklogSub">— замовлень</div></div>
-          <div class="mmini"><div class="l">Менеджерів</div><div class="v" id="b2KpiManagers">—</div><div class="d" id="b2KpiManagersSub">з продажами</div></div>
-        </div>
-
-        <div class="card" style="background:var(--bg3);padding:10px 12px;margin-top:8px">
+      <div class="g-2-1">
+        <div class="card">
           <div class="card-head">
-            <div><h3 style="font-size:11px">Виручка vs OPEX vs Чистий</h3><div class="card-sub" id="trendSub">—</div></div>
+            <div>
+              <h3>Виручка vs OPEX vs Чистий</h3>
+              <div class="card-sub" id="trendSub">—</div>
+            </div>
             <div style="display:flex;gap:8px;align-items:center">
               <div class="range-switch" id="trendRange">
                 <button data-r="month" class="on">М</button>
                 <button data-r="quarter">Кв</button>
                 <button data-r="year">Рік</button>
               </div>
-              <span class="card-meta" id="trendMeta">—</span>
+              <a class="pill accent" href="/finance.html">Усі →</a>
             </div>
           </div>
-          <div class="chart-wrap" style="height:170px">
+          <div class="chart-wrap">
             <canvas id="trendChart"></canvas>
           </div>
-        </div>
-
-        <div style="font-size:10.5px;color:var(--text3);margin:10px 0 5px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Воронка продажів</div>
-        <div id="b2Funnel" class="funnel"><div class="loading">Завантаження…</div></div>
-        <div id="b2FunnelFoot" style="display:flex;gap:14px;margin-top:8px;font-size:11px;color:var(--text3)"></div>
-        <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10.5px;color:var(--text3)">
-          <span>Конверсія: <strong id="b2FunnelMeta" style="color:var(--text);font-family:var(--mono)">—</strong></span>
-        </div>
-
-        <div class="sub-block">
-          <div class="sub-title">Розрізи · клієнти · менеджери</div>
-          <div class="g-1-1" style="gap:10px">
-            <div>
-              <div style="font-size:10px;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px">Топ-10 клієнтів <span style="color:var(--text3)">·</span> <span class="card-meta" id="b2CategoryMeta">—</span></div>
-              <div id="b2TopCustomers"><div class="loading">Завантаження…</div></div>
-            </div>
-            <div>
-              <div style="font-size:10px;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px">Топ менеджерів</div>
-              <div id="b2TopManagers"><div class="loading">Завантаження…</div></div>
-            </div>
+          <div style="display:flex;gap:18px;font-size:11px;color:var(--text2)">
+            <span><i style="display:inline-block;width:10px;height:2px;background:var(--accent);vertical-align:3px;margin-right:5px"></i>Виручка</span>
+            <span><i style="display:inline-block;width:10px;height:2px;background:var(--text3);vertical-align:3px;margin-right:5px"></i>Витрати</span>
+            <span><i style="display:inline-block;width:10px;height:2px;background:var(--green);vertical-align:3px;margin-right:5px"></i>Чистий</span>
           </div>
         </div>
 
-        <div class="sub-block">
-          <div class="sub-title">Виторг по категоріях</div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3>Структура періоду</h3>
+              <div class="card-sub">Куди йдуть гроші</div>
+            </div>
+            <a class="pill accent" href="/finance.html">Усі →</a>
+          </div>
+          <div class="ministats">
+            <div class="mstat">
+              <div class="mlbl">Валовий</div>
+              <div class="mval" id="miniGp">—</div>
+              <div class="msub" id="miniGpSub">—</div>
+            </div>
+            <div class="mstat">
+              <div class="mlbl">EBITDA маржа</div>
+              <div class="mval" id="miniMargin">—</div>
+              <div class="msub" id="miniMarginSub">—</div>
+            </div>
+            <div class="mstat">
+              <div class="mlbl">Запаси</div>
+              <div class="mval" id="miniStock">—</div>
+              <div class="msub" id="miniStockSub">—</div>
+            </div>
+            <div class="mstat">
+              <div class="mlbl">Грошовий цикл</div>
+              <div class="mval" id="miniCycle">—</div>
+              <div class="msub" id="miniCycleSub">DSO − DPO</div>
+            </div>
+          </div>
+          <div style="margin-top:8px">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:8px">Розклад витрат</div>
+            <div style="display:flex;gap:2px;height:28px;border-radius:6px;overflow:hidden;margin:0 0 6px" id="expensesSplit"><div style="flex:1;background:var(--bg3);color:var(--text3)">—</div></div>
+            <div id="expensesLegend" style="display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--text2)"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LIVE — воронка + категорії -->
+      <div class="g-2" style="margin-top:14px">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3>Воронка продажів</h3>
+              <div class="card-sub">Замовлення → Відвантаження → Оплата · period</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="card-meta" id="b2FunnelMeta">—</span>
+              <a class="pill accent" href="/osp.html">Усі →</a>
+            </div>
+          </div>
+          <div class="funnel" id="b2Funnel"><div class="loading">Завантаження…</div></div>
+          <div id="b2FunnelFoot" style="display:flex;gap:14px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3>Виторг по категоріях</h3>
+              <div class="card-sub">Розклад відвантажень за період</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="card-meta" id="b2CategoryMeta">—</span>
+              <a class="pill accent" href="/sales.html">Усі →</a>
+            </div>
+          </div>
           <div id="b2Category"><div class="loading">Завантаження…</div></div>
         </div>
+      </div>
 
-        <div class="mgrid c2" style="margin-top:10px">
-          <div class="mmini"><div class="l">Нові клієнти</div><div class="v" id="b2KpiNew">—</div><div class="d" id="b2KpiNewSub">за період</div></div>
-          <div class="mmini"><div class="l">Повторні</div><div class="v" id="b2KpiRepeat">—</div><div class="d" id="b2KpiRepeatSub">з активних</div></div>
+      <!-- LIVE: топ-10 клієнтів + менеджери -->
+      <div class="g-2" style="margin-top:14px">
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Топ-10 клієнтів</h3><div class="card-sub">За виторгом за період</div></div>
+            <a class="pill accent" href="/counterparties.html">Усі →</a>
+          </div>
+          <div id="b2TopCustomers"><div class="loading">Завантаження…</div></div>
         </div>
-      </section>
-
-      <!-- БЛОК 03 — МАРЖИНАЛЬНІСТЬ -->
-      <section class="block">
-        <div class="block-head-v2">
-          <h3><span class="ic">💰</span>Маржинальність</h3>
-          <span class="block-tags">
-            <span class="block-tag">щотижня</span>
-            <a class="drill-link" href="/finance.html?tab=gp">drill-down</a>
-          </span>
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Топ менеджерів</h3><div class="card-sub">Виторг + клієнти</div></div>
+            <a class="pill accent" href="/sales.html">Усі →</a>
+          </div>
+          <div id="b2TopManagers"><div class="loading">Завантаження…</div></div>
         </div>
-        <div class="q-line">Де реально заробляємо і де економіка тече?</div>
+      </div>
 
-        <div class="mgrid c2">
-          <div class="mmini"><div class="l">Маржа періоду</div><div class="v" id="b3MarginVal">—</div><div class="d" id="b3MarginSub">—</div></div>
-          <div class="mmini"><div class="l">Валовий прибуток</div><div class="v" id="b3ProfitVal">—</div><div class="d" id="b3ProfitSub">cogs</div></div>
-        </div>
+      <div class="g-4" style="margin-top:14px" id="b2Kpis">
+        <div class="mstat"><div class="mlbl">Backlog</div><div class="mval" id="b2KpiBacklog">—</div><div class="msub" id="b2KpiBacklogSub">—</div></div>
+        <div class="mstat"><div class="mlbl">Сер. замовлення</div><div class="mval" id="b2KpiAov">—</div><div class="msub" id="b2KpiAovSub">за період</div></div>
+        <div class="mstat"><div class="mlbl">Нові клієнти</div><div class="mval" id="b2KpiNew">—</div><div class="msub" id="b2KpiNewSub">перша покупка</div></div>
+        <div class="mstat"><div class="mlbl">Повторні</div><div class="mval" id="b2KpiRepeat">—</div><div class="msub" id="b2KpiRepeatSub">—</div></div>
+        <div class="mstat"><div class="mlbl">Менеджерів</div><div class="mval" id="b2KpiManagers">—</div><div class="msub" id="b2KpiManagersSub">з продажами</div></div>
+        <div class="mstat"><div class="mlbl">Замовлень</div><div class="mval" id="b2KpiOrders">—</div><div class="msub" id="b2KpiOrdersSub">за період</div></div>
+      </div>
+    </section>
 
-        <div class="sub-block">
-          <div class="sub-title">По категоріях</div>
+    <!-- ═══ БЛОК 03 — МАРЖИНАЛЬНІСТЬ (live) ═══ -->
+    <section class="block">
+      <div class="block-head">
+        <span class="block-num">03</span>
+        <span class="block-title">Маржинальність</span>
+        <span class="block-meta" id="b3Meta">з 1С Регістр продажів · ціль ≥ 12%</span>
+      </div>
+
+      <div class="g-1-1-1">
+        <div class="card">
+          <div class="card-head"><div><h3>Маржа по категоріях</h3><div class="card-sub">Де реально заробляєте</div></div><a class="pill accent" href="/finance.html?tab=gp">Усі →</a></div>
           <div id="b3ByCategory"><div class="loading">Завантаження…</div></div>
         </div>
 
-        <div class="sub-block">
-          <div class="sub-title">По менеджерах</div>
+        <div class="card">
+          <div class="card-head"><div><h3>Маржа по менеджерах</h3><div class="card-sub">Хто продає з дисципліною</div></div><a class="pill accent" href="/finance.html?tab=gp">Усі →</a></div>
           <div id="b3ByManager"><div class="loading">Завантаження…</div></div>
         </div>
 
-        <div class="sub-block">
-          <div class="sub-title">SKU нижче порогу 8%</div>
-          <div id="b3LowMargin"><div class="loading">Завантаження…</div></div>
+        <div class="card">
+          <div class="card-head"><div><h3>SKU нижче порогу</h3><div class="card-sub">Маржа &lt; 8% при значимому виторгу</div></div><a class="pill accent" href="/finance.html?tab=gp">Усі →</a></div>
+          <div class="ministats">
+            <div class="mstat"><div class="mlbl">Маржа періоду</div><div class="mval" id="b3MarginVal">—</div><div class="msub" id="b3MarginSub">—</div></div>
+            <div class="mstat"><div class="mlbl">Прибуток</div><div class="mval" id="b3ProfitVal">—</div><div class="msub" id="b3ProfitSub">валовий</div></div>
+          </div>
+          <div id="b3LowMargin" style="margin-top:6px"><div class="loading">Завантаження…</div></div>
         </div>
-      </section>
+      </div>
+    </section>
 
-    </div>
+    <!-- ═══ БЛОК 04 — ОБОРОТНИЙ КАПІТАЛ + ДЗ ═══ -->
+    <section class="block">
+      <div class="block-head">
+        <span class="block-num">04</span>
+        <span class="block-title">Оборотний капітал · дебіторка</span>
+        <span class="block-meta" id="b4Meta">з 1С Регістр розрахунків з покупцями</span>
+      </div>
 
-    <!-- Pair 2: Working capital + Inventory -->
-    <div class="g-1-1" style="margin-top:14px">
-
-      <!-- БЛОК 04 — ОБОРОТНИЙ КАПІТАЛ ДЗ⇄КЗ⇄CCC -->
-      <section class="block">
-        <div class="block-head-v2">
-          <h3><span class="ic">💳</span>Оборотний капітал · ДЗ ⇄ КЗ ⇄ CCC</h3>
-          <span class="block-tags">
-            <span class="block-tag fresh">щодня</span>
-            <a class="drill-link" href="/ar_aging.html">drill-down</a>
-          </span>
-        </div>
-        <div class="q-line">Скільки нам винні, скільки винні ми, і за скільки днів цикл?</div>
-
-        <div class="mgrid c4">
-          <div class="mmini"><div class="l">DIO</div><div class="v" id="miniStock">—</div><div class="d" id="miniStockSub">запаси</div></div>
-          <div class="mmini"><div class="l">DSO</div><div class="v" id="b4Dso">—</div><div class="d" id="b4DsoSub">ДЗ</div></div>
-          <div class="mmini"><div class="l">DPO</div><div class="v" id="b4Dpo">—</div><div class="d" id="b4DpoSub">КЗ</div></div>
-          <div class="mmini dark"><div class="l">CCC</div><div class="v" id="b4Ccc">—</div><div class="d" id="miniCycle">DIO+DSO−DPO</div></div>
-        </div>
-
-        <div class="sub-block">
-          <div class="sub-title">Дебіторська (нам винні) · <span class="card-meta" id="b4AgingSub" style="font-weight:500;text-transform:none;letter-spacing:0;font-size:10.5px">live</span></div>
+      <div class="g-2-1">
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Старіння дебіторки</h3><div class="card-sub" id="b4AgingSub">live з OData</div></div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="card-meta" id="b4AgingMeta">—</span>
+              <a class="pill accent" href="/ar_aging.html">Усі →</a>
+            </div>
+          </div>
           <div class="aging-stack" id="b4AgingStack"><div style="flex:1;background:var(--bg3);color:var(--text3);display:flex;align-items:center;justify-content:center">Завантаження…</div></div>
           <div class="aging-legend">
             <span><i class="sw" style="background:#22c55e"></i>До 7д</span>
@@ -589,256 +519,265 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
             <span><i class="sw" style="background:#ff8319"></i>31–60д</span>
             <span><i class="sw" style="background:#e74c3c"></i>61+д</span>
           </div>
-          <div style="font-size:10.5px;color:var(--text3);margin-top:6px;display:flex;justify-content:space-between"><span id="b4AgingMeta">—</span></div>
-          <div style="font-size:10px;color:var(--text3);margin:8px 0 4px;text-transform:uppercase;letter-spacing:.4px;font-weight:700">Топ боржники &gt; 30 днів</div>
+
+          <div class="g-1-1-1" style="margin-top:8px">
+            <div class="mstat">
+              <div class="mlbl">DSO</div>
+              <div class="mval" id="b4Dso">—</div>
+              <div class="msub" id="b4DsoSub">днів</div>
+            </div>
+            <div class="mstat">
+              <div class="mlbl">DPO</div>
+              <div class="mval" id="b4Dpo">—</div>
+              <div class="msub" id="b4DpoSub">постачальники</div>
+            </div>
+            <div class="mstat">
+              <div class="mlbl">CCC</div>
+              <div class="mval" id="b4Ccc">—</div>
+              <div class="msub">DSO − DPO</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Топ боржники</h3><div class="card-sub">Прострочка &gt; 30 днів · live</div></div>
+            <a class="pill accent" href="/counterparties.html">Усі →</a>
+          </div>
           <div id="b4TopOverdue"><div class="loading">Завантаження…</div></div>
         </div>
+      </div>
 
-        <div class="sub-block">
-          <div class="sub-title">Кредитні ліміти · <span id="b4LimitsMeta" style="font-weight:500;text-transform:none;letter-spacing:0;font-size:10.5px;color:var(--text3)">—</span></div>
-          <div id="b4Limits"><div class="loading">Завантаження…</div></div>
+      <div class="card" style="margin-top:14px">
+        <div class="card-head">
+          <div><h3>Кредитні ліміти</h3><div class="card-sub" id="b4LimitsSub">Утилізація встановленого ліміту</div></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="card-meta" id="b4LimitsMeta">—</span>
+            <a class="pill accent" href="/executive-details.html#credit-limits">Усі →</a>
+          </div>
         </div>
-      </section>
+        <div id="b4Limits"><div class="loading">Завантаження…</div></div>
+      </div>
+    </section>
 
-      <!-- БЛОК 05 — СКЛАД -->
-      <section class="block">
-        <div class="block-head-v2">
-          <h3><span class="ic">📦</span>Склад та запаси</h3>
-          <span class="block-tags">
-            <span class="block-tag fresh">щодня</span>
-            <a class="drill-link" href="/warehouses.html">drill-down</a>
-          </span>
+    <!-- ═══ БЛОК 05 — СКЛАД ═══ -->
+    <section class="block">
+      <div class="block-head">
+        <span class="block-num">05</span>
+        <span class="block-title">Склад · запаси</span>
+        <span class="block-meta" id="b5Meta">live з stock_balances + sales/purchase items</span>
+      </div>
+
+      <div class="g-1-1-1">
+        <div class="card">
+          <div class="card-head"><div><h3>Вартість запасів</h3><div class="card-sub" id="b5StockSub">Всі склади · live з 1С</div></div><a class="pill accent" href="/warehouses.html">Усі →</a></div>
+          <div class="ministats">
+            <div class="mstat">
+              <div class="mlbl">USD на руках</div>
+              <div class="mval" id="b5StockUsd">—</div>
+              <div class="msub" id="b5StockUsdSub">—</div>
+            </div>
+            <div class="mstat">
+              <div class="mlbl">UAH</div>
+              <div class="mval" id="b5StockUah">—</div>
+              <div class="msub">за поточним курсом</div>
+            </div>
+            <div class="mstat">
+              <div class="mlbl">У дорозі</div>
+              <div class="mval" id="b5Transit">—</div>
+              <div class="msub">склади «В дорозі»</div>
+            </div>
+            <div class="mstat">
+              <div class="mlbl">Унікальних SKU</div>
+              <div class="mval" id="b5SkuTotal">—</div>
+              <div class="msub" id="b5SkuTotalSub">—</div>
+            </div>
+          </div>
         </div>
-        <div class="q-line">Чи є те, що продається, і де заморожені гроші?</div>
 
-        <div class="mgrid c4">
-          <div class="mmini"><div class="l">USD на руках</div><div class="v" id="b5StockUsd">—</div><div class="d" id="b5StockUsdSub">—</div></div>
-          <div class="mmini"><div class="l">UAH</div><div class="v" id="b5StockUah">—</div><div class="d">за курсом</div></div>
-          <div class="mmini"><div class="l">У дорозі</div><div class="v" id="b5Transit">—</div><div class="d">in-transit</div></div>
-          <div class="mmini"><div class="l">SKU</div><div class="v" id="b5SkuTotal">—</div><div class="d" id="b5SkuTotalSub">—</div></div>
-        </div>
-        <div style="font-size:10.5px;color:var(--text3);margin:8px 0 4px" id="b5StockSub">—</div>
-
-        <div class="sub-block">
-          <div class="sub-title">Оборотність по категоріях (DOH · 30д)</div>
+        <div class="card">
+          <div class="card-head"><div><h3>Оборотність по групах</h3><div class="card-sub">Days of inventory · 30д продажів</div></div><a class="pill accent" href="/warehouses.html">Усі →</a></div>
           <div id="b5ByCategory"><div class="loading">Завантаження…</div></div>
-          <div id="b5Abc" style="font-size:11px;color:var(--text3);padding-top:8px;border-top:1px solid var(--border);margin-top:8px"></div>
+          <div id="b5Abc" style="font-size:11px;color:var(--text3);padding-top:8px;border-top:1px solid var(--border)"></div>
         </div>
 
-        <div class="sub-block">
-          <div class="sub-title">Stockouts (група A · &lt;14 днів)</div>
+        <div class="card">
+          <div class="card-head"><div><h3>Алерти запасів</h3><div class="card-sub">Stockouts vs dead stock</div></div><a class="pill accent" href="/executive-details.html#stock-alerts">Усі →</a></div>
+          <div style="font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:4px">Stockouts (група A · &lt;14 днів)</div>
           <div id="b5Stockouts"><div class="loading">Завантаження…</div></div>
-        </div>
-
-        <div class="sub-block">
-          <div class="sub-title">Dead stock (0 продажів 180д)</div>
+          <div style="font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-top:10px;margin-bottom:4px">Dead stock (0 продажів 180д)</div>
           <div id="b5DeadStock"><div class="loading">Завантаження…</div></div>
         </div>
+      </div>
+    </section>
 
-        <!-- Hidden ministats — used by old loadKpis (block 02-side panel from v1) -->
-        <span id="miniGp" style="display:none">—</span>
-        <span id="miniGpSub" style="display:none"></span>
-        <span id="miniMargin" style="display:none">—</span>
-        <span id="miniMarginSub" style="display:none"></span>
-        <span id="expensesSplit" style="display:none"></span>
-        <span id="expensesLegend" style="display:none"></span>
-      </section>
+    <!-- ═══ БЛОК 06 — ПОСТАЧАЛЬНИКИ ═══ -->
+    <section class="block">
+      <div class="block-head">
+        <span class="block-num">06</span>
+        <span class="block-title">Постачальники · закупівля</span>
+        <span class="block-meta" id="b6Meta">з purchase_receipts · live</span>
+      </div>
 
-    </div>
-
-    <!-- Pair 3: Suppliers + FX -->
-    <div class="g-1-1" style="margin-top:14px">
-
-      <!-- БЛОК 06 — ПОСТАЧАЛЬНИКИ -->
-      <section class="block">
-        <div class="block-head-v2">
-          <h3><span class="ic">🏭</span>Постачальники та закупівля</h3>
-          <span class="block-tags">
-            <span class="block-tag">щотижня</span>
-            <a class="drill-link" href="/counterparties.html#role=suppliers">drill-down</a>
-          </span>
-        </div>
-        <div class="q-line">Чи будемо мати товар вчасно, за якою ціною, в якій якості?</div>
-
-        <div class="sub-block" style="border-top:none;margin-top:0;padding-top:0">
-          <div class="sub-title">Концентрація · <span id="b6ConcSub" style="font-weight:500;text-transform:none;letter-spacing:0;font-size:10.5px;color:var(--text3)">—</span> · <span class="card-meta" id="b6ConcMeta">—</span></div>
+      <div class="g-1-1">
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Концентрація закупівель</h3><div class="card-sub" id="b6ConcSub">за період</div></div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="card-meta" id="b6ConcMeta">—</span>
+              <a class="pill accent" href="/counterparties.html#role=suppliers">Усі →</a>
+            </div>
+          </div>
           <div id="b6Concentration"><div class="loading">Завантаження…</div></div>
         </div>
 
-        <div class="sub-block">
-          <div class="sub-title">Топ-постачальники · наш борг</div>
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Топ-постачальники · наш борг</h3><div class="card-sub">live з 1С</div></div>
+            <a class="pill accent" href="/counterparties.html">Усі →</a>
+          </div>
           <div id="suppliersBody"><div class="loading">Завантаження…</div></div>
         </div>
+      </div>
 
-        <div class="sub-block">
-          <div class="sub-title">Тренд закупівельних цін · топ-5 SKU</div>
-          <div id="b6PriceTrends"><div class="loading">Завантаження…</div></div>
+      <div class="card" style="margin-top:14px">
+        <div class="card-head">
+          <div><h3>Тренд закупівельних цін · топ-5 SKU</h3><div class="card-sub">Сер. ціна по періодах для топ-обсягу SKU</div></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="card-meta">6 місяців</span>
+            <a class="pill accent" href="/executive-details.html#price-trends">Усі →</a>
+          </div>
         </div>
-      </section>
+        <div id="b6PriceTrends"><div class="loading">Завантаження…</div></div>
+      </div>
+    </section>
 
-      <!-- БЛОК 07 — ВАЛЮТА -->
-      <section class="block">
-        <div class="block-head-v2">
-          <h3><span class="ic">💱</span>Валюта та макрофактори</h3>
-          <span class="block-tags">
-            <span class="block-tag fresh">в реал. часі</span>
-            <a class="drill-link" href="/prices-1c.html">drill-down</a>
-          </span>
-        </div>
-        <div class="q-line">Скільки ми втрачаємо/заробляємо на курсі?</div>
+    <!-- ═══ БЛОК 07 — ВАЛЮТА ═══ -->
+    <section class="block">
+      <div class="block-head">
+        <span class="block-num">07</span>
+        <span class="block-title">Валюта · макрофактори</span>
+        <span class="block-meta" id="b7Meta">з fx_rates + cash + warehouse + AR/AP</span>
+      </div>
 
-        <div class="sub-block" style="border-top:none;margin-top:0;padding-top:0">
-          <div class="sub-title">Курси · <span id="b7RatesSub" style="font-weight:500;text-transform:none;letter-spacing:0;font-size:10.5px;color:var(--text3)">—</span></div>
+      <div class="g-1-1-1">
+        <div class="card">
+          <div class="card-head"><div><h3>Курси</h3><div class="card-sub" id="b7RatesSub">—</div></div><a class="pill accent" href="/prices-1c.html">Усі →</a></div>
           <div id="b7Rates"><div class="loading">Завантаження…</div></div>
         </div>
 
-        <div class="sub-block">
-          <div class="sub-title">Валютна позиція USD</div>
+        <div class="card">
+          <div class="card-head"><div><h3>Валютна позиція</h3><div class="card-sub">USD · довга / коротка</div></div><a class="pill accent" href="/finance.html?tab=cb">Усі →</a></div>
           <div id="b7Position"><div class="loading">Завантаження…</div></div>
         </div>
 
-        <div class="sub-block">
-          <div class="sub-title">Чутливість позиції</div>
+        <div class="card">
+          <div class="card-head"><div><h3>Чутливість позиції</h3><div class="card-sub">Δ USD/UAH → чиста позиція в UAH</div></div><a class="pill accent" href="/executive-details.html#fx-position">Усі →</a></div>
           <div id="b7Sensitivity"><div class="loading">Завантаження…</div></div>
         </div>
-      </section>
+      </div>
+    </section>
 
-    </div>
+    <!-- ═══ БЛОК 08 — КЛІЄНТИ-ІНСТАЛЯТОРИ ═══ -->
+    <section class="block">
+      <div class="block-head">
+        <span class="block-num">08</span>
+        <span class="block-title">Клієнти-інсталятори</span>
+        <span class="block-meta" id="b8Meta">live з sales_receipts · 30/90/180д</span>
+        <a class="pill accent" href="/counterparties.html#role=customers" style="margin-left:auto">Усі →</a>
+      </div>
 
-    <!-- Pair 4: Customers/CRM + Operations -->
-    <div class="g-1-1" style="margin-top:14px">
+      <div class="g-4" id="b8Kpis">
+        <a class="mstat" href="/counterparties.html#role=customers" style="text-decoration:none;color:inherit"><div class="mlbl">Активна база</div><div class="mval" id="b8Active90">—</div><div class="msub">купували за 90д</div></a>
+        <a class="mstat" href="/counterparties.html#role=customers" style="text-decoration:none;color:inherit"><div class="mlbl">Реактивна (180д)</div><div class="mval" id="b8Active180">—</div><div class="msub">купували за 180д</div></a>
+        <a class="mstat" href="/sales.html" style="text-decoration:none;color:inherit"><div class="mlbl">Нові клієнти</div><div class="mval" id="b8New30">—</div><div class="msub" id="b8NewSub">за 30 днів</div></a>
+        <a class="mstat" href="/counterparties.html#role=customers" style="text-decoration:none;color:inherit"><div class="mlbl">Churn 60+ днів</div><div class="mval neg" id="b8Churn">—</div><div class="msub">були активні</div></a>
+        <a class="mstat" href="/sales.html" style="text-decoration:none;color:inherit"><div class="mlbl">LTV середній</div><div class="mval" id="b8Ltv">—</div><div class="msub" id="b8LtvSub">за всю історію</div></a>
+        <a class="mstat" href="/counterparties.html#role=customers" style="text-decoration:none;color:inherit"><div class="mlbl">A · стратегічні</div><div class="mval" id="b8AbcA">—</div><div class="msub" id="b8AbcASub">— обороту</div></a>
+        <a class="mstat" href="/counterparties.html#role=customers" style="text-decoration:none;color:inherit"><div class="mlbl">B · стабільні</div><div class="mval" id="b8AbcB">—</div><div class="msub" id="b8AbcBSub">— обороту</div></a>
+        <a class="mstat" href="/counterparties.html#role=customers" style="text-decoration:none;color:inherit"><div class="mlbl">C · епізодичні</div><div class="mval" id="b8AbcC">—</div><div class="msub" id="b8AbcCSub">— обороту</div></a>
+      </div>
 
-      <!-- БЛОК 08 — КЛІЄНТИ-ІНСТАЛЯТОРИ -->
-      <section class="block">
-        <div class="block-head-v2">
-          <h3><span class="ic">👥</span>Клієнти-інсталятори (CRM)</h3>
-          <span class="block-tags">
-            <span class="block-tag">щотижня</span>
-            <a class="drill-link" href="/counterparties.html#role=customers">drill-down</a>
-          </span>
+      <div class="card" style="margin-top:14px">
+        <div class="card-head"><div><h3>Поведінкові сигнали відтоку</h3><div class="card-sub">≥3 покупок за 180д, але немає &gt; 45 днів</div></div><div style="display:flex;gap:8px;align-items:center"><span class="card-meta" id="b8SignalsMeta">—</span><a class="pill accent" href="/counterparties.html#role=customers">Усі →</a></div></div>
+        <div id="b8Signals"><div class="loading">Завантаження…</div></div>
+      </div>
+    </section>
+
+    <!-- ═══ БЛОК 09 — ОПЕРАЦІЙНА ═══ -->
+    <section class="block">
+      <div class="block-head">
+        <span class="block-num">09</span>
+        <span class="block-title">Операційна ефективність</span>
+        <span class="block-meta" id="b9Meta">час order→shipment з sales_orders + sales_receipts</span>
+        <a class="pill accent" href="/osp.html" style="margin-left:auto">Усі →</a>
+      </div>
+
+      <div class="g-4">
+        <a class="mstat" href="/osp.html" style="text-decoration:none;color:inherit"><div class="mlbl">Замовлення → відвантаження</div><div class="mval" id="b9TtsAvg">—</div><div class="msub" id="b9TtsAvgSub">—</div></a>
+        <a class="mstat" href="/osp.html" style="text-decoration:none;color:inherit"><div class="mlbl">SLA ≤ 2 днів</div><div class="mval" id="b9Sla2d">—</div><div class="msub" id="b9Sla2dSub">—</div></a>
+        <a class="mstat" href="/osp.html" style="text-decoration:none;color:inherit"><div class="mlbl">SLA ≤ 5 днів</div><div class="mval" id="b9Sla5d">—</div><div class="msub" id="b9Sla5dSub">—</div></a>
+        <a class="mstat" href="/sales.html" style="text-decoration:none;color:inherit"><div class="mlbl">Відвантажень</div><div class="mval" id="b9Shipments">—</div><div class="msub" id="b9ShipmentsSub">—</div></a>
+        <a class="mstat" href="/osp.html" style="text-decoration:none;color:inherit"><div class="mlbl">Замовлень</div><div class="mval" id="b9Orders">—</div><div class="msub">за період</div></a>
+        <div class="mstat"><div class="mlbl">RMA / точність<span class="mock-tag">N/A</span></div><div class="mval" style="color:var(--text3);font-style:italic;font-size:14px">нема в 1С</div><div class="msub">потрібен окремий облік</div></div>
+      </div>
+    </section>
+
+    <!-- ═══ БЛОК 10 — ПРОГНОЗИ + RUNWAY (live) ═══ -->
+    <section class="block">
+      <div class="block-head">
+        <span class="block-num">10</span>
+        <span class="block-title">Прогнози · cash flow</span>
+        <span class="block-meta">runway з реального AR/AP · продажі з історії 3 роки</span>
+      </div>
+
+      <div class="g-2-1">
+        <div class="card">
+          <div class="card-head">
+            <div><h3>90 днів · надходження vs зобов'язання</h3><div class="card-sub" id="runwaySub">Прогноз на основі середніх оборотів + AP</div></div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="pill accent" id="runwayPill">—</span>
+              <a class="pill accent" href="/finance.html?tab=cf">Усі →</a>
+            </div>
+          </div>
+          <div class="runway" id="runwayStrip"></div>
+          <div class="runway-axis"><span>сьогодні</span><span>+30</span><span>+60</span><span>+90</span></div>
+          <div class="runway-foot">
+            <span>Чистий через 90 днів — <strong id="runwayNet">—</strong></span>
+            <span id="runwayHealth">—</span>
+          </div>
         </div>
-        <div class="q-line">Хто з нами, хто йде, кого треба повертати?</div>
 
-        <div class="mgrid c4">
-          <div class="mmini"><div class="l">Активна (90д)</div><div class="v" id="b8Active90">—</div><div class="d">купували за 90д</div></div>
-          <div class="mmini"><div class="l">Реактивна (180д)</div><div class="v" id="b8Active180">—</div><div class="d">купували за 180д</div></div>
-          <div class="mmini"><div class="l">Нові 30д</div><div class="v green" id="b8New30">—</div><div class="d" id="b8NewSub">за 30 днів</div></div>
-          <div class="mmini"><div class="l">Churn 60+</div><div class="v red" id="b8Churn">—</div><div class="d">були активні</div></div>
-        </div>
-
-        <div class="mgrid c4" style="margin-top:8px">
-          <div class="mmini"><div class="l">LTV середній</div><div class="v" id="b8Ltv">—</div><div class="d" id="b8LtvSub">за всю історію</div></div>
-          <div class="mmini"><div class="l">A · стратегічні</div><div class="v" id="b8AbcA">—</div><div class="d" id="b8AbcASub">— обороту</div></div>
-          <div class="mmini"><div class="l">B · стабільні</div><div class="v" id="b8AbcB">—</div><div class="d" id="b8AbcBSub">— обороту</div></div>
-          <div class="mmini"><div class="l">C · епізодичні</div><div class="v" id="b8AbcC">—</div><div class="d" id="b8AbcCSub">— обороту</div></div>
-        </div>
-
-        <div class="sub-block">
-          <div class="sub-title">Ранні сигнали відтоку · <span id="b8SignalsMeta" style="font-weight:500;text-transform:none;letter-spacing:0;font-size:10.5px;color:var(--text3)">—</span></div>
-          <div style="font-size:10.5px;color:var(--text3);font-style:italic;margin-bottom:6px">≥3 покупок за 180д, але немає &gt; 45 днів — час дзвонити</div>
-          <div id="b8Signals"><div class="loading">Завантаження…</div></div>
-        </div>
-      </section>
-
-      <!-- БЛОК 09 — ОПЕРАЦІЙНА ЕФЕКТИВНІСТЬ -->
-      <section class="block">
-        <div class="block-head-v2">
-          <h3><span class="ic">⚙️</span>Операційна ефективність</h3>
-          <span class="block-tags">
-            <span class="block-tag fresh">щодня</span>
-            <a class="drill-link" href="/osp.html">drill-down</a>
-          </span>
-        </div>
-        <div class="q-line">Як швидко і якісно ми виконуємо замовлення?</div>
-
-        <div class="mgrid c3">
-          <div class="mmini"><div class="l">Order → ship</div><div class="v" id="b9TtsAvg">—</div><div class="d" id="b9TtsAvgSub">—</div></div>
-          <div class="mmini"><div class="l">SLA ≤ 2 днів</div><div class="v" id="b9Sla2d">—</div><div class="d" id="b9Sla2dSub">—</div></div>
-          <div class="mmini"><div class="l">SLA ≤ 5 днів</div><div class="v" id="b9Sla5d">—</div><div class="d" id="b9Sla5dSub">—</div></div>
-        </div>
-
-        <div class="mgrid c2" style="margin-top:8px">
-          <div class="mmini"><div class="l">Відвантажень</div><div class="v" id="b9Shipments">—</div><div class="d" id="b9ShipmentsSub">із order_ref_key</div></div>
-          <div class="mmini"><div class="l">Замовлень</div><div class="v" id="b9Orders">—</div><div class="d">за період</div></div>
-        </div>
-
-        <div class="mgrid c2" style="margin-top:8px">
-          <div class="mmini" style="opacity:.55"><div class="l">Returns / RMA</div><div class="v" style="font-size:13px;font-style:italic;color:var(--text3);font-family:inherit">нема в 1С</div><div class="d">потрібен окремий облік</div></div>
-          <div class="mmini" style="opacity:.55"><div class="l">Pick accuracy</div><div class="v" style="font-size:13px;font-style:italic;color:var(--text3);font-family:inherit">нема в 1С</div><div class="d">точність комплектації</div></div>
-        </div>
-      </section>
-
-    </div>
-
-    <!-- ─── ПРОГНОЗИ ─── -->
-    <div class="section-title">Рівень 4 · Прогнози</div>
-    <div class="g-1-1-1" style="margin-top:8px">
-
-      <!-- Прогноз продажів -->
-      <section class="block">
-        <div class="block-head-v2">
-          <h3><span class="ic">📈</span>Прогноз продажів</h3>
-          <span class="block-tags">
-            <span class="block-tag">щотижня</span>
-            <a class="drill-link" href="/forecast.html">drill-down</a>
-          </span>
-        </div>
-        <div class="q-line">Скільки продамо у 30/60/90?</div>
-        <div class="card-sub" id="b10ForecastSub" style="font-size:10.5px;color:var(--text3);margin-bottom:8px">сезонність × середній денний 90д</div>
-        <div id="b10Forecast"><div class="loading">Завантаження…</div></div>
-        <div class="sub-block">
-          <div class="sub-title">Ризики stockout (топ-A)</div>
+        <div class="card">
+          <div class="card-head"><div><h3>Прогноз продажів</h3><div class="card-sub" id="b10ForecastSub">сезонність × середній денний 90д</div></div><a class="pill accent" href="/forecast.html">Усі →</a></div>
+          <div id="b10Forecast"><div class="loading">Завантаження…</div></div>
+          <div style="font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-top:10px;margin-bottom:4px">Ризики stockout (топ-A)</div>
           <div id="b10StockoutRisks"><div class="loading">Завантаження…</div></div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- Прогноз потреби в товарі -->
-      <section class="block">
-        <div class="block-head-v2">
-          <h3><span class="ic">📦</span>Прогноз потреби в товарі</h3>
-          <span class="block-tags">
-            <span class="block-tag">щотижня</span>
-            <a class="drill-link" href="/warehouses.html">drill-down</a>
-          </span>
+    <!-- ═══ БЛОК 11 — АЛЕРТИ + ДІЇ ═══ -->
+    <section class="block">
+      <div class="block-head">
+        <span class="block-num">11</span>
+        <span class="block-title">Дії на сьогодні · алерти</span>
+        <span class="block-meta">live з порогових перевірок</span>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div><h3>Поточні алерти</h3><div class="card-sub">Що чекає на рішення</div></div>
+          <a class="pill accent" href="/executive-details.html#alerts">Усі →</a>
         </div>
-        <div class="q-line">Що замовляти у постачальників і в якому обсязі?</div>
-        <div class="hint" style="font-size:11px;padding:18px;text-align:left;color:var(--text3)">
-          Spec на майбутнє: SKU × тиждень heatmap (зелений = достатньо · червоний = stockout). Враховує продажі, lead time, in-transit, безпековий запас.
-          <br><br>
-          <span style="color:var(--text2)">Поточний live: ризики stockout у блоці «Прогноз продажів» (топ-A SKU з doh &lt; 14 днів).</span>
-        </div>
-      </section>
-
-      <!-- Прогноз cash flow (runway) -->
-      <section class="block">
-        <div class="block-head-v2">
-          <h3><span class="ic">💵</span>Прогноз cash flow · 90 днів</h3>
-          <span class="block-tags">
-            <span class="block-tag">щотижня</span>
-            <a class="drill-link" href="/finance.html?tab=cf">drill-down</a>
-          </span>
-        </div>
-        <div class="q-line">Чи вистачить грошей на ЗП, податки, PO?</div>
-        <div class="card-sub" id="runwaySub" style="font-size:10.5px;color:var(--text3);margin-bottom:8px">Прогноз на основі середніх оборотів + AP</div>
-        <div class="runway" id="runwayStrip"></div>
-        <div class="runway-axis"><span>сьогодні</span><span>+30</span><span>+60</span><span>+90</span></div>
-        <div class="runway-foot">
-          <span>Чистий через 90 днів — <strong id="runwayNet">—</strong></span>
-          <span class="pill accent" id="runwayPill">—</span>
-        </div>
-        <div id="runwayHealth" style="font-size:11px;color:var(--text3);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">—</div>
-      </section>
-
-    </div>
-
-    <!-- ─── AI РЕКОМЕНДАЦІЇ ─── -->
-    <div class="recommend-block">
-      <h3>AI-рекомендації <span class="ai-badge">live</span></h3>
-      <div class="reco-grid" id="aiRecoGrid"><div class="loading" style="grid-column:1/-1;padding:14px">Завантаження…</div></div>
-    </div>
-
+        <div class="alerts" id="alertsBox"></div>
+      </div>
+    </section>
 
     <div id="noAccess" style="display:none"></div>
+
+    <div class="foot-note">
+      Executive · RE:ACT · live: KPI · trend chart · runway · контрагенти · алерти · решта позначена тегом «умовно» і буде підключена до 1С/D1 поетапно.
+    </div>
   </div>
 </div>
 
@@ -979,8 +918,6 @@ function detectPreset(from, to) {
 function reloadAll() {
   document.getElementById('trendMeta').textContent = `${state.from} → ${state.to}`;
   document.getElementById('syncAge').textContent = 'зараз';
-  const hhmm = new Date().toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
-  ['upd1','upd2'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = hhmm; });
   applyStateToLinks();
   loadKpis();
   loadTrend();
@@ -997,17 +934,6 @@ function reloadAll() {
   loadOps();
   loadForecast();
   setTimeout(() => { document.getElementById('syncAge').textContent = '1с тому'; }, 1500);
-}
-
-// Toolbar-кнопки експорт / надіслати — поки заглушки
-function exportPdf() {
-  // Простий друк сторінки → можна зберегти як PDF через діалог браузера
-  window.print();
-}
-function sendByEmail() {
-  const subject = encodeURIComponent('Дашборд керівника · ' + (state.from || '') + '–' + (state.to || ''));
-  const body = encodeURIComponent('Посилання на дашборд: ' + location.href);
-  location.href = `mailto:?subject=${subject}&body=${body}`;
 }
 
 // Передаємо стан дашборду (період + орг) у hash усіх посилань на звіти —
@@ -1056,62 +982,30 @@ document.addEventListener('click', e => {
 // KPI HERO — 7 цифр (4 live + 3 mock-помічені)
 // ═══════════════════════════════════════════════════════════════════
 const KPIS = [
-  { id: 'kRev',    lbl: 'Виторг (оплачено)', owner: 'КД',  href: '/sales.html' },
-  { id: 'kMargin', lbl: 'Валова маржа',      owner: 'КД',  href: '/finance.html?tab=gp' },
-  { id: 'kNet',    lbl: 'Чистий прибуток',   owner: 'ФД',  href: '/finance.html' },
-  { id: 'kAR',     lbl: 'Борги нам',         owner: 'ФД',  href: '/counterparties.html#role=customers' },
-  { id: 'kAP',     lbl: 'Наш борг',          owner: 'ФД',  href: '/counterparties.html#role=suppliers' },
-  { id: 'kStock',  lbl: 'Запаси',            owner: 'ФД',  href: '/warehouses.html' },
-  { id: 'kHealth', lbl: 'Здоров\'я бізнесу', owner: 'CEO', mock: true, health: true },
+  { id: 'kRev',    lbl: 'Виторг (оплачено)', href: '/sales.html' },
+  { id: 'kMargin', lbl: 'Валова маржа',      href: '/finance.html?tab=gp' },
+  { id: 'kNet',    lbl: 'Чистий прибуток',   href: '/finance.html' },
+  { id: 'kAR',     lbl: 'Борги нам',         href: '/counterparties.html#role=customers' },
+  { id: 'kAP',     lbl: 'Наш борг',          href: '/counterparties.html#role=suppliers' },
+  { id: 'kStock',  lbl: 'Запаси',            href: '/warehouses.html' },
+  { id: 'kHealth', lbl: 'Здоров\'я',        mock: true },
 ];
 
 function buildKpiSkeleton() {
   document.getElementById('kpiHero').innerHTML = KPIS.map(k => {
     const tag = k.href ? 'a' : 'div';
     const attrs = k.href ? `href="${k.href}"` : '';
-    const cls = 'kpi ldg' + (k.health ? ' health' : '');
     return `
-    <${tag} class="${cls}" id="${k.id}" ${attrs}>
-      <div class="owner">${k.owner || ''}</div>
-      <div>
-        <div class="kpi-lbl">${k.lbl}${k.mock ? '<span class="mock-tag" style="margin-left:6px">умовно</span>' : ''}</div>
-        <div class="kpi-val">—</div>
-      </div>
-      <div>
-        <div class="bullet" id="${k.id}Bullet" style="display:none">
-          <div class="bar-bg"><div class="bar-fill"></div><div class="marker"></div></div>
-          <div class="bullet-lbl"><span class="bl-fact">факт</span><span class="bl-target">vs LY</span></div>
-        </div>
-        <div class="kpi-foot">
-          <span id="${k.id}Sub">—</span>
-          <span id="${k.id}Delta"></span>
-        </div>
+    <${tag} class="kpi ldg" id="${k.id}" ${attrs}>
+      <div class="kpi-lbl">${k.lbl}${k.mock ? '<span class="mock-tag" style="margin-left:6px">умовно</span>' : ''}</div>
+      <div class="kpi-val">—</div>
+      <div class="kpi-foot">
+        <span id="${k.id}Sub">—</span>
+        <span id="${k.id}Delta"></span>
       </div>
     </${tag}>
   `;
   }).join('');
-}
-
-// Render bullet bar for KPI «факт vs vs LY (минулий рік за тим самим періодом)»
-// cur — поточне значення, target — vs-LY (треба перевершити). Bar fill = cur/target,
-// marker = 100% (target). Колір: green ≥1.0, amber 0.6-1.0, red <0.6.
-function setKpiBullet(id, cur, target, opts = {}) {
-  const el = document.getElementById(id + 'Bullet'); if (!el) return;
-  if (target == null || !isFinite(target) || Math.abs(target) < 0.5) { el.style.display = 'none'; return; }
-  el.style.display = '';
-  const ratio = Math.max(0, Math.min(1.5, cur / Math.abs(target)));
-  const fill = el.querySelector('.bar-fill');
-  const marker = el.querySelector('.marker');
-  fill.classList.remove('green','amber','red');
-  fill.classList.add(ratio >= 1.0 ? 'green' : ratio >= 0.6 ? 'amber' : 'red');
-  fill.style.width = Math.min(100, ratio * 100 / 1.5 * 100 / 100 * 100).toFixed(0) + '%';
-  // simpler: width = (ratio / 1.5) * 100
-  fill.style.width = (ratio / 1.5 * 100).toFixed(0) + '%';
-  marker.style.left = '66.6%'; // marker = ratio 1.0 → 1.0/1.5 = 66.6%
-  const factL = el.querySelector('.bl-fact');
-  const tgtL = el.querySelector('.bl-target');
-  if (factL) factL.textContent = opts.factLabel || 'факт';
-  if (tgtL)  tgtL.textContent  = opts.targetLabel || `LY ${fmtMoneyShort(target)}`;
 }
 
 function kpiLoading(id) {
@@ -1204,7 +1098,6 @@ async function loadKpis() {
     revenue = salesPaidUsd(salesR.value);
     const p = (salesPR && salesPR.status === 'fulfilled' && salesPR.value && !salesPR.value.error) ? salesPaidUsd(salesPR.value) : null;
     kpiSet('kRev', { val: fmtMoneyShort(revenue), sub: periodLabel(), deltaCur: revenue, deltaPrev: p, deltaGood: 'up' });
-    if (p != null) setKpiBullet('kRev', revenue, p, { factLabel: 'факт', targetLabel: `min ${fmtMoneyShort(p)}` });
   } else { kpiError('kRev', (salesR.status === 'fulfilled' ? salesR.value.error : 'err') || 'err'); }
 
   // Net profit
@@ -1221,7 +1114,6 @@ async function loadKpis() {
     const rev = (pnlR.value.revenue?.total || 0) + (pnlR.value.otherIncome?.total || 0);
     const margin = rev > 0 ? netVal / rev : 0;
     kpiSet('kNet', { val: fmtMoneyShort(netVal), cls: netVal < 0 ? 'neg' : (netVal > 0 ? 'pos' : ''), sub: periodLabel(), deltaCur: netVal, deltaPrev: p, deltaGood: 'up' });
-    if (p != null && p > 0) setKpiBullet('kNet', netVal, p, { factLabel: 'факт', targetLabel: `prev ${fmtMoneyShort(p)}` });
     document.getElementById('miniMargin').textContent = rev ? fmtPct(margin) : '—';
     document.getElementById('miniMarginSub').textContent = rev ? `на ${fmtMoneyShort(rev)} виручки` : '—';
     renderExpensesSplit(pnlR.value);
@@ -1251,8 +1143,6 @@ async function loadKpis() {
     const rev = Number(gpR.value.total?.revenue || 0);
     const margin = rev > 0 ? gp / rev : 0;
     kpiSet('kMargin', { val: rev ? fmtPct(margin) : '—', cls: margin > 0.10 ? 'pos' : (margin < 0.05 ? 'neg' : ''), sub: rev ? fmtMoneyShort(gp) : '' });
-    // Bullet: маржа vs ціль 12% (ліва частина — факт, права — ціль)
-    if (rev) setKpiBullet('kMargin', margin, 0.12, { factLabel: `${(margin*100).toFixed(1)}%`, targetLabel: 'ціль 12%' });
     document.getElementById('miniGp').textContent = fmtMoneyShort(gp);
     document.getElementById('miniGp').style.color = gp < 0 ? 'var(--red)' : 'var(--text)';
     document.getElementById('miniGpSub').textContent = rev ? `маржа ${fmtPct(margin)}` : '—';
@@ -1547,9 +1437,10 @@ function renderTopCounterparties(elId, payload, opts) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// DECISIONS / ALERTS — 3 columns: critical / warning / insight (AI)
+// DECISIONS / ALERTS
 // ═══════════════════════════════════════════════════════════════════
 async function loadDecisions() {
+  const box = document.getElementById('alertsBox');
   const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
   const now = new Date();
   const janFirst = _iso(new Date(now.getFullYear(), 0, 1));
@@ -1565,59 +1456,63 @@ async function loadDecisions() {
     dashFetch(`${API_URL}?action=executive_warehouse_breakdown${orgQ}`).catch(() => null),
   ]);
 
-  const critical = [];
-  const warning = [];
-  const insight = [];
+  const alerts = [];
 
-  // ── Critical: AR > $50k
+  // ── HIGH: AR > $50k (поточне сальдо клієнтів)
   if (arR && !arR.error) {
     const bal = Number(arR.kpi?.balance_usd || 0);
     if (bal > 50000) {
-      critical.push({ title: `Дебіторка ${fmtMoneyShort(bal)} — поріг перевищено`, body: `Сальдо клієнтів перевищує $50k. Перегляньте топ-боржників і запустіть нагадування.`, act: { lbl: 'AR Aging →', href: '/ar_aging.html' } });
-    }
-  }
-  // ── Critical: aging d61p (прострочка 61+)
-  if (agingR && !agingR.error) {
-    const d61p = Number(agingR.buckets_usd?.d61p || 0);
-    if (d61p > 5000) {
-      critical.push({ title: `Прострочка 61+ днів = ${fmtMoneyShort(d61p)}`, body: `Передати юристу — або акт звірки.`, act: { lbl: 'AR Aging →', href: '/ar_aging.html' } });
-    }
-  }
-  // ── Critical: stockouts (group A SKU < 14 днів)
-  if (stockSplitR && !stockSplitR.error) {
-    const so = stockSplitR.stockouts || [];
-    if (so.length > 0) {
-      critical.push({ title: `${so.length} SKU групи A на межі stockout`, body: `Топ: ${esc((so[0]?.name || '').slice(0,38))} (${so[0]?.qty_onhand || 0} шт).`, act: { lbl: 'Склад →', href: '/warehouses.html' } });
+      alerts.push({ pri: 'h', title: `Дебіторка ${fmtMoneyShort(bal)} — потребує уваги`, body: `Поточне сальдо клієнтів перевищує поріг. Перегляньте топ-боржників і запустіть нагадування.`, act: { lbl: 'AR Aging', href: '/ar_aging.html' } });
     }
   }
 
-  // ── Warning: маржа < 5%
+  // ── HIGH: прострочка 61+ днів > $5k (з executive_ar_aging)
+  if (agingR && !agingR.error) {
+    const d61p = Number(agingR.buckets_usd?.d61p || 0);
+    if (d61p > 5000) {
+      alerts.push({ pri: 'h', title: `Прострочка 61+ днів = ${fmtMoneyShort(d61p)}`, body: `Передати юристу або готувати акт звірки. Топ-боржники у блоці 04.`, act: { lbl: 'AR Aging', href: '/ar_aging.html' } });
+    }
+  }
+
+  // ── HIGH: stockouts група A < 14 днів
+  if (stockSplitR && !stockSplitR.error) {
+    const so = stockSplitR.stockouts || [];
+    if (so.length > 0) {
+      const top = so[0]?.name || '';
+      alerts.push({ pri: 'h', title: `${so.length} SKU групи A на межі stockout`, body: `Топ: ${top.slice(0, 50)} — ${so[0]?.qty_onhand || 0} шт на руках. Розмістити PO зараз.`, act: { lbl: 'Склад', href: '/warehouses.html' } });
+    }
+  }
+
+  // ── MED: AP > AR · 1.2
+  if (arR && apR && !arR.error && !apR.error) {
+    const arBal = Math.abs(Number(arR.kpi?.balance_usd || 0));
+    const apBal = Number(apR.kpi?.balance_usd || 0);
+    if (apBal > arBal * 1.2 && apBal > 20000) {
+      alerts.push({ pri: 'm', title: 'Ми винні більше ніж нам винні', body: `Зобов'язання постачальникам ${fmtMoneyShort(apBal)} перевищують дебіторку ${fmtMoneyShort(arBal)}. Пришвидшити інкасацію або перенести оплати.`, act: { lbl: 'Cash flow', href: '/finance.html?tab=cf' } });
+    }
+  }
+
+  // ── MED: маржа за період < 5%
   if (pnlR && !pnlR.error) {
     const rev = (pnlR.revenue?.total || 0) + (pnlR.otherIncome?.total || 0);
     const cogs = pnlR.cogs?.total || 0; const exp = pnlR.totalExpenses?.total || 0;
     const net = rev - cogs - exp;
     const margin = rev > 0 ? net / rev : 0;
     if (margin < 0.05 && rev > 0) {
-      warning.push({ title: `Чиста маржа ${fmtPct(margin)} — низька`, body: `Cogs ${fmtMoneyShort(cogs)} · OPEX ${fmtMoneyShort(exp)}. Перевірити ціноутворення.`, act: { lbl: 'P&L →', href: '/finance.html' } });
+      alerts.push({ pri: 'h', title: `Маржа за період ${fmtPct(margin)} — низька`, body: `Чиста маржа нижче 5%. Собівартість ${fmtMoneyShort(cogs)} · операційні ${fmtMoneyShort(exp)}. Перевірити ціноутворення.`, act: { lbl: 'P&L', href: '/finance.html' } });
     }
   }
-  // ── Warning: AP > AR · 1.2
-  if (arR && apR && !arR.error && !apR.error) {
-    const arBal = Math.abs(Number(arR.kpi?.balance_usd || 0));
-    const apBal = Number(apR.kpi?.balance_usd || 0);
-    if (apBal > arBal * 1.2 && apBal > 20000) {
-      warning.push({ title: 'Ми винні більше, ніж нам винні', body: `AP ${fmtMoneyShort(apBal)} > AR ${fmtMoneyShort(arBal)}. Прискорити інкасацію.`, act: { lbl: 'Cash flow →', href: '/finance.html?tab=cf' } });
-    }
-  }
-  // ── Warning: запаси > 1.5× виручки
+
+  // ── MED: запаси > 1.5× виручки
   if (stockR && pnlR && !stockR.error && !pnlR.error) {
     const stock = Number(stockR.total_value_usd || 0);
     const rev = (pnlR.revenue?.total || 0) + (pnlR.otherIncome?.total || 0);
     if (rev > 0 && stock / rev > 1.5) {
-      warning.push({ title: `Запаси ${fmtMoneyShort(stock)} — понад 1.5× виручки`, body: `Оборотність повільна. Акції на повільні або stop-buy.`, act: { lbl: 'Склад →', href: '/warehouses.html' } });
+      alerts.push({ pri: 'm', title: `Запаси ${fmtMoneyShort(stock)} — понад 1.5× виручки`, body: `Оборотність повільна. Розгляньте акції на повільні позиції або стоп-закупівлю.`, act: { lbl: 'Склад', href: '/warehouses.html' } });
     }
   }
-  // ── Warning: SKU нижче порогу маржі (з gross_profit)
+
+  // ── MED: SKU нижче маржі 8% при значимому виторгу (>$500)
   if (gpR && !gpR.error) {
     let lowCnt = 0;
     Object.values(gpR.tree || {}).forEach(cl => Object.values(cl.contracts || {}).forEach(ct => Object.values(ct.orders || {}).forEach(ord => Object.values(ord.products || {}).forEach(p => {
@@ -1625,108 +1520,57 @@ async function loadDecisions() {
       if (rev >= 500 && (rev - cogs) / rev < 0.08) lowCnt++;
     }))));
     if (lowCnt > 5) {
-      warning.push({ title: `${lowCnt} позицій з маржею < 8%`, body: `Перегляньте прайс або закупівельні умови.`, act: { lbl: 'Маржа →', href: '/finance.html?tab=gp' } });
+      alerts.push({ pri: 'm', title: `${lowCnt} позицій з маржею < 8%`, body: `Перегляньте прайс або закупівельні умови по позиціях під порогом.`, act: { lbl: 'Маржа', href: '/finance.html?tab=gp' } });
     }
   }
 
-  // ── Insight: концентрація top-N клієнтів
+  // ── LOW: концентрація top-3 клієнтів > 50%
   if (arR && !arR.error) {
     const top = arR.top || arR.clients || [];
-    const totalArAbs = top.reduce((s, c) => s + Math.abs(Number(c.balance_usd || 0)), 0);
+    const totalAbs = top.reduce((s, c) => s + Math.abs(Number(c.balance_usd || 0)), 0);
     const top3 = top.slice(0, 3).reduce((s, c) => s + Math.abs(Number(c.balance_usd || 0)), 0);
-    if (totalArAbs > 0 && top3 / totalArAbs > 0.5) {
-      insight.push({ title: `Топ-3 клієнти = ${Math.round(top3/totalArAbs*100)}% дебіторки`, body: `Висока концентрація — ризик при втраті 1 клієнта.`, act: { lbl: 'Клієнти →', href: '/counterparties.html#role=customers' } });
+    if (totalAbs > 0 && top3 / totalAbs > 0.5) {
+      alerts.push({ pri: 'l', title: `Топ-3 клієнти = ${Math.round(top3/totalAbs*100)}% дебіторки`, body: `Висока концентрація. Втрата 1 клієнта суттєво вдарить по cashflow.`, act: { lbl: 'Клієнти', href: '/counterparties.html#role=customers' } });
     }
   }
-  // ── Insight: dead stock
+
+  // ── LOW: концентрація top-2 постачальників > 60%
+  if (apR && !apR.error) {
+    const top = apR.top || apR.suppliers || [];
+    const totalAbs = top.reduce((s, c) => s + Math.abs(Number(c.balance_usd || 0)), 0);
+    const top2 = top.slice(0, 2).reduce((s, c) => s + Math.abs(Number(c.balance_usd || 0)), 0);
+    if (totalAbs > 0 && top2 / totalAbs > 0.6) {
+      alerts.push({ pri: 'l', title: `Топ-2 постачальники = ${Math.round(top2/totalAbs*100)}% боргу`, body: `Концентрація вище безпечного 60% — варто диверсифікувати.`, act: { lbl: 'Постачальники', href: '/counterparties.html#role=suppliers' } });
+    }
+  }
+
+  // ── LOW: dead stock
   if (stockSplitR && !stockSplitR.error) {
     const dead = stockSplitR.dead_stock || [];
     if (dead.length > 0) {
       const totalDead = dead.reduce((s, d) => s + Number(d.stock_usd || 0), 0);
-      insight.push({ title: `Dead stock = ${fmtMoneyShort(totalDead)} (${dead.length} SKU)`, body: `0 продажів 180+ днів. Розгляньте акцію або списання.`, act: { lbl: 'Склад →', href: '/warehouses.html' } });
-    }
-  }
-  // ── Insight: концентрація постачальників
-  if (apR && !apR.error) {
-    const top = apR.top || apR.suppliers || [];
-    const totalApAbs = top.reduce((s, c) => s + Math.abs(Number(c.balance_usd || 0)), 0);
-    const top2 = top.slice(0, 2).reduce((s, c) => s + Math.abs(Number(c.balance_usd || 0)), 0);
-    if (totalApAbs > 0 && top2 / totalApAbs > 0.6) {
-      insight.push({ title: `Топ-2 постачальники = ${Math.round(top2/totalApAbs*100)}% боргу`, body: `Концентрація вище безпечного 60% — диверсифікувати.`, act: { lbl: 'Постачальники →', href: '/counterparties.html#role=suppliers' } });
+      alerts.push({ pri: 'l', title: `Dead stock = ${fmtMoneyShort(totalDead)} (${dead.length} SKU)`, body: `0 продажів 180+ днів. Розгляньте акцію або списання, щоб розморозити кошти.`, act: { lbl: 'Склад', href: '/warehouses.html' } });
     }
   }
 
-  // Empty fallbacks
-  if (!critical.length) critical.push({ title: 'Все під контролем', body: 'Жодних критичних порогів не порушено.' });
-  if (!warning.length) warning.push({ title: 'Без попереджень', body: 'Маржа, ДЗ⇄КЗ, запаси в нормі.' });
-  if (!insight.length) insight.push({ title: 'Поки інсайтів нема', body: 'AI-патерни не виявили відхилень.' });
+  if (!alerts.length) {
+    alerts.push({ pri: 'l', title: 'Усе спокійно', body: 'Ключові порогові значення в нормі.' });
+  }
 
-  const renderCol = (id, items) => {
-    document.getElementById(id).innerHTML = items.map(a => `
-      <div class="alert-item">
-        <strong>${esc(a.title)}</strong>
-        <span class="action">${esc(a.body)}${a.act ? ` <a href="${esc(a.act.href)}" style="color:var(--accent);font-style:normal;font-weight:600">${esc(a.act.lbl)}</a>` : ''}</span>
+  // Сорт по пріоритету (h > m > l), потім збереження порядку всередині
+  const order = { h: 0, m: 1, l: 2 };
+  alerts.sort((a, b) => (order[a.pri] || 9) - (order[b.pri] || 9));
+
+  box.innerHTML = alerts.map(a => `
+    <div class="alert">
+      <span class="pri ${a.pri}">${a.pri === 'h' ? 'Критично' : a.pri === 'm' ? 'Високий' : 'Увага'}</span>
+      <div class="body">
+        <strong>${esc(a.title)}${a.mock ? '<span class="mock-tag" style="margin-left:6px">умовно</span>' : ''}</strong>
+        <span>${esc(a.body)}</span>
       </div>
-    `).join('');
-  };
-  renderCol('alertsCritical', critical);
-  renderCol('alertsWarning', warning);
-  renderCol('alertsInsight', insight);
-  document.getElementById('cntCritical').textContent = critical.filter(a => a.act).length;
-  document.getElementById('cntWarning').textContent = warning.filter(a => a.act).length;
-  document.getElementById('cntInsight').textContent = insight.filter(a => a.act).length;
-
-  // ─── AI-рекомендації (live, базується на тих самих сигналах) ───
-  const recos = [];
-  if (stockSplitR && !stockSplitR.error) {
-    const so = (stockSplitR.stockouts || []).slice(0, 2);
-    so.forEach(s => recos.push({
-      lbl: `Розмістити PO на «${(s.name || '').slice(0, 50)}»`,
-      why: `Запас ${s.qty_onhand} шт, продажі ${Math.round(s.qty_30d || 0)}/30д. Stockout очікується через ${Math.round(s.doh_days_qty || 0)} дн.`,
-    }));
-    const dead = (stockSplitR.dead_stock || []).slice(0, 1);
-    dead.forEach(d => recos.push({
-      lbl: `Запустити акцію на dead stock «${(d.name || '').slice(0,40)}»`,
-      why: `Заморожено ${fmtMoneyShort(d.stock_usd)}. Не рухається ${d.days_since_sale ? d.days_since_sale + ' днів' : '180+ днів'}, ризик морального знецінення.`,
-    }));
-  }
-  if (gpR && !gpR.error) {
-    let worstSku = null;
-    Object.values(gpR.tree || {}).forEach(cl => Object.values(cl.contracts || {}).forEach(ct => Object.values(ct.orders || {}).forEach(ord => Object.values(ord.products || {}).forEach(p => {
-      const rev = Number(p.revenue || 0), cogs = Number(p.cogs || 0);
-      const m = rev > 0 ? (rev - cogs) / rev : 0;
-      if (rev > 1000 && m < 0.06 && (!worstSku || m < worstSku.m)) worstSku = { name: p.name, m, rev };
-    }))));
-    if (worstSku) recos.push({
-      lbl: `Підняти ціну на «${(worstSku.name || '').slice(0,40)}» на 3-5%`,
-      why: `Маржа ${fmtPct(worstSku.m)} (нижче за беззбитковий поріг 7%) при виторгу ${fmtMoneyShort(worstSku.rev)}.`,
-    });
-  }
-  if (apR && !apR.error) {
-    const top = apR.top || apR.suppliers || [];
-    const totalAbs = top.reduce((s, c) => s + Math.abs(Number(c.balance_usd || 0)), 0);
-    const top1 = Math.abs(Number(top[0]?.balance_usd || 0));
-    if (totalAbs > 0 && top1 / totalAbs > 0.6) recos.push({
-      lbl: `Диверсифікувати закупівлю від «${(top[0]?.description || top[0]?.name || '').slice(0,40)}»`,
-      why: `${Math.round(top1/totalAbs*100)}% обсягу = критичний ризик. Шукати другого постачальника.`,
-    });
-  }
-  // CRM reactivation
-  try {
-    const crmR = await dashFetch(`${API_URL}?action=executive_customers_crm${cpOrgQ()}`).catch(() => null);
-    if (crmR && crmR.churn_60d > 5) {
-      recos.push({
-        lbl: `Реактивувати ${crmR.churn_60d} клієнтів зі сегмента churn`,
-        why: `Не купують 60+ днів, історично середній LTV ${fmtMoneyShort(crmR.avg_ltv_usd || 0)}.`,
-      });
-    }
-  } catch (_) {}
-  if (!recos.length) {
-    recos.push({ lbl: 'Поки рекомендацій нема', why: 'Сигналів для дій не виявлено — продовжуйте моніторинг.' });
-  }
-  document.getElementById('aiRecoGrid').innerHTML = recos.slice(0, 6).map(r =>
-    `<div class="reco">${esc(r.lbl)}<div class="why">${esc(r.why)}</div></div>`
-  ).join('');
+      ${a.act ? `<a class="act" href="${esc(a.act.href || '#')}">${esc(a.act.lbl)} →</a>` : ''}
+    </div>
+  `).join('');
 }
 
 // ═══════════════════════════════════════════════════════════════════
