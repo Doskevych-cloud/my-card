@@ -2786,7 +2786,13 @@ async function cbLoad() {
     const data = await fetch(API_URL + q).then(r => r.json());
     if (data.error) throw new Error(data.error);
     cbState.data = data;
-    cbRender();
+    try {
+      cbRender();
+    } catch (re) {
+      console.error('cbRender failed:', re);
+      document.getElementById('cbBody').innerHTML =
+        '<div class="error">Помилка рендеру: ' + esc(re.message || String(re)) + '. Деталі у Console.</div>';
+    }
   } catch (e) {
     document.getElementById('cbBody').innerHTML = '<div class="error">' + esc(e.message) + '</div>';
   }
