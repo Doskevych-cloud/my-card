@@ -1456,7 +1456,7 @@ async function loadDecisions() {
   const janFirst = _iso(new Date(now.getFullYear(), 0, 1));
   const todayIso = _iso(now);
 
-  const [pnlR, arR, apR, stockR, agingR, gpR, stockSplitR] = await Promise.all([
+  const [pnlR, arR, apR, stockR, agingR, gpR, stockSplitR, cashR] = await Promise.all([
     dashFetch(`${API_URL}?action=pnl_accrual_report&from=${state.from}&to=${state.to}${orgQ}`).catch(() => null),
     dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${todayIso}${cpOrgQ()}`).catch(() => null),
     dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${todayIso}${cpOrgQ()}`).catch(() => null),
@@ -1464,6 +1464,7 @@ async function loadDecisions() {
     dashFetch(`${API_URL}?action=executive_ar_aging${orgQ}`).catch(() => null),
     dashFetch(`${API_URL}?action=gross_profit_report&from=${state.from}&to=${state.to}${orgQ}`).catch(() => null),
     dashFetch(`${API_URL}?action=executive_warehouse_breakdown${orgQ}`).catch(() => null),
+    dashFetch(`${API_URL}?action=cash_balance_report${orgQ}`).catch(() => null),
   ]);
 
   const alerts = [];
@@ -1560,6 +1561,45 @@ async function loadDecisions() {
     if (dead.length > 0) {
       const totalDead = dead.reduce((s, d) => s + Number(d.stock_usd || 0), 0);
       alerts.push({ pri: 'l', title: `Dead stock = ${fmtMoneyShort(totalDead)} (${dead.length} SKU)`, body: `0 продажів 180+ днів. Розгляньте акцію або списання, щоб розморозити кошти.`, act: { lbl: 'Склад', href: '/warehouses.html' } });
+    }
+  }
+
+  // ── UAH cash → варто конвертувати в USD
+  // Поріг: понад «операційну подушку» (1 міс OPEX в UAH) — гривневі залишки
+  // тануть на курсі. Беремо OPEX з P&L (period) як proxy для місячних UAH-витрат.
+  if (cashR && !cashR.error) {
+    const uahBal = Number(cashR.by_currency?.UAH || 0);
+    const uahRate = Number(cashR.today_rate?.UAH || 0); // 1 UAH = X USD (≈0.024)
+    const uahUsdEq = uahBal * uahRate;
+    const totalCashUsd = Number(cashR.total_usd || 0);
+    const uahShare = totalCashUsd > 0 ? uahUsdEq / totalCashUsd : 0;
+    // OPEX за період → денний opex → 30-денна подушка в UAH
+    const periodDays = Math.max(1, Math.round((new Date(state.to) - new Date(state.from)) / 86400000 + 1));
+    const opexUsd = pnlR && !pnlR.error ? (pnlR.totalExpenses?.total || 0) : 0;
+    const dailyOpexUsd = opexUsd / periodDays;
+    const opexCushionUsd = dailyOpexUsd * 30; // 1 міс операційного буферу
+    const excessUsd = Math.max(0, uahUsdEq - opexCushionUsd);
+    const uahShortMln = uahBal >= 1_000_000 ? (uahBal / 1_000_000).toFixed(2).replace('.',',') + ' M ₴'
+                      : uahBal >= 1000 ? (uahBal / 1000).toFixed(0) + ' k ₴'
+                      : Math.round(uahBal) + ' ₴';
+    if (excessUsd > 5000) {
+      // Чим більший надлишок — тим вища пріоритетність
+      const pri = excessUsd > 50000 ? 'h' : excessUsd > 20000 ? 'm' : 'l';
+      const cushionLbl = opexCushionUsd > 0 ? `подушка 1 міс OPEX ≈ ${fmtMoneyShort(opexCushionUsd)}` : 'операційна подушка не визначена';
+      alerts.push({
+        pri,
+        title: `UAH у касі ${fmtMoneyShort(uahUsdEq)} (${uahShortMln}) — надлишок ${fmtMoneyShort(excessUsd)}`,
+        body: `Гривня = ${(uahShare*100).toFixed(0)}% всього кешу, ${cushionLbl}. Конвертуйте надлишок у USD щоб уникнути курсових втрат.`,
+        act: { lbl: 'Каса', href: '/finance.html?tab=cb' },
+      });
+    } else if (uahShare > 0.5 && uahUsdEq > 10000) {
+      // Без надлишку понад 1 міс OPEX, але >50% всього кешу — м'яке нагадування
+      alerts.push({
+        pri: 'l',
+        title: `UAH у касі ${fmtMoneyShort(uahUsdEq)} = ${(uahShare*100).toFixed(0)}% кешу`,
+        body: `Гривневий залишок переважає над USD/EUR. Розгляньте часткову конвертацію, щоб збалансувати валютну позицію.`,
+        act: { lbl: 'Каса', href: '/finance.html?tab=cb' },
+      });
     }
   }
 
