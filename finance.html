@@ -2961,7 +2961,7 @@ function cbRender() {
       : '<span class="cb-logo-fallback">' + firstChar + '</span>';
     const titleClean = cbCleanDescription(a.description) || a.description || '';
     const txHostId = 'cb-tx-' + a.ref_key;
-    return '<div class="pnl-card cb-card-clickable" onclick="cbToggleAccount(' + JSON.stringify(a.ref_key) + ',' + JSON.stringify(txHostId) + ')" title="Клік — показати транзакції">' +
+    return '<div class="pnl-card cb-card-clickable" data-ref="' + esc(a.ref_key) + '" data-tx-host="' + esc(txHostId) + '" title="Клік — показати транзакції">' +
       '<div class="cb-card-head">' + logoHtml + '<span class="cl">' + esc(titleClean) + '</span></div>' +
       mainHtml +
       usdSub +
@@ -3021,6 +3021,17 @@ function cbRender() {
   });
 
   document.getElementById('cbBody').innerHTML = html;
+
+  // Event delegation для кліку по картці рахунку → drill-down транзакцій.
+  // Робимо тут (а не один раз на DOMContentLoaded), бо innerHTML регенерується.
+  const cbBody = document.getElementById('cbBody');
+  cbBody.onclick = function(ev) {
+    const card = ev.target.closest('.cb-card-clickable');
+    if (!card) return;
+    const ref = card.dataset.ref;
+    const hostId = card.dataset.txHost;
+    if (ref && hostId) cbToggleAccount(ref, hostId);
+  };
 }
 
 document.addEventListener('DOMContentLoaded', function() {
