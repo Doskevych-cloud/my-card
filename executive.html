@@ -940,23 +940,43 @@ function reloadAll() {
 // щоб при кліку на «Усі →» / KPI відкривався звіт з тими ж фільтрами.
 // Базові шляхи (та існуючі query / hash params типу tab=, role=) зберігаються.
 const _LINK_REPORTS = ['sales.html','finance.html','counterparties.html','warehouses.html','ar_aging.html','forecast.html','osp.html','prices-1c.html'];
+
+function _buildReportUrl(origHref, withCacheBust) {
+  const [pathRaw, hashPart] = (origHref || '').split('#');
+  const [pathPart, queryRaw] = pathRaw.split('?');
+  const q = new URLSearchParams(queryRaw || '');
+  if (withCacheBust) q.set('_t', String(Date.now()));
+  const h = new URLSearchParams(hashPart || '');
+  if (state.from) h.set('from', state.from); else h.delete('from');
+  if (state.to)   h.set('to',   state.to);   else h.delete('to');
+  if (state.org)  h.set('org',  state.org);  else h.delete('org');
+  if (state.preset) h.set('preset', state.preset); else h.delete('preset');
+  const qs = q.toString(), hs = h.toString();
+  return pathPart + (qs ? '?' + qs : '') + (hs ? '#' + hs : '');
+}
+
 function applyStateToLinks(root) {
   const scope = root || document;
   scope.querySelectorAll('a[href^="/"]').forEach(a => {
     const raw = a.getAttribute('href') || '';
     if (!_LINK_REPORTS.some(p => raw.includes('/' + p))) return;
     if (a.dataset._origHref == null) a.dataset._origHref = raw;
-    const orig = a.dataset._origHref;
-    const [pathPart, hashPart] = orig.split('#');
-    const h = new URLSearchParams(hashPart || '');
-    if (state.from) h.set('from', state.from); else h.delete('from');
-    if (state.to)   h.set('to',   state.to);   else h.delete('to');
-    if (state.org)  h.set('org',  state.org);  else h.delete('org');
-    if (state.preset) h.set('preset', state.preset); else h.delete('preset');
-    const hashStr = h.toString();
-    a.setAttribute('href', pathPart + (hashStr ? '#' + hashStr : ''));
+    a.setAttribute('href', _buildReportUrl(a.dataset._origHref, false));
   });
 }
+
+// Клік-перехоплювач: будує URL «на льоту» з cache-bust query — щоб гарантовано
+// обійти кеш браузера для HTML самих звітів. Працює тільки для звичайного
+// лівого кліку (Ctrl/Cmd/Shift/middle-click → стандартна поведінка з href).
+document.addEventListener('click', e => {
+  if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  const a = e.target.closest('a[href^="/"]');
+  if (!a) return;
+  const orig = a.dataset._origHref || a.getAttribute('href') || '';
+  if (!_LINK_REPORTS.some(p => orig.includes('/' + p))) return;
+  e.preventDefault();
+  location.href = _buildReportUrl(orig, true);
+});
 
 // ═══════════════════════════════════════════════════════════════════
 // KPI HERO — 7 цифр (4 live + 3 mock-помічені)
