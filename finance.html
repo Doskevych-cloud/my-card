@@ -10,8 +10,8 @@
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
-<script src="auth.js?v=cbnormorg20260426"></script>
-<script src="header.js?v=cbnormorg20260426"></script>
+<script src="auth.js?v=cbnormorg2_20260426"></script>
+<script src="header.js?v=cbnormorg2_20260426"></script>
 <!-- html2pdf.js for real PDF file download (not browser print dialog) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <!-- SheetJS (xlsx) for Excel export -->
@@ -2971,11 +2971,12 @@ function cbRender() {
   };
 
 
-  // Нормалізуємо орг: «Ген.ОД» / «Ген.КЕ» / «Ген.Київ» → «Генерація», все «Реакт*» → «Реакт»
+  // Нормалізуємо орг: «Ген.ОД» / «gen_od» / «gen_ke» / «gen_ky» / «gen» / «generac*» → «Генерація»;
+  // «react*» / «Реакт*» → «Реакт». Все інше — як є.
   const cbNormOrg = (s) => {
-    const v = String(s || '').toLowerCase();
-    if (/реакт|react/.test(v)) return 'Реакт';
-    if (/ген|generac/.test(v)) return 'Генерація';
+    const v = String(s || '').toLowerCase().trim();
+    if (/реакт|^react/.test(v)) return 'Реакт';
+    if (/ген|^gen|generac/.test(v)) return 'Генерація';
     return s || 'Без організації';
   };
 
