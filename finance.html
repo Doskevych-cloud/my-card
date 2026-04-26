@@ -535,15 +535,27 @@ const activeView = { tab: 'pnl' };
 
 // ── URL state persistence ──
 function saveStateToUrl() {
-  const st = activeView.tab === 'ar' ? arState : activeView.tab === 'gp' ? gpState : pnlState;
+  const tab = activeView.tab;
   const p = new URLSearchParams();
-  p.set('tab', activeView.tab);
-  if (st.from) p.set('from', st.from);
-  if (st.to) p.set('to', st.to);
-  if (st.org) p.set('org', st.org);
-  if (st.preset) p.set('preset', st.preset);
-  // Collapsed state: default true (collapsed on load); only write if false (expanded)
-  if (st.collapsed === false) p.set('exp', '1');
+  p.set('tab', tab);
+  // Date-range tabs (P&L, GP, AR, CF, FI) — пишемо from/to/preset/org.
+  // Point-in-time tabs (MS, WH, CB) — пишемо тільки on/org.
+  const RANGE = { pnl: pnlState, gp: gpState, ar: arState };
+  const POINT = { ms: typeof msState !== 'undefined' ? msState : null,
+                  wh: typeof whState !== 'undefined' ? whState : null,
+                  cb: typeof cbState !== 'undefined' ? cbState : null };
+  if (RANGE[tab]) {
+    const st = RANGE[tab];
+    if (st.from) p.set('from', st.from);
+    if (st.to) p.set('to', st.to);
+    if (st.org) p.set('org', st.org);
+    if (st.preset) p.set('preset', st.preset);
+    if (st.collapsed === false) p.set('exp', '1');
+  } else if (POINT[tab]) {
+    const st = POINT[tab];
+    if (st && st.on) p.set('on', st.on);
+    if (st && st.org) p.set('org', st.org);
+  }
   history.replaceState(null, '', '#' + p.toString());
 }
 function readStateFromUrl() {
@@ -2390,12 +2402,14 @@ function msSetPreset(p) {
   else if (p === 'qend')   { const q = Math.floor(m / 3); d = new Date(y, (q + 1) * 3, 0); }
   msState.on = _localISO(d);
   document.getElementById('msOnIn').value = msState.on;
+  saveStateToUrl();
   msLoad();
 }
 function msSetOrg(el) {
   msState.org = el.dataset.org;
   el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
+  saveStateToUrl();
   msLoad();
 }
 
@@ -2479,7 +2493,7 @@ function renderMs(data) {
 }
 document.addEventListener('DOMContentLoaded', function() {
   const onIn = document.getElementById('msOnIn');
-  if (onIn) onIn.addEventListener('change', function(e) { msState.on = e.target.value; msLoad(); });
+  if (onIn) onIn.addEventListener('change', function(e) { msState.on = e.target.value; saveStateToUrl(); msLoad(); });
 });
 
 /* ═══════════════════════════════════════════════════
@@ -2503,12 +2517,14 @@ function whSetPreset(p) {
                   (p === 'prevMeom' && tag === 'Кінець попер. міс');
     c.classList.toggle('active', match);
   });
+  saveStateToUrl();
   whLoad();
 }
 function whSetOrg(el) {
   whState.org = el.dataset.org;
   el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
+  saveStateToUrl();
   whRender();
 }
 
@@ -2696,7 +2712,7 @@ function whShowMore() {
 }
 document.addEventListener('DOMContentLoaded', function() {
   const dIn = document.getElementById('whDateIn');
-  if (dIn) dIn.addEventListener('change', function(e) { whState.on = e.target.value; whLoad(); });
+  if (dIn) dIn.addEventListener('change', function(e) { whState.on = e.target.value; saveStateToUrl(); whLoad(); });
 });
 
 /* ═══════════════════════════════════════════════════
@@ -2719,12 +2735,14 @@ function cbSetPreset(p) {
                   (p === 'prevMeom' && tag === 'Кінець попер. міс');
     c.classList.toggle('active', match);
   });
+  saveStateToUrl();
   cbLoad();
 }
 function cbSetOrg(el) {
   cbState.org = el.dataset.org;
   el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
+  saveStateToUrl();
   cbLoad();
 }
 
@@ -2893,7 +2911,7 @@ function cbRender() {
 
 document.addEventListener('DOMContentLoaded', function() {
   const dIn = document.getElementById('cbDateIn');
-  if (dIn) dIn.addEventListener('change', function(e) { cbState.on = e.target.value; cbLoad(); });
+  if (dIn) dIn.addEventListener('change', function(e) { cbState.on = e.target.value; saveStateToUrl(); cbLoad(); });
 });
 
 /* ═══════════════════════════════════════════════════
@@ -3038,19 +3056,40 @@ Auth.require('finance').then(function(user) {
       var cfTabEl = document.querySelector('.ptab[data-view="cf"]');
       if (cfTabEl) switchTab(cfTabEl);
     } else if (chosenTab === 'ms') {
+      // Дата і org для mutual settlements з URL (?on= / ?org=)
+      if (saved.on && /^\d{4}-\d{2}-\d{2}$/.test(saved.on)) {
+        msState.on = saved.on;
+        var msOnInEl = document.getElementById('msOnIn');
+        if (msOnInEl) msOnInEl.value = saved.on;
+      }
+      if (saved.org && (!hasAnyOrg || allowedOrgs.includes(saved.org))) {
+        msState.org = saved.org;
+      }
       var msTabEl = document.querySelector('.ptab[data-view="ms"]');
       if (msTabEl) switchTab(msTabEl);
+    } else if (chosenTab === 'cb') {
+      // Дата і org для cash balance з URL (?on= / ?org=)
+      if (saved.on && /^\d{4}-\d{2}-\d{2}$/.test(saved.on)) {
+        cbState.on = saved.on;
+        var cbDateInEl = document.getElementById('cbDateIn');
+        if (cbDateInEl) cbDateInEl.value = saved.on;
+        document.querySelectorAll('#cbToolbar .group:first-of-type .chip').forEach(function(c) { c.classList.remove('active'); });
+      }
+      if (saved.org && (!hasAnyOrg || allowedOrgs.includes(saved.org))) {
+        cbState.org = saved.org;
+      }
+      var cbTabEl = document.querySelector('.ptab[data-view="cb"]');
+      if (cbTabEl) switchTab(cbTabEl);
     } else if (chosenTab === 'wh') {
-      // Дата для warehouse (wh_on) — якщо передана з executive dashboard,
-      // підвантажуємо саме її замість дефолту 'today' щоб цифри співпадали.
-      if (saved.wh_on && /^\d{4}-\d{2}-\d{2}$/.test(saved.wh_on)) {
-        whState.on = saved.wh_on;
+      // Дата для warehouse — приймаємо обидва: ?on= (новий) і ?wh_on= (legacy
+      // з executive dashboard).
+      var whOn = saved.on || saved.wh_on;
+      if (whOn && /^\d{4}-\d{2}-\d{2}$/.test(whOn)) {
+        whState.on = whOn;
         var whDateInEl = document.getElementById('whDateIn');
-        if (whDateInEl) whDateInEl.value = saved.wh_on;
-        // Скидаємо preset-чіпи (обрана дата не з фіксованого списку).
+        if (whDateInEl) whDateInEl.value = whOn;
         document.querySelectorAll('#whToolbar .group:first-of-type .chip').forEach(function(c) { c.classList.remove('active'); });
       }
-      // Якщо org з URL — застосовуємо.
       if (saved.org && (!hasAnyOrg || allowedOrgs.includes(saved.org))) {
         whState.org = saved.org;
       }
