@@ -2828,16 +2828,38 @@ function cbRender() {
   }
 
   const cardHtml = (a) => {
-    const cursA = Object.keys(a.by_currency || {}).sort((x,y) => CUR_ORDER.indexOf(x) - CUR_ORDER.indexOf(y));
-    const totalUsd = Number(a.total_usd) || 0;
-    const totalCls = totalUsd < -0.5 ? 'color:var(--red)' : (totalUsd > 0.5 ? 'color:var(--green)' : 'color:var(--text3)');
-    const breakdown = cursA
+    const cursAll = Object.keys(a.by_currency || {})
       .filter(cur => Math.abs(Number((a.by_currency[cur]||{}).balance) || 0) > 0.005)
+      .sort((x,y) => CUR_ORDER.indexOf(x) - CUR_ORDER.indexOf(y));
+    const totalUsd = Number(a.total_usd) || 0;
+    const colorFor = v => v < -0.5 ? 'color:var(--red)' : (v > 0.5 ? 'color:var(--green)' : 'color:var(--text3)');
+
+    // Основна цифра — у нативній валюті рахунку. Якщо рахунок мульти-валютний
+    // (рідко: каси з кількома валютами), беремо валюту з найбільшим |balance|.
+    let mainCur = null, mainBal = 0;
+    if (cursAll.length) {
+      const sorted = cursAll.slice().sort((x,y) =>
+        Math.abs(Number(a.by_currency[y].balance) || 0) - Math.abs(Number(a.by_currency[x].balance) || 0));
+      mainCur = sorted[0];
+      mainBal = Number(a.by_currency[mainCur].balance) || 0;
+    }
+    const mainHtml = mainCur
+      ? '<span class="cv" style="' + colorFor(mainBal) + '">' + fmt(mainBal, 0) + ' ' + sym(mainCur) + '</span>'
+      : '<span class="cv" style="color:var(--text3)">0 $</span>';
+    // Підпис: USD-еквівалент (якщо нативна не USD або рахунок мульти-валютний)
+    const showUsdSub = mainCur && (mainCur !== 'USD' || cursAll.length > 1);
+    const usdSub = showUsdSub
+      ? '<span class="cs" style="color:var(--text3)">≈ ' + fmt(totalUsd, 0) + ' $</span>'
+      : '';
+
+    // Breakdown — показуємо лише додаткові валюти (крім mainCur), тільки коли мульти-валютний.
+    const otherCurs = cursAll.filter(c => c !== mainCur);
+    const breakdown = otherCurs
       .map(cur => {
-        const bb = a.by_currency[cur] || {};
-        const bal = Number(bb.balance) || 0;
+        const bal = Number(a.by_currency[cur].balance) || 0;
         return '<div class="cb-breakdown-row"><span class="cb-breakdown-cur">' + cur + '</span><span class="cb-breakdown-val">' + fmt(bal, 2) + ' ' + sym(cur) + '</span></div>';
       }).join('');
+
     const orgStr = a.org_short ? esc(a.org_short) : '';
     // Іконка: favicon з домену банку або літерний fallback
     const dom = cbBankDomain(a.description, a.account_type);
@@ -2848,7 +2870,8 @@ function cbRender() {
     const titleClean = cbCleanDescription(a.description) || a.description || '';
     return '<div class="pnl-card">' +
       '<div class="cb-card-head">' + logoHtml + '<span class="cl">' + esc(titleClean) + '</span></div>' +
-      '<span class="cv" style="' + totalCls + '">' + fmt(totalUsd, 0) + ' $</span>' +
+      mainHtml +
+      usdSub +
       (orgStr ? '<span class="cs">' + orgStr + '</span>' : '') +
       (breakdown ? '<div class="cb-breakdown">' + breakdown + '</div>' : '') +
     '</div>';
