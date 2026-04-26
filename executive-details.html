@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Executive · деталі</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<script>
+  try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
+</script>
+<script src="auth.js?v=execdetails-20260426"></script>
+<script src="header.js?v=execdetails-20260426"></script>
+<style>
+:root{
+  --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
+  --surface:#141414; --surface2:#1c1c1c; --surface3:#242424;
+  --border:#262626; --border2:#333;
+  --text:#f5f5f5; --text2:#a3a3a3; --text3:#737373;
+  --accent:#ff8319; --accent-bg:rgba(255,131,25,.12);
+  --red:#e74c3c; --red-bg:rgba(231,76,60,.10);
+  --green:#22c55e; --green-bg:rgba(34,197,94,.10);
+  --blue:#3b82f6; --blue-bg:rgba(59,130,246,.10);
+  --yellow:#eab308; --yellow-bg:rgba(234,179,8,.10);
+  --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+:root[data-theme="light"]{
+  --bg:#f5f5f7; --bg2:#ffffff; --bg3:#ececef;
+  --surface:#ffffff; --surface2:#ffffff; --surface3:#f0f2f5;
+  --border:#e5e5ea; --border2:#d1d1d6;
+  --text:#1c1c1e; --text2:#48484a; --text3:#8e8e93;
+  --accent:#e07017; --accent-bg:rgba(224,112,23,.12);
+  --red:#d93025; --red-bg:rgba(217,48,37,.08);
+  --green:#15803d; --green-bg:rgba(21,128,61,.08);
+  --blue:#1d4ed8; --blue-bg:rgba(29,78,216,.08);
+  --yellow:#a16207; --yellow-bg:rgba(161,98,7,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}
+
+.wrap{max-width:1400px;margin:0 auto;padding:20px}
+
+.hero{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+.hero h1{font-size:22px;font-weight:700;letter-spacing:-.4px}
+.hero .sub{font-size:12px;color:var(--text3);margin-top:4px}
+.back-link{font-size:11px;color:var(--text2);font-weight:600;padding:6px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;display:inline-flex;align-items:center;gap:5px;text-decoration:none;transition:background .15s,color .15s}
+.back-link:hover{background:var(--bg3);color:var(--accent)}
+
+.page-tabs{display:inline-flex;gap:4px;padding:4px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:14px;flex-wrap:wrap}
+.ptab{padding:8px 14px;border-radius:7px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;user-select:none;transition:background .15s,color .15s;white-space:nowrap}
+.ptab:hover{background:var(--bg3);color:var(--text)}
+.ptab.active{background:var(--accent-bg);color:var(--accent)}
+
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
+.toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.toolbar input[type=date]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;color-scheme:dark;font-family:inherit}
+:root[data-theme="light"] .toolbar input[type=date]{color-scheme:light}
+.toolbar .group{display:inline-flex;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px}
+.toolbar .group .chip{padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;user-select:none;transition:background .15s,color .15s}
+.toolbar .group .chip:hover{background:var(--bg3);color:var(--text)}
+.toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
+.toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 2px}
+
+.card{padding:16px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:14px}
+.card h2{font-size:14px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.card .sub{font-size:11px;color:var(--text3);font-weight:500;margin-bottom:10px}
+
+table.t{width:100%;border-collapse:collapse;font-size:12.5px}
+table.t th{text-align:left;padding:9px 8px;border-bottom:1px solid var(--border2);font-weight:700;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;background:var(--surface2)}
+table.t td{padding:9px 8px;border-bottom:1px solid var(--border);color:var(--text)}
+table.t td.num,table.t th.num{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+table.t tr:last-child td{border-bottom:none}
+table.t tbody tr:hover{background:var(--surface3)}
+table.t .pos{color:var(--green)}
+table.t .neg{color:var(--red)}
+
+.loading{text-align:center;padding:30px;color:var(--text3);font-size:12px}
+.loading::after{content:'';display:block;width:22px;height:22px;margin:12px auto 0;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:30px;color:var(--text3);font-size:12px;font-style:italic}
+.error{padding:14px;color:var(--red);background:var(--red-bg);border-radius:10px;font-size:12px;text-align:center}
+
+.panel{display:none}
+.panel.active{display:block;animation:fade .2s ease-out}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+.split-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:900px){.split-grid{grid-template-columns:1fr}}
+
+/* FX position rows */
+.fx-row{display:grid;grid-template-columns:80px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.fx-row:last-child{border-bottom:none}
+.fx-cur{font-family:var(--mono);font-weight:700;font-size:12px;color:var(--text)}
+.fx-name{font-size:11px;color:var(--text3)}
+.fx-val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);text-align:right}
+
+.position-row{display:grid;grid-template-columns:1fr auto;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.position-row.tot{border-top:2px solid var(--border2);font-size:15px;font-weight:700;padding-top:11px}
+.position-row .num{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600}
+.num.pos{color:var(--green)}
+.num.neg{color:var(--red)}
+
+/* Alert items */
+.alert-row{display:grid;grid-template-columns:90px 1fr auto;gap:14px;align-items:center;padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;margin-bottom:8px}
+.alert-row .pri{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;text-align:center;padding:4px 0;border-radius:4px}
+.alert-row .pri.h{background:var(--red-bg);color:var(--red)}
+.alert-row .pri.m{background:var(--yellow-bg);color:var(--yellow)}
+.alert-row .pri.l{background:var(--blue-bg);color:var(--blue)}
+.alert-row .body{display:flex;flex-direction:column;gap:3px;min-width:0}
+.alert-row .body strong{color:var(--text);font-weight:600;font-size:13px}
+.alert-row .body span{color:var(--text3);font-size:12px}
+.alert-row .act{font-size:11px;font-weight:600;color:var(--text2);padding:6px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;white-space:nowrap;text-decoration:none;display:inline-flex}
+.alert-row .act:hover{color:var(--accent);border-color:var(--accent)}
+
+/* Credit limit form */
+.limit-form{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px}
+.limit-form input,.limit-form select{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit}
+.limit-form button{padding:7px 14px;background:var(--accent);border:0;border-radius:6px;color:#fff;font-weight:600;font-size:12px;cursor:pointer}
+.limit-form button:hover{opacity:.92}
+.limit-form .hint{flex-basis:100%;font-size:11px;color:var(--text3);margin-top:4px}
+</style>
+</head>
+<body>
+
+<div id="appHeader"></div>
+<div class="wrap">
+
+  <div class="hero">
+    <div>
+      <h1 id="pageTitle">Executive · деталі</h1>
+      <div class="sub" id="pageSub">Розгорнуті дані для блоків дашборду керівника</div>
+    </div>
+    <a class="back-link" href="/executive.html">← Назад на дашборд</a>
+  </div>
+
+  <div class="page-tabs">
+    <span class="ptab" data-tab="stock-alerts">Алерти запасів</span>
+    <span class="ptab" data-tab="price-trends">Тренд цін</span>
+    <span class="ptab" data-tab="fx-position">Валютна позиція</span>
+    <span class="ptab" data-tab="credit-limits">Кредитні ліміти</span>
+    <span class="ptab" data-tab="alerts">Алерти CEO</span>
+  </div>
+
+  <div class="toolbar" id="toolbar">
+    <span class="lbl">Період</span>
+    <input type="date" id="fromIn">
+    <span style="color:var(--text3)">—</span>
+    <input type="date" id="toIn">
+    <span class="group" id="periodGroup">
+      <span class="chip" data-preset="month">Цей місяць</span>
+      <span class="chip" data-preset="quarter">Квартал</span>
+      <span class="chip" data-preset="year">Рік</span>
+    </span>
+    <span class="sep"></span>
+    <span class="group" id="orgGroup">
+      <span class="chip active" data-org="">Всі</span>
+      <span class="chip" data-org="Реакт">Реакт</span>
+      <span class="chip" data-org="Генерація">Генерація</span>
+    </span>
+  </div>
+
+  <!-- ═══ STOCK ALERTS ═══ -->
+  <div class="panel" id="panel-stock-alerts">
+    <div class="split-grid">
+      <div class="card">
+        <h2>Stockouts</h2>
+        <div class="sub">Топ-A SKU з запасом &lt; 14 днів або 0 на руках при активних продажах</div>
+        <div id="stockoutsBody"><div class="loading">Завантаження…</div></div>
+      </div>
+      <div class="card">
+        <h2>Dead stock</h2>
+        <div class="sub">SKU з запасом &gt; 0 і нульовими продажами 180+ днів</div>
+        <div id="deadStockBody"><div class="loading">Завантаження…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PRICE TRENDS ═══ -->
+  <div class="panel" id="panel-price-trends">
+    <div class="card">
+      <h2>Тренд закупівельних цін · топ-5 SKU</h2>
+      <div class="sub">Сер. ціна за період / 3 міс тому / 6 міс тому · підсвічено динаміку</div>
+      <div id="priceTrendsBody"><div class="loading">Завантаження…</div></div>
+    </div>
+  </div>
+
+  <!-- ═══ FX POSITION ═══ -->
+  <div class="panel" id="panel-fx-position">
+    <div class="split-grid">
+      <div class="card">
+        <h2>Курси</h2>
+        <div class="sub" id="ratesSub">—</div>
+        <div id="ratesBody"><div class="loading">Завантаження…</div></div>
+      </div>
+      <div class="card">
+        <h2>Валютна позиція USD</h2>
+        <div class="sub">Cash + інвентар + дебіторка − кредиторка</div>
+        <div id="positionBody"><div class="loading">Завантаження…</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Чутливість позиції</h2>
+      <div class="sub">Δ USD/UAH → чиста позиція в UAH у п'яти сценаріях</div>
+      <div id="sensitivityBody"><div class="loading">Завантаження…</div></div>
+    </div>
+  </div>
+
+  <!-- ═══ CREDIT LIMITS ═══ -->
+  <div class="panel" id="panel-credit-limits">
+    <div class="card">
+      <h2>Кредитні ліміти клієнтів</h2>
+      <div class="sub">Утилізація встановленого ліміту · live з D1 credit_limits</div>
+      <div id="limitsBody"><div class="loading">Завантаження…</div></div>
+      <div class="limit-form" id="limitForm" style="display:none">
+        <input type="text" id="limCustomerSearch" placeholder="Пошук клієнта…" style="min-width:280px">
+        <select id="limCustomerSelect" style="min-width:280px;display:none"></select>
+        <input type="number" id="limAmount" placeholder="Ліміт USD" min="0" step="100" style="width:140px">
+        <input type="text" id="limNotes" placeholder="Коментар (опц.)" style="flex:1;min-width:160px">
+        <button id="limSubmit">Додати / оновити</button>
+        <span class="hint">Видимо тільки для admin / finance · Δ зберігається в D1 credit_limits</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ CEO ALERTS ═══ -->
+  <div class="panel" id="panel-alerts">
+    <div class="card">
+      <h2>Алерти на сьогодні</h2>
+      <div class="sub">Live з порогових перевірок: AR/AP/маржа/запаси</div>
+      <div id="alertsBody"><div class="loading">Завантаження…</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API_URL = 'https://price-api.doskevich.workers.dev';
+
+const state = {
+  preset: 'month', from: '', to: '',
+  org: '',
+  tab: 'stock-alerts',
+};
+
+function _iso(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function fmt(n, dec = 0) { if (n == null || isNaN(n)) return '—'; return Number(n).toLocaleString('uk-UA', { maximumFractionDigits: dec, minimumFractionDigits: dec }); }
+function fmtMoneyShort(n) {
+  if (n == null || isNaN(n)) return '—';
+  const abs = Math.abs(n); const sign = n < 0 ? '−' : '';
+  if (abs >= 1_000_000) return sign + (abs / 1_000_000).toFixed(2).replace('.', ',') + ' M $';
+  if (abs >= 1000) return sign + (abs / 1000).toFixed(1).replace('.', ',') + ' k $';
+  return sign + Math.round(abs) + ' $';
+}
+function fmtPct(n, dec = 1) { if (n == null || !isFinite(n)) return '—'; return (n * 100).toFixed(dec) + '%'; }
+function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function cpOrgQ() {
+  if (!state.org) return '';
+  const map = { 'Реакт':'react', 'Генерація':'gen', 'Ген.Київ':'gen_ky' };
+  const code = map[state.org];
+  return code ? '&org=' + encodeURIComponent(code) : '';
+}
+
+Auth.require('dashboard').then(user => {
+  window.__user = user;
+  AppHeader.mount({ active: 'executive', user });
+
+  const orgs = user.orgs || {};
+  const hasAny = Object.values(orgs).some(v => v);
+  if (hasAny) {
+    const allowed = ['Реакт','Генерація'].filter(o => orgs[o]);
+    document.querySelectorAll('#orgGroup .chip').forEach(chip => {
+      const org = chip.dataset.org;
+      if (org === '') { if (allowed.length < 2) chip.style.display = 'none'; }
+      else if (!orgs[org]) chip.style.display = 'none';
+    });
+    const def = allowed.length === 1 ? allowed[0] : '';
+    state.org = def;
+    document.querySelectorAll('#orgGroup .chip').forEach(c => c.classList.toggle('active', c.dataset.org === def));
+  }
+
+  bindToolbar();
+  bindTabs();
+  setPreset('month');
+  // open tab from hash or default
+  const hash = (location.hash || '').replace('#', '');
+  const validTabs = ['stock-alerts','price-trends','fx-position','credit-limits','alerts'];
+  const initTab = validTabs.includes(hash) ? hash : 'stock-alerts';
+  switchTab(initTab);
+
+  // Show admin form if admin
+  if (user.roles?.admin || user.roles?.finance) {
+    document.getElementById('limitForm').style.display = 'flex';
+  }
+});
+
+function bindToolbar() {
+  document.querySelectorAll('#periodGroup .chip').forEach(c => c.addEventListener('click', () => setPreset(c.dataset.preset)));
+  document.querySelectorAll('#orgGroup .chip').forEach(chip => chip.addEventListener('click', () => {
+    if (chip.style.display === 'none') return;
+    document.querySelectorAll('#orgGroup .chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    state.org = chip.dataset.org;
+    loadCurrentTab();
+  }));
+  document.getElementById('fromIn').addEventListener('change', e => { state.from = e.target.value; loadCurrentTab(); });
+  document.getElementById('toIn').addEventListener('change', e => { state.to = e.target.value; loadCurrentTab(); });
+}
+
+function setPreset(p) {
+  state.preset = p;
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  let from, to = now;
+  if (p === 'month') from = new Date(y, m, 1);
+  else if (p === 'quarter') { const q = Math.floor(m/3); from = new Date(y, q*3, 1); }
+  else if (p === 'year') from = new Date(y, 0, 1);
+  state.from = _iso(from); state.to = _iso(to);
+  document.getElementById('fromIn').value = state.from;
+  document.getElementById('toIn').value = state.to;
+  document.querySelectorAll('#periodGroup .chip').forEach(c => c.classList.toggle('active', c.dataset.preset === p));
+  loadCurrentTab();
+}
+
+function bindTabs() {
+  document.querySelectorAll('.ptab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+}
+function switchTab(tab) {
+  state.tab = tab;
+  history.replaceState(null, '', '#' + tab);
+  document.querySelectorAll('.ptab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
+  loadCurrentTab();
+}
+
+function loadCurrentTab() {
+  if (state.tab === 'stock-alerts') return loadStockAlerts();
+  if (state.tab === 'price-trends') return loadPriceTrends();
+  if (state.tab === 'fx-position') return loadFxPosition();
+  if (state.tab === 'credit-limits') return loadCreditLimits();
+  if (state.tab === 'alerts') return loadCeoAlerts();
+}
+
+// ═══ STOCK ALERTS ═══
+async function loadStockAlerts() {
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
+  document.getElementById('stockoutsBody').innerHTML = '<div class="loading">Завантаження…</div>';
+  document.getElementById('deadStockBody').innerHTML = '<div class="loading">Завантаження…</div>';
+  const r = await fetch(`${API_URL}/?action=executive_warehouse_breakdown${orgQ}`).then(r=>r.json()).catch(e => ({ error: String(e) }));
+  if (r.error) {
+    document.getElementById('stockoutsBody').innerHTML = `<div class="error">${esc(r.error)}</div>`;
+    document.getElementById('deadStockBody').innerHTML = `<div class="error">${esc(r.error)}</div>`;
+    return;
+  }
+  const so = r.stockouts || [];
+  if (!so.length) {
+    document.getElementById('stockoutsBody').innerHTML = '<div class="empty">Немає критичних stockouts</div>';
+  } else {
+    document.getElementById('stockoutsBody').innerHTML = `<table class="t">
+      <thead><tr><th>SKU</th><th>Категорія</th><th class="num">На руках</th><th class="num">Продаж/30д</th><th class="num">Днів запасу</th></tr></thead>
+      <tbody>${so.map(s => `<tr>
+        <td><strong>${esc(s.name).slice(0, 80)}</strong>${s.article ? `<br><small style="color:var(--text3)">${esc(s.article)}</small>` : ''}</td>
+        <td>${esc(s.category || '—')}</td>
+        <td class="num">${fmt(s.qty_onhand)}</td>
+        <td class="num">${fmt(Math.round(s.qty_30d))}</td>
+        <td class="num neg">${s.doh_days_qty != null ? Math.round(s.doh_days_qty) + ' д' : 'stockout'}</td>
+      </tr>`).join('')}</tbody></table>`;
+  }
+  const ds = r.dead_stock || [];
+  if (!ds.length) {
+    document.getElementById('deadStockBody').innerHTML = '<div class="empty">Немає мертвого стоку</div>';
+  } else {
+    document.getElementById('deadStockBody').innerHTML = `<table class="t">
+      <thead><tr><th>SKU</th><th>Категорія</th><th class="num">На руках</th><th class="num">Днів</th><th class="num">Заморож. USD</th></tr></thead>
+      <tbody>${ds.map(s => `<tr>
+        <td><strong>${esc(s.name).slice(0, 80)}</strong>${s.article ? `<br><small style="color:var(--text3)">${esc(s.article)}</small>` : ''}</td>
+        <td>${esc(s.category || '—')}</td>
+        <td class="num">${fmt(s.qty_onhand)}</td>
+        <td class="num">${s.days_since_sale != null ? s.days_since_sale + ' д' : '180+ д'}</td>
+        <td class="num">${fmtMoneyShort(s.stock_usd)}</td>
+      </tr>`).join('')}</tbody></table>`;
+  }
+}
+
+// ═══ PRICE TRENDS ═══
+async function loadPriceTrends() {
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
+  document.getElementById('priceTrendsBody').innerHTML = '<div class="loading">Завантаження…</div>';
+  const r = await fetch(`${API_URL}/?action=executive_suppliers_breakdown&from=${state.from}&to=${state.to}${orgQ}`).then(r=>r.json()).catch(e=>({error:String(e)}));
+  if (r.error) {
+    document.getElementById('priceTrendsBody').innerHTML = `<div class="error">${esc(r.error)}</div>`;
+    return;
+  }
+  const trends = r.price_trends || [];
+  if (!trends.length) {
+    document.getElementById('priceTrendsBody').innerHTML = '<div class="empty">Немає даних по топ-SKU</div>';
+    return;
+  }
+  const fmtP = v => v == null ? '—' : '$ ' + (v >= 1000 ? (v/1000).toFixed(1) + 'k' : v.toFixed(2));
+  document.getElementById('priceTrendsBody').innerHTML = `<table class="t">
+    <thead><tr><th>SKU</th><th>Категорія</th><th class="num">Зараз</th><th class="num">3 міс тому</th><th class="num">6 міс тому</th><th class="num">Δ 6м</th></tr></thead>
+    <tbody>${trends.map(t => {
+      const cls = t.delta_6m == null ? '' : t.delta_6m > 0.05 ? 'neg' : t.delta_6m < -0.05 ? 'pos' : '';
+      const dlt = t.delta_6m == null ? '—' : (t.delta_6m > 0 ? '+' : '') + (t.delta_6m * 100).toFixed(1) + '%';
+      return `<tr>
+        <td><strong>${esc(t.name).slice(0, 70)}</strong>${t.article ? `<br><small style="color:var(--text3)">${esc(t.article)}</small>` : ''}</td>
+        <td>${esc(t.category || '—')}</td>
+        <td class="num">${fmtP(t.price_now)}</td>
+        <td class="num">${fmtP(t.price_3m_ago)}</td>
+        <td class="num">${fmtP(t.price_6m_ago)}</td>
+        <td class="num ${cls}">${dlt}</td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+// ═══ FX POSITION ═══
+async function loadFxPosition() {
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
+  ['ratesBody','positionBody','sensitivityBody'].forEach(id => {
+    document.getElementById(id).innerHTML = '<div class="loading">Завантаження…</div>';
+  });
+  const r = await fetch(`${API_URL}/?action=executive_fx_position${orgQ}`).then(r=>r.json()).catch(e=>({error:String(e)}));
+  if (r.error) {
+    ['ratesBody','positionBody','sensitivityBody'].forEach(id => {
+      document.getElementById(id).innerHTML = `<div class="error">${esc(r.error)}</div>`;
+    });
+    return;
+  }
+  const rt = r.rates || {}, sw = rt.swift || {}, doc = rt.doc_1c || {};
+  document.getElementById('ratesSub').textContent = `${rt.source || '—'} · станом на ${rt.date || '—'}`;
+  const fmtS = v => v != null && isFinite(v) ? v.toFixed(2).replace('.', ',') : '—';
+  document.getElementById('ratesBody').innerHTML = `
+    <div class="fx-row"><div class="fx-cur">USD SWIFT</div><div><div style="color:var(--text);font-weight:600">PrivatBank</div><div class="fx-name">купівля ${fmtS(sw.usd_buy)} / продаж ${fmtS(sw.usd_sell)}</div></div><div class="fx-val">${fmtS(sw.usd_sell)} ₴</div></div>
+    <div class="fx-row"><div class="fx-cur">EUR SWIFT</div><div><div style="color:var(--text);font-weight:600">PrivatBank</div><div class="fx-name">купівля ${fmtS(sw.eur_buy)} / продаж ${fmtS(sw.eur_sell)}</div></div><div class="fx-val">${fmtS(sw.eur_sell)} ₴</div></div>
+    <div class="fx-row"><div class="fx-cur" style="color:var(--text3)">1С doc</div><div><div style="color:var(--text2)">з документів</div><div class="fx-name">USD ${fmtS(doc.usd_uah)} · EUR ${fmtS(doc.eur_uah)}</div></div><div class="fx-val" style="color:var(--text3);font-size:11px">довідково</div></div>
+    <div class="fx-row"><div class="fx-cur">EUR/USD</div><div><div style="color:var(--text);font-weight:600">кросс-курс</div></div><div class="fx-val">${rt.eur_usd ? rt.eur_usd.toFixed(4) : '—'}</div></div>
+  `;
+
+  const pos = r.position_usd || {};
+  const positionRow = (lbl, val, isLiability) => `<div class="position-row">
+    <span style="color:var(--text2)">${lbl}</span>
+    <span class="num ${isLiability ? 'neg' : (val > 0 ? 'pos' : '')}">${isLiability ? '−' : (val > 0 ? '+' : '')} ${fmtMoneyShort(Math.abs(val))}</span>
+  </div>`;
+  const lbl = pos.net > 0 ? 'довга' : pos.net < 0 ? 'коротка' : 'нейтральна';
+  document.getElementById('positionBody').innerHTML = `
+    ${positionRow('USD на рахунках', pos.cash, false)}
+    ${positionRow('USD у запасах', pos.inventory, false)}
+    ${positionRow('USD у дорозі (PO)', pos.transit, false)}
+    ${positionRow('USD дебіторка', pos.ar, false)}
+    ${positionRow('USD кредиторка', pos.ap, true)}
+    <div class="position-row tot">
+      <span>Чиста позиція</span>
+      <span class="num ${pos.net > 0 ? 'pos' : (pos.net < 0 ? 'neg' : '')}">${pos.net >= 0 ? '+' : '−'} ${fmtMoneyShort(Math.abs(pos.net))}</span>
+    </div>
+    <div style="padding:9px 11px;background:var(--bg3);border-radius:8px;font-size:11.5px;color:var(--text2);margin-top:8px">
+      Позиція <strong style="color:var(--${pos.net > 0 ? 'green' : 'red'})">${lbl}</strong>.
+      ${pos.net > 0 ? 'Ослаблення гривні підвищує гривневу вартість запасів і дебіторки.' : 'Зміцнення гривні допомагає, бо USD-зобов\\'язання дорожчають менше.'}
+    </div>
+  `;
+
+  const sens = r.sensitivity || [];
+  document.getElementById('sensitivityBody').innerHTML = `<table class="t">
+    <thead><tr><th>Сценарій</th><th class="num">Курс UAH/USD</th><th class="num">Позиція UAH</th><th class="num">Δ UAH</th></tr></thead>
+    <tbody>${sens.map(s => {
+      const isCur = s.pct === 0;
+      const lbl = isCur ? '<strong>Поточний</strong>' : (s.pct > 0 ? `+${s.pct}% девальвація` : `${s.pct}% укріплення`);
+      const cls = isCur ? '' : (s.delta_uah > 0 ? 'pos' : 'neg');
+      return `<tr ${isCur ? 'style="background:var(--surface3)"' : ''}>
+        <td>${lbl}</td>
+        <td class="num">${s.rate_uah_per_usd}</td>
+        <td class="num">${fmt(s.position_uah / 1_000_000, 2)} M ₴</td>
+        <td class="num ${cls}">${isCur ? '—' : (s.delta_uah > 0 ? '+' : '') + fmt(s.delta_uah / 1_000_000, 2) + ' M ₴'}</td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+// ═══ CREDIT LIMITS ═══
+async function loadCreditLimits() {
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
+  document.getElementById('limitsBody').innerHTML = '<div class="loading">Завантаження…</div>';
+  const r = await fetch(`${API_URL}/?action=executive_ar_aging${orgQ}`).then(r=>r.json()).catch(e=>({error:String(e)}));
+  if (r.error) {
+    document.getElementById('limitsBody').innerHTML = `<div class="error">${esc(r.error)}</div>`;
+    return;
+  }
+  const limits = r.credit_limits || [];
+  if (!limits.length) {
+    document.getElementById('limitsBody').innerHTML = `<div class="empty">Кредитні ліміти ще не задані. Заповніть форму нижче.</div>`;
+  } else {
+    document.getElementById('limitsBody').innerHTML = `<table class="t">
+      <thead><tr><th>Клієнт</th><th class="num">Ліміт USD</th><th class="num">Використано</th><th class="num">Утилізація</th><th></th></tr></thead>
+      <tbody>${limits.map(l => {
+        const u = Math.max(0, Math.min(1, l.utilization));
+        const cls = u >= 0.95 ? 'neg' : u >= 0.75 ? 'neg' : '';
+        return `<tr>
+          <td><strong>${esc(l.name)}</strong></td>
+          <td class="num">${fmtMoneyShort(l.limit_usd)}</td>
+          <td class="num">${fmtMoneyShort(l.used_usd)}</td>
+          <td class="num ${cls}">${(u*100).toFixed(0)}%</td>
+          <td><button class="act" onclick="deleteLimit('${esc(l.ref)}','${esc(l.name)}')" style="background:transparent;border:1px solid var(--border);color:var(--text2);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer">видалити</button></td>
+        </tr>`;
+      }).join('')}</tbody></table>`;
+  }
+  // Завантажуємо клієнтів для autocomplete
+  loadCustomersForLimits();
+}
+
+let _customersCache = null;
+async function loadCustomersForLimits() {
+  if (_customersCache) return _customersCache;
+  try {
+    const r = await fetch(`${API_URL}/?action=customers_overview&from=${new Date(new Date().getFullYear(),0,1).toISOString().slice(0,10)}&to=${new Date().toISOString().slice(0,10)}&limit=100`).then(r=>r.json());
+    _customersCache = (r.top || []).map(c => ({ ref: c.ref_key, name: c.description }));
+  } catch (_) { _customersCache = []; }
+  const sel = document.getElementById('limCustomerSelect');
+  sel.innerHTML = '<option value="">— оберіть клієнта —</option>' + _customersCache.map(c => `<option value="${esc(c.ref)}">${esc(c.name)}</option>`).join('');
+  return _customersCache;
+}
+
+document.getElementById('limCustomerSearch').addEventListener('focus', () => {
+  document.getElementById('limCustomerSelect').style.display = 'inline-block';
+  document.getElementById('limCustomerSearch').style.display = 'none';
+  loadCustomersForLimits();
+});
+
+document.getElementById('limSubmit').addEventListener('click', async () => {
+  const ref = document.getElementById('limCustomerSelect').value;
+  const amt = Number(document.getElementById('limAmount').value);
+  const notes = document.getElementById('limNotes').value;
+  if (!ref || !amt || amt < 0) { alert('Виберіть клієнта і вкажіть ліміт > 0'); return; }
+  try {
+    const r = await fetch(`${API_URL}/?action=_admin_set_credit_limit&customer_ref=${encodeURIComponent(ref)}&limit_usd=${amt}&notes=${encodeURIComponent(notes)}`, { method: 'POST', credentials: 'include' }).then(r=>r.json());
+    if (r.error) { alert('Помилка: ' + r.error); return; }
+    document.getElementById('limAmount').value = '';
+    document.getElementById('limNotes').value = '';
+    loadCreditLimits();
+  } catch (e) { alert('Помилка: ' + e.message); }
+});
+
+async function deleteLimit(ref, name) {
+  if (!confirm('Видалити ліміт для ' + name + '?')) return;
+  try {
+    const r = await fetch(`${API_URL}/?action=_admin_set_credit_limit&customer_ref=${encodeURIComponent(ref)}&limit_usd=0`, { method: 'POST', credentials: 'include' }).then(r=>r.json());
+    if (r.error) { alert('Помилка: ' + r.error); return; }
+    loadCreditLimits();
+  } catch (e) { alert('Помилка: ' + e.message); }
+}
+
+// ═══ CEO ALERTS ═══
+async function loadCeoAlerts() {
+  const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
+  const cpOrg = cpOrgQ();
+  document.getElementById('alertsBody').innerHTML = '<div class="loading">Завантаження…</div>';
+  const now = new Date();
+  const janFirst = `${now.getFullYear()}-01-01`;
+  const todayIso = _iso(now);
+  const [pnlR, arR, apR, stockR] = await Promise.all([
+    fetch(`${API_URL}/?action=pnl_accrual_report&from=${state.from}&to=${state.to}${orgQ}`).then(r=>r.json()).catch(()=>null),
+    fetch(`${API_URL}/?action=customers_overview&from=${janFirst}&to=${todayIso}${cpOrg}`).then(r=>r.json()).catch(()=>null),
+    fetch(`${API_URL}/?action=suppliers_overview&from=${janFirst}&to=${todayIso}${cpOrg}`).then(r=>r.json()).catch(()=>null),
+    fetch(`${API_URL}/?action=warehouse_value_report&date=${todayIso}${orgQ}`).then(r=>r.json()).catch(()=>null),
+  ]);
+  const alerts = [];
+  if (arR && !arR.error) {
+    const bal = Number(arR.kpi?.balance_usd || 0);
+    if (Math.abs(bal) > 50000) {
+      alerts.push({ pri: bal > 0 ? 'm' : 'h', title: bal > 0 ? `Передплати клієнтів ${fmtMoneyShort(bal)}` : `Дебіторка ${fmtMoneyShort(-bal)} — потребує уваги`, body: bal > 0 ? 'Маємо невідвантажені передплати — перевірте план відвантажень.' : 'Сальдо клієнтів суттєве. Перегляньте топ-боржників і запустіть нагадування.', act: { lbl: 'AR Aging →', href: '/ar_aging.html' } });
+    }
+  }
+  if (arR && apR && !arR.error && !apR.error) {
+    const arBal = Number(arR.kpi?.balance_usd || 0);
+    const apBal = Number(apR.kpi?.balance_usd || 0);
+    if (apBal > Math.abs(arBal) * 1.2 && apBal > 20000) {
+      alerts.push({ pri: 'm', title: 'Ми винні більше ніж нам винні', body: `AP ${fmtMoneyShort(apBal)} > AR ${fmtMoneyShort(Math.abs(arBal))}. Прискорити інкасацію або перенести виплати.`, act: { lbl: 'Cash flow →', href: '/finance.html#cash-flow' } });
+    }
+  }
+  if (pnlR && !pnlR.error) {
+    const rev = (pnlR.revenue?.total || 0) + (pnlR.otherIncome?.total || 0);
+    const cogs = pnlR.cogs?.total || 0; const exp = pnlR.totalExpenses?.total || 0;
+    const net = rev - cogs - exp;
+    const margin = rev > 0 ? net / rev : 0;
+    if (margin < 0.05 && rev > 0) {
+      alerts.push({ pri: 'h', title: `Маржа за період ${fmtPct(margin)} — низька`, body: `Чиста маржа нижче 5%. COGS ${fmtMoneyShort(cogs)} · OPEX ${fmtMoneyShort(exp)}.`, act: { lbl: 'P&L →', href: '/finance.html' } });
+    }
+  }
+  if (stockR && pnlR && !stockR.error && !pnlR.error) {
+    const stock = Number(stockR.total_value_usd || 0);
+    const rev = (pnlR.revenue?.total || 0) + (pnlR.otherIncome?.total || 0);
+    if (rev > 0 && stock / rev > 1.5) {
+      alerts.push({ pri: 'm', title: `Запаси ${fmtMoneyShort(stock)} — понад 1.5× виручки`, body: `Оборотність повільна. Розгляньте акції на повільні позиції або стоп-закупівлю.`, act: { lbl: 'Склад →', href: '/warehouses.html' } });
+    }
+  }
+  if (!alerts.length) {
+    alerts.push({ pri: 'l', title: 'Усе спокійно', body: 'Ключові порогові значення в нормі.' });
+  }
+  document.getElementById('alertsBody').innerHTML = alerts.map(a => `
+    <div class="alert-row">
+      <span class="pri ${a.pri}">${a.pri==='h'?'Критично':a.pri==='m'?'Високий':'Увага'}</span>
+      <div class="body"><strong>${esc(a.title)}</strong><span>${esc(a.body)}</span></div>
+      ${a.act ? `<a class="act" href="${esc(a.act.href || '#')}">${esc(a.act.lbl)}</a>` : ''}
+    </div>
+  `).join('');
+}
+</script>
+</body>
+</html>
