@@ -538,11 +538,28 @@ async function runManualSync() {
     try {
       // Auth.js auto-attach Bearer-токен у всі fetch — використовуємо raw fetch
       // щоб мати query-параметри (apiFetch їх не приймає).
-      const API = 'https://price-api.doskevich.workers.dev';
-      const qs = SYNC_NEEDS_RANGE.has(act) ? `?action=${act}&from=${defaultFrom}&to=${defaultTo}` : `?action=${act}`;
-      const res = await fetch(API + '/' + qs);
-      const r = await res.json();
-      if (!res.ok || r.error) throw new Error(r.error || ('HTTP ' + res.status));
+      const API = 'https://price-api.doskevich.workers.dev/';
+
+      let r;
+      if (SYNC_NEEDS_RANGE.has(act) && yearsBetween(defaultFrom, defaultTo) > 1) {
+        // Worker має CPU-ліміт ~30с — для довгих періодів ділимо на роки.
+        const ranges = splitByYear(defaultFrom, defaultTo);
+        const partials = [];
+        for (const [f, t] of ranges) {
+          out.innerHTML += `<div style="color:var(--text3);padding-left:24px">  ↪ chunk ${f}..${t}</div>`;
+          const u = `${API}?action=${act}&from=${f}&to=${t}`;
+          const res = await fetch(u);
+          const j = await res.json();
+          if (!res.ok || j.error) throw new Error(j.error || ('HTTP ' + res.status));
+          partials.push(j);
+        }
+        r = mergePartials(partials);
+      } else {
+        const u = `${API}?action=${act}` + (SYNC_NEEDS_RANGE.has(act) ? `&from=${defaultFrom}&to=${defaultTo}` : '');
+        const res = await fetch(u);
+        r = await res.json();
+        if (!res.ok || r.error) throw new Error(r.error || ('HTTP ' + res.status));
+      }
       const sec = ((Date.now() - startedAt) / 1000).toFixed(1);
       const summary = formatSyncResult(r);
       results.push({ act, label, ok: true, sec, summary });
@@ -566,6 +583,37 @@ async function runManualSync() {
   btn.disabled = false;
 }
 
+function yearsBetween(from, to) {
+  return (new Date(to).getTime() - new Date(from).getTime()) / (365.25 * 24 * 3600 * 1000);
+}
+function splitByYear(from, to) {
+  // Розбиває [from..to] по календарних роках: [2022-10-01..2022-12-31], [2023-01-01..2023-12-31], ...
+  const out = [];
+  const start = new Date(from);
+  const end = new Date(to);
+  let cur = new Date(start);
+  while (cur <= end) {
+    const yEnd = new Date(cur.getFullYear(), 11, 31);
+    const chunkEnd = yEnd > end ? end : yEnd;
+    out.push([cur.toISOString().slice(0,10), chunkEnd.toISOString().slice(0,10)]);
+    cur = new Date(chunkEnd.getFullYear() + 1, 0, 1);
+  }
+  return out;
+}
+function mergePartials(partials) {
+  // Об'єднуємо результати чанків — підсумовуємо числові поля.
+  const merged = { chunks: partials.length };
+  const numKeys = ['inserted','total','scanned','skipped_no_nomenclature','remaining'];
+  for (const p of partials) {
+    if (p.entity && !merged.entity) merged.entity = p.entity;
+    for (const k of numKeys) {
+      if (typeof p[k] === 'number') merged[k] = (merged[k] || 0) + p[k];
+    }
+  }
+  if (partials[0]?.from) merged.from = partials[0].from;
+  if (partials[partials.length - 1]?.to) merged.to = partials[partials.length - 1].to;
+  return merged;
+}
 function formatSyncResult(r) {
   if (!r || typeof r !== 'object') return JSON.stringify(r);
   if (r.error) return r.error;
