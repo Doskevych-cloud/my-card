@@ -1128,7 +1128,11 @@ async function loadKpis() {
   const arCur = coBal(arR) ?? 0;
   const arPrev = coBal(arPR);
   if (arR.status === 'fulfilled' && arR.value && !arR.value.error) {
-    kpiSet('kAR', { val: fmtMoneyShort(arCur), cls: arCur > 0 ? 'pos' : (arCur < 0 ? 'neg' : ''), sub: 'YTD', deltaCur: arCur, deltaPrev: arPrev, deltaGood: 'up' });
+    // Інверсія cashflow-знаку для UI: «Борги нам» = нам винні (актив) → у дашборді
+    // показуємо позитивно. Як і counterparties.html (там same семантика).
+    const arDisplay = -arCur;
+    const arPrevDisplay = arPrev != null ? -arPrev : null;
+    kpiSet('kAR', { val: fmtMoneyShort(arDisplay), cls: arDisplay > 0 ? 'pos' : (arDisplay < 0 ? 'neg' : ''), sub: 'YTD', deltaCur: arDisplay, deltaPrev: arPrevDisplay, deltaGood: 'up' });
   } else { kpiError('kAR', arR.value?.error || 'err'); }
 
   const apCur = coBal(apR) ?? 0;
@@ -1169,17 +1173,21 @@ async function loadKpis() {
     document.getElementById('b5StockUah').textContent = fmt(stock * 41.42 / 1_000_000, 1).replace('.', ',') + ' M ₴';
   } else { kpiError('kStock', 'err'); }
 
-  // Cycle (DSO-DPO)
+  // Cycle (DSO-DPO). Беремо абсолютні значення дебіторки/кредиторки —
+  // arCur і apCur у cashflow-знаці (− = нам винні, + = ми винні), а DSO/DPO
+  // визначаються як «скільки днів виручки заморожено в дебіторці/кредиторці».
   let cycle = null;
   if (revenue > 0) {
     const days = Math.max(1, Math.round((new Date(state.to) - new Date(state.from)) / 86400000 + 1));
     const dailyRev = revenue / days;
     if (dailyRev > 0) {
-      const dso = arCur / dailyRev; const dpo = apCur / dailyRev;
+      const arAbs = Math.abs(arCur);
+      const apAbs = Math.abs(apCur);
+      const dso = arAbs / dailyRev;
+      const dpo = apAbs / dailyRev;
       cycle = dso - dpo;
       document.getElementById('miniCycle').textContent = Math.round(cycle) + ' д';
       document.getElementById('miniCycle').style.color = cycle > 45 ? 'var(--red)' : cycle > 20 ? 'var(--yellow)' : 'var(--green)';
-      // DSO/DPO/CCC у блок 4
       document.getElementById('b4Dso').textContent = Math.round(dso) + ' д';
       document.getElementById('b4Dso').style.color = dso > 40 ? 'var(--red)' : '';
       document.getElementById('b4DsoSub').textContent = `на ${fmtMoneyShort(dailyRev)}/д`;
@@ -1389,7 +1397,9 @@ async function loadRunway() {
   const pill = document.getElementById('runwayPill');
   pill.textContent = positiveDays >= 75 ? 'здоровий' : positiveDays >= 45 ? 'обережно' : 'ризик';
   pill.className = 'pill ' + (positiveDays >= 75 ? 'pos' : positiveDays >= 45 ? 'accent' : 'neg');
-  document.getElementById('runwayHealth').innerHTML = `AR: <strong>${fmtMoneyShort(ar)}</strong> · AP: <strong>${fmtMoneyShort(ap)}</strong>`;
+  // Інверсія cashflow-знаку для UI: AR (нам винні) показуємо позитивно;
+  // AP (ми винні) і так позитивне у cashflow знаці.
+  document.getElementById('runwayHealth').innerHTML = `AR: <strong>${fmtMoneyShort(Math.abs(ar))}</strong> · AP: <strong>${fmtMoneyShort(ap)}</strong>`;
 }
 
 // ═══════════════════════════════════════════════════════════════════
