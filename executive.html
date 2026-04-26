@@ -76,7 +76,9 @@ a{color:inherit;text-decoration:none}
 .kpi-row{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-bottom:18px}
 @media(max-width:1400px){.kpi-row{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:780px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
-.kpi{padding:16px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:8px;min-height:120px;transition:border-color .15s,transform .15s;position:relative}
+.kpi{padding:16px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:8px;min-height:120px;transition:border-color .15s,transform .15s;position:relative;color:inherit;text-decoration:none}
+a.kpi{cursor:pointer}
+a.kpi:hover{border-color:var(--accent);transform:translateY(-1px)}
 .kpi:hover{border-color:var(--border2);transform:translateY(-1px)}
 .kpi .kpi-lbl{font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;display:flex;align-items:center}
 .kpi .kpi-val{font-family:var(--mono);font-size:22px;font-weight:600;letter-spacing:-.4px;line-height:1.1;color:var(--text);white-space:nowrap}
@@ -137,7 +139,8 @@ a{color:inherit;text-decoration:none}
 
 /* ministats */
 .ministats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
-.mstat{padding:11px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:9px}
+.mstat{padding:11px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;display:block;transition:border-color .15s}
+a.mstat:hover{border-color:var(--accent)}
 .mstat .mlbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
 .mstat .mval{font-family:var(--mono);font-size:18px;font-weight:600;margin-top:4px;letter-spacing:-.3px;color:var(--text)}
 .mstat .mval.pos{color:var(--green)}
@@ -471,17 +474,17 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
 
       <div class="g-1-1-1">
         <div class="card">
-          <div class="card-head"><div><h3>Маржа по категоріях</h3><div class="card-sub">Де реально заробляєте</div></div><a class="pill accent" href="/finance.html#gross-profit">Усі →</a></div>
+          <div class="card-head"><div><h3>Маржа по категоріях</h3><div class="card-sub">Де реально заробляєте</div></div><a class="pill accent" href="/finance.html?tab=gp">Усі →</a></div>
           <div id="b3ByCategory"><div class="loading">Завантаження…</div></div>
         </div>
 
         <div class="card">
-          <div class="card-head"><div><h3>Маржа по менеджерах</h3><div class="card-sub">Хто продає з дисципліною</div></div><a class="pill accent" href="/finance.html#gross-profit">Усі →</a></div>
+          <div class="card-head"><div><h3>Маржа по менеджерах</h3><div class="card-sub">Хто продає з дисципліною</div></div><a class="pill accent" href="/finance.html?tab=gp">Усі →</a></div>
           <div id="b3ByManager"><div class="loading">Завантаження…</div></div>
         </div>
 
         <div class="card">
-          <div class="card-head"><div><h3>SKU нижче порогу</h3><div class="card-sub">Маржа &lt; 8% при значимому виторгу</div></div><a class="pill accent" href="/finance.html#gross-profit">Усі →</a></div>
+          <div class="card-head"><div><h3>SKU нижче порогу</h3><div class="card-sub">Маржа &lt; 8% при значимому виторгу</div></div><a class="pill accent" href="/finance.html?tab=gp">Усі →</a></div>
           <div class="ministats">
             <div class="mstat"><div class="mlbl">Маржа періоду</div><div class="mval" id="b3MarginVal">—</div><div class="msub" id="b3MarginSub">—</div></div>
             <div class="mstat"><div class="mlbl">Прибуток</div><div class="mval" id="b3ProfitVal">—</div><div class="msub" id="b3ProfitSub">валовий</div></div>
@@ -622,7 +625,7 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
             <div><h3>Концентрація закупівель</h3><div class="card-sub" id="b6ConcSub">за період</div></div>
             <div style="display:flex;gap:8px;align-items:center">
               <span class="card-meta" id="b6ConcMeta">—</span>
-              <a class="pill accent" href="/counterparties.html?role=suppliers">Усі →</a>
+              <a class="pill accent" href="/counterparties.html#role=suppliers">Усі →</a>
             </div>
           </div>
           <div id="b6Concentration"><div class="loading">Завантаження…</div></div>
@@ -664,7 +667,7 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         </div>
 
         <div class="card">
-          <div class="card-head"><div><h3>Валютна позиція</h3><div class="card-sub">USD · довга / коротка</div></div><a class="pill accent" href="/finance.html#cash">Усі →</a></div>
+          <div class="card-head"><div><h3>Валютна позиція</h3><div class="card-sub">USD · довга / коротка</div></div><a class="pill accent" href="/finance.html?tab=cb">Усі →</a></div>
           <div id="b7Position"><div class="loading">Завантаження…</div></div>
         </div>
 
@@ -681,21 +684,22 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="block-num">08</span>
         <span class="block-title">Клієнти-інсталятори</span>
         <span class="block-meta" id="b8Meta">live з sales_receipts · 30/90/180д</span>
+        <a class="pill accent" href="/counterparties.html#role=customers" style="margin-left:auto">Усі →</a>
       </div>
 
       <div class="g-4" id="b8Kpis">
-        <div class="mstat"><div class="mlbl">Активна база</div><div class="mval" id="b8Active90">—</div><div class="msub">купували за 90д</div></div>
-        <div class="mstat"><div class="mlbl">Реактивна (180д)</div><div class="mval" id="b8Active180">—</div><div class="msub">купували за 180д</div></div>
-        <div class="mstat"><div class="mlbl">Нові клієнти</div><div class="mval" id="b8New30">—</div><div class="msub" id="b8NewSub">за 30 днів</div></div>
-        <div class="mstat"><div class="mlbl">Churn 60+ днів</div><div class="mval neg" id="b8Churn">—</div><div class="msub">були активні</div></div>
-        <div class="mstat"><div class="mlbl">LTV середній</div><div class="mval" id="b8Ltv">—</div><div class="msub" id="b8LtvSub">за всю історію</div></div>
-        <div class="mstat"><div class="mlbl">A · стратегічні</div><div class="mval" id="b8AbcA">—</div><div class="msub" id="b8AbcASub">— обороту</div></div>
-        <div class="mstat"><div class="mlbl">B · стабільні</div><div class="mval" id="b8AbcB">—</div><div class="msub" id="b8AbcBSub">— обороту</div></div>
-        <div class="mstat"><div class="mlbl">C · епізодичні</div><div class="mval" id="b8AbcC">—</div><div class="msub" id="b8AbcCSub">— обороту</div></div>
+        <a class="mstat" href="/counterparties.html#role=customers" style="text-decoration:none;color:inherit"><div class="mlbl">Активна база</div><div class="mval" id="b8Active90">—</div><div class="msub">купували за 90д</div></a>
+        <a class="mstat" href="/counterparties.html#role=customers" style="text-decoration:none;color:inherit"><div class="mlbl">Реактивна (180д)</div><div class="mval" id="b8Active180">—</div><div class="msub">купували за 180д</div></a>
+        <a class="mstat" href="/sales.html" style="text-decoration:none;color:inherit"><div class="mlbl">Нові клієнти</div><div class="mval" id="b8New30">—</div><div class="msub" id="b8NewSub">за 30 днів</div></a>
+        <a class="mstat" href="/counterparties.html#role=customers" style="text-decoration:none;color:inherit"><div class="mlbl">Churn 60+ днів</div><div class="mval neg" id="b8Churn">—</div><div class="msub">були активні</div></a>
+        <a class="mstat" href="/sales.html" style="text-decoration:none;color:inherit"><div class="mlbl">LTV середній</div><div class="mval" id="b8Ltv">—</div><div class="msub" id="b8LtvSub">за всю історію</div></a>
+        <a class="mstat" href="/counterparties.html#role=customers" style="text-decoration:none;color:inherit"><div class="mlbl">A · стратегічні</div><div class="mval" id="b8AbcA">—</div><div class="msub" id="b8AbcASub">— обороту</div></a>
+        <a class="mstat" href="/counterparties.html#role=customers" style="text-decoration:none;color:inherit"><div class="mlbl">B · стабільні</div><div class="mval" id="b8AbcB">—</div><div class="msub" id="b8AbcBSub">— обороту</div></a>
+        <a class="mstat" href="/counterparties.html#role=customers" style="text-decoration:none;color:inherit"><div class="mlbl">C · епізодичні</div><div class="mval" id="b8AbcC">—</div><div class="msub" id="b8AbcCSub">— обороту</div></a>
       </div>
 
       <div class="card" style="margin-top:14px">
-        <div class="card-head"><div><h3>Поведінкові сигнали відтоку</h3><div class="card-sub">≥3 покупок за 180д, але немає &gt; 45 днів</div></div><div style="display:flex;gap:8px;align-items:center"><span class="card-meta" id="b8SignalsMeta">—</span><a class="pill accent" href="/counterparties.html?role=customers">Усі →</a></div></div>
+        <div class="card-head"><div><h3>Поведінкові сигнали відтоку</h3><div class="card-sub">≥3 покупок за 180д, але немає &gt; 45 днів</div></div><div style="display:flex;gap:8px;align-items:center"><span class="card-meta" id="b8SignalsMeta">—</span><a class="pill accent" href="/counterparties.html#role=customers">Усі →</a></div></div>
         <div id="b8Signals"><div class="loading">Завантаження…</div></div>
       </div>
     </section>
@@ -706,14 +710,15 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="block-num">09</span>
         <span class="block-title">Операційна ефективність</span>
         <span class="block-meta" id="b9Meta">час order→shipment з sales_orders + sales_receipts</span>
+        <a class="pill accent" href="/osp.html" style="margin-left:auto">Усі →</a>
       </div>
 
       <div class="g-4">
-        <div class="mstat"><div class="mlbl">Замовлення → відвантаження</div><div class="mval" id="b9TtsAvg">—</div><div class="msub" id="b9TtsAvgSub">—</div></div>
-        <div class="mstat"><div class="mlbl">SLA ≤ 2 днів</div><div class="mval" id="b9Sla2d">—</div><div class="msub" id="b9Sla2dSub">—</div></div>
-        <div class="mstat"><div class="mlbl">SLA ≤ 5 днів</div><div class="mval" id="b9Sla5d">—</div><div class="msub" id="b9Sla5dSub">—</div></div>
-        <div class="mstat"><div class="mlbl">Відвантажень</div><div class="mval" id="b9Shipments">—</div><div class="msub" id="b9ShipmentsSub">—</div></div>
-        <div class="mstat"><div class="mlbl">Замовлень</div><div class="mval" id="b9Orders">—</div><div class="msub">за період</div></div>
+        <a class="mstat" href="/osp.html" style="text-decoration:none;color:inherit"><div class="mlbl">Замовлення → відвантаження</div><div class="mval" id="b9TtsAvg">—</div><div class="msub" id="b9TtsAvgSub">—</div></a>
+        <a class="mstat" href="/osp.html" style="text-decoration:none;color:inherit"><div class="mlbl">SLA ≤ 2 днів</div><div class="mval" id="b9Sla2d">—</div><div class="msub" id="b9Sla2dSub">—</div></a>
+        <a class="mstat" href="/osp.html" style="text-decoration:none;color:inherit"><div class="mlbl">SLA ≤ 5 днів</div><div class="mval" id="b9Sla5d">—</div><div class="msub" id="b9Sla5dSub">—</div></a>
+        <a class="mstat" href="/sales.html" style="text-decoration:none;color:inherit"><div class="mlbl">Відвантажень</div><div class="mval" id="b9Shipments">—</div><div class="msub" id="b9ShipmentsSub">—</div></a>
+        <a class="mstat" href="/osp.html" style="text-decoration:none;color:inherit"><div class="mlbl">Замовлень</div><div class="mval" id="b9Orders">—</div><div class="msub">за період</div></a>
         <div class="mstat"><div class="mlbl">RMA / точність<span class="mock-tag">N/A</span></div><div class="mval" style="color:var(--text3);font-style:italic;font-size:14px">нема в 1С</div><div class="msub">потрібен окремий облік</div></div>
       </div>
     </section>
@@ -732,7 +737,7 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
             <div><h3>90 днів · надходження vs зобов'язання</h3><div class="card-sub" id="runwaySub">Прогноз на основі середніх оборотів + AP</div></div>
             <div style="display:flex;gap:8px;align-items:center">
               <span class="pill accent" id="runwayPill">—</span>
-              <a class="pill accent" href="/finance.html#cash-flow">Усі →</a>
+              <a class="pill accent" href="/finance.html?tab=cf">Усі →</a>
             </div>
           </div>
           <div class="runway" id="runwayStrip"></div>
@@ -934,26 +939,30 @@ function reloadAll() {
 // KPI HERO — 7 цифр (4 live + 3 mock-помічені)
 // ═══════════════════════════════════════════════════════════════════
 const KPIS = [
-  { id: 'kRev',    lbl: 'Виторг (оплачено)' },
-  { id: 'kMargin', lbl: 'Валова маржа' },
-  { id: 'kNet',    lbl: 'Чистий прибуток' },
-  { id: 'kAR',     lbl: 'Борги нам' },
-  { id: 'kAP',     lbl: 'Наш борг' },
-  { id: 'kStock',  lbl: 'Запаси' },
+  { id: 'kRev',    lbl: 'Виторг (оплачено)', href: '/sales.html' },
+  { id: 'kMargin', lbl: 'Валова маржа',      href: '/finance.html?tab=gp' },
+  { id: 'kNet',    lbl: 'Чистий прибуток',   href: '/finance.html' },
+  { id: 'kAR',     lbl: 'Борги нам',         href: '/counterparties.html#role=customers' },
+  { id: 'kAP',     lbl: 'Наш борг',          href: '/counterparties.html#role=suppliers' },
+  { id: 'kStock',  lbl: 'Запаси',            href: '/warehouses.html' },
   { id: 'kHealth', lbl: 'Здоров\'я',        mock: true },
 ];
 
 function buildKpiSkeleton() {
-  document.getElementById('kpiHero').innerHTML = KPIS.map(k => `
-    <div class="kpi ldg" id="${k.id}">
+  document.getElementById('kpiHero').innerHTML = KPIS.map(k => {
+    const tag = k.href ? 'a' : 'div';
+    const attrs = k.href ? `href="${k.href}"` : '';
+    return `
+    <${tag} class="kpi ldg" id="${k.id}" ${attrs}>
       <div class="kpi-lbl">${k.lbl}${k.mock ? '<span class="mock-tag" style="margin-left:6px">умовно</span>' : ''}</div>
       <div class="kpi-val">—</div>
       <div class="kpi-foot">
         <span id="${k.id}Sub">—</span>
         <span id="${k.id}Delta"></span>
       </div>
-    </div>
-  `).join('');
+    </${tag}>
+  `;
+  }).join('');
 }
 
 function kpiLoading(id) {
@@ -1035,7 +1044,7 @@ async function loadKpis() {
     dashFetch(`${API_URL}?action=pnl_accrual_report&from=${state.from}&to=${state.to}${orgQ}`),
     prev ? dashFetch(`${API_URL}?action=pnl_accrual_report&from=${prev.from}&to=${prev.to}${orgQ}`) : Promise.resolve(null),
     dashFetch(`${API_URL}?action=gross_profit_report&from=${state.from}&to=${state.to}${orgQ}`).catch(() => null),
-    dashFetch(`${API_URL}?action=warehouse_value_report&date=${todayIso}${orgQ}`).catch(() => null),
+    dashFetch(`${API_URL}?action=warehouse_value_report${orgQ}`).catch(() => null),
   ]);
 
   const [salesR, salesPR, arR, arPR, apR, apPR, pnlR, pnlPR, gpR, stockR] = results;
@@ -1100,11 +1109,12 @@ async function loadKpis() {
   let stock = 0;
   if (stockR && stockR.status === 'fulfilled' && stockR.value && !stockR.value.error) {
     stock = Number(stockR.value.total_value_usd || 0);
-    kpiSet('kStock', { val: fmtMoneyShort(stock), sub: `на ${todayIso}` });
+    const stockDate = stockR.value.as_of_date || todayIso;
+    kpiSet('kStock', { val: fmtMoneyShort(stock), sub: `на ${stockDate}` });
     document.getElementById('miniStock').textContent = fmtMoneyShort(stock);
-    document.getElementById('miniStockSub').textContent = `на ${todayIso}`;
+    document.getElementById('miniStockSub').textContent = `на ${stockDate}`;
     document.getElementById('b5StockUsd').textContent = fmtMoneyShort(stock);
-    document.getElementById('b5StockUsdSub').textContent = `всі склади · ${todayIso}`;
+    document.getElementById('b5StockUsdSub').textContent = `всі склади · ${stockDate}`;
     // Approx UAH (умовно at 41.42)
     document.getElementById('b5StockUah').textContent = fmt(stock * 41.42 / 1_000_000, 1).replace('.', ',') + ' M ₴';
   } else { kpiError('kStock', 'err'); }
@@ -1390,7 +1400,7 @@ async function loadDecisions() {
     dashFetch(`${API_URL}?action=pnl_accrual_report&from=${state.from}&to=${state.to}${orgQ}`).catch(() => null),
     dashFetch(`${API_URL}?action=customers_overview&from=${janFirst}&to=${todayIso}${cpOrgQ()}`).catch(() => null),
     dashFetch(`${API_URL}?action=suppliers_overview&from=${janFirst}&to=${todayIso}${cpOrgQ()}`).catch(() => null),
-    dashFetch(`${API_URL}?action=warehouse_value_report&date=${todayIso}${orgQ}`).catch(() => null),
+    dashFetch(`${API_URL}?action=warehouse_value_report${orgQ}`).catch(() => null),
   ]);
 
   const alerts = [];
