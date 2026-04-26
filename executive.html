@@ -107,6 +107,9 @@ a{color:inherit;text-decoration:none}
 .block-num{font-family:var(--mono);font-size:11px;color:var(--text3);font-weight:600;letter-spacing:.5px}
 .block-title{font-size:16px;font-weight:700;letter-spacing:-.2px;color:var(--text)}
 .block-meta{margin-left:auto;font-size:11px;color:var(--text3);font-weight:600}
+.block-link{font-size:10.5px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.4px;padding:4px 9px;border:1px solid var(--border);border-radius:6px;display:inline-flex;align-items:center;gap:4px;transition:background .15s,color .15s,border-color .15s;text-decoration:none;white-space:nowrap}
+.block-link:hover{background:var(--accent-bg);color:var(--accent);border-color:var(--accent)}
+.block-link::after{content:'→';font-size:11px}
 
 /* GRID */
 .g-2-1{display:grid;grid-template-columns:2fr 1fr;gap:14px}
@@ -335,6 +338,7 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="block-num">02</span>
         <span class="block-title">Продажі та комерція</span>
         <span class="block-meta" id="trendMeta"></span>
+        <a class="block-link" href="/sales.html">Звіт продажів</a>
       </div>
 
       <div class="g-2-1">
@@ -456,6 +460,7 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="block-num">03</span>
         <span class="block-title">Маржинальність</span>
         <span class="block-meta" id="b3Meta">з 1С Регістр продажів · ціль ≥ 12%</span>
+        <a class="block-link" href="/finance.html#gross-profit">Валовий прибуток</a>
       </div>
 
       <div class="g-1-1-1">
@@ -486,6 +491,7 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="block-num">04</span>
         <span class="block-title">Оборотний капітал · дебіторка</span>
         <span class="block-meta" id="b4Meta">з 1С Регістр розрахунків з покупцями</span>
+        <a class="block-link" href="/ar_aging.html">Старіння ДЗ</a>
       </div>
 
       <div class="g-2-1">
@@ -546,6 +552,7 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="block-num">05</span>
         <span class="block-title">Склад · запаси</span>
         <span class="block-meta" id="b5Meta">live з stock_balances + sales/purchase items</span>
+        <a class="block-link" href="/warehouses.html">Звіт складу</a>
       </div>
 
       <div class="g-1-1-1">
@@ -597,6 +604,7 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="block-num">06</span>
         <span class="block-title">Постачальники · закупівля</span>
         <span class="block-meta" id="b6Meta">з purchase_receipts · live</span>
+        <a class="block-link" href="/counterparties.html?role=suppliers">Постачальники</a>
       </div>
 
       <div class="g-1-1">
@@ -632,6 +640,7 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="block-num">07</span>
         <span class="block-title">Валюта · макрофактори</span>
         <span class="block-meta" id="b7Meta">з fx_rates + cash + warehouse + AR/AP</span>
+        <a class="block-link" href="/finance.html#cash-balance">Грошові залишки</a>
       </div>
 
       <div class="g-1-1-1">
@@ -658,6 +667,7 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="block-num">08</span>
         <span class="block-title">Клієнти-інсталятори</span>
         <span class="block-meta" id="b8Meta">live з sales_receipts · 30/90/180д</span>
+        <a class="block-link" href="/counterparties.html?role=customers">Клієнти</a>
       </div>
 
       <div class="g-4" id="b8Kpis">
@@ -683,6 +693,7 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="block-num">09</span>
         <span class="block-title">Операційна ефективність</span>
         <span class="block-meta" id="b9Meta">час order→shipment з sales_orders + sales_receipts</span>
+        <a class="block-link" href="/osp.html">Замовлення-Відвантаження-Оплата</a>
       </div>
 
       <div class="g-4">
@@ -701,6 +712,7 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="block-num">10</span>
         <span class="block-title">Прогнози · cash flow</span>
         <span class="block-meta">runway з реального AR/AP · продажі з історії 3 роки</span>
+        <a class="block-link" href="/forecast.html">Прогноз</a>
       </div>
 
       <div class="g-2-1">
