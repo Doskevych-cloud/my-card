@@ -1564,40 +1564,67 @@ async function loadDecisions() {
     }
   }
 
-  // ── UAH cash → варто конвертувати в USD
-  // Поріг: понад «операційну подушку» (1 міс OPEX в UAH) — гривневі залишки
-  // тануть на курсі. Беремо OPEX з P&L (period) як proxy для місячних UAH-витрат.
+  // ── UAH на рахунках → варто конвертувати в USD
+  // Розділяємо БАНК і КАСУ окремо: це різна семантика.
+  //  • БАНК UAH → надлишок понад 1 міс OPEX варто продати на FX в USD
+  //  • КАСА UAH → готівка для дрібних виплат, надлишок понад 2 тижні
+  //    краще внести на банк (а потім вже конвертувати).
   if (cashR && !cashR.error) {
-    const uahBal = Number(cashR.by_currency?.UAH || 0);
-    const uahRate = Number(cashR.today_rate?.UAH || 0); // 1 UAH = X USD (≈0.024)
-    const uahUsdEq = uahBal * uahRate;
+    const accounts = cashR.accounts || [];
+    let bankUah = 0, bankUsdEq = 0;
+    let cashUah = 0, cashUsdEq = 0;
+    accounts.forEach(a => {
+      const isBank = (a.account_type || 'bank') === 'bank';
+      const uah = a.by_currency?.UAH;
+      if (!uah) return;
+      const bal = Number(uah.balance || 0);
+      const usd = Number(uah.balance_usd || 0);
+      if (isBank) { bankUah += bal; bankUsdEq += usd; }
+      else        { cashUah += bal; cashUsdEq += usd; }
+    });
     const totalCashUsd = Number(cashR.total_usd || 0);
-    const uahShare = totalCashUsd > 0 ? uahUsdEq / totalCashUsd : 0;
-    // OPEX за період → денний opex → 30-денна подушка в UAH
+
+    // OPEX за період → денний opex → подушка в USD
     const periodDays = Math.max(1, Math.round((new Date(state.to) - new Date(state.from)) / 86400000 + 1));
     const opexUsd = pnlR && !pnlR.error ? (pnlR.totalExpenses?.total || 0) : 0;
     const dailyOpexUsd = opexUsd / periodDays;
-    const opexCushionUsd = dailyOpexUsd * 30; // 1 міс операційного буферу
-    const excessUsd = Math.max(0, uahUsdEq - opexCushionUsd);
-    const uahShortMln = uahBal >= 1_000_000 ? (uahBal / 1_000_000).toFixed(2).replace('.',',') + ' M ₴'
-                      : uahBal >= 1000 ? (uahBal / 1000).toFixed(0) + ' k ₴'
-                      : Math.round(uahBal) + ' ₴';
-    if (excessUsd > 5000) {
-      // Чим більший надлишок — тим вища пріоритетність
-      const pri = excessUsd > 50000 ? 'h' : excessUsd > 20000 ? 'm' : 'l';
-      const cushionLbl = opexCushionUsd > 0 ? `подушка 1 міс OPEX ≈ ${fmtMoneyShort(opexCushionUsd)}` : 'операційна подушка не визначена';
+    const bankCushionUsd = dailyOpexUsd * 30; // 1 міс — банк
+    const cashCushionUsd = dailyOpexUsd * 14; // 2 тижні — каса
+
+    const fmtUah = v => v >= 1_000_000 ? (v / 1_000_000).toFixed(2).replace('.', ',') + ' M ₴'
+                     : v >= 1000      ? (v / 1000).toFixed(0) + ' k ₴'
+                     : Math.round(v) + ' ₴';
+
+    // ── Банк UAH: надлишок над 1 міс OPEX → конвертувати в USD
+    const bankExcess = Math.max(0, bankUsdEq - bankCushionUsd);
+    const bankShare = totalCashUsd > 0 ? bankUsdEq / totalCashUsd : 0;
+    if (bankExcess > 5000) {
+      const pri = bankExcess > 50000 ? 'h' : bankExcess > 20000 ? 'm' : 'l';
+      const cushionLbl = bankCushionUsd > 0 ? `подушка 1 міс OPEX ≈ ${fmtMoneyShort(bankCushionUsd)}` : 'операційна подушка не визначена';
       alerts.push({
         pri,
-        title: `UAH у касі ${fmtMoneyShort(uahUsdEq)} (${uahShortMln}) — надлишок ${fmtMoneyShort(excessUsd)}`,
-        body: `Гривня = ${(uahShare*100).toFixed(0)}% всього кешу, ${cushionLbl}. Конвертуйте надлишок у USD щоб уникнути курсових втрат.`,
+        title: `Банк UAH ${fmtMoneyShort(bankUsdEq)} (${fmtUah(bankUah)}) — надлишок ${fmtMoneyShort(bankExcess)}`,
+        body: `Гривневий банк = ${(bankShare*100).toFixed(0)}% всього кешу, ${cushionLbl}. Продайте надлишок на FX у USD, щоб уникнути курсових втрат.`,
         act: { lbl: 'Каса', href: '/finance.html?tab=cb' },
       });
-    } else if (uahShare > 0.5 && uahUsdEq > 10000) {
-      // Без надлишку понад 1 міс OPEX, але >50% всього кешу — м'яке нагадування
+    } else if (bankShare > 0.5 && bankUsdEq > 10000) {
       alerts.push({
         pri: 'l',
-        title: `UAH у касі ${fmtMoneyShort(uahUsdEq)} = ${(uahShare*100).toFixed(0)}% кешу`,
-        body: `Гривневий залишок переважає над USD/EUR. Розгляньте часткову конвертацію, щоб збалансувати валютну позицію.`,
+        title: `Банк UAH ${fmtMoneyShort(bankUsdEq)} = ${(bankShare*100).toFixed(0)}% кешу`,
+        body: `Гривневий банк переважає над USD/EUR. Розгляньте часткову конвертацію для балансу валютної позиції.`,
+        act: { lbl: 'Каса', href: '/finance.html?tab=cb' },
+      });
+    }
+
+    // ── Каса UAH: готівка понад 2 тижні дрібних → внести на банк
+    const cashExcess = Math.max(0, cashUsdEq - cashCushionUsd);
+    if (cashUsdEq > 1000 && (cashExcess > 2000 || (cashCushionUsd === 0 && cashUsdEq > 5000))) {
+      const pri = cashExcess > 10000 ? 'm' : 'l';
+      const cushionLbl = cashCushionUsd > 0 ? `подушка 2 тижні OPEX ≈ ${fmtMoneyShort(cashCushionUsd)}` : 'операційна подушка не визначена';
+      alerts.push({
+        pri,
+        title: `Каса UAH ${fmtMoneyShort(cashUsdEq)} (${fmtUah(cashUah)}) — надлишок ${fmtMoneyShort(cashExcess)}`,
+        body: `Готівки в касі більше за поточну операційну потребу. ${cushionLbl}. Внесіть надлишок на банківський рахунок (далі за потреби — конвертуйте).`,
         act: { lbl: 'Каса', href: '/finance.html?tab=cb' },
       });
     }
