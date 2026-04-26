@@ -107,9 +107,6 @@ a{color:inherit;text-decoration:none}
 .block-num{font-family:var(--mono);font-size:11px;color:var(--text3);font-weight:600;letter-spacing:.5px}
 .block-title{font-size:16px;font-weight:700;letter-spacing:-.2px;color:var(--text)}
 .block-meta{margin-left:auto;font-size:11px;color:var(--text3);font-weight:600}
-.block-link{font-size:10.5px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.4px;padding:4px 9px;border:1px solid var(--border);border-radius:6px;display:inline-flex;align-items:center;gap:4px;transition:background .15s,color .15s,border-color .15s;text-decoration:none;white-space:nowrap}
-.block-link:hover{background:var(--accent-bg);color:var(--accent);border-color:var(--accent)}
-.block-link::after{content:'→';font-size:11px}
 
 /* GRID */
 .g-2-1{display:grid;grid-template-columns:2fr 1fr;gap:14px}
@@ -338,7 +335,6 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="block-num">02</span>
         <span class="block-title">Продажі та комерція</span>
         <span class="block-meta" id="trendMeta"></span>
-        <a class="block-link" href="/sales.html">Звіт продажів</a>
       </div>
 
       <div class="g-2-1">
@@ -348,10 +344,13 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
               <h3>Виручка vs OPEX vs Чистий</h3>
               <div class="card-sub" id="trendSub">—</div>
             </div>
-            <div class="range-switch" id="trendRange">
-              <button data-r="month" class="on">М</button>
-              <button data-r="quarter">Кв</button>
-              <button data-r="year">Рік</button>
+            <div style="display:flex;gap:8px;align-items:center">
+              <div class="range-switch" id="trendRange">
+                <button data-r="month" class="on">М</button>
+                <button data-r="quarter">Кв</button>
+                <button data-r="year">Рік</button>
+              </div>
+              <a class="pill accent" href="/finance.html">Усі →</a>
             </div>
           </div>
           <div class="chart-wrap">
@@ -370,6 +369,7 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
               <h3>Структура періоду</h3>
               <div class="card-sub">Куди йдуть гроші</div>
             </div>
+            <a class="pill accent" href="/finance.html">Усі →</a>
           </div>
           <div class="ministats">
             <div class="mstat">
@@ -409,7 +409,10 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
               <h3>Воронка продажів</h3>
               <div class="card-sub">Замовлення → Відвантаження → Оплата · period</div>
             </div>
-            <span class="card-meta" id="b2FunnelMeta">—</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="card-meta" id="b2FunnelMeta">—</span>
+              <a class="pill accent" href="/osp.html">Усі →</a>
+            </div>
           </div>
           <div class="funnel" id="b2Funnel"><div class="loading">Завантаження…</div></div>
           <div id="b2FunnelFoot" style="display:flex;gap:14px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)"></div>
@@ -421,7 +424,10 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
               <h3>Виторг по категоріях</h3>
               <div class="card-sub">Розклад відвантажень за період</div>
             </div>
-            <span class="card-meta" id="b2CategoryMeta">—</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="card-meta" id="b2CategoryMeta">—</span>
+              <a class="pill accent" href="/sales.html">Усі →</a>
+            </div>
           </div>
           <div id="b2Category"><div class="loading">Завантаження…</div></div>
         </div>
@@ -439,6 +445,7 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <div class="card">
           <div class="card-head">
             <div><h3>Топ менеджерів</h3><div class="card-sub">Виторг + клієнти</div></div>
+            <a class="pill accent" href="/sales.html">Усі →</a>
           </div>
           <div id="b2TopManagers"><div class="loading">Завантаження…</div></div>
         </div>
@@ -460,22 +467,21 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="block-num">03</span>
         <span class="block-title">Маржинальність</span>
         <span class="block-meta" id="b3Meta">з 1С Регістр продажів · ціль ≥ 12%</span>
-        <a class="block-link" href="/finance.html#gross-profit">Валовий прибуток</a>
       </div>
 
       <div class="g-1-1-1">
         <div class="card">
-          <div class="card-head"><div><h3>Маржа по категоріях</h3><div class="card-sub">Де реально заробляєте</div></div></div>
+          <div class="card-head"><div><h3>Маржа по категоріях</h3><div class="card-sub">Де реально заробляєте</div></div><a class="pill accent" href="/finance.html#gross-profit">Усі →</a></div>
           <div id="b3ByCategory"><div class="loading">Завантаження…</div></div>
         </div>
 
         <div class="card">
-          <div class="card-head"><div><h3>Маржа по менеджерах</h3><div class="card-sub">Хто продає з дисципліною</div></div></div>
+          <div class="card-head"><div><h3>Маржа по менеджерах</h3><div class="card-sub">Хто продає з дисципліною</div></div><a class="pill accent" href="/finance.html#gross-profit">Усі →</a></div>
           <div id="b3ByManager"><div class="loading">Завантаження…</div></div>
         </div>
 
         <div class="card">
-          <div class="card-head"><div><h3>SKU нижче порогу</h3><div class="card-sub">Маржа &lt; 8% при значимому виторгу</div></div></div>
+          <div class="card-head"><div><h3>SKU нижче порогу</h3><div class="card-sub">Маржа &lt; 8% при значимому виторгу</div></div><a class="pill accent" href="/finance.html#gross-profit">Усі →</a></div>
           <div class="ministats">
             <div class="mstat"><div class="mlbl">Маржа періоду</div><div class="mval" id="b3MarginVal">—</div><div class="msub" id="b3MarginSub">—</div></div>
             <div class="mstat"><div class="mlbl">Прибуток</div><div class="mval" id="b3ProfitVal">—</div><div class="msub" id="b3ProfitSub">валовий</div></div>
@@ -491,14 +497,16 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="block-num">04</span>
         <span class="block-title">Оборотний капітал · дебіторка</span>
         <span class="block-meta" id="b4Meta">з 1С Регістр розрахунків з покупцями</span>
-        <a class="block-link" href="/ar_aging.html">Старіння ДЗ</a>
       </div>
 
       <div class="g-2-1">
         <div class="card">
           <div class="card-head">
             <div><h3>Старіння дебіторки</h3><div class="card-sub" id="b4AgingSub">live з OData</div></div>
-            <span class="card-meta" id="b4AgingMeta">—</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="card-meta" id="b4AgingMeta">—</span>
+              <a class="pill accent" href="/ar_aging.html">Усі →</a>
+            </div>
           </div>
           <div class="aging-stack" id="b4AgingStack"><div style="flex:1;background:var(--bg3);color:var(--text3);display:flex;align-items:center;justify-content:center">Завантаження…</div></div>
           <div class="aging-legend">
@@ -552,12 +560,11 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="block-num">05</span>
         <span class="block-title">Склад · запаси</span>
         <span class="block-meta" id="b5Meta">live з stock_balances + sales/purchase items</span>
-        <a class="block-link" href="/warehouses.html">Звіт складу</a>
       </div>
 
       <div class="g-1-1-1">
         <div class="card">
-          <div class="card-head"><div><h3>Вартість запасів</h3><div class="card-sub" id="b5StockSub">Всі склади · live з 1С</div></div></div>
+          <div class="card-head"><div><h3>Вартість запасів</h3><div class="card-sub" id="b5StockSub">Всі склади · live з 1С</div></div><a class="pill accent" href="/warehouses.html">Усі →</a></div>
           <div class="ministats">
             <div class="mstat">
               <div class="mlbl">USD на руках</div>
@@ -583,7 +590,7 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         </div>
 
         <div class="card">
-          <div class="card-head"><div><h3>Оборотність по групах</h3><div class="card-sub">Days of inventory · 30д продажів</div></div></div>
+          <div class="card-head"><div><h3>Оборотність по групах</h3><div class="card-sub">Days of inventory · 30д продажів</div></div><a class="pill accent" href="/warehouses.html">Усі →</a></div>
           <div id="b5ByCategory"><div class="loading">Завантаження…</div></div>
           <div id="b5Abc" style="font-size:11px;color:var(--text3);padding-top:8px;border-top:1px solid var(--border)"></div>
         </div>
@@ -604,14 +611,16 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="block-num">06</span>
         <span class="block-title">Постачальники · закупівля</span>
         <span class="block-meta" id="b6Meta">з purchase_receipts · live</span>
-        <a class="block-link" href="/counterparties.html?role=suppliers">Постачальники</a>
       </div>
 
       <div class="g-1-1">
         <div class="card">
           <div class="card-head">
             <div><h3>Концентрація закупівель</h3><div class="card-sub" id="b6ConcSub">за період</div></div>
-            <span class="card-meta" id="b6ConcMeta">—</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="card-meta" id="b6ConcMeta">—</span>
+              <a class="pill accent" href="/counterparties.html?role=suppliers">Усі →</a>
+            </div>
           </div>
           <div id="b6Concentration"><div class="loading">Завантаження…</div></div>
         </div>
@@ -640,17 +649,16 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="block-num">07</span>
         <span class="block-title">Валюта · макрофактори</span>
         <span class="block-meta" id="b7Meta">з fx_rates + cash + warehouse + AR/AP</span>
-        <a class="block-link" href="/finance.html#cash-balance">Грошові залишки</a>
       </div>
 
       <div class="g-1-1-1">
         <div class="card">
-          <div class="card-head"><div><h3>Курси</h3><div class="card-sub" id="b7RatesSub">—</div></div></div>
+          <div class="card-head"><div><h3>Курси</h3><div class="card-sub" id="b7RatesSub">—</div></div><a class="pill accent" href="/prices-1c.html">Усі →</a></div>
           <div id="b7Rates"><div class="loading">Завантаження…</div></div>
         </div>
 
         <div class="card">
-          <div class="card-head"><div><h3>Валютна позиція</h3><div class="card-sub">USD · довга / коротка</div></div></div>
+          <div class="card-head"><div><h3>Валютна позиція</h3><div class="card-sub">USD · довга / коротка</div></div><a class="pill accent" href="/finance.html#cash">Усі →</a></div>
           <div id="b7Position"><div class="loading">Завантаження…</div></div>
         </div>
 
@@ -667,7 +675,6 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="block-num">08</span>
         <span class="block-title">Клієнти-інсталятори</span>
         <span class="block-meta" id="b8Meta">live з sales_receipts · 30/90/180д</span>
-        <a class="block-link" href="/counterparties.html?role=customers">Клієнти</a>
       </div>
 
       <div class="g-4" id="b8Kpis">
@@ -682,7 +689,7 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
       </div>
 
       <div class="card" style="margin-top:14px">
-        <div class="card-head"><div><h3>Поведінкові сигнали відтоку</h3><div class="card-sub">≥3 покупок за 180д, але немає &gt; 45 днів</div></div><span class="card-meta" id="b8SignalsMeta">—</span></div>
+        <div class="card-head"><div><h3>Поведінкові сигнали відтоку</h3><div class="card-sub">≥3 покупок за 180д, але немає &gt; 45 днів</div></div><div style="display:flex;gap:8px;align-items:center"><span class="card-meta" id="b8SignalsMeta">—</span><a class="pill accent" href="/counterparties.html?role=customers">Усі →</a></div></div>
         <div id="b8Signals"><div class="loading">Завантаження…</div></div>
       </div>
     </section>
@@ -693,7 +700,6 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="block-num">09</span>
         <span class="block-title">Операційна ефективність</span>
         <span class="block-meta" id="b9Meta">час order→shipment з sales_orders + sales_receipts</span>
-        <a class="block-link" href="/osp.html">Замовлення-Відвантаження-Оплата</a>
       </div>
 
       <div class="g-4">
@@ -712,14 +718,16 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         <span class="block-num">10</span>
         <span class="block-title">Прогнози · cash flow</span>
         <span class="block-meta">runway з реального AR/AP · продажі з історії 3 роки</span>
-        <a class="block-link" href="/forecast.html">Прогноз</a>
       </div>
 
       <div class="g-2-1">
         <div class="card">
           <div class="card-head">
             <div><h3>90 днів · надходження vs зобов'язання</h3><div class="card-sub" id="runwaySub">Прогноз на основі середніх оборотів + AP</div></div>
-            <span class="pill accent" id="runwayPill">—</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="pill accent" id="runwayPill">—</span>
+              <a class="pill accent" href="/finance.html#cash-flow">Усі →</a>
+            </div>
           </div>
           <div class="runway" id="runwayStrip"></div>
           <div class="runway-axis"><span>сьогодні</span><span>+30</span><span>+60</span><span>+90</span></div>
@@ -730,7 +738,7 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
         </div>
 
         <div class="card">
-          <div class="card-head"><div><h3>Прогноз продажів</h3><div class="card-sub" id="b10ForecastSub">сезонність × середній денний 90д</div></div></div>
+          <div class="card-head"><div><h3>Прогноз продажів</h3><div class="card-sub" id="b10ForecastSub">сезонність × середній денний 90д</div></div><a class="pill accent" href="/forecast.html">Усі →</a></div>
           <div id="b10Forecast"><div class="loading">Завантаження…</div></div>
           <div style="font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-top:10px;margin-bottom:4px">Ризики stockout (топ-A)</div>
           <div id="b10StockoutRisks"><div class="loading">Завантаження…</div></div>
