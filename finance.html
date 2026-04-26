@@ -566,7 +566,11 @@ function switchTab(el) {
   if (v === 'cf' && !cfState._loaded) cfLoad();
   if (v === 'ar' && !arState._loaded) arLoad();
   if (v === 'ms' && !msState._loaded) { msSetPreset('today'); }
-  if (v === 'wh' && !whState._loaded) { whSetPreset('today'); }
+  if (v === 'wh' && !whState._loaded) {
+    // Якщо whState.on вже задана з URL (wh_on=) — завантажуємо одразу
+    // на ту дату; інакше — дефолт 'today'.
+    if (whState.on) { whLoad(); } else { whSetPreset('today'); }
+  }
   if (v === 'cb' && !cbState._loaded) { cbSetPreset('today'); }
   saveStateToUrl();
 }
@@ -3017,6 +3021,19 @@ Auth.require('finance').then(function(user) {
       var msTabEl = document.querySelector('.ptab[data-view="ms"]');
       if (msTabEl) switchTab(msTabEl);
     } else if (chosenTab === 'wh') {
+      // Дата для warehouse (wh_on) — якщо передана з executive dashboard,
+      // підвантажуємо саме її замість дефолту 'today' щоб цифри співпадали.
+      if (saved.wh_on && /^\d{4}-\d{2}-\d{2}$/.test(saved.wh_on)) {
+        whState.on = saved.wh_on;
+        var whDateInEl = document.getElementById('whDateIn');
+        if (whDateInEl) whDateInEl.value = saved.wh_on;
+        // Скидаємо preset-чіпи (обрана дата не з фіксованого списку).
+        document.querySelectorAll('#whToolbar .group:first-of-type .chip').forEach(function(c) { c.classList.remove('active'); });
+      }
+      // Якщо org з URL — застосовуємо.
+      if (saved.org && (!hasAnyOrg || allowedOrgs.includes(saved.org))) {
+        whState.org = saved.org;
+      }
       var whTabEl = document.querySelector('.ptab[data-view="wh"]');
       if (whTabEl) switchTab(whTabEl);
     }

@@ -918,6 +918,7 @@ function detectPreset(from, to) {
 function reloadAll() {
   document.getElementById('trendMeta').textContent = `${state.from} → ${state.to}`;
   document.getElementById('syncAge').textContent = 'зараз';
+  applyStateToLinks();
   loadKpis();
   loadTrend();
   loadRunway();
@@ -933,6 +934,28 @@ function reloadAll() {
   loadOps();
   loadForecast();
   setTimeout(() => { document.getElementById('syncAge').textContent = '1с тому'; }, 1500);
+}
+
+// Передаємо стан дашборду (період + орг) у hash усіх посилань на звіти —
+// щоб при кліку на «Усі →» / KPI відкривався звіт з тими ж фільтрами.
+// Базові шляхи (та існуючі query / hash params типу tab=, role=) зберігаються.
+const _LINK_REPORTS = ['sales.html','finance.html','counterparties.html','warehouses.html','ar_aging.html','forecast.html','osp.html','prices-1c.html'];
+function applyStateToLinks(root) {
+  const scope = root || document;
+  scope.querySelectorAll('a[href^="/"]').forEach(a => {
+    const raw = a.getAttribute('href') || '';
+    if (!_LINK_REPORTS.some(p => raw.includes('/' + p))) return;
+    if (a.dataset._origHref == null) a.dataset._origHref = raw;
+    const orig = a.dataset._origHref;
+    const [pathPart, hashPart] = orig.split('#');
+    const h = new URLSearchParams(hashPart || '');
+    if (state.from) h.set('from', state.from); else h.delete('from');
+    if (state.to)   h.set('to',   state.to);   else h.delete('to');
+    if (state.org)  h.set('org',  state.org);  else h.delete('org');
+    if (state.preset) h.set('preset', state.preset); else h.delete('preset');
+    const hashStr = h.toString();
+    a.setAttribute('href', pathPart + (hashStr ? '#' + hashStr : ''));
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1111,6 +1134,13 @@ async function loadKpis() {
     stock = Number(stockR.value.total_value_usd || 0);
     const stockDate = stockR.value.as_of_date || todayIso;
     kpiSet('kStock', { val: fmtMoneyShort(stock), sub: `на ${stockDate}` });
+    // Перенаправляємо kStock на finance.html?tab=wh з тією ж датою snapshot,
+    // щоб цифри співпадали з тими що показує дашборд.
+    const kStockEl = document.getElementById('kStock');
+    if (kStockEl && kStockEl.tagName === 'A') {
+      kStockEl.dataset._origHref = `/finance.html?tab=wh#wh_on=${stockDate}`;
+      applyStateToLinks(kStockEl.parentElement);
+    }
     document.getElementById('miniStock').textContent = fmtMoneyShort(stock);
     document.getElementById('miniStockSub').textContent = `на ${stockDate}`;
     document.getElementById('b5StockUsd').textContent = fmtMoneyShort(stock);

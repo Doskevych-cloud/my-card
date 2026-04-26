@@ -192,8 +192,26 @@ Auth.require('sales').then(user => {
     state.org = defaultOrg;
     orgChips.forEach(c => c.classList.toggle('active', c.dataset.org === defaultOrg));
   }
-  setPreset('month');
+  // Якщо в URL hash є from/to/org (наприклад прийшли з executive dashboard) —
+  // застосовуємо їх замість дефолтного presetа.
+  const hs = _readHashState();
+  if (hs.from && hs.to) {
+    state.from = hs.from; state.to = hs.to;
+    if (hs.org && (!hasAnyOrg || userOrgs[hs.org])) {
+      state.org = hs.org;
+      document.querySelectorAll('.chip[data-org]').forEach(c => c.classList.toggle('active', c.dataset.org === state.org));
+    }
+    detectPreset();
+    load();
+  } else {
+    setPreset('month');
+  }
 });
+
+function _readHashState() {
+  try { return Object.fromEntries(new URLSearchParams(location.hash.slice(1))); }
+  catch (_) { return {}; }
+}
 
 // ─── State ───
 function _todayISO() {
