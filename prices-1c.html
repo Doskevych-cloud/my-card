@@ -121,14 +121,10 @@ a { color: inherit; text-decoration: none; }
   font-weight: 500;
   line-height: 1.5;
 }
-.info-card .v:not(.contact-row) {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: 6px;
-  row-gap: 2px;
+.info-card .v:not(.contact-row) .copy-btn {
+  vertical-align: -3px;
+  margin: 0;
 }
-.info-card .v:not(.contact-row) .v-text { flex: 0 1 auto; min-width: 0; }
 .info-card .v a:not(.tg-icon):not(.copy-btn) { color: var(--ink); }
 .info-card .v a:not(.tg-icon):not(.copy-btn):hover { color: var(--ink-3); }
 .copy-btn {
@@ -996,6 +992,23 @@ async function loadFxSwift() {
 // ============================================================
 // COPY-BUTTON з ✓ swap
 // ============================================================
+// Склеюємо last word адреси + copy-button у nowrap-обгортку,
+// щоб button завжди йшла поряд із текстом (а не відлітала на новий рядок).
+document.querySelectorAll('.info-card .v:not(.contact-row)').forEach(v => {
+  const txt = v.querySelector('.v-text');
+  const btn = v.querySelector('.copy-btn');
+  if (!txt || !btn) return;
+  const raw = txt.textContent.trim();
+  const idx = raw.lastIndexOf(' ');
+  if (idx < 0) return;
+  txt.textContent = raw.slice(0, idx) + ' ';
+  const wrap = document.createElement('span');
+  wrap.style.whiteSpace = 'nowrap';
+  wrap.appendChild(document.createTextNode(raw.slice(idx + 1) + ' '));
+  v.removeChild(btn);
+  wrap.appendChild(btn);
+  v.appendChild(wrap);
+});
 const copyIco = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="1"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
 const checkIco = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>';
 document.querySelectorAll('.copy-btn').forEach(btn => {
