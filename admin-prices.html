@@ -683,8 +683,29 @@ function renderRow(it, c) {
     ? `<span title="${esc(it.nom1c_description || '')}">${esc((it.nom1c_description || '').slice(0, 70))}${(it.nom1c_description||'').length > 70 ? '…' : ''}</span>`
     : `<span class="missing">не привʼязано</span>`;
 
-  const wattsM = (c.unit === '$/Вт' && it.display_spec) ? String(it.display_spec).match(/([\d.,]+)\s*Вт/i) : null;
-  const watts = wattsM ? parseFloat(wattsM[1].replace(',', '.')) : null;
+  // Витягуємо потужність у Вт з display_name → display_spec → nom1c_description
+  // (юзер може писати «625 Вт» в назві, або підписі, або ця інформація живе в 1С).
+  // Підтримуємо «625 Вт», «625Вт», «0.625 кВт», «6 кВт» (множимо на 1000).
+  const extractWatts = (s) => {
+    if (!s) return null;
+    const str = String(s);
+    // 1) кВт
+    const kw = str.match(/([\d]+(?:[.,][\d]+)?)\s*к[Вв]т\b/i);
+    if (kw) return parseFloat(kw[1].replace(',', '.')) * 1000;
+    // 2) Вт
+    const w = str.match(/([\d]+(?:[.,][\d]+)?)\s*[Вв]т\b/);
+    if (w) return parseFloat(w[1].replace(',', '.'));
+    // 3) «585W» / «6kW» (англ. позначення в датасит-назвах)
+    const en = str.match(/([\d]+(?:[.,][\d]+)?)\s*([kK]?)[Ww]\b/);
+    if (en) {
+      const v = parseFloat(en[1].replace(',', '.'));
+      return en[2] ? v * 1000 : v;
+    }
+    return null;
+  };
+  const watts = (c.unit === '$/Вт')
+    ? (extractWatts(it.display_name) || extractWatts(it.display_spec) || extractWatts(it.nom1c_description))
+    : null;
   const curSym = name => name === 'USD' ? '$' : (name === 'EUR' ? '€' : (name || '$'));
   const itemCur = (it.no_vat && it.no_vat.currency_name) || (it.with_vat && it.with_vat.currency_name) || null;
   const unitStr = c.unit === '$/Вт' ? '$/Вт' : (itemCur ? curSym(itemCur) : (c.unit || '$'));

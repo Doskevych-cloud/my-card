@@ -873,10 +873,23 @@ function renderCatalog() {
     return;
   }
 
-  const wattsForSpec = spec => {
-    const m = spec ? String(spec).match(/([\d.,]+)\s*Вт/i) : null;
-    return m ? parseFloat(m[1].replace(',', '.')) : null;
+  // Витягнути потужність у Вт. Юзер може писати «625 Вт» в назві АБО в підписі
+  // АБО в назві з 1С. Підтримуємо «625 Вт», «625Вт», «6 кВт», «585W», «6kW».
+  const extractWatts = (s) => {
+    if (!s) return null;
+    const str = String(s);
+    const kw = str.match(/([\d]+(?:[.,][\d]+)?)\s*к[Вв]т\b/i);
+    if (kw) return parseFloat(kw[1].replace(',', '.')) * 1000;
+    const w = str.match(/([\d]+(?:[.,][\d]+)?)\s*[Вв]т\b/);
+    if (w) return parseFloat(w[1].replace(',', '.'));
+    const en = str.match(/([\d]+(?:[.,][\d]+)?)\s*([kK]?)[Ww]\b/);
+    if (en) {
+      const v = parseFloat(en[1].replace(',', '.'));
+      return en[2] ? v * 1000 : v;
+    }
+    return null;
   };
+  const wattsForItem = it => extractWatts(it.name) || extractWatts(it.spec);
   const dsIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>';
 
   DATA.forEach(c => {
@@ -886,7 +899,7 @@ function renderCatalog() {
     sec.innerHTML = `<div class="cat-head"><h2>${esc(c.cat)}</h2></div>`;
 
     c.items.forEach(it => {
-      const w = (c.unit === '$/Вт') ? wattsForSpec(it.spec) : null;
+      const w = (c.unit === '$/Вт') ? wattsForItem(it) : null;
       const p1raw = it.no_vat && it.no_vat.price != null
         ? (w ? Number(it.no_vat.price) / w : Number(it.no_vat.price)) : null;
       const p2raw = it.with_vat && it.with_vat.price != null
