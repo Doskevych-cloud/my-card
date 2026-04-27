@@ -59,6 +59,9 @@
     finance: 'Фінанси',
     reports: 'Звіти',
     counterparties: 'Контрагенти',
+    suppliers: 'Постачальники',
+    customers: 'Покупці',
+    prices: 'Прайс (адмін)',
     admin: 'Адмін-панель',
   };
 
