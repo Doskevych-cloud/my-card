@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Прайс-лист · React</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #fafaf7;
+  --bg-elev: #ffffff;
+  --ink: #141414;
+  --ink-2: #3d3d3d;
+  --ink-3: #747474;
+  --ink-4: #b4b4b4;
+  --line: #e5e5e3;
+  --line-2: #efefed;
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.005em;
+}
+a { color: inherit; text-decoration: none; }
+
+/* ------ TOPBAR ------ */
+.topbar {
+  background: var(--bg);
+}
+.topbar-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.brand { display: flex; align-items: center; }
+.brand img { height: 52px; width: auto; display: block; }
+.topbar-spacer { flex: 1; }
+.fx-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 18px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  letter-spacing: 0.02em;
+}
+.fx-pill span { display: inline-flex; gap: 6px; }
+.fx-pill b { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+  font-family: inherit;
+  letter-spacing: 0.01em;
+}
+.btn:hover { background: var(--ink); color: #fff; }
+.btn svg { width: 13px; height: 13px; }
+
+/* ------ HERO ------ */
+.hero {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 36px 28px 28px;
+}
+.hero-date {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 36px;
+  font-weight: 500;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px 40px;
+  margin-bottom: 56px;
+}
+.contacts-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px 40px;
+  margin-bottom: 56px;
+}
+.info-card { display: flex; flex-direction: column; }
+.info-card .k {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.info-card .k svg { width: 12px; height: 12px; stroke: var(--ink-3); flex-shrink: 0; }
+.info-card .v {
+  font-size: 14px;
+  color: var(--ink);
+  font-weight: 500;
+  line-height: 1.5;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.info-card .v-text { }
+.info-card .v a:not(.tg-icon):not(.copy-btn) { color: var(--ink); }
+.info-card .v a:not(.tg-icon):not(.copy-btn):hover { color: var(--ink-3); }
+.copy-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px;
+  border: none;
+  color: var(--ink-4);
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  margin-top: 3px;
+  transition: color .15s ease;
+}
+.copy-btn:hover { color: var(--ink); }
+.copy-btn.copied { color: var(--ink); }
+.copy-btn svg { width: 13px; height: 13px; }
+
+.contact-card-inner { display: flex; align-items: center; gap: 14px; }
+.avatar {
+  width: 44px; height: 44px; flex-shrink: 0;
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px; font-weight: 600;
+  color: var(--ink-2);
+  letter-spacing: -0.01em;
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.contact-body .k { margin-bottom: 4px; }
+.contact-row { display: flex; align-items: center; gap: 10px; }
+.contact-card + .contact-card { margin-top: 16px; }
+.tg-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px;
+  color: var(--ink-3);
+  transition: color .15s ease;
+  flex-shrink: 0;
+}
+.tg-icon:hover { color: var(--ink); }
+.tg-icon svg { width: 18px; height: 18px; }
+
+/* ------ TOPBAR CONTACTS ------ */
+.topbar-contacts {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.topbar-contact {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 4px;
+  border-radius: 10px;
+  transition: background 0.15s;
+}
+.topbar-contact:hover { background: var(--bg-elev); }
+.tc-call {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.avatar-sm {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--bg-elev);
+  flex-shrink: 0;
+}
+.tc-body { display: flex; flex-direction: column; line-height: 1.15; }
+.tc-name {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+.tc-phone {
+  font-size: 13px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  margin-top: 2px;
+}
+.topbar-contact .tg-icon {
+  width: 20px; height: 20px;
+  margin-left: 2px;
+}
+.topbar-contact .tg-icon svg { width: 15px; height: 15px; }
+
+/* ------ STICKY TABLE HEADER ------ */
+.table-wrap { max-width: 1240px; margin: 0 auto; padding: 0 28px 72px; }
+main { padding: 0; }
+.row-head-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.row-head {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 14px 28px 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px 140px 130px 110px;
+  align-items: center;
+  gap: 24px;
+}
+.row-head div {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.row-head .num-col { text-align: center; }
+.row-head .head-stock, .row-head .head-ds { text-align: left; }
+
+main {
+  padding: 0;
+}
+
+.category { margin-top: 48px; scroll-margin-top: 160px; }
+.category:first-child { margin-top: 24px; border-top: none; padding-top: 0; }
+.category { border-top: 1px solid var(--line); padding-top: 20px; }
+.cat-head {
+  padding: 0 4px 12px;
+  margin-bottom: 0;
+}
+.cat-head h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px 140px 130px 110px;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 4px;
+  transition: background .12s ease;
+}
+.ds-link {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.ds-link:hover { color: var(--ink); }
+.ds-link svg { width: 11px; height: 11px; }
+.ds-link.none { color: var(--ink-4); cursor: default; }
+.row:hover { background: transparent; }
+
+.prod-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  min-width: 0;
+}
+.prod-sub {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 3px;
+  font-weight: 400;
+}
+
+.price {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.price.empty { color: var(--ink-4); font-weight: 400; text-align: center; }
+.price .cur { color: var(--ink-3); font-weight: 400; margin-left: 2px; }
+
+.stock {
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  width: 120px;
+  box-sizing: border-box;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.stock .led { width: 7px; height: 7px; background: var(--ink); flex-shrink: 0; }
+.stock.wait { color: var(--ink-3); }
+.stock.wait .led { background: var(--ink-3); }
+
+/* ------ FOOTER ------ */
+footer {
+  border-top: 1px solid var(--line);
+  padding: 28px 28px 36px;
+  margin-top: 72px;
+}
+.footer-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  gap: 40px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  letter-spacing: 0.02em;
+}
+.footer-inner p { margin: 0; max-width: 560px; line-height: 1.55; }
+.footer-inner .copyright { text-align: right; white-space: nowrap; }
+
+/* ------ MOBILE ------ */
+@media (max-width: 860px) {
+  .topbar-inner { padding: 14px 16px; gap: 12px; flex-wrap: wrap; }
+  .brand img { height: 38px; }
+  .fx-pill { font-size: 10px; gap: 12px; }
+  .btn span.hide-sm { display: none; }
+  .topbar-contacts {
+    order: 10;
+    width: 100%;
+    gap: 8px;
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+    justify-content: space-between;
+  }
+  .topbar-contact { padding: 4px 6px; gap: 8px; flex: 1; min-width: 0; }
+  .avatar-sm { width: 28px; height: 28px; }
+  .tc-phone { font-size: 12px; }
+
+  .hero { padding: 26px 16px 22px; }
+  .info-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 22px 18px;
+    margin-bottom: 36px;
+  }
+  .contacts-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 22px 18px;
+    margin-bottom: 36px;
+  }
+
+  .table-wrap { padding: 0 16px; }
+  .row-head-wrap { top: 0; }
+  main { padding: 0 16px 48px; }
+  .category { margin-top: 32px; scroll-margin-top: 140px; }
+  .cat-head h2 { font-size: 17px; }
+
+  .row-head { padding: 12px 16px; grid-template-columns: 1fr 90px; gap: 10px; }
+  .row-head .head-p1, .row-head .head-p2, .row-head .head-ds { display: none; }
+  .row-head .head-stock { display: none; }
+  .row-head::after {
+    content: 'Ціна';
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em;
+    text-align: right;
+  }
+
+  .row {
+    display: block;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .row .desktop-only { display: none; }
+  .row .mobile-meta { display: flex; }
+  .row > .prod-name { margin-bottom: 14px; }
+
+  .row .mobile-prices {
+    display: flex;
+    gap: 28px;
+    margin-bottom: 12px;
+  }
+  .row .mobile-prices .price-line {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .row .mobile-prices .price-line .lbl {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 500;
+  }
+  .row .mobile-prices .price-line .price {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+  }
+  .row .mobile-prices .price-line .price .cur { color: var(--ink-3); margin-left: 3px; font-weight: 400; }
+  .row .mobile-prices .price-line.empty .price { color: var(--ink-4); font-weight: 400; font-size: 13px; }
+
+  .row > .mobile-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  footer { padding: 24px 16px 32px; margin-top: 48px; }
+  .footer-inner { flex-direction: column; gap: 14px; }
+  .footer-inner .copyright { text-align: left; }
+}
+@media (min-width: 861px) {
+  .row .mobile-meta { display: none; }
+  .row .mobile-prices { display: none; }
+  .row .mobile-foot { display: none; }
+}
+
+@media print {
+  @page { size: A4; margin: 12mm 10mm; }
+
+  /* прибираємо все декоративне */
+  .topbar, footer, .fx-pill, .topbar-contacts, .btn, .copy-btn,
+  .tg-icon, .avatar, .row .mobile-meta, .mobile-foot { display: none !important; }
+
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    font-family: 'Times New Roman', Times, serif !important;
+    font-size: 10pt !important;
+    line-height: 1.3 !important;
+    letter-spacing: 0 !important;
+  }
+
+  a { color: #000 !important; text-decoration: none !important; }
+
+  /* шапка-документ */
+  .hero {
+    max-width: none; margin: 0; padding: 0 0 8mm 0;
+    border-bottom: 1px solid #000;
+    margin-bottom: 4mm;
+  }
+  .hero-date {
+    font-family: inherit !important;
+    font-size: 11pt !important;
+    color: #000 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    font-weight: 700 !important;
+    margin-bottom: 4mm !important;
+  }
+
+  .contacts-row, .info-grid {
+    display: block !important;
+    margin: 0 0 2mm 0 !important;
+  }
+  .contacts-row .info-card, .info-grid .info-card {
+    display: inline !important;
+    margin-right: 6mm;
+  }
+  .contact-card-inner, .contact-body { display: inline !important; }
+  .info-card .k {
+    font-family: inherit !important;
+    font-size: 10pt !important;
+    font-weight: 700 !important;
+    color: #000 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    margin: 0 4px 0 0 !important;
+    display: inline !important;
+  }
+  .info-card .k::after { content: ':'; }
+  .info-card .k svg { display: none !important; }
+  .info-card .v {
+    display: inline !important;
+    font-size: 10pt !important;
+    font-weight: 400 !important;
+    color: #000 !important;
+  }
+  .info-card .v-text { font-size: 10pt !important; }
+  .contact-row { display: inline !important; }
+
+  /* таблиця */
+  .row-head-wrap {
+    position: static !important;
+    border-bottom: 1px solid #000 !important;
+    background: #fff !important;
+  }
+  .row-head {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 2mm 0 !important;
+    grid-template-columns: minmax(0, 1fr) 22mm 22mm 22mm !important;
+    gap: 4mm !important;
+  }
+  .row-head div {
+    font-family: inherit !important;
+    font-size: 9pt !important;
+    font-weight: 700 !important;
+    color: #000 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+  }
+  .row-head .head-ds { display: none !important; }
+
+  .table-wrap { max-width: none !important; margin: 0 !important; padding: 0 !important; }
+  main { padding: 0 !important; }
+
+  .category {
+    margin: 4mm 0 0 0 !important;
+    border-top: none !important;
+    padding-top: 2mm !important;
+    break-inside: auto;
+  }
+  .category:first-child { margin-top: 2mm !important; }
+  .cat-head { padding: 0 0 1mm 0 !important; }
+  .cat-head h2 {
+    font-family: inherit !important;
+    font-size: 11pt !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+    border-bottom: 1px solid #000;
+    padding-bottom: 1mm;
+  }
+
+  .row {
+    grid-template-columns: minmax(0, 1fr) 22mm 22mm 22mm !important;
+    gap: 4mm !important;
+    padding: 1.2mm 0 !important;
+    border-bottom: 1px dotted #999 !important;
+    page-break-inside: avoid;
+  }
+  .row .desktop-only { display: block !important; }
+  .prod-name {
+    font-family: inherit !important;
+    font-size: 10pt !important;
+    font-weight: 600 !important;
+    color: #000 !important;
+  }
+  .prod-sub {
+    font-family: inherit !important;
+    font-size: 9pt !important;
+    color: #333 !important;
+    font-weight: 400 !important;
+    margin-top: 0 !important;
+  }
+  .price {
+    font-family: inherit !important;
+    font-size: 10pt !important;
+    font-weight: 500 !important;
+    color: #000 !important;
+    text-align: right !important;
+  }
+  .price.empty { color: #888 !important; }
+  .price .cur { color: #000 !important; }
+
+  .stock {
+    font-family: inherit !important;
+    font-size: 9pt !important;
+    color: #000 !important;
+    font-weight: 400 !important;
+    padding: 0 !important;
+    width: auto !important;
+  }
+  .stock .led { display: none !important; }
+  .ds-link { display: none !important; }
+
+  /* повторювати заголовок на кожній сторінці */
+  thead, .row-head-wrap { display: table-header-group; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="#" class="brand">
+      <img src="assets/logo-transparent.png" alt="React">
+    </a>
+    <div class="topbar-spacer"></div>
+    <div class="fx-pill">
+      <span>USD/UAH<b id="fxUsd">—</b></span>
+      <span>EUR/USD<b id="fxEur">—</b></span>
+    </div>
+    <button class="btn" onclick="window.print()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      <span class="hide-sm">Друк</span>
+    </button>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-date" id="priceDate">Прайс · 24 квітня 2026</div>
+  <div class="contacts-row">
+    <div class="info-card">
+      <div class="contact-card-inner">
+        <span class="avatar"><img src="assets/kateryna.png" alt="Катерина"></span>
+        <div class="contact-body">
+          <div class="k">Катерина</div>
+          <div class="v contact-row">
+            <a href="tel:+380675777340">+380 67 577 73 40</a>
+            <a class="tg-icon" href="https://t.me/kateryna_react" target="_blank" aria-label="Telegram"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="info-card">
+      <div class="contact-card-inner">
+        <span class="avatar"><img src="assets/oleksandra.png" alt="Олександра"></span>
+        <div class="contact-body">
+          <div class="k">Олександра</div>
+          <div class="v contact-row">
+            <a href="tel:+380633256110">+380 63 325 61 10</a>
+            <a class="tg-icon" href="https://t.me/oleksandra_react" target="_blank" aria-label="Telegram"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="k">Офіс · Одеса</div>
+      <div class="v">
+        <span class="v-text">вул. Велика Арнаутська, 15</span>
+        <button class="copy-btn" data-copy="Одеса, вул. Велика Арнаутська, 15" aria-label="Копіювати"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="1"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+      </div>
+    </div>
+    <div class="info-card">
+      <div class="k">Склад · Одеса</div>
+      <div class="v">
+        <span class="v-text">вул. Чигиринська, 21</span>
+        <button class="copy-btn" data-copy="Одеса, вул. Чигиринська, 21" aria-label="Копіювати"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="1"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+      </div>
+    </div>
+    <div class="info-card">
+      <div class="k">Склад · Київ</div>
+      <div class="v">
+        <span class="v-text">вул. Промислова, 10, Вишневе</span>
+        <button class="copy-btn" data-copy="Київ, Вишневе, вул. Промислова, 10" aria-label="Копіювати"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="1"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+      </div>
+    </div>
+  </div>
+  </div>
+</section>
+
+<div class="row-head-wrap">
+  <div class="row-head">
+    <div>Назва</div>
+    <div class="num-col head-p1">Ціна без ПДВ</div>
+    <div class="num-col head-p2">Ціна з ПДВ</div>
+    <div class="head-stock">Наявність</div>
+    <div class="head-ds">Даташит</div>
+  </div>
+</div>
+<div class="table-wrap">
+  <main id="catalog"></main>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <p>Ціни вказані у доларах США (USD). Остаточна вартість формується за курсом АТ КБ «Приватбанк» на день оплати.</p>
+    <div class="copyright">© 2026 React</div>
+  </div>
+</footer>
+
+<script>
+const DATA = [
+  { cat: "PV-модулі", items: [
+    { name: "Tongwei TWMNH-66HD", spec: "625 Вт · моно N-type", p1: 0.165, p2: null, stock: "в дорозі", ds: "https://drive.google.com/" },
+    { name: "Tongwei TWMNH-66HD", spec: "630 Вт · моно N-type", p1: null,  p2: 0.192, stock: "в дорозі", ds: "https://drive.google.com/" },
+    { name: "Hanersun HN18N-72HT", spec: "585 Вт · моно N-type", p1: 0.16, p2: null, stock: "в наявності", ds: "https://drive.google.com/" },
+  ]},
+  { cat: "Гібридні інвертори", items: [
+    { name: "Deye SUN-6K-SG05LP1-EU-AM2-P",  spec: "6 кВт · 1-фазний · низьковольтний", p1: 780,  stock: "в наявності", ds: "https://drive.google.com/" },
+    { name: "Deye SUN-8K-SG05LP1-EU-AM2-P",  spec: "8 кВт · 1-фазний · низьковольтний", p1: 1080, stock: "в наявності", ds: "https://drive.google.com/" },
+    { name: "Deye SUN-10K-SG02LP1-EU-AM3",   spec: "10 кВт · 1-фазний · низьковольтний", p1: 1500, stock: "в наявності", ds: "https://drive.google.com/" },
+    { name: "Deye SUN-10K-SG05LP3-EU-SM2",   spec: "10 кВт · 3-фазний · низьковольтний", p1: 1600, stock: "в наявності", ds: "https://drive.google.com/" },
+    { name: "Deye SUN-12K-SG02LP1-EU-AM3",   spec: "12 кВт · 1-фазний · низьковольтний", p1: 1595, stock: "в наявності", ds: "https://drive.google.com/" },
+    { name: "Deye SUN-12K-SG05LP3-EU-SM2",   spec: "12 кВт · 3-фазний · низьковольтний", p1: 1750, stock: "в наявності", ds: "https://drive.google.com/" },
+    { name: "Deye SUN-12K-SG01HP3-EU-AM2",   spec: "12 кВт · 3-фазний · високовольтний", p1: 900,  stock: "в наявності", ds: "https://drive.google.com/" },
+    { name: "Deye SUN-15K-SG05LP3-EU-SM2",   spec: "15 кВт · 3-фазний · низьковольтний", p1: 1900, stock: "в наявності", ds: "https://drive.google.com/" },
+    { name: "Deye SUN-15K-SG01HP3-EU",       spec: "15 кВт · 3-фазний · високовольтний", p1: 1600, stock: "в наявності", ds: "https://drive.google.com/" },
+    { name: "Deye SUN-20K-SG05LP3-EU",       spec: "20 кВт · 3-фазний · низьковольтний", p1: 2550, stock: "в наявності", ds: "https://drive.google.com/" },
+    { name: "Deye SUN-20K-SG01HP3-EU-AM2",   spec: "20 кВт · 3-фазний · високовольтний", p1: 1870, stock: "в наявності", ds: "https://drive.google.com/" },
+    { name: "Deye SUN-30K-SG02HP3-EU-AM3",   spec: "30 кВт · 3-фазний · високовольтний", p1: 3280, stock: "в наявності", ds: "https://drive.google.com/" },
+    { name: "Deye SUN-50K-SG01HP3-EU-BM4",   spec: "50 кВт · 3-фазний · високовольтний", p1: 4800, stock: "в дорозі", ds: "https://drive.google.com/" },
+    { name: "Deye SUN-80K-SG02HP3-EU-EM6",   spec: "80 кВт · 3-фазний · високовольтний", p1: 6250, stock: "в дорозі", ds: "https://drive.google.com/" },
+  ]},
+  { cat: "Низьковольтні акумулятори", items: [
+    { name: "Deye SE-G5.1 Pro-B",    spec: "5.12 кВт·год · настінний", p1: 810, stock: "в наявності", ds: "https://drive.google.com/" },
+    { name: "Deye SE-F5 Pro-C",      spec: "5.12 кВт·год · стійковий", p1: 790, stock: "в наявності", ds: "https://drive.google.com/" },
+    { name: "Dah DHN-LVWES05-G1",    spec: "5.12 кВт·год · настінний", p1: 695, stock: "в наявності", ds: "https://drive.google.com/" },
+    { name: "Pylontech US5000",      spec: "4.8 кВт·год · стійковий",  p1: 890, stock: "в наявності", ds: "https://drive.google.com/" },
+  ]},
+  { cat: "Високовольтні акумулятори", items: [
+    { name: "Deye BOS-G PRO",              spec: "5.12 кВт·год · модуль",         p1: 780,  p2: 900, stock: "в наявності", ds: "https://drive.google.com/" },
+    { name: "Deye BOS-G-PDU-2",            spec: "BMS для BOS-G PRO",              p1: 740,  p2: 860, stock: "в наявності", ds: "https://drive.google.com/" },
+    { name: 'Стійка 19" Deye 3U-HRACK',    spec: "12 акб + 1 блок керування",      p1: 430,  stock: "в наявності", ds: "https://drive.google.com/" },
+    { name: "Deye HV BOS-B-Pack16-A3-Pro", spec: "HV акумуляторний пакет",         p1: 1720, stock: "в дорозі", ds: "https://drive.google.com/" },
+    { name: "Deye BOS-B-PDU-2-А",          spec: "BMS для BOS-B-Pack16-A3-Pro",    p1: 1600, stock: "в дорозі", ds: "https://drive.google.com/" },
+  ]},
+  { cat: "PV-кабель", items: [
+    { name: "KBE 6 мм²", spec: "червоний / чорний · бухта 500 м", p1: null, stock: "в дорозі", priceNote: "ціна за запитом", ds: "https://drive.google.com/" },
+  ]},
+];
+
+const fmtPrice = v => v == null ? null :
+  v < 1 ? v.toFixed(3).replace(/\.?0+$/, '').replace('.', ',')
+        : v.toLocaleString('uk-UA', { maximumFractionDigits: 0 });
+
+// Дата
+const months = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+const today = new Date();
+document.getElementById('priceDate').textContent = `Прайс · ${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`;
+
+// Каталог
+const catalog = document.getElementById('catalog');
+DATA.forEach(c => {
+  const sec = document.createElement('section');
+  sec.className = 'category';
+  sec.innerHTML = `<div class="cat-head"><h2>${c.cat}</h2></div>`;
+  c.items.forEach(it => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    const stockClass = it.stock === 'в наявності' ? '' : 'wait';
+    const unit = it.unit || '$';
+    const renderP = v => v != null
+      ? `<span>${fmtPrice(v)}</span><span class="cur"> ${unit}</span>`
+      : (it.priceNote ? `<span style="font-weight:400;color:var(--ink-3);font-size:12px">${it.priceNote}</span>` : '—');
+    const dsIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>';
+    const dsCell = it.ds
+      ? `<a class="ds-link" href="${it.ds}" target="_blank" rel="noopener">${dsIcon}PDF</a>`
+      : `<span class="ds-link none">—</span>`;
+    row.innerHTML = `
+      <div class="prod-name">
+        <span>${it.name}</span>
+        ${it.spec ? `<span class="prod-sub">${it.spec}</span>` : ''}
+      </div>
+      <div class="price desktop-only ${it.p1 == null ? 'empty' : ''}">${renderP(it.p1)}</div>
+      <div class="price desktop-only ${it.p2 == null ? 'empty' : ''}">${renderP(it.p2)}</div>
+      <div class="desktop-only"><span class="stock ${stockClass}"><span class="led"></span>${it.stock}</span></div>
+      <div class="desktop-only">${dsCell}</div>
+
+      <div class="mobile-prices mobile-meta">
+        ${it.p1 != null
+          ? `<div class="price-line"><span class="lbl">без ПДВ</span><span class="price">${renderP(it.p1)}</span></div>`
+          : ''}
+        ${it.p2 != null
+          ? `<div class="price-line"><span class="lbl">з ПДВ</span><span class="price">${renderP(it.p2)}</span></div>`
+          : ''}
+        ${it.p1 == null && it.p2 == null
+          ? `<div class="price-line empty"><span class="lbl">ціна</span><span class="price">${it.priceNote || '—'}</span></div>`
+          : ''}
+      </div>
+      <div class="mobile-foot mobile-meta">
+        <span class="stock ${stockClass}"><span class="led"></span>${it.stock}</span>
+        ${it.ds ? `<a class="ds-link" href="${it.ds}" target="_blank" rel="noopener">${dsIcon}PDF</a>` : ''}
+      </div>
+    `;
+    sec.appendChild(row);
+  });
+  catalog.appendChild(sec);
+});
+
+// Copy-to-clipboard
+document.querySelectorAll('.copy-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const text = btn.getAttribute('data-copy');
+    try {
+      await navigator.clipboard.writeText(text);
+      btn.classList.add('copied');
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12l5 5L20 7"/></svg>';
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="1"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
+      }, 1400);
+    } catch(e) {}
+  });
+});
+
+// FX Privatbank
+(async function () {
+  try {
+    const r = await fetch('https://api.privatbank.ua/p24api/pubinfo?json&exchange&coursid=11');
+    const data = await r.json();
+    const usd = data.find(x => x.ccy === 'USD');
+    const eur = data.find(x => x.ccy === 'EUR');
+    if (usd) document.getElementById('fxUsd').textContent = Number(usd.sale).toFixed(2).replace('.', ',');
+    if (usd && eur) {
+      const rate = Number(eur.sale) / Number(usd.sale);
+      document.getElementById('fxEur').textContent = rate.toFixed(4).replace('.', ',');
+    }
+  } catch(e) {}
+})();
+</script>
+
+</body>
+</html>

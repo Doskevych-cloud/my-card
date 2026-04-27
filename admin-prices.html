@@ -10,8 +10,8 @@
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
-<script src="auth.js?v=hfref20260423"></script>
-<script src="header.js?v=hfref20260423"></script>
+<script src="auth.js?v=denyhdr20260427"></script>
+<script src="header.js?v=denyhdr20260427"></script>
 <style>
 :root {
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -689,13 +689,16 @@ function renderRow(it, c) {
   const extractWatts = (s) => {
     if (!s) return null;
     const str = String(s);
+    // ВАЖЛИВО: `\b` у JS regex базується на ASCII `\w` — для кирилиці НЕ
+    // спрацьовує. Тому замість `\b` використовуємо negative lookahead
+    // `(?![а-яА-ЯёЁіІїЇєЄґҐ])` — після Вт не може йти ще кирилична буква.
     // 1) кВт
-    const kw = str.match(/([\d]+(?:[.,][\d]+)?)\s*к[Вв]т\b/i);
+    const kw = str.match(/([\d]+(?:[.,][\d]+)?)\s*к[Вв]т(?![а-яА-ЯёЁіІїЇєЄґҐ])/i);
     if (kw) return parseFloat(kw[1].replace(',', '.')) * 1000;
     // 2) Вт
-    const w = str.match(/([\d]+(?:[.,][\d]+)?)\s*[Вв]т\b/);
+    const w = str.match(/([\d]+(?:[.,][\d]+)?)\s*[Вв]т(?![а-яА-ЯёЁіІїЇєЄґҐ])/);
     if (w) return parseFloat(w[1].replace(',', '.'));
-    // 3) «585W» / «6kW» (англ. позначення в датасит-назвах)
+    // 3) англ. «585W» / «6kW» — тут `\b` працює, бо це ASCII
     const en = str.match(/([\d]+(?:[.,][\d]+)?)\s*([kK]?)[Ww]\b/);
     if (en) {
       const v = parseFloat(en[1].replace(',', '.'));

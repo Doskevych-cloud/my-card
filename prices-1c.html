@@ -880,9 +880,9 @@ function renderCatalog() {
   const extractWatts = (s) => {
     if (!s) return null;
     const str = String(s);
-    const kw = str.match(/([\d]+(?:[.,][\d]+)?)\s*к[Вв]т\b/i);
+    const kw = str.match(/([\d]+(?:[.,][\d]+)?)\s*к[Вв]т(?![а-яА-ЯёЁіІїЇєЄґҐ])/i);
     if (kw) return parseFloat(kw[1].replace(',', '.')) * 1000;
-    const w = str.match(/([\d]+(?:[.,][\d]+)?)\s*[Вв]т\b/);
+    const w = str.match(/([\d]+(?:[.,][\d]+)?)\s*[Вв]т(?![а-яА-ЯёЁіІїЇєЄґҐ])/);
     if (w) return parseFloat(w[1].replace(',', '.'));
     const en = str.match(/([\d]+(?:[.,][\d]+)?)\s*([kK]?)[Ww]\b/);
     if (en) {

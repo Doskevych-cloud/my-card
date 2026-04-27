@@ -199,9 +199,9 @@
     const impAdmin = imp ? impersonatedBy() : '';
     document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
 
-    // Якщо ми в імперсонації — монтуємо шапку з банером "Повернутись",
-    // щоб адмін не застряг на заблокованій сторінці.
-    if (imp && global.AppHeader && global.AppHeader.mount) {
+    // Шапка програми має бути видна ЗАВЖДИ — навіть на deny-екрані юзер
+    // має бачити nav із доступними йому розділами та може піти куди має право.
+    if (global.AppHeader && global.AppHeader.mount) {
       try { global.AppHeader.mount({ active: '', user }); } catch {}
     }
 
