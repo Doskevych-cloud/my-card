@@ -988,13 +988,22 @@ document.addEventListener('DOMContentLoaded', () => {
     e.target.dataset.touched = '1';
   });
 
-  // click outside modal closes it
-  document.getElementById('itemModal').addEventListener('click', e => {
-    if (e.target.id === 'itemModal') closeItemModal();
-  });
-  document.getElementById('catModal').addEventListener('click', e => {
-    if (e.target.id === 'catModal') closeCatModal();
-  });
+  // click outside modal closes it — але тільки якщо натискання MOUSEDOWN
+  // ТЕЖ було на backdrop. Інакше «drag select» з input на backdrop помилково
+  // закривав модалку (юзер виділяв текст у Підпис, відпускав мишу за межі —
+  // mousedown на input → mouseup на backdrop → click target = backdrop → close).
+  // Тепер закриваємо тільки якщо обидві фази на backdrop.
+  function attachBackdropClose(modalId, closer) {
+    const el = document.getElementById(modalId);
+    let downOnBackdrop = false;
+    el.addEventListener('mousedown', e => { downOnBackdrop = (e.target.id === modalId); });
+    el.addEventListener('click', e => {
+      if (e.target.id === modalId && downOnBackdrop) closer();
+      downOnBackdrop = false;
+    });
+  }
+  attachBackdropClose('itemModal', closeItemModal);
+  attachBackdropClose('catModal', closeCatModal);
 });
 
 function hl(text, q) {
