@@ -176,6 +176,12 @@ a{color:inherit;text-decoration:none}
         <span class="chip" data-org="Генерація" onclick="setOrg(this)">Генерація</span>
       </span>
       <div class="sep"></div>
+      <span class="lbl">Двигун</span>
+      <span class="group" id="engineGroup" title="Legacy = OData /Balance (тільки Долг). D1 = NET cashflow з урахуванням авансів (узгоджено з Контрагентами).">
+        <span class="chip active" data-engine="legacy" onclick="setEngine(this)">Legacy</span>
+        <span class="chip" data-engine="d1" onclick="setEngine(this)">D1</span>
+      </span>
+      <div class="sep"></div>
       <span class="lbl">Сортування</span>
       <span class="group" id="sortGroup">
         <span class="chip active" data-sort="total" onclick="setSort(this)">За сумою</span>
@@ -193,7 +199,7 @@ a{color:inherit;text-decoration:none}
 
 <script>
 const API_URL = 'https://price-api.doskevich.workers.dev/';
-const state = { onDate: '', org: 'Реакт', clientFilter: '', sort: 'total', bucketFilter: null, _raw: null, collapsed: {} };
+const state = { onDate: '', org: 'Реакт', engine: 'legacy', clientFilter: '', sort: 'total', bucketFilter: null, _raw: null, collapsed: {} };
 
 const BUCKET_ORDER = ['d7','d14','d30','d60','d61p'];
 const BUCKET_LABEL = { d7:'До 7', d14:'8–14', d30:'15–30', d60:'31–60', d61p:'Від 61' };
@@ -219,6 +225,12 @@ function setOrg(el) {
   el.classList.add('active');
   load();
 }
+function setEngine(el) {
+  state.engine = el.dataset.engine;
+  el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  load();
+}
 function setSort(el) {
   state.sort = el.dataset.sort;
   el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
@@ -234,7 +246,8 @@ async function load() {
   document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
   document.getElementById('summary').innerHTML = '';
   try {
-    const q = '?action=receivables_aging&on_date=' + state.onDate + (state.org ? '&org=' + encodeURIComponent(state.org) : '');
+    const action = state.engine === 'd1' ? 'receivables_aging_d1' : 'receivables_aging';
+    const q = '?action=' + action + '&on_date=' + state.onDate + (state.org ? '&org=' + encodeURIComponent(state.org) : '');
     const data = await fetch(API_URL + q).then(r => r.json());
     if (data.error) throw new Error(data.error);
     state._raw = data;
