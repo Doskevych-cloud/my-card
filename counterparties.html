@@ -244,6 +244,10 @@ a{color:inherit;text-decoration:none}
       <span class="sep"></span>
 
       <input type="text" id="qIn" placeholder="🔎 контрагент (назва / ЕДРПОУ)" style="flex:1;min-width:220px;padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none">
+
+      <span class="chip" id="exportPdfBtn" onclick="downloadPDF()" title="Експорт у PDF з поточними фільтрами" style="cursor:pointer">
+        <span style="margin-right:5px">⤓</span> PDF
+      </span>
     </div>
 
     <div class="tabs" id="tabs">
@@ -761,6 +765,93 @@ Auth.require('counterparties').then(user => {
   wireToolbar();
   load();
 });
+
+/* ── PDF Export ───────────────────────────────────────────────────────
+ * Клонуємо #body + summary, вставляємо у нове вікно з data-theme=light
+ * і відкриваємо діалог друку → «Зберегти як PDF».
+ * Заголовок збирається з поточних фільтрів (період, орг, роль, пошук).
+ */
+function downloadPDF() {
+  const ROLE_TITLE = { customers:'Покупці', suppliers:'Постачальники', others:'Інші', all:'Усі контрагенти' };
+  const ORG_LABEL  = { react:'Реакт', gen:'Генерація', '':'Усі організації' };
+  const role = ROLE_TITLE[state.role] || 'Контрагенти';
+  const org  = ORG_LABEL[state.org || ''] || state.org || 'Усі';
+  const period = (state.from || '') + ' — ' + (state.to || '');
+  const q = (state.q || '').trim();
+  const filename = `Контрагенти · ${role} · ${period}${state.org ? ' · ' + org : ''}.pdf`;
+  const dt = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' });
+
+  const body = document.getElementById('body');
+  if (!body) return;
+  const clone = body.cloneNode(true);
+  // Прибираємо інтерактивні елементи що не потрібні в PDF
+  clone.querySelectorAll('button, input, .dv-toolbar, .pagination, .loader, .loading').forEach(el => el.remove());
+  // Розкриваємо всі згорнуті рядки
+  clone.querySelectorAll('[hidden]').forEach(el => el.removeAttribute('hidden'));
+  clone.querySelectorAll('.collapsed, [data-collapsed="true"]').forEach(el => {
+    el.classList.remove('collapsed');
+    el.setAttribute('data-collapsed', 'false');
+  });
+
+  const headHtml = `
+    <div class="pdf-head">
+      <div class="pdf-h1">Контрагенти — ${esc(role)}</div>
+      <div class="pdf-meta">
+        <span><b>Період:</b> ${esc(period)}</span>
+        <span><b>Організація:</b> ${esc(org)}</span>
+        ${q ? `<span><b>Пошук:</b> ${esc(q)}</span>` : ''}
+        <span><b>Сформовано:</b> ${esc(dt)}</span>
+      </div>
+    </div>`;
+
+  const win = window.open('', '_blank', 'width=1200,height=800');
+  if (!win) { alert('Дозволь pop-up для експорту PDF'); return; }
+  // Використовуємо ті ж стилі що й на сторінці — підвантажуємо як зовнішній
+  // CSS і перевикористовуємо. Простіше — копіюємо <style> і <link> з head.
+  const styleNodes = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+    .map(n => n.outerHTML).join('\n');
+
+  win.document.open();
+  win.document.write(`<!DOCTYPE html>
+<html lang="uk" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<title>${esc(filename.replace('.pdf',''))}</title>
+${styleNodes}
+<style>
+  body{background:#fff !important;color:#1c1c1e !important;padding:24px;font-family:'Inter',sans-serif}
+  .pdf-head{margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #1c1c1e}
+  .pdf-h1{font-size:20px;font-weight:700;letter-spacing:-.3px;margin-bottom:8px}
+  .pdf-meta{display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:#48484a}
+  .pdf-meta b{color:#1c1c1e;font-weight:600}
+  /* Прибираємо інтерактивні стилі, hover тощо */
+  *{cursor:default !important;user-select:text !important}
+  a{color:inherit !important;text-decoration:none !important}
+  table{font-size:11px !important}
+  th,td{padding:6px 10px !important}
+  /* Друк: A4 landscape, без фону */
+  @media print{
+    body{padding:0;margin:0}
+    .pdf-head{padding:14px 18px}
+    @page{size:A4 landscape;margin:10mm}
+  }
+</style>
+<script>try{document.documentElement.setAttribute('data-theme','light')}catch(e){}<\/script>
+</head>
+<body>
+${headHtml}
+<div id="content"></div>
+</body>
+</html>`);
+  win.document.close();
+
+  // Чекаємо на load перед print, щоб шрифти й стилі підтягнулися
+  win.onload = () => {
+    const cont = win.document.getElementById('content');
+    cont.appendChild(clone);
+    setTimeout(() => { try { win.focus(); win.print(); } catch (_) {} }, 350);
+  };
+}
 </script>
 </body>
 </html>
