@@ -68,9 +68,27 @@ a{color:inherit;text-decoration:none}
 
 /* Product list — timeline-style */
 .tp-list{display:flex;flex-direction:column;gap:0;background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.tp-row{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:14px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);transition:background .12s;cursor:default}
+.tp-row{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:14px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);transition:background .12s;cursor:pointer;position:relative}
 .tp-row:last-child{border-bottom:none}
 .tp-row:hover{background:var(--bg3)}
+.tp-row.open{background:var(--bg3)}
+.tp-row .chev{position:absolute;left:6px;top:50%;transform:translateY(-50%) rotate(0deg);font-size:9px;color:var(--text3);transition:transform .15s}
+.tp-row.open .chev{transform:translateY(-50%) rotate(90deg)}
+.tp-row > .date{padding-left:8px}
+
+/* Деталі товару */
+.tp-details{padding:12px 18px 18px 56px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:12px}
+.tp-details .h{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin:6px 0 8px}
+.tp-details table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.tp-details th{padding:6px 10px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;text-align:left;border-bottom:1px solid var(--border)}
+.tp-details th.num{text-align:right}
+.tp-details td{padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text2);white-space:nowrap}
+.tp-details td.num{text-align:right;color:var(--text);font-weight:600}
+.tp-details tbody tr:last-child td{border-bottom:none}
+.tp-details tbody tr:hover td{background:var(--bg3)}
+.tp-details td.client{color:var(--text);font-weight:500;max-width:280px;overflow:hidden;text-overflow:ellipsis}
+.tp-details .top-clients{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:6px}
+@media (max-width:900px){.tp-details .top-clients{grid-template-columns:1fr}.tp-details{padding-left:18px}}
 .tp-row .date{font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums;font-weight:600;min-width:64px;text-align:center;padding:4px 0}
 .tp-row .date b{display:block;font-size:14px;color:var(--text);font-weight:700;letter-spacing:-.3px;line-height:1.1}
 .tp-row .name{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -309,8 +327,10 @@ function render() {
       it.clients > 1 ? `${it.clients} клієнт.` : null,
       it.first_sold && it.first_sold !== it.last_sold ? `від ${fmtDate(it.first_sold).day} ${fmtDate(it.first_sold).mon}` : null,
     ].filter(Boolean).join(' · ');
+    const ref = it.nom_key || '';
     return `
-      <div class="tp-row${isHot ? ' hot' : ''}">
+      <div class="tp-row${isHot ? ' hot' : ''}" data-nom="${esc(ref)}">
+        <span class="chev">▶</span>
         <div class="date">${dInfo.day}<b>${dInfo.mon}</b></div>
         <div class="name">
           ${it.nom_code ? `<span class="code">${esc(it.nom_code)}</span>` : ''}${esc(it.nom_name)}
@@ -319,10 +339,87 @@ function render() {
         <div class="qty">${fmt(it.qty, 0)}<span class="unit">шт</span></div>
         <div class="receipts">${fmt(it.receipts, 0)} нак.</div>
         <div class="revenue${(it.revenue_usd || 0) === 0 ? ' zero' : ''}">${fmt(it.revenue_usd, 0)} $</div>
-      </div>`;
+      </div>
+      <div class="tp-details" id="det-${esc(ref)}" style="display:none"></div>`;
   }).join('');
 
   document.getElementById('body').innerHTML = `<div class="tp-list">${html}</div>`;
+  // Клік на рядок — toggle деталі
+  document.querySelectorAll('.tp-row[data-nom]').forEach(row => {
+    row.addEventListener('click', () => toggleDetails(row));
+  });
+}
+
+const _detailsCache = new Map();
+
+async function toggleDetails(row) {
+  const ref = row.dataset.nom;
+  if (!ref) return;
+  const det = document.getElementById('det-' + ref);
+  if (!det) return;
+  if (row.classList.contains('open')) {
+    row.classList.remove('open');
+    det.style.display = 'none';
+    return;
+  }
+  row.classList.add('open');
+  det.style.display = 'block';
+  if (_detailsCache.has(ref)) {
+    det.innerHTML = _detailsCache.get(ref);
+    return;
+  }
+  det.innerHTML = '<div style="padding:10px;color:var(--text3)">Завантаження…</div>';
+  try {
+    const q = `?action=top_product_details&nom_key=${encodeURIComponent(ref)}&from=${state.from}&to=${state.to}` + (state.org ? `&org=${encodeURIComponent(state.org)}` : '');
+    const r = await fetch(API_URL + q).then(x => x.json());
+    if (r.error) throw new Error(r.error);
+    const html = renderDetails(r);
+    _detailsCache.set(ref, html);
+    det.innerHTML = html;
+  } catch (e) {
+    det.innerHTML = `<div class="error">${esc(e.message)}</div>`;
+  }
+}
+
+function renderDetails(d) {
+  const rows = d.rows || [];
+  const tc = d.top_clients || [];
+  if (!rows.length) return '<div style="padding:10px;color:var(--text3)">Немає рядків</div>';
+  const fmtD = iso => (iso || '').slice(0, 10).split('-').reverse().slice(0, 2).join('.');
+  const ordersTbl = `
+    <div class="h">Відвантаження (${rows.length})</div>
+    <table>
+      <thead><tr>
+        <th>Дата</th><th>Накладна</th><th>Клієнт</th><th>Замовлення</th>
+        <th class="num">К-сть</th><th class="num">Сума</th><th>Вал.</th><th class="num">USD</th>
+      </tr></thead>
+      <tbody>${rows.map(r => `
+        <tr>
+          <td>${fmtD(r.date)}</td>
+          <td>${esc(r.receipt || '—')}</td>
+          <td class="client">${esc(r.client)}</td>
+          <td>${r.order ? `№${esc(r.order)}` : '<span style="color:var(--text3)">—</span>'}</td>
+          <td class="num">${fmt(r.qty, 0)}</td>
+          <td class="num">${fmt(r.amount, 2)}</td>
+          <td>${esc(r.cur)}</td>
+          <td class="num" style="color:var(--green)">${fmt(r.amount_usd, 0)} $</td>
+        </tr>`).join('')}</tbody>
+    </table>`;
+  const clientsTbl = tc.length > 1 ? `
+    <div class="h" style="margin-top:14px">Топ-клієнти (${tc.length})</div>
+    <table>
+      <thead><tr>
+        <th>Клієнт</th><th class="num">К-сть</th><th class="num">Накладних</th><th class="num">USD</th>
+      </tr></thead>
+      <tbody>${tc.map(c => `
+        <tr>
+          <td class="client">${esc(c.name)}</td>
+          <td class="num">${fmt(c.qty, 0)}</td>
+          <td class="num">${fmt(c.receipts, 0)}</td>
+          <td class="num" style="color:var(--green)">${fmt(c.amount_usd, 0)} $</td>
+        </tr>`).join('')}</tbody>
+    </table>` : '';
+  return ordersTbl + clientsTbl;
 }
 </script>
 </body>
