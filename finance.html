@@ -369,6 +369,8 @@ a{color:inherit;text-decoration:none}
         <input type="text" id="gpBuyerIn" placeholder="Пошук покупця..." oninput="gpFilterChanged()">
         <span class="lbl">Номенклатура</span>
         <input type="text" id="gpNomIn" placeholder="Пошук товару..." oninput="gpFilterChanged()">
+        <span class="lbl" title="Не включати у звіт. Кілька значень розділяй комою">Виключити</span>
+        <input type="text" id="gpExcludeIn" placeholder="напр.: ТОВ ГЕНЕРАЦІЯ, Іванов" oninput="gpFilterChanged()">
         <div class="sep"></div>
         <span class="group pnl-collapse-ctl" title="Керування згортанням груп">
           <span class="chip" onclick="gpToggleAll(false)">
@@ -2002,7 +2004,19 @@ document.getElementById('cfToIn').addEventListener('change', function(e) { cfSta
 /* ═══════════════════════════════════════════════════
    GROSS PROFIT TAB
    ═══════════════════════════════════════════════════ */
-const gpState = { from: '', to: '', org: '', preset: '', buyerFilter: '', nomFilter: '', _loaded: false, _rawData: null };
+const gpState = { from: '', to: '', org: '', preset: '', buyerFilter: '', nomFilter: '', excludeList: [], _loaded: false, _rawData: null };
+
+// Restore persisted exclude list (per-browser, не в URL)
+try {
+  const saved = localStorage.getItem('gp_exclude') || '';
+  if (saved) {
+    gpState.excludeList = saved.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    document.addEventListener('DOMContentLoaded', () => {
+      const el = document.getElementById('gpExcludeIn');
+      if (el) el.value = saved;
+    });
+  }
+} catch (_) {}
 const gpOpenRows = new Set();
 let gpFilterTimer = null;
 
@@ -2035,6 +2049,9 @@ function gpFilterChanged() {
   gpFilterTimer = setTimeout(function() {
     gpState.buyerFilter = document.getElementById('gpBuyerIn').value.trim().toLowerCase();
     gpState.nomFilter = document.getElementById('gpNomIn').value.trim().toLowerCase();
+    const exRaw = document.getElementById('gpExcludeIn').value || '';
+    gpState.excludeList = exRaw.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    try { localStorage.setItem('gp_exclude', exRaw); } catch (_) {}
     if (gpState._rawData) renderGp(gpState._rawData);
   }, 300);
 }
@@ -2060,6 +2077,14 @@ function renderGp(data) {
 
   // Apply client-side filters
   let filtered = clients;
+  // Exclude list (substring match по назві клієнта; кілька через кому)
+  const ex = (gpState.excludeList || []);
+  if (ex.length) {
+    filtered = filtered.filter(cl => {
+      const n = (cl.name || '').toLowerCase();
+      return !ex.some(x => x && n.includes(x));
+    });
+  }
   if (bf) {
     filtered = filtered.filter(cl => cl.name.toLowerCase().includes(bf));
   }
@@ -2105,9 +2130,9 @@ function renderGp(data) {
     '<div class="pnl-card c-cost"><span class="cl">Собівартість</span><span class="cv">' + fmt(ft.cogs, 2) + sfx + '</span>' +
       '<span class="cs">' + (ft.revenue ? (ft.cogs / ft.revenue * 100).toFixed(1) + '% від виручки' : '') + '</span></div>' +
     '<div class="pnl-card c-grs"><span class="cl">Валовий прибуток</span><span class="cv">' + fmt(ft.profit, 2) + sfx + '</span>' +
-      '<span class="cs">Рентабельність ' + ft.margin.toFixed(2) + '%</span></div>' +
-    '<div class="pnl-card c-net"><span class="cl">Клієнтів</span><span class="cv">' + filtered.length + '</span>' +
-      '<span class="cs">Накладних: ' + filtered.reduce((s, c) => s + c.contracts.reduce((s2, ct) => s2 + ct.orders.reduce((s3, o) => s3 + o.products.reduce((s4, p) => s4 + p.docs.length, 0), 0), 0), 0) + '</span></div>' +
+      '<span class="cs">' + (ft.revenue ? ((ft.profit / ft.revenue) * 100).toFixed(1) + '% від виручки' : '') + '</span></div>' +
+    '<div class="pnl-card c-net"><span class="cl">Рентабельність</span><span class="cv">' + ft.margin.toFixed(2) + '%</span>' +
+      '<span class="cs">' + filtered.length + ' клієнт., ' + filtered.reduce((s, c) => s + c.contracts.reduce((s2, ct) => s2 + ct.orders.reduce((s3, o) => s3 + o.products.reduce((s4, p) => s4 + p.docs.length, 0), 0), 0), 0) + ' накл.</span></div>' +
   '</div>';
 
   // Build flat rows for tree table
