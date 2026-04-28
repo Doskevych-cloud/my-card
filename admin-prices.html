@@ -110,6 +110,11 @@ a{color:inherit;text-decoration:none}
 /* ─── Table ─── */
 .tbl{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed}
 .tbl thead th{padding:8px 10px;background:var(--bg2);color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl thead th.sortable{cursor:pointer;user-select:none;transition:color .12s}
+.tbl thead th.sortable:hover{color:var(--text)}
+.tbl thead th .sort-ico{display:inline-block;margin-left:4px;font-size:10px;color:var(--text4);font-weight:400;transition:color .12s}
+.tbl thead th.sortable:hover .sort-ico{color:var(--text3)}
+.tbl thead th .sort-ico.active{color:var(--accent)}
 .tbl tbody td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top;overflow:hidden;text-overflow:ellipsis}
 .tbl tbody tr:last-child td{border-bottom:none}
 .tbl tbody tr:hover{background:var(--bg2)}
@@ -435,6 +440,7 @@ let CHOSEN_NOM = null;
 let FILTER = 'all';
 let SEARCH = '';
 let COLLAPSED = new Set();       // category slugs
+let SORT = { field: null, dir: 'asc' };  // null = за замовчуванням (sort_order з 1С)
 
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const slugify = s => String(s || '').toLowerCase()
@@ -442,6 +448,72 @@ const slugify = s => String(s || '').toLowerCase()
   .replace(/[òóôöõø]/g,'o').replace(/[ùúûüū]/g,'u').replace(/[ñ]/g,'n').replace(/[ç]/g,'c')
   .replace(/[а-яёіїєґ]/g, ch => ({'а':'a','б':'b','в':'v','г':'g','ґ':'g','д':'d','е':'e','є':'ie','ё':'e','ж':'zh','з':'z','и':'y','і':'i','ї':'i','й':'i','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'shch','ъ':'','ы':'y','ь':'','э':'e','ю':'iu','я':'ia'}[ch] || ''))
   .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+// Сортування рядків таблиці прайсу. Глобальний стан — клік на колонку в будь-якій
+// категорії застосовує той самий sort до всіх. Натиск на ту ж колонку — toggle dir.
+// Третій клік на ту ж колонку → reset (повернутись до природнього sort_order).
+const STOCK_KIND_RANK = { instock: 0, intransit: 1, none: 2 };
+function sortKey(it, field, c) {
+  switch (field) {
+    case 'name':     return (it.display_name || '').toLowerCase();
+    case 'nom1c':    return (it.nom1c_description || '￿').toLowerCase(); // empty → end
+    case 'kind':     return STOCK_KIND_RANK[itemStockKind(it, c.slug)] ?? 9;
+    case 'stock':    return it._stock ? Number(it._stock.stock) || 0 : -1;
+    case 'transit':  return it._stock ? Number(it._stock.transit) || 0 : -1;
+    case 'no_vat':   return priceForSort(it, 'no_vat', c);
+    case 'with_vat': return priceForSort(it, 'with_vat', c);
+    default: return 0;
+  }
+}
+function priceForSort(it, key, c) {
+  const v = it[key] && it[key].price;
+  if (v == null) return -Infinity;
+  if (c.unit !== '$/Вт') return Number(v);
+  // $/Вт — ділимо на потужність (як у renderRow), щоб сортувати по фактичних $/Вт.
+  const w = extractWattsFromItem(it);
+  return w ? Number(v) / w : Number(v);
+}
+function extractWattsFromItem(it) {
+  const tryExtract = (s) => {
+    if (!s) return null;
+    const str = String(s);
+    let m = str.match(/([\d]+(?:[.,][\d]+)?)\s*к[Вв]т/i);
+    if (m) return parseFloat(m[1].replace(',', '.')) * 1000;
+    m = str.match(/([\d]+(?:[.,][\d]+)?)\s*[Вв]т/);
+    if (m) return parseFloat(m[1].replace(',', '.'));
+    m = str.match(/([\d]+(?:[.,][\d]+)?)\s*([kK]?)[Ww]\b/);
+    if (m) return parseFloat(m[1].replace(',', '.')) * (m[2] ? 1000 : 1);
+    return null;
+  };
+  return tryExtract(it.display_name) || tryExtract(it.display_spec) || tryExtract(it.nom1c_description);
+}
+function sortedItems(items, c) {
+  if (!SORT.field) return items;
+  const dir = SORT.dir === 'desc' ? -1 : 1;
+  const arr = items.slice();
+  arr.sort((a, b) => {
+    const ka = sortKey(a, SORT.field, c);
+    const kb = sortKey(b, SORT.field, c);
+    if (ka < kb) return -1 * dir;
+    if (ka > kb) return  1 * dir;
+    return 0;
+  });
+  return arr;
+}
+function sortBy(field) {
+  if (SORT.field !== field) {
+    SORT = { field, dir: 'asc' };
+  } else if (SORT.dir === 'asc') {
+    SORT.dir = 'desc';
+  } else {
+    SORT = { field: null, dir: 'asc' };  // reset
+  }
+  render();
+}
+function sortIco(field) {
+  if (SORT.field !== field) return '<span class="sort-ico">↕</span>';
+  return `<span class="sort-ico active">${SORT.dir === 'asc' ? '↑' : '↓'}</span>`;
+}
 
 function toast(msg, kind) {
   const t = document.getElementById('toast');
@@ -680,17 +752,17 @@ function renderCatTable(c) {
         <col class="c-act">
       </colgroup>
       <thead><tr>
-        <th>Назва на прайсі</th>
-        <th class="h-1c">Товар 1С</th>
-        <th>Наявність</th>
-        <th class="right">Склад</th>
-        <th class="right">В дорозі</th>
-        <th class="right">Без ПДВ</th>
-        <th class="right">З ПДВ</th>
+        <th class="sortable" onclick="sortBy('name')">Назва на прайсі ${sortIco('name')}</th>
+        <th class="h-1c sortable" onclick="sortBy('nom1c')">Товар 1С ${sortIco('nom1c')}</th>
+        <th class="sortable" onclick="sortBy('kind')">Наявність ${sortIco('kind')}</th>
+        <th class="right sortable" onclick="sortBy('stock')">Склад ${sortIco('stock')}</th>
+        <th class="right sortable" onclick="sortBy('transit')">В дорозі ${sortIco('transit')}</th>
+        <th class="right sortable" onclick="sortBy('no_vat')">Без ПДВ ${sortIco('no_vat')}</th>
+        <th class="right sortable" onclick="sortBy('with_vat')">З ПДВ ${sortIco('with_vat')}</th>
         <th></th>
       </tr></thead>
       <tbody>
-        ${c.items.map(it => renderRow(it, c)).join('')}
+        ${sortedItems(c.items, c).map(it => renderRow(it, c)).join('')}
       </tbody>
     </table>`;
 }
