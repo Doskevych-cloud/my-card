@@ -381,14 +381,24 @@ a{color:inherit;text-decoration:none}
         </span>
         <div class="sep"></div>
         <span class="lbl">Покупець</span>
-        <input type="text" id="gpBuyerIn" placeholder="Пошук покупця..." oninput="gpFilterChanged()">
+        <span class="gp-tags" id="gpBuyerTags">
+          <input type="text" id="gpBuyerIn" placeholder="Почни вводити…" autocomplete="off"
+                 oninput="gpTagInput.onInput('buyer')" onfocus="gpTagInput.onInput('buyer')"
+                 onkeydown="gpTagInput.onKey('buyer',event)" onblur="setTimeout(()=>gpTagInput.hide('buyer'),200)">
+          <div id="gpBuyerSuggest" class="gp-suggest" style="display:none"></div>
+        </span>
         <span class="lbl">Номенклатура</span>
-        <input type="text" id="gpNomIn" placeholder="Пошук товару..." oninput="gpFilterChanged()">
+        <span class="gp-tags" id="gpNomTags">
+          <input type="text" id="gpNomIn" placeholder="Почни вводити…" autocomplete="off"
+                 oninput="gpTagInput.onInput('nom')" onfocus="gpTagInput.onInput('nom')"
+                 onkeydown="gpTagInput.onKey('nom',event)" onblur="setTimeout(()=>gpTagInput.hide('nom'),200)">
+          <div id="gpNomSuggest" class="gp-suggest" style="display:none"></div>
+        </span>
         <span class="lbl">Виключити</span>
         <span class="gp-tags" id="gpExcludeTags">
           <input type="text" id="gpExcludeIn" placeholder="Почни вводити клієнта…" autocomplete="off"
-                 oninput="gpExcludeOnInput()" onfocus="gpExcludeOnInput()"
-                 onkeydown="gpExcludeOnKey(event)" onblur="setTimeout(gpExcludeHideSuggest,200)">
+                 oninput="gpTagInput.onInput('exclude')" onfocus="gpTagInput.onInput('exclude')"
+                 onkeydown="gpTagInput.onKey('exclude',event)" onblur="setTimeout(()=>gpTagInput.hide('exclude'),200)">
           <div id="gpExcludeSuggest" class="gp-suggest" style="display:none"></div>
         </span>
         <div class="sep"></div>
@@ -2108,26 +2118,36 @@ document.getElementById('cfToIn').addEventListener('change', function(e) { cfSta
 /* ═══════════════════════════════════════════════════
    GROSS PROFIT TAB
    ═══════════════════════════════════════════════════ */
-const gpState = { from: '', to: '', org: '', preset: '', buyerFilter: '', nomFilter: '', excludeList: [], _loaded: false, _rawData: null };
+const gpState = { from: '', to: '', org: '', preset: '', buyerInclude: [], nomInclude: [], excludeList: [], _loaded: false, _rawData: null };
 
-// Restore persisted exclude list (per-browser, не в URL).
-// Новий формат — JSON-масив повних назв; старий формат (рядок через кому) теж парсимо.
-try {
-  const saved = localStorage.getItem('gp_exclude') || '';
-  if (saved) {
+// Restore persisted tag filters (per-browser, не в URL).
+// Формат — JSON-масив повних назв; для excludeList також підтримуємо старий
+// CSV-формат для зворотньої сумісності.
+function _gpRestoreTags(storageKey, stateKey, allowCsv) {
+  try {
+    const saved = localStorage.getItem(storageKey) || '';
+    if (!saved) return;
     let arr = [];
     try { arr = JSON.parse(saved); if (!Array.isArray(arr)) arr = []; } catch (_) {}
-    if (!arr.length && saved.includes(',')) {
+    if (!arr.length && allowCsv && saved.includes(',')) {
       arr = saved.split(',').map(s => s.trim()).filter(Boolean);
-    } else if (!arr.length && saved.trim()) {
+    } else if (!arr.length && allowCsv && saved.trim()) {
       arr = [saved.trim()];
     }
-    gpState.excludeList = arr;
-    document.addEventListener('DOMContentLoaded', () => {
-      if (typeof gpExcludeRenderTags === 'function') gpExcludeRenderTags();
-    });
+    if (arr.length) gpState[stateKey] = arr;
+  } catch (_) {}
+}
+_gpRestoreTags('gp_buyer_include', 'buyerInclude');
+_gpRestoreTags('gp_nom_include',   'nomInclude');
+_gpRestoreTags('gp_exclude',       'excludeList', true);
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof gpTagInput !== 'undefined') {
+    gpTagInput.renderTags('buyer');
+    gpTagInput.renderTags('nom');
+    gpTagInput.renderTags('exclude');
   }
-} catch (_) {}
+});
 const gpOpenRows = new Set();
 let gpFilterTimer = null;
 
@@ -2155,125 +2175,141 @@ function gpSetOrg(el) {
   saveStateToUrl();
   gpLoad();
 }
-function gpFilterChanged() {
-  clearTimeout(gpFilterTimer);
-  gpFilterTimer = setTimeout(function() {
-    gpState.buyerFilter = document.getElementById('gpBuyerIn').value.trim().toLowerCase();
-    gpState.nomFilter = document.getElementById('gpNomIn').value.trim().toLowerCase();
-    if (gpState._rawData) renderGp(gpState._rawData);
-  }, 300);
-}
+// Старий gpFilterChanged() більше не потрібен — фільтри тепер tag-based,
+// зміни тригерять renderGp напряму через gpTagInput.add/remove.
+function gpFilterChanged() { /* deprecated */ }
 
-/* ── Exclude tag-input ──────────────────────────────────────────────── */
+/* ── Generic tag-input для GP-фільтрів ─────────────────────────────────
+ * Підтримує 3 поля: 'buyer' (включити клієнтів), 'nom' (включити номенклатуру),
+ * 'exclude' (виключити клієнтів). Усі логіки однакові — масив повних назв,
+ * autocomplete по доступним опціям зі звіту, чіпи з ✕, клавіатура.
+ */
+const GP_TAG_CFG = {
+  buyer:   { stateKey: 'buyerInclude', tagsId: 'gpBuyerTags',   inputId: 'gpBuyerIn',   suggestId: 'gpBuyerSuggest',   storageKey: 'gp_buyer_include',
+             options: () => ((gpState._rawData && gpState._rawData.clients) || []).map(c => ({ name: c.name, meta: fmt(c.revenue || 0, 0) + ' $' })) },
+  nom:     { stateKey: 'nomInclude',   tagsId: 'gpNomTags',     inputId: 'gpNomIn',     suggestId: 'gpNomSuggest',     storageKey: 'gp_nom_include',
+             options: () => {
+               const seen = new Map();
+               ((gpState._rawData && gpState._rawData.clients) || []).forEach(cl =>
+                 (cl.contracts || []).forEach(ct =>
+                   (ct.orders || []).forEach(ord =>
+                     (ord.products || []).forEach(p => {
+                       const k = (p.name || '').trim();
+                       if (!k) return;
+                       const cur = seen.get(k) || { name: k, revenue: 0 };
+                       cur.revenue += Number(p.revenue) || 0;
+                       seen.set(k, cur);
+                     }))));
+               return [...seen.values()].sort((a,b) => b.revenue - a.revenue)
+                 .map(p => ({ name: p.name, meta: fmt(p.revenue, 0) + ' $' }));
+             } },
+  exclude: { stateKey: 'excludeList',  tagsId: 'gpExcludeTags', inputId: 'gpExcludeIn', suggestId: 'gpExcludeSuggest', storageKey: 'gp_exclude',
+             options: () => ((gpState._rawData && gpState._rawData.clients) || []).map(c => ({ name: c.name, meta: fmt(c.revenue || 0, 0) + ' $' })) },
+};
 
-// Зберігаємо повні назви (а не lowercase) для рендеру чіпів.
-// gpState.excludeList — масив повних назв клієнтів.
-
-function gpExcludeRenderTags() {
-  const host = document.getElementById('gpExcludeTags');
-  if (!host) return;
-  // Прибираємо старі чіпи (всі діти крім input/suggest)
-  Array.from(host.querySelectorAll('.gp-tag')).forEach(n => n.remove());
-  const inp = document.getElementById('gpExcludeIn');
-  (gpState.excludeList || []).forEach(name => {
-    const t = document.createElement('span');
-    t.className = 'gp-tag';
-    t.innerHTML = '<span class="name">' + esc(name) + '</span><span class="x" data-name="' + esc(name) + '">×</span>';
-    host.insertBefore(t, inp);
-  });
-}
-
-function gpExcludeAdd(name) {
-  if (!name) return;
-  const exists = (gpState.excludeList || []).some(n => n.toLowerCase() === name.toLowerCase());
-  if (!exists) {
-    gpState.excludeList = (gpState.excludeList || []).concat([name]);
-    try { localStorage.setItem('gp_exclude', JSON.stringify(gpState.excludeList)); } catch (_) {}
-  }
-  document.getElementById('gpExcludeIn').value = '';
-  gpExcludeHideSuggest();
-  gpExcludeRenderTags();
-  if (gpState._rawData) renderGp(gpState._rawData);
-}
-
-function gpExcludeRemove(name) {
-  gpState.excludeList = (gpState.excludeList || []).filter(n => n !== name);
-  try { localStorage.setItem('gp_exclude', JSON.stringify(gpState.excludeList)); } catch (_) {}
-  gpExcludeRenderTags();
-  if (gpState._rawData) renderGp(gpState._rawData);
-}
-
-function gpExcludeHideSuggest() {
-  const dd = document.getElementById('gpExcludeSuggest');
-  if (dd) dd.style.display = 'none';
-}
-
-function gpExcludeOnInput() {
-  const inp = document.getElementById('gpExcludeIn');
-  const dd = document.getElementById('gpExcludeSuggest');
-  if (!inp || !dd) return;
-  const q = inp.value.trim().toLowerCase();
-  const all = (gpState._rawData && gpState._rawData.clients) || [];
-  if (!all.length) { dd.style.display = 'none'; return; }
-  const excluded = new Set((gpState.excludeList || []).map(n => n.toLowerCase()));
-  const matched = all
-    .filter(cl => !excluded.has((cl.name || '').toLowerCase()))
-    .filter(cl => !q || (cl.name || '').toLowerCase().includes(q))
-    .slice(0, 50);
-  if (!matched.length) {
-    dd.innerHTML = '<div class="empty">Нічого не знайдено</div>';
-    dd.style.display = 'block';
-    return;
-  }
-  dd.innerHTML = matched.map((cl, i) =>
-    '<div class="opt" data-name="' + esc(cl.name) + '"' + (i === 0 ? ' data-hl="1"' : '') + '>' +
-      esc(cl.name) +
-      '<span class="meta">' + fmt(cl.revenue || 0, 0) + ' $</span>' +
-    '</div>'
-  ).join('');
-  // hl на першому
-  dd.querySelectorAll('.opt').forEach((el, i) => el.classList.toggle('hl', i === 0));
-  dd.style.display = 'block';
-}
-
-function gpExcludeOnKey(ev) {
-  const dd = document.getElementById('gpExcludeSuggest');
-  if (!dd || dd.style.display === 'none') {
-    // Backspace на пустому інпуті → прибираємо останній чіп
-    if (ev.key === 'Backspace' && !ev.target.value && (gpState.excludeList || []).length) {
-      gpExcludeRemove(gpState.excludeList[gpState.excludeList.length - 1]);
+const gpTagInput = {
+  list(field) { return gpState[GP_TAG_CFG[field].stateKey] || []; },
+  save(field) {
+    try { localStorage.setItem(GP_TAG_CFG[field].storageKey, JSON.stringify(this.list(field))); } catch (_) {}
+  },
+  renderTags(field) {
+    const cfg = GP_TAG_CFG[field];
+    const host = document.getElementById(cfg.tagsId);
+    if (!host) return;
+    Array.from(host.querySelectorAll('.gp-tag')).forEach(n => n.remove());
+    const inp = document.getElementById(cfg.inputId);
+    this.list(field).forEach(name => {
+      const t = document.createElement('span');
+      t.className = 'gp-tag';
+      t.innerHTML = '<span class="name">' + esc(name) + '</span><span class="x" data-name="' + esc(name) + '" data-field="' + field + '">×</span>';
+      host.insertBefore(t, inp);
+    });
+  },
+  add(field, name) {
+    if (!name) return;
+    const cfg = GP_TAG_CFG[field];
+    const cur = this.list(field);
+    if (!cur.some(n => n.toLowerCase() === name.toLowerCase())) {
+      gpState[cfg.stateKey] = cur.concat([name]);
+      this.save(field);
     }
-    return;
-  }
-  const opts = Array.from(dd.querySelectorAll('.opt'));
-  let idx = opts.findIndex(o => o.classList.contains('hl'));
-  if (ev.key === 'ArrowDown') {
-    ev.preventDefault();
-    idx = Math.min(idx + 1, opts.length - 1);
-    opts.forEach((o, i) => o.classList.toggle('hl', i === idx));
-    opts[idx]?.scrollIntoView({ block: 'nearest' });
-  } else if (ev.key === 'ArrowUp') {
-    ev.preventDefault();
-    idx = Math.max(idx - 1, 0);
-    opts.forEach((o, i) => o.classList.toggle('hl', i === idx));
-    opts[idx]?.scrollIntoView({ block: 'nearest' });
-  } else if (ev.key === 'Enter') {
-    ev.preventDefault();
-    const sel = opts[idx] || opts[0];
-    if (sel) gpExcludeAdd(sel.dataset.name);
-  } else if (ev.key === 'Escape') {
-    gpExcludeHideSuggest();
-  } else if (ev.key === 'Backspace' && !ev.target.value && (gpState.excludeList || []).length) {
-    gpExcludeRemove(gpState.excludeList[gpState.excludeList.length - 1]);
-  }
-}
+    document.getElementById(cfg.inputId).value = '';
+    this.hide(field);
+    this.renderTags(field);
+    if (gpState._rawData) renderGp(gpState._rawData);
+  },
+  remove(field, name) {
+    const cfg = GP_TAG_CFG[field];
+    gpState[cfg.stateKey] = this.list(field).filter(n => n !== name);
+    this.save(field);
+    this.renderTags(field);
+    if (gpState._rawData) renderGp(gpState._rawData);
+  },
+  hide(field) {
+    const dd = document.getElementById(GP_TAG_CFG[field].suggestId);
+    if (dd) dd.style.display = 'none';
+  },
+  onInput(field) {
+    const cfg = GP_TAG_CFG[field];
+    const inp = document.getElementById(cfg.inputId);
+    const dd  = document.getElementById(cfg.suggestId);
+    if (!inp || !dd) return;
+    const q = inp.value.trim().toLowerCase();
+    const all = cfg.options();
+    if (!all.length) { dd.style.display = 'none'; return; }
+    const taken = new Set(this.list(field).map(n => n.toLowerCase()));
+    const matched = all
+      .filter(o => !taken.has((o.name || '').toLowerCase()))
+      .filter(o => !q || (o.name || '').toLowerCase().includes(q))
+      .slice(0, 50);
+    if (!matched.length) {
+      dd.innerHTML = '<div class="empty">Нічого не знайдено</div>';
+      dd.style.display = 'block';
+      return;
+    }
+    dd.innerHTML = matched.map((o, i) =>
+      '<div class="opt' + (i === 0 ? ' hl' : '') + '" data-name="' + esc(o.name) + '" data-field="' + field + '">' +
+        esc(o.name) + '<span class="meta">' + esc(o.meta || '') + '</span>' +
+      '</div>'
+    ).join('');
+    dd.style.display = 'block';
+  },
+  onKey(field, ev) {
+    const dd = document.getElementById(GP_TAG_CFG[field].suggestId);
+    if (!dd || dd.style.display === 'none') {
+      if (ev.key === 'Backspace' && !ev.target.value && this.list(field).length) {
+        this.remove(field, this.list(field)[this.list(field).length - 1]);
+      }
+      return;
+    }
+    const opts = Array.from(dd.querySelectorAll('.opt'));
+    let idx = opts.findIndex(o => o.classList.contains('hl'));
+    if (ev.key === 'ArrowDown') {
+      ev.preventDefault(); idx = Math.min(idx + 1, opts.length - 1);
+      opts.forEach((o, i) => o.classList.toggle('hl', i === idx));
+      opts[idx]?.scrollIntoView({ block: 'nearest' });
+    } else if (ev.key === 'ArrowUp') {
+      ev.preventDefault(); idx = Math.max(idx - 1, 0);
+      opts.forEach((o, i) => o.classList.toggle('hl', i === idx));
+      opts[idx]?.scrollIntoView({ block: 'nearest' });
+    } else if (ev.key === 'Enter') {
+      ev.preventDefault();
+      const sel = opts[idx] || opts[0];
+      if (sel) this.add(field, sel.dataset.name);
+    } else if (ev.key === 'Escape') {
+      this.hide(field);
+    } else if (ev.key === 'Backspace' && !ev.target.value && this.list(field).length) {
+      this.remove(field, this.list(field)[this.list(field).length - 1]);
+    }
+  },
+};
 
-// Делегуємо клік: на ✕ чіпа і на opt у dropdown
+// Делегуємо клік: на ✕ чіпа і на opt у dropdown — для всіх 3 полів
 document.addEventListener('click', function(ev) {
-  const x = ev.target.closest('#gpExcludeTags .gp-tag .x');
-  if (x) { gpExcludeRemove(x.dataset.name); return; }
-  const opt = ev.target.closest('#gpExcludeSuggest .opt');
-  if (opt) { gpExcludeAdd(opt.dataset.name); return; }
+  const x = ev.target.closest('.gp-tag .x[data-field]');
+  if (x) { gpTagInput.remove(x.dataset.field, x.dataset.name); return; }
+  const opt = ev.target.closest('.gp-suggest .opt[data-field]');
+  if (opt) { gpTagInput.add(opt.dataset.field, opt.dataset.name); return; }
 });
 
 function gpDateChanged() {
@@ -2292,25 +2328,26 @@ document.getElementById('gpToIn').addEventListener('change', function(e) { gpSta
 function renderGp(data) {
   const { total, clients } = data;
   const sfx = ' $';
-  const bf = gpState.buyerFilter;
-  const nf = gpState.nomFilter;
+  const buyerInc = new Set((gpState.buyerInclude || []).map(n => (n || '').toLowerCase()));
+  const nomInc   = new Set((gpState.nomInclude   || []).map(n => (n || '').toLowerCase()));
+  const exSet    = new Set((gpState.excludeList  || []).map(n => (n || '').toLowerCase()));
 
   // Apply client-side filters
   let filtered = clients;
-  // Exclude list — масив повних назв клієнтів (точний матч, case-insensitive)
-  const exSet = new Set((gpState.excludeList || []).map(n => (n || '').toLowerCase()));
+  // 1. Виключені клієнти — точний матч
   if (exSet.size) {
     filtered = filtered.filter(cl => !exSet.has((cl.name || '').toLowerCase()));
   }
-  if (bf) {
-    filtered = filtered.filter(cl => cl.name.toLowerCase().includes(bf));
+  // 2. Включені клієнти — точний матч (якщо не порожньо)
+  if (buyerInc.size) {
+    filtered = filtered.filter(cl => buyerInc.has((cl.name || '').toLowerCase()));
   }
-  if (nf) {
-    // Deep filter: keep clients that have at least one matching product
+  // 3. Включена номенклатура — лишаємо тільки products назва яких ∈ nomInc
+  if (nomInc.size) {
     filtered = filtered.map(cl => {
       const contracts = cl.contracts.map(ct => {
         const orders = ct.orders.map(ord => {
-          const products = ord.products.filter(pr => pr.name.toLowerCase().includes(nf));
+          const products = ord.products.filter(pr => nomInc.has((pr.name || '').toLowerCase()));
           if (!products.length) return null;
           const qty = products.reduce((s, p) => s + p.qty, 0);
           const revenue = products.reduce((s, p) => s + p.revenue, 0);
@@ -2468,6 +2505,13 @@ async function gpLoad() {
     if (data.error) throw new Error(data.error);
     gpState._rawData = data;
     renderGp(data);
+    // Після завантаження даних — переконаємось що чіпи відображені
+    // (на випадок якщо restore спрацював раніше DOM-ready).
+    if (typeof gpTagInput !== 'undefined') {
+      gpTagInput.renderTags('buyer');
+      gpTagInput.renderTags('nom');
+      gpTagInput.renderTags('exclude');
+    }
   } catch (e) {
     document.getElementById('gpBody').innerHTML = '<div class="error">' + esc(e.message) + '</div>';
   }
