@@ -678,11 +678,14 @@ function switchTab(el) {
 function _refreshTabToolbar(v) {
   const st = _stateForTab(v);
   if (!st) return;
-  const presetMap = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' };
+  const presetMap = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік', today:'Сьогодні', meom:'Кінець місяця', prevMeom:'Кінець попер. міс' };
   const setVal = (id, val) => { const el = document.getElementById(id); if (el && val != null) el.value = val; };
-  const setPresetChips = (toolbarId, preset) => {
+  const setPresetChips = (toolbarId, preset, from, to) => {
+    // Якщо preset не задано — підрахуємо з дат через detectPreset.
+    const p = preset || (from && to && typeof detectPreset === 'function' ? detectPreset(from, to) : '');
+    if (st && from) st.preset = p; // оновлюємо стан, щоб збергилося в URL
     document.querySelectorAll('#' + toolbarId + ' .group:first-of-type .chip').forEach(c => {
-      c.classList.toggle('active', c.textContent.trim() === presetMap[preset]);
+      c.classList.toggle('active', c.textContent.trim() === presetMap[p]);
     });
   };
   const setOrgChips = (groupId, org) => {
@@ -690,11 +693,11 @@ function _refreshTabToolbar(v) {
       c.classList.toggle('active', c.dataset.org === (org || ''));
     });
   };
-  if (v === 'pnl') { setVal('fromIn', st.from); setVal('toIn', st.to); setPresetChips('pnlToolbar', st.preset); setOrgChips('pnlOrgGroup', st.org); }
-  else if (v === 'gp') { setVal('gpFromIn', st.from); setVal('gpToIn', st.to); setPresetChips('gpToolbar', st.preset); setOrgChips('gpOrgGroup', st.org); }
-  else if (v === 'ar') { setVal('arFromIn', st.from); setVal('arToIn', st.to); setPresetChips('arToolbar', st.preset); setOrgChips('arOrgGroup', st.org); }
-  else if (v === 'cf') { setVal('cfFromIn', st.from); setVal('cfToIn', st.to); setPresetChips('cfToolbar', st.preset); setOrgChips('cfOrgGroup', st.org); }
-  else if (v === 'fi') { setVal('fiFromIn', st.from); setVal('fiToIn', st.to); setPresetChips('fiToolbar', st.preset); setOrgChips('fiOrgGroup', st.org); }
+  if (v === 'pnl') { setVal('fromIn', st.from); setVal('toIn', st.to); setPresetChips('pnlToolbar', st.preset, st.from, st.to); setOrgChips('pnlOrgGroup', st.org); }
+  else if (v === 'gp') { setVal('gpFromIn', st.from); setVal('gpToIn', st.to); setPresetChips('gpToolbar', st.preset, st.from, st.to); setOrgChips('gpOrgGroup', st.org); }
+  else if (v === 'ar') { setVal('arFromIn', st.from); setVal('arToIn', st.to); setPresetChips('arToolbar', st.preset, st.from, st.to); setOrgChips('arOrgGroup', st.org); }
+  else if (v === 'cf') { setVal('cfFromIn', st.from); setVal('cfToIn', st.to); setPresetChips('cfToolbar', st.preset, st.from, st.to); setOrgChips('cfOrgGroup', st.org); }
+  else if (v === 'fi') { setVal('fiFromIn', st.from); setVal('fiToIn', st.to); setPresetChips('fiToolbar', st.preset, st.from, st.to); setOrgChips('fiOrgGroup', st.org); }
   else if (v === 'ms') { setVal('msOnIn', st.on); setOrgChips('msOrgGroup', st.org); }
   else if (v === 'wh') { setVal('whDateIn', st.on); setOrgChips('whOrgGroup', st.org); }
   else if (v === 'cb') { setVal('cbDateIn', st.on); setOrgChips('cbOrgGroup', st.org); }
