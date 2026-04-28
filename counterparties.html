@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="auth.js?v=denyhdr20260427"></script>
-<script src="header.js?v=denyhdr20260427"></script>
+<script src="auth.js?v=mob1-20260427"></script>
+<script src="header.js?v=mob1-20260427"></script>
 <style>
 :root{
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -193,11 +193,26 @@ a{color:inherit;text-decoration:none}
 @media (max-width:1000px){
   .kpi-row{grid-template-columns:repeat(3,1fr)}
 }
-@media (max-width:640px){
-  .kpi-row{grid-template-columns:repeat(2,1fr)}
-  .toolbar{gap:8px;padding:10px}
-  .s-tbl thead th,.s-tbl tbody td{padding:8px 8px}
+@media (max-width:720px){
+  .wrap{padding:12px}
+  .page-tabs{display:flex;overflow-x:auto;gap:2px;padding:3px;-webkit-overflow-scrolling:touch;max-width:100%;scrollbar-width:none}
+  .page-tabs::-webkit-scrollbar{display:none}
+  .ptab{padding:7px 12px;font-size:12px;flex:0 0 auto}
+  .toolbar{padding:8px;gap:6px;border-radius:10px;flex-wrap:wrap}
+  .toolbar .lbl{display:none}
+  .toolbar .chip{padding:6px 10px;font-size:11px}
+  .toolbar .group{padding:3px;gap:2px}
+  .toolbar .group .chip{padding:5px 8px;font-size:11px}
+  .toolbar .sep{display:none}
+  .cp-tags{min-width:0;max-width:100%;flex:1 1 100%}
+  .kpi-row{grid-template-columns:repeat(2,1fr);gap:8px}
+  .s-tbl{font-size:11px}
+  .s-tbl thead th,.s-tbl tbody td{padding:7px 8px;font-size:11px}
   .s-tbl .kind-badge{display:none}
+}
+@media (max-width:480px){
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .act-sum{grid-template-columns:1fr 1fr}
 }
 
 /* Tag-input з autocomplete (для «Покупець» і «Виключити») */

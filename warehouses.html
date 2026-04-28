@@ -11,8 +11,8 @@
   // Apply saved theme BEFORE styles paint — avoids flash-of-wrong-theme
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
-<script src="auth.js?v=denyhdr20260427"></script>
-<script src="header.js?v=denyhdr20260427"></script>
+<script src="auth.js?v=mob1-20260427"></script>
+<script src="header.js?v=mob1-20260427"></script>
 <style>
 :root{
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -129,11 +129,28 @@ a{color:inherit;text-decoration:none}
 .empty{padding:40px 20px;text-align:center;color:var(--text3);font-size:12px}
 
 @media (max-width:720px){
-  .toolbar{padding:10px;gap:8px}
-  .toolbar input[type=text]{min-width:140px}
-  .tree-tbl thead th,.tree-tbl tbody td{padding:8px 8px}
-  .tree-tbl tr.reserve-row td{padding-left:24px}
+  .wrap{padding:12px}
+  .page-head h1{font-size:17px}
+  .toolbar{padding:8px;gap:6px;border-radius:10px}
+  .toolbar input[type=text]{flex:1 1 100%;min-width:0;font-size:12px;padding:6px 8px}
+  .toolbar input[type=date]{font-size:12px;padding:6px 8px}
+  .toolbar .lbl{display:none}
+  .toolbar .chip{padding:6px 10px;font-size:11px}
+  .toolbar .check{padding:6px 8px;font-size:10.5px}
+  .toolbar .group{padding:3px;gap:2px}
+  .toolbar .group .chip{padding:5px 8px;font-size:11px}
+  .toolbar .sep{display:none}
+  .tree-wrap{border-radius:10px}
+  .tree-tbl{font-size:11px}
+  .tree-tbl thead th,.tree-tbl tbody td{padding:6px 6px;font-size:11px}
+  .tree-tbl thead th:nth-child(2),
+  .tree-tbl thead th:nth-child(3),
+  .tree-tbl thead th:nth-child(4){width:78px}
+  .tree-tbl tr.wh-row td{padding:8px 6px;font-size:11.5px}
+  .tree-tbl tr.reserve-row td{padding-left:24px;font-size:10.5px}
   .tree-tbl tr.reserve-row td:first-child{padding-left:24px}
+  .tree-tbl tr.reserve-row.wh-break td{padding-left:34px;font-size:10px}
+  .wh-section-title{padding:8px 10px;font-size:11.5px}
 }
 </style>
 </head>
