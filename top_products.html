@@ -323,10 +323,13 @@ function render() {
   const html = items.map(it => {
     const dInfo = fmtDate(it.last_sold);
     const isHot = dInfo.iso === today || dInfo.iso === yesterday;
-    const stats = [
-      it.clients > 1 ? `${it.clients} клієнт.` : null,
-      it.first_sold && it.first_sold !== it.last_sold ? `від ${fmtDate(it.first_sold).day} ${fmtDate(it.first_sold).mon}` : null,
-    ].filter(Boolean).join(' · ');
+    // Підпис: загальний обсяг і клієнти за період (якщо більше ніж 1 день продажу)
+    const totalStats = [];
+    if (it.days_count > 1) totalStats.push(`всього ${fmt(it.qty, 0)} шт за ${it.days_count} дн.`);
+    if (it.clients > 1) totalStats.push(`${it.clients} клієнт.`);
+    if (it.first_sold && it.first_sold !== (it.last_day || it.last_sold || '').slice(0,10))
+      totalStats.push(`від ${fmtDate(it.first_sold).day} ${fmtDate(it.first_sold).mon}`);
+    const stats = totalStats.join(' · ');
     const ref = it.nom_key || '';
     return `
       <div class="tp-row${isHot ? ' hot' : ''}" data-nom="${esc(ref)}">
@@ -336,9 +339,9 @@ function render() {
           ${it.nom_code ? `<span class="code">${esc(it.nom_code)}</span>` : ''}${esc(it.nom_name)}
           ${stats ? `<span class="stats">${esc(stats)}</span>` : ''}
         </div>
-        <div class="qty">${fmt(it.qty, 0)}<span class="unit">шт</span></div>
-        <div class="receipts">${fmt(it.receipts, 0)} нак.</div>
-        <div class="revenue${(it.revenue_usd || 0) === 0 ? ' zero' : ''}">${fmt(it.revenue_usd, 0)} $</div>
+        <div class="qty">${fmt(it.qty_last_day, 0)}<span class="unit">шт</span></div>
+        <div class="receipts">${fmt(it.receipts_last_day, 0)} нак.</div>
+        <div class="revenue${(it.revenue_usd_last_day || 0) === 0 ? ' zero' : ''}">${fmt(it.revenue_usd_last_day, 0)} $</div>
       </div>
       <div class="tp-details" id="det-${esc(ref)}" style="display:none"></div>`;
   }).join('');
