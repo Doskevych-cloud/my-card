@@ -10,6 +10,7 @@
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="auth.js?v=denyhdr20260427"></script>
 <script src="header.js?v=denyhdr20260427"></script>
 <style>
@@ -766,91 +767,83 @@ Auth.require('counterparties').then(user => {
   load();
 });
 
-/* ── PDF Export ───────────────────────────────────────────────────────
- * Клонуємо #body + summary, вставляємо у нове вікно з data-theme=light
- * і відкриваємо діалог друку → «Зберегти як PDF».
- * Заголовок збирається з поточних фільтрів (період, орг, роль, пошук).
+/* ── PDF Export через html2pdf.js ─────────────────────────────────────
+ * Робимо тимчасовий offscreen-контейнер (light theme), туди клонуємо
+ * #body, додаємо шапку з фільтрами, html2pdf.js рендерить у файл.
  */
-function downloadPDF() {
-  const ROLE_TITLE = { customers:'Покупці', suppliers:'Постачальники', others:'Інші', all:'Усі контрагенти' };
-  const ORG_LABEL  = { react:'Реакт', gen:'Генерація', '':'Усі організації' };
-  const role = ROLE_TITLE[state.role] || 'Контрагенти';
-  const org  = ORG_LABEL[state.org || ''] || state.org || 'Усі';
-  const period = (state.from || '') + ' — ' + (state.to || '');
-  const q = (state.q || '').trim();
-  const filename = `Контрагенти · ${role} · ${period}${state.org ? ' · ' + org : ''}.pdf`;
-  const dt = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' });
+async function downloadPDF() {
+  const btn = document.getElementById('exportPdfBtn');
+  const orig = btn ? btn.innerHTML : '';
+  if (btn) { btn.innerHTML = '⏳ Генерую…'; btn.style.pointerEvents = 'none'; }
 
-  const body = document.getElementById('body');
-  if (!body) return;
-  const clone = body.cloneNode(true);
-  // Прибираємо інтерактивні елементи що не потрібні в PDF
-  clone.querySelectorAll('button, input, .dv-toolbar, .pagination, .loader, .loading').forEach(el => el.remove());
-  // Розкриваємо всі згорнуті рядки
-  clone.querySelectorAll('[hidden]').forEach(el => el.removeAttribute('hidden'));
-  clone.querySelectorAll('.collapsed, [data-collapsed="true"]').forEach(el => {
-    el.classList.remove('collapsed');
-    el.setAttribute('data-collapsed', 'false');
-  });
+  try {
+    if (typeof html2pdf === 'undefined') {
+      alert('html2pdf не завантажено. Спробуй ще раз через секунду.');
+      return;
+    }
 
-  const headHtml = `
-    <div class="pdf-head">
-      <div class="pdf-h1">Контрагенти — ${esc(role)}</div>
-      <div class="pdf-meta">
-        <span><b>Період:</b> ${esc(period)}</span>
-        <span><b>Організація:</b> ${esc(org)}</span>
-        ${q ? `<span><b>Пошук:</b> ${esc(q)}</span>` : ''}
-        <span><b>Сформовано:</b> ${esc(dt)}</span>
+    const ROLE_TITLE = { customers:'Покупці', suppliers:'Постачальники', others:'Інші', all:'Усі контрагенти' };
+    const ORG_LABEL  = { react:'Реакт', gen:'Генерація', '':'Усі організації' };
+    const role = ROLE_TITLE[state.role] || 'Контрагенти';
+    const org  = ORG_LABEL[state.org || ''] || state.org || 'Усі';
+    const period = (state.from || '') + ' — ' + (state.to || '');
+    const q = (state.q || '').trim();
+    const filename = `Контрагенти - ${role} - ${period}${state.org ? ' - ' + org : ''}.pdf`;
+    const dt = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' });
+
+    const bodyEl = document.getElementById('body');
+    if (!bodyEl) { alert('Немає вмісту для експорту'); return; }
+
+    // Збираємо контейнер для друку (offscreen, фіксованої ширини)
+    const container = document.createElement('div');
+    container.setAttribute('data-pdf-export', '1');
+    container.style.cssText = 'position:fixed;left:-99999px;top:0;width:1100px;background:#fff;color:#1c1c1e;padding:24px;font-family:Inter,sans-serif';
+    container.innerHTML = `
+      <div style="margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #1c1c1e">
+        <div style="font-size:20px;font-weight:700;margin-bottom:8px">Контрагенти — ${esc(role)}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:#48484a">
+          <span><b style="color:#1c1c1e">Період:</b> ${esc(period)}</span>
+          <span><b style="color:#1c1c1e">Організація:</b> ${esc(org)}</span>
+          ${q ? `<span><b style="color:#1c1c1e">Пошук:</b> ${esc(q)}</span>` : ''}
+          <span><b style="color:#1c1c1e">Сформовано:</b> ${esc(dt)}</span>
+        </div>
       </div>
-    </div>`;
+      <div id="__pdf_content"></div>`;
 
-  const win = window.open('', '_blank', 'width=1200,height=800');
-  if (!win) { alert('Дозволь pop-up для експорту PDF'); return; }
-  // Використовуємо ті ж стилі що й на сторінці — підвантажуємо як зовнішній
-  // CSS і перевикористовуємо. Простіше — копіюємо <style> і <link> з head.
-  const styleNodes = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
-    .map(n => n.outerHTML).join('\n');
+    const clone = bodyEl.cloneNode(true);
+    clone.querySelectorAll('button, input, .dv-toolbar, .pagination, .loader, .loading').forEach(el => el.remove());
+    clone.querySelectorAll('[hidden]').forEach(el => el.removeAttribute('hidden'));
+    // Прив'язуємо світлі кольори інлайн (бо CSS-змінні з :root[data-theme=dark] не успадкуються)
+    clone.style.color = '#1c1c1e';
+    clone.querySelectorAll('*').forEach(el => {
+      el.style.color = '';
+      el.style.background = '';
+    });
+    container.querySelector('#__pdf_content').appendChild(clone);
+    document.body.appendChild(container);
 
-  win.document.open();
-  win.document.write(`<!DOCTYPE html>
-<html lang="uk" data-theme="light">
-<head>
-<meta charset="UTF-8">
-<title>${esc(filename.replace('.pdf',''))}</title>
-${styleNodes}
-<style>
-  body{background:#fff !important;color:#1c1c1e !important;padding:24px;font-family:'Inter',sans-serif}
-  .pdf-head{margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #1c1c1e}
-  .pdf-h1{font-size:20px;font-weight:700;letter-spacing:-.3px;margin-bottom:8px}
-  .pdf-meta{display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:#48484a}
-  .pdf-meta b{color:#1c1c1e;font-weight:600}
-  /* Прибираємо інтерактивні стилі, hover тощо */
-  *{cursor:default !important;user-select:text !important}
-  a{color:inherit !important;text-decoration:none !important}
-  table{font-size:11px !important}
-  th,td{padding:6px 10px !important}
-  /* Друк: A4 landscape, без фону */
-  @media print{
-    body{padding:0;margin:0}
-    .pdf-head{padding:14px 18px}
-    @page{size:A4 landscape;margin:10mm}
+    // Тимчасово форсимо light theme на root щоб CSS-змінні стали світлими в клонi
+    const rootPrev = document.documentElement.getAttribute('data-theme');
+    document.documentElement.setAttribute('data-theme', 'light');
+
+    await html2pdf().set({
+      margin: 8,
+      filename,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+    }).from(container).save();
+
+    // Відновлюємо стан сторінки
+    if (rootPrev) document.documentElement.setAttribute('data-theme', rootPrev);
+    container.remove();
+  } catch (e) {
+    console.error('PDF export error:', e);
+    alert('Помилка експорту PDF: ' + (e.message || e));
+  } finally {
+    if (btn) { btn.innerHTML = orig; btn.style.pointerEvents = ''; }
   }
-</style>
-<script>try{document.documentElement.setAttribute('data-theme','light')}catch(e){}<\/script>
-</head>
-<body>
-${headHtml}
-<div id="content"></div>
-</body>
-</html>`);
-  win.document.close();
-
-  // Чекаємо на load перед print, щоб шрифти й стилі підтягнулися
-  win.onload = () => {
-    const cont = win.document.getElementById('content');
-    cont.appendChild(clone);
-    setTimeout(() => { try { win.focus(); win.print(); } catch (_) {} }, 350);
-  };
 }
 </script>
 </body>
