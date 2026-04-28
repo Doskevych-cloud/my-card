@@ -10,8 +10,8 @@
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
-<script src="auth.js?v=tp20260428"></script>
-<script src="header.js?v=tp20260428"></script>
+<script src="auth.js?v=tp20260428b"></script>
+<script src="header.js?v=tp20260428b"></script>
 <style>
 :root{
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -272,7 +272,7 @@ function render() {
     return n.includes(state.search) || c.includes(state.search);
   });
 
-  // Sort
+  // Sort. last_sold == день продажу (кожен рядок = товар+день).
   const cmp = {
     last_sold:  (a, b) => (b.last_sold || '').localeCompare(a.last_sold || ''),
     qty:        (a, b) => (b.qty || 0) - (a.qty || 0),
@@ -320,35 +320,32 @@ function render() {
     return { day: parts[2], mon: M[parseInt(parts[1])-1] || '', year: parts[0], iso: d };
   };
 
-  const html = items.map(it => {
-    const dInfo = fmtDate(it.last_sold);
+  const html = items.map((it, idx) => {
+    const dInfo = fmtDate(it.last_sold || it.day);
     const isHot = dInfo.iso === today || dInfo.iso === yesterday;
-    // Підпис: загальний обсяг і клієнти за період (якщо більше ніж 1 день продажу)
-    const totalStats = [];
-    if (it.days_count > 1) totalStats.push(`всього ${fmt(it.qty, 0)} шт за ${it.days_count} дн.`);
-    if (it.clients > 1) totalStats.push(`${it.clients} клієнт.`);
-    if (it.first_sold && it.first_sold !== (it.last_day || it.last_sold || '').slice(0,10))
-      totalStats.push(`від ${fmtDate(it.first_sold).day} ${fmtDate(it.first_sold).mon}`);
-    const stats = totalStats.join(' · ');
+    // Один рядок = 1 (товар, день). Підпис — лише к-сть клієнтів цього дня (>1).
+    const stats = it.clients > 1 ? `${it.clients} клієнт.` : '';
     const ref = it.nom_key || '';
+    const day = it.day || dInfo.iso;
+    const rowId = `${esc(ref)}__${esc(day)}`;
     return `
-      <div class="tp-row${isHot ? ' hot' : ''}" data-nom="${esc(ref)}">
+      <div class="tp-row${isHot ? ' hot' : ''}" data-row="${rowId}" data-nom="${esc(ref)}" data-day="${esc(day)}">
         <span class="chev">▶</span>
         <div class="date">${dInfo.day}<b>${dInfo.mon}</b></div>
         <div class="name">
           ${it.nom_code ? `<span class="code">${esc(it.nom_code)}</span>` : ''}${esc(it.nom_name)}
           ${stats ? `<span class="stats">${esc(stats)}</span>` : ''}
         </div>
-        <div class="qty">${fmt(it.qty_last_day, 0)}<span class="unit">шт</span></div>
-        <div class="receipts">${fmt(it.receipts_last_day, 0)} нак.</div>
-        <div class="revenue${(it.revenue_usd_last_day || 0) === 0 ? ' zero' : ''}">${fmt(it.revenue_usd_last_day, 0)} $</div>
+        <div class="qty">${fmt(it.qty, 0)}<span class="unit">шт</span></div>
+        <div class="receipts">${fmt(it.receipts, 0)} нак.</div>
+        <div class="revenue${(it.revenue_usd || 0) === 0 ? ' zero' : ''}">${fmt(it.revenue_usd, 0)} $</div>
       </div>
-      <div class="tp-details" id="det-${esc(ref)}" style="display:none"></div>`;
+      <div class="tp-details" id="det-${rowId}" style="display:none"></div>`;
   }).join('');
 
   document.getElementById('body').innerHTML = `<div class="tp-list">${html}</div>`;
   // Клік на рядок — toggle деталі
-  document.querySelectorAll('.tp-row[data-nom]').forEach(row => {
+  document.querySelectorAll('.tp-row[data-row]').forEach(row => {
     row.addEventListener('click', () => toggleDetails(row));
   });
 }
@@ -357,8 +354,10 @@ const _detailsCache = new Map();
 
 async function toggleDetails(row) {
   const ref = row.dataset.nom;
-  if (!ref) return;
-  const det = document.getElementById('det-' + ref);
+  const day = row.dataset.day;
+  const rowId = row.dataset.row;
+  if (!ref || !rowId) return;
+  const det = document.getElementById('det-' + rowId);
   if (!det) return;
   if (row.classList.contains('open')) {
     row.classList.remove('open');
@@ -367,17 +366,19 @@ async function toggleDetails(row) {
   }
   row.classList.add('open');
   det.style.display = 'block';
-  if (_detailsCache.has(ref)) {
-    det.innerHTML = _detailsCache.get(ref);
+  if (_detailsCache.has(rowId)) {
+    det.innerHTML = _detailsCache.get(rowId);
     return;
   }
   det.innerHTML = '<div style="padding:10px;color:var(--text3)">Завантаження…</div>';
   try {
-    const q = `?action=top_product_details&nom_key=${encodeURIComponent(ref)}&from=${state.from}&to=${state.to}` + (state.org ? `&org=${encodeURIComponent(state.org)}` : '');
+    let q = `?action=top_product_details&nom_key=${encodeURIComponent(ref)}&from=${state.from}&to=${state.to}`;
+    if (day) q += `&day=${encodeURIComponent(day)}`;
+    if (state.org) q += `&org=${encodeURIComponent(state.org)}`;
     const r = await fetch(API_URL + q).then(x => x.json());
     if (r.error) throw new Error(r.error);
     const html = renderDetails(r);
-    _detailsCache.set(ref, html);
+    _detailsCache.set(rowId, html);
     det.innerHTML = html;
   } catch (e) {
     det.innerHTML = `<div class="error">${esc(e.message)}</div>`;
