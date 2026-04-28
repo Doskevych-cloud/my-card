@@ -10,8 +10,8 @@
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
-<script src="auth.js?v=mob1-20260427"></script>
-<script src="header.js?v=mob1-20260427"></script>
+<script src="auth.js?v=mob2-20260427"></script>
+<script src="header.js?v=mob2-20260427"></script>
 <!-- html2pdf.js for real PDF file download (not browser print dialog) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <!-- SheetJS (xlsx) for Excel export -->
@@ -291,10 +291,14 @@ a{color:inherit;text-decoration:none}
 
 @media(max-width:720px){
   .wrap{padding:12px}
-  /* Page-tabs: горизонтальний скрол щоб не переносити рядки */
-  .page-tabs{display:flex;overflow-x:auto;gap:2px;padding:3px;-webkit-overflow-scrolling:touch;max-width:100%;scrollbar-width:none}
-  .page-tabs::-webkit-scrollbar{display:none}
-  .ptab{padding:7px 12px;font-size:12px;flex:0 0 auto}
+  /* Page-tabs: переносимо на кілька рядків, щоб не клипати export dropdown */
+  .page-tabs{display:flex;flex-wrap:wrap;gap:3px;padding:3px;max-width:100%}
+  .ptab{padding:6px 10px;font-size:11.5px;flex:0 0 auto}
+  .export-menu{flex:0 0 auto;margin-left:auto !important}
+  /* Розкривайка експорту: трохи зменшити, лишити в потоці (нема clipping тепер) */
+  .export-dropdown{min-width:140px !important}
+  /* iOS smooth scroll на табличних обгортках */
+  .pnl-wrap{-webkit-overflow-scrolling:touch}
   /* Toolbar — менш повітря, всі чіпи переносяться */
   .toolbar{padding:8px;gap:6px;border-radius:10px}
   .toolbar input[type=date]{font-size:12px;padding:6px 8px;flex:1;min-width:0}
@@ -321,8 +325,6 @@ a{color:inherit;text-decoration:none}
   .pnl-table tr.sec[data-cat] td{font-size:11.5px}
   .pnl-table tr.itm td{font-size:11px}
   .pnl-table tr.grd td{font-size:12.5px}
-  /* Export-меню вписати */
-  .export-menu{margin-left:0 !important;flex:1}
   /* CB — групи, грід карток на 1 колонку при дуже вузькому, 2 на трохи ширшому */
   .cb-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
   .cb-org-head{padding:6px 2px 8px;gap:8px}
