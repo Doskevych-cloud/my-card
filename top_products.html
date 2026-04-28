@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Останні продажі</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<script>
+  try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
+</script>
+<script src="auth.js?v=tp20260428"></script>
+<script src="header.js?v=tp20260428"></script>
+<style>
+:root{
+  --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
+  --surface:#141414; --surface2:#1c1c1c;
+  --border:#262626; --border2:#333;
+  --text:#f5f5f5; --text2:#a3a3a3; --text3:#737373;
+  --accent:#ff8319; --accent-bg:rgba(255,131,25,.12);
+  --red:#e74c3c; --green:#22c55e;
+}
+:root[data-theme="light"]{
+  --bg:#f5f5f7; --bg2:#ffffff; --bg3:#ececef;
+  --surface:#ffffff; --surface2:#ffffff;
+  --border:#e5e5ea; --border2:#d1d1d6;
+  --text:#1c1c1e; --text2:#48484a; --text3:#8e8e93;
+  --accent:#e07017; --accent-bg:rgba(224,112,23,.12);
+  --red:#d93025; --green:#15803d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+
+.wrap{max-width:1400px;margin:0 auto;padding:20px}
+.page-tabs{display:inline-flex;gap:4px;padding:4px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:14px}
+.ptab{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;color:var(--text2);text-decoration:none;transition:background .15s,color .15s;white-space:nowrap}
+.ptab:hover{background:var(--bg3);color:var(--text)}
+.ptab.active{background:var(--accent-bg);color:var(--accent)}
+
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
+.toolbar input[type=text]{flex:1;min-width:200px;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;transition:border .15s}
+.toolbar input:focus{border-color:var(--accent)}
+.toolbar input[type=date]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;color-scheme:dark;font-family:inherit}
+:root[data-theme="light"] .toolbar input[type=date]{color-scheme:light}
+.toolbar input[type=date]:focus{border-color:var(--accent)}
+.toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.toolbar .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;display:inline-flex;align-items:center;gap:6px}
+.toolbar .chip:hover{background:var(--bg3);color:var(--text)}
+.toolbar .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 2px}
+.toolbar .group{display:inline-flex;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px}
+.toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
+.toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
+
+/* KPI summary */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:14px}
+.kpi{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:2px}
+.kpi .lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+.kpi .v{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.3px;line-height:1.2;font-variant-numeric:tabular-nums;margin-top:3px}
+.kpi .v.green{color:var(--green)}
+.kpi .sub{font-size:11.5px;color:var(--text3);font-weight:500}
+
+/* Sort chips */
+.sort-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:0 4px;font-size:11.5px;color:var(--text3);font-weight:600}
+.sort-row .meta{margin-left:auto;color:var(--text3);font-weight:500}
+
+/* Product list — timeline-style */
+.tp-list{display:flex;flex-direction:column;gap:0;background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.tp-row{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:14px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);transition:background .12s;cursor:default}
+.tp-row:last-child{border-bottom:none}
+.tp-row:hover{background:var(--bg3)}
+.tp-row .date{font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums;font-weight:600;min-width:64px;text-align:center;padding:4px 0}
+.tp-row .date b{display:block;font-size:14px;color:var(--text);font-weight:700;letter-spacing:-.3px;line-height:1.1}
+.tp-row .name{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tp-row .name .code{color:var(--text3);font-size:11px;font-weight:500;margin-right:6px}
+.tp-row .name .stats{display:block;font-size:11px;color:var(--text3);font-weight:500;margin-top:1px}
+.tp-row .qty{font-size:13px;font-variant-numeric:tabular-nums;font-weight:700;color:var(--text);text-align:right;min-width:80px}
+.tp-row .qty .unit{font-size:10px;color:var(--text3);font-weight:500;margin-left:3px}
+.tp-row .receipts{font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums;text-align:right;min-width:60px}
+.tp-row .revenue{font-size:13px;font-variant-numeric:tabular-nums;font-weight:700;color:var(--green);text-align:right;min-width:96px}
+.tp-row .revenue.zero{color:var(--text3)}
+
+/* Hot indicator: позиція з продажем сьогодні/вчора */
+.tp-row.hot .date b{color:var(--accent)}
+
+@media (max-width:720px){
+  .tp-row{grid-template-columns:auto 1fr auto;font-size:12px}
+  .tp-row .receipts,.tp-row .qty .unit{display:none}
+}
+
+.loading{padding:60px 20px;text-align:center;color:var(--text2);font-size:13px}
+.loading::after{content:'';display:block;width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:14px auto 0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error{padding:20px;text-align:center;color:var(--red);background:rgba(231,76,60,.12);border-radius:10px;font-size:12px;margin-top:16px}
+.empty{padding:60px 20px;text-align:center;color:var(--text3);font-size:13px}
+</style>
+</head>
+<body>
+
+<div id="appHeader"></div>
+<div id="app">
+  <div class="wrap">
+    <div class="page-tabs">
+      <a href="/sales.html" class="ptab">📈 Продажі менеджерів</a>
+      <span class="ptab active">📦 Останні продажі</span>
+      <a href="/osp.html" class="ptab">📋 Оплата та відвантаження</a>
+      <a href="/ar_aging.html" class="ptab">⏱ Заборгованість покупців</a>
+    </div>
+
+    <div class="toolbar">
+      <span class="lbl">Період</span>
+      <input type="date" id="fromIn">
+      <span style="color:var(--text3)">—</span>
+      <input type="date" id="toIn">
+      <span class="group">
+        <span class="chip" data-preset="7d"        onclick="setPreset('7d')">7 днів</span>
+        <span class="chip active" data-preset="30d" onclick="setPreset('30d')">30 днів</span>
+        <span class="chip" data-preset="month"     onclick="setPreset('month')">Цей місяць</span>
+        <span class="chip" data-preset="prevmonth" onclick="setPreset('prevmonth')">Минулий</span>
+        <span class="chip" data-preset="quarter"   onclick="setPreset('quarter')">Квартал</span>
+        <span class="chip" data-preset="year"      onclick="setPreset('year')">Рік</span>
+      </span>
+
+      <span class="sep"></span>
+
+      <span class="chip" data-org="" onclick="setOrg('')">Всі</span>
+      <span class="chip active" data-org="Реакт" onclick="setOrg('Реакт')">Реакт</span>
+      <span class="chip" data-org="Генерація" onclick="setOrg('Генерація')">Генерація</span>
+
+      <span class="sep"></span>
+
+      <input type="text" id="searchIn" placeholder="🔎 Пошук товару (назва / код 1С)…">
+    </div>
+
+    <div id="summary"></div>
+
+    <div class="sort-row">
+      <span>Сортувати:</span>
+      <span class="chip active" data-sort="last_sold" onclick="setSort('last_sold')">⏱ Останній продаж</span>
+      <span class="chip" data-sort="qty" onclick="setSort('qty')">📊 Кількість</span>
+      <span class="chip" data-sort="revenue_usd" onclick="setSort('revenue_usd')">💰 Виручка</span>
+      <span class="chip" data-sort="receipts" onclick="setSort('receipts')">🧾 Документів</span>
+      <span class="meta" id="resultMeta"></span>
+    </div>
+
+    <div id="body"><div class="loading">Завантаження…</div></div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://price-api.doskevich.workers.dev';
+
+Auth.require('sales').then(user => {
+  AppHeader.mount({ active: 'sales', user });
+  // Org-видимість як на інших сторінках
+  const userOrgs = user.orgs || {};
+  const hasAnyOrg = Object.values(userOrgs).some(v => v);
+  if (hasAnyOrg) {
+    const allowedOrgs = ['Реакт', 'Генерація'].filter(o => userOrgs[o]);
+    document.querySelectorAll('.chip[data-org]').forEach(chip => {
+      const org = chip.dataset.org;
+      if (org === '') {
+        if (allowedOrgs.length < 2) chip.style.display = 'none';
+      } else if (!userOrgs[org]) chip.style.display = 'none';
+    });
+    const defaultOrg = allowedOrgs.length === 1 ? allowedOrgs[0] : '';
+    state.org = defaultOrg;
+    document.querySelectorAll('.chip[data-org]').forEach(c =>
+      c.classList.toggle('active', c.dataset.org === defaultOrg));
+  }
+  setPreset('30d');
+});
+
+const _todayISO = () => new Date().toISOString().slice(0, 10);
+const state = {
+  data: null,
+  org: 'Реакт',
+  from: '',
+  to: '',
+  search: '',
+  sort: 'last_sold',
+};
+
+function _localISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function setPreset(p) {
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  let from, to = now;
+  if (p === '7d')             from = new Date(y, m, now.getDate() - 6);
+  else if (p === '30d')       from = new Date(y, m, now.getDate() - 29);
+  else if (p === 'month')     from = new Date(y, m, 1);
+  else if (p === 'prevmonth') { from = new Date(y, m-1, 1); to = new Date(y, m, 0); }
+  else if (p === 'quarter')   { const q = Math.floor(m/3); from = new Date(y, q*3, 1); }
+  else if (p === 'year')      from = new Date(y, 0, 1);
+  state.from = _localISO(from);
+  state.to = _localISO(to);
+  document.getElementById('fromIn').value = state.from;
+  document.getElementById('toIn').value = state.to;
+  document.querySelectorAll('.chip[data-preset]').forEach(c => c.classList.toggle('active', c.dataset.preset === p));
+  load();
+}
+
+function setOrg(v) {
+  state.org = v;
+  document.querySelectorAll('.chip[data-org]').forEach(c => c.classList.toggle('active', c.dataset.org === v));
+  load();
+}
+
+function setSort(s) {
+  state.sort = s;
+  document.querySelectorAll('.chip[data-sort]').forEach(c => c.classList.toggle('active', c.dataset.sort === s));
+  render();
+}
+
+document.getElementById('fromIn').addEventListener('change', e => { state.from = e.target.value; load(); });
+document.getElementById('toIn').addEventListener('change', e => { state.to = e.target.value; load(); });
+document.getElementById('searchIn').addEventListener('input', e => { state.search = e.target.value.trim().toLowerCase(); render(); });
+
+const fmt = (n, d=2) => {
+  if (n == null || isNaN(n)) return '0';
+  const fixed = Number(n).toFixed(d);
+  const [int, dec] = fixed.split('.');
+  const intF = int.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return d ? `${intF},${dec}` : intF;
+};
+const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+async function load() {
+  document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
+  document.getElementById('summary').innerHTML = '';
+  document.getElementById('resultMeta').textContent = '';
+  try {
+    const q = `?action=top_sold_products&from=${state.from}&to=${state.to}` + (state.org ? `&org=${encodeURIComponent(state.org)}` : '');
+    const r = await fetch(API_URL + q).then(x => x.json());
+    if (r.error) throw new Error(r.error);
+    state.data = r;
+    render();
+  } catch (e) {
+    document.getElementById('body').innerHTML = `<div class="error">${esc(e.message)}</div>`;
+  }
+}
+
+function render() {
+  const d = state.data;
+  if (!d) return;
+  const items = (d.items || []).filter(it => {
+    if (!state.search) return true;
+    const n = (it.nom_name || '').toLowerCase();
+    const c = (it.nom_code || '').toLowerCase();
+    return n.includes(state.search) || c.includes(state.search);
+  });
+
+  // Sort
+  const cmp = {
+    last_sold:  (a, b) => (b.last_sold || '').localeCompare(a.last_sold || ''),
+    qty:        (a, b) => (b.qty || 0) - (a.qty || 0),
+    revenue_usd:(a, b) => (b.revenue_usd || 0) - (a.revenue_usd || 0),
+    receipts:   (a, b) => (b.receipts || 0) - (a.receipts || 0),
+  }[state.sort] || ((a, b) => 0);
+  items.sort(cmp);
+
+  // Summary KPI
+  const t = d.totals || {};
+  document.getElementById('summary').innerHTML = `
+    <div class="summary">
+      <div class="kpi">
+        <span class="lbl">Виручка</span>
+        <span class="v green">${fmt(t.revenue_usd, 0)} $</span>
+        <span class="sub">за ${state.from} — ${state.to}</span>
+      </div>
+      <div class="kpi">
+        <span class="lbl">Унікальних товарів</span>
+        <span class="v">${fmt(t.products, 0)}</span>
+        <span class="sub">${fmt(t.qty, 0)} одиниць</span>
+      </div>
+      <div class="kpi">
+        <span class="lbl">Накладних</span>
+        <span class="v">${fmt(t.receipts, 0)}</span>
+        <span class="sub">${state.org || 'Всі організації'}</span>
+      </div>
+    </div>`;
+
+  document.getElementById('resultMeta').textContent = `показано ${items.length} з ${(d.items || []).length}`;
+
+  if (!items.length) {
+    document.getElementById('body').innerHTML = '<div class="empty">Немає продажів за обраний період / фільтри</div>';
+    return;
+  }
+
+  // Hot = today/yesterday
+  const today = new Date().toISOString().slice(0,10);
+  const yesterday = (() => { const d = new Date(); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); })();
+  const fmtDate = iso => {
+    if (!iso) return '—';
+    const d = (iso || '').slice(0,10);
+    const M = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
+    const parts = d.split('-');
+    return { day: parts[2], mon: M[parseInt(parts[1])-1] || '', year: parts[0], iso: d };
+  };
+
+  const html = items.map(it => {
+    const dInfo = fmtDate(it.last_sold);
+    const isHot = dInfo.iso === today || dInfo.iso === yesterday;
+    const stats = [
+      it.clients > 1 ? `${it.clients} клієнт.` : null,
+      it.first_sold && it.first_sold !== it.last_sold ? `від ${fmtDate(it.first_sold).day} ${fmtDate(it.first_sold).mon}` : null,
+    ].filter(Boolean).join(' · ');
+    return `
+      <div class="tp-row${isHot ? ' hot' : ''}">
+        <div class="date">${dInfo.day}<b>${dInfo.mon}</b></div>
+        <div class="name">
+          ${it.nom_code ? `<span class="code">${esc(it.nom_code)}</span>` : ''}${esc(it.nom_name)}
+          ${stats ? `<span class="stats">${esc(stats)}</span>` : ''}
+        </div>
+        <div class="qty">${fmt(it.qty, 0)}<span class="unit">шт</span></div>
+        <div class="receipts">${fmt(it.receipts, 0)} нак.</div>
+        <div class="revenue${(it.revenue_usd || 0) === 0 ? ' zero' : ''}">${fmt(it.revenue_usd, 0)} $</div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('body').innerHTML = `<div class="tp-list">${html}</div>`;
+}
+</script>
+</body>
+</html>
