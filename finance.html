@@ -599,24 +599,105 @@ function readStateFromUrl() {
   try { return Object.fromEntries(new URLSearchParams(h)); } catch (_) { return null; }
 }
 
+// Синхронізація фільтрів між вкладками: коли юзер змінив період/орг у P&L
+// і переходить на GP/AR/CF/FI — підхоплюємо ті ж самі. Між range↔point
+// (CB/MS/WH) — переносимо org і дату `to` як `on`.
+function _syncFiltersFromTo(fromState, toState) {
+  if (!fromState || !toState) return;
+  const isRangeFrom = 'from' in fromState && 'to' in fromState;
+  const isRangeTo   = 'from' in toState   && 'to' in toState;
+  const isPointFrom = 'on' in fromState;
+  const isPointTo   = 'on' in toState;
+  if (isRangeFrom && isRangeTo) {
+    toState.from = fromState.from;
+    toState.to = fromState.to;
+    toState.preset = fromState.preset;
+    if (fromState.org !== undefined) toState.org = fromState.org;
+  } else if (isRangeFrom && isPointTo) {
+    // Перехід range → point: беремо кінець періоду як «на дату»
+    if (fromState.to) toState.on = fromState.to;
+    if (fromState.org !== undefined) toState.org = fromState.org;
+  } else if (isPointFrom && isRangeTo) {
+    // Перехід point → range: ставимо on як кінець, місяць назад — як початок
+    if (fromState.on) {
+      toState.to = fromState.on;
+      const d = new Date(fromState.on); d.setMonth(d.getMonth() - 1);
+      toState.from = _localISO(d);
+      toState.preset = '';
+    }
+    if (fromState.org !== undefined) toState.org = fromState.org;
+  } else if (isPointFrom && isPointTo) {
+    if (fromState.on) toState.on = fromState.on;
+    if (fromState.org !== undefined) toState.org = fromState.org;
+  }
+}
+
+function _stateForTab(tab) {
+  return ({ pnl: typeof pnlState !== 'undefined' ? pnlState : null,
+            gp: typeof gpState !== 'undefined' ? gpState : null,
+            ar: typeof arState !== 'undefined' ? arState : null,
+            cf: typeof cfState !== 'undefined' ? cfState : null,
+            fi: typeof fiState !== 'undefined' ? fiState : null,
+            ms: typeof msState !== 'undefined' ? msState : null,
+            wh: typeof whState !== 'undefined' ? whState : null,
+            cb: typeof cbState !== 'undefined' ? cbState : null }[tab]) || null;
+}
+
 function switchTab(el) {
+  const prev = activeView.tab;
   document.querySelectorAll('.ptab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   const v = el.dataset.view;
   activeView.tab = v;
   document.querySelectorAll('.view').forEach(d => d.classList.toggle('active', d.id === v + 'View'));
-  if (v === 'gp' && !gpState._loaded) gpLoad();
-  if (v === 'fi' && !fiState._loaded) fiLoad();
-  if (v === 'cf' && !cfState._loaded) cfLoad();
-  if (v === 'ar' && !arState._loaded) arLoad();
-  if (v === 'ms' && !msState._loaded) { msSetPreset('today'); }
-  if (v === 'wh' && !whState._loaded) {
-    // Якщо whState.on вже задана з URL (wh_on=) — завантажуємо одразу
-    // на ту дату; інакше — дефолт 'today'.
-    if (whState.on) { whLoad(); } else { whSetPreset('today'); }
+
+  // Синхронізуємо фільтри з попередньої вкладки (якщо була і відрізняється)
+  if (prev && prev !== v) {
+    _syncFiltersFromTo(_stateForTab(prev), _stateForTab(v));
   }
-  if (v === 'cb' && !cbState._loaded) { cbSetPreset('today'); }
+
+  // Завантажуємо вкладку. Для всіх вкладок викликаємо load — sync дав свіжі
+  // фільтри; повторний load з тими ж самими фільтрами просто читає з кешу.
+  if (v === 'pnl') pnlLoad();
+  else if (v === 'gp') gpLoad();
+  else if (v === 'fi') fiLoad();
+  else if (v === 'cf') cfLoad();
+  else if (v === 'ar') arLoad();
+  else if (v === 'ms') { if (msState.on) msLoad(); else msSetPreset('today'); }
+  else if (v === 'wh') { if (whState.on) whLoad(); else whSetPreset('today'); }
+  else if (v === 'cb') { if (cbState.on) cbLoad(); else cbSetPreset('today'); }
+
+  // Синхронізуємо UI-стан (date inputs, chips) для нової активної вкладки
+  _refreshTabToolbar(v);
+
   saveStateToUrl();
+}
+
+// Оновити date inputs / org chips / preset chips для активної вкладки
+// після того як її state підмінили з попередньої.
+function _refreshTabToolbar(v) {
+  const st = _stateForTab(v);
+  if (!st) return;
+  const presetMap = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' };
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el && val != null) el.value = val; };
+  const setPresetChips = (toolbarId, preset) => {
+    document.querySelectorAll('#' + toolbarId + ' .group:first-of-type .chip').forEach(c => {
+      c.classList.toggle('active', c.textContent.trim() === presetMap[preset]);
+    });
+  };
+  const setOrgChips = (groupId, org) => {
+    document.querySelectorAll('#' + groupId + ' .chip[data-org]').forEach(c => {
+      c.classList.toggle('active', c.dataset.org === (org || ''));
+    });
+  };
+  if (v === 'pnl') { setVal('fromIn', st.from); setVal('toIn', st.to); setPresetChips('pnlToolbar', st.preset); setOrgChips('pnlOrgGroup', st.org); }
+  else if (v === 'gp') { setVal('gpFromIn', st.from); setVal('gpToIn', st.to); setPresetChips('gpToolbar', st.preset); setOrgChips('gpOrgGroup', st.org); }
+  else if (v === 'ar') { setVal('arFromIn', st.from); setVal('arToIn', st.to); setPresetChips('arToolbar', st.preset); setOrgChips('arOrgGroup', st.org); }
+  else if (v === 'cf') { setVal('cfFromIn', st.from); setVal('cfToIn', st.to); setPresetChips('cfToolbar', st.preset); setOrgChips('cfOrgGroup', st.org); }
+  else if (v === 'fi') { setVal('fiFromIn', st.from); setVal('fiToIn', st.to); setPresetChips('fiToolbar', st.preset); setOrgChips('fiOrgGroup', st.org); }
+  else if (v === 'ms') { setVal('msOnIn', st.on); setOrgChips('msOrgGroup', st.org); }
+  else if (v === 'wh') { setVal('whDateIn', st.on); setOrgChips('whOrgGroup', st.org); }
+  else if (v === 'cb') { setVal('cbDateIn', st.on); setOrgChips('cbOrgGroup', st.org); }
 }
 
 // Export the active tab to a real PDF file using html2pdf.js.
