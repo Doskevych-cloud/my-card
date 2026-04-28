@@ -147,6 +147,7 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
       <span style="font-size:12px;color:var(--text3)">
         Крон: кожні 30 хв, 09:00–19:30 Kyiv · window 7 днів · 11 таблиць (sales/purchase + movements + fx)
       </span>
+      <span id="autosyncLastRun" style="font-size:12px;color:var(--text3);margin-left:auto;white-space:nowrap" title="Найсвіжіший last_synced_at з sync_state">—</span>
     </div>
     <div id="autosyncResult" style="margin-top:12px;font-size:12px;color:var(--text2);display:none"></div>
   </div>
@@ -214,7 +215,42 @@ Auth.require('admin').then(user => {
   currentUser = user;
   AppHeader.mount({ active: 'admin', user });
   loadUsers();
+  loadAutosyncStatus();
 });
+
+// Найсвіжіший last_synced_at з sync_state — показуємо поряд із кнопкою autosync.
+// Оновлюємо при load page і після ручного запуску.
+function fmtAgo(iso) {
+  if (!iso) return null;
+  const dt = new Date(iso);
+  const diff = (Date.now() - dt.getTime()) / 1000;
+  if (diff < 0) return 'тільки що';
+  if (diff < 60) return 'щойно';
+  if (diff < 3600) return `${Math.floor(diff/60)} хв тому`;
+  if (diff < 86400) {
+    const h = Math.floor(diff/3600);
+    const m = Math.floor((diff%3600)/60);
+    return m ? `${h} год ${m} хв тому` : `${h} год тому`;
+  }
+  return `${Math.floor(diff/86400)} д тому`;
+}
+async function loadAutosyncStatus() {
+  const span = document.getElementById('autosyncLastRun');
+  if (!span) return;
+  try {
+    const r = await Auth.apiFetch('_admin_sync_state');
+    let max = null;
+    for (const s of (r.state || [])) {
+      if (s.last_synced_at && (!max || s.last_synced_at > max)) max = s.last_synced_at;
+    }
+    if (!max) { span.textContent = 'ще не запускався'; return; }
+    const dt = new Date(max);
+    const local = dt.toLocaleString('uk-UA', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+    span.textContent = `Останній синк: ${local} · ${fmtAgo(max)}`;
+  } catch (_) {
+    span.textContent = '—';
+  }
+}
 
 async function loadUsers() {
   try {
@@ -493,6 +529,7 @@ async function runAutosync() {
   } finally {
     btn.disabled = false;
     btn.textContent = '🔄 Запустити autosync зараз';
+    loadAutosyncStatus();
   }
 }
 
