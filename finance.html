@@ -101,6 +101,21 @@ a{color:inherit;text-decoration:none}
 .toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
 .toolbar input[type=text]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;font-family:inherit;min-width:150px}
 .toolbar input[type=text]:focus{border-color:var(--accent)}
+
+/* Tag input для виключень GP — чіпи з ✕, авто-підказки */
+.gp-tags{position:relative;display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center;padding:4px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;min-width:240px;max-width:520px;min-height:30px}
+.gp-tags:focus-within{border-color:var(--accent)}
+.gp-tags input[type=text]{flex:1;min-width:120px;padding:3px 4px;border:none;background:transparent;font-size:12px;color:var(--text);outline:none}
+.gp-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 6px 2px 8px;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:600;border-radius:6px;white-space:nowrap;max-width:200px}
+.gp-tag .name{overflow:hidden;text-overflow:ellipsis}
+.gp-tag .x{cursor:pointer;font-size:14px;line-height:1;opacity:.7;padding:0 2px}
+.gp-tag .x:hover{opacity:1;color:var(--red)}
+.gp-suggest{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);max-height:280px;overflow-y:auto;z-index:50}
+.gp-suggest .opt{padding:7px 12px;font-size:12px;cursor:pointer;color:var(--text);border-bottom:1px solid var(--border)}
+.gp-suggest .opt:last-child{border-bottom:none}
+.gp-suggest .opt:hover,.gp-suggest .opt.hl{background:var(--bg3);color:var(--accent)}
+.gp-suggest .opt .meta{color:var(--text3);font-size:10.5px;margin-left:8px}
+.gp-suggest .empty{padding:10px 12px;font-size:12px;color:var(--text3)}
 .toolbar input[type=text]::placeholder{color:var(--text3)}
 
 /* P&L table */
@@ -369,8 +384,13 @@ a{color:inherit;text-decoration:none}
         <input type="text" id="gpBuyerIn" placeholder="Пошук покупця..." oninput="gpFilterChanged()">
         <span class="lbl">Номенклатура</span>
         <input type="text" id="gpNomIn" placeholder="Пошук товару..." oninput="gpFilterChanged()">
-        <span class="lbl" title="Не включати у звіт. Кілька значень розділяй комою">Виключити</span>
-        <input type="text" id="gpExcludeIn" placeholder="напр.: ТОВ ГЕНЕРАЦІЯ, Іванов" oninput="gpFilterChanged()">
+        <span class="lbl">Виключити</span>
+        <span class="gp-tags" id="gpExcludeTags">
+          <input type="text" id="gpExcludeIn" placeholder="Почни вводити клієнта…" autocomplete="off"
+                 oninput="gpExcludeOnInput()" onfocus="gpExcludeOnInput()"
+                 onkeydown="gpExcludeOnKey(event)" onblur="setTimeout(gpExcludeHideSuggest,200)">
+          <div id="gpExcludeSuggest" class="gp-suggest" style="display:none"></div>
+        </span>
         <div class="sep"></div>
         <span class="group pnl-collapse-ctl" title="Керування згортанням груп">
           <span class="chip" onclick="gpToggleAll(false)">
@@ -2090,14 +2110,21 @@ document.getElementById('cfToIn').addEventListener('change', function(e) { cfSta
    ═══════════════════════════════════════════════════ */
 const gpState = { from: '', to: '', org: '', preset: '', buyerFilter: '', nomFilter: '', excludeList: [], _loaded: false, _rawData: null };
 
-// Restore persisted exclude list (per-browser, не в URL)
+// Restore persisted exclude list (per-browser, не в URL).
+// Новий формат — JSON-масив повних назв; старий формат (рядок через кому) теж парсимо.
 try {
   const saved = localStorage.getItem('gp_exclude') || '';
   if (saved) {
-    gpState.excludeList = saved.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    let arr = [];
+    try { arr = JSON.parse(saved); if (!Array.isArray(arr)) arr = []; } catch (_) {}
+    if (!arr.length && saved.includes(',')) {
+      arr = saved.split(',').map(s => s.trim()).filter(Boolean);
+    } else if (!arr.length && saved.trim()) {
+      arr = [saved.trim()];
+    }
+    gpState.excludeList = arr;
     document.addEventListener('DOMContentLoaded', () => {
-      const el = document.getElementById('gpExcludeIn');
-      if (el) el.value = saved;
+      if (typeof gpExcludeRenderTags === 'function') gpExcludeRenderTags();
     });
   }
 } catch (_) {}
@@ -2133,12 +2160,121 @@ function gpFilterChanged() {
   gpFilterTimer = setTimeout(function() {
     gpState.buyerFilter = document.getElementById('gpBuyerIn').value.trim().toLowerCase();
     gpState.nomFilter = document.getElementById('gpNomIn').value.trim().toLowerCase();
-    const exRaw = document.getElementById('gpExcludeIn').value || '';
-    gpState.excludeList = exRaw.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-    try { localStorage.setItem('gp_exclude', exRaw); } catch (_) {}
     if (gpState._rawData) renderGp(gpState._rawData);
   }, 300);
 }
+
+/* ── Exclude tag-input ──────────────────────────────────────────────── */
+
+// Зберігаємо повні назви (а не lowercase) для рендеру чіпів.
+// gpState.excludeList — масив повних назв клієнтів.
+
+function gpExcludeRenderTags() {
+  const host = document.getElementById('gpExcludeTags');
+  if (!host) return;
+  // Прибираємо старі чіпи (всі діти крім input/suggest)
+  Array.from(host.querySelectorAll('.gp-tag')).forEach(n => n.remove());
+  const inp = document.getElementById('gpExcludeIn');
+  (gpState.excludeList || []).forEach(name => {
+    const t = document.createElement('span');
+    t.className = 'gp-tag';
+    t.innerHTML = '<span class="name">' + esc(name) + '</span><span class="x" data-name="' + esc(name) + '">×</span>';
+    host.insertBefore(t, inp);
+  });
+}
+
+function gpExcludeAdd(name) {
+  if (!name) return;
+  const exists = (gpState.excludeList || []).some(n => n.toLowerCase() === name.toLowerCase());
+  if (!exists) {
+    gpState.excludeList = (gpState.excludeList || []).concat([name]);
+    try { localStorage.setItem('gp_exclude', JSON.stringify(gpState.excludeList)); } catch (_) {}
+  }
+  document.getElementById('gpExcludeIn').value = '';
+  gpExcludeHideSuggest();
+  gpExcludeRenderTags();
+  if (gpState._rawData) renderGp(gpState._rawData);
+}
+
+function gpExcludeRemove(name) {
+  gpState.excludeList = (gpState.excludeList || []).filter(n => n !== name);
+  try { localStorage.setItem('gp_exclude', JSON.stringify(gpState.excludeList)); } catch (_) {}
+  gpExcludeRenderTags();
+  if (gpState._rawData) renderGp(gpState._rawData);
+}
+
+function gpExcludeHideSuggest() {
+  const dd = document.getElementById('gpExcludeSuggest');
+  if (dd) dd.style.display = 'none';
+}
+
+function gpExcludeOnInput() {
+  const inp = document.getElementById('gpExcludeIn');
+  const dd = document.getElementById('gpExcludeSuggest');
+  if (!inp || !dd) return;
+  const q = inp.value.trim().toLowerCase();
+  const all = (gpState._rawData && gpState._rawData.clients) || [];
+  if (!all.length) { dd.style.display = 'none'; return; }
+  const excluded = new Set((gpState.excludeList || []).map(n => n.toLowerCase()));
+  const matched = all
+    .filter(cl => !excluded.has((cl.name || '').toLowerCase()))
+    .filter(cl => !q || (cl.name || '').toLowerCase().includes(q))
+    .slice(0, 50);
+  if (!matched.length) {
+    dd.innerHTML = '<div class="empty">Нічого не знайдено</div>';
+    dd.style.display = 'block';
+    return;
+  }
+  dd.innerHTML = matched.map((cl, i) =>
+    '<div class="opt" data-name="' + esc(cl.name) + '"' + (i === 0 ? ' data-hl="1"' : '') + '>' +
+      esc(cl.name) +
+      '<span class="meta">' + fmt(cl.revenue || 0, 0) + ' $</span>' +
+    '</div>'
+  ).join('');
+  // hl на першому
+  dd.querySelectorAll('.opt').forEach((el, i) => el.classList.toggle('hl', i === 0));
+  dd.style.display = 'block';
+}
+
+function gpExcludeOnKey(ev) {
+  const dd = document.getElementById('gpExcludeSuggest');
+  if (!dd || dd.style.display === 'none') {
+    // Backspace на пустому інпуті → прибираємо останній чіп
+    if (ev.key === 'Backspace' && !ev.target.value && (gpState.excludeList || []).length) {
+      gpExcludeRemove(gpState.excludeList[gpState.excludeList.length - 1]);
+    }
+    return;
+  }
+  const opts = Array.from(dd.querySelectorAll('.opt'));
+  let idx = opts.findIndex(o => o.classList.contains('hl'));
+  if (ev.key === 'ArrowDown') {
+    ev.preventDefault();
+    idx = Math.min(idx + 1, opts.length - 1);
+    opts.forEach((o, i) => o.classList.toggle('hl', i === idx));
+    opts[idx]?.scrollIntoView({ block: 'nearest' });
+  } else if (ev.key === 'ArrowUp') {
+    ev.preventDefault();
+    idx = Math.max(idx - 1, 0);
+    opts.forEach((o, i) => o.classList.toggle('hl', i === idx));
+    opts[idx]?.scrollIntoView({ block: 'nearest' });
+  } else if (ev.key === 'Enter') {
+    ev.preventDefault();
+    const sel = opts[idx] || opts[0];
+    if (sel) gpExcludeAdd(sel.dataset.name);
+  } else if (ev.key === 'Escape') {
+    gpExcludeHideSuggest();
+  } else if (ev.key === 'Backspace' && !ev.target.value && (gpState.excludeList || []).length) {
+    gpExcludeRemove(gpState.excludeList[gpState.excludeList.length - 1]);
+  }
+}
+
+// Делегуємо клік: на ✕ чіпа і на opt у dropdown
+document.addEventListener('click', function(ev) {
+  const x = ev.target.closest('#gpExcludeTags .gp-tag .x');
+  if (x) { gpExcludeRemove(x.dataset.name); return; }
+  const opt = ev.target.closest('#gpExcludeSuggest .opt');
+  if (opt) { gpExcludeAdd(opt.dataset.name); return; }
+});
 
 function gpDateChanged() {
   gpState.preset = detectPreset(gpState.from, gpState.to) || '';
@@ -2161,13 +2297,10 @@ function renderGp(data) {
 
   // Apply client-side filters
   let filtered = clients;
-  // Exclude list (substring match по назві клієнта; кілька через кому)
-  const ex = (gpState.excludeList || []);
-  if (ex.length) {
-    filtered = filtered.filter(cl => {
-      const n = (cl.name || '').toLowerCase();
-      return !ex.some(x => x && n.includes(x));
-    });
+  // Exclude list — масив повних назв клієнтів (точний матч, case-insensitive)
+  const exSet = new Set((gpState.excludeList || []).map(n => (n || '').toLowerCase()));
+  if (exSet.size) {
+    filtered = filtered.filter(cl => !exSet.has((cl.name || '').toLowerCase()));
   }
   if (bf) {
     filtered = filtered.filter(cl => cl.name.toLowerCase().includes(bf));
