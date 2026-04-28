@@ -522,7 +522,10 @@ const cpTagInput = {
     const dd  = document.getElementById(cfg.suggestId);
     if (!inp || !dd) return;
     const q = inp.value.trim().toLowerCase();
-    const all = (state._lastRows || []).map(r => ({ name: r.name || '—', meta: fmtCurSigned(Number(r.balance_usd) || 0, 'USD') }));
+    const all = (state._lastRows || []).map(r => ({
+      name: r.description || r.name || '—',
+      meta: fmtCurSigned(Number(r.balance_usd) || 0, 'USD'),
+    })).filter(o => o.name && o.name !== '—');
     if (!all.length) { dd.style.display = 'none'; return; }
     const taken = new Set(this.list(field).map(n => n.toLowerCase()));
     const matched = all
@@ -728,8 +731,9 @@ async function loadOverview(){
     const incSet = new Set((state.includeList || []).map(s => (s || '').toLowerCase()));
     const exSet  = new Set((state.excludeList || []).map(s => (s || '').toLowerCase()));
     let topFiltered = d.top || [];
-    if (incSet.size) topFiltered = topFiltered.filter(r => incSet.has((r.name || '').toLowerCase()));
-    if (exSet.size)  topFiltered = topFiltered.filter(r => !exSet.has((r.name || '').toLowerCase()));
+    const _rname = r => (r.description || r.name || '').toLowerCase();
+    if (incSet.size) topFiltered = topFiltered.filter(r => incSet.has(_rname(r)));
+    if (exSet.size)  topFiltered = topFiltered.filter(r => !exSet.has(_rname(r)));
     body.innerHTML = renderKpi(d.kpi) + renderTop(topFiltered) + renderDynamics(d.dynamics);
     // Клік по рядку постачальника → відкриваємо акт звірки
     body.querySelectorAll('tr.clickable[data-ref]').forEach(tr => {
