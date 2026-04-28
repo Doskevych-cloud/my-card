@@ -286,7 +286,7 @@ a{color:inherit;text-decoration:none}
     <span class="sub">редагує <a href="https://react.ink" target="_blank" rel="noopener">публічний прайс ↗</a></span>
     <div class="spacer"></div>
     <div class="actions">
-      <button class="btn" id="refreshPublicBtn" onclick="refreshPublicPrices(this)">↻ Оновити react.ink</button>
+      <button class="btn" id="refreshPublicBtn" onclick="refreshPublicPrices(this)">↻ Оновити ціни</button>
       <button class="btn" onclick="openCatModal()">+ Категорія</button>
       <button class="btn btn--primary" onclick="openItemModal()">+ Позиція</button>
     </div>
@@ -547,7 +547,7 @@ async function refreshPublicPrices(btn) {
     if (r.ok && Array.isArray(r.results)) {
       const ok = r.results.every(x => x.ok);
       const sizes = r.results.map(x => `${x.key.split('_')[0]}: ${x.size || 0}b`).join(' · ');
-      toast(ok ? `react.ink оновлено · ${sizes}` : `Частково: ${sizes}`, ok ? 'ok' : 'err');
+      toast(ok ? `Ціни оновлено · ${sizes}` : `Частково: ${sizes}`, ok ? 'ok' : 'err');
     } else {
       toast('Невідома відповідь від react-pricelist', 'err');
     }
