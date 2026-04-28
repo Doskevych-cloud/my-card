@@ -199,6 +199,34 @@ a{color:inherit;text-decoration:none}
   .s-tbl thead th,.s-tbl tbody td{padding:8px 8px}
   .s-tbl .kind-badge{display:none}
 }
+
+/* PDF-шапка з фільтрами — видна тільки під час print */
+.pdf-only{display:none}
+
+@media print{
+  /* Ховаємо інтерактив і навігацію */
+  #appHeader, .toolbar, .tabs, #exportPdfBtn, button, .pagination,
+  .dv-toolbar, .loader, .loading{display:none !important}
+  /* Показуємо print-шапку */
+  .pdf-only{display:block !important;margin:0 0 14px 0;padding:0 0 10px 0;border-bottom:2px solid #1c1c1e}
+
+  /* Світла тема для друку — гарантовано */
+  html[data-theme="dark"]{--bg:#fff;--bg2:#fff;--bg3:#fff;--surface:#fff;--surface2:#fff;--text:#1c1c1e;--text2:#48484a;--text3:#6b7280;--border:#e5e5ea;--border2:#d1d1d6}
+  body{background:#fff !important;color:#1c1c1e !important;font-size:10px}
+
+  /* Розкриваємо все приховане */
+  [hidden]{display:revert !important}
+
+  /* Розгортаємо max-width контейнерів */
+  .wrap, #app{max-width:none !important;padding:6mm !important}
+
+  /* Таблиці без розривів між рядками */
+  table{break-inside:auto}
+  tr{break-inside:avoid;break-after:auto}
+  thead{display:table-header-group}
+
+  @page{size:A4 landscape;margin:8mm}
+}
 </style>
 </head>
 <body>
@@ -767,83 +795,49 @@ Auth.require('counterparties').then(user => {
   load();
 });
 
-/* ── PDF Export через html2pdf.js ─────────────────────────────────────
- * Робимо тимчасовий offscreen-контейнер (light theme), туди клонуємо
- * #body, додаємо шапку з фільтрами, html2pdf.js рендерить у файл.
+/* ── PDF Export через window.print() ──────────────────────────────────
+ * Простіше та надійніше html2pdf: ставимо клас 'pdf-print', форсимо
+ * light theme, додаємо print-шапку з фільтрами, викликаємо print.
+ * Юзер бачить системний діалог → «Зберегти як PDF».
  */
-async function downloadPDF() {
-  const btn = document.getElementById('exportPdfBtn');
-  const orig = btn ? btn.innerHTML : '';
-  if (btn) { btn.innerHTML = '⏳ Генерую…'; btn.style.pointerEvents = 'none'; }
+function downloadPDF() {
+  const ROLE_TITLE = { customers:'Покупці', suppliers:'Постачальники', others:'Інші', all:'Усі контрагенти' };
+  const ORG_LABEL  = { react:'Реакт', gen:'Генерація', '':'Усі організації' };
+  const role = ROLE_TITLE[state.role] || 'Контрагенти';
+  const org  = ORG_LABEL[state.org || ''] || state.org || 'Усі';
+  const period = (state.from || '') + ' — ' + (state.to || '');
+  const q = (state.q || '').trim();
+  const dt = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' });
 
-  try {
-    if (typeof html2pdf === 'undefined') {
-      alert('html2pdf не завантажено. Спробуй ще раз через секунду.');
-      return;
-    }
-
-    const ROLE_TITLE = { customers:'Покупці', suppliers:'Постачальники', others:'Інші', all:'Усі контрагенти' };
-    const ORG_LABEL  = { react:'Реакт', gen:'Генерація', '':'Усі організації' };
-    const role = ROLE_TITLE[state.role] || 'Контрагенти';
-    const org  = ORG_LABEL[state.org || ''] || state.org || 'Усі';
-    const period = (state.from || '') + ' — ' + (state.to || '');
-    const q = (state.q || '').trim();
-    const filename = `Контрагенти - ${role} - ${period}${state.org ? ' - ' + org : ''}.pdf`;
-    const dt = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' });
-
-    const bodyEl = document.getElementById('body');
-    if (!bodyEl) { alert('Немає вмісту для експорту'); return; }
-
-    // Збираємо контейнер для друку (offscreen, фіксованої ширини)
-    const container = document.createElement('div');
-    container.setAttribute('data-pdf-export', '1');
-    container.style.cssText = 'position:fixed;left:-99999px;top:0;width:1100px;background:#fff;color:#1c1c1e;padding:24px;font-family:Inter,sans-serif';
-    container.innerHTML = `
-      <div style="margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #1c1c1e">
-        <div style="font-size:20px;font-weight:700;margin-bottom:8px">Контрагенти — ${esc(role)}</div>
-        <div style="display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:#48484a">
-          <span><b style="color:#1c1c1e">Період:</b> ${esc(period)}</span>
-          <span><b style="color:#1c1c1e">Організація:</b> ${esc(org)}</span>
-          ${q ? `<span><b style="color:#1c1c1e">Пошук:</b> ${esc(q)}</span>` : ''}
-          <span><b style="color:#1c1c1e">Сформовано:</b> ${esc(dt)}</span>
-        </div>
-      </div>
-      <div id="__pdf_content"></div>`;
-
-    const clone = bodyEl.cloneNode(true);
-    clone.querySelectorAll('button, input, .dv-toolbar, .pagination, .loader, .loading').forEach(el => el.remove());
-    clone.querySelectorAll('[hidden]').forEach(el => el.removeAttribute('hidden'));
-    // Прив'язуємо світлі кольори інлайн (бо CSS-змінні з :root[data-theme=dark] не успадкуються)
-    clone.style.color = '#1c1c1e';
-    clone.querySelectorAll('*').forEach(el => {
-      el.style.color = '';
-      el.style.background = '';
-    });
-    container.querySelector('#__pdf_content').appendChild(clone);
-    document.body.appendChild(container);
-
-    // Тимчасово форсимо light theme на root щоб CSS-змінні стали світлими в клонi
-    const rootPrev = document.documentElement.getAttribute('data-theme');
-    document.documentElement.setAttribute('data-theme', 'light');
-
-    await html2pdf().set({
-      margin: 8,
-      filename,
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
-    }).from(container).save();
-
-    // Відновлюємо стан сторінки
-    if (rootPrev) document.documentElement.setAttribute('data-theme', rootPrev);
-    container.remove();
-  } catch (e) {
-    console.error('PDF export error:', e);
-    alert('Помилка експорту PDF: ' + (e.message || e));
-  } finally {
-    if (btn) { btn.innerHTML = orig; btn.style.pointerEvents = ''; }
+  // Ставимо print-шапку (видна тільки при print)
+  let head = document.getElementById('__pdfHead');
+  if (!head) {
+    head = document.createElement('div');
+    head.id = '__pdfHead';
+    head.className = 'pdf-only';
+    document.body.insertBefore(head, document.body.firstChild);
   }
+  head.innerHTML = `
+    <div style="font-size:18px;font-weight:700;margin-bottom:6px">Контрагенти — ${esc(role)}</div>
+    <div style="font-size:11px;color:#48484a;display:flex;flex-wrap:wrap;gap:14px">
+      <span><b style="color:#1c1c1e">Період:</b> ${esc(period)}</span>
+      <span><b style="color:#1c1c1e">Організація:</b> ${esc(org)}</span>
+      ${q ? `<span><b style="color:#1c1c1e">Пошук:</b> ${esc(q)}</span>` : ''}
+      <span><b style="color:#1c1c1e">Сформовано:</b> ${esc(dt)}</span>
+    </div>`;
+
+  // Тимчасово примусова світла тема для красивого PDF
+  const prevTheme = document.documentElement.getAttribute('data-theme');
+  document.documentElement.setAttribute('data-theme', 'light');
+  document.title = `Контрагенти - ${role} - ${period}`;
+
+  setTimeout(() => {
+    window.print();
+    // Відновлюємо стан після діалогу
+    setTimeout(() => {
+      if (prevTheme) document.documentElement.setAttribute('data-theme', prevTheme);
+    }, 200);
+  }, 100);
 }
 </script>
 </body>
