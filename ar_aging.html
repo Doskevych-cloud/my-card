@@ -245,10 +245,17 @@ function filterChanged() {
 async function load() {
   document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
   document.getElementById('summary').innerHTML = '';
+  // Reset transient UI state so previous engine/org leftovers не "залипали" у render.
+  state._raw = null;
+  state.bucketFilter = null;
   try {
     const action = state.engine === 'd1' ? 'receivables_aging_d1' : 'receivables_aging';
-    const q = '?action=' + action + '&on_date=' + state.onDate + (state.org ? '&org=' + encodeURIComponent(state.org) : '');
-    const data = await fetch(API_URL + q).then(r => r.json());
+    // _t — cache-buster проти HTTP/disk-кешу браузера. Тіло відповіді все одно
+    // кешується KV-шаром у воркері — зайвого навантаження немає.
+    const q = '?action=' + action + '&on_date=' + state.onDate
+            + (state.org ? '&org=' + encodeURIComponent(state.org) : '')
+            + '&_t=' + Date.now();
+    const data = await fetch(API_URL + q, { cache: 'no-store' }).then(r => r.json());
     if (data.error) throw new Error(data.error);
     state._raw = data;
     render(data);
