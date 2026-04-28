@@ -290,10 +290,50 @@ a{color:inherit;text-decoration:none}
 .view.active{display:block}
 
 @media(max-width:720px){
-  .pnl-summary{grid-template-columns:1fr 1fr}
+  .wrap{padding:12px}
+  /* Page-tabs: горизонтальний скрол щоб не переносити рядки */
+  .page-tabs{display:flex;overflow-x:auto;gap:2px;padding:3px;-webkit-overflow-scrolling:touch;max-width:100%;scrollbar-width:none}
+  .page-tabs::-webkit-scrollbar{display:none}
+  .ptab{padding:7px 12px;font-size:12px;flex:0 0 auto}
+  /* Toolbar — менш повітря, всі чіпи переносяться */
+  .toolbar{padding:8px;gap:6px;border-radius:10px}
+  .toolbar input[type=date]{font-size:12px;padding:6px 8px;flex:1;min-width:0}
+  .toolbar input[type=text]{font-size:12px;padding:6px 8px;flex:1;min-width:140px}
+  .toolbar .lbl{display:none}
+  .toolbar .chip{padding:6px 10px;font-size:11px}
+  .toolbar .group{padding:3px;gap:2px}
+  .toolbar .group .chip{padding:5px 8px;font-size:11px}
+  .toolbar .sep{display:none}
+  .pnl-collapse-ctl .chip{padding:6px 10px;font-size:11px}
+  .pnl-collapse-ctl .chip .ic{margin-right:3px}
+  /* Summary cards 1 col на дуже малих, 2 col на середніх */
+  .pnl-summary{grid-template-columns:1fr 1fr;gap:8px}
+  .pnl-card{padding:11px 12px;border-radius:10px}
+  .pnl-card .cv{font-size:18px}
+  .pnl-card .cl{font-size:9.5px}
+  .pnl-card .cs{font-size:10.5px}
+  /* Таблиці */
+  .pnl-wrap{border-radius:10px}
   .pnl-table{font-size:11px}
-  .pnl-table th,.pnl-table td{padding:5px 8px}
+  .pnl-table th,.pnl-table td{padding:6px 8px}
   .pnl-table td:first-child,.pnl-table th:first-child{min-width:180px}
+  .pnl-table tr.cat td,.pnl-table tr.sec:not([data-cat]) td,.pnl-table tr.grd:not([data-is-grd-head]) td{font-size:12.5px}
+  .pnl-table tr.sec[data-cat] td{font-size:11.5px}
+  .pnl-table tr.itm td{font-size:11px}
+  .pnl-table tr.grd td{font-size:12.5px}
+  /* Export-меню вписати */
+  .export-menu{margin-left:0 !important;flex:1}
+  /* CB — групи, грід карток на 1 колонку при дуже вузькому, 2 на трохи ширшому */
+  .cb-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+  .cb-org-head{padding:6px 2px 8px;gap:8px}
+  .cb-org-name{font-size:14px}
+  .cb-org-total{font-size:14px}
+  .cb-type-head{margin:10px 0 6px 2px}
+  .pnl-card .cb-card-head{margin-bottom:2px}
+}
+@media(max-width:480px){
+  .pnl-summary{grid-template-columns:1fr}
+  .cb-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
