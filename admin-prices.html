@@ -536,20 +536,27 @@ async function apiCall(action, opts = {}) {
   return data;
 }
 
-// Прогрів KV-кешу публічного прайсу react.ink. Викликається після правок цін
-// у 1С — інакше доведеться чекати до годинного cron на react-pricelist.
+// Повне оновлення публічних цін на react.ink: 1С → D1 → invalidate price-api KV
+// → refresh react-pricelist KV. Триває 5-10 секунд через OData fetch.
 async function refreshPublicPrices(btn) {
   const orig = btn.textContent;
   btn.disabled = true;
   btn.textContent = '↻ Оновлюю…';
   try {
     const r = await apiCall('_admin_public_prices_refresh');
-    if (r.ok && Array.isArray(r.results)) {
-      const ok = r.results.every(x => x.ok);
-      const sizes = r.results.map(x => `${x.key.split('_')[0]}: ${x.size || 0}b`).join(' · ');
-      toast(ok ? `Ціни оновлено · ${sizes}` : `Частково: ${sizes}`, ok ? 'ok' : 'err');
+    if (Array.isArray(r.steps)) {
+      const failed = r.steps.filter(s => !s.ok);
+      const totalMs = r.steps.reduce((a, s) => a + (s.ms || 0), 0);
+      if (failed.length === 0) {
+        toast(`Ціни оновлено за ${(totalMs/1000).toFixed(1)}s · 4/4 кроків`, 'ok');
+        // Оновлюємо локальні дані щоб нові ціни одразу були видні в адмінці.
+        load();
+      } else {
+        const f = failed.map(s => `${s.step}: ${s.error || 'fail'}`).join('; ');
+        toast(`Помилка на кроках: ${f}`, 'err');
+      }
     } else {
-      toast('Невідома відповідь від react-pricelist', 'err');
+      toast('Невідома відповідь сервера', 'err');
     }
   } catch (e) {
     toast('Помилка: ' + (e.message || e), 'err');
