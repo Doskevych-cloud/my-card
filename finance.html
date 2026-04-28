@@ -2255,6 +2255,15 @@ const gpTagInput = {
     const dd  = document.getElementById(cfg.suggestId);
     if (!inp || !dd) return;
     const q = inp.value.trim().toLowerCase();
+    // Live substring-фільтр поки нема обраних тегів — для звичайного пошуку
+    // як було раніше. Якщо вже є теги — query ігнорується (теги пріоритетніші).
+    if (field === 'buyer' || field === 'nom') {
+      gpState[field === 'buyer' ? 'buyerQuery' : 'nomQuery'] = q;
+      clearTimeout(gpTagInput._qTimer);
+      gpTagInput._qTimer = setTimeout(() => {
+        if (gpState._rawData) renderGp(gpState._rawData);
+      }, 250);
+    }
     const all = cfg.options();
     if (!all.length) { dd.style.display = 'none'; return; }
     const taken = new Set(this.list(field).map(n => n.toLowerCase()));
@@ -2331,6 +2340,8 @@ function renderGp(data) {
   const buyerInc = new Set((gpState.buyerInclude || []).map(n => (n || '').toLowerCase()));
   const nomInc   = new Set((gpState.nomInclude   || []).map(n => (n || '').toLowerCase()));
   const exSet    = new Set((gpState.excludeList  || []).map(n => (n || '').toLowerCase()));
+  const buyerQ   = (gpState.buyerQuery || '').toLowerCase();
+  const nomQ     = (gpState.nomQuery   || '').toLowerCase();
 
   // Apply client-side filters
   let filtered = clients;
@@ -2338,16 +2349,24 @@ function renderGp(data) {
   if (exSet.size) {
     filtered = filtered.filter(cl => !exSet.has((cl.name || '').toLowerCase()));
   }
-  // 2. Включені клієнти — точний матч (якщо не порожньо)
+  // 2. Включені клієнти: точний матч (теги) АБО substring-пошук (якщо тегів нема)
   if (buyerInc.size) {
     filtered = filtered.filter(cl => buyerInc.has((cl.name || '').toLowerCase()));
+  } else if (buyerQ) {
+    filtered = filtered.filter(cl => (cl.name || '').toLowerCase().includes(buyerQ));
   }
-  // 3. Включена номенклатура — лишаємо тільки products назва яких ∈ nomInc
-  if (nomInc.size) {
+  // 3. Включена номенклатура: точний матч (теги) АБО substring (якщо тегів нема)
+  const nomMatch = (name) => {
+    const n = (name || '').toLowerCase();
+    if (nomInc.size) return nomInc.has(n);
+    if (nomQ) return n.includes(nomQ);
+    return null; // нема ні тегів, ні query — фільтр не діє
+  };
+  if (nomInc.size || nomQ) {
     filtered = filtered.map(cl => {
       const contracts = cl.contracts.map(ct => {
         const orders = ct.orders.map(ord => {
-          const products = ord.products.filter(pr => nomInc.has((pr.name || '').toLowerCase()));
+          const products = ord.products.filter(pr => nomMatch(pr.name));
           if (!products.length) return null;
           const qty = products.reduce((s, p) => s + p.qty, 0);
           const revenue = products.reduce((s, p) => s + p.revenue, 0);
