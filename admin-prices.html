@@ -369,6 +369,14 @@ a{color:inherit;text-decoration:none}
         <div class="hint">Автоматично перезаписується з 1С при синхронізації залишків</div>
       </div>
       <div class="field">
+        <label>Своя ціна (override)</label>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <input id="f_override_no_vat"   type="number" step="any" min="0" placeholder="без ПДВ" style="max-width:140px">
+          <input id="f_override_with_vat" type="number" step="any" min="0" placeholder="з ПДВ"   style="max-width:140px">
+          <span class="hint" style="margin:0">Порожньо → ціна з 1С. Інакше — фіксована, у валюті типу ціни.</span>
+        </div>
+      </div>
+      <div class="field">
         <label>Datasheet URL</label>
         <input id="f_datasheet_url" placeholder="https://...">
       </div>
@@ -954,6 +962,8 @@ function addMissingToPrice(nom) {
   document.getElementById('f_display_spec').value = '';
   setSegStock('в наявності');
   document.getElementById('f_datasheet_url').value = '';
+  document.getElementById('f_override_no_vat').value = '';
+  document.getElementById('f_override_with_vat').value = '';
   document.getElementById('deleteBtn').style.display = 'none';
   renderChosenNom();
   updatePreview();
@@ -1015,6 +1025,8 @@ function openItemModal(item, preSlug) {
   document.getElementById('f_display_spec').value = (item && item.display_spec) || '';
   setSegStock((item && item.stock) || 'в наявності');
   document.getElementById('f_datasheet_url').value = (item && item.datasheet_url) || '';
+  document.getElementById('f_override_no_vat').value   = (item && item.override_price_no_vat   != null) ? item.override_price_no_vat   : '';
+  document.getElementById('f_override_with_vat').value = (item && item.override_price_with_vat != null) ? item.override_price_with_vat : '';
   document.getElementById('deleteBtn').style.display = EDIT_ID ? '' : 'none';
   renderChosenNom();
   updatePreview();
@@ -1183,6 +1195,8 @@ async function saveItem() {
     display_spec: document.getElementById('f_display_spec').value.trim() || null,
     stock: getSegStock(),
     datasheet_url: document.getElementById('f_datasheet_url').value.trim() || null,
+    override_price_no_vat:   document.getElementById('f_override_no_vat').value.trim()   || null,
+    override_price_with_vat: document.getElementById('f_override_with_vat').value.trim() || null,
     sort_order: 0,
   };
   if (!body.category_slug) { toast('Оберіть категорію', 'err'); return; }
