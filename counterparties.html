@@ -200,6 +200,21 @@ a{color:inherit;text-decoration:none}
   .s-tbl .kind-badge{display:none}
 }
 
+/* Tag-input з autocomplete (для «Покупець» і «Виключити») */
+.cp-tags{position:relative;display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center;padding:4px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;min-width:200px;max-width:380px;min-height:30px}
+.cp-tags:focus-within{border-color:var(--accent)}
+.cp-tags input[type=text]{flex:1;min-width:100px;padding:3px 4px;border:none;background:transparent;font-size:12px;color:var(--text);outline:none}
+.cp-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 6px 2px 8px;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:600;border-radius:6px;white-space:nowrap;max-width:200px}
+.cp-tag .name{overflow:hidden;text-overflow:ellipsis}
+.cp-tag .x{cursor:pointer;font-size:14px;line-height:1;opacity:.7;padding:0 2px}
+.cp-tag .x:hover{opacity:1;color:var(--red)}
+.cp-suggest{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.4);max-height:280px;overflow-y:auto;z-index:50}
+.cp-suggest .opt{padding:7px 12px;font-size:12px;cursor:pointer;color:var(--text);border-bottom:1px solid var(--border)}
+.cp-suggest .opt:last-child{border-bottom:none}
+.cp-suggest .opt:hover,.cp-suggest .opt.hl{background:var(--bg3);color:var(--accent)}
+.cp-suggest .opt .meta{color:var(--text3);font-size:10.5px;margin-left:8px}
+.cp-suggest .empty{padding:10px 12px;font-size:12px;color:var(--text3)}
+
 /* PDF-шапка з фільтрами — видна тільки під час print */
 .pdf-only{display:none}
 
@@ -272,7 +287,17 @@ a{color:inherit;text-decoration:none}
 
       <span class="sep"></span>
 
-      <input type="text" id="qIn" placeholder="🔎 контрагент (назва / ЕДРПОУ)" style="flex:1;min-width:220px;padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none">
+      <span class="lbl">Покупець</span>
+      <span class="cp-tags" id="cpIncludeTags">
+        <input type="text" id="qIn" placeholder="Почни вводити…" autocomplete="off">
+        <div id="cpIncludeSuggest" class="cp-suggest" style="display:none"></div>
+      </span>
+
+      <span class="lbl">Виключити</span>
+      <span class="cp-tags" id="cpExcludeTags">
+        <input type="text" id="cpExcludeIn" placeholder="Почни вводити…" autocomplete="off">
+        <div id="cpExcludeSuggest" class="cp-suggest" style="display:none"></div>
+      </span>
 
       <span class="chip" id="exportPdfBtn" title="Експорт у PDF з поточними фільтрами" style="cursor:pointer">
         <span style="margin-right:5px">⤓</span> PDF
@@ -303,7 +328,18 @@ const fmtCurSigned = (n, cur) => {
 const body = document.getElementById('body');
 const sub  = document.getElementById('subTitle');
 
-const state = { from:'', to:'', org:'', preset:'12m', q:'', role:'suppliers', detailRef:'', tab:'overview', dvTable:'counterparties', dvSearch:'', dvOffset:0 };
+const state = { from:'', to:'', org:'', preset:'12m', q:'', role:'suppliers', detailRef:'', tab:'overview', dvTable:'counterparties', dvSearch:'', dvOffset:0,
+                 includeList:[], excludeList:[], _lastRows:[] };
+
+// Restore tag-filters з localStorage
+(function _cpRestoreTags(){
+  try {
+    const inc = localStorage.getItem('cp_include');
+    const ex  = localStorage.getItem('cp_exclude');
+    if (inc) { try { const a = JSON.parse(inc); if (Array.isArray(a)) state.includeList = a; } catch (_) {} }
+    if (ex)  { try { const a = JSON.parse(ex);  if (Array.isArray(a)) state.excludeList = a; } catch (_) {} }
+  } catch (_) {}
+})();
 const ROLE_LABEL = { suppliers:'постачальник', customers:'покупець', others:'контрагент', all:'контрагент' };
 const ROLE_LABEL_COL = { suppliers:'Постачальник', customers:'Покупець', others:'Контрагент', all:'Контрагент' };
 const ROLE_ENDPOINT = { suppliers:'suppliers_overview', customers:'customers_overview', others:'others_overview', all:'all_overview' };
@@ -418,8 +454,112 @@ function wireToolbar(){
     const v = e.target.value;
     clearTimeout(qTimer);
     qTimer = setTimeout(() => setState({ q: v.trim() }), 250);
+    cpTagInput.onInput('include');
   });
+  document.getElementById('qIn').addEventListener('focus', () => cpTagInput.onInput('include'));
+  document.getElementById('qIn').addEventListener('blur',  () => setTimeout(() => cpTagInput.hide('include'), 200));
+  document.getElementById('qIn').addEventListener('keydown', e => cpTagInput.onKey('include', e));
+
+  const exIn = document.getElementById('cpExcludeIn');
+  exIn.addEventListener('input', () => cpTagInput.onInput('exclude'));
+  exIn.addEventListener('focus', () => cpTagInput.onInput('exclude'));
+  exIn.addEventListener('blur',  () => setTimeout(() => cpTagInput.hide('exclude'), 200));
+  exIn.addEventListener('keydown', e => cpTagInput.onKey('exclude', e));
+
+  cpTagInput.renderTags('include');
+  cpTagInput.renderTags('exclude');
 }
+
+/* Generic tag-input для counterparties (як в GP) */
+const CP_TAG_CFG = {
+  include: { stateKey:'includeList', tagsId:'cpIncludeTags', inputId:'qIn',          suggestId:'cpIncludeSuggest', storageKey:'cp_include' },
+  exclude: { stateKey:'excludeList', tagsId:'cpExcludeTags', inputId:'cpExcludeIn',  suggestId:'cpExcludeSuggest', storageKey:'cp_exclude' },
+};
+const cpTagInput = {
+  list(field) { return state[CP_TAG_CFG[field].stateKey] || []; },
+  save(field) { try { localStorage.setItem(CP_TAG_CFG[field].storageKey, JSON.stringify(this.list(field))); } catch (_) {} },
+  rerender() { if (typeof load === 'function') load(); },
+  renderTags(field) {
+    const cfg = CP_TAG_CFG[field];
+    const host = document.getElementById(cfg.tagsId);
+    if (!host) return;
+    Array.from(host.querySelectorAll('.cp-tag')).forEach(n => n.remove());
+    const inp = document.getElementById(cfg.inputId);
+    this.list(field).forEach(name => {
+      const t = document.createElement('span');
+      t.className = 'cp-tag';
+      t.innerHTML = '<span class="name">' + esc(name) + '</span><span class="x" data-name="' + esc(name) + '" data-field="' + field + '">×</span>';
+      host.insertBefore(t, inp);
+    });
+  },
+  add(field, name) {
+    if (!name) return;
+    const cfg = CP_TAG_CFG[field];
+    const cur = this.list(field);
+    if (!cur.some(n => n.toLowerCase() === name.toLowerCase())) {
+      state[cfg.stateKey] = cur.concat([name]);
+      this.save(field);
+    }
+    document.getElementById(cfg.inputId).value = '';
+    this.hide(field);
+    this.renderTags(field);
+    this.rerender();
+  },
+  remove(field, name) {
+    const cfg = CP_TAG_CFG[field];
+    state[cfg.stateKey] = this.list(field).filter(n => n !== name);
+    this.save(field);
+    this.renderTags(field);
+    this.rerender();
+  },
+  hide(field) { const dd = document.getElementById(CP_TAG_CFG[field].suggestId); if (dd) dd.style.display = 'none'; },
+  onInput(field) {
+    const cfg = CP_TAG_CFG[field];
+    const inp = document.getElementById(cfg.inputId);
+    const dd  = document.getElementById(cfg.suggestId);
+    if (!inp || !dd) return;
+    const q = inp.value.trim().toLowerCase();
+    const all = (state._lastRows || []).map(r => ({ name: r.name || '—', meta: fmtCurSigned(Number(r.balance_usd) || 0, 'USD') }));
+    if (!all.length) { dd.style.display = 'none'; return; }
+    const taken = new Set(this.list(field).map(n => n.toLowerCase()));
+    const matched = all
+      .filter(o => !taken.has((o.name || '').toLowerCase()))
+      .filter(o => !q || (o.name || '').toLowerCase().includes(q))
+      .slice(0, 50);
+    if (!matched.length) { dd.innerHTML = '<div class="empty">Нічого не знайдено</div>'; dd.style.display = 'block'; return; }
+    dd.innerHTML = matched.map((o, i) =>
+      '<div class="opt' + (i === 0 ? ' hl' : '') + '" data-name="' + esc(o.name) + '" data-field="' + field + '">' +
+        esc(o.name) + '<span class="meta">' + esc(o.meta || '') + '</span>' +
+      '</div>').join('');
+    dd.style.display = 'block';
+  },
+  onKey(field, ev) {
+    const dd = document.getElementById(CP_TAG_CFG[field].suggestId);
+    if (!dd || dd.style.display === 'none') {
+      if (ev.key === 'Backspace' && !ev.target.value && this.list(field).length) {
+        this.remove(field, this.list(field)[this.list(field).length - 1]);
+      }
+      return;
+    }
+    const opts = Array.from(dd.querySelectorAll('.opt'));
+    let idx = opts.findIndex(o => o.classList.contains('hl'));
+    if (ev.key === 'ArrowDown') { ev.preventDefault(); idx = Math.min(idx+1, opts.length-1); opts.forEach((o,i) => o.classList.toggle('hl', i===idx)); opts[idx]?.scrollIntoView({block:'nearest'}); }
+    else if (ev.key === 'ArrowUp') { ev.preventDefault(); idx = Math.max(idx-1, 0); opts.forEach((o,i) => o.classList.toggle('hl', i===idx)); opts[idx]?.scrollIntoView({block:'nearest'}); }
+    else if (ev.key === 'Enter')   { ev.preventDefault(); const sel = opts[idx] || opts[0]; if (sel) this.add(field, sel.dataset.name); }
+    else if (ev.key === 'Escape')  { this.hide(field); }
+    else if (ev.key === 'Backspace' && !ev.target.value && this.list(field).length) {
+      this.remove(field, this.list(field)[this.list(field).length - 1]);
+    }
+  },
+};
+
+// Делегування кліків — на ✕ і на opt
+document.addEventListener('click', function(ev) {
+  const x = ev.target.closest('.cp-tag .x[data-field]');
+  if (x) { cpTagInput.remove(x.dataset.field, x.dataset.name); return; }
+  const opt = ev.target.closest('.cp-suggest .opt[data-field]');
+  if (opt) { cpTagInput.add(opt.dataset.field, opt.dataset.name); return; }
+});
 
 function kindBadge(k){
   if (k === 'both')     return '<span class="kind-badge kind-both">both</span>';
@@ -579,7 +719,15 @@ async function loadOverview(){
     const d = await res.json();
     if (d.error) throw new Error(d.error);
     sub.textContent = `${d.period.from} → ${d.period.to}${d.period.org ? ' · ' + d.period.org : ''}${d.period.q ? ' · q="' + d.period.q + '"' : ''}`;
-    body.innerHTML = renderKpi(d.kpi) + renderTop(d.top) + renderDynamics(d.dynamics);
+    // Зберігаємо весь top для tag-input autocomplete
+    state._lastRows = d.top || [];
+    // Frontend-фільтрація за tag-input списками (точний матч по name)
+    const incSet = new Set((state.includeList || []).map(s => (s || '').toLowerCase()));
+    const exSet  = new Set((state.excludeList || []).map(s => (s || '').toLowerCase()));
+    let topFiltered = d.top || [];
+    if (incSet.size) topFiltered = topFiltered.filter(r => incSet.has((r.name || '').toLowerCase()));
+    if (exSet.size)  topFiltered = topFiltered.filter(r => !exSet.has((r.name || '').toLowerCase()));
+    body.innerHTML = renderKpi(d.kpi) + renderTop(topFiltered) + renderDynamics(d.dynamics);
     // Клік по рядку постачальника → відкриваємо акт звірки
     body.querySelectorAll('tr.clickable[data-ref]').forEach(tr => {
       tr.addEventListener('click', () => setState({ detailRef: tr.dataset.ref }));
