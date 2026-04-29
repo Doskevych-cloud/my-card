@@ -137,6 +137,21 @@ a{color:inherit;text-decoration:none}
 .ar-table td.b-val.has.b-d60 {color:var(--accent)}
 .ar-table td.b-val.has.b-d61p{color:var(--red)}
 
+/* Tag-input з autocomplete (як у counterparties) */
+.ar-tags{position:relative;display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center;padding:4px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;min-width:200px;max-width:380px;min-height:30px}
+.ar-tags:focus-within{border-color:var(--accent)}
+.ar-tags input[type=text]{flex:1;min-width:100px;padding:3px 4px;border:none;background:transparent;font-size:12px;color:var(--text);outline:none;min-width:100px !important}
+.ar-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 6px 2px 8px;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:600;border-radius:6px;white-space:nowrap;max-width:200px}
+.ar-tag .name{overflow:hidden;text-overflow:ellipsis}
+.ar-tag .x{cursor:pointer;font-size:14px;line-height:1;opacity:.7;padding:0 2px}
+.ar-tag .x:hover{opacity:1;color:var(--red)}
+.ar-suggest{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);max-height:280px;overflow-y:auto;z-index:50;min-width:280px}
+.ar-suggest .opt{padding:7px 12px;font-size:12px;cursor:pointer;color:var(--text);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.ar-suggest .opt:last-child{border-bottom:none}
+.ar-suggest .opt:hover,.ar-suggest .opt.hl{background:var(--bg3);color:var(--accent)}
+.ar-suggest .opt .meta{color:var(--text3);font-size:10.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ar-suggest .empty{padding:10px 12px;font-size:12px;color:var(--text3)}
+
 /* Loading + empty */
 .loading{text-align:center;padding:60px 20px;color:var(--text3);font-size:14px}
 .loading::after{content:'';display:block;width:28px;height:28px;margin:16px auto 0;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
@@ -199,20 +214,24 @@ a{color:inherit;text-decoration:none}
         <span class="chip" data-org="Генерація" onclick="setOrg(this)">Генерація</span>
       </span>
       <div class="sep"></div>
-      <span class="lbl">Двигун</span>
-      <span class="group" id="engineGroup" title="Legacy = OData /Balance (тільки Долг). D1 = NET cashflow з урахуванням авансів (узгоджено з Контрагентами).">
-        <span class="chip active" data-engine="legacy" onclick="setEngine(this)">Legacy</span>
-        <span class="chip" data-engine="d1" onclick="setEngine(this)">D1</span>
-      </span>
-      <div class="sep"></div>
       <span class="lbl">Сортування</span>
       <span class="group" id="sortGroup">
         <span class="chip active" data-sort="total" onclick="setSort(this)">За сумою</span>
         <span class="chip" data-sort="age" onclick="setSort(this)">За віком</span>
         <span class="chip" data-sort="name" onclick="setSort(this)">За назвою</span>
       </span>
+      <div class="sep"></div>
+      <span class="lbl">Покупець</span>
+      <span class="ar-tags" id="arIncludeTags">
+        <input type="text" id="arIncludeIn" placeholder="Почни вводити…" autocomplete="off">
+        <div id="arIncludeSuggest" class="ar-suggest" style="display:none"></div>
+      </span>
+      <span class="lbl">Виключити</span>
+      <span class="ar-tags" id="arExcludeTags">
+        <input type="text" id="arExcludeIn" placeholder="Почни вводити…" autocomplete="off">
+        <div id="arExcludeSuggest" class="ar-suggest" style="display:none"></div>
+      </span>
       <div class="spacer"></div>
-      <input type="text" id="clientIn" placeholder="🔎 Пошук клієнта..." oninput="filterChanged()">
     </div>
 
     <div id="summary"></div>
@@ -222,7 +241,13 @@ a{color:inherit;text-decoration:none}
 
 <script>
 const API_URL = 'https://price-api.doskevich.workers.dev/';
-const state = { onDate: '', org: 'Реакт', engine: 'legacy', clientFilter: '', sort: 'total', bucketFilter: null, _raw: null, collapsed: {} };
+const state = { onDate: '', org: 'Реакт', sort: 'total', bucketFilter: null, includeList: [], excludeList: [], _raw: null, collapsed: {} };
+try {
+  const inc = localStorage.getItem('ar_include');
+  const ex  = localStorage.getItem('ar_exclude');
+  if (inc) { const a = JSON.parse(inc); if (Array.isArray(a)) state.includeList = a; }
+  if (ex)  { const a = JSON.parse(ex);  if (Array.isArray(a)) state.excludeList = a; }
+} catch (_) {}
 
 const BUCKET_ORDER = ['d7','d14','d30','d60','d61p'];
 const BUCKET_LABEL = { d7:'До 7', d14:'8–14', d30:'15–30', d60:'31–60', d61p:'Від 61' };
@@ -248,34 +273,128 @@ function setOrg(el) {
   el.classList.add('active');
   load();
 }
-function setEngine(el) {
-  state.engine = el.dataset.engine;
-  el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  load();
-}
 function setSort(el) {
   state.sort = el.dataset.sort;
   el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
   if (state._raw) render(state._raw);
 }
-function filterChanged() {
-  state.clientFilter = document.getElementById('clientIn').value.trim().toLowerCase();
-  if (state._raw) render(state._raw);
-}
+
+/* Tag-input з autocomplete (як у counterparties) */
+const AR_TAG_CFG = {
+  include: { stateKey:'includeList', tagsId:'arIncludeTags', inputId:'arIncludeIn', suggestId:'arIncludeSuggest', storageKey:'ar_include' },
+  exclude: { stateKey:'excludeList', tagsId:'arExcludeTags', inputId:'arExcludeIn', suggestId:'arExcludeSuggest', storageKey:'ar_exclude' },
+};
+const arTagInput = {
+  list(field) { return state[AR_TAG_CFG[field].stateKey] || []; },
+  save(field) { try { localStorage.setItem(AR_TAG_CFG[field].storageKey, JSON.stringify(this.list(field))); } catch (_) {} },
+  rerender() { if (state._raw) render(state._raw); },
+  renderTags(field) {
+    const cfg = AR_TAG_CFG[field];
+    const host = document.getElementById(cfg.tagsId);
+    if (!host) return;
+    Array.from(host.querySelectorAll('.ar-tag')).forEach(n => n.remove());
+    const inp = document.getElementById(cfg.inputId);
+    this.list(field).forEach(name => {
+      const t = document.createElement('span');
+      t.className = 'ar-tag';
+      t.innerHTML = '<span class="name">' + esc(name) + '</span><span class="x" data-name="' + esc(name) + '" data-field="' + field + '">×</span>';
+      host.insertBefore(t, inp);
+    });
+  },
+  add(field, name) {
+    if (!name) return;
+    const cfg = AR_TAG_CFG[field];
+    const cur = this.list(field);
+    if (!cur.some(n => n.toLowerCase() === name.toLowerCase())) {
+      state[cfg.stateKey] = cur.concat([name]);
+      this.save(field);
+    }
+    document.getElementById(cfg.inputId).value = '';
+    this.hide(field);
+    this.renderTags(field);
+    this.rerender();
+  },
+  remove(field, name) {
+    const cfg = AR_TAG_CFG[field];
+    state[cfg.stateKey] = this.list(field).filter(n => n !== name);
+    this.save(field);
+    this.renderTags(field);
+    this.rerender();
+  },
+  hide(field) { const dd = document.getElementById(AR_TAG_CFG[field].suggestId); if (dd) dd.style.display = 'none'; },
+  allClients() {
+    if (!state._raw) return [];
+    const seen = new Map();
+    (state._raw.currencies || []).forEach(c => {
+      (c.clients || []).forEach(cl => {
+        const name = cl.name || '';
+        if (!name) return;
+        const key = name.toLowerCase();
+        const usd = (cl.totalUSD != null) ? cl.totalUSD : (Number(cl.total) || 0) * ((c.totalUSD && c.total) ? (c.totalUSD / c.total) : 0);
+        const prev = seen.get(key) || { name, usd: 0 };
+        prev.usd += usd;
+        seen.set(key, prev);
+      });
+    });
+    return [...seen.values()].sort((a,b) => b.usd - a.usd);
+  },
+  onInput(field) {
+    const cfg = AR_TAG_CFG[field];
+    const inp = document.getElementById(cfg.inputId);
+    const dd  = document.getElementById(cfg.suggestId);
+    if (!inp || !dd) return;
+    const q = inp.value.trim().toLowerCase();
+    const all = this.allClients();
+    if (!all.length) { dd.style.display = 'none'; return; }
+    const taken = new Set(this.list(field).map(n => n.toLowerCase()));
+    const matched = all
+      .filter(o => !taken.has((o.name || '').toLowerCase()))
+      .filter(o => !q || (o.name || '').toLowerCase().includes(q))
+      .slice(0, 50);
+    if (!matched.length) { dd.innerHTML = '<div class="empty">Нічого не знайдено</div>'; dd.style.display = 'block'; return; }
+    dd.innerHTML = matched.map((o, i) =>
+      '<div class="opt' + (i === 0 ? ' hl' : '') + '" data-name="' + esc(o.name) + '" data-field="' + field + '">' +
+        '<span>' + esc(o.name) + '</span>' +
+        '<span class="meta">' + (o.usd ? fmt(o.usd) + ' $' : '') + '</span>' +
+      '</div>').join('');
+    dd.style.display = 'block';
+  },
+  onKey(field, ev) {
+    const dd = document.getElementById(AR_TAG_CFG[field].suggestId);
+    if (!dd || dd.style.display === 'none') {
+      if (ev.key === 'Backspace' && !ev.target.value && this.list(field).length) {
+        this.remove(field, this.list(field)[this.list(field).length - 1]);
+      }
+      return;
+    }
+    const opts = Array.from(dd.querySelectorAll('.opt'));
+    let idx = opts.findIndex(o => o.classList.contains('hl'));
+    if (ev.key === 'ArrowDown') { ev.preventDefault(); idx = Math.min(idx+1, opts.length-1); opts.forEach((o,i) => o.classList.toggle('hl', i===idx)); opts[idx]?.scrollIntoView({block:'nearest'}); }
+    else if (ev.key === 'ArrowUp') { ev.preventDefault(); idx = Math.max(idx-1, 0); opts.forEach((o,i) => o.classList.toggle('hl', i===idx)); opts[idx]?.scrollIntoView({block:'nearest'}); }
+    else if (ev.key === 'Enter')   { ev.preventDefault(); const sel = opts[idx] || opts[0]; if (sel) this.add(field, sel.dataset.name); }
+    else if (ev.key === 'Escape')  { this.hide(field); }
+    else if (ev.key === 'Backspace' && !ev.target.value && this.list(field).length) {
+      this.remove(field, this.list(field)[this.list(field).length - 1]);
+    }
+  },
+};
+document.addEventListener('click', function(ev) {
+  const x = ev.target.closest('.ar-tag .x[data-field]');
+  if (x) { arTagInput.remove(x.dataset.field, x.dataset.name); return; }
+  const opt = ev.target.closest('.ar-suggest .opt[data-field]');
+  if (opt) { arTagInput.add(opt.dataset.field, opt.dataset.name); return; }
+});
 
 async function load() {
   document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
   document.getElementById('summary').innerHTML = '';
-  // Reset transient UI state so previous engine/org leftovers не "залипали" у render.
   state._raw = null;
   state.bucketFilter = null;
   try {
-    const action = state.engine === 'd1' ? 'receivables_aging_d1' : 'receivables_aging';
     // _t — cache-buster проти HTTP/disk-кешу браузера. Тіло відповіді все одно
     // кешується KV-шаром у воркері — зайвого навантаження немає.
-    const q = '?action=' + action + '&on_date=' + state.onDate
+    const q = '?action=receivables_aging_d1&on_date=' + state.onDate
             + (state.org ? '&org=' + encodeURIComponent(state.org) : '')
             + '&_t=' + Date.now();
     const data = await fetch(API_URL + q, { cache: 'no-store' }).then(r => r.json());
@@ -308,11 +427,20 @@ function toneClass(pct, thresholds) {
 }
 
 function render(data) {
-  const f = state.clientFilter;
-  // Always compute the summary from the UNFILTERED data (by name search & bucket filter).
+  // Tag-фільтри: include — показуємо ТІЛЬКИ цих; exclude — приховуємо їх.
+  // Точний матч по name (case-insensitive). Без tag → без фільтру.
+  const incSet = new Set((state.includeList || []).map(s => (s || '').toLowerCase()));
+  const exSet  = new Set((state.excludeList || []).map(s => (s || '').toLowerCase()));
+  const isAllowed = name => {
+    const k = (name || '').toLowerCase();
+    if (incSet.size && !incSet.has(k)) return false;
+    if (exSet.has(k)) return false;
+    return true;
+  };
+  const filtered = !!(incSet.size || exSet.size);
   const summaryCurrencies = (data.currencies || []).map(c => {
-    const clients = c.clients.filter(x => !f || (x.name || '').toLowerCase().includes(f));
-    if (f && clients.length !== c.clients.length) {
+    const clients = c.clients.filter(x => isAllowed(x.name));
+    if (filtered && clients.length !== c.clients.length) {
       const t = clients.reduce((s, x) => s + x.total, 0);
       const b = clients.reduce((acc, x) => {
         BUCKET_ORDER.forEach(k => { acc[k] = (acc[k] || 0) + (x.buckets[k] || 0); });
@@ -469,18 +597,22 @@ function renderTable(currencies) {
 
 function toggleCur(curKey) {
   state.collapsed[curKey] = !state.collapsed[curKey];
-  if (state._raw) renderTable(state._raw.currencies.map(c => {
-    const f = state.clientFilter;
-    if (!f) return c;
-    const clients = c.clients.filter(x => (x.name || '').toLowerCase().includes(f));
-    if (clients.length === c.clients.length) return c;
-    const t = clients.reduce((s, x) => s + x.total, 0);
-    const b = clients.reduce((acc, x) => { BUCKET_ORDER.forEach(k => acc[k] = (acc[k] || 0) + (x.buckets[k] || 0)); return acc; }, { d7:0,d14:0,d30:0,d60:0,d61p:0 });
-    return { ...c, total: t, buckets: b, clients };
-  }).filter(c => c.clients.length));
+  if (state._raw) render(state._raw);
 }
 
 document.getElementById('onDateIn').addEventListener('change', function(e) { state.onDate = e.target.value; load(); });
+
+// Wire tag-input listeners (як у counterparties).
+['include','exclude'].forEach(field => {
+  const inp = document.getElementById(AR_TAG_CFG[field].inputId);
+  if (!inp) return;
+  inp.addEventListener('input',   () => arTagInput.onInput(field));
+  inp.addEventListener('focus',   () => arTagInput.onInput(field));
+  inp.addEventListener('blur',    () => setTimeout(() => arTagInput.hide(field), 200));
+  inp.addEventListener('keydown', e => arTagInput.onKey(field, e));
+});
+arTagInput.renderTags('include');
+arTagInput.renderTags('exclude');
 
 // Mount header eagerly so theme toggle works regardless of auth state.
 AppHeader.mount({ active: 'sales' });
