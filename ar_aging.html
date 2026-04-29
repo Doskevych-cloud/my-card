@@ -241,12 +241,27 @@ a{color:inherit;text-decoration:none}
 
 <script>
 const API_URL = 'https://price-api.doskevich.workers.dev/';
+// Внутрішні холдингові орги як «покупці» — інтра-холдинг розрахунки, не реальні клієнти.
+// Точні назви з counterparties.description (включно з trailing space у "Київ ").
+const DEFAULT_EXCLUDES = [
+  'Дистрибуція',
+  'ТОВ "ГЕНЕРАЦІЯ ЕНЕРДЖІ" Киев',
+  'ТОВ "ГЕНЕРАЦІЯ ЕНЕРДЖІ" Київ ',
+  'ТОВ "ГЕНЕРАЦІЯ ЕНЕРДЖІ" Одеса',
+];
 const state = { onDate: '', org: 'Реакт', sort: 'total', bucketFilter: null, includeList: [], excludeList: [], _raw: null, collapsed: {} };
 try {
   const inc = localStorage.getItem('ar_include');
   const ex  = localStorage.getItem('ar_exclude');
   if (inc) { const a = JSON.parse(inc); if (Array.isArray(a)) state.includeList = a; }
-  if (ex)  { const a = JSON.parse(ex);  if (Array.isArray(a)) state.excludeList = a; }
+  if (ex !== null) {
+    const a = JSON.parse(ex);
+    if (Array.isArray(a)) state.excludeList = a;
+  } else {
+    // Перший візит — заливаємо дефолт у localStorage.
+    state.excludeList = DEFAULT_EXCLUDES.slice();
+    localStorage.setItem('ar_exclude', JSON.stringify(state.excludeList));
+  }
 } catch (_) {}
 
 const BUCKET_ORDER = ['d7','d14','d30','d60','d61p'];
