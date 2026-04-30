@@ -201,10 +201,33 @@
     .imp-banner .imp-exit:hover{ background:#ffcc33 }
 
     @media (max-width:720px){
-      .app-topbar{ padding:10px 12px; gap:10px }
+      /* Mobile topbar: 2 рядки. Перший — brand + actions (theme/admin/user) праворуч.
+         Другий — nav на повну ширину з горизонтальним скролом. */
+      .app-topbar{ flex-wrap:wrap; padding:8px 12px; gap:8px }
+      .app-topbar .brand{ order:1; flex:0 0 auto }
       .app-topbar .brand .name{ display:none }
-      .app-topbar .nav a{ padding:5px 8px; font-size:11px }
+      .app-topbar .spacer{ display:none }
+      .app-topbar .theme-btn{ order:2; width:32px; height:32px; flex:0 0 auto; margin-left:auto }
+      .app-topbar .admin-link{ order:3; padding:4px 8px; flex:0 0 auto; font-size:11px }
+      .app-topbar .user-wrap{ order:4; flex:0 0 auto }
+      .app-topbar .user-btn{ padding:3px 8px 3px 3px; font-size:12px }
+      .app-topbar .user-btn .avatar{ width:24px; height:24px; font-size:11px }
       .app-topbar .user-btn .uname{ display:none }
+      .app-topbar .nav{
+        order:5;
+        flex:1 1 100%;
+        overflow-x:auto;
+        -webkit-overflow-scrolling:touch;
+        scrollbar-width:none;
+        flex-wrap:nowrap;
+        padding:2px;
+      }
+      .app-topbar .nav::-webkit-scrollbar{ display:none }
+      .app-topbar .nav a{ flex:0 0 auto; padding:5px 9px; font-size:11.5px }
+      /* Impersonation banner — компактно на мобілі */
+      .imp-banner{ padding:6px 12px; font-size:11px; gap:8px }
+      .imp-banner .imp-exit{ padding:4px 8px; font-size:10.5px }
+      .imp-banner b{ font-size:11px }
     }
   `;
 
