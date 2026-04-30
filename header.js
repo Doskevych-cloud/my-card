@@ -144,6 +144,116 @@
       outline:2px solid #ff8319; outline-offset:2px; border-radius:8px;
     }
 
+    /* Burger button — hidden on desktop, shown via media query below */
+    .app-topbar .burger{
+      display:none;
+      width:36px; height:36px; padding:0;
+      border-radius:8px; cursor:pointer;
+      color: var(--text, #eaecef);
+      background: var(--bg2, rgba(255,255,255,.03));
+      border:1px solid var(--border, rgba(255,255,255,.08));
+      align-items:center; justify-content:center;
+      transition: border-color .15s, color .15s;
+    }
+    .app-topbar .burger:hover{ border-color:#ff8319; color:#ff8319 }
+    .app-topbar .burger svg{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round }
+
+    /* Slide-out nav drawer (mobile only) */
+    .nav-drawer{
+      position:fixed; inset:0; z-index:100;
+      pointer-events:none;
+      visibility:hidden;
+      font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    }
+    .nav-drawer.open{ pointer-events:auto; visibility:visible }
+    .nav-drawer .nd-overlay{
+      position:absolute; inset:0;
+      background: rgba(0,0,0,.55);
+      opacity:0;
+      transition: opacity .2s ease;
+    }
+    .nav-drawer.open .nd-overlay{ opacity:1 }
+    .nav-drawer .nd-panel{
+      position:absolute; top:0; right:0; bottom:0;
+      width:min(86vw, 320px);
+      background: var(--card, var(--bg2, #14171c));
+      border-left:1px solid var(--border, rgba(255,255,255,.08));
+      transform: translateX(100%);
+      transition: transform .25s ease-out;
+      display:flex; flex-direction:column;
+      overflow:hidden;
+      padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0);
+    }
+    .nav-drawer.open .nd-panel{ transform: translateX(0) }
+    .nav-drawer .nd-head{
+      display:flex; align-items:center; gap:12px;
+      padding:14px 14px 12px;
+      border-bottom:1px solid var(--border, rgba(255,255,255,.08));
+    }
+    .nav-drawer .nd-avatar{
+      width:36px; height:36px; border-radius:50%;
+      background:#ff8319; color:#111;
+      display:inline-flex; align-items:center; justify-content:center;
+      font-weight:700; font-size:14px;
+      flex:0 0 auto; object-fit:cover;
+    }
+    .nav-drawer .nd-info{ min-width:0; flex:1 }
+    .nav-drawer .nd-info .nd-name{
+      font-size:13px; font-weight:600; color: var(--text, #eaecef);
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+    .nav-drawer .nd-info .nd-email{
+      font-size:11px; color: var(--text3, #6b7280);
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+    .nav-drawer .nd-close{
+      width:32px; height:32px; padding:0;
+      background:transparent; border:0; cursor:pointer;
+      color: var(--text2, #9aa4b2);
+      display:inline-flex; align-items:center; justify-content:center;
+      border-radius:8px; flex:0 0 auto;
+    }
+    .nav-drawer .nd-close:hover{ color: var(--text, #eaecef); background: var(--bg3, rgba(255,255,255,.05)) }
+    .nav-drawer .nd-close svg{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round }
+    .nav-drawer .nd-list{
+      flex:1; overflow-y:auto;
+      padding:8px;
+      display:flex; flex-direction:column; gap:2px;
+    }
+    .nav-drawer .nd-list a{
+      display:flex; align-items:center; gap:10px;
+      padding:11px 12px;
+      border-radius:8px;
+      text-decoration:none;
+      color: var(--text, #eaecef);
+      font-size:14px; font-weight:500;
+    }
+    .nav-drawer .nd-list a:hover{ background: var(--bg3, rgba(255,255,255,.05)) }
+    .nav-drawer .nd-list a.active{
+      background: rgba(255,131,25,.12);
+      color:#ff8319; font-weight:600;
+    }
+    .nav-drawer .nd-foot{
+      padding:10px;
+      border-top:1px solid var(--border, rgba(255,255,255,.08));
+      display:flex; align-items:center; gap:8px;
+    }
+    .nav-drawer .nd-foot a,
+    .nav-drawer .nd-foot button{
+      flex:1;
+      display:inline-flex; align-items:center; justify-content:center; gap:6px;
+      padding:9px 12px;
+      border-radius:8px;
+      border:1px solid var(--border, rgba(255,255,255,.08));
+      background:transparent;
+      color: var(--text, #eaecef);
+      font:inherit; font-size:12.5px; font-weight:500;
+      cursor:pointer; text-decoration:none;
+    }
+    .nav-drawer .nd-foot a:hover,
+    .nav-drawer .nd-foot button:hover{ color:#ff8319; border-color:#ff8319 }
+    body.nav-drawer-open{ overflow:hidden }
+
     /* ══ Unified button system — primary / secondary / ghost / danger + --sm ══ */
     .btn{
       display:inline-flex; align-items:center; gap:6px;
@@ -201,29 +311,19 @@
     .imp-banner .imp-exit:hover{ background:#ffcc33 }
 
     @media (max-width:720px){
-      /* Mobile topbar: 2 рядки. Перший — brand + actions (theme/admin/user) праворуч.
-         Другий — nav на повну ширину з горизонтальним скролом. */
-      .app-topbar{ flex-wrap:wrap; padding:8px 12px; gap:8px }
-      .app-topbar .brand{ order:1; flex:0 0 auto }
-      .app-topbar .brand .name{ display:none }
-      .app-topbar .spacer{ display:none }
-      .app-topbar .theme-btn{ order:2; width:32px; height:32px; flex:0 0 auto; margin-left:auto }
-      .app-topbar .admin-link{ order:3; padding:4px 8px; flex:0 0 auto; font-size:11px }
-      .app-topbar .user-wrap{ order:4; flex:0 0 auto }
-      .app-topbar .user-btn{ padding:3px 8px 3px 3px; font-size:12px }
-      .app-topbar .user-btn .avatar{ width:24px; height:24px; font-size:11px }
-      .app-topbar .user-btn .uname{ display:none }
-      .app-topbar .nav{
-        order:5;
-        flex:1 1 100%;
-        overflow-x:auto;
-        -webkit-overflow-scrolling:touch;
-        scrollbar-width:none;
-        flex-wrap:nowrap;
-        padding:2px;
-      }
-      .app-topbar .nav::-webkit-scrollbar{ display:none }
-      .app-topbar .nav a{ flex:0 0 auto; padding:5px 9px; font-size:11.5px }
+      /* Mobile topbar: одна рядка. Nav/admin/user перенесені в slide-out drawer
+         за hamburger-кнопкою справа. Це уникає горизонтального скролу та
+         масштабується під будь-яку кількість пунктів меню. */
+      .app-topbar{ padding:9px 14px; gap:10px }
+      .app-topbar .brand{ flex:0 0 auto }
+      .app-topbar .brand .logo{ width:30px; height:30px; font-size:14px; border-radius:8px }
+      .app-topbar .brand .name{ font-size:14px }
+      .app-topbar .spacer{ display:block; flex:1 }
+      .app-topbar .nav{ display:none }
+      .app-topbar .admin-link{ display:none }
+      .app-topbar .user-wrap{ display:none }
+      .app-topbar .theme-btn{ width:36px; height:36px }
+      .app-topbar .burger{ display:inline-flex }
       /* Impersonation banner — компактно на мобілі */
       .imp-banner{ padding:6px 12px; font-size:11px; gap:8px }
       .imp-banner .imp-exit{ padding:4px 8px; font-size:10.5px }
@@ -310,6 +410,37 @@
         <button class="imp-exit" onclick="AppHeader.stopImpersonate()">← Повернутись як адмін</button>
       </div>` : '';
 
+    // Single source of truth for nav items — used by both desktop nav and mobile drawer.
+    const navItems = [
+      { role: 'dashboard',     active: 'dashboard',     href: '/',                  label: '🧭 Дашборд' },
+      { role: 'dashboard',     active: 'executive',     href: '/executive.html',    label: '💼 Executive' },
+      { role: 'home',          active: 'home',          href: '/prices.html',       label: '🏠 Порівняння цін' },
+      { role: 'prices',        active: 'prices-admin',  href: '/admin-prices.html', label: '🔧 Прайс' },
+      { role: 'forecast',      active: 'forecast',      href: '/forecast.html',     label: '📊 Закупівлі' },
+      { role: 'warehouses',    active: 'warehouses',    href: '/warehouses.html',   label: '📦 Склад' },
+      { role: 'sales',         active: 'sales',         href: '/sales.html',        label: '📈 Продажі' },
+      { role: 'counterparties',active: 'counterparties',href: '/counterparties.html', label: '👥 Контрагенти' },
+      { role: '_admin',        active: 'finance',       href: '/finance.html',      label: '💰 Фінанси' },
+      { role: 'reports',       active: 'reports',       href: '/reports.html',      label: '📑 Звіти' },
+    ];
+    const visibleItems = navItems.filter(it => it.role === '_admin' ? isAdmin : can(it.role));
+    const navLinksHtml = visibleItems.map(it =>
+      `<a href="${it.href}" class="${active === it.active ? 'active' : ''}">${it.label}</a>`
+    ).join('');
+
+    // Drawer header — avatar + name + email
+    const initials = (user && (user.name || user.email || '?').slice(0, 1).toUpperCase()) || '?';
+    const drawerAvatar = user
+      ? (user.picture
+          ? `<img class="nd-avatar" src="${esc(user.picture)}" referrerpolicy="no-referrer" alt="">`
+          : `<span class="nd-avatar">${esc(initials)}</span>`)
+      : `<span class="nd-avatar">?</span>`;
+    const drawerInfo = user ? `
+      <div class="nd-info">
+        <div class="nd-name">${esc(user.name || user.email || '')}</div>
+        <div class="nd-email">${esc(user.email || '')}</div>
+      </div>` : `<div class="nd-info"></div>`;
+
     host.innerHTML = `
       ${impBanner}
       <header class="app-topbar">
@@ -317,18 +448,7 @@
           <span class="logo">R</span>
           <span class="name">REACT</span>
         </a>
-        <nav class="nav">
-          ${can('dashboard')  ? `<a href="/"                class="${active==='dashboard'  ? 'active' : ''}">🧭 Дашборд</a>` : ''}
-          ${can('dashboard')  ? `<a href="/executive.html"  class="${active==='executive'  ? 'active' : ''}">💼 Executive</a>` : ''}
-          ${can('home')       ? `<a href="/prices.html"     class="${active==='home'       ? 'active' : ''}">🏠 Порівняння цін</a>` : ''}
-          ${can('prices')     ? `<a href="/admin-prices.html" class="${active==='prices-admin' ? 'active' : ''}">🔧 Прайс</a>` : ''}
-          ${can('forecast')   ? `<a href="/forecast.html"   class="${active==='forecast'   ? 'active' : ''}">📊 Закупівлі</a>` : ''}
-          ${can('warehouses') ? `<a href="/warehouses.html" class="${active==='warehouses' ? 'active' : ''}">📦 Склад</a>` : ''}
-          ${can('sales')      ? `<a href="/sales.html"      class="${active==='sales'      ? 'active' : ''}">📈 Продажі</a>` : ''}
-          ${can('counterparties') ? `<a href="/counterparties.html" class="${active==='counterparties' ? 'active' : ''}">👥 Контрагенти</a>` : ''}
-          ${isAdmin           ? `<a href="/finance.html"    class="${active==='finance'    ? 'active' : ''}">💰 Фінанси</a>` : ''}
-          ${can('reports')    ? `<a href="/reports.html"    class="${active==='reports'    ? 'active' : ''}">📑 Звіти</a>` : ''}
-        </nav>
+        <nav class="nav">${navLinksHtml}</nav>
         <div class="spacer"></div>
         <button class="theme-btn" onclick="AppHeader.toggleTheme()" title="Переключити тему">
           <svg id="hdrIconSun"  viewBox="0 0 24 24" style="display:none"><circle cx="12" cy="12" r="4"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="7" y2="7"/><line x1="17" y1="17" x2="19.1" y2="19.1"/><line x1="4.9" y1="19.1" x2="7" y2="17"/><line x1="17" y1="7" x2="19.1" y2="4.9"/></g></svg>
@@ -336,14 +456,34 @@
         </button>
         ${isAdmin ? `<a class="admin-link" href="/admin.html">⚙ Адмін</a>` : ''}
         ${userButtonHtml(user)}
+        <button class="burger" id="hdrBurger" aria-label="Меню">
+          <svg viewBox="0 0 24 24"><line x1="4" y1="7"  x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+        </button>
       </header>
+      <div class="nav-drawer" id="hdrDrawer" aria-hidden="true">
+        <div class="nd-overlay" data-close="1"></div>
+        <aside class="nd-panel" role="dialog" aria-label="Навігація">
+          <div class="nd-head">
+            ${drawerAvatar}
+            ${drawerInfo}
+            <button class="nd-close" data-close="1" aria-label="Закрити">
+              <svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+            </button>
+          </div>
+          <nav class="nd-list">${navLinksHtml}</nav>
+          <div class="nd-foot">
+            ${isAdmin ? `<a href="/admin.html">⚙ Адмін</a>` : ''}
+            <button id="hdrDrawerLogout">Вийти</button>
+          </div>
+        </aside>
+      </div>
     `;
 
     // Initialize theme icon (data-theme already set by inline head script).
     const curTheme = document.documentElement.getAttribute('data-theme') || 'dark';
     applyTheme(curTheme);
 
-    // User dropdown behaviour
+    // User dropdown behaviour (desktop only — element hidden on mobile via CSS)
     const btn  = host.querySelector('#hdrUserBtn');
     const menu = host.querySelector('#hdrUserMenu');
     const lo   = host.querySelector('#hdrLogout');
@@ -360,6 +500,39 @@
         if (global.Auth && global.Auth.logout) global.Auth.logout();
       });
     }
+
+    // Mobile drawer behaviour
+    const drawer = host.querySelector('#hdrDrawer');
+    const burger = host.querySelector('#hdrBurger');
+    const drawerLogout = host.querySelector('#hdrDrawerLogout');
+    function openDrawer() {
+      if (!drawer) return;
+      drawer.classList.add('open');
+      drawer.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('nav-drawer-open');
+    }
+    function closeDrawer() {
+      if (!drawer) return;
+      drawer.classList.remove('open');
+      drawer.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('nav-drawer-open');
+    }
+    if (burger) burger.addEventListener('click', openDrawer);
+    if (drawer) {
+      drawer.addEventListener('click', (e) => {
+        if (e.target.closest('[data-close]')) closeDrawer();
+      });
+    }
+    if (drawerLogout) {
+      drawerLogout.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeDrawer();
+        if (global.Auth && global.Auth.logout) global.Auth.logout();
+      });
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && drawer && drawer.classList.contains('open')) closeDrawer();
+    });
   }
 
   async function stopImpersonate() {
