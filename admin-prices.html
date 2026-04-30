@@ -10,8 +10,8 @@
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
-<script src="auth.js?v=denyhdr20260427"></script>
-<script src="header.js?v=denyhdr20260427"></script>
+<script src="auth.js?v=mobhdr20260430"></script>
+<script src="header.js?v=mobhdr20260430"></script>
 <style>
 :root {
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -66,6 +66,14 @@ a{color:inherit;text-decoration:none}
 .stats .spacer{flex:1}
 .stats .as-of{color:var(--text3);font-size:11.5px}
 .stats .as-of b{color:var(--text2);font-weight:500}
+
+/* FX-статус — окремий пілл праворуч у page-head */
+.fx-pill{display:inline-flex;align-items:center;gap:10px;padding:6px 11px;border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.fx-pill .fx-pair{display:inline-flex;align-items:baseline;gap:4px}
+.fx-pill .fx-pair .lbl{color:var(--text3);font-size:11px}
+.fx-pill b{color:var(--text);font-weight:600}
+.fx-pill .fx-age{color:var(--text3);font-size:11px;padding-left:8px;border-left:1px solid var(--border)}
+.fx-pill.stale .fx-age{color:var(--red)}
 
 /* ─── Toolbar ─── */
 .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
@@ -285,6 +293,11 @@ a{color:inherit;text-decoration:none}
     <h1>Адмінка прайсу</h1>
     <span class="sub">редагує <a href="https://react.ink" target="_blank" rel="noopener">публічний прайс ↗</a></span>
     <div class="spacer"></div>
+    <div class="fx-pill" id="fxPill" style="display:none" title="SWIFT-курс PrivatBank · оновлюється кожні 15 хв + о 9/10/11 Київ">
+      <span class="fx-pair"><span class="lbl">USD/UAH</span><b id="fxUsd">—</b></span>
+      <span class="fx-pair"><span class="lbl">EUR/UAH</span><b id="fxEur">—</b></span>
+      <span class="fx-age" id="fxAge">—</span>
+    </div>
     <div class="actions">
       <button class="btn" id="refreshPublicBtn" onclick="refreshPublicPrices(this)">↻ Оновити ціни</button>
       <button class="btn" onclick="openCatModal()">+ Категорія</button>
@@ -572,6 +585,32 @@ async function refreshPublicPrices(btn) {
     btn.disabled = false;
     btn.textContent = orig;
   }
+}
+
+// FX-статус — поточний SWIFT-курс PrivatBank (USD/EUR проти UAH) + час
+// останнього оновлення в KV. Cron `*/15 * * * *` + `0 6,7,8 * * *` тримає
+// KV свіжим, handler віддає кешоване <30 хв або робить live при потребі.
+async function loadFxStatus() {
+  try {
+    const r = await fetch(`${API}/?action=fx_swift`);
+    if (!r.ok) return;
+    const d = await r.json();
+    const usd = d?.rates?.USD?.sell, eur = d?.rates?.EUR?.sell;
+    const fmt = v => Number(v).toFixed(2).replace('.', ',');
+    if (usd) document.getElementById('fxUsd').textContent = fmt(usd);
+    if (eur) document.getElementById('fxEur').textContent = fmt(eur);
+    const ageMs = d.fetched_at ? (Date.now() - new Date(d.fetched_at).getTime()) : null;
+    const ageStr = ageMs == null ? '—'
+      : ageMs < 60_000     ? `${Math.round(ageMs/1000)}с тому`
+      : ageMs < 3_600_000  ? `${Math.floor(ageMs/60_000)}хв тому`
+      : ageMs < 86_400_000 ? `${Math.floor(ageMs/3_600_000)}г тому`
+                           : `${Math.floor(ageMs/86_400_000)}д тому`;
+    const pill = document.getElementById('fxPill');
+    document.getElementById('fxAge').textContent = ageStr;
+    // >2 год — підсвічуємо як stale (cron мав спрацювати; щось не так).
+    pill.classList.toggle('stale', ageMs != null && ageMs > 2 * 3_600_000);
+    pill.style.display = '';
+  } catch (_) { /* silent */ }
 }
 
 async function load() {
@@ -1281,6 +1320,9 @@ Auth.require('prices').then(user => {
   load().catch(e => {
     document.getElementById('content').innerHTML = `<div class="empty" style="color:var(--red)">Помилка: ${esc(e.message)}</div>`;
   });
+  loadFxStatus();
+  // Live-оновлення кожні 60с — щоб бачити коли cron спрацював і lable «N хв тому» не застрягав.
+  setInterval(loadFxStatus, 60_000);
 });
 </script>
 </body>
