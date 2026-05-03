@@ -2446,7 +2446,7 @@ function renderGp(data) {
       '<span class="cs">' + (ft.revenue ? (ft.cogs / ft.revenue * 100).toFixed(1) + '% від виручки' : '') + '</span></div>' +
     '<div class="pnl-card c-grs"><span class="cl">Валовий прибуток</span><span class="cv">' + fmt(ft.profit, 2) + sfx + '</span>' +
       '<span class="cs">' + (ft.revenue ? ((ft.profit / ft.revenue) * 100).toFixed(1) + '% від виручки' : '') + '</span></div>' +
-    '<div class="pnl-card c-net"><span class="cl">Рентабельність</span><span class="cv">' + ft.margin.toFixed(2) + '%</span>' +
+    '<div class="pnl-card c-net"><span class="cl">Валова маржа</span><span class="cv">' + ft.margin.toFixed(2) + '%</span>' +
       '<span class="cs">' + filtered.length + ' клієнт., ' + filtered.reduce((s, c) => s + c.contracts.reduce((s2, ct) => s2 + ct.orders.reduce((s3, o) => s3 + o.products.reduce((s4, p) => s4 + p.docs.length, 0), 0), 0), 0) + ' накл.</span></div>' +
   '</div>';
 
@@ -2492,7 +2492,7 @@ function renderGp(data) {
     '<th class="col-total">Виручка, $</th>' +
     '<th class="col-total">Собівартість, $</th>' +
     '<th class="col-total">Валовий прибуток, $</th>' +
-    '<th class="col-total">Рентабельність</th>' +
+    '<th class="col-total">Валова маржа</th>' +
     '</tr></thead><tbody>';
 
   // Разом — поверх, у стилі P&L grand-row (.grd)

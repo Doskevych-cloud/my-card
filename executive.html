@@ -988,6 +988,7 @@ const KPIS = [
   { id: 'kAR',     lbl: 'Борги нам',         href: '/counterparties.html#role=customers' },
   { id: 'kAP',     lbl: 'Наш борг',          href: '/counterparties.html#role=suppliers' },
   { id: 'kStock',  lbl: 'Запаси',            href: '/warehouses.html' },
+  { id: 'kCcr',    lbl: 'CCR',               href: '/finance.html?tab=cf' },
   { id: 'kHealth', lbl: 'Здоров\'я',        mock: true },
 ];
 
@@ -1088,9 +1089,11 @@ async function loadKpis() {
     prev ? dashFetch(`${API_URL}?action=pnl_accrual_report&from=${prev.from}&to=${prev.to}${orgQ}`) : Promise.resolve(null),
     dashFetch(`${API_URL}?action=gross_profit_report&from=${state.from}&to=${state.to}${orgQ}`).catch(() => null),
     dashFetch(`${API_URL}?action=warehouse_value_report${orgQ}`).catch(() => null),
+    dashFetch(`${API_URL}?action=cash_flow_report&from=${state.from}&to=${state.to}${orgQ}`).catch(() => null),
+    prev ? dashFetch(`${API_URL}?action=cash_flow_report&from=${prev.from}&to=${prev.to}${orgQ}`).catch(() => null) : Promise.resolve(null),
   ]);
 
-  const [salesR, salesPR, arR, arPR, apR, apPR, pnlR, pnlPR, gpR, stockR] = results;
+  const [salesR, salesPR, arR, arPR, apR, apPR, pnlR, pnlPR, gpR, stockR, cfR, cfPR] = results;
 
   // Revenue (paid)
   let revenue = 0;
@@ -1172,6 +1175,27 @@ async function loadKpis() {
     // Approx UAH (умовно at 41.42)
     document.getElementById('b5StockUah').textContent = fmt(stock * 41.42 / 1_000_000, 1).replace('.', ',') + ' M ₴';
   } else { kpiError('kStock', 'err'); }
+
+  // CCR (Cash Conversion Ratio) = Operating CF / Net Profit
+  function ocfFromCf(c) {
+    if (!c || c.error) return null;
+    return c.operating ? Number(c.operating.net) || 0 : null;
+  }
+  const ocfCur = (cfR && cfR.status === 'fulfilled') ? ocfFromCf(cfR.value) : null;
+  const ocfPrev = (cfPR && cfPR.status === 'fulfilled') ? ocfFromCf(cfPR.value) : null;
+  const npPrev = (pnlPR && pnlPR.status === 'fulfilled' && pnlPR.value && !pnlPR.value.error) ? netFromPnl(pnlPR.value) : null;
+  const ccrCur = (netVal != null && Math.abs(netVal) > 0.5 && ocfCur != null) ? (ocfCur / netVal * 100) : null;
+  const ccrPrev = (npPrev != null && Math.abs(npPrev) > 0.5 && ocfPrev != null) ? (ocfPrev / npPrev * 100) : null;
+  if (ccrCur != null) {
+    kpiSet('kCcr', {
+      val: ccrCur.toFixed(1) + '%',
+      cls: ccrCur >= 80 ? 'pos' : (ccrCur < 0 ? 'neg' : ''),
+      sub: `Op CF ${fmtMoneyShort(ocfCur)} / Чистий ${fmtMoneyShort(netVal)}`,
+      deltaCur: ccrCur, deltaPrev: ccrPrev, deltaGood: 'up',
+    });
+  } else {
+    kpiSet('kCcr', { val: '—', sub: 'недостатньо даних' });
+  }
 
   // Cycle (DSO-DPO). Беремо абсолютні значення дебіторки/кредиторки —
   // arCur і apCur у cashflow-знаці (− = нам винні, + = ми винні), а DSO/DPO
