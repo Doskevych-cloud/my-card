@@ -3275,14 +3275,13 @@ function cbRenderHistory(data) {
   const datasets = visibleCodes.map(code => ({
     label: code,
     data: data.series[code],
+    backgroundColor: COLOR[code] || '#94a3b8',
     borderColor: COLOR[code] || '#94a3b8',
-    backgroundColor: (COLOR[code] || '#94a3b8') + '22',
     yAxisID: code === 'UAH' ? 'yL' : 'yR',
-    tension: 0.25,
-    fill: false,
-    pointRadius: 0,
-    pointHoverRadius: 4,
-    borderWidth: 1.5,
+    borderWidth: 0,
+    borderRadius: 2,
+    categoryPercentage: 0.85,
+    barPercentage: 0.95,
   }));
 
   const dates = data.dates || [];
@@ -3313,7 +3312,7 @@ function cbRenderHistory(data) {
 
   if (cbState._historyChart) cbState._historyChart.destroy();
   cbState._historyChart = new Chart(cv.getContext('2d'), {
-    type: 'line',
+    type: 'bar',
     data: { labels, datasets },
     options: {
       responsive: true,

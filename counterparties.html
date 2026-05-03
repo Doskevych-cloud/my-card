@@ -11,8 +11,10 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="auth.js?v=mobhdr20260430"></script>
-<script src="header.js?v=mobhdr20260430"></script>
+<script src="auth.js?v=mctrend20260430"></script>
+<script src="header.js?v=mctrend20260430"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="monthly-chart.js?v=mctrend20260430"></script>
 <style>
 :root{
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -316,6 +318,14 @@ a{color:inherit;text-decoration:none}
       <span class="chip" id="exportPdfBtn" title="Експорт у PDF з поточними фільтрами" style="cursor:pointer">
         <span style="margin-right:5px">⤓</span> PDF
       </span>
+    </div>
+
+    <div class="mc-block">
+      <div class="mc-head">
+        <span class="mc-title" id="mcTitle">Баланс — кінець кожного місяця</span>
+        <span class="mc-sub" id="mcSub">завантаження…</span>
+      </div>
+      <div class="mc-canvas-wrap"><canvas id="mcCanvas"></canvas></div>
     </div>
 
     <div class="tabs" id="tabs">
