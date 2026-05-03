@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=ccr2-20260430"></script>
-<script src="header.js?v=ccr2-20260430"></script>
+<script src="auth.js?v=ccrtt-20260430"></script>
+<script src="header.js?v=ccrtt-20260430"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -482,7 +482,6 @@ function buildKpiSkeleton() {
     keyKpis.push({ id: 'kpiAP',      cls: 'c-ap',  lbl: 'Наш борг' });
     keyKpis.push({ id: 'kpiStock',   cls: 'c-stock', lbl: 'Вартість запасів' });
     keyKpis.push({ id: 'kpiCcr',     cls: 'c-ccr', lbl: 'CCR (Cash Conversion)' });
-    keyKpis.push({ id: 'kpiQoe',     cls: 'c-qoe', lbl: 'Quality of Earnings' });
   }
   if (r.reports) {
     keyKpis.push({ id: 'kpiLeads', cls: 'c-lead',lbl: 'Нові ліди' });
@@ -816,37 +815,16 @@ async function loadKey() {
   // 6) ВАРТІСТЬ ЗАПАСІВ = warehouse_value_report.total_value_usd
   loadStockKpi(trendBuckets, todayIso, monthAgoIso);
 
-  // 7+8) CCR і QoE — обидві використовують Net Profit з P&L як знаменник
-  // CCR = Operating CF / Net Profit  · QoE = Operating Profit / Net Profit
+  // 7) CCR — Operating Cash Flow / Net Profit
   const pnlVal = (r) => (r && r.status === 'fulfilled' && r.value && !r.value.error) ? r.value : null;
   const cfVal  = (r) => (r && r.status === 'fulfilled' && r.value && !r.value.error) ? r.value : null;
   const pnlCur = pnlVal(pnl), pnlP = pnlVal(pnlPrev);
   const cfCur  = cfVal(cfR),  cfP  = cfVal(cfPrevR);
 
-  // Збираємо числа для карток
   const npCur = pnlCur ? pnlNet(pnlCur) : null;
   const npPrev = pnlP ? pnlNet(pnlP) : null;
-  const opCur = pnlCur ? pnlOperatingProfit(pnlCur) : null;
-  const opPrev = pnlP ? pnlOperatingProfit(pnlP) : null;
   const ocfCur = cfCur && cfCur.operating ? Number(cfCur.operating.net) || 0 : null;
   const ocfPrev = cfP && cfP.operating ? Number(cfP.operating.net) || 0 : null;
-
-  // QoE = Operating Profit / Net Profit
-  const qoeCur = (npCur !== null && Math.abs(npCur) > 0.5 && opCur !== null) ? (opCur / npCur * 100) : null;
-  const qoePrev = (npPrev !== null && Math.abs(npPrev) > 0.5 && opPrev !== null) ? (opPrev / npPrev * 100) : null;
-  if (qoeCur !== null) {
-    updateKpi('kpiQoe', {
-      numeric: { target: qoeCur, format: v => v.toFixed(1) + '%' },
-      cls: qoeCur >= 80 ? 'pos' : (qoeCur < 0 ? 'neg' : ''),
-      sub: `Опер. ${fmtMoney(opCur, '$')} / Чистий ${fmtMoney(npCur, '$')} ${deltaHtml(qoeCur, qoePrev)}`,
-    });
-    wireKpiClick('kpiQoe', openQoeModal);
-  } else {
-    const subTxt = npCur !== null
-      ? `Опер. ${fmtMoney(opCur || 0, '$')} / Чистий ${fmtMoney(npCur, '$')} · ділення некоректне`
-      : 'Дані недоступні';
-    updateKpi('kpiQoe', { val: '—', sub: subTxt, error: false });
-  }
 
   // CCR = Operating CF / Net Profit
   const ccrCur = (npCur !== null && Math.abs(npCur) > 0.5 && ocfCur !== null) ? (ocfCur / npCur * 100) : null;
@@ -866,25 +844,17 @@ async function loadKey() {
   }
 
   // Sparklines (12 buckets, % values per bucket)
-  const ccrSeries = [], qoeSeries = [];
-  for (let i = 0; i < N_SPARK; i++) {
-    const p = (gpSparkR[i] && gpSparkR[i].status === 'fulfilled') ? null : null; // не GP — нам потрібен PnL
-    // Беремо pnlTrend.byMonth, не gpSparkR
-  }
-  // PnL trend був прокинутий разом, береду byMonth і агрегуємо в bucket'и
+  const ccrSeries = [];
   const pnlT = pnlVal(pnlTrend);
   if (pnlT) {
     for (let i = 0; i < N_SPARK; i++) {
       const b = trendBuckets[i];
       const bucketNet = sumBucketMonths(b, pnlNetByMonth(pnlT));
-      const bucketOp  = sumBucketMonths(b, pnlOpProfitByMonth(pnlT));
       const cfBucket = (cfSparkR[i] && cfSparkR[i].status === 'fulfilled' && cfSparkR[i].value && !cfSparkR[i].value.error) ? cfSparkR[i].value : null;
       const ocf = cfBucket && cfBucket.operating ? Number(cfBucket.operating.net) || 0 : 0;
       ccrSeries.push(Math.abs(bucketNet) > 0.5 ? (ocf / bucketNet * 100) : 0);
-      qoeSeries.push(Math.abs(bucketNet) > 0.5 ? (bucketOp / bucketNet * 100) : 0);
     }
     drawSparkline('kpiCcrSpark', ccrSeries, { color: 'var(--accent)' });
-    drawSparkline('kpiQoeSpark', qoeSeries, { color: 'var(--accent)' });
   }
 }
 
@@ -1339,33 +1309,6 @@ function pnlNet(p) {
   const exp = (p.totalExpenses && p.totalExpenses.total) || 0;
   return rev - cogs - exp;
 }
-// Operating Profit total = Revenue + OtherIncome − COGS − (admin + commercial)
-// (тобто без податків і неопераційних витрат — як на P&L tab finance.html)
-function pnlOperatingProfit(p) {
-  if (!p) return 0;
-  const rev = (p.revenue && p.revenue.total || 0) + (p.otherIncome && p.otherIncome.total || 0);
-  const cogs = (p.cogs && p.cogs.total) || 0;
-  const sec = p.sections || {};
-  const overhead = ((sec.admin && sec.admin.total) || 0) + ((sec.commercial && sec.commercial.total) || 0);
-  return rev - cogs - overhead;
-}
-// Operating Profit per month
-function pnlOpProfitByMonth(p) {
-  if (!p || !Array.isArray(p.months)) return {};
-  const byM = {};
-  // Якщо section-by-month нема в API, fallback: net + tax + other_expense (бо tax і other в Net є витратами)
-  const sec = p.sections || {};
-  const taxTotal = (sec.tax && sec.tax.total) || 0;
-  const otherTotal = (sec.other_expense && sec.other_expense.total) || 0;
-  const denom = taxTotal + otherTotal;
-  // Простіша апроксимація: opByMonth = netByMonth + (tax+other) розподілений рівномірно по місяцях
-  // (точно — потрібен byMonth в sections, чого API не дає)
-  const netByM = pnlNetByMonth(p);
-  const months = p.months;
-  const perMonth = months.length ? denom / months.length : 0;
-  months.forEach(m => { byM[m] = (netByM[m] || 0) + perMonth; });
-  return byM;
-}
 function sumBucketMonths(bucket, byM) {
   const f = new Date(bucket.from + 'T00:00:00');
   const t = new Date(bucket.to + 'T00:00:00');
@@ -1388,7 +1331,6 @@ const METRIC_DEFS = {
   ap:      { title: '💳 Наш борг — динаміка', label: 'Наш борг', unit: '$' },
   stock:   { title: '📦 Вартість запасів — динаміка', label: 'Запаси', unit: '$' },
   ccr:     { title: '💧 Cash Conversion — динаміка', label: 'CCR', unit: '%' },
-  qoe:     { title: '⚖️ Quality of Earnings — динаміка', label: 'QoE', unit: '%' },
   leads:   { title: '🎯 Нові ліди — динаміка', label: 'Ліди', unit: '' },
   won:     { title: '🏆 Успішно реалізовано — динаміка', label: 'Успіх', unit: '' },
   conv:    { title: '📊 Кінцева конверсія — динаміка', label: 'Конверсія', unit: '%' },
@@ -1402,7 +1344,6 @@ function openArModal()      { openTrendModal('ar'); }
 function openApModal()      { openTrendModal('ap'); }
 function openStockModal()   { openTrendModal('stock'); }
 function openCcrModal()     { openTrendModal('ccr'); }
-function openQoeModal()     { openTrendModal('qoe'); }
 function openLeadsModal()   { openTrendModal('leads'); }
 function openWonModal()     { openTrendModal('won'); }
 function openConvModal()    { openTrendModal('conv'); }
@@ -1509,27 +1450,24 @@ async function reloadModalChart() {
       dashFetch(API_URL + `?action=gross_profit_report&from=${b.from}&to=${b.to}${orgQ}`).catch(() => null)
     ));
     values = resps.map(d => (d && d.total && Number(d.total.profit)) || 0);
-  } else if (metric === 'ccr' || metric === 'qoe') {
-    // CCR = Operating CF / Net Profit; QoE = Operating Profit / Net Profit (з P&L)
+  } else if (metric === 'ccr') {
+    // CCR = Operating Cash Flow / Net Profit (з P&L)
     const pnls = await Promise.all(buckets.map(b =>
       dashFetch(API_URL + `?action=pnl_accrual_report&from=${b.from}&to=${b.to}${orgQ}`).catch(() => null)
     ));
-    if (metric === 'ccr') {
-      const cfs = await Promise.all(buckets.map(b =>
-        dashFetch(API_URL + `?action=cash_flow_report&from=${b.from}&to=${b.to}${orgQ}`).catch(() => null)
-      ));
-      values = buckets.map((b, i) => {
-        const np = pnlNet(pnls[i]);
-        const ocf = cfs[i] && cfs[i].operating ? Number(cfs[i].operating.net) || 0 : 0;
-        return Math.abs(np) > 0.5 ? (ocf / np * 100) : 0;
-      });
-    } else {
-      values = buckets.map((b, i) => {
-        const np = pnlNet(pnls[i]);
-        const op = pnlOperatingProfit(pnls[i]);
-        return Math.abs(np) > 0.5 ? (op / np * 100) : 0;
-      });
-    }
+    const cfs = await Promise.all(buckets.map(b =>
+      dashFetch(API_URL + `?action=cash_flow_report&from=${b.from}&to=${b.to}${orgQ}`).catch(() => null)
+    ));
+    const details = [];
+    values = buckets.map((b, i) => {
+      const np = pnlNet(pnls[i]);
+      const ocf = cfs[i] && cfs[i].operating ? Number(cfs[i].operating.net) || 0 : 0;
+      details.push({ numerator: ocf, denominator: np, numLbl: 'Op CF', denLbl: 'Чистий' });
+      return Math.abs(np) > 0.5 ? (ocf / np * 100) : 0;
+    });
+    state.modalDetails = details;
+  } else {
+    state.modalDetails = null;
   }
 
   renderModalChart(buckets, values, gran, metric);
@@ -1643,12 +1581,22 @@ function renderModalChart(buckets, values, gran, metric) {
               label: c => opts.fmtVal(c.parsed.y),
               afterLabel: c => {
                 const idx = c.dataIndex;
-                if (idx === 0) return '';
-                const prev = values[idx - 1];
-                if (!prev) return '';
-                const dp = (values[idx] - prev) / Math.abs(prev);
-                const arrow = dp > 0 ? '▲' : (dp < 0 ? '▼' : '–');
-                return `${arrow} ${(dp * 100).toFixed(1)}% vs ${prevLabel}`;
+                const lines = [];
+                // Якщо є вхідні числа (CCR) — показуємо чисельник/знаменник
+                const det = state.modalDetails && state.modalDetails[idx];
+                if (det) {
+                  lines.push(`${det.numLbl} ${fmtMoney(det.numerator, '$')}`);
+                  lines.push(`${det.denLbl} ${fmtMoney(det.denominator, '$')}`);
+                }
+                if (idx > 0) {
+                  const prev = values[idx - 1];
+                  if (prev) {
+                    const dp = (values[idx] - prev) / Math.abs(prev);
+                    const arrow = dp > 0 ? '▲' : (dp < 0 ? '▼' : '–');
+                    lines.push(`${arrow} ${(dp * 100).toFixed(1)}% vs ${prevLabel}`);
+                  }
+                }
+                return lines;
               },
             },
           },
