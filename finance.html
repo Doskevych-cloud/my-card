@@ -10,8 +10,10 @@
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
-<script src="auth.js?v=mobhdr20260430"></script>
-<script src="header.js?v=mobhdr20260430"></script>
+<script src="auth.js?v=mctrend20260430"></script>
+<script src="header.js?v=mctrend20260430"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="monthly-chart.js?v=mctrend20260430"></script>
 <!-- html2pdf.js for real PDF file download (not browser print dialog) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <!-- SheetJS (xlsx) for Excel export -->
@@ -286,6 +288,13 @@ a{color:inherit;text-decoration:none}
 .cb-tx-tbl td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--text)}
 .cb-tx-tbl td.doc{color:var(--text);max-width:380px;overflow:hidden;text-overflow:ellipsis}
 
+.cb-history{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.cb-history-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.cb-history-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+.cb-history-period{display:inline-flex;gap:3px}
+.cb-history-canvas-wrap{position:relative;height:280px}
+.cb-history.empty{display:none}
+
 .view{display:none}
 .view.active{display:block}
 
@@ -398,6 +407,13 @@ a{color:inherit;text-decoration:none}
           </span>
         </span>
       </div>
+      <div class="mc-block">
+        <div class="mc-head">
+          <span class="mc-title">Чистий прибуток — 12 місяців</span>
+          <span class="mc-sub" id="mcPnlSub">завантаження…</span>
+        </div>
+        <div class="mc-canvas-wrap"><canvas id="mcPnlCanvas"></canvas></div>
+      </div>
       <div id="pnlSummary"></div>
       <div id="pnlBody"><div class="loading">Завантаження...</div></div>
     </div>
@@ -453,6 +469,13 @@ a{color:inherit;text-decoration:none}
           </span>
         </span>
       </div>
+      <div class="mc-block">
+        <div class="mc-head">
+          <span class="mc-title">Валова маржа — 12 місяців</span>
+          <span class="mc-sub" id="mcGpSub">завантаження…</span>
+        </div>
+        <div class="mc-canvas-wrap"><canvas id="mcGpCanvas"></canvas></div>
+      </div>
       <div id="gpSummary"></div>
       <div id="gpBody"><div class="loading">Завантаження...</div></div>
     </div>
@@ -485,6 +508,13 @@ a{color:inherit;text-decoration:none}
             <span class="ic">⊟</span> Згорнути
           </span>
         </span>
+      </div>
+      <div class="mc-block">
+        <div class="mc-head">
+          <span class="mc-title">Operating Cash Flow — 12 місяців</span>
+          <span class="mc-sub" id="mcCfSub">завантаження…</span>
+        </div>
+        <div class="mc-canvas-wrap"><canvas id="mcCfCanvas"></canvas></div>
       </div>
       <div id="cfSummary"></div>
       <div id="cfBody"><div class="loading">Завантаження...</div></div>
@@ -627,6 +657,17 @@ a{color:inherit;text-decoration:none}
         </span>
       </div>
       <div id="cbSummary"></div>
+      <div id="cbHistoryPanel" class="cb-history">
+        <div class="cb-history-head">
+          <span class="cb-history-title">Залишки по валютах у часі</span>
+          <span class="group cb-history-period">
+            <span class="chip" data-cbh="30" onclick="cbSetHistoryDays(this)">30д</span>
+            <span class="chip active" data-cbh="90" onclick="cbSetHistoryDays(this)">90д</span>
+            <span class="chip" data-cbh="365" onclick="cbSetHistoryDays(this)">365д</span>
+          </span>
+        </div>
+        <div class="cb-history-canvas-wrap"><canvas id="cbHistoryCanvas"></canvas></div>
+      </div>
       <div id="cbBody"><div class="loading">Завантаження...</div></div>
     </div>
   </div>
@@ -1726,6 +1767,7 @@ async function pnlLoad() {
   } catch (e) {
     document.getElementById('pnlBody').innerHTML = '<div class="error">' + esc(e.message) + '</div>';
   }
+  if (window._mcPnl) window._mcPnl.reload({ org: pnlState.org });
 }
 
 // ═══════════════════════════════════════════════
@@ -2096,6 +2138,7 @@ async function cfLoad() {
   } catch (e) {
     document.getElementById('cfBody').innerHTML = '<div class="error">' + esc(e.message) + '</div>';
   }
+  if (window._mcCf) window._mcCf.reload({ org: cfState.org });
 }
 
 function renderCf(data) {
@@ -2576,6 +2619,7 @@ async function gpLoad() {
   } catch (e) {
     document.getElementById('gpBody').innerHTML = '<div class="error">' + esc(e.message) + '</div>';
   }
+  if (window._mcGp) window._mcGp.reload({ org: gpState.org });
 }
 
 /* ═══════════════════════════════════════════════════
@@ -3099,7 +3143,7 @@ document.addEventListener('DOMContentLoaded', function() {
 /* ═══════════════════════════════════════════════════
    CASH BALANCE TAB — залишки по касах / банках
    ═══════════════════════════════════════════════════ */
-const cbState = { on: '', org: '', view: 'cards', _loaded: false, data: null };
+const cbState = { on: '', org: '', view: 'cards', _loaded: false, data: null, historyDays: 90, _historyChart: null };
 
 // Drill-down: при кліку на картку рахунку показуємо рухи цього account_ref_key.
 async function cbToggleAccount(ref, hostId) {
@@ -3187,6 +3231,123 @@ async function cbLoad() {
   } catch (e) {
     document.getElementById('cbBody').innerHTML = '<div class="error">' + esc(e.message) + '</div>';
   }
+  cbLoadHistory();
+}
+
+function cbSetHistoryDays(el) {
+  cbState.historyDays = Number(el.dataset.cbh) || 90;
+  el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  cbLoadHistory();
+}
+
+async function cbLoadHistory() {
+  const panel = document.getElementById('cbHistoryPanel');
+  if (!panel || !cbState.on) return;
+  try {
+    const q = '?action=cash_balance_history&on=' + cbState.on +
+              '&days=' + cbState.historyDays +
+              (cbState.org ? '&org=' + encodeURIComponent(cbState.org) : '');
+    const data = await fetch(API_URL + q).then(r => r.json());
+    if (data.error) throw new Error(data.error);
+    cbRenderHistory(data);
+  } catch (e) {
+    console.error('cbLoadHistory failed:', e);
+    panel.classList.add('empty');
+  }
+}
+
+function cbRenderHistory(data) {
+  const panel = document.getElementById('cbHistoryPanel');
+  const cv = document.getElementById('cbHistoryCanvas');
+  if (!panel || !cv || !window.Chart) return;
+  const series = data.series || {};
+  const codes = Object.keys(series).filter(c => series[c].some(v => Math.abs(v) > 0.5));
+  if (!codes.length) { panel.classList.add('empty'); return; }
+  panel.classList.remove('empty');
+
+  // Кольори по валютах (відповідають фінансовій палітрі)
+  const COLOR = { USD:'#22c55e', UAH:'#3b82f6', EUR:'#a855f7' };
+  const order = ['USD','UAH','EUR'].concat(codes.filter(c => !['USD','UAH','EUR'].includes(c)));
+  const visibleCodes = order.filter(c => codes.includes(c));
+
+  // UAH ліворуч (мільйони), USD/EUR праворуч (тисячі) — щоб шкали не давили одна одну
+  const datasets = visibleCodes.map(code => ({
+    label: code,
+    data: data.series[code],
+    borderColor: COLOR[code] || '#94a3b8',
+    backgroundColor: (COLOR[code] || '#94a3b8') + '22',
+    yAxisID: code === 'UAH' ? 'yL' : 'yR',
+    tension: 0.25,
+    fill: false,
+    pointRadius: 0,
+    pointHoverRadius: 4,
+    borderWidth: 1.5,
+  }));
+
+  const dates = data.dates || [];
+  const labels = dates.map(d => d.slice(5));  // MM-DD
+  const text2 = getComputedStyle(document.documentElement).getPropertyValue('--text2').trim() || '#94a3b8';
+  const text3 = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim() || '#64748b';
+  const border = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#1f2937';
+
+  const fmtAxis = (v, code) => {
+    const a = Math.abs(v);
+    if (code === 'UAH') {
+      if (a >= 1e6) return (v/1e6).toFixed(1).replace(/\.0$/,'') + 'M';
+      if (a >= 1e3) return (v/1e3).toFixed(0) + 'k';
+      return String(Math.round(v));
+    }
+    if (a >= 1e3) return (v/1e3).toFixed(1).replace(/\.0$/,'') + 'k';
+    return String(Math.round(v));
+  };
+  const SYM = { USD:'$', EUR:'€', UAH:'₴' };
+  const fmtTip = (v, code) => {
+    const a = Math.abs(v);
+    let txt;
+    if (a >= 1e6) txt = (v/1e6).toFixed(2) + 'M';
+    else if (a >= 1e3) txt = (v/1e3).toFixed(1) + 'k';
+    else txt = v.toFixed(2);
+    return txt + ' ' + (SYM[code] || code);
+  };
+
+  if (cbState._historyChart) cbState._historyChart.destroy();
+  cbState._historyChart = new Chart(cv.getContext('2d'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { color: text2, font: { size: 11 }, boxWidth: 12, boxHeight: 2 } },
+        tooltip: {
+          callbacks: {
+            title: (items) => {
+              const idx = items[0].dataIndex;
+              return dates[idx] || '';
+            },
+            label: (ctx) => ctx.dataset.label + ': ' + fmtTip(ctx.parsed.y, ctx.dataset.label),
+          },
+        },
+      },
+      scales: {
+        x: { ticks: { color: text3, font: { size: 10 }, maxTicksLimit: 10 }, grid: { display: false } },
+        yL: {
+          type: 'linear', position: 'left',
+          ticks: { color: text3, font: { size: 10 }, callback: (v) => fmtAxis(v, 'UAH') },
+          grid: { color: border, drawTicks: false }, border: { display: false },
+          display: visibleCodes.includes('UAH'),
+        },
+        yR: {
+          type: 'linear', position: 'right',
+          ticks: { color: text3, font: { size: 10 }, callback: (v) => fmtAxis(v, 'USD') },
+          grid: { display: false }, border: { display: false },
+          display: visibleCodes.some(c => c !== 'UAH'),
+        },
+      },
+    },
+  });
 }
 
 function cbRender() {
@@ -3422,9 +3583,56 @@ function detectPreset(from, to) {
   return '';
 }
 
+// ── Monthly trend charts (12 months) — pnl/gp/cf ────────────────────
+async function _mcFetchPnlNet(from, to, filters) {
+  const orgQ = (filters && filters.org) ? '&org=' + encodeURIComponent(filters.org) : '';
+  const r = await fetch(API_URL + '?action=pnl_accrual_report&from=' + from + '&to=' + to + orgQ).then(x => x.json()).catch(() => null);
+  if (!r || r.error) return 0;
+  const rev = ((r.revenue && r.revenue.total) || 0) + ((r.otherIncome && r.otherIncome.total) || 0);
+  const cogs = (r.cogs && r.cogs.total) || 0;
+  const exp = (r.totalExpenses && r.totalExpenses.total) || 0;
+  return rev - cogs - exp;
+}
+async function _mcFetchGpMargin(from, to, filters) {
+  const orgQ = (filters && filters.org) ? '&org=' + encodeURIComponent(filters.org) : '';
+  const r = await fetch(API_URL + '?action=gross_profit_report&from=' + from + '&to=' + to + orgQ).then(x => x.json()).catch(() => null);
+  if (!r || r.error || !r.total) return 0;
+  const rev = Number(r.total.revenue) || 0;
+  const profit = Number(r.total.profit) || 0;
+  return rev > 0 ? (profit / rev * 100) : 0;
+}
+async function _mcFetchOpCf(from, to, filters) {
+  const orgQ = (filters && filters.org) ? '&org=' + encodeURIComponent(filters.org) : '';
+  const r = await fetch(API_URL + '?action=cash_flow_report&from=' + from + '&to=' + to + orgQ).then(x => x.json()).catch(() => null);
+  if (!r || r.error || !r.operating) return 0;
+  return Number(r.operating.net) || 0;
+}
+function _initFinanceCharts() {
+  if (typeof MonthlyChart === 'undefined') return;
+  if (!window._mcPnl) {
+    window._mcPnl = MonthlyChart.mount('mcPnlCanvas', {
+      label: 'Чистий', unit: '$', color: 'var(--green)', type: 'bar',
+      subId: 'mcPnlSub', fetchValue: _mcFetchPnlNet,
+    });
+  }
+  if (!window._mcGp) {
+    window._mcGp = MonthlyChart.mount('mcGpCanvas', {
+      label: 'Валова маржа', unit: '%', color: 'var(--green)', type: 'line',
+      subId: 'mcGpSub', fetchValue: _mcFetchGpMargin,
+    });
+  }
+  if (!window._mcCf) {
+    window._mcCf = MonthlyChart.mount('mcCfCanvas', {
+      label: 'Op CF', unit: '$', color: 'var(--green)', type: 'bar',
+      subId: 'mcCfSub', fetchValue: _mcFetchOpCf,
+    });
+  }
+}
+
 Auth.require('finance').then(function(user) {
   window.__user = user;
   AppHeader.mount({ active: 'finance', user });
+  _initFinanceCharts();
 
   // Org-level access for both views
   // If no orgs assigned at all → show everything (no restriction)
