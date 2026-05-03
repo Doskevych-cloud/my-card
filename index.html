@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=ccr20260430"></script>
-<script src="header.js?v=ccr20260430"></script>
+<script src="auth.js?v=ccr2-20260430"></script>
+<script src="header.js?v=ccr2-20260430"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -823,46 +823,46 @@ async function loadKey() {
   const pnlCur = pnlVal(pnl), pnlP = pnlVal(pnlPrev);
   const cfCur  = cfVal(cfR),  cfP  = cfVal(cfPrevR);
 
-  // QoE
-  const qoeRatio = (p) => {
-    if (!p) return null;
-    const np = pnlNet(p);
-    const op = pnlOperatingProfit(p);
-    if (Math.abs(np) < 0.5) return null;
-    return (op / np) * 100;
-  };
-  const qoeCur = qoeRatio(pnlCur);
-  const qoePrev = qoeRatio(pnlP);
+  // Збираємо числа для карток
+  const npCur = pnlCur ? pnlNet(pnlCur) : null;
+  const npPrev = pnlP ? pnlNet(pnlP) : null;
+  const opCur = pnlCur ? pnlOperatingProfit(pnlCur) : null;
+  const opPrev = pnlP ? pnlOperatingProfit(pnlP) : null;
+  const ocfCur = cfCur && cfCur.operating ? Number(cfCur.operating.net) || 0 : null;
+  const ocfPrev = cfP && cfP.operating ? Number(cfP.operating.net) || 0 : null;
+
+  // QoE = Operating Profit / Net Profit
+  const qoeCur = (npCur !== null && Math.abs(npCur) > 0.5 && opCur !== null) ? (opCur / npCur * 100) : null;
+  const qoePrev = (npPrev !== null && Math.abs(npPrev) > 0.5 && opPrev !== null) ? (opPrev / npPrev * 100) : null;
   if (qoeCur !== null) {
     updateKpi('kpiQoe', {
       numeric: { target: qoeCur, format: v => v.toFixed(1) + '%' },
       cls: qoeCur >= 80 ? 'pos' : (qoeCur < 0 ? 'neg' : ''),
-      sub: `Опер. прибуток / Чистий ${deltaHtml(qoeCur, qoePrev)}`,
+      sub: `Опер. ${fmtMoney(opCur, '$')} / Чистий ${fmtMoney(npCur, '$')} ${deltaHtml(qoeCur, qoePrev)}`,
     });
     wireKpiClick('kpiQoe', openQoeModal);
   } else {
-    updateKpi('kpiQoe', { val: '—', sub: 'Чистий ≈ 0, ділення некоректне', error: false });
+    const subTxt = npCur !== null
+      ? `Опер. ${fmtMoney(opCur || 0, '$')} / Чистий ${fmtMoney(npCur, '$')} · ділення некоректне`
+      : 'Дані недоступні';
+    updateKpi('kpiQoe', { val: '—', sub: subTxt, error: false });
   }
 
-  // CCR
-  const ccrRatio = (p, c) => {
-    if (!p || !c) return null;
-    const np = pnlNet(p);
-    const ocf = (c.operating && Number(c.operating.net)) || 0;
-    if (Math.abs(np) < 0.5) return null;
-    return (ocf / np) * 100;
-  };
-  const ccrCur = ccrRatio(pnlCur, cfCur);
-  const ccrPrev = ccrRatio(pnlP, cfP);
+  // CCR = Operating CF / Net Profit
+  const ccrCur = (npCur !== null && Math.abs(npCur) > 0.5 && ocfCur !== null) ? (ocfCur / npCur * 100) : null;
+  const ccrPrev = (npPrev !== null && Math.abs(npPrev) > 0.5 && ocfPrev !== null) ? (ocfPrev / npPrev * 100) : null;
   if (ccrCur !== null) {
     updateKpi('kpiCcr', {
       numeric: { target: ccrCur, format: v => v.toFixed(1) + '%' },
       cls: ccrCur >= 80 ? 'pos' : (ccrCur < 0 ? 'neg' : ''),
-      sub: `Operating CF / Чистий ${deltaHtml(ccrCur, ccrPrev)}`,
+      sub: `Op CF ${fmtMoney(ocfCur, '$')} / Чистий ${fmtMoney(npCur, '$')} ${deltaHtml(ccrCur, ccrPrev)}`,
     });
     wireKpiClick('kpiCcr', openCcrModal);
   } else {
-    updateKpi('kpiCcr', { val: '—', sub: 'Чистий ≈ 0, ділення некоректне', error: false });
+    const subTxt = (ocfCur !== null && npCur !== null)
+      ? `Op CF ${fmtMoney(ocfCur, '$')} / Чистий ${fmtMoney(npCur, '$')} · ділення некоректне`
+      : 'Дані недоступні';
+    updateKpi('kpiCcr', { val: '—', sub: subTxt, error: false });
   }
 
   // Sparklines (12 buckets, % values per bucket)
