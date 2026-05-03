@@ -11,8 +11,10 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
-<script src="auth.js?v=mobhdr20260430"></script>
-<script src="header.js?v=mobhdr20260430"></script>
+<script src="auth.js?v=mctrend20260430"></script>
+<script src="header.js?v=mctrend20260430"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="monthly-chart.js?v=mctrend20260430"></script>
 <style>
 :root{
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -219,6 +221,14 @@ a{color:inherit;text-decoration:none}
       <input type="text" id="searchIn" placeholder="🔎 Пошук клієнта, менеджера, № замовлення…">
     </div>
 
+    <div class="mc-block">
+      <div class="mc-head">
+        <span class="mc-title">Виторг (оплачено) — 12 місяців</span>
+        <span class="mc-sub" id="mcSub">завантаження…</span>
+      </div>
+      <div class="mc-canvas-wrap"><canvas id="mcCanvas"></canvas></div>
+    </div>
+
     <div id="curSummary"></div>
     <div id="body"><div class="loading">Завантаження…</div></div>
   </div>
@@ -230,6 +240,7 @@ const API_URL = 'https://price-api.doskevich.workers.dev';
 Auth.require('sales').then(user => {
   window.__user = user;
   AppHeader.mount({ active: 'sales', user });
+  _initMonthlyChart();
   // Org-level access: hide chips for orgs the user doesn't have access to
   // If no orgs assigned at all → show everything (no restriction)
   const userOrgs = user.orgs || {};
@@ -339,6 +350,49 @@ async function load() {
     state.loading = false;
     document.getElementById('body').innerHTML = `<div class="error">${esc(e.message)}</div>`;
   }
+  if (window._mc) window._mc.reload({ org: state.org });
+}
+
+// Месячний графік виторгу: paidUsd за період
+function _salesPaidUsdFromPayload(payload, orgFilter) {
+  if (!payload) return 0;
+  if (payload.byOrg && typeof payload.byOrg === 'object') {
+    let total = 0;
+    Object.entries(payload.byOrg).forEach(([orgName, data]) => {
+      if (orgFilter && orgName !== orgFilter) return;
+      (data.managers || []).forEach(m => { total += Number(m.paidUsd || 0); });
+    });
+    return total;
+  }
+  if (Array.isArray(payload.managers)) {
+    let total = 0;
+    payload.managers.forEach(mgr => {
+      if (orgFilter && mgr.org && mgr.org !== orgFilter) return;
+      if (Array.isArray(mgr.payments)) {
+        mgr.payments.forEach(p => { if (p && typeof p.amountUsd === 'number') total += p.amountUsd; });
+      } else if (typeof mgr.paidUsd === 'number') total += mgr.paidUsd;
+    });
+    return total;
+  }
+  return 0;
+}
+async function _fetchPaidForBucket(from, to, filters) {
+  const orgFilter = (filters && filters.org) || '';
+  const q = `?action=sales_report_d1&from=${from}&to=${to}&org=${encodeURIComponent(orgFilter)}`;
+  const r = await fetch(API_URL + q).then(x => x.json()).catch(() => null);
+  if (!r || r.error) return 0;
+  return _salesPaidUsdFromPayload(r, orgFilter);
+}
+function _initMonthlyChart() {
+  if (window._mc || typeof MonthlyChart === 'undefined') return;
+  window._mc = MonthlyChart.mount('mcCanvas', {
+    label: 'Виторг (опл.)',
+    unit: '$',
+    color: 'var(--green)',
+    type: 'bar',
+    subId: 'mcSub',
+    fetchValue: _fetchPaidForBucket,
+  });
 }
 
 // ─── Controls ───
