@@ -1225,9 +1225,12 @@ function renderCableWh(f){
     total: w.black.free + w.black.reserve + w.red.free + w.red.reserve,
   })).filter(w => w.total > 0);
 
-  // In-transit warehouses (no free/reserve split in API, just totals)
+  // In-transit warehouses — мають той самий free/reserve split, що й on-hand
   const inTransit = (f.inTransit && f.inTransit.byWh || []).map(w => ({
-    name: w.name, black: w.black, red: w.red, total: w.black + w.red,
+    name: w.name,
+    blackFree: w.blackFree || 0, blackRes: w.blackReserve || 0,
+    redFree: w.redFree || 0, redRes: w.redReserve || 0,
+    total: (w.blackFree || 0) + (w.blackReserve || 0) + (w.redFree || 0) + (w.redReserve || 0),
   })).filter(w => w.total > 0);
 
   const rowOnHand = w => `
@@ -1254,10 +1257,10 @@ function renderCableWh(f){
         <div class="wh-cable-total">${fmt(w.total)} м</div>
       </div>
       <table class="wh-cable-tbl">
-        <thead><tr><th>Колір</th><th colspan="2">Кількість</th></tr></thead>
+        <thead><tr><th>Колір</th><th>Залишок</th><th>Резерв</th><th>Вільно</th></tr></thead>
         <tbody>
-          <tr><td><span class="wh-dot black"></span>Чорний</td><td colspan="2"><strong>${fmt(w.black)}</strong> м</td></tr>
-          <tr><td><span class="wh-dot red"></span>Червоний</td><td colspan="2"><strong>${fmt(w.red)}</strong> м</td></tr>
+          <tr><td><span class="wh-dot black"></span>Чорний</td><td><strong>${fmt(w.blackFree + w.blackRes)}</strong></td><td>${fmt(w.blackRes)}</td><td>${fmt(w.blackFree)}</td></tr>
+          <tr><td><span class="wh-dot red"></span>Червоний</td><td><strong>${fmt(w.redFree + w.redRes)}</strong></td><td>${fmt(w.redRes)}</td><td>${fmt(w.redFree)}</td></tr>
         </tbody>
       </table>
     </div>`;
