@@ -144,10 +144,26 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
     </div>
     <div style="padding:12px 4px 4px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
       <button class="btn btn--primary" id="btnAutosync" onclick="runAutosync()">🔄 Запустити autosync зараз</button>
-      <span style="font-size:12px;color:var(--text3)">
-        Крон: кожні 30 хв, 09:00–19:30 Kyiv · window 7 днів · 11 таблиць (sales/purchase + movements + fx)
-      </span>
       <span id="autosyncLastRun" style="font-size:12px;color:var(--text3);margin-left:auto;white-space:nowrap" title="Найсвіжіший last_synced_at з sync_state">—</span>
+    </div>
+    <div style="padding:8px 4px 4px;display:grid;grid-template-columns:160px 1fr;gap:6px 14px;font-size:12px;color:var(--text2)">
+      <div style="color:var(--text3)">Cron — основний</div>
+      <div><code>*/30 6-16 * * *</code> UTC = кожні 30 хв, 09:00–19:30 Kyiv → <code>runDailyAutoSync</code></div>
+
+      <div style="color:var(--text3)">Cron — FX warmup</div>
+      <div><code>*/15 * * * *</code> + <code>0 6,7,8 * * *</code> → SWIFT-курс ПриватБанку у KV</div>
+
+      <div style="color:var(--text3)">Вікно документів</div>
+      <div>7 днів від <b>00:00 UTC</b> (boundary-fix 2026-05-04 — фіксує ордери створені вранці того ж дня)</div>
+
+      <div style="color:var(--text3)">Кожен прохід (~30 хв)</div>
+      <div>sales_orders → sales_receipts → sales_order_items → orphan-перевірка менеджерів (90 днів) → ar_movements → payments_in → purchase_* → ap_movements → payments_out → cash_* → fx_rates_1c → amount_usd_backfill → stock_balances → price_types → nomenclature_prices → cache-bust</div>
+
+      <div style="color:var(--text3)">Ранковий прохід<br><span style="font-size:11px">(06:00 UTC, тільки 1 раз/добу)</span></div>
+      <div>+ master_data (контрагенти/контракти/SKU/склади/працівники) <br>+ fx_rates_pb (ПриватБанк fallback, window 7 днів) <br>+ <b>sales_orders_managers_full</b> (повний re-sync менеджерів за 180 днів — ловить пере-проставлених у 1С)</div>
+
+      <div style="color:var(--text3)">НЕ в крон<br><span style="font-size:11px">(scan-based, важкі)</span></div>
+      <div>sales_receipt_items, purchase_receipt_items — запускати вручну з потрібним періодом</div>
     </div>
     <div id="autosyncResult" style="margin-top:12px;font-size:12px;color:var(--text2);display:none"></div>
   </div>
