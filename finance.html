@@ -472,6 +472,12 @@ a{color:inherit;text-decoration:none}
             <span class="ic">⊟</span> Згорнути
           </span>
         </span>
+        <div class="sep"></div>
+        <span class="group">
+          <span class="chip" id="gpSyncBtn" onclick="gpSyncItems()" title="Підтягнути позиції видаткових і прибуткових накладних з 1С за вибраний період (потрібно для коректних собівартостей)">
+            <span class="ic">↻</span> Оновити позиції
+          </span>
+        </span>
       </div>
       <div class="mc-block">
         <div class="mc-head">
@@ -1696,6 +1702,33 @@ function gpToggleAll(collapse) {
   });
   setToggleActive('#gpToolbar .pnl-collapse-ctl', collapse);
   gpState.collapsed = collapse; saveStateToUrl();
+}
+
+// Підтягнути позиції видаткових/прибуткових накладних з 1С за поточний період GP.
+// scan-based ендпойнти не в крон — треба триггерити вручну при потребі свіжих
+// собівартостей. Admin-only (finance вкладка вже захищена FINANCE_ADMIN_ONLY).
+async function gpSyncItems() {
+  const btn = document.getElementById('gpSyncBtn');
+  if (!btn) return;
+  if (!gpState.from || !gpState.to) { alert('Спочатку вкажи період'); return; }
+  const orig = btn.innerHTML;
+  btn.style.pointerEvents = 'none'; btn.style.opacity = '.6';
+  btn.innerHTML = '<span class="ic">⏳</span> Синкаю позиції…';
+  try {
+    const qs = '&from=' + gpState.from + '&to=' + gpState.to;
+    const [sr, pr] = await Promise.all([
+      fetch(API_URL + '?action=_admin_sync_sales_receipt_items' + qs).then(r => r.json()),
+      fetch(API_URL + '?action=_admin_sync_purchase_receipt_items' + qs).then(r => r.json()),
+    ]);
+    if (sr.error) throw new Error('sales: ' + sr.error);
+    if (pr.error) throw new Error('purchase: ' + pr.error);
+    btn.innerHTML = '<span class="ic">✓</span> ' + (sr.inserted || 0) + ' + ' + (pr.inserted || 0) + ' позицій';
+    await gpLoad();
+    setTimeout(() => { btn.innerHTML = orig; btn.style.pointerEvents = ''; btn.style.opacity = ''; }, 3000);
+  } catch (e) {
+    alert('Sync failed: ' + (e.message || e));
+    btn.innerHTML = orig; btn.style.pointerEvents = ''; btn.style.opacity = '';
+  }
 }
 
 function arToggleAll(collapse) {
@@ -3324,11 +3357,36 @@ function cbRender() {
   const sym = c => CUR_SYM[c] || c;
   const CUR_ORDER = ['USD','UAH','EUR'];
 
-  // ── Summary: Ітого + per-currency totals як окремі картки ──
+  // ── Summary: Ітого + окремо банки / каси з розбивкою по валютах ──
   const totalUsd = Number(data.total_usd) || 0;
   const bc = data.by_currency || {};
   const curs = Object.keys(bc).sort((a,b) => CUR_ORDER.indexOf(a) - CUR_ORDER.indexOf(b));
   const asOfPretty = data.on_date ? data.on_date.split('-').reverse().join('.') : '—';
+
+  const accounts = data.accounts || [];
+  const bankAccs = accounts.filter(a => a.account_type === 'bank');
+  const cashAccs = accounts.filter(a => a.account_type !== 'bank');
+
+  const sumByCurForGroup = (group) => {
+    const byCur = {};
+    let usd = 0;
+    group.forEach(a => {
+      usd += Number(a.total_usd) || 0;
+      Object.entries(a.by_currency || {}).forEach(([cur, v]) => {
+        byCur[cur] = (byCur[cur] || 0) + (Number(v.balance) || 0);
+      });
+    });
+    return { usd: Math.round(usd * 100) / 100, byCur };
+  };
+  const bankTotals = sumByCurForGroup(bankAccs);
+  const cashTotals = sumByCurForGroup(cashAccs);
+
+  const curBreakdownHtml = (byCur) => {
+    const keys = Object.keys(byCur).filter(c => Math.abs(byCur[c]) > 0.5)
+      .sort((a,b) => CUR_ORDER.indexOf(a) - CUR_ORDER.indexOf(b));
+    if (!keys.length) return '';
+    return '<span class="cs">' + keys.map(c => fmt(byCur[c], 0) + ' ' + sym(c)).join(' · ') + '</span>';
+  };
 
   const sumCards = [
     '<div class="pnl-card">' +
@@ -3336,27 +3394,26 @@ function cbRender() {
       '<span class="cv" style="color:var(--green)">' + fmt(totalUsd, 0) + ' $</span>' +
       '<span class="cs">станом на ' + esc(asOfPretty) + '</span>' +
     '</div>',
-    ...curs
-      .filter(c => Math.abs(Number(bc[c])||0) > 0.5)
-      .map(c => '<div class="pnl-card">' +
-        '<span class="cl">У ' + c + '</span>' +
-        '<span class="cv">' + fmt(Math.abs(Number(bc[c])||0), 0) + ' ' + sym(c) + '</span>' +
-        '<span class="cs">на ' + esc(asOfPretty) + '</span>' +
-      '</div>')
+    '<div class="pnl-card">' +
+      '<span class="cl">Банківські рахунки</span>' +
+      '<span class="cv">' + fmt(bankTotals.usd, 0) + ' $</span>' +
+      curBreakdownHtml(bankTotals.byCur) +
+    '</div>',
+    '<div class="pnl-card">' +
+      '<span class="cl">Каси</span>' +
+      '<span class="cv">' + fmt(cashTotals.usd, 0) + ' $</span>' +
+      curBreakdownHtml(cashTotals.byCur) +
+    '</div>'
   ];
   document.getElementById('cbSummary').innerHTML =
     '<div class="pnl-summary">' + sumCards.join('') + '</div>';
 
   // ── Картки рахунків (замість таблиць) ──
-  const accounts = data.accounts || [];
   if (!accounts.length) {
     document.getElementById('cbBody').innerHTML =
       '<div style="padding:30px;text-align:center;color:var(--text3)">Немає активних рахунків на обрану дату.</div>';
     return;
   }
-
-  const banks = accounts.filter(a => a.account_type === 'bank');
-  const cash  = accounts.filter(a => a.account_type !== 'bank');
 
   // Чистка опису рахунку від номера/IBAN — лишаємо тільки людську назву банку/каси
   function cbCleanDescription(d) {
@@ -3446,50 +3503,52 @@ function cbRender() {
   };
 
 
-  // Нормалізуємо орг: «Ген.ОД» / «gen_od» / «gen_ke» / «gen_ky» / «gen» / «generac*» → «Генерація»;
-  // «react*» / «Реакт*» → «Реакт». Все інше — як є.
-  const cbNormOrg = (s) => {
-    const v = String(s || '').toLowerCase().trim();
-    if (/реакт|^react/.test(v)) return 'Реакт';
-    if (/ген|^gen|generac/.test(v)) return 'Генерація';
-    return s || 'Без організації';
-  };
-
-  // ── Картковий вигляд (за замовчуванням): org → banks/cash → cards ──
-  const groups = {};
-  accounts.forEach(a => {
-    const org = cbNormOrg(a.org_short);
-    if (!groups[org]) groups[org] = { banks: [], cash: [], total: 0 };
-    if (a.account_type === 'bank') groups[org].banks.push(a);
-    else groups[org].cash.push(a);
-    groups[org].total += Number(a.total_usd) || 0;
-  });
-
   const sumOf = arr => arr.reduce((s, r) => s + (Number(r.total_usd) || 0), 0);
   const sortDesc = arr => [...arr].sort((a, b) => (Number(b.total_usd) || 0) - (Number(a.total_usd) || 0));
 
-  // Орг сортуємо за total desc
-  const orgKeys = Object.keys(groups).sort((a, b) => groups[b].total - groups[a].total);
+  // ── Групування по валютах: currency → banks/cash ──
+  // Визначаємо "головну валюту" рахунку = та що має найбільший |balance|
+  const getMainCur = (a) => {
+    const entries = Object.entries(a.by_currency || {});
+    if (!entries.length) return 'USD';
+    entries.sort((x, y) => Math.abs(Number(y[1].balance) || 0) - Math.abs(Number(x[1].balance) || 0));
+    return entries[0][0];
+  };
+
+  const curGroups = {};
+  accounts.forEach(a => {
+    const cur = getMainCur(a);
+    if (!curGroups[cur]) curGroups[cur] = { banks: [], cash: [], total: 0 };
+    if (a.account_type === 'bank') curGroups[cur].banks.push(a);
+    else curGroups[cur].cash.push(a);
+    curGroups[cur].total += Number(a.total_usd) || 0;
+  });
+
+  const curKeys = Object.keys(curGroups).sort((a, b) => CUR_ORDER.indexOf(a) - CUR_ORDER.indexOf(b));
 
   let html = '';
-  orgKeys.forEach(org => {
-    const g = groups[org];
+  curKeys.forEach(cur => {
+    const g = curGroups[cur];
     const banks = sortDesc(g.banks);
     const cash = sortDesc(g.cash);
+    const curTotal = banks.reduce((s, a) => s + (Number((a.by_currency[cur]||{}).balance) || 0), 0)
+                   + cash.reduce((s, a) => s + (Number((a.by_currency[cur]||{}).balance) || 0), 0);
     html += '<div class="cb-org-block">' +
       '<div class="cb-org-head">' +
-        '<span class="cb-org-name">' + esc(org) + '</span>' +
-        '<span class="cb-org-total">' + fmt(g.total, 0) + ' $</span>' +
+        '<span class="cb-org-name">' + cur + '</span>' +
+        '<span class="cb-org-total">' + fmt(curTotal, 0) + ' ' + sym(cur) + '</span>' +
       '</div>';
     if (banks.length) {
+      const banksCurTotal = banks.reduce((s, a) => s + (Number((a.by_currency[cur]||{}).balance) || 0), 0);
       html += '<div class="cb-type-head">Банківські рахунки' +
-        '<span class="cb-type-meta">' + banks.length + ' рах. · ' + fmt(sumOf(banks), 0) + ' $</span>' +
+        '<span class="cb-type-meta">' + banks.length + ' рах. · ' + fmt(banksCurTotal, 0) + ' ' + sym(cur) + '</span>' +
         '</div>' +
         '<div class="cb-grid">' + banks.map(cardHtml).join('') + '</div>';
     }
     if (cash.length) {
+      const cashCurTotal = cash.reduce((s, a) => s + (Number((a.by_currency[cur]||{}).balance) || 0), 0);
       html += '<div class="cb-type-head">Каси' +
-        '<span class="cb-type-meta">' + cash.length + ' рах. · ' + fmt(sumOf(cash), 0) + ' $</span>' +
+        '<span class="cb-type-meta">' + cash.length + ' рах. · ' + fmt(cashCurTotal, 0) + ' ' + sym(cur) + '</span>' +
         '</div>' +
         '<div class="cb-grid">' + cash.map(cardHtml).join('') + '</div>';
     }
