@@ -221,6 +221,7 @@ a{color:inherit;text-decoration:none}
 .pnl-card .cl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
 .pnl-card .cv{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.3px;line-height:1.2}
 .pnl-card .cs{font-size:11px;color:var(--text3);font-weight:500}
+.pnl-card .cb-cur-row{font-size:14px;color:var(--text2);font-weight:600;font-variant-numeric:tabular-nums;line-height:1.4;margin-top:2px}
 /* Summary cards — neutral by default, only Net Profit green (or red when negative) */
 .pnl-card .cv{color:var(--text)}
 /* pnl-card border-left accents прибрано — акцент через .c-net .cv колір */
@@ -3367,25 +3368,37 @@ function cbRender() {
   const bankAccs = accounts.filter(a => a.account_type === 'bank');
   const cashAccs = accounts.filter(a => a.account_type !== 'bank');
 
-  const sumByCurForGroup = (group) => {
+  // Підсумок по групі: рахунок враховуємо ЛИШЕ у його main currency (та сама
+  // логіка що й у body — щоб summary і group headers збігалися завжди).
+  const getMainCurEntry = (a) => {
+    const entries = Object.entries(a.by_currency || {});
+    if (!entries.length) return null;
+    entries.sort((x, y) => Math.abs(Number(y[1].balance) || 0) - Math.abs(Number(x[1].balance) || 0));
+    return entries[0]; // [cur, {balance, balance_usd}]
+  };
+  const sumByMainCur = (group) => {
     const byCur = {};
     let usd = 0;
     group.forEach(a => {
       usd += Number(a.total_usd) || 0;
-      Object.entries(a.by_currency || {}).forEach(([cur, v]) => {
-        byCur[cur] = (byCur[cur] || 0) + (Number(v.balance) || 0);
-      });
+      const e = getMainCurEntry(a);
+      if (!e) return;
+      // Округлюємо per-card → сума header матиме арифметику картки.
+      byCur[e[0]] = (byCur[e[0]] || 0) + Math.round(Number(e[1].balance) || 0);
     });
     return { usd: Math.round(usd * 100) / 100, byCur };
   };
-  const bankTotals = sumByCurForGroup(bankAccs);
-  const cashTotals = sumByCurForGroup(cashAccs);
+  const bankTotals = sumByMainCur(bankAccs);
+  const cashTotals = sumByMainCur(cashAccs);
 
+  // Breakdown по валютах — окремими рядками нормального розміру (не subscript).
   const curBreakdownHtml = (byCur) => {
     const keys = Object.keys(byCur).filter(c => Math.abs(byCur[c]) > 0.5)
       .sort((a,b) => CUR_ORDER.indexOf(a) - CUR_ORDER.indexOf(b));
     if (!keys.length) return '';
-    return '<span class="cs">' + keys.map(c => fmt(byCur[c], 0) + ' ' + sym(c)).join(' · ') + '</span>';
+    return keys.map(c =>
+      '<span class="cb-cur-row">' + fmt(byCur[c], 0) + ' ' + sym(c) + '</span>'
+    ).join('');
   };
 
   const sumCards = [
@@ -3506,23 +3519,25 @@ function cbRender() {
   const sumOf = arr => arr.reduce((s, r) => s + (Number(r.total_usd) || 0), 0);
   const sortDesc = arr => [...arr].sort((a, b) => (Number(b.total_usd) || 0) - (Number(a.total_usd) || 0));
 
-  // ── Групування по валютах: currency → banks/cash ──
-  // Визначаємо "головну валюту" рахунку = та що має найбільший |balance|
-  const getMainCur = (a) => {
-    const entries = Object.entries(a.by_currency || {});
-    if (!entries.length) return 'USD';
-    entries.sort((x, y) => Math.abs(Number(y[1].balance) || 0) - Math.abs(Number(x[1].balance) || 0));
-    return entries[0][0];
-  };
-
+  // ── Групування по валютах: currency (main) → banks/cash ──
+  // Рахунок іде в одну групу — за main currency (той же getMainCurEntry,
+  // що й у summary). Тому суми в summary і в group headers завжди збігаються.
   const curGroups = {};
   accounts.forEach(a => {
-    const cur = getMainCur(a);
-    if (!curGroups[cur]) curGroups[cur] = { banks: [], cash: [], total: 0 };
+    const e = getMainCurEntry(a);
+    if (!e) return;
+    const cur = e[0];
+    if (!curGroups[cur]) curGroups[cur] = { banks: [], cash: [] };
     if (a.account_type === 'bank') curGroups[cur].banks.push(a);
     else curGroups[cur].cash.push(a);
-    curGroups[cur].total += Number(a.total_usd) || 0;
   });
+
+  // Сума header'а групи / типу = сума ОКРУГЛЕНИХ main-баланс карток
+  // (щоб не було розходження на 1 одиницю через per-card округлення).
+  const sumMainRounded = (arr) => arr.reduce((s, a) => {
+    const e = getMainCurEntry(a);
+    return s + (e ? Math.round(Number(e[1].balance) || 0) : 0);
+  }, 0);
 
   const curKeys = Object.keys(curGroups).sort((a, b) => CUR_ORDER.indexOf(a) - CUR_ORDER.indexOf(b));
 
@@ -3531,24 +3546,21 @@ function cbRender() {
     const g = curGroups[cur];
     const banks = sortDesc(g.banks);
     const cash = sortDesc(g.cash);
-    const curTotal = banks.reduce((s, a) => s + (Number((a.by_currency[cur]||{}).balance) || 0), 0)
-                   + cash.reduce((s, a) => s + (Number((a.by_currency[cur]||{}).balance) || 0), 0);
+    const curTotal = sumMainRounded(banks) + sumMainRounded(cash);
     html += '<div class="cb-org-block">' +
       '<div class="cb-org-head">' +
         '<span class="cb-org-name">' + cur + '</span>' +
         '<span class="cb-org-total">' + fmt(curTotal, 0) + ' ' + sym(cur) + '</span>' +
       '</div>';
     if (banks.length) {
-      const banksCurTotal = banks.reduce((s, a) => s + (Number((a.by_currency[cur]||{}).balance) || 0), 0);
       html += '<div class="cb-type-head">Банківські рахунки' +
-        '<span class="cb-type-meta">' + banks.length + ' рах. · ' + fmt(banksCurTotal, 0) + ' ' + sym(cur) + '</span>' +
+        '<span class="cb-type-meta">' + banks.length + ' рах. · ' + fmt(sumMainRounded(banks), 0) + ' ' + sym(cur) + '</span>' +
         '</div>' +
         '<div class="cb-grid">' + banks.map(cardHtml).join('') + '</div>';
     }
     if (cash.length) {
-      const cashCurTotal = cash.reduce((s, a) => s + (Number((a.by_currency[cur]||{}).balance) || 0), 0);
       html += '<div class="cb-type-head">Каси' +
-        '<span class="cb-type-meta">' + cash.length + ' рах. · ' + fmt(cashCurTotal, 0) + ' ' + sym(cur) + '</span>' +
+        '<span class="cb-type-meta">' + cash.length + ' рах. · ' + fmt(sumMainRounded(cash), 0) + ' ' + sym(cur) + '</span>' +
         '</div>' +
         '<div class="cb-grid">' + cash.map(cardHtml).join('') + '</div>';
     }
