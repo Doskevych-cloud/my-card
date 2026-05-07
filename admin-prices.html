@@ -133,12 +133,11 @@ a{color:inherit;text-decoration:none}
 .tbl .nowrap{white-space:nowrap}
 
 /* column widths */
-.tbl col.c-name{width:22%}
-.tbl col.c-1c{width:26%}
+.tbl col.c-name{width:30%}
 .tbl col.c-stock{width:110px}
-.tbl col.c-num{width:80px}
-.tbl col.c-price{width:100px}
-.tbl col.c-act{width:72px}
+.tbl col.c-num{width:72px}
+.tbl col.c-price{width:96px}
+.tbl col.c-act{width:60px}
 
 .tbl .prod-cell .name{font-weight:500;display:flex;align-items:center;gap:6px}
 .tbl .prod-cell .sub{font-size:10.5px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -480,6 +479,10 @@ function sortKey(it, field, c) {
     case 'nom1c':    return (it.nom1c_description || '￿').toLowerCase(); // empty → end
     case 'kind':     return STOCK_KIND_RANK[itemStockKind(it, c.slug)] ?? 9;
     case 'stock':    return it._stock ? Number(it._stock.stock) || 0 : -1;
+    case 'odessa':   return it._stock ? Number(it._stock.odessa)  || 0 : -1;
+    case 'kyiv':     return it._stock ? Number(it._stock.kyiv)    || 0 : -1;
+    case 'kyiv_bn':  return it._stock ? Number(it._stock.kyiv_bn) || 0 : -1;
+    case 'truf':     return it._stock ? Number(it._stock.truf)    || 0 : -1;
     case 'transit':  return it._stock ? Number(it._stock.transit) || 0 : -1;
     case 'no_vat':   return priceForSort(it, 'no_vat', c);
     case 'with_vat': return priceForSort(it, 'with_vat', c);
@@ -797,8 +800,10 @@ function renderCatTable(c) {
     <table class="tbl">
       <colgroup>
         <col class="c-name">
-        <col class="c-1c">
         <col class="c-stock">
+        <col class="c-num">
+        <col class="c-num">
+        <col class="c-num">
         <col class="c-num">
         <col class="c-num">
         <col class="c-price">
@@ -807,9 +812,11 @@ function renderCatTable(c) {
       </colgroup>
       <thead><tr>
         <th class="sortable" onclick="sortBy('name')">Назва на прайсі ${sortIco('name')}</th>
-        <th class="h-1c sortable" onclick="sortBy('nom1c')">Товар 1С ${sortIco('nom1c')}</th>
         <th class="sortable" onclick="sortBy('kind')">Наявність ${sortIco('kind')}</th>
-        <th class="right sortable" onclick="sortBy('stock')">Склад ${sortIco('stock')}</th>
+        <th class="right sortable" onclick="sortBy('odessa')">Одеса ${sortIco('odessa')}</th>
+        <th class="right sortable" onclick="sortBy('kyiv')">Київ ${sortIco('kyiv')}</th>
+        <th class="right sortable" onclick="sortBy('kyiv_bn')">Київ бн ${sortIco('kyiv_bn')}</th>
+        <th class="right sortable" onclick="sortBy('truf')">Труфкакі ${sortIco('truf')}</th>
         <th class="right sortable" onclick="sortBy('transit')">В дорозі ${sortIco('transit')}</th>
         <th class="right sortable" onclick="sortBy('no_vat')">Без ПДВ ${sortIco('no_vat')}</th>
         <th class="right sortable" onclick="sortBy('with_vat')">З ПДВ ${sortIco('with_vat')}</th>
@@ -823,15 +830,20 @@ function renderCatTable(c) {
 
 function renderRow(it, c) {
   const st = it._stock;
-  const stockN = st ? Math.round(Number(st.stock) || 0) : null;
-  const transitN = st ? Math.round(Number(st.transit) || 0) : null;
+  const cellN = (v) => {
+    if (!st) return '—';
+    const n = Math.round(Number(v) || 0);
+    return n || '—';
+  };
+  const cellCls = (v) => (st && Math.round(Number(v) || 0) > 0) ? '' : 'muted';
+  const odessaV  = st ? st.odessa  : null;
+  const kyivV    = st ? st.kyiv    : null;
+  const kyivBnV  = st ? st.kyiv_bn : null;
+  const trufV    = st ? st.truf    : null;
+  const transitV = st ? st.transit : null;
   const flags = itemIssues(it);
   const kind = itemStockKind(it, c.slug);
   const hidden = !matchesFilter(it, c.slug);
-
-  const nomLine = it.nom1c_ref_key
-    ? `<span title="${esc(it.nom1c_description || '')}">${esc((it.nom1c_description || '').slice(0, 70))}${(it.nom1c_description||'').length > 70 ? '…' : ''}</span>`
-    : `<span class="missing">не привʼязано</span>`;
 
   // Витягуємо потужність у Вт з display_name → display_spec → nom1c_description
   // (юзер може писати «625 Вт» в назві, або підписі, або ця інформація живе в 1С).
@@ -892,10 +904,12 @@ function renderRow(it, c) {
         <div class="name">${warnIco}${esc(it.display_name || '—')}${dsBadge}</div>
         ${specLine}
       </td>
-      <td class="c-1c-cell"><div class="nom-cell ${flags.no1c ? 'missing' : ''}">${nomLine}</div></td>
       <td>${stockPill}</td>
-      <td class="right ${stockN > 0 ? '' : 'muted'}">${stockN != null ? stockN : '—'}</td>
-      <td class="right ${transitN > 0 ? '' : 'muted'}">${transitN != null ? transitN : '—'}</td>
+      <td class="right ${cellCls(odessaV)}">${cellN(odessaV)}</td>
+      <td class="right ${cellCls(kyivV)}">${cellN(kyivV)}</td>
+      <td class="right ${cellCls(kyivBnV)}">${cellN(kyivBnV)}</td>
+      <td class="right ${cellCls(trufV)}">${cellN(trufV)}</td>
+      <td class="right ${cellCls(transitV)}">${cellN(transitV)}</td>
       <td class="right">${fmtPrice(it.no_vat && it.no_vat.price)}</td>
       <td class="right">${fmtPrice(it.with_vat && it.with_vat.price)}</td>
       <td class="right">
