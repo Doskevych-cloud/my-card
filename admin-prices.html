@@ -299,6 +299,7 @@ a{color:inherit;text-decoration:none}
     </div>
     <div class="actions">
       <button class="btn" id="refreshPublicBtn" onclick="refreshPublicPrices(this)">↻ Оновити ціни</button>
+      <button class="btn" id="refreshStocksBtn" onclick="refreshStocks(this)">↻ Оновити залишки</button>
       <button class="btn" onclick="openCatModal()">+ Категорія</button>
       <button class="btn btn--primary" onclick="openItemModal()">+ Позиція</button>
     </div>
@@ -579,6 +580,33 @@ async function refreshPublicPrices(btn) {
         const f = failed.map(s => `${s.step}: ${s.error || 'fail'}`).join('; ');
         toast(`Помилка на кроках: ${f}`, 'err');
       }
+    } else {
+      toast('Невідома відповідь сервера', 'err');
+    }
+  } catch (e) {
+    toast('Помилка: ' + (e.message || e), 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
+}
+
+// Sync залишків Реакту/Генерації з 1С → D1 (stock_balances).
+// Триває 5–15s — OData fetch + bulk insert. price_list_stocks не кешується,
+// тому одразу після sync load() видасть свіжі цифри.
+async function refreshStocks(btn) {
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '↻ Синхронізую…';
+  const t0 = Date.now();
+  try {
+    const r = await apiCall('_admin_sync_stock');
+    const ms = Date.now() - t0;
+    if (r && r.entity === 'stock_balances') {
+      toast(`Залишки оновлено · ${r.rows} рядків · ${(ms/1000).toFixed(1)}s`, 'ok');
+      load();
+    } else if (r && r.error) {
+      toast('Помилка: ' + r.error, 'err');
     } else {
       toast('Невідома відповідь сервера', 'err');
     }
