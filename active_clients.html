@@ -235,22 +235,22 @@ function render() {
       <div class="kpi clickable${_statusFilter === 'new' ? ' selected' : ''}" onclick="filterStatus('new')">
         <span class="kl">Нових</span>
         <span class="kv" style="color:var(--green)">${summary.new}</span>
-        <span class="ks">перша накладна в історії потрапила в ${fmtDate(period.from)} — ${fmtDate(period.to)}</span>
+        <span class="ks">перша оплата в історії потрапила в ${fmtDate(period.from)} — ${fmtDate(period.to)}</span>
       </div>
       <div class="kpi clickable${_statusFilter === 'returning' ? ' selected' : ''}" onclick="filterStatus('returning')">
         <span class="kl">Повернулися</span>
         <span class="kv" style="color:var(--blue)">${summary.returning}</span>
-        <span class="ks">мали накладні до ${fmtDate(period.from)} і купили знову</span>
+        <span class="ks">мали оплати до ${fmtDate(period.from)} і оплатили знову</span>
       </div>
       <div class="kpi clickable${_statusFilter === 'lost' ? ' selected' : ''}" onclick="filterStatus('lost')">
         <span class="kl">Відтік</span>
         <span class="kv" style="color:var(--red)">${summary.lost}</span>
-        <span class="ks">купували в попередні 3 міс до ${fmtDate(period.from)}, але за ${fmtDate(period.from)} — ${fmtDate(period.to)} — жодної накладної</span>
+        <span class="ks">оплачували в попередні 3 міс до ${fmtDate(period.from)}, але за ${fmtDate(period.from)} — ${fmtDate(period.to)} — жодної оплати</span>
       </div>
       <div class="kpi">
-        <span class="kl">Виторг за ${fmtDate(period.from)} — ${fmtDate(period.to)}</span>
+        <span class="kl">Оплати за ${fmtDate(period.from)} — ${fmtDate(period.to)}</span>
         <span class="kv">${fmtUsd(summary.total_usd)}</span>
-        <span class="ks">сума видаткових накладних активних клієнтів, USD</span>
+        <span class="ks">сума оплат активних клієнтів, USD</span>
       </div>
     </div>
 
@@ -260,9 +260,9 @@ function render() {
       <div class="f-lost" style="width:${pLost}%"></div>
     </div>
     <div class="funnel-legend">
-      <span class="fl-new">Нових ${summary.new} — раніше ніколи не купували</span>
+      <span class="fl-new">Нових ${summary.new} — раніше ніколи не оплачували</span>
       <span class="fl-ret">Повернулись ${summary.returning} — вже були клієнтами</span>
-      <span class="fl-lost">Відтік ${summary.lost} — перестали купувати</span>
+      <span class="fl-lost">Відтік ${summary.lost} — перестали оплачувати</span>
     </div>
 
     <input type="text" class="search-box" placeholder="Пошук клієнта…" value="${esc(_search)}" oninput="_search=this.value;render()">
@@ -273,10 +273,10 @@ function render() {
         <thead><tr>
           <th class="sortable" onclick="sortBy('name')">Клієнт ${sortIco('name')}</th>
           <th class="sortable" onclick="sortBy('status')">Статус ${sortIco('status')}</th>
-          <th class="sortable" onclick="sortBy('days_since_last')">Днів без покупки ${sortIco('days_since_last')}</th>
-          <th class="sortable" onclick="sortBy('total_usd')">Виторг (USD) ${sortIco('total_usd')}</th>
-          <th class="sortable" onclick="sortBy('receipts')">Накладних ${sortIco('receipts')}</th>
-          <th class="sortable" onclick="sortBy('last_receipt')">Остання ${sortIco('last_receipt')}</th>
+          <th class="sortable" onclick="sortBy('days_since_last')">Днів без оплати ${sortIco('days_since_last')}</th>
+          <th class="sortable" onclick="sortBy('total_usd')">Оплачено (USD) ${sortIco('total_usd')}</th>
+          <th class="sortable" onclick="sortBy('payments')">Оплат ${sortIco('payments')}</th>
+          <th class="sortable" onclick="sortBy('last_payment')">Остання оплата ${sortIco('last_payment')}</th>
         </tr></thead>
         <tbody>${filtered.map(c => `
           <tr>
@@ -284,8 +284,8 @@ function render() {
             <td>${statusBadge(c.status)}</td>
             <td><span class="${daysClass(c.days_since_last)}">${c.days_since_last}д</span></td>
             <td>${c.status === 'lost' ? '—' : fmtUsd(c.total_usd)}</td>
-            <td>${c.status === 'lost' ? '—' : c.receipts}</td>
-            <td>${fmtDate(c.last_receipt)}</td>
+            <td>${c.status === 'lost' ? '—' : c.payments}</td>
+            <td>${fmtDate(c.last_payment)}</td>
           </tr>`).join('')}
         </tbody>
       </table>
