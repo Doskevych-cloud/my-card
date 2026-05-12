@@ -165,16 +165,8 @@ async function load() {
 }
 
 function render() {
-  const { summary, clients, lost_clients, period, prev_period } = _data;
+  const { summary, clients, lost_clients, period } = _data;
   const q = _search.toLowerCase();
-
-  const deltaClients = summary.active - (summary.returning + summary.lost);
-  const deltaSign = deltaClients >= 0 ? '+' : '';
-  const deltaCls = deltaClients >= 0 ? 'delta-pos' : 'delta-neg';
-
-  const revDelta = summary.total_usd - summary.prev_total_usd;
-  const revSign = revDelta >= 0 ? '+' : '';
-  const revCls = revDelta >= 0 ? 'delta-pos' : 'delta-neg';
 
   const total = summary.new + summary.returning + summary.lost;
   const pNew = total > 0 ? (summary.new / total * 100) : 0;
@@ -185,18 +177,18 @@ function render() {
   const filteredLost = q ? lost_clients.filter(c => c.name.toLowerCase().includes(q)) : lost_clients;
 
   const html = `
-    <div class="period-lbl">Період: ${fmtDate(period.from)} — ${fmtDate(period.to)} · Порівняння: ${fmtDate(prev_period.from)} — ${fmtDate(prev_period.to)}</div>
+    <div class="period-lbl">Період: ${fmtDate(period.from)} — ${fmtDate(period.to)}</div>
 
     <div class="kpi-grid">
       <div class="kpi">
         <span class="kl">Активних клієнтів</span>
         <span class="kv">${summary.active}</span>
-        <span class="ks ${deltaCls}">${deltaSign}${deltaClients} до попередніх 6 міс</span>
+        <span class="ks">з відвантаженнями за 6 міс</span>
       </div>
       <div class="kpi">
         <span class="kl">Нових</span>
         <span class="kv" style="color:var(--green)">${summary.new}</span>
-        <span class="ks">вперше за цей період</span>
+        <span class="ks">перша накладна коли-небудь</span>
       </div>
       <div class="kpi">
         <span class="kl">Повернулися</span>
@@ -211,7 +203,6 @@ function render() {
       <div class="kpi">
         <span class="kl">Виторг за період</span>
         <span class="kv">${fmtUsd(summary.total_usd)}</span>
-        <span class="ks ${revCls}">${revSign}${fmtUsd(Math.abs(revDelta))} до попередніх 6 міс</span>
       </div>
     </div>
 
@@ -235,8 +226,8 @@ function render() {
           <th>Клієнт</th>
           <th>Статус</th>
           <th>Виторг (USD)</th>
-          <th>Попередній період</th>
           <th>Накладних</th>
+          <th>Перша накладна</th>
           <th>Остання</th>
         </tr></thead>
         <tbody>${filteredClients.map(c => `
@@ -244,8 +235,8 @@ function render() {
             <td>${esc(c.name)}</td>
             <td><span class="badge ${c.status === 'new' ? 'badge-new' : 'badge-ret'}">${c.status === 'new' ? 'новий' : 'повторний'}</span></td>
             <td>${fmtUsd(c.total_usd)}</td>
-            <td>${c.prev_usd > 0 ? fmtUsd(c.prev_usd) : '—'}</td>
             <td>${c.receipts}</td>
+            <td>${fmtDate(c.first_ever)}</td>
             <td>${fmtDate(c.last_receipt)}</td>
           </tr>`).join('')}
         </tbody>
