@@ -683,8 +683,9 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
       <div class="block-head">
         <span class="block-num">08</span>
         <span class="block-title">Клієнти-інсталятори</span>
-        <span class="block-meta" id="b8Meta">live з sales_receipts · 30/90/180д</span>
-        <a class="pill accent" href="/counterparties.html#role=customers" style="margin-left:auto">Усі →</a>
+        <span class="block-meta" id="b8Meta">live з payments_in + sales_receipts · 30/90/180д</span>
+        <a class="pill accent" href="/active_clients.html" style="margin-left:auto">Покупці →</a>
+        <a class="pill accent" href="/counterparties.html#role=customers">Контрагенти →</a>
       </div>
 
       <div class="g-4" id="b8Kpis">
@@ -2161,8 +2162,12 @@ async function loadCustomersCrm() {
     dashFetch(`${API_URL}?action=active_clients`).catch(e => ({ error: String(e) })),
   ]);
 
-  // active_clients (payment-based)
-  if (acRes && !acRes.error && acRes.summary) {
+  // active_clients (payment-based, Реакт only)
+  const acTile = document.getElementById('b8ActivePay')?.closest('.mstat');
+  if (state.org === 'Генерація') {
+    if (acTile) acTile.style.display = 'none';
+  } else if (acRes && !acRes.error && acRes.summary) {
+    if (acTile) acTile.style.display = '';
     document.getElementById('b8ActivePay').textContent = acRes.summary.active || 0;
     document.getElementById('b8ActivePaySub').textContent =
       `${acRes.summary.new || 0} нових · ${acRes.summary.lost || 0} відтік`;
