@@ -283,7 +283,7 @@ function render() {
             <td>${esc(c.name)}</td>
             <td>${statusBadge(c.status)}</td>
             <td><span class="${daysClass(c.days_since_last)}">${c.days_since_last}д</span></td>
-            <td>${c.status === 'lost' ? fmtUsd(c.prev_usd) : fmtUsd(c.total_usd)}</td>
+            <td>${fmtUsd(c.total_usd)}</td>
             <td>${c.status === 'lost' ? '—' : c.payments}</td>
             <td>${fmtDate(c.last_payment)}</td>
           </tr>`).join('')}
