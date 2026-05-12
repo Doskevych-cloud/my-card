@@ -53,6 +53,9 @@ a{color:inherit;text-decoration:none}
 .kpi .kl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
 .kpi .kv{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.3px;line-height:1.2;color:var(--text)}
 .kpi .ks{font-size:11px;color:var(--text3);font-weight:500}
+.kpi.clickable{cursor:pointer;transition:border-color .15s,background .15s}
+.kpi.clickable:hover{border-color:var(--border2);background:var(--bg3)}
+.kpi.clickable.selected{border-color:var(--accent);background:var(--accent-bg)}
 .kpi .delta-pos{color:var(--green)}
 .kpi .delta-neg{color:var(--red)}
 
@@ -160,6 +163,7 @@ function esc(s) {
 let _data = null;
 let _search = '';
 let SORT = { field: null, dir: 'asc' };
+let _statusFilter = '';
 
 function sortBy(field) {
   if (SORT.field !== field) { SORT = { field, dir: 'asc' }; }
@@ -170,6 +174,10 @@ function sortBy(field) {
 function sortIco(field) {
   if (SORT.field !== field) return '<span class="sort-ico">⇅</span>';
   return `<span class="sort-ico active">${SORT.dir === 'asc' ? '↑' : '↓'}</span>`;
+}
+function filterStatus(s) {
+  _statusFilter = _statusFilter === s ? '' : s;
+  render();
 }
 
 async function load() {
@@ -193,7 +201,9 @@ function render() {
   const pRet = total > 0 ? (summary.returning / total * 100) : 0;
   const pLost = total > 0 ? (summary.lost / total * 100) : 0;
 
-  let filtered = q ? clients.filter(c => c.name.toLowerCase().includes(q)) : [...clients];
+  let filtered = [...clients];
+  if (q) filtered = filtered.filter(c => c.name.toLowerCase().includes(q));
+  if (_statusFilter) filtered = filtered.filter(c => c.status === _statusFilter);
 
   if (SORT.field) {
     const dir = SORT.dir === 'asc' ? 1 : -1;
@@ -217,22 +227,22 @@ function render() {
     <div class="period-lbl">Період: ${fmtDate(period.from)} — ${fmtDate(period.to)}</div>
 
     <div class="kpi-grid">
-      <div class="kpi">
-        <span class="kl">Активних клієнтів</span>
-        <span class="kv">${summary.active}</span>
-        <span class="ks">≥1 видаткова накладна за ${fmtDate(period.from)} — ${fmtDate(period.to)}</span>
+      <div class="kpi clickable${_statusFilter === '' ? ' selected' : ''}" onclick="filterStatus('')">
+        <span class="kl">Всі клієнти</span>
+        <span class="kv">${summary.active + summary.lost}</span>
+        <span class="ks">за ${fmtDate(period.from)} — ${fmtDate(period.to)}</span>
       </div>
-      <div class="kpi">
+      <div class="kpi clickable${_statusFilter === 'new' ? ' selected' : ''}" onclick="filterStatus('new')">
         <span class="kl">Нових</span>
         <span class="kv" style="color:var(--green)">${summary.new}</span>
         <span class="ks">перша накладна в історії потрапила в ${fmtDate(period.from)} — ${fmtDate(period.to)}</span>
       </div>
-      <div class="kpi">
+      <div class="kpi clickable${_statusFilter === 'returning' ? ' selected' : ''}" onclick="filterStatus('returning')">
         <span class="kl">Повернулися</span>
         <span class="kv" style="color:var(--blue)">${summary.returning}</span>
         <span class="ks">мали накладні до ${fmtDate(period.from)} і купили знову</span>
       </div>
-      <div class="kpi">
+      <div class="kpi clickable${_statusFilter === 'lost' ? ' selected' : ''}" onclick="filterStatus('lost')">
         <span class="kl">Відтік</span>
         <span class="kv" style="color:var(--red)">${summary.lost}</span>
         <span class="ks">купували в попередні 3 міс до ${fmtDate(period.from)}, але за ${fmtDate(period.from)} — ${fmtDate(period.to)} — жодної накладної</span>
