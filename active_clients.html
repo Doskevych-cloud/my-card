@@ -203,7 +203,8 @@ function render() {
 
   let filtered = [...clients];
   if (q) filtered = filtered.filter(c => c.name.toLowerCase().includes(q));
-  if (_statusFilter) filtered = filtered.filter(c => c.status === _statusFilter);
+  if (_statusFilter === 'active') filtered = filtered.filter(c => c.status !== 'lost');
+  else if (_statusFilter) filtered = filtered.filter(c => c.status === _statusFilter);
 
   if (SORT.field) {
     const dir = SORT.dir === 'asc' ? 1 : -1;
@@ -228,6 +229,11 @@ function render() {
 
     <div class="kpi-grid">
       <div class="kpi clickable${_statusFilter === '' ? ' selected' : ''}" onclick="filterStatus('')">
+        <span class="kl">Всі клієнти</span>
+        <span class="kv">${summary.active + summary.lost}</span>
+        <span class="ks">активні + втрачені за ${fmtDate(period.from)} — ${fmtDate(period.to)}</span>
+      </div>
+      <div class="kpi clickable${_statusFilter === 'active' ? ' selected' : ''}" onclick="filterStatus('active')">
         <span class="kl">Активних клієнтів</span>
         <span class="kv">${summary.active}</span>
         <span class="ks">≥1 оплата за ${fmtDate(period.from)} — ${fmtDate(period.to)}</span>

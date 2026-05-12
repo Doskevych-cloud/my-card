@@ -688,6 +688,7 @@ table.t td small{color:var(--text3);font-size:10.5px;display:block}
       </div>
 
       <div class="g-4" id="b8Kpis">
+        <a class="mstat" href="/active_clients.html" style="text-decoration:none;color:inherit"><div class="mlbl">Активна база (оплати)</div><div class="mval" id="b8ActivePay">—</div><div class="msub" id="b8ActivePaySub">оплачували за 3 міс</div></a>
         <a class="mstat" href="/counterparties.html#role=customers" style="text-decoration:none;color:inherit"><div class="mlbl">Активна база</div><div class="mval" id="b8Active90">—</div><div class="msub">купували за 90д</div></a>
         <a class="mstat" href="/counterparties.html#role=customers" style="text-decoration:none;color:inherit"><div class="mlbl">Реактивна (180д)</div><div class="mval" id="b8Active180">—</div><div class="msub">купували за 180д</div></a>
         <a class="mstat" href="/sales.html" style="text-decoration:none;color:inherit"><div class="mlbl">Нові клієнти</div><div class="mval" id="b8New30">—</div><div class="msub" id="b8NewSub">за 30 днів</div></a>
@@ -2155,7 +2156,18 @@ async function loadFxPosition() {
 // ═══════════════════════════════════════════════════════════════════
 async function loadCustomersCrm() {
   const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
-  const r = await dashFetch(`${API_URL}?action=executive_customers_crm${orgQ}`).catch(e => ({ error: String(e) }));
+  const [r, acRes] = await Promise.all([
+    dashFetch(`${API_URL}?action=executive_customers_crm${orgQ}`).catch(e => ({ error: String(e) })),
+    dashFetch(`${API_URL}?action=active_clients`).catch(e => ({ error: String(e) })),
+  ]);
+
+  // active_clients (payment-based)
+  if (acRes && !acRes.error && acRes.summary) {
+    document.getElementById('b8ActivePay').textContent = acRes.summary.active || 0;
+    document.getElementById('b8ActivePaySub').textContent =
+      `${acRes.summary.new || 0} нових · ${acRes.summary.lost || 0} відтік`;
+  }
+
   if (!r || r.error) {
     document.getElementById('b8Signals').innerHTML = `<div class="error">${esc(r?.error || 'не вдалось')}</div>`;
     return;
