@@ -81,6 +81,7 @@ a{color:inherit;text-decoration:none}
 .badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.3px}
 .badge-new{background:var(--green-bg);color:var(--green)}
 .badge-ret{background:var(--blue-bg);color:var(--blue)}
+.badge-lost{background:var(--red-bg);color:var(--red)}
 .days-warn{color:var(--yellow);font-weight:700}
 .days-danger{color:var(--red);font-weight:700}
 .tbl thead th.sortable{cursor:pointer;user-select:none;transition:color .12s}
@@ -184,7 +185,7 @@ async function load() {
 }
 
 function render() {
-  const { summary, clients, lost_clients, period } = _data;
+  const { summary, clients, period } = _data;
   const q = _search.toLowerCase();
 
   const total = summary.new + summary.returning + summary.lost;
@@ -192,23 +193,25 @@ function render() {
   const pRet = total > 0 ? (summary.returning / total * 100) : 0;
   const pLost = total > 0 ? (summary.lost / total * 100) : 0;
 
-  let filteredClients = q ? clients.filter(c => c.name.toLowerCase().includes(q)) : [...clients];
-  let filteredLost = q ? lost_clients.filter(c => c.name.toLowerCase().includes(q)) : [...lost_clients];
+  let filtered = q ? clients.filter(c => c.name.toLowerCase().includes(q)) : [...clients];
 
   if (SORT.field) {
     const dir = SORT.dir === 'asc' ? 1 : -1;
-    const cmp = (a, b) => {
+    filtered.sort((a, b) => {
       let va = a[SORT.field], vb = b[SORT.field];
       if (va == null) va = '';
       if (vb == null) vb = '';
       if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir;
       return String(va).localeCompare(String(vb), 'uk') * dir;
-    };
-    filteredClients = filteredClients.sort(cmp);
-    filteredLost = filteredLost.sort(cmp);
+    });
   }
 
   function daysClass(d) { return d >= 90 ? 'days-danger' : d >= 45 ? 'days-warn' : ''; }
+  function statusBadge(s) {
+    if (s === 'new') return '<span class="badge badge-new">новий</span>';
+    if (s === 'lost') return '<span class="badge badge-lost">втрачений</span>';
+    return '<span class="badge badge-ret">повторний</span>';
+  }
 
   const html = `
     <div class="period-lbl">Період: ${fmtDate(period.from)} — ${fmtDate(period.to)}</div>
@@ -254,8 +257,7 @@ function render() {
 
     <input type="text" class="search-box" placeholder="Пошук клієнта…" value="${esc(_search)}" oninput="_search=this.value;render()">
 
-    <div class="sec-title">Активні клієнти <span class="sec-count">${filteredClients.length}</span></div>
-    <div class="period-lbl">Клієнти з хоча б однією проведеною видатковою накладною за період ${fmtDate(period.from)} — ${fmtDate(period.to)}</div>
+    <div class="sec-title">Клієнтська база <span class="sec-count">${filtered.length}</span></div>
     <div class="tbl-wrap">
       <table class="tbl">
         <thead><tr>
@@ -264,42 +266,20 @@ function render() {
           <th class="sortable" onclick="sortBy('days_since_last')">Днів без покупки ${sortIco('days_since_last')}</th>
           <th class="sortable" onclick="sortBy('total_usd')">Виторг (USD) ${sortIco('total_usd')}</th>
           <th class="sortable" onclick="sortBy('receipts')">Накладних ${sortIco('receipts')}</th>
-          <th class="sortable" onclick="sortBy('first_ever')">Перша накладна ${sortIco('first_ever')}</th>
           <th class="sortable" onclick="sortBy('last_receipt')">Остання ${sortIco('last_receipt')}</th>
         </tr></thead>
-        <tbody>${filteredClients.map(c => `
+        <tbody>${filtered.map(c => `
           <tr>
             <td>${esc(c.name)}</td>
-            <td><span class="badge ${c.status === 'new' ? 'badge-new' : 'badge-ret'}">${c.status === 'new' ? 'новий' : 'повторний'}</span></td>
+            <td>${statusBadge(c.status)}</td>
             <td><span class="${daysClass(c.days_since_last)}">${c.days_since_last}д</span></td>
-            <td>${fmtUsd(c.total_usd)}</td>
-            <td>${c.receipts}</td>
-            <td>${fmtDate(c.first_ever)}</td>
+            <td>${c.status === 'lost' ? '—' : fmtUsd(c.total_usd)}</td>
+            <td>${c.status === 'lost' ? '—' : c.receipts}</td>
             <td>${fmtDate(c.last_receipt)}</td>
           </tr>`).join('')}
         </tbody>
       </table>
     </div>
-
-    ${filteredLost.length ? `
-      <div class="sec-title" style="color:var(--red)">Втрачені клієнти <span class="sec-count">${filteredLost.length}</span></div>
-      <div class="period-lbl">Були активні в попередні 3 міс, але за поточний період (${fmtDate(period.from)} — ${fmtDate(period.to)}) — жодної накладної</div>
-      <div class="tbl-wrap">
-        <table class="tbl">
-          <thead><tr>
-            <th class="sortable" onclick="sortBy('name')">Клієнт ${sortIco('name')}</th>
-            <th class="sortable" onclick="sortBy('prev_usd')">Виторг минулого періоду ${sortIco('prev_usd')}</th>
-            <th class="sortable" onclick="sortBy('last_receipt')">Остання накладна ${sortIco('last_receipt')}</th>
-          </tr></thead>
-          <tbody>${filteredLost.map(c => `
-            <tr>
-              <td>${esc(c.name)}</td>
-              <td>${fmtUsd(c.prev_usd)}</td>
-              <td>${fmtDate(c.last_receipt)}</td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
-      </div>` : ''}
   `;
 
   document.getElementById('body').innerHTML = html;
