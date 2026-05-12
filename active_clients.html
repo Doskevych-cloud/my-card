@@ -183,26 +183,27 @@ function render() {
       <div class="kpi">
         <span class="kl">Активних клієнтів</span>
         <span class="kv">${summary.active}</span>
-        <span class="ks">з відвантаженнями за 3 міс</span>
+        <span class="ks">≥1 видаткова накладна за останні 3 міс</span>
       </div>
       <div class="kpi">
         <span class="kl">Нових</span>
         <span class="kv" style="color:var(--green)">${summary.new}</span>
-        <span class="ks">перша накладна коли-небудь</span>
+        <span class="ks">перша накладна в історії потрапила в цей період</span>
       </div>
       <div class="kpi">
         <span class="kl">Повернулися</span>
         <span class="kv" style="color:var(--blue)">${summary.returning}</span>
-        <span class="ks">купували і раніше</span>
+        <span class="ks">мали накладні до цього періоду і купили знову</span>
       </div>
       <div class="kpi">
         <span class="kl">Відтік</span>
         <span class="kv" style="color:var(--red)">${summary.lost}</span>
-        <span class="ks">були активні, зараз ні</span>
+        <span class="ks">купували в попередні 3 міс, але за цей період — жодної накладної</span>
       </div>
       <div class="kpi">
         <span class="kl">Виторг за період</span>
         <span class="kv">${fmtUsd(summary.total_usd)}</span>
+        <span class="ks">сума всіх видаткових накладних активних клієнтів, USD</span>
       </div>
     </div>
 
@@ -212,14 +213,15 @@ function render() {
       <div class="f-lost" style="width:${pLost}%"></div>
     </div>
     <div class="funnel-legend">
-      <span class="fl-new">Нових ${summary.new}</span>
-      <span class="fl-ret">Повернулись ${summary.returning}</span>
-      <span class="fl-lost">Відтік ${summary.lost}</span>
+      <span class="fl-new">Нових ${summary.new} — раніше ніколи не купували</span>
+      <span class="fl-ret">Повернулись ${summary.returning} — вже були клієнтами</span>
+      <span class="fl-lost">Відтік ${summary.lost} — перестали купувати</span>
     </div>
 
     <input type="text" class="search-box" placeholder="Пошук клієнта…" value="${esc(_search)}" oninput="_search=this.value;render()">
 
     <div class="sec-title">Активні клієнти <span class="sec-count">${filteredClients.length}</span></div>
+    <div class="period-lbl">Клієнти з хоча б однією проведеною видатковою накладною за період ${fmtDate(period.from)} — ${fmtDate(period.to)}</div>
     <div class="tbl-wrap">
       <table class="tbl">
         <thead><tr>
@@ -245,6 +247,7 @@ function render() {
 
     ${filteredLost.length ? `
       <div class="sec-title" style="color:var(--red)">Втрачені клієнти <span class="sec-count">${filteredLost.length}</span></div>
+      <div class="period-lbl">Були активні в попередні 3 міс, але за поточний період (${fmtDate(period.from)} — ${fmtDate(period.to)}) — жодної накладної</div>
       <div class="tbl-wrap">
         <table class="tbl">
           <thead><tr>
