@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Активна клієнтська база</title>
+<script>
+  try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
+</script>
+<script src="auth.js?v=mobhdr20260430"></script>
+<script src="header.js?v=mobhdr20260430"></script>
+<style>
+:root{
+  --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
+  --surface:#141414; --surface2:#1c1c1c;
+  --border:#262626; --border2:#333;
+  --text:#f5f5f5; --text2:#a3a3a3; --text3:#737373;
+  --accent:#ff8319; --accent-bg:rgba(255,131,25,.12);
+  --red:#e74c3c; --red-bg:rgba(231,76,60,.12);
+  --green:#22c55e; --green-bg:rgba(34,197,94,.12);
+  --blue:#3b82f6; --blue-bg:rgba(59,130,246,.12);
+  --yellow:#eab308; --yellow-bg:rgba(234,179,8,.12);
+  --shadow-md:0 4px 20px rgba(0,0,0,.4);
+}
+:root[data-theme="light"]{
+  --bg:#f5f5f7; --bg2:#ffffff; --bg3:#ececef;
+  --surface:#ffffff; --surface2:#ffffff;
+  --border:#e5e5ea; --border2:#d1d1d6;
+  --text:#1c1c1e; --text2:#48484a; --text3:#8e8e93;
+  --accent:#e07017; --accent-bg:rgba(224,112,23,.12);
+  --red:#d93025; --red-bg:rgba(217,48,37,.10);
+  --green:#15803d; --green-bg:rgba(21,128,61,.10);
+  --blue:#1d4ed8; --blue-bg:rgba(29,78,216,.10);
+  --yellow:#a16207; --yellow-bg:rgba(161,98,7,.10);
+  --shadow-md:0 4px 20px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1400px;margin:0 auto;padding:20px}
+
+.page-tabs{display:inline-flex;gap:4px;padding:4px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:14px}
+.ptab{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;color:var(--text2);text-decoration:none;transition:background .15s,color .15s;white-space:nowrap;cursor:pointer}
+.ptab:hover{background:var(--bg3);color:var(--text)}
+.ptab.active{background:var(--accent-bg);color:var(--accent)}
+
+.loading{text-align:center;color:var(--text3);padding:60px 0;font-size:14px}
+.error{text-align:center;color:var(--red);padding:60px 0;font-size:14px}
+
+/* KPI cards */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:18px}
+.kpi{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:3px}
+.kpi .kl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+.kpi .kv{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.3px;line-height:1.2;color:var(--text)}
+.kpi .ks{font-size:11px;color:var(--text3);font-weight:500}
+.kpi .delta-pos{color:var(--green)}
+.kpi .delta-neg{color:var(--red)}
+
+/* Funnel bar */
+.funnel{display:flex;height:8px;border-radius:4px;overflow:hidden;margin-bottom:18px;background:var(--bg3)}
+.funnel .f-new{background:var(--green)}
+.funnel .f-ret{background:var(--blue)}
+.funnel .f-lost{background:var(--red)}
+.funnel-legend{display:flex;gap:16px;margin-bottom:18px;font-size:11px;color:var(--text2)}
+.funnel-legend span::before{content:'';display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.funnel-legend .fl-new::before{background:var(--green)}
+.funnel-legend .fl-ret::before{background:var(--blue)}
+.funnel-legend .fl-lost::before{background:var(--red)}
+
+/* Client table */
+.tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px;background:var(--bg)}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;min-width:600px}
+.tbl th,.tbl td{padding:10px 14px;text-align:right;white-space:nowrap;vertical-align:middle;line-height:1.25}
+.tbl th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;background:var(--surface2);position:sticky;top:0;z-index:2;border-bottom:1px solid var(--border)}
+.tbl th:first-child,.tbl td:first-child{text-align:left;position:sticky;left:0;z-index:1;min-width:220px;background:inherit}
+.tbl th:first-child{z-index:3;background:var(--surface2)}
+.tbl tbody tr{background:var(--bg);border-bottom:1px solid var(--border)}
+.tbl tbody tr:last-child{border-bottom:none}
+.tbl tbody tr:hover{background:var(--bg3)}
+.tbl td:first-child{font-weight:600}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.3px}
+.badge-new{background:var(--green-bg);color:var(--green)}
+.badge-ret{background:var(--blue-bg);color:var(--blue)}
+
+/* Period label */
+.period-lbl{font-size:12px;color:var(--text3);margin-bottom:14px}
+
+/* Section title */
+.sec-title{font-size:14px;font-weight:700;color:var(--text);margin:24px 0 10px;display:flex;align-items:center;gap:8px}
+.sec-count{font-size:12px;font-weight:600;color:var(--text3)}
+
+/* Search */
+.search-box{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;font-family:inherit;min-width:200px;margin-bottom:14px}
+.search-box:focus{border-color:var(--accent)}
+
+@media(max-width:768px){
+  .wrap{padding:12px}
+  .kpi-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .kpi .kv{font-size:18px}
+  .page-tabs{display:flex;flex-wrap:wrap;gap:3px;padding:3px;max-width:100%}
+  .ptab{padding:6px 10px;font-size:11.5px;flex:0 0 auto}
+}
+</style>
+</head>
+<body>
+
+<div id="appHeader"></div>
+<div id="app">
+  <div class="wrap">
+    <div class="page-tabs">
+      <a href="/sales.html" class="ptab">📈 Продажі менеджерів</a>
+      <a href="/top_products.html" class="ptab">📦 Останні продажі</a>
+      <a href="/osp.html" class="ptab">📋 Оплата та відвантаження</a>
+      <a href="/ar_aging.html" class="ptab">⏱ Заборгованість покупців</a>
+      <a href="/active_clients.html" class="ptab active">👥 Клієнтська база</a>
+    </div>
+
+    <div id="body"><div class="loading">Завантаження…</div></div>
+  </div>
+</div>
+
+<script>
+const API = 'https://price-api.doskevich.workers.dev';
+
+Auth.require('sales').then(user => {
+  window.__user = user;
+  AppHeader.mount({ active: 'sales', user });
+  const userOrgs = user.orgs || {};
+  const hasAnyOrg = Object.values(userOrgs).some(v => v);
+  if (hasAnyOrg && !userOrgs['Реакт']) {
+    document.getElementById('body').innerHTML = '<div class="error">Доступ тільки для організації Реакт</div>';
+    return;
+  }
+  load();
+});
+
+function fmt(n, dec = 0) {
+  if (n == null || isNaN(n)) return '—';
+  return Number(n).toLocaleString('uk-UA', { maximumFractionDigits: dec, minimumFractionDigits: dec });
+}
+function fmtUsd(n) { return '$' + fmt(n, 0); }
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d)) return iso;
+  return d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+function esc(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+let _data = null;
+let _search = '';
+
+async function load() {
+  document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
+  try {
+    const res = await fetch(`${API}?action=active_clients`).then(r => r.json());
+    if (res.error) throw new Error(res.error);
+    _data = res;
+    render();
+  } catch (e) {
+    document.getElementById('body').innerHTML = `<div class="error">${esc(e.message)}</div>`;
+  }
+}
+
+function render() {
+  const { summary, clients, lost_clients, period, prev_period } = _data;
+  const q = _search.toLowerCase();
+
+  const deltaClients = summary.active - (summary.returning + summary.lost);
+  const deltaSign = deltaClients >= 0 ? '+' : '';
+  const deltaCls = deltaClients >= 0 ? 'delta-pos' : 'delta-neg';
+
+  const revDelta = summary.total_usd - summary.prev_total_usd;
+  const revSign = revDelta >= 0 ? '+' : '';
+  const revCls = revDelta >= 0 ? 'delta-pos' : 'delta-neg';
+
+  const total = summary.new + summary.returning + summary.lost;
+  const pNew = total > 0 ? (summary.new / total * 100) : 0;
+  const pRet = total > 0 ? (summary.returning / total * 100) : 0;
+  const pLost = total > 0 ? (summary.lost / total * 100) : 0;
+
+  const filteredClients = q ? clients.filter(c => c.name.toLowerCase().includes(q)) : clients;
+  const filteredLost = q ? lost_clients.filter(c => c.name.toLowerCase().includes(q)) : lost_clients;
+
+  const html = `
+    <div class="period-lbl">Період: ${fmtDate(period.from)} — ${fmtDate(period.to)} · Порівняння: ${fmtDate(prev_period.from)} — ${fmtDate(prev_period.to)}</div>
+
+    <div class="kpi-grid">
+      <div class="kpi">
+        <span class="kl">Активних клієнтів</span>
+        <span class="kv">${summary.active}</span>
+        <span class="ks ${deltaCls}">${deltaSign}${deltaClients} до попередніх 6 міс</span>
+      </div>
+      <div class="kpi">
+        <span class="kl">Нових</span>
+        <span class="kv" style="color:var(--green)">${summary.new}</span>
+        <span class="ks">вперше за цей період</span>
+      </div>
+      <div class="kpi">
+        <span class="kl">Повернулися</span>
+        <span class="kv" style="color:var(--blue)">${summary.returning}</span>
+        <span class="ks">купували і раніше</span>
+      </div>
+      <div class="kpi">
+        <span class="kl">Відтік</span>
+        <span class="kv" style="color:var(--red)">${summary.lost}</span>
+        <span class="ks">були активні, зараз ні</span>
+      </div>
+      <div class="kpi">
+        <span class="kl">Виторг за період</span>
+        <span class="kv">${fmtUsd(summary.total_usd)}</span>
+        <span class="ks ${revCls}">${revSign}${fmtUsd(Math.abs(revDelta))} до попередніх 6 міс</span>
+      </div>
+    </div>
+
+    <div class="funnel">
+      <div class="f-new" style="width:${pNew}%"></div>
+      <div class="f-ret" style="width:${pRet}%"></div>
+      <div class="f-lost" style="width:${pLost}%"></div>
+    </div>
+    <div class="funnel-legend">
+      <span class="fl-new">Нових ${summary.new}</span>
+      <span class="fl-ret">Повернулись ${summary.returning}</span>
+      <span class="fl-lost">Відтік ${summary.lost}</span>
+    </div>
+
+    <input type="text" class="search-box" placeholder="Пошук клієнта…" value="${esc(_search)}" oninput="_search=this.value;render()">
+
+    <div class="sec-title">Активні клієнти <span class="sec-count">${filteredClients.length}</span></div>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr>
+          <th>Клієнт</th>
+          <th>Статус</th>
+          <th>Виторг (USD)</th>
+          <th>Попередній період</th>
+          <th>Накладних</th>
+          <th>Остання</th>
+        </tr></thead>
+        <tbody>${filteredClients.map(c => `
+          <tr>
+            <td>${esc(c.name)}</td>
+            <td><span class="badge ${c.status === 'new' ? 'badge-new' : 'badge-ret'}">${c.status === 'new' ? 'новий' : 'повторний'}</span></td>
+            <td>${fmtUsd(c.total_usd)}</td>
+            <td>${c.prev_usd > 0 ? fmtUsd(c.prev_usd) : '—'}</td>
+            <td>${c.receipts}</td>
+            <td>${fmtDate(c.last_receipt)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    ${filteredLost.length ? `
+      <div class="sec-title" style="color:var(--red)">Втрачені клієнти <span class="sec-count">${filteredLost.length}</span></div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr>
+            <th>Клієнт</th>
+            <th>Виторг минулого періоду</th>
+            <th>Остання накладна</th>
+          </tr></thead>
+          <tbody>${filteredLost.map(c => `
+            <tr>
+              <td>${esc(c.name)}</td>
+              <td>${fmtUsd(c.prev_usd)}</td>
+              <td>${fmtDate(c.last_receipt)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>` : ''}
+  `;
+
+  document.getElementById('body').innerHTML = html;
+}
+</script>
+</body>
+</html>
