@@ -81,6 +81,16 @@ a{color:inherit;text-decoration:none}
 .badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.3px}
 .badge-new{background:var(--green-bg);color:var(--green)}
 .badge-ret{background:var(--blue-bg);color:var(--blue)}
+.badge-warn{background:var(--yellow-bg);color:var(--yellow)}
+.days-warn{color:var(--yellow);font-weight:700}
+.days-danger{color:var(--red);font-weight:700}
+.signal-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border)}
+.signal-row:last-child{border-bottom:none}
+.signal-name{font-weight:600;font-size:13px}
+.signal-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.signal-right{text-align:right;white-space:nowrap}
+.signal-days{font-size:15px;font-weight:700;color:var(--red)}
+.signal-rev{font-size:11px;color:var(--text3)}
 
 /* Period label */
 .period-lbl{font-size:12px;color:var(--text3);margin-bottom:14px}
@@ -165,7 +175,7 @@ async function load() {
 }
 
 function render() {
-  const { summary, clients, lost_clients, period } = _data;
+  const { summary, clients, lost_clients, churn_signals, period } = _data;
   const q = _search.toLowerCase();
 
   const total = summary.new + summary.returning + summary.lost;
@@ -175,6 +185,10 @@ function render() {
 
   const filteredClients = q ? clients.filter(c => c.name.toLowerCase().includes(q)) : clients;
   const filteredLost = q ? lost_clients.filter(c => c.name.toLowerCase().includes(q)) : lost_clients;
+  const signals = churn_signals || [];
+  const filteredSignals = q ? signals.filter(c => c.name.toLowerCase().includes(q)) : signals;
+
+  function daysClass(d) { return d >= 90 ? 'days-danger' : d >= 45 ? 'days-warn' : ''; }
 
   const html = `
     <div class="period-lbl">Період: ${fmtDate(period.from)} — ${fmtDate(period.to)}</div>
@@ -183,7 +197,7 @@ function render() {
       <div class="kpi">
         <span class="kl">Активних клієнтів</span>
         <span class="kv">${summary.active}</span>
-        <span class="ks">≥1 видаткова накладна за останні 3 міс</span>
+        <span class="ks">≥1 видаткова накладна за останні 6 міс</span>
       </div>
       <div class="kpi">
         <span class="kl">Нових</span>
@@ -198,12 +212,17 @@ function render() {
       <div class="kpi">
         <span class="kl">Відтік</span>
         <span class="kv" style="color:var(--red)">${summary.lost}</span>
-        <span class="ks">купували в попередні 3 міс, але за цей період — жодної накладної</span>
+        <span class="ks">купували в попередні 6 міс, але за цей період — жодної накладної</span>
       </div>
       <div class="kpi">
         <span class="kl">Виторг за період</span>
         <span class="kv">${fmtUsd(summary.total_usd)}</span>
         <span class="ks">сума всіх видаткових накладних активних клієнтів, USD</span>
+      </div>
+      <div class="kpi">
+        <span class="kl">Сигнали відтоку</span>
+        <span class="kv" style="color:var(--yellow)">${signals.length}</span>
+        <span class="ks">≥3 покупок за 180д, але немає 45+ днів</span>
       </div>
     </div>
 
@@ -220,6 +239,30 @@ function render() {
 
     <input type="text" class="search-box" placeholder="Пошук клієнта…" value="${esc(_search)}" oninput="_search=this.value;render()">
 
+    ${filteredSignals.length ? `
+      <div class="sec-title" style="color:var(--yellow)">Поведінкові сигнали відтоку <span class="sec-count">${filteredSignals.length}</span></div>
+      <div class="period-lbl">Клієнти з ≥3 покупками за 180 днів, але без жодної покупки вже 45+ днів</div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr>
+            <th>Клієнт</th>
+            <th>Днів без покупки</th>
+            <th>Виторг 180д (USD)</th>
+            <th>Накладних 180д</th>
+            <th>Остання накладна</th>
+          </tr></thead>
+          <tbody>${filteredSignals.map(s => `
+            <tr>
+              <td>${esc(s.name)}</td>
+              <td><span class="${daysClass(s.days_since_last)}">${s.days_since_last}д</span></td>
+              <td>${fmtUsd(s.rev_180_usd)}</td>
+              <td>${s.receipts_180}</td>
+              <td>${fmtDate(s.last_date)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>` : ''}
+
     <div class="sec-title">Активні клієнти <span class="sec-count">${filteredClients.length}</span></div>
     <div class="period-lbl">Клієнти з хоча б однією проведеною видатковою накладною за період ${fmtDate(period.from)} — ${fmtDate(period.to)}</div>
     <div class="tbl-wrap">
@@ -227,6 +270,7 @@ function render() {
         <thead><tr>
           <th>Клієнт</th>
           <th>Статус</th>
+          <th>Днів без покупки</th>
           <th>Виторг (USD)</th>
           <th>Накладних</th>
           <th>Перша накладна</th>
@@ -236,6 +280,7 @@ function render() {
           <tr>
             <td>${esc(c.name)}</td>
             <td><span class="badge ${c.status === 'new' ? 'badge-new' : 'badge-ret'}">${c.status === 'new' ? 'новий' : 'повторний'}</span></td>
+            <td><span class="${daysClass(c.days_since_last)}">${c.days_since_last}д</span></td>
             <td>${fmtUsd(c.total_usd)}</td>
             <td>${c.receipts}</td>
             <td>${fmtDate(c.first_ever)}</td>
@@ -247,7 +292,7 @@ function render() {
 
     ${filteredLost.length ? `
       <div class="sec-title" style="color:var(--red)">Втрачені клієнти <span class="sec-count">${filteredLost.length}</span></div>
-      <div class="period-lbl">Були активні в попередні 3 міс, але за поточний період (${fmtDate(period.from)} — ${fmtDate(period.to)}) — жодної накладної</div>
+      <div class="period-lbl">Були активні в попередні 6 міс, але за поточний період (${fmtDate(period.from)} — ${fmtDate(period.to)}) — жодної накладної</div>
       <div class="tbl-wrap">
         <table class="tbl">
           <thead><tr>
