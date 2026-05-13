@@ -7,8 +7,8 @@
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
-<script src="auth.js?v=inv20260513"></script>
-<script src="header.js?v=inv20260513"></script>
+<script src="auth.js?v=inv20260513b"></script>
+<script src="header.js?v=inv20260513b"></script>
 <style>
 :root{
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -56,56 +56,59 @@ a{color:inherit;text-decoration:none}
 .toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
 .toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 2px}
 
-/* Summary cards */
-.inv-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px}
-.inv-card{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:3px;cursor:pointer;transition:border-color .12s,background .12s}
-.inv-card:hover{border-color:var(--border2)}
-.inv-card.active{border-color:var(--accent);background:var(--accent-bg)}
-.inv-card.dim{opacity:.55}
-.inv-card .cl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
-.inv-card .cv{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.3px;line-height:1.2;color:var(--text)}
-.inv-card .cs{font-size:11px;color:var(--text3);font-weight:500}
-.inv-card.c-fast .cv{color:var(--green)}
-.inv-card.c-normal .cv{color:var(--blue)}
-.inv-card.c-slow .cv{color:var(--yellow)}
-.inv-card.c-excess .cv{color:var(--accent)}
-.inv-card.c-dead .cv{color:var(--red)}
+/* KPI cards — top row */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.kpi{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:3px}
+.kpi .kl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+.kpi .kv{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.3px;line-height:1.2;color:var(--text)}
+.kpi .ks{font-size:11px;color:var(--text3);font-weight:500}
+
+/* Status filter cards */
+.status-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.st-card{padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:2px;cursor:pointer;transition:border-color .12s,background .12s,opacity .12s}
+.st-card:hover{border-color:var(--border2)}
+.st-card.active{border-color:var(--accent);background:var(--accent-bg)}
+.st-card.dim{opacity:.5}
+.st-card .sl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+.st-card .sv{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.3px;line-height:1.2}
+.st-card .ss{font-size:11px;color:var(--text3);font-weight:500}
+.st-card.s-fast   .sv{color:var(--green)}
+.st-card.s-normal .sv{color:var(--text)}
+.st-card.s-slow   .sv{color:var(--text)}
+.st-card.s-dead   .sv{color:var(--red)}
 
 /* Table */
 .inv-wrap{overflow:auto;margin-bottom:20px;border:1px solid var(--border);border-radius:12px;background:var(--bg)}
-.inv-table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums;min-width:900px}
+.inv-table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums;min-width:1100px}
 .inv-table th,.inv-table td{padding:10px 12px;text-align:right;white-space:nowrap;vertical-align:middle;line-height:1.25}
-.inv-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;background:var(--surface2);position:sticky;top:0;z-index:2;border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+.inv-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;background:var(--surface2);position:sticky;top:0;z-index:2;border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
 .inv-table th:hover{color:var(--text)}
 .inv-table th.sorted{color:var(--accent)}
 .inv-table th.sorted::after{content:' ▾';font-size:9px}
 .inv-table th.sorted.asc::after{content:' ▴'}
-.inv-table th:first-child{text-align:left;position:sticky;left:0;z-index:3;background:var(--surface2);min-width:300px}
-.inv-table td:first-child{text-align:left;position:sticky;left:0;z-index:1;background:inherit;min-width:300px}
+.inv-table th:first-child{text-align:left;position:sticky;left:0;z-index:3;background:var(--surface2);min-width:280px}
+.inv-table td:first-child{text-align:left;position:sticky;left:0;z-index:1;background:inherit;min-width:280px}
 .inv-table tbody tr{background:var(--bg);transition:background .1s}
 .inv-table tbody tr:hover td{background:var(--bg3)}
 .inv-table tbody tr+tr td{border-top:1px solid var(--border)}
 .inv-table td.zr{color:var(--text3)}
-.inv-table td.name-cell{overflow:hidden;text-overflow:ellipsis;max-width:350px}
+.inv-table td.name-cell{overflow:hidden;text-overflow:ellipsis;max-width:320px}
 .inv-table td.name-cell .article{color:var(--text3);font-size:11px;margin-left:6px}
-.inv-table td.name-cell .cat{display:block;font-size:10px;color:var(--text3);font-weight:500;margin-top:1px;overflow:hidden;text-overflow:ellipsis}
-.inv-table td.cls-fast{color:var(--green);font-weight:600}
-.inv-table td.cls-normal{color:var(--blue);font-weight:600}
-.inv-table td.cls-slow{color:var(--yellow);font-weight:600}
-.inv-table td.cls-excess{color:var(--accent);font-weight:600}
-.inv-table td.cls-dead{color:var(--red);font-weight:600}
-
-/* Category group header */
-.inv-table tr.cat-hdr td{font-weight:700;font-size:13px;color:var(--text);border-top:2px solid var(--border);background:var(--surface2);padding:9px 12px;cursor:pointer;user-select:none}
-.inv-table tr.cat-hdr td .tri{display:inline-block;width:10px;margin-right:8px;font-size:9px;color:var(--text3);transition:transform .18s;text-align:center;vertical-align:1px}
-.inv-table tr.cat-hdr[data-collapsed="true"] td .tri{transform:rotate(-90deg)}
-.inv-table tr.cat-child.collapsed-hidden{display:none}
+.inv-table td.abc-a{color:var(--green);font-weight:700}
+.inv-table td.abc-b{color:var(--text);font-weight:600}
+.inv-table td.abc-c{color:var(--text3);font-weight:500}
+.inv-table td.s-fast{color:var(--green);font-weight:600}
+.inv-table td.s-normal{color:var(--text);font-weight:600}
+.inv-table td.s-slow{color:var(--text);font-weight:600}
+.inv-table td.s-dead{color:var(--red);font-weight:600}
+.inv-table td.excess-hi{color:var(--red)}
 
 /* Loading + empty */
 .loading{text-align:center;padding:60px 20px;color:var(--text3);font-size:14px}
 .loading::after{content:'';display:block;width:28px;height:28px;margin:16px auto 0;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .error{text-align:center;padding:40px;color:var(--red);background:var(--red-bg);border-radius:12px;margin:20px 0}
+.empty-msg{padding:40px;text-align:center;color:var(--text3);font-size:13px;background:var(--surface2);border:1px dashed var(--border);border-radius:12px}
 
 @media(max-width:720px){
   .wrap{padding:12px}
@@ -117,17 +120,20 @@ a{color:inherit;text-decoration:none}
   .toolbar .group{padding:3px;gap:2px}
   .toolbar .group .chip{padding:5px 8px;font-size:11px}
   .toolbar .sep{display:none}
-  .inv-summary{grid-template-columns:1fr 1fr;gap:8px}
-  .inv-card{padding:11px 12px;border-radius:10px}
-  .inv-card .cl{font-size:9.5px}
-  .inv-card .cv{font-size:18px}
+  .kpi-row{grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .kpi{padding:11px 12px;border-radius:10px}
+  .kpi .kv{font-size:18px}
+  .status-row{grid-template-columns:1fr 1fr;gap:8px}
+  .st-card{padding:10px 12px;border-radius:10px}
+  .st-card .sv{font-size:16px}
   .inv-wrap{border-radius:10px;-webkit-overflow-scrolling:touch}
-  .inv-table{font-size:11px;min-width:700px}
+  .inv-table{font-size:11px;min-width:900px}
   .inv-table th,.inv-table td{padding:6px 8px}
   .inv-table td:first-child,.inv-table th:first-child{min-width:200px}
 }
 @media(max-width:480px){
-  .inv-summary{grid-template-columns:1fr}
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .status-row{grid-template-columns:1fr 1fr}
 }
 </style>
 </head>
@@ -155,27 +161,30 @@ a{color:inherit;text-decoration:none}
       <span class="lbl">Пошук</span>
       <input type="text" id="searchIn" placeholder="Назва або артикул…" oninput="applyFilters()">
       <div class="sep"></div>
-      <span class="lbl">Групувати</span>
-      <span class="group" id="groupMode">
-        <span class="chip active" data-group="flat" onclick="setGroup(this)">Без</span>
-        <span class="chip" data-group="category" onclick="setGroup(this)">Категорія</span>
+      <span class="lbl">ABC</span>
+      <span class="group" id="abcGroup">
+        <span class="chip active" data-abc="" onclick="setAbc(this)">Всі</span>
+        <span class="chip" data-abc="A" onclick="setAbc(this)">A</span>
+        <span class="chip" data-abc="B" onclick="setAbc(this)">B</span>
+        <span class="chip" data-abc="C" onclick="setAbc(this)">C</span>
       </span>
     </div>
 
-    <div id="summary"></div>
+    <div id="kpis"></div>
+    <div id="statusCards"></div>
     <div id="body"><div class="loading">Завантаження…</div></div>
   </div>
 </div>
 
 <script>
 const API = 'https://price-api.doskevich.workers.dev/';
-const state = { org: 'Реакт', classFilter: null, sortCol: 'value_usd', sortAsc: false, groupBy: 'flat' };
+const state = { org: 'Реакт', statusFilter: null, abcFilter: '', sortCol: 'excess_val', sortAsc: false };
 let DATA = null;
 
 const fmt  = (v, d=0) => v == null ? '—' : Number(v).toLocaleString('uk-UA', { minimumFractionDigits: d, maximumFractionDigits: d });
-const fmtU = (v) => v == null ? '—' : '$' + fmt(v, 0);
-const CLASS_LABELS = { fast: 'Швидкий', normal: 'Нормальний', slow: 'Повільний', excess: 'Надлишок', dead: 'Мертвий' };
-const CLASS_DAYS   = { fast: '< 30 дн', normal: '30–90 дн', slow: '90–180 дн', excess: '180–365 дн', dead: '> 365 дн' };
+const fmtU = v => v == null ? '—' : '$' + fmt(v, 0);
+const STATUS_LABELS = { fast: 'Швидкий', normal: 'Нормальний', slow: 'Повільний', dead: 'Мертвий' };
+const STATUS_DESC   = { fast: 'DSI < 60 дн', normal: 'DSI 60–180 дн', slow: 'DSI > 180 дн', dead: 'Без продажів 12 міс' };
 
 function setOrg(el) {
   document.querySelectorAll('#orgGroup .chip').forEach(c => c.classList.remove('active'));
@@ -183,30 +192,27 @@ function setOrg(el) {
   state.org = el.dataset.org;
   load();
 }
-
-function setGroup(el) {
-  document.querySelectorAll('#groupMode .chip').forEach(c => c.classList.remove('active'));
+function setAbc(el) {
+  document.querySelectorAll('#abcGroup .chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
-  state.groupBy = el.dataset.group;
+  state.abcFilter = el.dataset.abc;
   render();
 }
-
-function setClassFilter(cls) {
-  state.classFilter = state.classFilter === cls ? null : cls;
+function setStatusFilter(s) {
+  state.statusFilter = state.statusFilter === s ? null : s;
   render();
 }
-
 function setSort(col) {
   if (state.sortCol === col) state.sortAsc = !state.sortAsc;
   else { state.sortCol = col; state.sortAsc = false; }
   render();
 }
-
 function applyFilters() { render(); }
 
 async function load() {
   document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
-  document.getElementById('summary').innerHTML = '';
+  document.getElementById('kpis').innerHTML = '';
+  document.getElementById('statusCards').innerHTML = '';
   try {
     const orgParam = state.org ? `&org=${encodeURIComponent(state.org)}` : '';
     const r = await fetch(`${API}?action=inventory_turnover${orgParam}`, {
@@ -223,32 +229,67 @@ async function load() {
 function render() {
   if (!DATA) return;
   const s = DATA.summary;
-  const bc = s.by_class || {};
-  const classes = ['fast','normal','slow','excess','dead'];
 
-  // Summary cards
-  let sh = `<div class="inv-summary">
-    <div class="inv-card ${!state.classFilter ? 'active' : 'dim'}" onclick="setClassFilter(null)">
-      <div class="cl">Всього на складі</div>
-      <div class="cv">${fmtU(s.total_value_usd)}</div>
-      <div class="cs">${fmt(s.total_sku)} SKU</div>
-    </div>`;
-  for (const cl of classes) {
-    const c = bc[cl] || {};
-    const isActive = state.classFilter === cl;
-    const dim = state.classFilter && !isActive ? 'dim' : '';
-    sh += `<div class="inv-card c-${cl} ${isActive ? 'active' : dim}" onclick="setClassFilter('${cl}')">
-      <div class="cl">${CLASS_LABELS[cl]}</div>
-      <div class="cv">${fmtU(c.value_usd)}</div>
-      <div class="cs">${c.sku || 0} SKU &middot; ${CLASS_DAYS[cl]}</div>
+  // KPI cards
+  document.getElementById('kpis').innerHTML = `<div class="kpi-row">
+    <div class="kpi">
+      <div class="kl">Вартість запасу</div>
+      <div class="kv">${fmtU(s.stock_value_usd)}</div>
+      <div class="ks">${fmt(s.total_sku)} SKU</div>
+    </div>
+    <div class="kpi">
+      <div class="kl">Оборотність (ITR)</div>
+      <div class="kv">${s.itr != null ? fmt(s.itr, 2) + 'x' : '—'}</div>
+      <div class="ks">разів на рік</div>
+    </div>
+    <div class="kpi">
+      <div class="kl">Дні запасу (DSI)</div>
+      <div class="kv">${s.dsi != null ? fmt(s.dsi) : '—'}</div>
+      <div class="ks">днів</div>
+    </div>
+    <div class="kpi">
+      <div class="kl">GMROI</div>
+      <div class="kv">${s.gmroi != null ? fmt(s.gmroi, 2) : '—'}</div>
+      <div class="ks">$/$ інвестиції</div>
+    </div>
+    <div class="kpi">
+      <div class="kl" style="color:var(--red)">Мертвий сток</div>
+      <div class="kv" style="color:var(--red)">${fmtU(s.dead?.value_usd)}</div>
+      <div class="ks">${s.dead?.sku || 0} SKU</div>
+    </div>
+    <div class="kpi">
+      <div class="kl" style="color:var(--red)">Надлишок (> ${DATA.target_coverage_days}д)</div>
+      <div class="kv" style="color:var(--red)">${fmtU(s.excess_value_usd)}</div>
+      <div class="ks">понад норму покриття</div>
+    </div>
+  </div>`;
+
+  // Status filter cards
+  const statuses = ['fast', 'normal', 'slow', 'dead'];
+  const byStatus = {};
+  for (const st of statuses) byStatus[st] = { sku: 0, val: 0 };
+  for (const it of DATA.items) {
+    const b = byStatus[it.status];
+    if (b) { b.sku++; b.val += it.stock_val || 0; }
+  }
+  let stHtml = '<div class="status-row">';
+  for (const st of statuses) {
+    const b = byStatus[st];
+    const isActive = state.statusFilter === st;
+    const dim = state.statusFilter && !isActive ? 'dim' : '';
+    stHtml += `<div class="st-card s-${st} ${isActive ? 'active' : dim}" onclick="setStatusFilter('${st}')">
+      <div class="sl">${STATUS_LABELS[st]}</div>
+      <div class="sv">${fmtU(b.val)}</div>
+      <div class="ss">${b.sku} SKU &middot; ${STATUS_DESC[st]}</div>
     </div>`;
   }
-  sh += '</div>';
-  document.getElementById('summary').innerHTML = sh;
+  stHtml += '</div>';
+  document.getElementById('statusCards').innerHTML = stHtml;
 
-  // Filter + sort items
+  // Filter items
   let items = DATA.items.slice();
-  if (state.classFilter) items = items.filter(i => i.turnover_class === state.classFilter);
+  if (state.statusFilter) items = items.filter(i => i.status === state.statusFilter);
+  if (state.abcFilter) items = items.filter(i => i.abc === state.abcFilter);
   const q = (document.getElementById('searchIn')?.value || '').toLowerCase().trim();
   if (q) items = items.filter(i =>
     (i.name || '').toLowerCase().includes(q) ||
@@ -256,27 +297,35 @@ function render() {
     (i.code || '').toLowerCase().includes(q)
   );
 
-  const sortFn = (a, b) => {
+  // Sort
+  items.sort((a, b) => {
     let va = a[state.sortCol], vb = b[state.sortCol];
     if (va == null) va = state.sortAsc ? Infinity : -Infinity;
     if (vb == null) vb = state.sortAsc ? Infinity : -Infinity;
     if (typeof va === 'string') return state.sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
     return state.sortAsc ? va - vb : vb - va;
-  };
-  items.sort(sortFn);
+  });
 
-  // Build table
+  if (!items.length) {
+    document.getElementById('body').innerHTML = '<div class="empty-msg">Немає даних для обраних фільтрів</div>';
+    return;
+  }
+
+  // Table
   const cols = [
-    { key: 'name', label: 'Товар' },
-    { key: 'qty', label: 'Залишок' },
-    { key: 'value_usd', label: 'Вартість, $' },
-    { key: 'sold_30d', label: 'Продано 30д' },
-    { key: 'sold_90d', label: 'Продано 90д' },
-    { key: 'sold_365d', label: 'Продано 365д' },
-    { key: 'days_of_stock', label: 'Дні запасу' },
-    { key: 'daily_rate', label: 'Шт/день' },
-    { key: 'last_sale_date', label: 'Остання продаж' },
-    { key: 'turnover_class', label: 'Клас' },
+    { key: 'name',      label: 'Товар' },
+    { key: 'abc',       label: 'ABC' },
+    { key: 'qty',       label: 'Залишок' },
+    { key: 'stock_val', label: 'Вартість $' },
+    { key: 'sold_90d',  label: 'Продано 90д' },
+    { key: 'sold_365d', label: 'Продано рік' },
+    { key: 'itr',       label: 'ITR' },
+    { key: 'dsi',       label: 'DSI' },
+    { key: 'gmroi',     label: 'GMROI' },
+    { key: 'dos',       label: 'Покриття дн' },
+    { key: 'excess_val',label: 'Надлишок $' },
+    { key: 'last_sale', label: 'Остання продаж' },
+    { key: 'status',    label: 'Статус' },
   ];
 
   let th = '<tr>';
@@ -288,28 +337,7 @@ function render() {
   th += '</tr>';
 
   let tbody = '';
-  if (state.groupBy === 'category') {
-    const groups = new Map();
-    for (const it of items) {
-      const cat = it.category || 'Без категорії';
-      if (!groups.has(cat)) groups.set(cat, []);
-      groups.get(cat).push(it);
-    }
-    for (const [cat, citems] of groups) {
-      const catVal = citems.reduce((s, i) => s + (i.value_usd || 0), 0);
-      const catQty = citems.reduce((s, i) => s + i.qty, 0);
-      const catId = cat.replace(/[^a-zA-Zа-яА-ЯіІїЇєЄґҐ0-9]/g, '_');
-      tbody += `<tr class="cat-hdr" data-cat="${catId}" onclick="toggleCat('${catId}')"><td colspan="${cols.length}"><span class="tri">▾</span>${cat} &mdash; ${fmt(citems.length)} шт, ${fmtU(catVal)}</td></tr>`;
-      for (const it of citems) tbody += rowHtml(it, `cat-child cat-${catId}`);
-    }
-  } else {
-    for (const it of items) tbody += rowHtml(it, '');
-  }
-
-  if (!items.length) {
-    document.getElementById('body').innerHTML = '<div class="error" style="background:var(--surface2);color:var(--text3)">Немає даних для обраних фільтрів</div>';
-    return;
-  }
+  for (const it of items) tbody += rowHtml(it);
 
   document.getElementById('body').innerHTML = `
     <div class="inv-wrap"><table class="inv-table">
@@ -317,45 +345,40 @@ function render() {
       <tbody>${tbody}</tbody>
     </table></div>
     <div style="font-size:11px;color:var(--text3);padding:4px 2px">
-      Дата залишків: ${DATA.as_of_date} &middot; ${fmt(items.length)} позицій
+      Залишки на ${DATA.as_of_date} &middot; ${fmt(items.length)} позицій
+      &middot; Норма покриття: ${DATA.target_coverage_days} дн
     </div>`;
 }
 
-function rowHtml(it, extraCls) {
-  const zr = v => v === 0 || v == null ? ' zr' : '';
+function rowHtml(it) {
+  const zr = v => (v === 0 || v == null) ? ' class="zr"' : '';
   const fmtDate = d => {
     if (!d) return '—';
     const dt = new Date(d);
-    const dd = String(dt.getDate()).padStart(2, '0');
-    const mm = String(dt.getMonth() + 1).padStart(2, '0');
-    const yy = String(dt.getFullYear()).slice(-2);
-    return `${dd}.${mm}.${yy}`;
+    return String(dt.getDate()).padStart(2,'0') + '.' + String(dt.getMonth()+1).padStart(2,'0') + '.' + String(dt.getFullYear()).slice(-2);
   };
-  const clsCls = `cls-${it.turnover_class}`;
-  return `<tr class="${extraCls}">
+  const abcCls = it.abc === 'A' ? 'abc-a' : it.abc === 'B' ? 'abc-b' : 'abc-c';
+  const stCls = 's-' + it.status;
+  const exCls = it.excess_val > 0 ? ' excess-hi' : '';
+  return `<tr>
     <td class="name-cell">${esc(it.name)}${it.article ? `<span class="article">${esc(it.article)}</span>` : ''}</td>
+    <td class="${abcCls}">${it.abc}</td>
     <td${zr(it.qty)}>${fmt(it.qty)}</td>
-    <td${zr(it.value_usd)}>${fmtU(it.value_usd)}</td>
-    <td${zr(it.sold_30d)}>${fmt(it.sold_30d)}</td>
+    <td${zr(it.stock_val)}>${fmtU(it.stock_val)}</td>
     <td${zr(it.sold_90d)}>${fmt(it.sold_90d)}</td>
     <td${zr(it.sold_365d)}>${fmt(it.sold_365d)}</td>
-    <td class="${clsCls}">${it.days_of_stock != null ? fmt(it.days_of_stock) : '—'}</td>
-    <td${zr(it.daily_rate)}>${fmt(it.daily_rate, 2)}</td>
-    <td>${fmtDate(it.last_sale_date)}</td>
-    <td class="${clsCls}">${CLASS_LABELS[it.turnover_class] || it.turnover_class}</td>
+    <td${zr(it.itr)}>${it.itr != null ? fmt(it.itr, 2) + 'x' : '—'}</td>
+    <td${zr(it.dsi)}>${it.dsi != null ? fmt(it.dsi) : '—'}</td>
+    <td${zr(it.gmroi)}>${it.gmroi != null ? fmt(it.gmroi, 2) : '—'}</td>
+    <td${zr(it.dos)}>${it.dos != null ? fmt(it.dos) : '—'}</td>
+    <td${exCls ? ' class="excess-hi"' : zr(it.excess_val)}>${fmtU(it.excess_val)}</td>
+    <td>${fmtDate(it.last_sale)}</td>
+    <td class="${stCls}">${STATUS_LABELS[it.status] || it.status}</td>
   </tr>`;
 }
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-function toggleCat(catId) {
-  const hdr = document.querySelector(`tr[data-cat="${catId}"]`);
-  const collapsed = hdr.getAttribute('data-collapsed') === 'true';
-  hdr.setAttribute('data-collapsed', String(!collapsed));
-  document.querySelectorAll(`.cat-${catId}`).forEach(r => r.classList.toggle('collapsed-hidden', !collapsed));
-}
-
-// Auth + org visibility
 Auth.require('sales').then(user => {
   const userOrgs = user?.orgs || {};
   const hasAnyOrg = Object.keys(userOrgs).length > 0;
