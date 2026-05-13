@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SLA: Час реакції · RE:ACT ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<script>
+  try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
+</script>
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+<script src="auth.js?v=sla20260513"></script>
+<script src="header.js?v=sla20260513"></script>
+<style>
+:root{
+  --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
+  --surface:#141414; --surface2:#1c1c1c;
+  --border:#262626; --border2:#333;
+  --text:#f5f5f5; --text2:#a3a3a3; --text3:#737373;
+  --accent:#ff8319; --accent-bg:rgba(255,131,25,.12);
+  --red:#e74c3c; --red-bg:rgba(231,76,60,.12);
+  --green:#22c55e; --green-bg:rgba(34,197,94,.12);
+  --shadow-md:0 4px 20px rgba(0,0,0,.4);
+}
+:root[data-theme="light"]{
+  --bg:#f5f5f7; --bg2:#ffffff; --bg3:#ececef;
+  --surface:#ffffff; --surface2:#ffffff;
+  --border:#e5e5ea; --border2:#d1d1d6;
+  --text:#1c1c1e; --text2:#48484a; --text3:#8e8e93;
+  --accent:#e07017; --accent-bg:rgba(224,112,23,.12);
+  --red:#d93025; --red-bg:rgba(217,48,37,.10);
+  --green:#15803d; --green-bg:rgba(21,128,61,.10);
+  --shadow-md:0 4px 20px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+
+.wrap{margin:0 auto;padding:14px 16px}
+.page-tabs{display:inline-flex;gap:4px;padding:4px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:10px}
+.ptab{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;color:var(--text2);text-decoration:none;transition:background .15s,color .15s;white-space:nowrap}
+.ptab:hover{background:var(--bg3);color:var(--text)}
+.ptab.active{background:var(--accent-bg);color:var(--accent)}
+
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
+.toolbar input[type=date]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;color-scheme:dark;font-family:inherit}
+:root[data-theme="light"] .toolbar input[type=date]{color-scheme:light}
+.toolbar input[type=date]:focus{border-color:var(--accent)}
+.toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.toolbar .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;display:inline-flex;align-items:center;gap:6px}
+.toolbar .chip:hover{background:var(--bg3);color:var(--text)}
+.toolbar .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 2px}
+.toolbar .group{display:inline-flex;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px}
+.toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
+.toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
+
+/* SLA summary cards */
+.sla-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px}
+.sla-card{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
+.sla-card .lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-bottom:3px}
+.sla-card .val{font-size:22px;font-weight:800;letter-spacing:-.3px;line-height:1.2;font-variant-numeric:tabular-nums}
+
+/* SLA tree table */
+.sla-tbl{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+.sla-tbl th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:700;padding:8px 6px;border-bottom:2px solid var(--border)}
+.sla-tbl th.r{text-align:right}
+.sla-tbl td{padding:7px 6px;border-bottom:1px solid var(--border);vertical-align:middle}
+.sla-tbl td.r{text-align:right;font-variant-numeric:tabular-nums}
+.sla-tbl .col-reaction{background:var(--surface2)}
+.sla-tbl th.col-reaction{background:var(--surface2)}
+
+/* Level 1: Manager row */
+.sla-tbl .lvl1{cursor:pointer;user-select:none}
+.sla-tbl .lvl1:hover{background:var(--bg3)}
+.sla-tbl .lvl1 td:first-child{font-weight:700;font-size:13px}
+.sla-tbl .lvl1 .toggle{color:var(--text3);font-size:10px;margin-right:6px;display:inline-block;transition:transform .15s}
+.sla-tbl .lvl1.open .toggle{transform:rotate(90deg)}
+
+/* Level 2: Counterparty row */
+.sla-tbl .lvl2{cursor:pointer;user-select:none}
+.sla-tbl .lvl2:hover{background:var(--bg3)}
+.sla-tbl .lvl2 td:first-child{padding-left:24px;font-weight:600;font-size:12px;color:var(--text2)}
+.sla-tbl .lvl2 .toggle{color:var(--text3);font-size:10px;margin-right:4px;display:inline-block;transition:transform .15s}
+.sla-tbl .lvl2.open .toggle{transform:rotate(90deg)}
+
+/* Level 3: Event row */
+.sla-tbl .lvl3 td{font-size:11px;color:var(--text2)}
+.sla-tbl .lvl3 td:first-child{padding-left:44px}
+
+/* Footer row */
+.sla-tbl .sla-footer td{border-top:2px solid var(--border);font-weight:700;font-size:13px;padding:10px 6px}
+
+/* Reaction time coloring */
+.sla-good{color:var(--green)}
+.sla-bad{color:var(--red)}
+
+/* Pending banner */
+.pending-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.pending-item{padding:8px 12px;background:var(--red-bg);border:1px solid var(--red);border-radius:8px;font-size:11px;font-weight:600;color:var(--red)}
+.pending-item .name{color:var(--text)}
+
+/* Loading / empty */
+.loading{text-align:center;padding:40px;color:var(--text3);font-size:13px}
+
+/* Admin panel */
+.admin-section{margin-top:20px;padding:16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
+.admin-section h3{font-size:13px;font-weight:700;margin-bottom:10px}
+.admin-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.admin-tbl th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:700;padding:6px;border-bottom:1px solid var(--border)}
+.admin-tbl td{padding:6px;border-bottom:1px solid var(--border)}
+.admin-tbl td input{background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:4px 6px;font-size:11px;width:100%}
+.btn-sm{padding:5px 10px;background:var(--accent-bg);border:1px solid var(--accent);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer}
+.btn-sm:hover{background:var(--accent);color:#fff}
+
+@media(max-width:768px){
+  .page-tabs{display:flex;flex-wrap:wrap;gap:3px;padding:3px;max-width:100%}
+  .ptab{padding:6px 10px;font-size:11.5px;flex:0 0 auto}
+  .sla-summary{grid-template-columns:1fr 1fr}
+  .sla-tbl{font-size:11px}
+  .sla-tbl .lvl2 td:first-child{padding-left:16px}
+  .sla-tbl .lvl3 td:first-child{padding-left:28px}
+}
+</style>
+</head>
+<body>
+
+<div id="appHeader"></div>
+<div id="app">
+  <div class="wrap">
+    <div class="page-tabs">
+      <a href="/sales.html" class="ptab">📈 Продажі менеджерів</a>
+      <a href="/top_products.html" class="ptab">📦 Останні продажі</a>
+      <a href="/osp.html" class="ptab">📋 Оплата та відвантаження</a>
+      <a href="/ar_aging.html" class="ptab">⏱ Заборгованість покупців</a>
+      <a href="/active_clients.html" class="ptab">👥 Клієнтська база</a>
+      <a href="/inventory.html" class="ptab">📊 Обіговість запасів</a>
+      <a href="/sla.html" class="ptab active">⚡ SLA</a>
+    </div>
+
+    <div class="toolbar">
+      <span class="lbl">Період</span>
+      <input type="date" id="fromIn">
+      <span style="color:var(--text3)">—</span>
+      <input type="date" id="toIn">
+      <span class="group">
+        <span class="chip" data-preset="month" onclick="setPreset('month')">Цей місяць</span>
+        <span class="chip" data-preset="prevmonth" onclick="setPreset('prevmonth')">Минулий</span>
+      </span>
+      <span class="sep"></span>
+      <span class="chip" data-org="" onclick="setOrg('')">Всі</span>
+      <span class="chip" data-org="Реакт" onclick="setOrg('Реакт')">Реакт</span>
+      <span class="chip" data-org="Генерація" onclick="setOrg('Генерація')">Генерація</span>
+    </div>
+
+    <div id="pendingBar" class="pending-bar"></div>
+
+    <div id="summaryCards" class="sla-summary"></div>
+
+    <div id="reportWrap">
+      <div class="loading" id="loader">Завантаження…</div>
+      <table class="sla-tbl" id="slaTbl" style="display:none">
+        <thead>
+          <tr>
+            <th style="width:40%">Менеджер / Контрагент / Час запиту</th>
+            <th class="r" style="width:17%">Час відповіді</th>
+            <th class="r col-reaction" style="width:13%">Час реакції (хв)</th>
+            <th style="width:30%">Чат</th>
+          </tr>
+        </thead>
+        <tbody id="slaBody"></tbody>
+        <tfoot id="slaFoot"></tfoot>
+      </table>
+    </div>
+
+    <div id="adminPanel"></div>
+  </div>
+</div>
+
+<script>
+const API = 'https://price-api.doskevich.workers.dev/';
+const state = { from: '', to: '', org: '', preset: 'month' };
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  return `${dd}-${mm}-${d.getFullYear()} ${hh}:${mi}`;
+}
+
+function reactionClass(min) {
+  if (min < 3) return 'sla-good';
+  if (min >= 10) return 'sla-bad';
+  return '';
+}
+
+function fmtReaction(min) {
+  if (min == null) return '—';
+  return min < 1 ? min.toFixed(2) : min < 10 ? min.toFixed(1) : Math.round(min);
+}
+
+// ── Presets ──
+function calcPreset(name) {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  if (name === 'month') return { from: new Date(y, m, 1), to: new Date(y, m + 1, 1) };
+  if (name === 'prevmonth') return { from: new Date(y, m - 1, 1), to: new Date(y, m, 1) };
+  return { from: new Date(y, m, 1), to: new Date(y, m + 1, 1) };
+}
+function isoDate(d) { return d.toISOString().slice(0, 10); }
+
+function setPreset(p) {
+  state.preset = p;
+  const { from, to } = calcPreset(p);
+  state.from = isoDate(from); state.to = isoDate(to);
+  document.getElementById('fromIn').value = state.from;
+  document.getElementById('toIn').value = state.to;
+  document.querySelectorAll('[data-preset]').forEach(c => c.classList.toggle('active', c.dataset.preset === p));
+  saveHash(); load();
+}
+function setOrg(org) {
+  state.org = org;
+  document.querySelectorAll('[data-org]').forEach(c => c.classList.toggle('active', c.dataset.org === org));
+  saveHash(); load();
+}
+
+function detectPreset(from, to) {
+  for (const p of ['month', 'prevmonth']) {
+    const r = calcPreset(p);
+    if (isoDate(r.from) === from && isoDate(r.to) === to) return p;
+  }
+  return '';
+}
+
+// ── Hash state ──
+function saveHash() {
+  location.hash = `from=${state.from}&to=${state.to}&org=${encodeURIComponent(state.org)}`;
+}
+function loadHash() {
+  const h = location.hash.slice(1);
+  const p = new URLSearchParams(h);
+  if (p.get('from')) state.from = p.get('from');
+  if (p.get('to')) state.to = p.get('to');
+  if (p.has('org')) state.org = p.get('org');
+}
+
+// ── Render ──
+function renderSummary(data) {
+  const el = document.getElementById('summaryCards');
+  const avgColor = data.overall_avg_min < 3 ? 'var(--green)' : data.overall_avg_min >= 10 ? 'var(--red)' : 'var(--text)';
+  el.innerHTML = `
+    <div class="sla-card"><div class="lbl">Середній час реакції</div><div class="val" style="color:${avgColor}">${fmtReaction(data.overall_avg_min)} хв</div></div>
+    <div class="sla-card"><div class="lbl">Всього відповідей</div><div class="val">${data.total_events}</div></div>
+    <div class="sla-card"><div class="lbl">Менеджерів</div><div class="val">${data.managers.length}</div></div>
+  `;
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById('slaBody');
+  const tfoot = document.getElementById('slaFoot');
+  const tbl = document.getElementById('slaTbl');
+  const loader = document.getElementById('loader');
+
+  if (!data.managers.length) {
+    loader.textContent = 'Немає даних за обраний період';
+    loader.style.display = ''; tbl.style.display = 'none';
+    return;
+  }
+  loader.style.display = 'none'; tbl.style.display = '';
+
+  let html = '';
+  for (const mgr of data.managers) {
+    const mgrId = 'm_' + mgr.name.replace(/\W/g, '_');
+    html += `<tr class="lvl1" data-target="${mgrId}" onclick="toggleGroup(this)">
+      <td><span class="toggle">▶</span>${mgr.name}</td>
+      <td></td>
+      <td class="r col-reaction ${reactionClass(mgr.avg_min)}">${fmtReaction(mgr.avg_min)}</td>
+      <td></td>
+    </tr>`;
+
+    for (const cp of mgr.counterparties) {
+      const cpId = mgrId + '_c_' + cp.name.replace(/\W/g, '_');
+      html += `<tr class="lvl2 ${mgrId}" style="display:none" data-target="${cpId}" onclick="toggleGroup(this)">
+        <td><span class="toggle">▶</span>${cp.name}</td>
+        <td></td>
+        <td class="r col-reaction ${reactionClass(cp.avg_min)}">${fmtReaction(cp.avg_min)}</td>
+        <td></td>
+      </tr>`;
+
+      for (const ev of cp.events) {
+        html += `<tr class="lvl3 ${cpId}" style="display:none">
+          <td>${fmtDate(ev.request_at)}</td>
+          <td class="r">${fmtDate(ev.response_at)}</td>
+          <td class="r col-reaction ${reactionClass(ev.reaction_min)}">${fmtReaction(ev.reaction_min)}</td>
+          <td style="font-size:10px;color:var(--text3)">${cp.chat_title || ''}</td>
+        </tr>`;
+      }
+    }
+  }
+  tbody.innerHTML = html;
+
+  tfoot.innerHTML = `<tr class="sla-footer">
+    <td colspan="2" class="r">В серед.:</td>
+    <td class="r col-reaction ${reactionClass(data.overall_avg_min)}">${fmtReaction(data.overall_avg_min)}</td>
+    <td></td>
+  </tr>`;
+}
+
+function toggleGroup(row) {
+  const id = row.dataset.target;
+  const isOpen = row.classList.toggle('open');
+  document.querySelectorAll('.' + id).forEach(r => {
+    if (isOpen) {
+      if (r.classList.contains('lvl2') || r.classList.contains('lvl3') && r.classList.contains(id)) {
+        r.style.display = r.classList.contains('lvl3') ? 'none' : '';
+      }
+      if (r.classList.contains('lvl2')) r.style.display = '';
+    } else {
+      r.style.display = 'none';
+      r.classList.remove('open');
+    }
+  });
+}
+
+function renderPending(data) {
+  const el = document.getElementById('pendingBar');
+  if (!data.pending || !data.pending.length) { el.innerHTML = ''; return; }
+  el.innerHTML = data.pending.map(p =>
+    `<div class="pending-item"><span class="name">${p.counterparty_name}</span> — чекає ${Math.round(p.waiting_min)} хв</div>`
+  ).join('');
+}
+
+async function load() {
+  const loader = document.getElementById('loader');
+  loader.textContent = 'Завантаження…'; loader.style.display = '';
+  document.getElementById('slaTbl').style.display = 'none';
+
+  try {
+    const qs = `from=${state.from}&to=${state.to}&org=${encodeURIComponent(state.org)}`;
+    const [report, pending] = await Promise.all([
+      fetch(API + '?action=sla_report&' + qs).then(r => r.json()),
+      fetch(API + '?action=sla_pending&org=' + encodeURIComponent(state.org)).then(r => r.json())
+    ]);
+    renderSummary(report);
+    renderTable(report);
+    renderPending(pending);
+  } catch (e) {
+    loader.textContent = 'Помилка: ' + e.message;
+    loader.style.display = '';
+  }
+}
+
+// ── Admin panel ──
+async function renderAdmin(user) {
+  if (!user.roles || !user.roles.admin) return;
+  const [chatsRes, mgrsRes] = await Promise.all([
+    fetch(API + '?action=sla_chats_list').then(r => r.json()),
+    fetch(API + '?action=sla_managers_list').then(r => r.json())
+  ]);
+
+  const panel = document.getElementById('adminPanel');
+  panel.innerHTML = `
+    <div class="admin-section">
+      <h3>Менеджери (Telegram)</h3>
+      <table class="admin-tbl">
+        <thead><tr><th>Telegram ID</th><th>ПІБ</th><th>Виключити зі звіту</th><th></th></tr></thead>
+        <tbody id="mgrsTbl">${(mgrsRes.managers || []).map(m => `<tr>
+          <td>${m.telegram_user_id}</td><td>${m.name}</td>
+          <td>${m.exclude_from_report ? 'так' : 'ні'}</td><td></td>
+        </tr>`).join('')}</tbody>
+      </table>
+      <div style="margin-top:8px;display:flex;gap:6px;align-items:center">
+        <input id="newMgrId" placeholder="Telegram user ID" style="width:140px;padding:5px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px">
+        <input id="newMgrName" placeholder="ПІБ" style="width:180px;padding:5px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px">
+        <label style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px"><input type="checkbox" id="newMgrExclude"> Виключити</label>
+        <button class="btn-sm" onclick="addManager()">Додати</button>
+      </div>
+    </div>
+    <div class="admin-section" style="margin-top:12px">
+      <h3>Чати (Telegram групи)</h3>
+      <table class="admin-tbl">
+        <thead><tr><th>Chat ID</th><th>Контрагент</th><th>Менеджер</th><th>Орг</th><th>Активний</th></tr></thead>
+        <tbody id="chatsTbl">${(chatsRes.chats || []).map(c => `<tr>
+          <td>${c.chat_id}</td><td>${c.counterparty_name}</td>
+          <td>${c.manager_default || '—'}</td><td>${c.org}</td>
+          <td>${c.active ? 'так' : 'ні'}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+      <div style="margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <input id="newChatId" placeholder="Chat ID" style="width:120px;padding:5px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px">
+        <input id="newChatTitle" placeholder="Назва чату" style="width:160px;padding:5px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px">
+        <input id="newChatCp" placeholder="Контрагент" style="width:160px;padding:5px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px">
+        <input id="newChatMgr" placeholder="Менеджер" style="width:140px;padding:5px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px">
+        <select id="newChatOrg" style="padding:5px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px">
+          <option value="Генерація">Генерація</option><option value="Реакт">Реакт</option>
+        </select>
+        <button class="btn-sm" onclick="addChat()">Додати</button>
+      </div>
+    </div>
+  `;
+}
+
+async function addManager() {
+  const id = +document.getElementById('newMgrId').value;
+  const name = document.getElementById('newMgrName').value.trim();
+  if (!id || !name) return alert('Вкажіть Telegram ID і ПІБ');
+  const exclude = document.getElementById('newMgrExclude').checked ? 1 : 0;
+  await fetch(API + '?action=sla_managers_upsert', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ telegram_user_id: id, name, exclude_from_report: exclude })
+  });
+  location.reload();
+}
+
+async function addChat() {
+  const chatId = +document.getElementById('newChatId').value;
+  const title = document.getElementById('newChatTitle').value.trim();
+  const cp = document.getElementById('newChatCp').value.trim();
+  const mgr = document.getElementById('newChatMgr').value.trim();
+  const org = document.getElementById('newChatOrg').value;
+  if (!chatId || !cp) return alert('Вкажіть Chat ID і Контрагента');
+  await fetch(API + '?action=sla_chats_upsert', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, chat_title: title, counterparty_name: cp, manager_default: mgr, org })
+  });
+  location.reload();
+}
+
+// ── Init ──
+Auth.require('sales').then(user => {
+  AppHeader.mount({ active: 'sales', user });
+
+  // Org filter visibility
+  const userOrgs = user.orgs || {};
+  const hasAnyOrg = Object.keys(userOrgs).length > 0;
+  if (hasAnyOrg) {
+    const allowedOrgs = ['Реакт', 'Генерація'].filter(o => userOrgs[o]);
+    const orgChips = document.querySelectorAll('.chip[data-org]');
+    orgChips.forEach(chip => {
+      const org = chip.dataset.org;
+      if (org === '') {
+        if (allowedOrgs.length < 2) chip.style.display = 'none';
+      } else {
+        if (!userOrgs[org]) chip.style.display = 'none';
+      }
+    });
+    const defaultOrg = allowedOrgs.length === 1 ? allowedOrgs[0] : '';
+    state.org = defaultOrg;
+    orgChips.forEach(c => c.classList.toggle('active', c.dataset.org === defaultOrg));
+  }
+
+  // Load hash or default preset
+  loadHash();
+  if (!state.from || !state.to) {
+    const { from, to } = calcPreset('month');
+    state.from = isoDate(from); state.to = isoDate(to);
+  }
+  state.preset = detectPreset(state.from, state.to) || 'month';
+  document.getElementById('fromIn').value = state.from;
+  document.getElementById('toIn').value = state.to;
+  document.querySelectorAll('[data-preset]').forEach(c => c.classList.toggle('active', c.dataset.preset === state.preset));
+
+  // Date change listeners
+  document.getElementById('fromIn').addEventListener('change', function() { state.from = this.value; state.preset = detectPreset(state.from, state.to); saveHash(); load(); });
+  document.getElementById('toIn').addEventListener('change', function() { state.to = this.value; state.preset = detectPreset(state.from, state.to); saveHash(); load(); });
+
+  load();
+  renderAdmin(user);
+});
+</script>
+</body>
+</html>
