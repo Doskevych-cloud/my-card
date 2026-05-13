@@ -11,8 +11,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
-<script src="auth.js?v=sla20260513"></script>
-<script src="header.js?v=sla20260513"></script>
+<script src="auth.js?v=sla20260513b"></script>
+<script src="header.js?v=sla20260513b"></script>
 <style>
 :root{
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -44,7 +44,7 @@ a{color:inherit;text-decoration:none}
 .ptab:hover{background:var(--bg3);color:var(--text)}
 .ptab.active{background:var(--accent-bg);color:var(--accent)}
 
-.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
 .toolbar input[type=date]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;color-scheme:dark;font-family:inherit}
 :root[data-theme="light"] .toolbar input[type=date]{color-scheme:light}
 .toolbar input[type=date]:focus{border-color:var(--accent)}
@@ -57,71 +57,92 @@ a{color:inherit;text-decoration:none}
 .toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
 .toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
 
-/* SLA summary cards */
-.sla-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px}
-.sla-card{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
-.sla-card .lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-bottom:3px}
-.sla-card .val{font-size:22px;font-weight:800;letter-spacing:-.3px;line-height:1.2;font-variant-numeric:tabular-nums}
+/* ── Pending pulse ── */
+.pending-banner{padding:10px 14px;background:var(--red-bg);border:1px solid color-mix(in srgb,var(--red) 40%,transparent);border-radius:10px;margin-bottom:14px;display:none}
+.pending-banner .pb-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.pending-banner .pb-dot{width:8px;height:8px;border-radius:50%;background:var(--red);animation:pulse 2s infinite}
+.pending-banner .pb-title{font-size:12px;font-weight:700;color:var(--red)}
+.pending-banner .pb-list{display:flex;flex-wrap:wrap;gap:6px}
+.pending-banner .pb-item{font-size:11px;color:var(--text2);padding:4px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px}
+.pending-banner .pb-item b{color:var(--text);font-weight:600}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-/* SLA tree table */
-.sla-tbl{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
-.sla-tbl th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:700;padding:8px 6px;border-bottom:2px solid var(--border)}
-.sla-tbl th.r{text-align:right}
-.sla-tbl td{padding:7px 6px;border-bottom:1px solid var(--border);vertical-align:middle}
-.sla-tbl td.r{text-align:right;font-variant-numeric:tabular-nums}
-.sla-tbl .col-reaction{background:var(--surface2)}
-.sla-tbl th.col-reaction{background:var(--surface2)}
+/* ── Metrics row ── */
+.metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.metric{padding:16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
+.metric .m-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:4px}
+.metric .m-value{font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1.1;font-variant-numeric:tabular-nums}
+.metric .m-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.metric.hero{grid-column:1;position:relative}
+.metric.hero .m-value{font-size:36px}
 
-/* Level 1: Manager row */
-.sla-tbl .lvl1{cursor:pointer;user-select:none}
-.sla-tbl .lvl1:hover{background:var(--bg3)}
-.sla-tbl .lvl1 td:first-child{font-weight:700;font-size:13px}
-.sla-tbl .lvl1 .toggle{color:var(--text3);font-size:10px;margin-right:6px;display:inline-block;transition:transform .15s}
-.sla-tbl .lvl1.open .toggle{transform:rotate(90deg)}
+/* ── Distribution ── */
+.distrib{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;margin-bottom:14px}
+.distrib .d-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:10px}
+.distrib .d-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.distrib .d-row:last-child{margin-bottom:0}
+.distrib .d-lbl{width:70px;font-size:11px;color:var(--text2);text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+.distrib .d-bar-bg{flex:1;height:20px;background:var(--bg2);border-radius:4px;overflow:hidden;position:relative}
+.distrib .d-bar{height:100%;border-radius:4px;transition:width .4s ease}
+.distrib .d-count{width:36px;font-size:11px;color:var(--text3);text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+.d-bar.clr-green{background:var(--green)}
+.d-bar.clr-text{background:var(--text3)}
+.d-bar.clr-red{background:var(--red)}
 
-/* Level 2: Counterparty row */
-.sla-tbl .lvl2{cursor:pointer;user-select:none}
-.sla-tbl .lvl2:hover{background:var(--bg3)}
-.sla-tbl .lvl2 td:first-child{padding-left:24px;font-weight:600;font-size:12px;color:var(--text2)}
-.sla-tbl .lvl2 .toggle{color:var(--text3);font-size:10px;margin-right:4px;display:inline-block;transition:transform .15s}
-.sla-tbl .lvl2.open .toggle{transform:rotate(90deg)}
+/* ── Managers ranking ── */
+.ranking{margin-bottom:14px}
+.ranking .r-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:8px}
+.mgr-card{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;cursor:pointer;transition:background .15s}
+.mgr-card:hover{background:var(--bg3)}
+.mgr-card.open{border-color:var(--border2)}
+.mgr-card .mc-rank{font-size:16px;font-weight:800;color:var(--text3);width:22px;text-align:center;flex-shrink:0;font-variant-numeric:tabular-nums}
+.mgr-card .mc-info{flex:1;min-width:0}
+.mgr-card .mc-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mgr-card .mc-stats{font-size:11px;color:var(--text3);margin-top:1px}
+.mgr-card .mc-bar-bg{width:120px;height:6px;background:var(--bg2);border-radius:3px;overflow:hidden;flex-shrink:0}
+.mgr-card .mc-bar{height:100%;border-radius:3px;transition:width .4s ease}
+.mgr-card .mc-val{font-size:18px;font-weight:800;width:60px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
 
-/* Level 3: Event row */
-.sla-tbl .lvl3 td{font-size:11px;color:var(--text2)}
-.sla-tbl .lvl3 td:first-child{padding-left:44px}
+/* ── Expanded detail under manager card ── */
+.mgr-detail{display:none;margin:-2px 0 6px;padding:0 14px 12px;background:var(--surface2);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px}
+.mgr-detail.open{display:block}
+.mgr-detail .md-cp{padding:8px 0;border-bottom:1px solid var(--border)}
+.mgr-detail .md-cp:last-child{border-bottom:none}
+.mgr-detail .md-cp-head{display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:2px 0}
+.mgr-detail .md-cp-name{font-size:12px;font-weight:600;color:var(--text2)}
+.mgr-detail .md-cp-avg{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.mgr-detail .md-evts{margin-top:4px;display:none}
+.mgr-detail .md-evts.open{display:block}
+.mgr-detail .md-evt{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:11px;color:var(--text3)}
+.mgr-detail .md-evt-time{font-variant-numeric:tabular-nums}
 
-/* Footer row */
-.sla-tbl .sla-footer td{border-top:2px solid var(--border);font-weight:700;font-size:13px;padding:10px 6px}
+/* ── Loading / empty ── */
+.loading{text-align:center;padding:48px;color:var(--text3);font-size:13px}
 
-/* Reaction time coloring */
-.sla-good{color:var(--green)}
-.sla-bad{color:var(--red)}
-
-/* Pending banner */
-.pending-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.pending-item{padding:8px 12px;background:var(--red-bg);border:1px solid var(--red);border-radius:8px;font-size:11px;font-weight:600;color:var(--red)}
-.pending-item .name{color:var(--text)}
-
-/* Loading / empty */
-.loading{text-align:center;padding:40px;color:var(--text3);font-size:13px}
-
-/* Admin panel */
-.admin-section{margin-top:20px;padding:16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
-.admin-section h3{font-size:13px;font-weight:700;margin-bottom:10px}
+/* ── Admin panel ── */
+.admin-toggle{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text3);font-size:11px;font-weight:600;cursor:pointer;margin-top:20px;transition:all .15s}
+.admin-toggle:hover{color:var(--text);border-color:var(--border2)}
+.admin-section{margin-top:10px;padding:16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:none}
+.admin-section.open{display:block}
+.admin-section h3{font-size:12px;font-weight:700;margin-bottom:8px;color:var(--text2)}
 .admin-tbl{width:100%;border-collapse:collapse;font-size:12px}
 .admin-tbl th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:700;padding:6px;border-bottom:1px solid var(--border)}
-.admin-tbl td{padding:6px;border-bottom:1px solid var(--border)}
-.admin-tbl td input{background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:4px 6px;font-size:11px;width:100%}
-.btn-sm{padding:5px 10px;background:var(--accent-bg);border:1px solid var(--accent);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer}
+.admin-tbl td{padding:6px;border-bottom:1px solid var(--border);color:var(--text2)}
+.admin-tbl td.mono{font-variant-numeric:tabular-nums;font-size:11px;color:var(--text3)}
+.admin-row{margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.admin-row input,.admin-row select{padding:5px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;font-family:inherit}
+.admin-row label{font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px}
+.btn-sm{padding:5px 12px;background:var(--accent-bg);border:1px solid var(--accent);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s}
 .btn-sm:hover{background:var(--accent);color:#fff}
 
 @media(max-width:768px){
   .page-tabs{display:flex;flex-wrap:wrap;gap:3px;padding:3px;max-width:100%}
   .ptab{padding:6px 10px;font-size:11.5px;flex:0 0 auto}
-  .sla-summary{grid-template-columns:1fr 1fr}
-  .sla-tbl{font-size:11px}
-  .sla-tbl .lvl2 td:first-child{padding-left:16px}
-  .sla-tbl .lvl3 td:first-child{padding-left:28px}
+  .metrics{grid-template-columns:1fr}
+  .metric.hero .m-value{font-size:28px}
+  .mgr-card .mc-bar-bg{display:none}
+  .mgr-card .mc-val{font-size:16px;width:50px}
+  .distrib .d-lbl{width:55px;font-size:10px}
 }
 </style>
 </head>
@@ -155,25 +176,19 @@ a{color:inherit;text-decoration:none}
       <span class="chip" data-org="Генерація" onclick="setOrg('Генерація')">Генерація</span>
     </div>
 
-    <div id="pendingBar" class="pending-bar"></div>
-
-    <div id="summaryCards" class="sla-summary"></div>
-
-    <div id="reportWrap">
-      <div class="loading" id="loader">Завантаження…</div>
-      <table class="sla-tbl" id="slaTbl" style="display:none">
-        <thead>
-          <tr>
-            <th style="width:40%">Менеджер / Контрагент / Час запиту</th>
-            <th class="r" style="width:17%">Час відповіді</th>
-            <th class="r col-reaction" style="width:13%">Час реакції (хв)</th>
-            <th style="width:30%">Чат</th>
-          </tr>
-        </thead>
-        <tbody id="slaBody"></tbody>
-        <tfoot id="slaFoot"></tfoot>
-      </table>
+    <div id="pendingBanner" class="pending-banner">
+      <div class="pb-head">
+        <span class="pb-dot"></span>
+        <span class="pb-title" id="pendingTitle">Очікують відповіді</span>
+      </div>
+      <div class="pb-list" id="pendingList"></div>
     </div>
+
+    <div id="metricsRow" class="metrics"></div>
+    <div id="distribWrap"></div>
+    <div id="rankingWrap" class="ranking"></div>
+
+    <div class="loading" id="loader">Завантаження…</div>
 
     <div id="adminPanel"></div>
   </div>
@@ -182,38 +197,45 @@ a{color:inherit;text-decoration:none}
 <script>
 const API = 'https://price-api.doskevich.workers.dev/';
 const state = { from: '', to: '', org: '', preset: 'month' };
+const SLA_THRESHOLD = 10;
 
-function fmtDate(iso) {
+function fmtTime(iso) {
   if (!iso) return '—';
   const d = new Date(iso);
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mi = String(d.getMinutes()).padStart(2, '0');
-  return `${dd}-${mm}-${d.getFullYear()} ${hh}:${mi}`;
+  return d.toLocaleString('uk-UA', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
 }
-
-function reactionClass(min) {
-  if (min < 3) return 'sla-good';
-  if (min >= 10) return 'sla-bad';
-  return '';
+function fmtFull(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString('uk-UA', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
 }
-
-function fmtReaction(min) {
+function fmtR(min) {
   if (min == null) return '—';
-  return min < 1 ? min.toFixed(2) : min < 10 ? min.toFixed(1) : Math.round(min);
+  if (min < 1) return min.toFixed(1);
+  if (min < 60) return Math.round(min) + '';
+  const h = Math.floor(min / 60), m = Math.round(min % 60);
+  return h + 'г ' + m + 'хв';
+}
+function rColor(min) {
+  if (min == null) return '';
+  if (min < 3) return 'var(--green)';
+  if (min >= SLA_THRESHOLD) return 'var(--red)';
+  return 'var(--text)';
+}
+function rClass(min) {
+  if (min < 3) return 'clr-green';
+  if (min >= SLA_THRESHOLD) return 'clr-red';
+  return 'clr-text';
 }
 
 // ── Presets ──
 function calcPreset(name) {
-  const now = new Date();
-  const y = now.getFullYear(), m = now.getMonth();
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
   if (name === 'month') return { from: new Date(y, m, 1), to: new Date(y, m + 1, 1) };
   if (name === 'prevmonth') return { from: new Date(y, m - 1, 1), to: new Date(y, m, 1) };
   return { from: new Date(y, m, 1), to: new Date(y, m + 1, 1) };
 }
 function isoDate(d) { return d.toISOString().slice(0, 10); }
-
 function setPreset(p) {
   state.preset = p;
   const { from, to } = calcPreset(p);
@@ -228,7 +250,6 @@ function setOrg(org) {
   document.querySelectorAll('[data-org]').forEach(c => c.classList.toggle('active', c.dataset.org === org));
   saveHash(); load();
 }
-
 function detectPreset(from, to) {
   for (const p of ['month', 'prevmonth']) {
     const r = calcPreset(p);
@@ -242,103 +263,157 @@ function saveHash() {
   location.hash = `from=${state.from}&to=${state.to}&org=${encodeURIComponent(state.org)}`;
 }
 function loadHash() {
-  const h = location.hash.slice(1);
-  const p = new URLSearchParams(h);
+  const h = location.hash.slice(1), p = new URLSearchParams(h);
   if (p.get('from')) state.from = p.get('from');
   if (p.get('to')) state.to = p.get('to');
   if (p.has('org')) state.org = p.get('org');
 }
 
-// ── Render ──
-function renderSummary(data) {
-  const el = document.getElementById('summaryCards');
-  const avgColor = data.overall_avg_min < 3 ? 'var(--green)' : data.overall_avg_min >= 10 ? 'var(--red)' : 'var(--text)';
+// ── Distribution buckets ──
+function calcDistrib(managers) {
+  const buckets = [
+    { label: '< 1 хв', min: 0, max: 1, count: 0, cls: 'clr-green' },
+    { label: '1 – 3 хв', min: 1, max: 3, count: 0, cls: 'clr-green' },
+    { label: '3 – 5 хв', min: 3, max: 5, count: 0, cls: 'clr-text' },
+    { label: '5 – 10 хв', min: 5, max: 10, count: 0, cls: 'clr-text' },
+    { label: '> 10 хв', min: 10, max: Infinity, count: 0, cls: 'clr-red' },
+  ];
+  let total = 0;
+  for (const mgr of managers)
+    for (const cp of mgr.counterparties)
+      for (const ev of cp.events) {
+        const m = ev.reaction_min;
+        for (const b of buckets) if (m >= b.min && m < b.max) { b.count++; break; }
+        total++;
+      }
+  return { buckets, total };
+}
+
+// ── Render: Metrics ──
+function renderMetrics(data) {
+  const el = document.getElementById('metricsRow');
+  const avg = data.overall_avg_min;
+  const fastest = data.managers.reduce((f, m) => {
+    for (const cp of m.counterparties) for (const ev of cp.events) if (f === null || ev.reaction_min < f) f = ev.reaction_min;
+    return f;
+  }, null);
+  const slowest = data.managers.reduce((s, m) => {
+    for (const cp of m.counterparties) for (const ev of cp.events) if (s === null || ev.reaction_min > s) s = ev.reaction_min;
+    return s;
+  }, null);
+
   el.innerHTML = `
-    <div class="sla-card"><div class="lbl">Середній час реакції</div><div class="val" style="color:${avgColor}">${fmtReaction(data.overall_avg_min)} хв</div></div>
-    <div class="sla-card"><div class="lbl">Всього відповідей</div><div class="val">${data.total_events}</div></div>
-    <div class="sla-card"><div class="lbl">Менеджерів</div><div class="val">${data.managers.length}</div></div>
+    <div class="metric hero">
+      <div class="m-label">Середній час реакції</div>
+      <div class="m-value" style="color:${rColor(avg)}">${fmtR(avg)}</div>
+      <div class="m-sub">хвилин</div>
+    </div>
+    <div class="metric">
+      <div class="m-label">Подій за період</div>
+      <div class="m-value">${data.total_events}</div>
+      <div class="m-sub">${data.managers.length} менеджер${data.managers.length === 1 ? '' : 'ів'}</div>
+    </div>
+    <div class="metric">
+      <div class="m-label">Найшвидша / найповільніша</div>
+      <div class="m-value"><span style="color:var(--green)">${fmtR(fastest)}</span> <span style="color:var(--text3);font-size:16px;font-weight:400">/</span> <span style="color:var(--red)">${fmtR(slowest)}</span></div>
+      <div class="m-sub">хвилин</div>
+    </div>
   `;
 }
 
-function renderTable(data) {
-  const tbody = document.getElementById('slaBody');
-  const tfoot = document.getElementById('slaFoot');
-  const tbl = document.getElementById('slaTbl');
-  const loader = document.getElementById('loader');
+// ── Render: Distribution ──
+function renderDistrib(managers) {
+  const wrap = document.getElementById('distribWrap');
+  const { buckets, total } = calcDistrib(managers);
+  if (!total) { wrap.innerHTML = ''; return; }
+  const maxCount = Math.max(...buckets.map(b => b.count));
 
-  if (!data.managers.length) {
-    loader.textContent = 'Немає даних за обраний період';
-    loader.style.display = ''; tbl.style.display = 'none';
-    return;
-  }
-  loader.style.display = 'none'; tbl.style.display = '';
+  wrap.innerHTML = `<div class="distrib">
+    <div class="d-title">Розподіл часу реакції</div>
+    ${buckets.map(b => `<div class="d-row">
+      <div class="d-lbl">${b.label}</div>
+      <div class="d-bar-bg"><div class="d-bar ${b.cls}" style="width:${maxCount ? (b.count / maxCount * 100) : 0}%"></div></div>
+      <div class="d-count">${b.count}</div>
+    </div>`).join('')}
+  </div>`;
+}
 
-  let html = '';
-  for (const mgr of data.managers) {
-    const mgrId = 'm_' + mgr.name.replace(/\W/g, '_');
-    html += `<tr class="lvl1" data-target="${mgrId}" onclick="toggleGroup(this)">
-      <td><span class="toggle">▶</span>${mgr.name}</td>
-      <td></td>
-      <td class="r col-reaction ${reactionClass(mgr.avg_min)}">${fmtReaction(mgr.avg_min)}</td>
-      <td></td>
-    </tr>`;
+// ── Render: Manager ranking ──
+function renderRanking(data) {
+  const wrap = document.getElementById('rankingWrap');
+  if (!data.managers.length) { wrap.innerHTML = ''; return; }
 
+  const sorted = [...data.managers].sort((a, b) => a.avg_min - b.avg_min);
+  const maxAvg = Math.max(...sorted.map(m => m.avg_min), SLA_THRESHOLD);
+
+  let html = '<div class="r-title">Менеджери</div>';
+  sorted.forEach((mgr, i) => {
+    const barW = Math.min((mgr.avg_min / maxAvg) * 100, 100);
+    const id = 'mgr_' + i;
+    html += `<div class="mgr-card" data-id="${id}" onclick="toggleMgr('${id}')">
+      <div class="mc-rank">${i + 1}</div>
+      <div class="mc-info">
+        <div class="mc-name">${mgr.name}</div>
+        <div class="mc-stats">${mgr.count} подій · ${mgr.counterparties.length} контрагент${mgr.counterparties.length > 1 ? 'ів' : ''}</div>
+      </div>
+      <div class="mc-bar-bg"><div class="mc-bar ${rClass(mgr.avg_min)}" style="width:${barW}%"></div></div>
+      <div class="mc-val" style="color:${rColor(mgr.avg_min)}">${fmtR(mgr.avg_min)}</div>
+    </div>`;
+
+    html += `<div class="mgr-detail" id="${id}">`;
     for (const cp of mgr.counterparties) {
-      const cpId = mgrId + '_c_' + cp.name.replace(/\W/g, '_');
-      html += `<tr class="lvl2 ${mgrId}" style="display:none" data-target="${cpId}" onclick="toggleGroup(this)">
-        <td><span class="toggle">▶</span>${cp.name}</td>
-        <td></td>
-        <td class="r col-reaction ${reactionClass(cp.avg_min)}">${fmtReaction(cp.avg_min)}</td>
-        <td></td>
-      </tr>`;
-
+      const cpId = id + '_cp_' + cp.name.replace(/\W/g, '_');
+      html += `<div class="md-cp">
+        <div class="md-cp-head" onclick="event.stopPropagation();toggleCp('${cpId}')">
+          <span class="md-cp-name">${cp.name}</span>
+          <span class="md-cp-avg" style="color:${rColor(cp.avg_min)}">${fmtR(cp.avg_min)} · ${cp.count} шт</span>
+        </div>
+        <div class="md-evts" id="${cpId}">`;
       for (const ev of cp.events) {
-        html += `<tr class="lvl3 ${cpId}" style="display:none">
-          <td>${fmtDate(ev.request_at)}</td>
-          <td class="r">${fmtDate(ev.response_at)}</td>
-          <td class="r col-reaction ${reactionClass(ev.reaction_min)}">${fmtReaction(ev.reaction_min)}</td>
-          <td style="font-size:10px;color:var(--text3)">${cp.chat_title || ''}</td>
-        </tr>`;
+        html += `<div class="md-evt">
+          <span class="md-evt-time">${fmtFull(ev.request_at)} → ${fmtTime(ev.response_at)}</span>
+          <span style="color:${rColor(ev.reaction_min)};font-weight:600">${fmtR(ev.reaction_min)}</span>
+        </div>`;
       }
+      html += '</div></div>';
     }
-  }
-  tbody.innerHTML = html;
-
-  tfoot.innerHTML = `<tr class="sla-footer">
-    <td colspan="2" class="r">В серед.:</td>
-    <td class="r col-reaction ${reactionClass(data.overall_avg_min)}">${fmtReaction(data.overall_avg_min)}</td>
-    <td></td>
-  </tr>`;
-}
-
-function toggleGroup(row) {
-  const id = row.dataset.target;
-  const isOpen = row.classList.toggle('open');
-  document.querySelectorAll('.' + id).forEach(r => {
-    if (isOpen) {
-      if (r.classList.contains('lvl2') || r.classList.contains('lvl3') && r.classList.contains(id)) {
-        r.style.display = r.classList.contains('lvl3') ? 'none' : '';
-      }
-      if (r.classList.contains('lvl2')) r.style.display = '';
-    } else {
-      r.style.display = 'none';
-      r.classList.remove('open');
-    }
+    html += '</div>';
   });
+
+  wrap.innerHTML = html;
 }
 
+function toggleMgr(id) {
+  const card = document.querySelector(`.mgr-card[data-id="${id}"]`);
+  const detail = document.getElementById(id);
+  if (!card || !detail) return;
+  const isOpen = detail.classList.toggle('open');
+  card.classList.toggle('open', isOpen);
+  if (isOpen) card.style.borderRadius = '10px 10px 0 0';
+  else card.style.borderRadius = '';
+}
+function toggleCp(id) {
+  document.getElementById(id)?.classList.toggle('open');
+}
+
+// ── Render: Pending ──
 function renderPending(data) {
-  const el = document.getElementById('pendingBar');
-  if (!data.pending || !data.pending.length) { el.innerHTML = ''; return; }
-  el.innerHTML = data.pending.map(p =>
-    `<div class="pending-item"><span class="name">${p.counterparty_name}</span> — чекає ${Math.round(p.waiting_min)} хв</div>`
+  const banner = document.getElementById('pendingBanner');
+  if (!data.pending || !data.pending.length) { banner.style.display = 'none'; return; }
+  banner.style.display = '';
+  document.getElementById('pendingTitle').textContent = `${data.pending.length} без відповіді`;
+  document.getElementById('pendingList').innerHTML = data.pending.map(p =>
+    `<div class="pb-item"><b>${p.counterparty_name}</b> — ${Math.round(p.waiting_min)} хв</div>`
   ).join('');
 }
 
+// ── Load ──
 async function load() {
   const loader = document.getElementById('loader');
   loader.textContent = 'Завантаження…'; loader.style.display = '';
-  document.getElementById('slaTbl').style.display = 'none';
+  document.getElementById('metricsRow').innerHTML = '';
+  document.getElementById('distribWrap').innerHTML = '';
+  document.getElementById('rankingWrap').innerHTML = '';
 
   try {
     const qs = `from=${state.from}&to=${state.to}&org=${encodeURIComponent(state.org)}`;
@@ -346,8 +421,17 @@ async function load() {
       fetch(API + '?action=sla_report&' + qs).then(r => r.json()),
       fetch(API + '?action=sla_pending&org=' + encodeURIComponent(state.org)).then(r => r.json())
     ]);
-    renderSummary(report);
-    renderTable(report);
+
+    loader.style.display = 'none';
+    if (!report.managers || !report.managers.length) {
+      loader.textContent = 'Немає даних за обраний період';
+      loader.style.display = '';
+      renderPending(pending);
+      return;
+    }
+    renderMetrics(report);
+    renderDistrib(report.managers);
+    renderRanking(report);
     renderPending(pending);
   } catch (e) {
     loader.textContent = 'Помилка: ' + e.message;
@@ -362,71 +446,65 @@ async function renderAdmin(user) {
     fetch(API + '?action=sla_chats_list').then(r => r.json()),
     fetch(API + '?action=sla_managers_list').then(r => r.json())
   ]);
-
   const panel = document.getElementById('adminPanel');
   panel.innerHTML = `
+    <div class="admin-toggle" onclick="this.nextElementSibling.classList.toggle('open')">Адмін-панель</div>
     <div class="admin-section">
-      <h3>Менеджери (Telegram)</h3>
+      <h3>Менеджери</h3>
       <table class="admin-tbl">
-        <thead><tr><th>Telegram ID</th><th>ПІБ</th><th>Виключити зі звіту</th><th></th></tr></thead>
-        <tbody id="mgrsTbl">${(mgrsRes.managers || []).map(m => `<tr>
-          <td>${m.telegram_user_id}</td><td>${m.name}</td>
-          <td>${m.exclude_from_report ? 'так' : 'ні'}</td><td></td>
+        <thead><tr><th>Telegram ID</th><th>ПІБ</th><th>У звіті</th></tr></thead>
+        <tbody>${(mgrsRes.managers || []).map(m => `<tr>
+          <td class="mono">${m.telegram_user_id}</td><td>${m.name}</td>
+          <td>${m.exclude_from_report ? 'ні' : 'так'}</td>
         </tr>`).join('')}</tbody>
       </table>
-      <div style="margin-top:8px;display:flex;gap:6px;align-items:center">
-        <input id="newMgrId" placeholder="Telegram user ID" style="width:140px;padding:5px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px">
-        <input id="newMgrName" placeholder="ПІБ" style="width:180px;padding:5px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px">
-        <label style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px"><input type="checkbox" id="newMgrExclude"> Виключити</label>
+      <div class="admin-row">
+        <input id="newMgrId" placeholder="Telegram user ID" style="width:130px">
+        <input id="newMgrName" placeholder="ПІБ" style="width:170px">
+        <label><input type="checkbox" id="newMgrExclude"> Виключити</label>
         <button class="btn-sm" onclick="addManager()">Додати</button>
       </div>
-    </div>
-    <div class="admin-section" style="margin-top:12px">
-      <h3>Чати (Telegram групи)</h3>
+      <h3 style="margin-top:16px">Чати</h3>
       <table class="admin-tbl">
-        <thead><tr><th>Chat ID</th><th>Контрагент</th><th>Менеджер</th><th>Орг</th><th>Активний</th></tr></thead>
-        <tbody id="chatsTbl">${(chatsRes.chats || []).map(c => `<tr>
-          <td>${c.chat_id}</td><td>${c.counterparty_name}</td>
+        <thead><tr><th>Chat ID</th><th>Контрагент</th><th>Менеджер</th><th>Орг</th><th>Act</th></tr></thead>
+        <tbody>${(chatsRes.chats || []).map(c => `<tr>
+          <td class="mono">${c.chat_id}</td><td>${c.counterparty_name}</td>
           <td>${c.manager_default || '—'}</td><td>${c.org}</td>
-          <td>${c.active ? 'так' : 'ні'}</td>
+          <td>${c.active ? '+' : '—'}</td>
         </tr>`).join('')}</tbody>
       </table>
-      <div style="margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        <input id="newChatId" placeholder="Chat ID" style="width:120px;padding:5px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px">
-        <input id="newChatTitle" placeholder="Назва чату" style="width:160px;padding:5px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px">
-        <input id="newChatCp" placeholder="Контрагент" style="width:160px;padding:5px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px">
-        <input id="newChatMgr" placeholder="Менеджер" style="width:140px;padding:5px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px">
-        <select id="newChatOrg" style="padding:5px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px">
-          <option value="Генерація">Генерація</option><option value="Реакт">Реакт</option>
-        </select>
+      <div class="admin-row">
+        <input id="newChatId" placeholder="Chat ID" style="width:110px">
+        <input id="newChatTitle" placeholder="Назва" style="width:140px">
+        <input id="newChatCp" placeholder="Контрагент" style="width:150px">
+        <input id="newChatMgr" placeholder="Менеджер" style="width:120px">
+        <select id="newChatOrg"><option value="Генерація">Генерація</option><option value="Реакт">Реакт</option></select>
         <button class="btn-sm" onclick="addChat()">Додати</button>
       </div>
     </div>
   `;
 }
-
 async function addManager() {
   const id = +document.getElementById('newMgrId').value;
   const name = document.getElementById('newMgrName').value.trim();
   if (!id || !name) return alert('Вкажіть Telegram ID і ПІБ');
-  const exclude = document.getElementById('newMgrExclude').checked ? 1 : 0;
   await fetch(API + '?action=sla_managers_upsert', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ telegram_user_id: id, name, exclude_from_report: exclude })
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ telegram_user_id:id, name, exclude_from_report: document.getElementById('newMgrExclude').checked ? 1 : 0 })
   });
   location.reload();
 }
-
 async function addChat() {
   const chatId = +document.getElementById('newChatId').value;
-  const title = document.getElementById('newChatTitle').value.trim();
   const cp = document.getElementById('newChatCp').value.trim();
-  const mgr = document.getElementById('newChatMgr').value.trim();
-  const org = document.getElementById('newChatOrg').value;
   if (!chatId || !cp) return alert('Вкажіть Chat ID і Контрагента');
   await fetch(API + '?action=sla_chats_upsert', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, chat_title: title, counterparty_name: cp, manager_default: mgr, org })
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      chat_id: chatId, chat_title: document.getElementById('newChatTitle').value.trim(),
+      counterparty_name: cp, manager_default: document.getElementById('newChatMgr').value.trim(),
+      org: document.getElementById('newChatOrg').value
+    })
   });
   location.reload();
 }
@@ -435,7 +513,6 @@ async function addChat() {
 Auth.require('sales').then(user => {
   AppHeader.mount({ active: 'sales', user });
 
-  // Org filter visibility
   const userOrgs = user.orgs || {};
   const hasAnyOrg = Object.keys(userOrgs).length > 0;
   if (hasAnyOrg) {
@@ -454,7 +531,6 @@ Auth.require('sales').then(user => {
     orgChips.forEach(c => c.classList.toggle('active', c.dataset.org === defaultOrg));
   }
 
-  // Load hash or default preset
   loadHash();
   if (!state.from || !state.to) {
     const { from, to } = calcPreset('month');
@@ -465,7 +541,6 @@ Auth.require('sales').then(user => {
   document.getElementById('toIn').value = state.to;
   document.querySelectorAll('[data-preset]').forEach(c => c.classList.toggle('active', c.dataset.preset === state.preset));
 
-  // Date change listeners
   document.getElementById('fromIn').addEventListener('change', function() { state.from = this.value; state.preset = detectPreset(state.from, state.to); saveHash(); load(); });
   document.getElementById('toIn').addEventListener('change', function() { state.to = this.value; state.preset = detectPreset(state.from, state.to); saveHash(); load(); });
 
