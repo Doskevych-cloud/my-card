@@ -64,11 +64,13 @@ a{color:inherit;text-decoration:none}
 .funnel .f-new{background:var(--green)}
 .funnel .f-ret{background:var(--blue)}
 .funnel .f-lost{background:var(--red)}
-.funnel-legend{display:flex;gap:16px;margin-bottom:18px;font-size:11px;color:var(--text2)}
+.funnel .f-inactive{background:var(--border2)}
+.funnel-legend{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:18px;font-size:11px;color:var(--text2)}
 .funnel-legend span::before{content:'';display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
 .funnel-legend .fl-new::before{background:var(--green)}
 .funnel-legend .fl-ret::before{background:var(--blue)}
 .funnel-legend .fl-lost::before{background:var(--red)}
+.funnel-legend .fl-inactive::before{background:var(--border2)}
 
 /* Client table */
 .tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px;background:var(--bg)}
@@ -85,6 +87,7 @@ a{color:inherit;text-decoration:none}
 .badge-new{background:var(--green-bg);color:var(--green)}
 .badge-ret{background:var(--blue-bg);color:var(--blue)}
 .badge-lost{background:var(--red-bg);color:var(--red)}
+.badge-inactive{background:var(--bg3);color:var(--text3)}
 .days-warn{color:var(--yellow);font-weight:700}
 .days-danger{color:var(--red);font-weight:700}
 .tbl thead th.sortable{cursor:pointer;user-select:none;transition:color .12s}
@@ -200,16 +203,18 @@ function render() {
   const { summary, clients, period } = _data;
   const q = _search.toLowerCase();
 
-  const total = summary.new + summary.returning + summary.lost;
+  const inactive = summary.inactive || 0;
+  const total = summary.new + summary.returning + summary.lost + inactive;
   const pNew = total > 0 ? (summary.new / total * 100) : 0;
   const pRet = total > 0 ? (summary.returning / total * 100) : 0;
   const pLost = total > 0 ? (summary.lost / total * 100) : 0;
+  const pInactive = total > 0 ? (inactive / total * 100) : 0;
 
   const regions = [...new Set(clients.map(c => c.region).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'uk'));
 
   let filtered = [...clients];
   if (q) filtered = filtered.filter(c => c.name.toLowerCase().includes(q));
-  if (_statusFilter === 'active') filtered = filtered.filter(c => c.status !== 'lost');
+  if (_statusFilter === 'active') filtered = filtered.filter(c => c.status !== 'lost' && c.status !== 'inactive');
   else if (_statusFilter) filtered = filtered.filter(c => c.status === _statusFilter);
   if (_regionFilter) filtered = filtered.filter(c => c.region === _regionFilter);
 
@@ -228,6 +233,7 @@ function render() {
   function statusBadge(s) {
     if (s === 'new') return '<span class="badge badge-new">новий</span>';
     if (s === 'lost') return '<span class="badge badge-lost">втрачений</span>';
+    if (s === 'inactive') return '<span class="badge badge-inactive">неактивний</span>';
     return '<span class="badge badge-ret">повторний</span>';
   }
 
@@ -236,9 +242,9 @@ function render() {
 
     <div class="kpi-grid">
       <div class="kpi clickable${_statusFilter === '' ? ' selected' : ''}" onclick="filterStatus('')">
-        <span class="kl">Всі клієнти</span>
-        <span class="kv">${summary.active + summary.lost}</span>
-        <span class="ks">активні + втрачені за ${fmtDate(period.from)} — ${fmtDate(period.to)}</span>
+        <span class="kl">Всі дилери</span>
+        <span class="kv">${total}</span>
+        <span class="ks">активні + втрачені + неактивні</span>
       </div>
       <div class="kpi clickable${_statusFilter === 'active' ? ' selected' : ''}" onclick="filterStatus('active')">
         <span class="kl">Активних клієнтів</span>
@@ -260,6 +266,11 @@ function render() {
         <span class="kv" style="color:var(--red)">${summary.lost}</span>
         <span class="ks">оплачували в попередні 3 міс до ${fmtDate(period.from)}, але за ${fmtDate(period.from)} — ${fmtDate(period.to)} — жодної оплати</span>
       </div>
+      <div class="kpi clickable${_statusFilter === 'inactive' ? ' selected' : ''}" onclick="filterStatus('inactive')">
+        <span class="kl">Неактивні</span>
+        <span class="kv" style="color:var(--text3)">${inactive}</span>
+        <span class="ks">дилери Planfix без оплат понад 6 міс</span>
+      </div>
       <div class="kpi">
         <span class="kl">Оплати за ${fmtDate(period.from)} — ${fmtDate(period.to)}</span>
         <span class="kv">${fmtUsd(summary.total_usd)}</span>
@@ -271,11 +282,13 @@ function render() {
       <div class="f-new" style="width:${pNew}%"></div>
       <div class="f-ret" style="width:${pRet}%"></div>
       <div class="f-lost" style="width:${pLost}%"></div>
+      <div class="f-inactive" style="width:${pInactive}%"></div>
     </div>
     <div class="funnel-legend">
-      <span class="fl-new">Нових ${summary.new} — раніше ніколи не оплачували</span>
-      <span class="fl-ret">Повернулись ${summary.returning} — вже були клієнтами</span>
-      <span class="fl-lost">Відтік ${summary.lost} — перестали оплачувати</span>
+      <span class="fl-new">Нових ${summary.new}</span>
+      <span class="fl-ret">Повернулись ${summary.returning}</span>
+      <span class="fl-lost">Відтік ${summary.lost}</span>
+      <span class="fl-inactive">Неактивні ${inactive}</span>
     </div>
 
     <div class="filters-row">
@@ -303,9 +316,9 @@ function render() {
             <td>${esc(c.name)}</td>
             <td style="color:var(--text2)">${esc(c.region || '—')}</td>
             <td>${statusBadge(c.status)}</td>
-            <td><span class="${daysClass(c.days_since_last)}">${c.days_since_last}д</span></td>
-            <td>${fmtUsd(c.total_usd)}</td>
-            <td>${c.status === 'lost' ? '—' : c.payments}</td>
+            <td>${c.days_since_last != null ? `<span class="${daysClass(c.days_since_last)}">${c.days_since_last}д</span>` : '—'}</td>
+            <td>${c.total_usd ? fmtUsd(c.total_usd) : '—'}</td>
+            <td>${c.status === 'lost' || c.status === 'inactive' ? '—' : c.payments}</td>
             <td>${fmtDate(c.last_payment)}</td>
           </tr>`).join('')}
         </tbody>
