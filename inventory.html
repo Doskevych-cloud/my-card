@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Обіговість запасів</title>
+<script>
+  try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
+</script>
+<script src="auth.js?v=inv20260513"></script>
+<script src="header.js?v=inv20260513"></script>
+<style>
+:root{
+  --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
+  --surface:#141414; --surface2:#1c1c1c;
+  --border:#262626; --border2:#333;
+  --text:#f5f5f5; --text2:#a3a3a3; --text3:#737373;
+  --accent:#ff8319; --accent-bg:rgba(255,131,25,.12);
+  --red:#e74c3c; --red-bg:rgba(231,76,60,.12);
+  --green:#22c55e; --green-bg:rgba(34,197,94,.12);
+  --blue:#3b82f6; --blue-bg:rgba(59,130,246,.12);
+  --yellow:#eab308; --yellow-bg:rgba(234,179,8,.12);
+  --shadow-md:0 4px 20px rgba(0,0,0,.4);
+}
+:root[data-theme="light"]{
+  --bg:#f5f5f7; --bg2:#ffffff; --bg3:#ececef;
+  --surface:#ffffff; --surface2:#ffffff;
+  --border:#e5e5ea; --border2:#d1d1d6;
+  --text:#1c1c1e; --text2:#48484a; --text3:#8e8e93;
+  --accent:#e07017; --accent-bg:rgba(224,112,23,.12);
+  --red:#d93025; --red-bg:rgba(217,48,37,.10);
+  --green:#15803d; --green-bg:rgba(21,128,61,.10);
+  --blue:#1d4ed8; --blue-bg:rgba(29,78,216,.10);
+  --yellow:#a16207; --yellow-bg:rgba(161,98,7,.10);
+  --shadow-md:0 4px 20px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+
+.wrap{max-width:1400px;margin:0 auto;padding:20px}
+.page-tabs{display:inline-flex;gap:4px;padding:4px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:14px}
+.ptab{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;color:var(--text2);text-decoration:none;transition:background .15s,color .15s;white-space:nowrap;cursor:pointer}
+.ptab:hover{background:var(--bg3);color:var(--text)}
+.ptab.active{background:var(--accent-bg);color:var(--accent)}
+
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
+.toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.toolbar input[type=text]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;font-family:inherit;min-width:200px}
+.toolbar input[type=text]:focus{border-color:var(--accent)}
+.toolbar .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;display:inline-flex;align-items:center;gap:6px}
+.toolbar .chip:hover{background:var(--bg3);color:var(--text)}
+.toolbar .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.toolbar .group{display:inline-flex;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px}
+.toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
+.toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
+.toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 2px}
+
+/* Summary cards */
+.inv-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px}
+.inv-card{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:3px;cursor:pointer;transition:border-color .12s,background .12s}
+.inv-card:hover{border-color:var(--border2)}
+.inv-card.active{border-color:var(--accent);background:var(--accent-bg)}
+.inv-card.dim{opacity:.55}
+.inv-card .cl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+.inv-card .cv{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.3px;line-height:1.2;color:var(--text)}
+.inv-card .cs{font-size:11px;color:var(--text3);font-weight:500}
+.inv-card.c-fast .cv{color:var(--green)}
+.inv-card.c-normal .cv{color:var(--blue)}
+.inv-card.c-slow .cv{color:var(--yellow)}
+.inv-card.c-excess .cv{color:var(--accent)}
+.inv-card.c-dead .cv{color:var(--red)}
+
+/* Table */
+.inv-wrap{overflow:auto;margin-bottom:20px;border:1px solid var(--border);border-radius:12px;background:var(--bg)}
+.inv-table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums;min-width:900px}
+.inv-table th,.inv-table td{padding:10px 12px;text-align:right;white-space:nowrap;vertical-align:middle;line-height:1.25}
+.inv-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;background:var(--surface2);position:sticky;top:0;z-index:2;border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+.inv-table th:hover{color:var(--text)}
+.inv-table th.sorted{color:var(--accent)}
+.inv-table th.sorted::after{content:' ▾';font-size:9px}
+.inv-table th.sorted.asc::after{content:' ▴'}
+.inv-table th:first-child{text-align:left;position:sticky;left:0;z-index:3;background:var(--surface2);min-width:300px}
+.inv-table td:first-child{text-align:left;position:sticky;left:0;z-index:1;background:inherit;min-width:300px}
+.inv-table tbody tr{background:var(--bg);transition:background .1s}
+.inv-table tbody tr:hover td{background:var(--bg3)}
+.inv-table tbody tr+tr td{border-top:1px solid var(--border)}
+.inv-table td.zr{color:var(--text3)}
+.inv-table td.name-cell{overflow:hidden;text-overflow:ellipsis;max-width:350px}
+.inv-table td.name-cell .article{color:var(--text3);font-size:11px;margin-left:6px}
+.inv-table td.name-cell .cat{display:block;font-size:10px;color:var(--text3);font-weight:500;margin-top:1px;overflow:hidden;text-overflow:ellipsis}
+.inv-table td.cls-fast{color:var(--green);font-weight:600}
+.inv-table td.cls-normal{color:var(--blue);font-weight:600}
+.inv-table td.cls-slow{color:var(--yellow);font-weight:600}
+.inv-table td.cls-excess{color:var(--accent);font-weight:600}
+.inv-table td.cls-dead{color:var(--red);font-weight:600}
+
+/* Category group header */
+.inv-table tr.cat-hdr td{font-weight:700;font-size:13px;color:var(--text);border-top:2px solid var(--border);background:var(--surface2);padding:9px 12px;cursor:pointer;user-select:none}
+.inv-table tr.cat-hdr td .tri{display:inline-block;width:10px;margin-right:8px;font-size:9px;color:var(--text3);transition:transform .18s;text-align:center;vertical-align:1px}
+.inv-table tr.cat-hdr[data-collapsed="true"] td .tri{transform:rotate(-90deg)}
+.inv-table tr.cat-child.collapsed-hidden{display:none}
+
+/* Loading + empty */
+.loading{text-align:center;padding:60px 20px;color:var(--text3);font-size:14px}
+.loading::after{content:'';display:block;width:28px;height:28px;margin:16px auto 0;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error{text-align:center;padding:40px;color:var(--red);background:var(--red-bg);border-radius:12px;margin:20px 0}
+
+@media(max-width:720px){
+  .wrap{padding:12px}
+  .page-tabs{display:flex;flex-wrap:wrap;gap:3px;padding:3px;max-width:100%}
+  .ptab{padding:6px 10px;font-size:11.5px;flex:0 0 auto}
+  .toolbar{padding:8px;gap:6px;border-radius:10px}
+  .toolbar .lbl{display:none}
+  .toolbar .chip{padding:6px 10px;font-size:11px}
+  .toolbar .group{padding:3px;gap:2px}
+  .toolbar .group .chip{padding:5px 8px;font-size:11px}
+  .toolbar .sep{display:none}
+  .inv-summary{grid-template-columns:1fr 1fr;gap:8px}
+  .inv-card{padding:11px 12px;border-radius:10px}
+  .inv-card .cl{font-size:9.5px}
+  .inv-card .cv{font-size:18px}
+  .inv-wrap{border-radius:10px;-webkit-overflow-scrolling:touch}
+  .inv-table{font-size:11px;min-width:700px}
+  .inv-table th,.inv-table td{padding:6px 8px}
+  .inv-table td:first-child,.inv-table th:first-child{min-width:200px}
+}
+@media(max-width:480px){
+  .inv-summary{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="appHeader"></div>
+<div id="app">
+  <div class="wrap">
+    <div class="page-tabs">
+      <a href="/sales.html" class="ptab">📈 Продажі менеджерів</a>
+      <a href="/top_products.html" class="ptab">📦 Останні продажі</a>
+      <a href="/osp.html" class="ptab">📋 Оплата та відвантаження</a>
+      <a href="/ar_aging.html" class="ptab">⏱ Заборгованість покупців</a>
+      <a href="/active_clients.html" class="ptab">👥 Клієнтська база</a>
+      <span class="ptab active">📊 Обіговість запасів</span>
+    </div>
+
+    <div class="toolbar">
+      <span class="group" id="orgGroup">
+        <span class="chip" data-org="" onclick="setOrg(this)">Всі</span>
+        <span class="chip active" data-org="Реакт" onclick="setOrg(this)">Реакт</span>
+        <span class="chip" data-org="Генерація" onclick="setOrg(this)">Генерація</span>
+      </span>
+      <div class="sep"></div>
+      <span class="lbl">Пошук</span>
+      <input type="text" id="searchIn" placeholder="Назва або артикул…" oninput="applyFilters()">
+      <div class="sep"></div>
+      <span class="lbl">Групувати</span>
+      <span class="group" id="groupMode">
+        <span class="chip active" data-group="flat" onclick="setGroup(this)">Без</span>
+        <span class="chip" data-group="category" onclick="setGroup(this)">Категорія</span>
+      </span>
+    </div>
+
+    <div id="summary"></div>
+    <div id="body"><div class="loading">Завантаження…</div></div>
+  </div>
+</div>
+
+<script>
+const API = 'https://price-api.doskevich.workers.dev/';
+const state = { org: 'Реакт', classFilter: null, sortCol: 'value_usd', sortAsc: false, groupBy: 'flat' };
+let DATA = null;
+
+const fmt  = (v, d=0) => v == null ? '—' : Number(v).toLocaleString('uk-UA', { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmtU = (v) => v == null ? '—' : '$' + fmt(v, 0);
+const CLASS_LABELS = { fast: 'Швидкий', normal: 'Нормальний', slow: 'Повільний', excess: 'Надлишок', dead: 'Мертвий' };
+const CLASS_DAYS   = { fast: '< 30 дн', normal: '30–90 дн', slow: '90–180 дн', excess: '180–365 дн', dead: '> 365 дн' };
+
+function setOrg(el) {
+  document.querySelectorAll('#orgGroup .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  state.org = el.dataset.org;
+  load();
+}
+
+function setGroup(el) {
+  document.querySelectorAll('#groupMode .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  state.groupBy = el.dataset.group;
+  render();
+}
+
+function setClassFilter(cls) {
+  state.classFilter = state.classFilter === cls ? null : cls;
+  render();
+}
+
+function setSort(col) {
+  if (state.sortCol === col) state.sortAsc = !state.sortAsc;
+  else { state.sortCol = col; state.sortAsc = false; }
+  render();
+}
+
+function applyFilters() { render(); }
+
+async function load() {
+  document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
+  document.getElementById('summary').innerHTML = '';
+  try {
+    const orgParam = state.org ? `&org=${encodeURIComponent(state.org)}` : '';
+    const r = await fetch(`${API}?action=inventory_turnover${orgParam}`, {
+      headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('session_token') || '') }
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    DATA = await r.json();
+    render();
+  } catch (e) {
+    document.getElementById('body').innerHTML = `<div class="error">${e.message}</div>`;
+  }
+}
+
+function render() {
+  if (!DATA) return;
+  const s = DATA.summary;
+  const bc = s.by_class || {};
+  const classes = ['fast','normal','slow','excess','dead'];
+
+  // Summary cards
+  let sh = `<div class="inv-summary">
+    <div class="inv-card ${!state.classFilter ? 'active' : 'dim'}" onclick="setClassFilter(null)">
+      <div class="cl">Всього на складі</div>
+      <div class="cv">${fmtU(s.total_value_usd)}</div>
+      <div class="cs">${fmt(s.total_sku)} SKU</div>
+    </div>`;
+  for (const cl of classes) {
+    const c = bc[cl] || {};
+    const isActive = state.classFilter === cl;
+    const dim = state.classFilter && !isActive ? 'dim' : '';
+    sh += `<div class="inv-card c-${cl} ${isActive ? 'active' : dim}" onclick="setClassFilter('${cl}')">
+      <div class="cl">${CLASS_LABELS[cl]}</div>
+      <div class="cv">${fmtU(c.value_usd)}</div>
+      <div class="cs">${c.sku || 0} SKU &middot; ${CLASS_DAYS[cl]}</div>
+    </div>`;
+  }
+  sh += '</div>';
+  document.getElementById('summary').innerHTML = sh;
+
+  // Filter + sort items
+  let items = DATA.items.slice();
+  if (state.classFilter) items = items.filter(i => i.turnover_class === state.classFilter);
+  const q = (document.getElementById('searchIn')?.value || '').toLowerCase().trim();
+  if (q) items = items.filter(i =>
+    (i.name || '').toLowerCase().includes(q) ||
+    (i.article || '').toLowerCase().includes(q) ||
+    (i.code || '').toLowerCase().includes(q)
+  );
+
+  const sortFn = (a, b) => {
+    let va = a[state.sortCol], vb = b[state.sortCol];
+    if (va == null) va = state.sortAsc ? Infinity : -Infinity;
+    if (vb == null) vb = state.sortAsc ? Infinity : -Infinity;
+    if (typeof va === 'string') return state.sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    return state.sortAsc ? va - vb : vb - va;
+  };
+  items.sort(sortFn);
+
+  // Build table
+  const cols = [
+    { key: 'name', label: 'Товар' },
+    { key: 'qty', label: 'Залишок' },
+    { key: 'value_usd', label: 'Вартість, $' },
+    { key: 'sold_30d', label: 'Продано 30д' },
+    { key: 'sold_90d', label: 'Продано 90д' },
+    { key: 'sold_365d', label: 'Продано 365д' },
+    { key: 'days_of_stock', label: 'Дні запасу' },
+    { key: 'daily_rate', label: 'Шт/день' },
+    { key: 'last_sale_date', label: 'Остання продаж' },
+    { key: 'turnover_class', label: 'Клас' },
+  ];
+
+  let th = '<tr>';
+  for (const c of cols) {
+    const sorted = state.sortCol === c.key;
+    const cls = sorted ? `sorted${state.sortAsc ? ' asc' : ''}` : '';
+    th += `<th class="${cls}" onclick="setSort('${c.key}')">${c.label}</th>`;
+  }
+  th += '</tr>';
+
+  let tbody = '';
+  if (state.groupBy === 'category') {
+    const groups = new Map();
+    for (const it of items) {
+      const cat = it.category || 'Без категорії';
+      if (!groups.has(cat)) groups.set(cat, []);
+      groups.get(cat).push(it);
+    }
+    for (const [cat, citems] of groups) {
+      const catVal = citems.reduce((s, i) => s + (i.value_usd || 0), 0);
+      const catQty = citems.reduce((s, i) => s + i.qty, 0);
+      const catId = cat.replace(/[^a-zA-Zа-яА-ЯіІїЇєЄґҐ0-9]/g, '_');
+      tbody += `<tr class="cat-hdr" data-cat="${catId}" onclick="toggleCat('${catId}')"><td colspan="${cols.length}"><span class="tri">▾</span>${cat} &mdash; ${fmt(citems.length)} шт, ${fmtU(catVal)}</td></tr>`;
+      for (const it of citems) tbody += rowHtml(it, `cat-child cat-${catId}`);
+    }
+  } else {
+    for (const it of items) tbody += rowHtml(it, '');
+  }
+
+  if (!items.length) {
+    document.getElementById('body').innerHTML = '<div class="error" style="background:var(--surface2);color:var(--text3)">Немає даних для обраних фільтрів</div>';
+    return;
+  }
+
+  document.getElementById('body').innerHTML = `
+    <div class="inv-wrap"><table class="inv-table">
+      <thead>${th}</thead>
+      <tbody>${tbody}</tbody>
+    </table></div>
+    <div style="font-size:11px;color:var(--text3);padding:4px 2px">
+      Дата залишків: ${DATA.as_of_date} &middot; ${fmt(items.length)} позицій
+    </div>`;
+}
+
+function rowHtml(it, extraCls) {
+  const zr = v => v === 0 || v == null ? ' zr' : '';
+  const fmtDate = d => {
+    if (!d) return '—';
+    const dt = new Date(d);
+    const dd = String(dt.getDate()).padStart(2, '0');
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const yy = String(dt.getFullYear()).slice(-2);
+    return `${dd}.${mm}.${yy}`;
+  };
+  const clsCls = `cls-${it.turnover_class}`;
+  return `<tr class="${extraCls}">
+    <td class="name-cell">${esc(it.name)}${it.article ? `<span class="article">${esc(it.article)}</span>` : ''}</td>
+    <td${zr(it.qty)}>${fmt(it.qty)}</td>
+    <td${zr(it.value_usd)}>${fmtU(it.value_usd)}</td>
+    <td${zr(it.sold_30d)}>${fmt(it.sold_30d)}</td>
+    <td${zr(it.sold_90d)}>${fmt(it.sold_90d)}</td>
+    <td${zr(it.sold_365d)}>${fmt(it.sold_365d)}</td>
+    <td class="${clsCls}">${it.days_of_stock != null ? fmt(it.days_of_stock) : '—'}</td>
+    <td${zr(it.daily_rate)}>${fmt(it.daily_rate, 2)}</td>
+    <td>${fmtDate(it.last_sale_date)}</td>
+    <td class="${clsCls}">${CLASS_LABELS[it.turnover_class] || it.turnover_class}</td>
+  </tr>`;
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function toggleCat(catId) {
+  const hdr = document.querySelector(`tr[data-cat="${catId}"]`);
+  const collapsed = hdr.getAttribute('data-collapsed') === 'true';
+  hdr.setAttribute('data-collapsed', String(!collapsed));
+  document.querySelectorAll(`.cat-${catId}`).forEach(r => r.classList.toggle('collapsed-hidden', !collapsed));
+}
+
+// Auth + org visibility
+Auth.require('sales').then(user => {
+  const userOrgs = user?.orgs || {};
+  const hasAnyOrg = Object.keys(userOrgs).length > 0;
+  if (hasAnyOrg) {
+    const allowedOrgs = ['Реакт', 'Генерація'].filter(o => userOrgs[o]);
+    const orgChips = document.querySelectorAll('#orgGroup .chip');
+    orgChips.forEach(chip => {
+      const org = chip.dataset.org;
+      if (org === '') {
+        if (allowedOrgs.length < 2) chip.style.display = 'none';
+      } else {
+        if (!userOrgs[org]) chip.style.display = 'none';
+      }
+    });
+    const defaultOrg = allowedOrgs.length === 1 ? allowedOrgs[0] : '';
+    state.org = defaultOrg;
+    orgChips.forEach(c => c.classList.toggle('active', c.dataset.org === defaultOrg));
+  }
+  load();
+});
+</script>
+</body>
+</html>
