@@ -218,6 +218,25 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
   </div>
 </div>
 
+<div class="card" style="margin-top:24px">
+  <div class="card-head">
+    <h2>Бот: системний промпт</h2>
+    <div class="spacer"></div>
+    <span id="promptUpdatedAt" style="font-size:11px;color:var(--text3)"></span>
+  </div>
+  <div style="padding:12px 4px 4px">
+    <p style="font-size:12px;color:var(--text3);margin:0 0 8px">
+      Змінні: <code>{{MANAGER_MENTION}}</code>, <code>{{MANAGER_NAME}}</code>, <code>{{BUSINESS_KNOWLEDGE}}</code> — підставляються автоматично. Зауваження від адмінів (бот: запамʼятай) додаються в кінці.
+    </p>
+    <textarea id="botPrompt" style="width:100%;min-height:400px;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;font-size:12px;line-height:1.5;resize:vertical;color-scheme:dark" spellcheck="false"></textarea>
+    <div style="margin-top:10px;display:flex;gap:10px;align-items:center">
+      <button class="btn btn--primary" onclick="saveBotPrompt()">Зберегти</button>
+      <button class="btn btn--ghost" onclick="resetBotPrompt()">Скинути до дефолту</button>
+      <span id="promptSaveStatus" style="font-size:12px;color:var(--text3)"></span>
+    </div>
+  </div>
+</div>
+
 <div id="toastHost"></div>
 
 <script>
@@ -227,11 +246,14 @@ let currentUser = null;
 let users = [];
 let inviteOpen = false;
 
+const BOT_API = 'https://price-api.doskevich.workers.dev/';
+
 Auth.require('admin').then(user => {
   currentUser = user;
   AppHeader.mount({ active: 'admin', user });
   loadUsers();
   loadAutosyncStatus();
+  loadBotPrompt();
 });
 
 // Найсвіжіший last_synced_at з sync_state — показуємо поряд із кнопкою autosync.
@@ -681,6 +703,62 @@ function formatSyncResult(r) {
   if (r.counts) parts.push(Object.entries(r.counts).map(([k,v]) => `${k}=${v}`).join(' · '));
   if (r.from && r.to) parts.push(`[${String(r.from).slice(0,10)}..${String(r.to).slice(0,10)}]`);
   return parts.length ? parts.join(' · ') : JSON.stringify(r).slice(0, 200);
+}
+
+let defaultBotPrompt = '';
+
+async function loadBotPrompt() {
+  try {
+    const token = localStorage.getItem('session_token');
+    const r = await fetch(`${BOT_API}?action=bot_config_get`, { headers: { Authorization: `Bearer ${token}` } });
+    const d = await r.json();
+    if (d.error) { console.error('bot_config_get:', d.error); return; }
+    const ta = document.getElementById('botPrompt');
+    if (d.prompt) {
+      ta.value = d.prompt;
+    } else {
+      const resp = await fetch('https://react-bot.doskevich.workers.dev/bot-default-prompt');
+      const dd = await resp.json();
+      ta.value = dd.prompt || '';
+      defaultBotPrompt = ta.value;
+    }
+    if (!defaultBotPrompt) defaultBotPrompt = ta.value;
+    if (d.updated_at) {
+      document.getElementById('promptUpdatedAt').textContent = 'Оновлено: ' + fmtDate(d.updated_at);
+    }
+  } catch (e) { console.error('loadBotPrompt:', e); }
+}
+
+async function saveBotPrompt() {
+  const ta = document.getElementById('botPrompt');
+  const status = document.getElementById('promptSaveStatus');
+  status.textContent = 'Зберігаю...';
+  try {
+    const token = localStorage.getItem('session_token');
+    const r = await fetch(`${BOT_API}?action=bot_config_set`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ prompt: ta.value })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      toast('Промпт збережено', 'ok');
+      status.textContent = '';
+      document.getElementById('promptUpdatedAt').textContent = 'Оновлено: щойно';
+    } else {
+      toast(d.error || 'Помилка збереження', 'err');
+      status.textContent = '';
+    }
+  } catch (e) {
+    toast('Помилка: ' + e.message, 'err');
+    status.textContent = '';
+  }
+}
+
+function resetBotPrompt() {
+  if (!defaultBotPrompt) { toast('Дефолт не завантажено', 'err'); return; }
+  document.getElementById('botPrompt').value = defaultBotPrompt;
+  toast('Скинуто до дефолту (не збережено)', 'ok');
 }
 
 function toast(text, kind) {
