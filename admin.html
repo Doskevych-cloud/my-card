@@ -252,8 +252,7 @@ let currentUser = null;
 let users = [];
 let inviteOpen = false;
 
-const BOT_API = 'https://price-api.doskevich.workers.dev/';
-const BOT_WORKER_API = 'https://react-bot.doskevich.workers.dev/';
+const BOT_API = 'https://react-bot.doskevich.workers.dev/';
 
 Auth.require('admin').then(user => {
   currentUser = user;
@@ -718,7 +717,7 @@ async function loadBotSettings() {
   const wrap = document.getElementById('botSettingsWrap');
   try {
     const token = localStorage.getItem('session_token');
-    const r = await fetch(`${BOT_WORKER_API}?action=bot_settings_get`, { headers: { Authorization: `Bearer ${token}` } });
+    const r = await fetch(`${BOT_API}?action=bot_settings_get`, { headers: { Authorization: `Bearer ${token}` } });
     const d = await r.json();
     if (d.error) { wrap.innerHTML = `<div style="color:var(--red)">${d.error}</div>`; return; }
     const rows = d.settings || [];
@@ -755,7 +754,7 @@ async function saveBotSettings() {
   const status = document.getElementById('settingsSaveStatus');
   try {
     const token = localStorage.getItem('session_token');
-    const r = await fetch(`${BOT_WORKER_API}?action=bot_settings_update`, {
+    const r = await fetch(`${BOT_API}?action=bot_settings_update`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ settings }),
