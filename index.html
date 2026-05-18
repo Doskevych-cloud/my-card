@@ -1242,15 +1242,24 @@ async function loadKpis() {
   }
 
   // ITR (Inventory Turnover Ratio) = COGS 365d / Stock Value
+  // Дельта: апроксимуємо ITR за попередній період з P&L COGS (annualized) / stock
   if (itrR && itrR.status === 'fulfilled' && itrR.value && !itrR.value.error) {
     const s = itrR.value.summary || {};
     const itrVal = s.itr != null ? s.itr : null;
     const dsiVal = s.dsi != null ? s.dsi : null;
+    let itrPrev = null;
+    if (itrVal != null && stock > 0 && pnlPR && pnlPR.status === 'fulfilled' && pnlPR.value && !pnlPR.value.error && prev) {
+      const cogsPrev = pnlPR.value.cogs?.total || 0;
+      const prevDays = Math.max(1, Math.round((new Date(prev.to) - new Date(prev.from)) / 86400000 + 1));
+      const cogsAnnPrev = cogsPrev / prevDays * 365;
+      if (cogsAnnPrev > 0) itrPrev = cogsAnnPrev / stock;
+    }
     if (itrVal != null) {
       kpiSet('kItr', {
         val: itrVal.toFixed(1) + '×',
         cls: itrVal >= 4 ? 'pos' : (itrVal < 1 ? 'neg' : ''),
         sub: dsiVal != null ? `DSI ${dsiVal} д · запаси ${fmtMoneyShort(s.stock_value_usd || 0)}` : '',
+        deltaCur: itrVal, deltaPrev: itrPrev, deltaGood: 'up',
       });
     } else {
       kpiSet('kItr', { val: '—', sub: 'немає даних' });
@@ -1258,13 +1267,16 @@ async function loadKpis() {
   } else { kpiError('kItr', itrR?.value?.error || 'err'); }
 
   // Active Clients (≥1 оплата за 3 міс)
+  // Дельта: prev active ≈ returning + lost (ті хто був активний раніше)
   if (clientsR && clientsR.status === 'fulfilled' && clientsR.value && !clientsR.value.error) {
     const cs = clientsR.value.summary || {};
     const cp = clientsR.value.period || {};
     const fmtD = d => d ? d.slice(8,10) + '.' + d.slice(5,7) + '.' + d.slice(0,4) : '';
+    const prevActive = (cs.returning || 0) + (cs.lost || 0);
     kpiSet('kClients', {
       val: String(cs.active || 0),
       sub: `≥1 оплата за ${fmtD(cp.from)} — ${fmtD(cp.to)}`,
+      deltaCur: cs.active || 0, deltaPrev: prevActive > 0 ? prevActive : null, deltaGood: 'up',
     });
   } else { kpiError('kClients', clientsR?.value?.error || 'err'); }
 
