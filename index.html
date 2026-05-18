@@ -992,6 +992,8 @@ const KPIS = [
   { id: 'kStock',  lbl: 'Запаси',            href: '/warehouses.html' },
   { id: 'kCash',   lbl: 'Кошти',             href: '/finance.html?tab=cb' },
   { id: 'kCcr',    lbl: 'CCR',               href: '/finance.html?tab=cf' },
+  { id: 'kItr',    lbl: 'ITR',              href: '/warehouses.html' },
+  { id: 'kClients',lbl: 'Активних клієнтів', href: null },
   { id: 'kHealth', lbl: 'Здоров\'я',        mock: true },
 ];
 
@@ -1095,9 +1097,11 @@ async function loadKpis() {
     dashFetch(`${API_URL}?action=cash_flow_report&from=${state.from}&to=${state.to}${orgQ}`).catch(() => null),
     prev ? dashFetch(`${API_URL}?action=cash_flow_report&from=${prev.from}&to=${prev.to}${orgQ}`).catch(() => null) : Promise.resolve(null),
     dashFetch(`${API_URL}?action=cash_balance_report${orgQ}`).catch(() => null),
+    dashFetch(`${API_URL}?action=inventory_turnover${orgQ}`).catch(() => null),
+    dashFetch(`${API_URL}?action=active_clients`).catch(() => null),
   ]);
 
-  const [salesR, salesPR, arR, arPR, apR, apPR, pnlR, pnlPR, gpR, stockR, cfR, cfPR, cbR] = results;
+  const [salesR, salesPR, arR, arPR, apR, apPR, pnlR, pnlPR, gpR, stockR, cfR, cfPR, cbR, itrR, clientsR] = results;
 
   // Revenue (paid)
   let revenue = 0;
@@ -1217,6 +1221,33 @@ async function loadKpis() {
   } else {
     kpiSet('kCcr', { val: '—', sub: 'недостатньо даних' });
   }
+
+  // ITR (Inventory Turnover Ratio) = COGS 365d / Stock Value
+  if (itrR && itrR.status === 'fulfilled' && itrR.value && !itrR.value.error) {
+    const s = itrR.value.summary || {};
+    const itrVal = s.itr != null ? s.itr : null;
+    const dsiVal = s.dsi != null ? s.dsi : null;
+    if (itrVal != null) {
+      kpiSet('kItr', {
+        val: itrVal.toFixed(1) + '×',
+        cls: itrVal >= 4 ? 'pos' : (itrVal < 1 ? 'neg' : ''),
+        sub: dsiVal != null ? `DSI ${dsiVal} д · запаси ${fmtMoneyShort(s.stock_value_usd || 0)}` : '',
+      });
+    } else {
+      kpiSet('kItr', { val: '—', sub: 'немає даних' });
+    }
+  } else { kpiError('kItr', itrR?.value?.error || 'err'); }
+
+  // Active Clients (≥1 оплата за 3 міс)
+  if (clientsR && clientsR.status === 'fulfilled' && clientsR.value && !clientsR.value.error) {
+    const cs = clientsR.value.summary || {};
+    const cp = clientsR.value.period || {};
+    const fmtD = d => d ? d.slice(8,10) + '.' + d.slice(5,7) + '.' + d.slice(0,4) : '';
+    kpiSet('kClients', {
+      val: String(cs.active || 0),
+      sub: `≥1 оплата за ${fmtD(cp.from)} — ${fmtD(cp.to)}`,
+    });
+  } else { kpiError('kClients', clientsR?.value?.error || 'err'); }
 
   // Cycle (DSO-DPO). Беремо абсолютні значення дебіторки/кредиторки —
   // arCur і apCur у cashflow-знаці (− = нам винні, + = ми винні), а DSO/DPO
