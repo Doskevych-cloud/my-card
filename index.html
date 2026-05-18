@@ -98,6 +98,10 @@ a.kpi:hover{border-color:var(--accent);transform:translateY(-1px)}
 .kpi .health-dot.ok{background:var(--green);box-shadow:0 0 8px rgba(34,197,94,.5)}
 .kpi .health-dot.warn{background:var(--yellow)}
 .kpi .health-dot.bad{background:var(--red)}
+.kpi-hint{position:relative;display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;border:1px solid var(--border2);color:var(--text3);font-size:9px;font-weight:700;cursor:help;margin-left:auto;flex-shrink:0;line-height:1;font-family:inherit;text-transform:none;letter-spacing:0}
+.kpi-hint:hover{border-color:var(--text3);color:var(--text2)}
+.kpi-hint .kpi-tip{display:none;position:absolute;top:calc(100% + 6px);right:-8px;width:240px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;font-size:11.5px;font-weight:400;color:var(--text2);line-height:1.5;text-transform:none;letter-spacing:0;white-space:normal;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,.25);pointer-events:none}
+.kpi-hint:hover .kpi-tip{display:block}
 
 /* BLOCK */
 .block{margin-top:18px;animation:block-in .45s ease-out backwards}
@@ -997,13 +1001,28 @@ const KPIS = [
   { id: 'kHealth', lbl: 'Здоров\'я',        mock: true },
 ];
 
+const KPI_HINTS = {
+  kRev:    'Сума оплат від клієнтів за період (в USD). Тільки фактично отримані гроші, не відвантаження.',
+  kMargin: 'Валова маржа = (Виручка − Собівартість) / Виручка. Показує скільки залишається після прямих витрат на товар.',
+  kNet:    'Чистий прибуток = Виручка − Собівартість − Усі витрати. Що реально залишається після всіх витрат.',
+  kAR:     'Дебіторка — скільки грошей нам винні клієнти. Чим більше — тим більше коштів заморожено.',
+  kAP:     'Кредиторка — скільки ми винні постачальникам. Баланс між AR і AP = здоров\'я cashflow.',
+  kStock:  'Вартість товарів на складах в USD. Багато запасів = заморожений капітал.',
+  kCash:   'Залишки на банківських рахунках і в касах. Скільки грошей є прямо зараз.',
+  kCcr:    'Cash Conversion Ratio — скільки прибутку реально дійшло до каси. >100% = супер, <0% = каса порожніє при плюсовому прибутку.',
+  kItr:    'Inventory Turnover — скільки разів на рік склад повністю продається. >4× = швидко, <1× = товар лежить. DSI = скільки днів вистачить запасів.',
+  kClients:'Унікальні клієнти з ≥1 оплатою за останні 3 місяці (тільки Реакт).',
+  kHealth: 'Агрегат з 5 метрик: виторг, прибуток, AR/AP баланс, CCC, маржа. 5/5 = все зелене.',
+};
+
 function buildKpiSkeleton() {
   document.getElementById('kpiHero').innerHTML = KPIS.map(k => {
     const tag = k.href ? 'a' : 'div';
     const attrs = k.href ? `href="${k.href}"` : '';
+    const hint = KPI_HINTS[k.id] ? `<span class="kpi-hint" onclick="event.preventDefault();event.stopPropagation()">?<span class="kpi-tip">${KPI_HINTS[k.id]}</span></span>` : '';
     return `
     <${tag} class="kpi ldg" id="${k.id}" ${attrs}>
-      <div class="kpi-lbl">${k.lbl}${k.mock ? '<span class="mock-tag" style="margin-left:6px">умовно</span>' : ''}</div>
+      <div class="kpi-lbl">${k.lbl}${k.mock ? '<span class="mock-tag" style="margin-left:6px">умовно</span>' : ''}${hint}</div>
       <div class="kpi-val">—</div>
       <div class="kpi-foot">
         <span id="${k.id}Sub">—</span>
