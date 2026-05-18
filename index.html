@@ -981,7 +981,7 @@ document.addEventListener('click', e => {
 });
 
 // ═══════════════════════════════════════════════════════════════════
-// KPI HERO — 7 цифр (4 live + 3 mock-помічені)
+// KPI HERO — 8 цифр (5 live + 3 mock-помічені)
 // ═══════════════════════════════════════════════════════════════════
 const KPIS = [
   { id: 'kRev',    lbl: 'Виторг (оплачено)', href: '/sales.html' },
@@ -990,6 +990,7 @@ const KPIS = [
   { id: 'kAR',     lbl: 'Борги нам',         href: '/counterparties.html#role=customers' },
   { id: 'kAP',     lbl: 'Наш борг',          href: '/counterparties.html#role=suppliers' },
   { id: 'kStock',  lbl: 'Запаси',            href: '/warehouses.html' },
+  { id: 'kCash',   lbl: 'Кошти',             href: '/finance.html?tab=cb' },
   { id: 'kCcr',    lbl: 'CCR',               href: '/finance.html?tab=cf' },
   { id: 'kHealth', lbl: 'Здоров\'я',        mock: true },
 ];
@@ -1093,9 +1094,10 @@ async function loadKpis() {
     dashFetch(`${API_URL}?action=warehouse_value_report${orgQ}`).catch(() => null),
     dashFetch(`${API_URL}?action=cash_flow_report&from=${state.from}&to=${state.to}${orgQ}`).catch(() => null),
     prev ? dashFetch(`${API_URL}?action=cash_flow_report&from=${prev.from}&to=${prev.to}${orgQ}`).catch(() => null) : Promise.resolve(null),
+    dashFetch(`${API_URL}?action=cash_balance_report${orgQ}`).catch(() => null),
   ]);
 
-  const [salesR, salesPR, arR, arPR, apR, apPR, pnlR, pnlPR, gpR, stockR, cfR, cfPR] = results;
+  const [salesR, salesPR, arR, arPR, apR, apPR, pnlR, pnlPR, gpR, stockR, cfR, cfPR, cbR] = results;
 
   // Revenue (paid)
   let revenue = 0;
@@ -1177,6 +1179,23 @@ async function loadKpis() {
     // Approx UAH (умовно at 41.42)
     document.getElementById('b5StockUah').textContent = fmt(stock * 41.42 / 1_000_000, 1).replace('.', ',') + ' M ₴';
   } else { kpiError('kStock', 'err'); }
+
+  // Cash balance
+  if (cbR && cbR.status === 'fulfilled' && cbR.value && !cbR.value.error) {
+    const cb = cbR.value;
+    const totalCash = Number(cb.total_usd || 0);
+    const accs = cb.accounts || [];
+    let bankUsd = 0, cashUsd = 0;
+    accs.forEach(a => {
+      if (a.account_type === 'bank') bankUsd += Number(a.total_usd || 0);
+      else cashUsd += Number(a.total_usd || 0);
+    });
+    kpiSet('kCash', {
+      val: fmtMoneyShort(totalCash),
+      cls: totalCash > 0 ? 'pos' : '',
+      sub: `Рахунки ${fmtMoneyShort(bankUsd)} · Каси ${fmtMoneyShort(cashUsd)}`,
+    });
+  } else { kpiError('kCash', cbR?.value?.error || 'err'); }
 
   // CCR (Cash Conversion Ratio) = Operating CF / Net Profit
   function ocfFromCf(c) {
