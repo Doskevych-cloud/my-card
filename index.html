@@ -998,7 +998,6 @@ const KPIS = [
   { id: 'kCcr',    lbl: 'CCR',               href: '/finance.html?tab=cf' },
   { id: 'kItr',    lbl: 'ITR',              href: '/warehouses.html' },
   { id: 'kClients',lbl: 'Активних клієнтів', href: null },
-  { id: 'kHealth', lbl: 'Здоров\'я',        mock: true },
 ];
 
 const KPI_HINTS = {
@@ -1012,7 +1011,6 @@ const KPI_HINTS = {
   kCcr:    'Cash Conversion Ratio — скільки прибутку реально дійшло до каси. >100% = супер, <0% = каса порожніє при плюсовому прибутку.',
   kItr:    'Inventory Turnover — скільки разів на рік склад повністю продається. >4× = швидко, <1× = товар лежить. DSI = скільки днів вистачить запасів.',
   kClients:'Унікальні клієнти з ≥1 оплатою за останні 3 місяці (тільки Реакт).',
-  kHealth: 'Агрегат з 5 метрик: виторг, прибуток, AR/AP баланс, CCC, маржа. 5/5 = все зелене.',
 };
 
 function buildKpiSkeleton() {
@@ -1303,30 +1301,6 @@ async function loadKpis() {
       document.getElementById('b4Ccc').style.color = cycle > 45 ? 'var(--red)' : cycle > 20 ? 'var(--yellow)' : 'var(--green)';
     }
   }
-
-  // Health (умовно — агрегат)
-  let healthScore = 0; let healthCls = 'ok'; let healthDetails = [];
-  if (revenue > 0) healthScore++; else healthDetails.push('виторг');
-  if (netVal != null && netVal > 0) healthScore++; else healthDetails.push('прибуток');
-  if (arCur >= 0 && (apCur === 0 || arCur >= apCur * 0.8)) healthScore++; else healthDetails.push('AR/AP');
-  if (cycle != null && cycle < 60) healthScore++; else healthDetails.push('CCC');
-  if (gpR?.value && !gpR.value.error) {
-    const m = Number(gpR.value.total?.profit || 0) / Math.max(1, Number(gpR.value.total?.revenue || 0));
-    if (m > 0.10) healthScore++; else healthDetails.push('маржа');
-  }
-  if (healthScore >= 4) healthCls = 'ok';
-  else if (healthScore >= 3) healthCls = 'warn';
-  else healthCls = 'bad';
-  (function renderHealth(){
-    const el = document.getElementById('kHealth');
-    if (!el) return;
-    el.classList.remove('ldg','err');
-    const valEl = el.querySelector('.kpi-val');
-    valEl.classList.remove('pos','neg');
-    valEl.innerHTML = `<span class="health-dot ${healthCls}"></span>${healthScore} / 5`;
-    const subEl = document.getElementById('kHealthSub');
-    if (subEl) subEl.textContent = healthDetails.length ? 'нюанс: ' + healthDetails.slice(0,2).join(', ') : 'усе зелене';
-  })();
 
   document.getElementById('trendSub').textContent = `${state.from} → ${state.to} · орг: ${state.org || 'всі'}`;
 }
