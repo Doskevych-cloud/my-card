@@ -2129,7 +2129,7 @@ async function loadFxPosition() {
     return;
   }
 
-  // Rates: основний — SWIFT PrivatBank (sell), референс — 1c_doc
+  // Rates: основний — НБУ +1% (sell), референс — 1c_doc
   const rt = r.rates || {};
   const sw = rt.swift || {};
   const doc = rt.doc_1c || {};
@@ -2137,13 +2137,13 @@ async function loadFxPosition() {
   const fmtS = v => v != null && isFinite(v) ? v.toFixed(2).replace('.', ',') : '—';
   document.getElementById('b7Rates').innerHTML = `
     <div class="fx-row">
-      <div class="fx-cur">USD<small style="display:block;font-size:9px;color:var(--text3);font-weight:500;margin-top:1px">SWIFT</small></div>
-      <div><div style="color:var(--text);font-weight:600;font-size:13px">долар США</div><div class="fx-name">PrivatBank · купівля ${fmtS(sw.usd_buy)} / продаж ${fmtS(sw.usd_sell)}</div></div>
+      <div class="fx-cur">USD</div>
+      <div><div style="color:var(--text);font-weight:600;font-size:13px">долар США</div><div class="fx-name">НБУ +1% · ${fmtS(sw.usd_sell)} ₴</div></div>
       <div><div class="fx-val">${fmtS(sw.usd_sell)} ₴</div></div>
     </div>
     <div class="fx-row">
-      <div class="fx-cur">EUR<small style="display:block;font-size:9px;color:var(--text3);font-weight:500;margin-top:1px">SWIFT</small></div>
-      <div><div style="color:var(--text);font-weight:600;font-size:13px">євро</div><div class="fx-name">PrivatBank · купівля ${fmtS(sw.eur_buy)} / продаж ${fmtS(sw.eur_sell)}</div></div>
+      <div class="fx-cur">EUR</div>
+      <div><div style="color:var(--text);font-weight:600;font-size:13px">євро</div><div class="fx-name">НБУ +1% · ${fmtS(sw.eur_sell)} ₴</div></div>
       <div><div class="fx-val">${fmtS(sw.eur_sell)} ₴</div></div>
     </div>
     <div class="fx-row">
