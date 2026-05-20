@@ -8,7 +8,7 @@
 // ═════════════════════════════════════════════════════════════════
 
 (function (global) {
-  const API = 'https://api.react.ink/';
+  const API = 'https://price-api.doskevich.workers.dev/';
   const TOKEN_KEY = 'session_token';
   const USER_CACHE_KEY = 'session_user';
   // ── Impersonation (admin тимчасово переходить у сесію іншого користувача) ──
