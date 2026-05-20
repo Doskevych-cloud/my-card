@@ -8,7 +8,7 @@
 // ═════════════════════════════════════════════════════════════════
 
 (function (global) {
-  const API = 'https://price-api.doskevich.workers.dev/';
+  const API = 'https://api.react.ink/';
   const TOKEN_KEY = 'session_token';
   const USER_CACHE_KEY = 'session_user';
   // ── Impersonation (admin тимчасово переходить у сесію іншого користувача) ──
@@ -36,7 +36,7 @@
     const _origFetch = global.fetch.bind(global);
     global.fetch = function (input, init) {
       const url = typeof input === 'string' ? input : (input && input.url) || '';
-      if (url && url.includes('price-api.doskevich.workers.dev')) {
+      if (url && (url.includes('api.react.ink') || url.includes('price-api.doskevich.workers.dev'))) {
         init = init || {};
         const headers = new Headers(init.headers || (input && input.headers) || {});
         const token = localStorage.getItem(TOKEN_KEY) || '';
