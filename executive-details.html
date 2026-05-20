@@ -431,8 +431,8 @@ async function loadFxPosition() {
   document.getElementById('ratesSub').textContent = `${rt.source || '—'} · станом на ${rt.date || '—'}`;
   const fmtS = v => v != null && isFinite(v) ? v.toFixed(2).replace('.', ',') : '—';
   document.getElementById('ratesBody').innerHTML = `
-    <div class="fx-row"><div class="fx-cur">USD SWIFT</div><div><div style="color:var(--text);font-weight:600">PrivatBank</div><div class="fx-name">купівля ${fmtS(sw.usd_buy)} / продаж ${fmtS(sw.usd_sell)}</div></div><div class="fx-val">${fmtS(sw.usd_sell)} ₴</div></div>
-    <div class="fx-row"><div class="fx-cur">EUR SWIFT</div><div><div style="color:var(--text);font-weight:600">PrivatBank</div><div class="fx-name">купівля ${fmtS(sw.eur_buy)} / продаж ${fmtS(sw.eur_sell)}</div></div><div class="fx-val">${fmtS(sw.eur_sell)} ₴</div></div>
+    <div class="fx-row"><div class="fx-cur">USD</div><div><div style="color:var(--text);font-weight:600">долар США</div><div class="fx-name">НБУ +1% · ${fmtS(sw.usd_sell)} ₴</div></div><div class="fx-val">${fmtS(sw.usd_sell)} ₴</div></div>
+    <div class="fx-row"><div class="fx-cur">EUR</div><div><div style="color:var(--text);font-weight:600">євро</div><div class="fx-name">НБУ +1% · ${fmtS(sw.eur_sell)} ₴</div></div><div class="fx-val">${fmtS(sw.eur_sell)} ₴</div></div>
     <div class="fx-row"><div class="fx-cur" style="color:var(--text3)">1С doc</div><div><div style="color:var(--text2)">з документів</div><div class="fx-name">USD ${fmtS(doc.usd_uah)} · EUR ${fmtS(doc.eur_uah)}</div></div><div class="fx-val" style="color:var(--text3);font-size:11px">довідково</div></div>
     <div class="fx-row"><div class="fx-cur">EUR/USD</div><div><div style="color:var(--text);font-weight:600">кросс-курс</div></div><div class="fx-val">${rt.eur_usd ? rt.eur_usd.toFixed(4) : '—'}</div></div>
   `;

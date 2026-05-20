@@ -151,7 +151,7 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
       <div><code>*/30 6-16 * * *</code> UTC = кожні 30 хв, 09:00–19:30 Kyiv → <code>runDailyAutoSync</code></div>
 
       <div style="color:var(--text3)">Cron — FX warmup</div>
-      <div><code>*/15 * * * *</code> + <code>0 6,7,8 * * *</code> → SWIFT-курс ПриватБанку у KV</div>
+      <div><code>*/15 * * * *</code> + <code>0 6,7,8 * * *</code> → курс НБУ +1% у KV</div>
 
       <div style="color:var(--text3)">Вікно документів</div>
       <div>7 днів від <b>00:00 UTC</b> (boundary-fix 2026-05-04 — фіксує ордери створені вранці того ж дня)</div>
@@ -160,7 +160,7 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
       <div>sales_orders → sales_receipts → sales_order_items → orphan-перевірка менеджерів (90 днів) → ar_movements → payments_in → purchase_* → ap_movements → payments_out → cash_* → fx_rates_1c → amount_usd_backfill → stock_balances → price_types → nomenclature_prices → cache-bust</div>
 
       <div style="color:var(--text3)">Ранковий прохід<br><span style="font-size:11px">(06:00 UTC, тільки 1 раз/добу)</span></div>
-      <div>+ master_data (контрагенти/контракти/SKU/склади/працівники) <br>+ fx_rates_pb (ПриватБанк fallback, window 7 днів) <br>+ <b>sales_orders_managers_full</b> (повний re-sync менеджерів за 180 днів — ловить пере-проставлених у 1С)</div>
+      <div>+ master_data (контрагенти/контракти/SKU/склади/працівники) <br>+ fx_rates_pb (НБУ +1% fallback, window 7 днів) <br>+ <b>sales_orders_managers_full</b> (повний re-sync менеджерів за 180 днів — ловить пере-проставлених у 1С)</div>
 
       <div style="color:var(--text3)">НЕ в крон<br><span style="font-size:11px">(scan-based, важкі)</span></div>
       <div>sales_receipt_items, purchase_receipt_items — запускати вручну з потрібним періодом</div>
