@@ -9,6 +9,10 @@
 </script>
 <script src="auth.js?v=mobhdr20260430"></script>
 <script src="header.js?v=mobhdr20260430"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/uk.js"></script>
+<script src="date-range.js"></script>
 <style>
 :root{
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -53,9 +57,6 @@ a{color:inherit;text-decoration:none}
 /* Toolbar — same canon as sales.html / ar_aging.html */
 .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
 .toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
-.toolbar input[type=date]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;color-scheme:dark;font-family:inherit}
-:root[data-theme="light"] .toolbar input[type=date]{color-scheme:light}
-.toolbar input[type=date]:focus{border-color:var(--accent)}
 .toolbar .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;display:inline-flex;align-items:center;gap:6px;border-radius:8px}
 .toolbar .chip:hover{background:var(--bg3);color:var(--text)}
 .toolbar .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
@@ -151,7 +152,7 @@ a{color:inherit;text-decoration:none}
   .page-tabs,.sub-tabs{display:flex;flex-wrap:wrap;gap:3px;padding:3px;max-width:100%}
   .ptab,.stab{padding:6px 10px;font-size:11.5px;flex:0 0 auto}
   .toolbar{padding:8px;gap:6px;border-radius:10px}
-  .toolbar input[type=date]{font-size:12px;padding:6px 8px}
+  .toolbar .date-range-input{font-size:12px;padding:6px 8px}
   .toolbar input[type=text]{flex:1 1 100%;min-width:0;font-size:12px;padding:6px 8px}
   .toolbar .lbl{display:none}
   .toolbar .chip{padding:6px 10px;font-size:11px}
@@ -189,9 +190,7 @@ a{color:inherit;text-decoration:none}
 
   <div class="toolbar">
     <span class="lbl">Період</span>
-    <input type="date" id="fromIn">
-    <span style="color:var(--text3)">—</span>
-    <input type="date" id="toIn">
+    <input type="text" id="dateRange" class="date-range-input" readonly>
     <span class="group" id="presetGroup">
       <span class="chip" data-preset="month">Цей місяць</span>
       <span class="chip" data-preset="prevmonth">Минулий</span>
@@ -331,9 +330,9 @@ function detectPreset(from, to) {
 }
 
 // ─── Controls ───
+let _picker = null;
 function syncInputs() {
-  document.getElementById('fromIn').value = state.from;
-  document.getElementById('toIn').value = state.to;
+  if (_picker) _picker.setDates(state.from, state.to);
 }
 function syncPresetChips() {
   document.querySelectorAll('#presetGroup .chip').forEach(c => {
@@ -383,15 +382,15 @@ function setMode(m) {
   syncModeChips(); saveStateToUrl(); load();
 }
 function attachEvents() {
-  document.getElementById('fromIn').addEventListener('change', e => {
-    state.from = e.target.value || _firstOfMonthISO();
-    state.preset = detectPreset(state.from, state.to);
-    syncPresetChips(); saveStateToUrl(); load();
-  });
-  document.getElementById('toIn').addEventListener('change', e => {
-    state.to = e.target.value || _todayISO();
-    state.preset = detectPreset(state.from, state.to);
-    syncPresetChips(); saveStateToUrl(); load();
+  _picker = initDateRange({
+    inputId: 'dateRange',
+    from: state.from,
+    to: state.to,
+    onChange: function(from, to) {
+      state.from = from; state.to = to;
+      state.preset = detectPreset(from, to);
+      syncPresetChips(); saveStateToUrl(); load();
+    }
   });
   document.querySelectorAll('#presetGroup .chip').forEach(c => {
     c.addEventListener('click', () => setPreset(c.dataset.preset));

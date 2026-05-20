@@ -7,12 +7,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="auth.js?v=ccrtt-20260430"></script>
 <script src="header.js?v=ccrtt-20260430"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/uk.js"></script>
+<script src="date-range.js"></script>
 <style>
 :root{
   /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
@@ -59,9 +63,6 @@ a{color:inherit;text-decoration:none}
 @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.6)}}
 
 .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
-.toolbar input[type=date]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;color-scheme:dark;font-family:inherit}
-:root[data-theme="light"] .toolbar input[type=date]{color-scheme:light}
-.toolbar input[type=date]:focus{border-color:var(--accent)}
 .toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
 .toolbar .group{display:inline-flex;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px}
 .toolbar .group .chip{padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;user-select:none;transition:background .15s,color .15s}
@@ -232,9 +233,7 @@ a{color:inherit;text-decoration:none}
 
     <div class="toolbar">
       <span class="lbl">Період</span>
-      <input type="date" id="fromIn">
-      <span style="color:var(--text3)">—</span>
-      <input type="date" id="toIn">
+      <input type="text" id="dateRange" class="date-range-input" readonly>
       <span class="group" id="periodGroup">
         <span class="chip" data-preset="month">Цей місяць</span>
         <span class="chip" data-preset="prevmonth">Минулий</span>
@@ -366,6 +365,7 @@ function _todayISO() {
 function _localISO(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+let _picker = null;
 const state = {
   preset: 'month',
   from: '', to: '',
@@ -411,10 +411,12 @@ function bindToolbar() {
       reloadAll();
     });
   });
-  const fi = document.getElementById('fromIn');
-  const ti = document.getElementById('toIn');
-  if (fi) fi.addEventListener('change', e => { state.from = e.target.value; dashDateChanged(); });
-  if (ti) ti.addEventListener('change', e => { state.to   = e.target.value; dashDateChanged(); });
+  _picker = initDateRange({
+    inputId: 'dateRange',
+    from: state.from || _localISO(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+    to: state.to || _localISO(new Date()),
+    onChange: function(from, to) { state.from = from; state.to = to; dashDateChanged(); }
+  });
 }
 
 
@@ -428,8 +430,7 @@ function setPreset(p) {
   else if (p === 'year')      from = new Date(y, 0, 1);
   state.from = _localISO(from);
   state.to = _localISO(to);
-  const fi = document.getElementById('fromIn'); if (fi) fi.value = state.from;
-  const ti = document.getElementById('toIn');   if (ti) ti.value = state.to;
+  if (_picker) _picker.setDates(state.from, state.to);
   document.querySelectorAll('#periodGroup .chip').forEach(c => c.classList.toggle('active', c.dataset.preset === p));
   reloadAll();
 }

@@ -10,6 +10,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/uk.js"></script>
+<script src="date-range.js"></script>
 <script src="auth.js?v=mobhdr20260430"></script>
 <script src="header.js?v=mobhdr20260430"></script>
 <style>
@@ -175,9 +179,7 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
     </div>
     <div style="padding:12px 4px 4px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <label style="font-size:12px;color:var(--text3)">Період (для рухів)</label>
-      <input type="date" id="manSyncFrom" style="padding:6px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;color-scheme:dark">
-      <span style="color:var(--text3)">—</span>
-      <input type="date" id="manSyncTo" style="padding:6px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;color-scheme:dark">
+      <input type="text" id="manSyncRange" class="date-range-input" readonly style="padding:6px 8px;background:var(--bg2,var(--card2));border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;width:220px;cursor:pointer">
       <span style="font-size:11px;color:var(--text3)">довідники ігнорують період</span>
     </div>
     <div style="padding:12px 4px 4px">
@@ -579,6 +581,16 @@ async function runAutosync() {
 }
 
 // ── Ручний вибірковий sync ──────────────────────────────────────────────
+var _manSyncFrom = '', _manSyncTo = '';
+(function() {
+  var today = new Date();
+  var yAgo = new Date(today); yAgo.setFullYear(today.getFullYear() - 1);
+  _manSyncFrom = yAgo.toISOString().slice(0,10);
+  _manSyncTo = today.toISOString().slice(0,10);
+  initDateRange({ inputId: 'manSyncRange', from: _manSyncFrom, to: _manSyncTo,
+    onChange: function(f, t) { _manSyncFrom = f; _manSyncTo = t; } });
+})();
+
 function manSyncToggleAll(on) {
   document.querySelectorAll('#manSyncResult, #btnManSync').forEach(() => {});
   document.querySelectorAll('input[type=checkbox][data-act^="_admin_"]').forEach(c => c.checked = !!on);
@@ -597,13 +609,10 @@ const SYNC_NEEDS_RANGE = new Set([
 async function runManualSync() {
   const checked = Array.from(document.querySelectorAll('input[type=checkbox][data-act^="_admin_"]:checked'));
   if (!checked.length) { toast('Нічого не обрано', 'err'); return; }
-  const from = document.getElementById('manSyncFrom').value;
-  const to   = document.getElementById('manSyncTo').value;
-  // Дефолт: рік назад → сьогодні (для сутностей з range, якщо юзер не вказав)
   const today = new Date();
   const yAgo = new Date(today); yAgo.setFullYear(today.getFullYear() - 1);
-  const defaultFrom = from || yAgo.toISOString().slice(0,10);
-  const defaultTo   = to   || today.toISOString().slice(0,10);
+  const defaultFrom = _manSyncFrom || yAgo.toISOString().slice(0,10);
+  const defaultTo   = _manSyncTo   || today.toISOString().slice(0,10);
 
   const btn = document.getElementById('btnManSync');
   const out = document.getElementById('manSyncResult');

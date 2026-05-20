@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
@@ -16,6 +17,9 @@
 <script src="monthly-chart.js?v=mctrend20260430"></script>
 <!-- html2pdf.js for real PDF file download (not browser print dialog) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/uk.js"></script>
+<script src="date-range.js"></script>
 <!-- SheetJS (xlsx) for Excel export -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -91,9 +95,6 @@ a{color:inherit;text-decoration:none}
 
 .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
 .toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
-.toolbar input[type=date]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;color-scheme:dark;font-family:inherit}
-:root[data-theme="light"] .toolbar input[type=date]{color-scheme:light}
-.toolbar input[type=date]:focus{border-color:var(--accent)}
 .toolbar .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;display:inline-flex;align-items:center;gap:6px}
 .toolbar .chip:hover{background:var(--bg3);color:var(--text)}
 .toolbar .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
@@ -315,7 +316,7 @@ a{color:inherit;text-decoration:none}
   .pnl-wrap{-webkit-overflow-scrolling:touch}
   /* Toolbar — менш повітря, всі чіпи переносяться */
   .toolbar{padding:8px;gap:6px;border-radius:10px}
-  .toolbar input[type=date]{font-size:12px;padding:6px 8px;flex:1;min-width:0}
+  .toolbar .date-range-input{font-size:12px;padding:6px 8px;flex:1;min-width:0}
   .toolbar input[type=text]{font-size:12px;padding:6px 8px;flex:1;min-width:140px}
   .toolbar .lbl{display:none}
   .toolbar .chip{padding:6px 10px;font-size:11px}
@@ -387,9 +388,7 @@ a{color:inherit;text-decoration:none}
     <div id="pnlView" class="view active">
       <div class="toolbar" id="pnlToolbar">
         <span class="lbl">Період</span>
-        <input type="date" id="fromIn">
-        <span style="color:var(--text3)">—</span>
-        <input type="date" id="toIn">
+        <input type="text" id="pnlDateRange" class="date-range-input" readonly>
         <span class="group">
           <span class="chip" onclick="setPreset('month')">Цей місяць</span>
           <span class="chip" onclick="setPreset('prevmonth')">Минулий</span>
@@ -427,9 +426,7 @@ a{color:inherit;text-decoration:none}
     <div id="gpView" class="view">
       <div class="toolbar" id="gpToolbar">
         <span class="lbl">Період</span>
-        <input type="date" id="gpFromIn">
-        <span style="color:var(--text3)">—</span>
-        <input type="date" id="gpToIn">
+        <input type="text" id="gpDateRange" class="date-range-input" readonly>
         <span class="group">
           <span class="chip" onclick="gpSetPreset('month')">Цей місяць</span>
           <span class="chip" onclick="gpSetPreset('prevmonth')">Минулий</span>
@@ -495,9 +492,7 @@ a{color:inherit;text-decoration:none}
     <div id="cfView" class="view">
       <div class="toolbar" id="cfToolbar">
         <span class="lbl">Період</span>
-        <input type="date" id="cfFromIn">
-        <span style="color:var(--text3)">—</span>
-        <input type="date" id="cfToIn">
+        <input type="text" id="cfDateRange" class="date-range-input" readonly>
         <span class="group">
           <span class="chip" onclick="cfSetPreset('month')">Цей місяць</span>
           <span class="chip" onclick="cfSetPreset('prevmonth')">Минулий</span>
@@ -535,9 +530,7 @@ a{color:inherit;text-decoration:none}
     <div id="fiView" class="view">
       <div class="toolbar" id="fiToolbar">
         <span class="lbl">Період</span>
-        <input type="date" id="fiFromIn">
-        <span style="color:var(--text3)">—</span>
-        <input type="date" id="fiToIn">
+        <input type="text" id="fiDateRange" class="date-range-input" readonly>
         <span class="group">
           <span class="chip" onclick="fiSetPreset('month')">Цей місяць</span>
           <span class="chip" onclick="fiSetPreset('prevmonth')">Минулий</span>
@@ -568,9 +561,7 @@ a{color:inherit;text-decoration:none}
     <div id="arView" class="view">
       <div class="toolbar" id="arToolbar">
         <span class="lbl">Період</span>
-        <input type="date" id="arFromIn">
-        <span style="color:var(--text3)">—</span>
-        <input type="date" id="arToIn">
+        <input type="text" id="arDateRange" class="date-range-input" readonly>
         <span class="group">
           <span class="chip" onclick="arSetPreset('month')">Цей місяць</span>
           <span class="chip" onclick="arSetPreset('prevmonth')">Минулий</span>
@@ -817,11 +808,11 @@ function _refreshTabToolbar(v) {
       c.classList.toggle('active', c.dataset.org === (org || ''));
     });
   };
-  if (v === 'pnl') { setVal('fromIn', st.from); setVal('toIn', st.to); setPresetChips('pnlToolbar', st.preset, st.from, st.to); setOrgChips('pnlOrgGroup', st.org); }
-  else if (v === 'gp') { setVal('gpFromIn', st.from); setVal('gpToIn', st.to); setPresetChips('gpToolbar', st.preset, st.from, st.to); setOrgChips('gpOrgGroup', st.org); }
-  else if (v === 'ar') { setVal('arFromIn', st.from); setVal('arToIn', st.to); setPresetChips('arToolbar', st.preset, st.from, st.to); setOrgChips('arOrgGroup', st.org); }
-  else if (v === 'cf') { setVal('cfFromIn', st.from); setVal('cfToIn', st.to); setPresetChips('cfToolbar', st.preset, st.from, st.to); setOrgChips('cfOrgGroup', st.org); }
-  else if (v === 'fi') { setVal('fiFromIn', st.from); setVal('fiToIn', st.to); setPresetChips('fiToolbar', st.preset, st.from, st.to); setOrgChips('fiOrgGroup', st.org); }
+  if (v === 'pnl') { if (_pnlPicker) _pnlPicker.setDates(st.from, st.to); setPresetChips('pnlToolbar', st.preset, st.from, st.to); setOrgChips('pnlOrgGroup', st.org); }
+  else if (v === 'gp') { if (_gpPicker) _gpPicker.setDates(st.from, st.to); setPresetChips('gpToolbar', st.preset, st.from, st.to); setOrgChips('gpOrgGroup', st.org); }
+  else if (v === 'ar') { if (_arPicker) _arPicker.setDates(st.from, st.to); setPresetChips('arToolbar', st.preset, st.from, st.to); setOrgChips('arOrgGroup', st.org); }
+  else if (v === 'cf') { if (_cfPicker) _cfPicker.setDates(st.from, st.to); setPresetChips('cfToolbar', st.preset, st.from, st.to); setOrgChips('cfOrgGroup', st.org); }
+  else if (v === 'fi') { if (_fiPicker) _fiPicker.setDates(st.from, st.to); setPresetChips('fiToolbar', st.preset, st.from, st.to); setOrgChips('fiOrgGroup', st.org); }
   else if (v === 'ms') { setVal('msOnIn', st.on); setOrgChips('msOrgGroup', st.org); }
   else if (v === 'wh') { setVal('whDateIn', st.on); setOrgChips('whOrgGroup', st.org); }
   else if (v === 'cb') { setVal('cbDateIn', st.on); setOrgChips('cbOrgGroup', st.org); }
@@ -1187,6 +1178,7 @@ function _localISO(d) {
 /* ═══════════════════════════════════════════════════
    P&L TAB
    ═══════════════════════════════════════════════════ */
+let _pnlPicker = null;
 const pnlState = { from: '', to: '', org: '', preset: '' };
 
 const PNL_TEMPLATE = [
@@ -1322,8 +1314,7 @@ function setPreset(p) {
   else if (p === 'quarter')   { const q = Math.floor(m/3); from = new Date(y, q*3, 1); }
   else if (p === 'year')      from = new Date(y, 0, 1);
   pnlState.from = _localISO(from); pnlState.to = _localISO(to); pnlState.preset = p;
-  document.getElementById('fromIn').value = pnlState.from;
-  document.getElementById('toIn').value   = pnlState.to;
+  if (_pnlPicker) _pnlPicker.setDates(pnlState.from, pnlState.to);
   document.querySelectorAll('#pnlToolbar .group:first-of-type .chip').forEach(c => {
     const map = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' };
     c.classList.toggle('active', c.textContent.trim() === map[p]);
@@ -1928,8 +1919,8 @@ function pnlDateChanged() {
   saveStateToUrl();
   pnlLoad();
 }
-document.getElementById('fromIn').addEventListener('change', function(e) { pnlState.from = e.target.value; pnlDateChanged(); });
-document.getElementById('toIn').addEventListener('change', function(e) { pnlState.to = e.target.value; pnlDateChanged(); });
+_pnlPicker = initDateRange({ inputId: 'pnlDateRange', from: pnlState.from, to: pnlState.to,
+  onChange: function(f, t) { pnlState.from = f; pnlState.to = t; pnlDateChanged(); } });
 
 /* ═══════════════════════════════════════════════════
    FINANCIAL INDICATORS TAB
@@ -1938,6 +1929,7 @@ document.getElementById('toIn').addEventListener('change', function(e) { pnlStat
    • pnl_accrual_report — для EBITDA (включає амортизацію) + total revenue/cogs
    • gross_profit_report — для розбивки по підрозділах (revenue/cogs per dept)
    ═══════════════════════════════════════════════════ */
+let _fiPicker = null;
 const fiState = { from: '', to: '', org: '', preset: '', _loaded: false };
 
 function fiSetPreset(p) {
@@ -1948,8 +1940,7 @@ function fiSetPreset(p) {
   else if (p === 'quarter')   { const q = Math.floor(m/3); from = new Date(y, q*3, 1); }
   else if (p === 'year')      from = new Date(y, 0, 1);
   fiState.from = _localISO(from); fiState.to = _localISO(to); fiState.preset = p;
-  document.getElementById('fiFromIn').value = fiState.from;
-  document.getElementById('fiToIn').value   = fiState.to;
+  if (_fiPicker) _fiPicker.setDates(fiState.from, fiState.to);
   document.querySelectorAll('#fiToolbar .group:first-of-type .chip').forEach(c => {
     const map = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' };
     c.classList.toggle('active', c.textContent.trim() === map[p]);
@@ -1970,8 +1961,7 @@ async function fiLoad() {
   if (!fiState.from || !fiState.to) {
     if (pnlState.from && pnlState.to) {
       fiState.from = pnlState.from; fiState.to = pnlState.to; fiState.preset = pnlState.preset;
-      document.getElementById('fiFromIn').value = fiState.from;
-      document.getElementById('fiToIn').value   = fiState.to;
+      if (_fiPicker) _fiPicker.setDates(fiState.from, fiState.to);
     } else {
       fiSetPreset('month');
       return; // fiSetPreset will call fiLoad recursively
@@ -2123,12 +2113,13 @@ function renderFi(pnl, gp) {
   }
 }
 
-document.getElementById('fiFromIn').addEventListener('change', function(e) { fiState.from = e.target.value; fiLoad(); });
-document.getElementById('fiToIn').addEventListener('change', function(e) { fiState.to = e.target.value; fiLoad(); });
+_fiPicker = initDateRange({ inputId: 'fiDateRange', from: fiState.from, to: fiState.to,
+  onChange: function(f, t) { fiState.from = f; fiState.to = t; fiLoad(); } });
 
 /* ═══════════════════════════════════════════════════
    CASH FLOW TAB (Direct method, 3 sections + Transfers info)
    ═══════════════════════════════════════════════════ */
+let _cfPicker = null;
 const cfState = { from: '', to: '', org: '', preset: '', _loaded: false };
 
 function cfSetPreset(p) {
@@ -2139,8 +2130,7 @@ function cfSetPreset(p) {
   else if (p === 'quarter')   { const q = Math.floor(m/3); from = new Date(y, q*3, 1); }
   else if (p === 'year')      from = new Date(y, 0, 1);
   cfState.from = _localISO(from); cfState.to = _localISO(to); cfState.preset = p;
-  document.getElementById('cfFromIn').value = cfState.from;
-  document.getElementById('cfToIn').value   = cfState.to;
+  if (_cfPicker) _cfPicker.setDates(cfState.from, cfState.to);
   document.querySelectorAll('#cfToolbar .group:first-of-type .chip').forEach(c => {
     const map = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' };
     c.classList.toggle('active', c.textContent.trim() === map[p]);
@@ -2160,8 +2150,7 @@ async function cfLoad() {
   if (!cfState.from || !cfState.to) {
     if (pnlState.from && pnlState.to) {
       cfState.from = pnlState.from; cfState.to = pnlState.to; cfState.preset = pnlState.preset;
-      document.getElementById('cfFromIn').value = cfState.from;
-      document.getElementById('cfToIn').value   = cfState.to;
+      if (_cfPicker) _cfPicker.setDates(cfState.from, cfState.to);
     } else { cfSetPreset('month'); return; }
   }
   document.getElementById('cfBody').innerHTML = '<div class="loading">Завантаження...</div>';
@@ -2235,12 +2224,13 @@ function renderCf(data) {
   if (tbl) pnlBindCollapse(tbl);
 }
 
-document.getElementById('cfFromIn').addEventListener('change', function(e) { cfState.from = e.target.value; cfLoad(); });
-document.getElementById('cfToIn').addEventListener('change', function(e) { cfState.to = e.target.value; cfLoad(); });
+_cfPicker = initDateRange({ inputId: 'cfDateRange', from: cfState.from, to: cfState.to,
+  onChange: function(f, t) { cfState.from = f; cfState.to = t; cfLoad(); } });
 
 /* ═══════════════════════════════════════════════════
    GROSS PROFIT TAB
    ═══════════════════════════════════════════════════ */
+let _gpPicker = null;
 const gpState = { from: '', to: '', org: '', preset: '', buyerInclude: [], nomInclude: [], excludeList: [], _loaded: false, _rawData: null };
 
 // Restore persisted tag filters (per-browser, не в URL).
@@ -2282,8 +2272,7 @@ function gpSetPreset(p) {
   else if (p === 'quarter')   { const q = Math.floor(m/3); from = new Date(y, q*3, 1); }
   else if (p === 'year')      from = new Date(y, 0, 1);
   gpState.from = _localISO(from); gpState.to = _localISO(to); gpState.preset = p;
-  document.getElementById('gpFromIn').value = gpState.from;
-  document.getElementById('gpToIn').value   = gpState.to;
+  if (_gpPicker) _gpPicker.setDates(gpState.from, gpState.to);
   document.querySelectorAll('#gpToolbar .group:first-of-type .chip').forEach(c => {
     const map = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' };
     c.classList.toggle('active', c.textContent.trim() === map[p]);
@@ -2453,8 +2442,8 @@ function gpDateChanged() {
   saveStateToUrl();
   gpLoad();
 }
-document.getElementById('gpFromIn').addEventListener('change', function(e) { gpState.from = e.target.value; gpDateChanged(); });
-document.getElementById('gpToIn').addEventListener('change', function(e) { gpState.to = e.target.value; gpDateChanged(); });
+_gpPicker = initDateRange({ inputId: 'gpDateRange', from: gpState.from, to: gpState.to,
+  onChange: function(f, t) { gpState.from = f; gpState.to = t; gpDateChanged(); } });
 
 /* ── GP Render ── */
 function renderGp(data) {
@@ -2663,6 +2652,7 @@ async function gpLoad() {
 /* ═══════════════════════════════════════════════════
    ACCOUNTS RECEIVABLE TAB (Розрахунки з покупцями)
    ═══════════════════════════════════════════════════ */
+let _arPicker = null;
 const arState = { from: '', to: '', org: '', preset: '', buyerFilter: '', _loaded: false, _rawData: null };
 let arFilterTimer = null;
 
@@ -2674,8 +2664,7 @@ function arSetPreset(p) {
   else if (p === 'quarter')   { const q = Math.floor(m/3); from = new Date(y, q*3, 1); }
   else if (p === 'year')      from = new Date(y, 0, 1);
   arState.from = _localISO(from); arState.to = _localISO(to); arState.preset = p;
-  document.getElementById('arFromIn').value = arState.from;
-  document.getElementById('arToIn').value   = arState.to;
+  if (_arPicker) _arPicker.setDates(arState.from, arState.to);
   document.querySelectorAll('#arToolbar .group:first-of-type .chip').forEach(c => {
     const map = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' };
     c.classList.toggle('active', c.textContent.trim() === map[p]);
@@ -2707,8 +2696,8 @@ function arDateChanged() {
   saveStateToUrl();
   arLoad();
 }
-document.getElementById('arFromIn').addEventListener('change', function(e) { arState.from = e.target.value; arDateChanged(); });
-document.getElementById('arToIn').addEventListener('change', function(e) { arState.to = e.target.value; arDateChanged(); });
+_arPicker = initDateRange({ inputId: 'arDateRange', from: arState.from, to: arState.to,
+  onChange: function(f, t) { arState.from = f; arState.to = t; arDateChanged(); } });
 
 function renderAr(data) {
   const { currencies } = data;
@@ -3720,8 +3709,7 @@ Auth.require('finance').then(function(user) {
     pnlState.preset = saved.preset || detectPreset(saved.from, saved.to) || '';
     pnlState.collapsed = saved.exp !== '1';
     if (saved.org && (!hasAnyOrg || allowedOrgs.includes(saved.org))) pnlState.org = saved.org;
-    document.getElementById('fromIn').value = pnlState.from;
-    document.getElementById('toIn').value = pnlState.to;
+    if (_pnlPicker) _pnlPicker.setDates(pnlState.from, pnlState.to);
     // Update PNL preset chips
     var presetMap = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', year:'Рік' };
     document.querySelectorAll('#pnlToolbar .group:first-of-type .chip').forEach(function(c) {
@@ -3737,8 +3725,7 @@ Auth.require('finance').then(function(user) {
     gpState.preset = saved.preset || detectPreset(saved.from, saved.to) || '';
     gpState.collapsed = saved.exp !== '1';
     gpState.org = pnlState.org;
-    document.getElementById('gpFromIn').value = gpState.from;
-    document.getElementById('gpToIn').value = gpState.to;
+    if (_gpPicker) _gpPicker.setDates(gpState.from, gpState.to);
     document.querySelectorAll('#gpOrgGroup .chip[data-org]').forEach(function(c) {
       c.classList.toggle('active', c.dataset.org === gpState.org);
     });
@@ -3751,8 +3738,7 @@ Auth.require('finance').then(function(user) {
     arState.preset = saved.preset || detectPreset(saved.from, saved.to) || '';
     arState.collapsed = saved.exp !== '1';
     arState.org = pnlState.org;
-    document.getElementById('arFromIn').value = arState.from;
-    document.getElementById('arToIn').value = arState.to;
+    if (_arPicker) _arPicker.setDates(arState.from, arState.to);
     document.querySelectorAll('#arOrgGroup .chip[data-org]').forEach(function(c) {
       c.classList.toggle('active', c.dataset.org === arState.org);
     });
@@ -3765,20 +3751,15 @@ Auth.require('finance').then(function(user) {
     pnlState.from = _localISO(new Date(_y, 0, 1));
     pnlState.to = _localISO(_now);
     pnlState.preset = 'year';
-    document.getElementById('fromIn').value = pnlState.from;
-    document.getElementById('toIn').value = pnlState.to;
+    if (_pnlPicker) _pnlPicker.setDates(pnlState.from, pnlState.to);
     gpState.from = pnlState.from; gpState.to = pnlState.to; gpState.preset = 'year';
-    document.getElementById('gpFromIn').value = gpState.from;
-    document.getElementById('gpToIn').value = gpState.to;
+    if (_gpPicker) _gpPicker.setDates(gpState.from, gpState.to);
     arState.from = pnlState.from; arState.to = pnlState.to; arState.preset = 'year';
-    document.getElementById('arFromIn').value = arState.from;
-    document.getElementById('arToIn').value = arState.to;
+    if (_arPicker) _arPicker.setDates(arState.from, arState.to);
     fiState.from = pnlState.from; fiState.to = pnlState.to; fiState.preset = 'year';
-    document.getElementById('fiFromIn').value = fiState.from;
-    document.getElementById('fiToIn').value = fiState.to;
+    if (_fiPicker) _fiPicker.setDates(fiState.from, fiState.to);
     cfState.from = pnlState.from; cfState.to = pnlState.to; cfState.preset = 'year';
-    document.getElementById('cfFromIn').value = cfState.from;
-    document.getElementById('cfToIn').value = cfState.to;
+    if (_cfPicker) _cfPicker.setDates(cfState.from, cfState.to);
    }
     // Switch tab if saved, OR from ?tab=fi|gp|ar query param
     const qp = new URLSearchParams(location.search);
@@ -3843,32 +3824,28 @@ Auth.require('finance').then(function(user) {
     // Pre-set GP dates (same as P&L default) but don't load yet
     gpState.from = pnlState.from;
     gpState.to = pnlState.to;
-    document.getElementById('gpFromIn').value = gpState.from;
-    document.getElementById('gpToIn').value = gpState.to;
+    if (_gpPicker) _gpPicker.setDates(gpState.from, gpState.to);
     document.querySelectorAll('#gpToolbar .group:first-of-type .chip').forEach(c => {
       c.classList.toggle('active', c.textContent.trim() === 'Рік');
     });
     // Pre-set AR dates too
     arState.from = pnlState.from;
     arState.to = pnlState.to;
-    document.getElementById('arFromIn').value = arState.from;
-    document.getElementById('arToIn').value = arState.to;
+    if (_arPicker) _arPicker.setDates(arState.from, arState.to);
     document.querySelectorAll('#arToolbar .group:first-of-type .chip').forEach(c => {
       c.classList.toggle('active', c.textContent.trim() === 'Рік');
     });
     // Pre-set FI dates too
     fiState.from = pnlState.from;
     fiState.to = pnlState.to;
-    document.getElementById('fiFromIn').value = fiState.from;
-    document.getElementById('fiToIn').value = fiState.to;
+    if (_fiPicker) _fiPicker.setDates(fiState.from, fiState.to);
     document.querySelectorAll('#fiToolbar .group:first-of-type .chip').forEach(c => {
       c.classList.toggle('active', c.textContent.trim() === 'Рік');
     });
     // Pre-set CF dates too
     cfState.from = pnlState.from;
     cfState.to = pnlState.to;
-    document.getElementById('cfFromIn').value = cfState.from;
-    document.getElementById('cfToIn').value = cfState.to;
+    if (_cfPicker) _cfPicker.setDates(cfState.from, cfState.to);
     document.querySelectorAll('#cfToolbar .group:first-of-type .chip').forEach(c => {
       c.classList.toggle('active', c.textContent.trim() === 'Рік');
     });

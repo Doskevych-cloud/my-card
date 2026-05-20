@@ -7,12 +7,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <script src="auth.js?v=sla20260513b"></script>
 <script src="header.js?v=sla20260513b"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/uk.js"></script>
+<script src="date-range.js"></script>
 <style>
 :root{
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -45,9 +49,6 @@ a{color:inherit;text-decoration:none}
 .ptab.active{background:var(--accent-bg);color:var(--accent)}
 
 .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
-.toolbar input[type=date]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;color-scheme:dark;font-family:inherit}
-:root[data-theme="light"] .toolbar input[type=date]{color-scheme:light}
-.toolbar input[type=date]:focus{border-color:var(--accent)}
 .toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
 .toolbar .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;display:inline-flex;align-items:center;gap:6px}
 .toolbar .chip:hover{background:var(--bg3);color:var(--text)}
@@ -163,9 +164,7 @@ a{color:inherit;text-decoration:none}
 
     <div class="toolbar">
       <span class="lbl">Період</span>
-      <input type="date" id="fromIn">
-      <span style="color:var(--text3)">—</span>
-      <input type="date" id="toIn">
+      <input type="text" id="dateRange" class="date-range-input" readonly>
       <span class="group">
         <span class="chip" data-preset="month" onclick="setPreset('month')">Цей місяць</span>
         <span class="chip" data-preset="prevmonth" onclick="setPreset('prevmonth')">Минулий</span>
@@ -192,6 +191,7 @@ a{color:inherit;text-decoration:none}
 
 <script>
 const API = 'https://react-bot.doskevich.workers.dev/';
+let _picker = null;
 const state = { from: '', to: '', org: 'Реакт', preset: 'month' };
 const SLA_THRESHOLD = 10;
 
@@ -236,8 +236,7 @@ function setPreset(p) {
   state.preset = p;
   const { from, to } = calcPreset(p);
   state.from = isoDate(from); state.to = isoDate(to);
-  document.getElementById('fromIn').value = state.from;
-  document.getElementById('toIn').value = state.to;
+  if (_picker) _picker.setDates(state.from, state.to);
   document.querySelectorAll('[data-preset]').forEach(c => c.classList.toggle('active', c.dataset.preset === p));
   saveHash(); load();
 }
@@ -509,12 +508,14 @@ Auth.require('sales').then(user => {
     state.from = isoDate(from); state.to = isoDate(to);
   }
   state.preset = detectPreset(state.from, state.to) || 'month';
-  document.getElementById('fromIn').value = state.from;
-  document.getElementById('toIn').value = state.to;
   document.querySelectorAll('[data-preset]').forEach(c => c.classList.toggle('active', c.dataset.preset === state.preset));
 
-  document.getElementById('fromIn').addEventListener('change', function() { state.from = this.value; state.preset = detectPreset(state.from, state.to); saveHash(); load(); });
-  document.getElementById('toIn').addEventListener('change', function() { state.to = this.value; state.preset = detectPreset(state.from, state.to); saveHash(); load(); });
+  _picker = initDateRange({
+    inputId: 'dateRange',
+    from: state.from,
+    to: state.to,
+    onChange: function(from, to) { state.from = from; state.to = to; state.preset = detectPreset(from, to); saveHash(); load(); }
+  });
 
   load();
   renderAdmin(user);
