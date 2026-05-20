@@ -65,8 +65,29 @@
     admin: 'Адмін-панель',
   };
 
+  // Старі/великі ключі що можуть забити 5MB ліміт localStorage
+  const STALE_LS_KEYS = ['sigText', 'ssjText', 'dashboard_cache', 'dashboard_classic_cache'];
+
+  function purgeStaleStorage() {
+    for (const k of STALE_LS_KEYS) localStorage.removeItem(k);
+    // Видалити кеші дашборду з динамічними ключами
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('dash_cache_') || k.startsWith('exec_cache_'))) localStorage.removeItem(k);
+    }
+  }
+
+  function safeLsSet(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch (_) {
+      purgeStaleStorage();
+      localStorage.setItem(key, value);
+    }
+  }
+
   function getToken() { return localStorage.getItem(TOKEN_KEY) || ''; }
-  function setToken(t) { localStorage.setItem(TOKEN_KEY, t); }
+  function setToken(t) { safeLsSet(TOKEN_KEY, t); }
   function clearToken() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_CACHE_KEY);
@@ -76,7 +97,7 @@
     catch { return null; }
   }
   function setCachedUser(u) {
-    if (u) localStorage.setItem(USER_CACHE_KEY, JSON.stringify(u));
+    if (u) safeLsSet(USER_CACHE_KEY, JSON.stringify(u));
     else localStorage.removeItem(USER_CACHE_KEY);
   }
 
@@ -140,9 +161,9 @@
     if (!curTok || !curUser) throw new Error('Не авторизовано');
     if (!(curUser.roles && curUser.roles.admin)) throw new Error('Не адмін');
     const r = await apiFetch('admin_impersonate', { method: 'POST', body: { email } });
-    localStorage.setItem(ADMIN_TOKEN_BAK, curTok);
-    localStorage.setItem(ADMIN_USER_BAK, JSON.stringify(curUser));
-    localStorage.setItem(IMPERSONATED_BY_KEY, curUser.email);
+    safeLsSet(ADMIN_TOKEN_BAK, curTok);
+    safeLsSet(ADMIN_USER_BAK, JSON.stringify(curUser));
+    safeLsSet(IMPERSONATED_BY_KEY, curUser.email);
     setToken(r.token);
     setCachedUser(r.user);
     return r.user;
