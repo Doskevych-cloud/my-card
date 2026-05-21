@@ -11,8 +11,12 @@
   // Apply saved theme BEFORE styles paint — avoids flash-of-wrong-theme
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 <script src="auth.js?v=mobhdr20260430"></script>
 <script src="header.js?v=mobhdr20260430"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/uk.js"></script>
+<script src="date-range.js"></script>
 <style>
 :root{
   --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
@@ -56,9 +60,6 @@ a{color:inherit;text-decoration:none}
 .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
 .toolbar input[type=text]{flex:1;min-width:200px;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;transition:border .15s}
 .toolbar input:focus{border-color:var(--accent)}
-.toolbar input[type=date]{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;color-scheme:dark;font-family:inherit}
-:root[data-theme="light"] .toolbar input[type=date]{color-scheme:light}
-.toolbar input[type=date]:focus{border-color:var(--accent)}
 .toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
 .toolbar .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;display:inline-flex;align-items:center;gap:6px}
 .toolbar .chip:hover{background:var(--bg3);color:var(--text)}
@@ -71,6 +72,20 @@ a{color:inherit;text-decoration:none}
 .toolbar .group{display:inline-flex;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px}
 .toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
 .toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
+/* Tag-filter */
+.wh-tags{position:relative;display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center;padding:4px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;flex:1;min-width:200px;min-height:30px}
+.wh-tags:focus-within{border-color:var(--accent)}
+.wh-tags input[type=text]{flex:1;min-width:100px;padding:3px 4px;border:none;background:transparent;font-size:12px;color:var(--text);outline:none}
+.wh-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 6px 2px 8px;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:600;border-radius:6px;white-space:nowrap;max-width:220px}
+.wh-tag .name{overflow:hidden;text-overflow:ellipsis}
+.wh-tag .x{cursor:pointer;font-size:14px;line-height:1;opacity:.7;padding:0 2px}
+.wh-tag .x:hover{opacity:1;color:var(--red)}
+.wh-suggest{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);max-height:280px;overflow-y:auto;z-index:50;min-width:300px}
+.wh-suggest .opt{padding:7px 12px;font-size:12px;cursor:pointer;color:var(--text);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.wh-suggest .opt:last-child{border-bottom:none}
+.wh-suggest .opt:hover,.wh-suggest .opt.hl{background:var(--bg3);color:var(--accent)}
+.wh-suggest .opt .meta{color:var(--text3);font-size:10.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.wh-suggest .empty{padding:10px 12px;font-size:12px;color:var(--text3)}
 
 /* Tree table (1C-style) */
 .tree-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
@@ -133,7 +148,7 @@ a{color:inherit;text-decoration:none}
   .page-head h1{font-size:17px}
   .toolbar{padding:8px;gap:6px;border-radius:10px}
   .toolbar input[type=text]{flex:1 1 100%;min-width:0;font-size:12px;padding:6px 8px}
-  .toolbar input[type=date]{font-size:12px;padding:6px 8px}
+  .toolbar .date-range-input{font-size:12px;padding:6px 8px;min-width:100px}
   .toolbar .lbl{display:none}
   .toolbar .chip{padding:6px 10px;font-size:11px}
   .toolbar .check{padding:6px 8px;font-size:10.5px}
@@ -164,8 +179,8 @@ a{color:inherit;text-decoration:none}
     </div>
     <div class="toolbar">
       <span class="lbl">На дату</span>
-      <input type="date" id="asOfIn" title="Залишки на кінець обраної дати">
-      <button class="btn btn--secondary btn--sm" onclick="setToday()" title="Поточний залишок">Сьогодні</button>
+      <input type="text" id="asOfIn" class="date-range-input" readonly title="Залишки на кінець обраної дати">
+      <span class="chip" onclick="setToday()">Сьогодні</span>
 
       <span class="sep"></span>
 
@@ -192,7 +207,10 @@ a{color:inherit;text-decoration:none}
       <button class="btn btn--secondary btn--sm" onclick="expandAll()">⊞ Розгорнути</button>
       <button class="btn btn--secondary btn--sm" onclick="collapseAll()">⊟ Згорнути</button>
 
-      <input type="text" id="searchIn" placeholder="🔎 Пошук по товару чи клієнту…">
+      <span class="wh-tags" id="whIncludeTags">
+        <input type="text" id="searchIn" placeholder="🔎 Пошук по товару чи клієнту…" autocomplete="off">
+        <div id="whIncludeSuggest" class="wh-suggest" style="display:none"></div>
+      </span>
     </div>
 
     <div id="body"><div class="loading">Завантаження…</div></div>
@@ -243,7 +261,10 @@ const state = {
   showEmpty: false,
   openKeys: new Set(),   // expanded item keys
   loading: false,
+  includeList: [],
 };
+// Restore include filter
+try { const s = localStorage.getItem('wh_stock_include'); if (s) { const a = JSON.parse(s); if (Array.isArray(a)) state.includeList = a; } } catch (_) {}
 const IN_TRANSIT_MARKER = 'В дорозі';
 
 function fmt(n, dec = 0) {
@@ -266,9 +287,9 @@ function todayISO() {
 }
 
 // ─── Init date input ───
+let _picker;
 function _syncAsOfInput() {
-  const el = document.getElementById('asOfIn');
-  if (el) el.value = state.asOf || '';
+  if (_picker) _picker.setDate(state.asOf || _todayISO());
 }
 
 // ─── Data loading ───
@@ -319,15 +340,118 @@ function setToday() {
   _syncAsOfInput();
   load();
 }
-document.getElementById('asOfIn').addEventListener('change', e => {
-  const v = e.target.value;
-  state.asOf = v || _todayISO();
-  load();
+_picker = initDateSingle({
+  inputId: 'asOfIn',
+  date: state.asOf || _todayISO(),
+  onChange: function(d) { state.asOf = d; load(); }
 });
-document.getElementById('searchIn').addEventListener('input', e => {
+/* Tag-input з autocomplete */
+const whTagInput = {
+  list() { return state.includeList || []; },
+  save() { try { localStorage.setItem('wh_stock_include', JSON.stringify(this.list())); } catch (_) {} },
+  renderTags() {
+    const host = document.getElementById('whIncludeTags');
+    if (!host) return;
+    Array.from(host.querySelectorAll('.wh-tag')).forEach(n => n.remove());
+    const inp = document.getElementById('searchIn');
+    this.list().forEach(name => {
+      const t = document.createElement('span');
+      t.className = 'wh-tag';
+      t.innerHTML = '<span class="name">' + esc(name) + '</span><span class="x" data-name="' + esc(name) + '">×</span>';
+      host.insertBefore(t, inp);
+    });
+  },
+  add(name) {
+    if (!name) return;
+    const cur = this.list();
+    if (!cur.some(n => n.toLowerCase() === name.toLowerCase())) {
+      state.includeList = cur.concat([name]);
+      this.save();
+    }
+    document.getElementById('searchIn').value = '';
+    state.search = '';
+    this.hide();
+    this.renderTags();
+    render();
+  },
+  remove(name) {
+    state.includeList = this.list().filter(n => n !== name);
+    this.save();
+    this.renderTags();
+    render();
+  },
+  hide() { const dd = document.getElementById('whIncludeSuggest'); if (dd) dd.style.display = 'none'; },
+  allItems() {
+    if (!state.data) return [];
+    const seen = new Map();
+    const warehouses = (state.data.warehouses || []).filter(w => !state.org || w.org === state.org);
+    warehouses.forEach(w => {
+      (w.items || []).forEach(it => {
+        if (!it.name) return;
+        const key = it.name.toLowerCase();
+        const prev = seen.get(key) || { name: it.name, total: 0 };
+        prev.total += it.total || 0;
+        seen.set(key, prev);
+      });
+    });
+    return [...seen.values()].filter(o => o.total > 0).sort((a, b) => b.total - a.total);
+  },
+  onInput() {
+    const inp = document.getElementById('searchIn');
+    const dd  = document.getElementById('whIncludeSuggest');
+    if (!inp || !dd) return;
+    const q = inp.value.trim().toLowerCase();
+    const all = this.allItems();
+    if (!all.length) { dd.style.display = 'none'; return; }
+    const taken = new Set(this.list().map(n => n.toLowerCase()));
+    const matched = all
+      .filter(o => !taken.has(o.name.toLowerCase()))
+      .filter(o => !q || o.name.toLowerCase().includes(q))
+      .slice(0, 50);
+    if (!matched.length) { dd.innerHTML = '<div class="empty">Нічого не знайдено</div>'; dd.style.display = 'block'; return; }
+    dd.innerHTML = matched.map((o, i) =>
+      '<div class="opt' + (i === 0 ? ' hl' : '') + '" data-name="' + esc(o.name) + '">' +
+        '<span>' + esc(o.name) + '</span>' +
+        '<span class="meta">' + fmt(o.total, 0) + ' шт</span>' +
+      '</div>').join('');
+    dd.style.display = 'block';
+  },
+  onKey(ev) {
+    const dd = document.getElementById('whIncludeSuggest');
+    if (!dd || dd.style.display === 'none') {
+      if (ev.key === 'Backspace' && !ev.target.value && this.list().length) {
+        this.remove(this.list()[this.list().length - 1]);
+      }
+      return;
+    }
+    const opts = Array.from(dd.querySelectorAll('.opt'));
+    let idx = opts.findIndex(o => o.classList.contains('hl'));
+    if (ev.key === 'ArrowDown') { ev.preventDefault(); idx = Math.min(idx + 1, opts.length - 1); opts.forEach((o, i) => o.classList.toggle('hl', i === idx)); opts[idx]?.scrollIntoView({ block: 'nearest' }); }
+    else if (ev.key === 'ArrowUp') { ev.preventDefault(); idx = Math.max(idx - 1, 0); opts.forEach((o, i) => o.classList.toggle('hl', i === idx)); opts[idx]?.scrollIntoView({ block: 'nearest' }); }
+    else if (ev.key === 'Enter') { ev.preventDefault(); const sel = opts[idx] || opts[0]; if (sel) this.add(sel.dataset.name); }
+    else if (ev.key === 'Escape') { this.hide(); }
+    else if (ev.key === 'Backspace' && !ev.target.value && this.list().length) {
+      this.remove(this.list()[this.list().length - 1]);
+    }
+  },
+};
+document.addEventListener('click', function(ev) {
+  const x = ev.target.closest('.wh-tag .x[data-name]');
+  if (x) { whTagInput.remove(x.dataset.name); return; }
+  const opt = ev.target.closest('.wh-suggest .opt[data-name]');
+  if (opt) { whTagInput.add(opt.dataset.name); return; }
+});
+whTagInput.renderTags();
+
+const searchIn = document.getElementById('searchIn');
+searchIn.addEventListener('input', e => {
   state.search = e.target.value.toLowerCase().trim();
+  whTagInput.onInput();
   render();
 });
+searchIn.addEventListener('focus', () => whTagInput.onInput());
+searchIn.addEventListener('blur', () => setTimeout(() => whTagInput.hide(), 200));
+searchIn.addEventListener('keydown', e => whTagInput.onKey(e));
 document.getElementById('showEmpty').addEventListener('change', e => {
   state.showEmpty = e.target.checked;
   render();
@@ -383,7 +507,9 @@ function getCombinedItems() {
     summary = Object.values(merged);
   }
   if (!state.showEmpty) summary = summary.filter(s => s.total > 0);
-  if (state.search) summary = summary.filter(s => matchesSearch(s, s.reserves));
+  const incSet = new Set((state.includeList || []).map(n => n.toLowerCase()));
+  if (incSet.size) summary = summary.filter(s => incSet.has((s.name || '').toLowerCase()));
+  else if (state.search) summary = summary.filter(s => matchesSearch(s, s.reserves));
   return summary;
 }
 
@@ -425,7 +551,10 @@ function renderPerWh() {
     const isTransit = w.name.startsWith(IN_TRANSIT_MARKER);
     let items = w.items || [];
     if (!state.showEmpty) items = items.filter(it => it.total > 0);
-    if (state.search) {
+    const incSet = new Set((state.includeList || []).map(n => n.toLowerCase()));
+    if (incSet.size) {
+      items = items.filter(it => incSet.has((it.name || '').toLowerCase()));
+    } else if (state.search) {
       items = items.filter(it => {
         const rs = (w.reservesByItem && w.reservesByItem[it.name]) || [];
         return it.name.toLowerCase().includes(state.search) ||
