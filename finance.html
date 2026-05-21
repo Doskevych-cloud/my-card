@@ -162,10 +162,23 @@ a{color:inherit;text-decoration:none}
 /* Tertiary: groups inside a sec (Адміністративні, Персонал, etc.) */
 .pnl-table tr.grp td{font-weight:600;font-size:12.5px;color:var(--text)}
 .pnl-table tr.grp td:first-child{padding-left:44px}
+/* Tag-filter (warehouse) */
+.wh-tags{position:relative;display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center;padding:4px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;min-width:180px;max-width:420px;min-height:30px}
+.wh-tags:focus-within{border-color:var(--accent)}
+.wh-tags input[type=text]{flex:1;min-width:100px;padding:3px 4px;border:none;background:transparent;font-size:12px;color:var(--text);outline:none}
+.wh-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 6px 2px 8px;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:600;border-radius:6px;white-space:nowrap;max-width:220px}
+.wh-tag .name{overflow:hidden;text-overflow:ellipsis}
+.wh-tag .x{cursor:pointer;font-size:14px;line-height:1;opacity:.7;padding:0 2px}
+.wh-tag .x:hover{opacity:1;color:var(--red)}
+.wh-suggest{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);max-height:280px;overflow-y:auto;z-index:50;min-width:300px}
+.wh-suggest .opt{padding:7px 12px;font-size:12px;cursor:pointer;color:var(--text);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.wh-suggest .opt:last-child{border-bottom:none}
+.wh-suggest .opt:hover,.wh-suggest .opt.hl{background:var(--bg3);color:var(--accent)}
+.wh-suggest .opt .meta{color:var(--text3);font-size:10.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.wh-suggest .empty{padding:10px 12px;font-size:12px;color:var(--text3)}
 /* Leaves */
 .pnl-table tr.itm td{color:var(--text2);font-weight:400;font-size:13px}
 .pnl-table tr.itm td:first-child{padding-left:58px}
-.pnl-table tr.itm.wh-sel td{background:color-mix(in srgb, var(--accent) 8%, transparent)}
 .pnl-table tr.itm[data-grp] td:first-child{padding-left:68px}
 .pnl-table tr.sub td{font-weight:700;color:var(--text);border-top:1px solid var(--border2)}
 .pnl-table tr.sub td:first-child{padding-left:14px}
@@ -629,6 +642,12 @@ a{color:inherit;text-decoration:none}
           <span class="chip active" data-org="" onclick="whSetOrg(this)">Всі</span>
           <span class="chip" data-org="Реакт" onclick="whSetOrg(this)">Реакт</span>
           <span class="chip" data-org="Генерація" onclick="whSetOrg(this)">Генерація</span>
+        </span>
+        <div class="sep"></div>
+        <span class="lbl">Товар</span>
+        <span class="wh-tags" id="whIncludeTags">
+          <input type="text" id="whIncludeIn" placeholder="Почни вводити…" autocomplete="off">
+          <div id="whIncludeSuggest" class="wh-suggest" style="display:none"></div>
         </span>
         <div class="sep"></div>
         <span class="group">
@@ -2953,7 +2972,7 @@ document.addEventListener('DOMContentLoaded', function() {
    WAREHOUSE VALUE TAB (Вартісна оцінка складу)
    Дані з D1: stock_balances + weighted-avg cost per (nom × org)
    ═══════════════════════════════════════════════════ */
-const whState = { on: '', org: '', _loaded: false, data: null, search: '', limit: 200, selected: new Set() };
+const whState = { on: '', org: '', _loaded: false, data: null, search: '', limit: 200, includeList: [] };
 
 function whSetPreset(p) {
   const now = new Date(), y = now.getFullYear(), m = now.getMonth();
@@ -2973,6 +2992,108 @@ function whSetPreset(p) {
   saveStateToUrl();
   whLoad();
 }
+/* Tag-input для фільтра товарів */
+const whTagInput = {
+  list() { return whState.includeList || []; },
+  save() { try { localStorage.setItem('wh_include', JSON.stringify(this.list())); } catch (_) {} },
+  renderTags() {
+    const host = document.getElementById('whIncludeTags');
+    if (!host) return;
+    Array.from(host.querySelectorAll('.wh-tag')).forEach(n => n.remove());
+    const inp = document.getElementById('whIncludeIn');
+    this.list().forEach(name => {
+      const t = document.createElement('span');
+      t.className = 'wh-tag';
+      t.innerHTML = '<span class="name">' + esc(name) + '</span><span class="x" data-name="' + esc(name) + '">×</span>';
+      host.insertBefore(t, inp);
+    });
+  },
+  add(name) {
+    if (!name) return;
+    const cur = this.list();
+    if (!cur.some(n => n.toLowerCase() === name.toLowerCase())) {
+      whState.includeList = cur.concat([name]);
+      this.save();
+    }
+    document.getElementById('whIncludeIn').value = '';
+    this.hide();
+    this.renderTags();
+    whRender();
+  },
+  remove(name) {
+    whState.includeList = this.list().filter(n => n !== name);
+    this.save();
+    this.renderTags();
+    whRender();
+  },
+  hide() { const dd = document.getElementById('whIncludeSuggest'); if (dd) dd.style.display = 'none'; },
+  allItems() {
+    if (!whState.data) return [];
+    const seen = new Map();
+    const orgFilter = whState.org;
+    const orgMatch = tag => {
+      if (!orgFilter) return true;
+      if (orgFilter === 'Генерація') return tag === 'Генерація' || tag === 'Ген.Київ';
+      return tag === orgFilter;
+    };
+    (whState.data.items || []).filter(it => orgMatch(it.organization_tag)).forEach(it => {
+      const name = it.nomenclature_name || '';
+      if (!name) return;
+      const key = name.toLowerCase();
+      const prev = seen.get(key) || { name, val: 0, qty: 0 };
+      prev.val += it.value_usd || 0;
+      prev.qty += it.qty || 0;
+      seen.set(key, prev);
+    });
+    return [...seen.values()].sort((a, b) => b.val - a.val);
+  },
+  onInput() {
+    const inp = document.getElementById('whIncludeIn');
+    const dd  = document.getElementById('whIncludeSuggest');
+    if (!inp || !dd) return;
+    const q = inp.value.trim().toLowerCase();
+    const all = this.allItems();
+    if (!all.length) { dd.style.display = 'none'; return; }
+    const taken = new Set(this.list().map(n => n.toLowerCase()));
+    const matched = all
+      .filter(o => !taken.has(o.name.toLowerCase()))
+      .filter(o => !q || o.name.toLowerCase().includes(q))
+      .slice(0, 50);
+    if (!matched.length) { dd.innerHTML = '<div class="empty">Нічого не знайдено</div>'; dd.style.display = 'block'; return; }
+    dd.innerHTML = matched.map((o, i) =>
+      '<div class="opt' + (i === 0 ? ' hl' : '') + '" data-name="' + esc(o.name) + '">' +
+        '<span>' + esc(o.name) + '</span>' +
+        '<span class="meta">' + (o.val ? fmt(o.val, 0) + ' $ · ' + fmt(o.qty, 0) + ' шт' : fmt(o.qty, 0) + ' шт') + '</span>' +
+      '</div>').join('');
+    dd.style.display = 'block';
+  },
+  onKey(ev) {
+    const dd = document.getElementById('whIncludeSuggest');
+    if (!dd || dd.style.display === 'none') {
+      if (ev.key === 'Backspace' && !ev.target.value && this.list().length) {
+        this.remove(this.list()[this.list().length - 1]);
+      }
+      return;
+    }
+    const opts = Array.from(dd.querySelectorAll('.opt'));
+    let idx = opts.findIndex(o => o.classList.contains('hl'));
+    if (ev.key === 'ArrowDown') { ev.preventDefault(); idx = Math.min(idx + 1, opts.length - 1); opts.forEach((o, i) => o.classList.toggle('hl', i === idx)); opts[idx]?.scrollIntoView({ block: 'nearest' }); }
+    else if (ev.key === 'ArrowUp') { ev.preventDefault(); idx = Math.max(idx - 1, 0); opts.forEach((o, i) => o.classList.toggle('hl', i === idx)); opts[idx]?.scrollIntoView({ block: 'nearest' }); }
+    else if (ev.key === 'Enter') { ev.preventDefault(); const sel = opts[idx] || opts[0]; if (sel) this.add(sel.dataset.name); }
+    else if (ev.key === 'Escape') { this.hide(); }
+    else if (ev.key === 'Backspace' && !ev.target.value && this.list().length) {
+      this.remove(this.list()[this.list().length - 1]);
+    }
+  },
+};
+// Click handlers for tag × and suggest options
+document.addEventListener('click', function(ev) {
+  const x = ev.target.closest('.wh-tag .x[data-name]');
+  if (x) { whTagInput.remove(x.dataset.name); return; }
+  const opt = ev.target.closest('.wh-suggest .opt[data-name]');
+  if (opt) { whTagInput.add(opt.dataset.name); return; }
+});
+
 function whSetOrg(el) {
   whState.org = el.dataset.org;
   el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
@@ -2983,7 +3104,6 @@ function whSetOrg(el) {
 
 async function whLoad() {
   whState._loaded = true;
-  whState.selected.clear();
   document.getElementById('whBody').innerHTML = '<div class="loading">Завантаження...</div>';
   document.getElementById('whSummary').innerHTML = '';
   try {
@@ -3034,7 +3154,9 @@ function whRender() {
     if (orgFilter === 'Генерація') return tag === 'Генерація' || tag === 'Ген.Київ';
     return tag === orgFilter;
   };
-  const items = (data.items || []).filter(it => orgMatch(it.organization_tag));
+  const incSet = new Set((whState.includeList || []).map(s => s.toLowerCase()));
+  const allOrgItems = (data.items || []).filter(it => orgMatch(it.organization_tag));
+  const items = incSet.size ? allOrgItems.filter(it => incSet.has((it.nomenclature_name || '').toLowerCase())) : allOrgItems;
   const byWh = (data.by_warehouse || []).filter(w => orgMatch(w.organization_tag));
   const byOrg = (data.by_organization || []).filter(o => orgMatch(o.organization_tag));
 
@@ -3109,10 +3231,6 @@ function whRender() {
   const shown = sorted.slice(0, whState.limit);
   const more = sorted.length - shown.length;
 
-  const selKey = it => it.nomenclature_ref_key + '|' + it.warehouse_ref_key;
-  const allFilteredKeys = sorted.map(it => selKey(it));
-  const allChecked = allFilteredKeys.length > 0 && allFilteredKeys.every(k => whState.selected.has(k));
-
   const itemRows = shown.length ? shown.map(it => {
     const cost = it.avg_cost_usd;
     const val  = it.value_usd;
@@ -3121,10 +3239,7 @@ function whRender() {
     const valStr  = unpriced ? '<span style="color:var(--text3)">н/д</span>' : fmt(val, 0) + ' $';
     const nameHtml = esc(it.nomenclature_name) +
       (it.nomenclature_article ? '<span style="color:var(--text3);font-size:11px;margin-left:6px">' + esc(it.nomenclature_article) + '</span>' : '');
-    const k = selKey(it);
-    const checked = whState.selected.has(k) ? ' checked' : '';
-    return '<tr class="itm' + (checked ? ' wh-sel' : '') + '">' +
-      '<td style="width:28px;padding-left:10px;padding-right:0"><input type="checkbox" class="wh-chk" data-key="' + esc(k) + '"' + checked + ' style="accent-color:var(--accent);cursor:pointer"></td>' +
+    return '<tr class="itm">' +
       '<td>' + nameHtml + '</td>' +
       '<td>' + esc(it.warehouse_name) + '</td>' +
       '<td>' + esc(it.organization_tag) + '</td>' +
@@ -3132,7 +3247,7 @@ function whRender() {
       '<td class="col-total">' + costStr + '</td>' +
       '<td class="col-total"' + (unpriced ? '' : ' style="color:var(--green)"') + '>' + valStr + '</td>' +
       '</tr>';
-  }).join('') : '<tr class="itm"><td colspan="7" style="text-align:center;color:var(--text3);padding:16px">— немає позицій —</td></tr>';
+  }).join('') : '<tr class="itm"><td colspan="6" style="text-align:center;color:var(--text3);padding:16px">— немає позицій —</td></tr>';
 
   const itemsTableHtml =
     '<div class="pnl-wrap">' +
@@ -3144,7 +3259,6 @@ function whRender() {
       '</div>' +
       '<table class="pnl-table">' +
         '<thead><tr>' +
-          '<th style="width:28px;padding-left:10px;padding-right:0"><input type="checkbox" id="whSelAll"' + (allChecked ? ' checked' : '') + ' style="accent-color:var(--accent);cursor:pointer"></th>' +
           '<th style="min-width:260px">Номенклатура</th>' +
           '<th>Склад</th>' +
           '<th>Організація</th>' +
@@ -3156,26 +3270,7 @@ function whRender() {
       '</table>' +
     '</div>';
 
-  // ── Selection bar ──
-  let selBarHtml = '';
-  if (whState.selected.size > 0) {
-    let selQty = 0, selVal = 0, selCount = 0;
-    for (const it of items) {
-      if (whState.selected.has(selKey(it))) {
-        selCount++;
-        selQty += it.qty;
-        if (it.value_usd != null) selVal += it.value_usd;
-      }
-    }
-    selBarHtml = '<div id="whSelBar" style="position:sticky;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;gap:18px;font-size:13px">' +
-      '<span style="font-weight:600">Обрано ' + selCount + ' поз.</span>' +
-      '<span style="color:var(--text2)">' + fmt(selQty, 0) + ' од.</span>' +
-      '<span style="color:var(--green);font-weight:600">' + fmt(selVal, 0) + ' $</span>' +
-      '<span class="chip" onclick="whState.selected.clear();whRender()" style="cursor:pointer;margin-left:auto;font-size:12px">Скинути</span>' +
-    '</div>';
-  }
-
-  document.getElementById('whBody').innerHTML = whTableHtml + itemsTableHtml + selBarHtml;
+  document.getElementById('whBody').innerHTML = whTableHtml + itemsTableHtml;
 
   // Привʼязуємо пошук (debounce)
   const si = document.getElementById('whSearchIn');
@@ -3187,23 +3282,6 @@ function whRender() {
     });
   }
 
-  // Checkboxes — individual
-  document.querySelectorAll('.wh-chk').forEach(cb => {
-    cb.addEventListener('change', function() {
-      const k = this.dataset.key;
-      if (this.checked) whState.selected.add(k); else whState.selected.delete(k);
-      whRender();
-    });
-  });
-  // Select all (visible filtered)
-  const selAllCb = document.getElementById('whSelAll');
-  if (selAllCb) {
-    selAllCb.addEventListener('change', function() {
-      if (this.checked) allFilteredKeys.forEach(k => whState.selected.add(k));
-      else allFilteredKeys.forEach(k => whState.selected.delete(k));
-      whRender();
-    });
-  }
 }
 function whShowMore() {
   whState.limit = (whState.limit || 200) + 300;
@@ -3212,6 +3290,17 @@ function whShowMore() {
 document.addEventListener('DOMContentLoaded', function() {
   const dIn = document.getElementById('whDateIn');
   if (dIn) dIn.addEventListener('change', function(e) { whState.on = e.target.value; saveStateToUrl(); whLoad(); });
+  // Restore include filter from localStorage
+  try { const s = localStorage.getItem('wh_include'); if (s) { const a = JSON.parse(s); if (Array.isArray(a)) whState.includeList = a; } } catch (_) {}
+  whTagInput.renderTags();
+  // Wire tag-input listeners
+  const inp = document.getElementById('whIncludeIn');
+  if (inp) {
+    inp.addEventListener('input', () => whTagInput.onInput());
+    inp.addEventListener('focus', () => whTagInput.onInput());
+    inp.addEventListener('blur', () => setTimeout(() => whTagInput.hide(), 200));
+    inp.addEventListener('keydown', e => whTagInput.onKey(e));
+  }
 });
 
 /* ═══════════════════════════════════════════════════
