@@ -247,7 +247,8 @@ document.getElementById('searchChats').addEventListener('input', function() {
   renderChats();
 });
 
-Auth.require('sales', () => {
+Auth.require('sales').then(user => {
+  AppHeader.mount({ active: 'sales', user });
   document.querySelectorAll('.bc-toolbar .bc-chip[data-org]').forEach(c => {
     if (c.dataset.org === '') c.classList.add('active');
   });
