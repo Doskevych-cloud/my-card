@@ -416,7 +416,7 @@ const whTagInput = {
     if (!inp || !dd) return;
     const q = inp.value.trim().toLowerCase();
     const all = this.allItems();
-    if (!all.length) { dd.style.display = 'none'; console.log('[wh-tag] allItems empty, data:', !!state.data, 'wh:', (state.data?.warehouses||[]).length); return; }
+    if (!all.length) { dd.style.display = 'none'; return; }
     const taken = new Set(this.list().map(n => n.toLowerCase()));
     const matched = all
       .filter(o => !taken.has(o.name.toLowerCase()))
