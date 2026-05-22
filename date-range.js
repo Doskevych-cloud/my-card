@@ -40,6 +40,31 @@
     return new Date(+p[0], +p[1] - 1, +p[2]);
   }
 
+  window.initDateSingle = function (opts) {
+    var el = document.getElementById(opts.inputId);
+    if (!el) return null;
+    var uk = (typeof flatpickr !== 'undefined' && flatpickr.l10ns && flatpickr.l10ns.uk) || {};
+    var locale = Object.assign({}, uk);
+    var fp = flatpickr(el, {
+      mode: 'single',
+      dateFormat: 'd.m.Y',
+      locale: locale,
+      defaultDate: opts.date ? _parse(opts.date) : new Date(),
+      allowInput: false,
+      clickOpens: true,
+      disableMobile: true,
+      onChange: function (dates) {
+        if (dates.length === 1 && opts.onChange) {
+          opts.onChange(_iso(dates[0]));
+        }
+      },
+    });
+    return {
+      setDate: function (d) { fp.setDate(_parse(d), false); },
+      instance: fp,
+    };
+  };
+
   window.initDateRange = function (opts) {
     var el = document.getElementById(opts.inputId);
     if (!el) return null;
