@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Розсилка · RE:ACT ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<script>
+  try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
+</script>
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+<script src="auth.js?v=bc20260522"></script>
+<script src="header.js?v=bc20260522"></script>
+<style>
+:root{
+  --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
+  --surface:#141414; --surface2:#1c1c1c;
+  --border:#262626; --border2:#333;
+  --text:#f5f5f5; --text2:#a3a3a3; --text3:#737373;
+  --accent:#ff8319; --accent-bg:rgba(255,131,25,.12);
+  --red:#e74c3c; --red-bg:rgba(231,76,60,.12);
+  --green:#22c55e; --green-bg:rgba(34,197,94,.12);
+  --shadow-md:0 4px 20px rgba(0,0,0,.4);
+}
+:root[data-theme="light"]{
+  --bg:#f5f5f7; --bg2:#ffffff; --bg3:#ececef;
+  --surface:#ffffff; --surface2:#ffffff;
+  --border:#e5e5ea; --border2:#d1d1d6;
+  --text:#1c1c1e; --text2:#48484a; --text3:#8e8e93;
+  --accent:#e07017; --accent-bg:rgba(224,112,23,.12);
+  --red:#d93025; --red-bg:rgba(217,48,37,.10);
+  --green:#15803d; --green-bg:rgba(21,128,61,.10);
+  --shadow-md:0 4px 20px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+
+.wrap{margin:0 auto;padding:14px 16px;max-width:900px}
+.page-tabs{display:inline-flex;gap:4px;padding:4px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:14px}
+.ptab{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;color:var(--text2);text-decoration:none;transition:background .15s,color .15s;white-space:nowrap}
+.ptab:hover{background:var(--bg3);color:var(--text)}
+.ptab.active{background:var(--accent-bg);color:var(--accent)}
+
+.bc-block{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+.bc-block h2{font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text)}
+
+.bc-textarea{width:100%;min-height:100px;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:inherit;line-height:1.5;resize:vertical;outline:none;transition:border .15s}
+.bc-textarea:focus{border-color:var(--accent)}
+.bc-textarea::placeholder{color:var(--text3)}
+.char-count{font-size:11px;color:var(--text3);text-align:right;margin-top:4px;font-variant-numeric:tabular-nums}
+
+.bc-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.bc-search{flex:1;min-width:180px;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;transition:border .15s}
+.bc-search:focus{border-color:var(--accent)}
+.bc-search::placeholder{color:var(--text3)}
+
+.bc-chip{padding:5px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none}
+.bc-chip:hover{background:var(--bg3);color:var(--text)}
+.bc-chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+
+.chat-list{max-height:360px;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+.chat-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .1s;user-select:none}
+.chat-row:hover{background:var(--bg3)}
+.chat-row input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px;flex-shrink:0;cursor:pointer}
+.chat-row .cr-name{font-size:12px;font-weight:500;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-row .cr-org{font-size:10px;color:var(--text3);font-weight:600;flex-shrink:0}
+
+.bc-footer{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.bc-count{font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums}
+.bc-btn{padding:10px 24px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .15s}
+.bc-btn:hover{opacity:.9}
+.bc-btn:disabled{opacity:.4;cursor:not-allowed}
+
+.bc-result{margin-top:14px;padding:12px 14px;border-radius:10px;font-size:12px;display:none}
+.bc-result.ok{display:block;background:var(--green-bg);color:var(--green);border:1px solid color-mix(in srgb,var(--green) 30%,transparent)}
+.bc-result.err{display:block;background:var(--red-bg);color:var(--red);border:1px solid color-mix(in srgb,var(--red) 30%,transparent)}
+
+.loading-msg{text-align:center;padding:30px;color:var(--text3);font-size:12px}
+
+@media(max-width:600px){
+  .page-tabs{display:flex;flex-wrap:wrap;gap:3px;padding:3px}
+  .ptab{padding:6px 10px;font-size:11.5px}
+  .bc-footer{flex-direction:column;align-items:stretch}
+  .bc-btn{text-align:center}
+}
+</style>
+</head>
+<body>
+<div id="appHeader"></div>
+<div id="app">
+  <div class="wrap">
+    <div class="page-tabs">
+      <a href="/sales.html" class="ptab">📈 Продажі менеджерів</a>
+      <a href="/top_products.html" class="ptab">📦 Останні продажі</a>
+      <a href="/osp.html" class="ptab">📋 Оплата та відвантаження</a>
+      <a href="/ar_aging.html" class="ptab">⏱ Заборгованість покупців</a>
+      <a href="/active_clients.html" class="ptab">👥 Клієнтська база</a>
+      <a href="/inventory.html" class="ptab">📊 Обіговість запасів</a>
+      <a href="/sla.html" class="ptab">⚡ SLA</a>
+      <a href="/broadcast.html" class="ptab active">📢 Розсилка</a>
+    </div>
+
+    <div class="bc-block">
+      <h2>Повідомлення</h2>
+      <textarea id="msgText" class="bc-textarea" placeholder="Текст повідомлення…"></textarea>
+      <div class="char-count"><span id="charCount">0</span> символів</div>
+    </div>
+
+    <div class="bc-block">
+      <h2>Обрати чати</h2>
+      <div class="bc-toolbar">
+        <input type="text" id="searchChats" class="bc-search" placeholder="Пошук чату…">
+        <span class="bc-chip" data-org="" onclick="filterOrg(this)">Всі</span>
+        <span class="bc-chip" data-org="Реакт" onclick="filterOrg(this)">Реакт</span>
+        <span class="bc-chip" data-org="Генерація" onclick="filterOrg(this)">Генерація</span>
+        <span style="flex-grow:1"></span>
+        <span class="bc-chip" onclick="toggleAll(true)">Обрати все</span>
+        <span class="bc-chip" onclick="toggleAll(false)">Зняти все</span>
+      </div>
+      <div id="chatList" class="chat-list">
+        <div class="loading-msg">Завантаження чатів…</div>
+      </div>
+    </div>
+
+    <div class="bc-footer">
+      <span class="bc-count">Обрано: <b id="selCount">0</b> чатів</span>
+      <span style="flex-grow:1"></span>
+      <button id="sendBtn" class="bc-btn" disabled onclick="sendBroadcast()">Відправити</button>
+    </div>
+
+    <div id="result" class="bc-result"></div>
+  </div>
+</div>
+
+<script>
+const BOT_API = 'https://react-bot.doskevich.workers.dev/';
+let allChats = [];
+let orgFilter = '';
+let searchQuery = '';
+
+function getToken() {
+  return localStorage.getItem('session_token') || '';
+}
+
+async function apiFetch(action, opts = {}) {
+  const url = BOT_API + '?action=' + action;
+  const headers = { 'Authorization': 'Bearer ' + getToken() };
+  if (opts.body) headers['Content-Type'] = 'application/json';
+  const r = await fetch(url, {
+    method: opts.body ? 'POST' : 'GET',
+    headers,
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  return r.json();
+}
+
+async function loadChats() {
+  const data = await apiFetch('broadcast_chats');
+  if (data.error) { document.getElementById('chatList').innerHTML = `<div class="loading-msg" style="color:var(--red)">${data.error}</div>`; return; }
+  allChats = (data.chats || []).map(c => ({ ...c, selected: false }));
+  renderChats();
+}
+
+function renderChats() {
+  const q = searchQuery.toLowerCase();
+  const filtered = allChats.filter(c => {
+    if (orgFilter && c.org !== orgFilter) return false;
+    if (q && !(c.chat_title || '').toLowerCase().includes(q) && !(c.counterparty_name || '').toLowerCase().includes(q)) return false;
+    return true;
+  });
+  const el = document.getElementById('chatList');
+  if (!filtered.length) { el.innerHTML = '<div class="loading-msg">Нічого не знайдено</div>'; updateCount(); return; }
+  el.innerHTML = filtered.map((c, i) => {
+    const idx = allChats.indexOf(c);
+    return `<label class="chat-row">
+      <input type="checkbox" data-idx="${idx}" ${c.selected ? 'checked' : ''} onchange="toggleChat(${idx}, this.checked)">
+      <span class="cr-name">${esc(c.chat_title || c.counterparty_name)}</span>
+      <span class="cr-org">${esc(c.org || '')}</span>
+    </label>`;
+  }).join('');
+  updateCount();
+}
+
+function toggleChat(idx, val) {
+  allChats[idx].selected = val;
+  updateCount();
+}
+
+function toggleAll(val) {
+  const q = searchQuery.toLowerCase();
+  allChats.forEach(c => {
+    if (orgFilter && c.org !== orgFilter) return;
+    if (q && !(c.chat_title || '').toLowerCase().includes(q) && !(c.counterparty_name || '').toLowerCase().includes(q)) return;
+    c.selected = val;
+  });
+  renderChats();
+}
+
+function filterOrg(el) {
+  orgFilter = el.dataset.org;
+  document.querySelectorAll('.bc-toolbar .bc-chip[data-org]').forEach(c => c.classList.toggle('active', c.dataset.org === orgFilter));
+  renderChats();
+}
+
+function updateCount() {
+  const n = allChats.filter(c => c.selected).length;
+  document.getElementById('selCount').textContent = n;
+  const hasText = document.getElementById('msgText').value.trim().length > 0;
+  document.getElementById('sendBtn').disabled = !n || !hasText;
+}
+
+async function sendBroadcast() {
+  const text = document.getElementById('msgText').value.trim();
+  const chatIds = allChats.filter(c => c.selected).map(c => c.chat_id);
+  if (!chatIds.length || !text) return;
+
+  const btn = document.getElementById('sendBtn');
+  const res = document.getElementById('result');
+  btn.disabled = true;
+  btn.textContent = 'Відправляю…';
+  res.className = 'bc-result';
+
+  try {
+    const data = await apiFetch('broadcast_send', { body: { chat_ids: chatIds, text } });
+    if (data.error) throw new Error(data.error);
+    res.className = 'bc-result ok';
+    res.textContent = `Відправлено: ${data.sent}` + (data.failed ? `, помилок: ${data.failed}` : '');
+  } catch (e) {
+    res.className = 'bc-result err';
+    res.textContent = 'Помилка: ' + e.message;
+  }
+  btn.textContent = 'Відправити';
+  updateCount();
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+document.getElementById('msgText').addEventListener('input', function() {
+  document.getElementById('charCount').textContent = this.value.length;
+  updateCount();
+});
+document.getElementById('searchChats').addEventListener('input', function() {
+  searchQuery = this.value;
+  renderChats();
+});
+
+Auth.require('sales', () => {
+  document.querySelectorAll('.bc-toolbar .bc-chip[data-org]').forEach(c => {
+    if (c.dataset.org === '') c.classList.add('active');
+  });
+  loadChats();
+});
+</script>
+</body>
+</html>
