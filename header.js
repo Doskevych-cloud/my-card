@@ -50,7 +50,11 @@
       color:#fff; font-weight:800; font-size:16px;
       box-shadow:0 4px 12px rgba(255,131,25,.35);
     }
-    .app-topbar .brand .name{ font-size:16px; line-height:1 }
+    .app-topbar .brand .name{
+      height:18px; display:block;
+      filter: brightness(0) invert(1);
+    }
+    :root[data-theme="light"] .app-topbar .brand .name{ filter: none; }
     .app-topbar .spacer{ flex:1 }
 
     .app-topbar .nav{
@@ -317,7 +321,7 @@
       .app-topbar{ padding:9px 14px; gap:10px }
       .app-topbar .brand{ flex:0 0 auto }
       .app-topbar .brand .logo{ width:30px; height:30px; font-size:14px; border-radius:8px }
-      .app-topbar .brand .name{ font-size:14px }
+      .app-topbar .brand .name{ height:15px }
       .app-topbar .spacer{ display:block; flex:1 }
       .app-topbar .nav{ display:none }
       .app-topbar .admin-link{ display:none }
@@ -445,7 +449,7 @@
       <header class="app-topbar">
         <a class="brand" href="/" title="REACT">
           <span class="logo">R</span>
-          <span class="name">REACT</span>
+          <img class="name" src="/assets/logo-transparent.png" alt="React">
         </a>
         <nav class="nav">${navLinksHtml}</nav>
         <div class="spacer"></div>
