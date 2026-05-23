@@ -27,7 +27,7 @@
 
   const MONTHS_UK = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
 
-  function _iso(d) { return d.toISOString().slice(0, 10); }
+  function _iso(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
   function _monthLabel(d) {
     const yy = String(d.getFullYear()).slice(2);
     return `${MONTHS_UK[d.getMonth()]} '${yy}`;
