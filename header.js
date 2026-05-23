@@ -448,7 +448,6 @@
       ${impBanner}
       <header class="app-topbar">
         <a class="brand" href="/" title="REACT">
-          <span class="logo">R</span>
           <img class="name" src="/assets/logo-transparent.png" alt="React">
         </a>
         <nav class="nav">${navLinksHtml}</nav>
