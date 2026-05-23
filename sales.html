@@ -266,6 +266,10 @@ Auth.require('sales').then(user => {
   window.__user = user;
   AppHeader.mount({ active: 'sales', user });
   Auth.filterSubNav(user);
+  if (!user.roles.admin && !user.roles.sales) {
+    var ft = [...document.querySelectorAll('.page-tabs .ptab[href]')].find(function(t) { return t.style.display !== 'none'; });
+    if (ft) { location.href = ft.href; return; }
+  }
   _initMonthlyChart();
   // Org-level access: hide chips for orgs the user doesn't have access to
   // If no orgs assigned at all → show everything (no restriction)

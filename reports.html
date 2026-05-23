@@ -275,6 +275,11 @@ Auth.require('reports').then(user => {
   AppHeader.mount({ active: 'reports', user });
   Auth.filterSubNav(user);
   hydrateFromHash();
+  var _selTab = document.querySelector('.stab[data-rep="' + state.report + '"]');
+  if (_selTab && _selTab.style.display === 'none') {
+    var _fv = [...document.querySelectorAll('.stab[data-rep]')].find(function(t) { return t.style.display !== 'none'; });
+    if (_fv) state.report = _fv.dataset.rep;
+  }
   syncInputs();
   syncPresetChips();
   syncOrgChips();

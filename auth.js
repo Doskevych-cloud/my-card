@@ -327,8 +327,11 @@
     // Admin bypasses all per-module role checks — except special DEV gates below.
     const isAdmin = !!roles.admin;
     if (!isAdmin && !roles[role]) {
-      showDenyScreen(`Адмін ще не відкрив вам доступ до цього модуля.`, role);
-      return new Promise(() => {}); // halt caller
+      var hasSub = Object.keys(roles).some(function(k) { return k.startsWith(role + '_') && roles[k]; });
+      if (!hasSub) {
+        showDenyScreen(`Адмін ще не відкрив вам доступ до цього модуля.`, role);
+        return new Promise(() => {}); // halt caller
+      }
     }
     // DEV gate: finance available only to admins until module is stable
     if (FINANCE_ADMIN_ONLY && role === 'finance' && !isAdmin) {
