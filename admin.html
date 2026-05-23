@@ -748,15 +748,17 @@ async function loadBotFeedback() {
     const dislikes = rows.filter(r => r.reaction === 'dislike').length;
     const pct = rows.length ? Math.round(likes / rows.length * 100) : 0;
     stats.textContent = `👍 ${likes}  👎 ${dislikes}  (${pct}% позитивних)`;
-    let html = '<table style="width:100%"><thead><tr><th style="width:40px"></th><th>Запит дилера</th><th>Відповідь бота</th><th style="width:100px">Хто</th><th style="width:90px">Коли</th><th style="width:50px"></th></tr></thead><tbody>';
+    let html = '<table style="width:100%"><thead><tr><th style="width:40px"></th><th>Запит дилера</th><th>Відповідь бота</th><th>Корекція</th><th style="width:100px">Хто</th><th style="width:90px">Коли</th><th style="width:50px"></th></tr></thead><tbody>';
     for (const fb of rows) {
       const icon = fb.reaction === 'like' ? '👍' : '👎';
       const rowColor = fb.reaction === 'dislike' ? 'background:rgba(255,59,48,0.06)' : '';
       const when = fb.created_at ? fb.created_at.slice(5, 16).replace('T', ' ') : '';
+      const corr = fb.correction || '';
       html += `<tr style="${rowColor}">`;
       html += `<td style="font-size:18px;text-align:center">${icon}</td>`;
       html += `<td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(fb.user_text||'').replace(/"/g,'&quot;')}">${fb.user_text || '—'}</td>`;
-      html += `<td style="font-size:12px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(fb.bot_text||'').replace(/"/g,'&quot;')}">${fb.bot_text || '—'}</td>`;
+      html += `<td style="font-size:12px;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(fb.bot_text||'').replace(/"/g,'&quot;')}">${fb.bot_text || '—'}</td>`;
+      html += `<td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:${corr ? 'var(--green)' : 'var(--text3)'}" title="${corr.replace(/"/g,'&quot;')}">${corr || '—'}</td>`;
       html += `<td style="font-size:12px;color:var(--text3)">@${fb.reactor_username || '?'}</td>`;
       html += `<td style="font-size:11px;color:var(--text3)">${when}</td>`;
       html += `<td><button class="btn btn--ghost" style="font-size:11px;padding:2px 6px" onclick="deleteFeedback(${fb.id})">×</button></td>`;
