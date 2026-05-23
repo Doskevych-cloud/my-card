@@ -322,10 +322,10 @@ const ALL_MODULES = Object.keys(MODULE_LABELS);
 
 const BOT_API = 'https://react-bot.doskevich.workers.dev/';
 
-Auth.require('admin').then(async user => {
+Auth.require('admin').then(user => {
   currentUser = user;
   AppHeader.mount({ active: 'admin', user });
-  await loadRoles();
+  loadRoles();
   loadUsers();
   loadAutosyncStatus();
   loadBotPrompt();
@@ -561,6 +561,7 @@ async function loadRoles() {
     const r = await Auth.apiFetch('admin_roles');
     roles = r.roles || [];
     renderRoles();
+    if (users.length) renderTable();
   } catch (e) {
     document.getElementById('rolesContainer').innerHTML = `<div class="loading">Помилка: ${escapeHtml(e.message)}</div>`;
   }
