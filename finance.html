@@ -375,14 +375,14 @@ a{color:inherit;text-decoration:none}
   <div class="wrap">
     <div class="print-header" id="printHeader"></div>
     <div class="page-tabs">
-      <span class="ptab active" data-view="pnl" onclick="switchTab(this)">P&L</span>
-      <span class="ptab" data-view="gp" onclick="switchTab(this)">Валовий прибуток</span>
-      <span class="ptab" data-view="fi" onclick="switchTab(this)">Фінансові показники</span>
-      <span class="ptab" data-view="cf" onclick="switchTab(this)">Cash Flow</span>
-      <span class="ptab" data-view="ar" onclick="switchTab(this)">Розрахунки з покупцями</span>
-      <span class="ptab" data-view="ms" onclick="switchTab(this)">Взаєморозрахунки</span>
-      <span class="ptab" data-view="wh" onclick="switchTab(this)">Склад (вартість)</span>
-      <span class="ptab" data-view="cb" onclick="switchTab(this)">Кошти</span>
+      <span class="ptab active" data-view="pnl" data-perm="finance_pnl" onclick="switchTab(this)">P&L</span>
+      <span class="ptab" data-view="gp" data-perm="finance_gp" onclick="switchTab(this)">Валовий прибуток</span>
+      <span class="ptab" data-view="fi" data-perm="finance_fi" onclick="switchTab(this)">Фінансові показники</span>
+      <span class="ptab" data-view="cf" data-perm="finance_cf" onclick="switchTab(this)">Cash Flow</span>
+      <span class="ptab" data-view="ar" data-perm="finance_ar" onclick="switchTab(this)">Розрахунки з покупцями</span>
+      <span class="ptab" data-view="ms" data-perm="finance_ms" onclick="switchTab(this)">Взаєморозрахунки</span>
+      <span class="ptab" data-view="wh" data-perm="finance_wh" onclick="switchTab(this)">Склад (вартість)</span>
+      <span class="ptab" data-view="cb" data-perm="finance_cb" onclick="switchTab(this)">Кошти</span>
       <span class="export-menu" style="margin-left:auto;position:relative">
         <button type="button" class="btn btn--secondary export-btn" onclick="toggleExportMenu(event)" title="Експортувати поточну вкладку">
           <span class="ic">⬇</span> Експорт <span style="opacity:.7">▾</span>
@@ -3794,6 +3794,9 @@ function _initFinanceCharts() {
 Auth.require('finance').then(function(user) {
   window.__user = user;
   AppHeader.mount({ active: 'finance', user });
+  Auth.filterSubNav(user);
+  var firstVisible = document.querySelector('.ptab[data-view]:not([style*="display: none"])');
+  if (firstVisible && firstVisible.dataset.view !== 'pnl') switchTab(firstVisible);
   _initFinanceCharts();
 
   // Org-level access for both views

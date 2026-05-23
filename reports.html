@@ -179,12 +179,12 @@ a{color:inherit;text-decoration:none}
       <button class="ptab active" data-cat="sales">📈 Продажі</button>
     </div>
     <div class="sub-tabs" id="subTabs">
-      <button class="stab active" data-rep="funnel">🎯 Воронка</button>
-      <button class="stab" data-rep="channels">🌐 Канали</button>
-      <button class="stab" data-rep="managers">👥 Менеджери</button>
-      <button class="stab" data-rep="dynamics">📈 Динаміка</button>
-      <button class="stab" data-rep="abc">🏷️ ABC</button>
-      <button class="stab" data-rep="cycle">⏱️ Цикл</button>
+      <button class="stab active" data-rep="funnel" data-perm="reports_funnel">🎯 Воронка</button>
+      <button class="stab" data-rep="channels" data-perm="reports_channels">🌐 Канали</button>
+      <button class="stab" data-rep="managers" data-perm="reports_managers">👥 Менеджери</button>
+      <button class="stab" data-rep="dynamics" data-perm="reports_dynamics">📈 Динаміка</button>
+      <button class="stab" data-rep="abc" data-perm="reports_abc">🏷️ ABC</button>
+      <button class="stab" data-rep="cycle" data-perm="reports_cycle">⏱️ Цикл</button>
     </div>
   </div>
 
@@ -273,6 +273,7 @@ const ORG_TEMPLATES = {
 // ─── Boot ───
 Auth.require('reports').then(user => {
   AppHeader.mount({ active: 'reports', user });
+  Auth.filterSubNav(user);
   hydrateFromHash();
   syncInputs();
   syncPresetChips();

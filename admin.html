@@ -90,13 +90,17 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
 .tab-panel { display:none; }
 .tab-panel.active { display:block; }
 
-.role-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+.role-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px; }
 .role-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; }
 .role-card-head { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
 .role-card-head input { flex:1; background:var(--card2); border:1px solid var(--border); color:var(--text); padding:7px 10px; border-radius:8px; font:inherit; font-size:14px; font-weight:600; }
-.role-perms { display:grid; grid-template-columns:1fr 1fr; gap:4px 12px; margin-bottom:12px; }
+.role-perms { display:flex; flex-direction:column; gap:2px; margin-bottom:12px; }
 .role-perms label { font-size:12px; color:var(--text2); display:flex; align-items:center; gap:6px; cursor:pointer; padding:3px 0; }
 .role-perms input { accent-color:var(--accent); }
+.perm-group { margin:4px 0 2px; }
+.perm-group-head { font-size:12px; font-weight:600; color:var(--text); display:flex; align-items:center; gap:6px; cursor:pointer; padding:3px 0; }
+.perm-group-head input { accent-color:var(--accent); }
+.perm-group-children { padding-left:20px; display:flex; flex-direction:column; gap:1px; }
 .role-card-foot { display:flex; align-items:center; gap:8px; }
 .role-card-foot .meta { margin-left:auto; font-size:11px; color:var(--text3); }
 td .role-select { background:var(--card2); border:1px solid var(--border); color:var(--text); padding:5px 8px; border-radius:6px; font:inherit; font-size:12px; cursor:pointer; min-width:140px; }
@@ -313,13 +317,55 @@ let users = [];
 let roles = [];
 let inviteOpen = false;
 
-const MODULE_LABELS = {
-  dashboard:'Дашборд', home:'Порівняння цін', forecast:'Закупівлі',
-  warehouses:'Склад', sales:'Продажі', reports:'Звіти', finance:'Фінанси',
-  suppliers:'Постачальники', customers:'Покупці', counterparties:'Контрагенти',
-  prices:'Прайс', admin:'Адмін',
-};
-const ALL_MODULES = Object.keys(MODULE_LABELS);
+const PERM_TREE = [
+  { key: 'dashboard', label: 'Дашборд' },
+  { key: 'home', label: 'Порівняння цін' },
+  { key: 'forecast', label: 'Закупівлі' },
+  { key: 'warehouses', label: 'Склад' },
+  { group: 'Продажі', children: [
+    { key: 'sales', label: 'Продажі менеджерів' },
+    { key: 'sales_top_products', label: 'Останні продажі' },
+    { key: 'sales_osp', label: 'Оплата та відвантаження' },
+    { key: 'sales_ar_aging', label: 'Заборгованість покупців' },
+    { key: 'sales_active_clients', label: 'Клієнтська база' },
+    { key: 'sales_inventory', label: 'Обіговість запасів' },
+    { key: 'sales_sla', label: 'SLA' },
+    { key: 'sales_broadcast', label: 'Розсилка' },
+  ]},
+  { group: 'Фінанси', gate: 'finance', children: [
+    { key: 'finance_pnl', label: 'P&L' },
+    { key: 'finance_gp', label: 'Валовий прибуток' },
+    { key: 'finance_fi', label: 'Фінансові показники' },
+    { key: 'finance_cf', label: 'Cash Flow' },
+    { key: 'finance_ar', label: 'Розрахунки з покупцями' },
+    { key: 'finance_ms', label: 'Взаєморозрахунки' },
+    { key: 'finance_wh', label: 'Склад (вартість)' },
+    { key: 'finance_cb', label: 'Кошти' },
+  ]},
+  { group: 'Звіти', gate: 'reports', children: [
+    { key: 'reports_funnel', label: 'Воронка' },
+    { key: 'reports_channels', label: 'Канали' },
+    { key: 'reports_managers', label: 'Менеджери' },
+    { key: 'reports_dynamics', label: 'Динаміка' },
+    { key: 'reports_abc', label: 'ABC' },
+    { key: 'reports_cycle', label: 'Цикл' },
+  ]},
+  { key: 'suppliers', label: 'Постачальники' },
+  { key: 'customers', label: 'Покупці' },
+  { key: 'counterparties', label: 'Контрагенти' },
+  { key: 'prices', label: 'Прайс' },
+  { key: 'admin', label: 'Адмін' },
+];
+function allPermKeys() {
+  const keys = [];
+  for (const item of PERM_TREE) {
+    if (item.key) keys.push(item.key);
+    if (item.gate) keys.push(item.gate);
+    if (item.children) item.children.forEach(c => keys.push(c.key));
+  }
+  return keys;
+}
+const ALL_MODULES = allPermKeys();
 
 const BOT_API = 'https://react-bot.doskevich.workers.dev/';
 
@@ -569,6 +615,47 @@ async function loadRoles() {
   }
 }
 
+function renderPermTree(perms, cardId) {
+  let html = '';
+  for (const item of PERM_TREE) {
+    if (item.key && !item.children) {
+      html += `<label><input type="checkbox" data-mod="${item.key}" ${perms[item.key] ? 'checked' : ''}> ${escapeHtml(item.label)}</label>`;
+    } else if (item.children) {
+      const gateKey = item.gate || null;
+      const childKeys = item.children.map(c => c.key);
+      const allKeys = gateKey ? [gateKey, ...childKeys] : childKeys;
+      const allChecked = allKeys.every(k => perms[k]);
+      const someChecked = allKeys.some(k => perms[k]);
+      const gid = cardId + '_' + (item.gate || item.children[0].key.split('_')[0]);
+      html += `<div class="perm-group">`;
+      html += `<label class="perm-group-head"><input type="checkbox" data-group-toggle="${gid}" ${allChecked ? 'checked' : ''} ${!allChecked && someChecked ? 'data-indeterminate="1"' : ''} onchange="togglePermGroup(this,'${gid}')"> ${escapeHtml(item.group)}</label>`;
+      html += `<div class="perm-group-children" data-group="${gid}">`;
+      if (gateKey) {
+        html += `<label><input type="checkbox" data-mod="${gateKey}" data-gchild="${gid}" ${perms[gateKey] ? 'checked' : ''} onchange="updateGroupHead('${gid}')"> Доступ до модуля</label>`;
+      }
+      for (const ch of item.children) {
+        html += `<label><input type="checkbox" data-mod="${ch.key}" data-gchild="${gid}" ${perms[ch.key] ? 'checked' : ''} onchange="updateGroupHead('${gid}')"> ${escapeHtml(ch.label)}</label>`;
+      }
+      html += `</div></div>`;
+    }
+  }
+  return html;
+}
+function togglePermGroup(el, gid) {
+  const checked = el.checked;
+  document.querySelectorAll(`[data-gchild="${gid}"]`).forEach(cb => { cb.checked = checked; });
+  el.removeAttribute('data-indeterminate');
+  el.indeterminate = false;
+}
+function updateGroupHead(gid) {
+  const children = [...document.querySelectorAll(`[data-gchild="${gid}"]`)];
+  const head = document.querySelector(`[data-group-toggle="${gid}"]`);
+  if (!head) return;
+  const all = children.every(c => c.checked);
+  const some = children.some(c => c.checked);
+  head.checked = all;
+  head.indeterminate = !all && some;
+}
 function renderRoles() {
   const c = document.getElementById('rolesContainer');
   if (!roles.length) { c.innerHTML = '<div class="empty">Немає ролей</div>'; return; }
@@ -577,22 +664,20 @@ function renderRoles() {
   c.innerHTML = roles.map(r => {
     const perms = r.permissions || {};
     const cnt = userCounts[r.id] || 0;
+    const cid = 'rc_' + r.id;
     return `
     <div class="role-card" data-role-id="${escapeHtml(r.id)}">
       <div class="role-card-head">
         <input type="text" value="${escapeHtml(r.name)}" data-field="name">
         ${r.id === 'admin' ? '' : `<button class="btn btn--danger btn--sm" onclick="deleteRole('${escapeHtml(r.id)}')" title="Видалити роль">✕</button>`}
       </div>
-      <div class="role-perms">
-        ${ALL_MODULES.map(m => `
-          <label><input type="checkbox" data-mod="${m}" ${perms[m] ? 'checked' : ''}> ${MODULE_LABELS[m]}</label>
-        `).join('')}
-      </div>
+      <div class="role-perms">${renderPermTree(perms, cid)}</div>
       <div class="role-card-foot">
         <span class="meta">${cnt} ${cnt === 1 ? 'користувач' : 'користувачів'}</span>
       </div>
     </div>`;
   }).join('');
+  document.querySelectorAll('[data-indeterminate="1"]').forEach(cb => { cb.indeterminate = true; });
 }
 
 async function saveAllRoles() {

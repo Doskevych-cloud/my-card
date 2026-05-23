@@ -198,14 +198,14 @@ a{color:inherit;text-decoration:none}
 <div id="app">
   <div class="wrap">
     <div class="page-tabs">
-      <a href="/sales.html" class="ptab">📈 Продажі менеджерів</a>
-      <a href="/top_products.html" class="ptab">📦 Останні продажі</a>
-      <a href="/osp.html" class="ptab">📋 Оплата та відвантаження</a>
-      <span class="ptab active">⏱ Заборгованість покупців</span>
-      <a href="/active_clients.html" class="ptab">👥 Клієнтська база</a>
-      <a href="/inventory.html" class="ptab">📊 Обіговість запасів</a>
-      <a href="/sla.html" class="ptab">⚡ SLA</a>
-      <a href="/broadcast.html" class="ptab">📢 Розсилка</a>
+      <a href="/sales.html" class="ptab" data-perm="sales">📈 Продажі менеджерів</a>
+      <a href="/top_products.html" class="ptab" data-perm="sales_top_products">📦 Останні продажі</a>
+      <a href="/osp.html" class="ptab" data-perm="sales_osp">📋 Оплата та відвантаження</a>
+      <span class="ptab active" data-perm="sales_ar_aging">⏱ Заборгованість покупців</span>
+      <a href="/active_clients.html" class="ptab" data-perm="sales_active_clients">👥 Клієнтська база</a>
+      <a href="/inventory.html" class="ptab" data-perm="sales_inventory">📊 Обіговість запасів</a>
+      <a href="/sla.html" class="ptab" data-perm="sales_sla">⚡ SLA</a>
+      <a href="/broadcast.html" class="ptab" data-perm="sales_broadcast">📢 Розсилка</a>
     </div>
 
     <div class="toolbar">
@@ -641,8 +641,9 @@ arTagInput.renderTags('exclude');
 
 // Mount header eagerly so theme toggle works regardless of auth state.
 AppHeader.mount({ active: 'sales' });
-Auth.require('sales').then(user => {
+Auth.require('sales_ar_aging').then(user => {
   AppHeader.mount({ active: 'sales', user });
+  Auth.filterSubNav(user);
   setToday();
 }).catch(() => {});
 </script>

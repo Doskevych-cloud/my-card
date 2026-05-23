@@ -55,9 +55,30 @@
     home: 'Порівняння цін',
     forecast: 'Прогноз кабелю',
     warehouses: 'Склад',
-    sales: 'Продажі',
+    sales: 'Продажі — Продажі менеджерів',
+    sales_top_products: 'Продажі — Останні продажі',
+    sales_osp: 'Продажі — Оплата та відвантаження',
+    sales_ar_aging: 'Продажі — Заборгованість покупців',
+    sales_active_clients: 'Продажі — Клієнтська база',
+    sales_inventory: 'Продажі — Обіговість запасів',
+    sales_sla: 'Продажі — SLA',
+    sales_broadcast: 'Продажі — Розсилка',
     finance: 'Фінанси',
+    finance_pnl: 'Фінанси — P&L',
+    finance_gp: 'Фінанси — Валовий прибуток',
+    finance_fi: 'Фінанси — Фінансові показники',
+    finance_cf: 'Фінанси — Cash Flow',
+    finance_ar: 'Фінанси — Розрахунки з покупцями',
+    finance_ms: 'Фінанси — Взаєморозрахунки',
+    finance_wh: 'Фінанси — Склад (вартість)',
+    finance_cb: 'Фінанси — Кошти',
     reports: 'Звіти',
+    reports_funnel: 'Звіти — Воронка',
+    reports_channels: 'Звіти — Канали',
+    reports_managers: 'Звіти — Менеджери',
+    reports_dynamics: 'Звіти — Динаміка',
+    reports_abc: 'Звіти — ABC',
+    reports_cycle: 'Звіти — Цикл',
     counterparties: 'Контрагенти',
     suppliers: 'Постачальники',
     customers: 'Покупці',
@@ -320,6 +341,14 @@
     return user;
   }
 
+  function filterSubNav(user) {
+    const roles = (user && user.roles) || {};
+    if (roles.admin) return;
+    document.querySelectorAll('[data-perm]').forEach(el => {
+      if (!roles[el.dataset.perm]) el.style.display = 'none';
+    });
+  }
+
   global.Auth = {
     API,
     homeHref,
@@ -329,6 +358,7 @@
     require,
     cachedUser,
     MODULE_LABEL,
+    filterSubNav,
     // Impersonation
     isImpersonating, impersonatedBy,
     startImpersonate, stopImpersonate,

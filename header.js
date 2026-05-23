@@ -395,8 +395,11 @@
     const user = opts.user || (global.Auth && global.Auth.cachedUser && global.Auth.cachedUser()) || null;
     const roles = (user && user.roles) || {};
     const isAdmin = !!roles.admin;
-    // Admin sees everything; others — only modules where they have the role.
-    const can = (r) => isAdmin || !!roles[r];
+    const can = (r) => {
+      if (isAdmin) return true;
+      if (roles[r]) return true;
+      return Object.keys(roles).some(k => k.startsWith(r + '_') && roles[k]);
+    };
 
     let host = document.getElementById('appHeader');
     if (!host) {
