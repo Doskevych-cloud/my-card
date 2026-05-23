@@ -141,6 +141,20 @@ a{color:inherit;text-decoration:none}
 .val-neg{color:var(--red);font-weight:600}
 .val-zero{color:var(--text3)}
 
+/* ─── Exclude tag input ─── */
+.s-tags{position:relative;display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center;padding:4px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;min-width:200px;max-width:500px;min-height:30px;flex:1}
+.s-tags:focus-within{border-color:var(--accent)}
+.s-tags input[type=text]{flex:1;min-width:100px;padding:3px 4px;border:none;background:transparent;font-size:12px;color:var(--text);outline:none}
+.s-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 6px 2px 8px;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:600;border-radius:6px;white-space:nowrap;max-width:200px}
+.s-tag .name{overflow:hidden;text-overflow:ellipsis}
+.s-tag .x{cursor:pointer;font-size:14px;line-height:1;opacity:.7;padding:0 2px}
+.s-tag .x:hover{opacity:1;color:var(--red)}
+.s-suggest{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);max-height:280px;overflow-y:auto;z-index:50}
+.s-suggest .opt{padding:7px 12px;font-size:12px;cursor:pointer;color:var(--text);border-bottom:1px solid var(--border)}
+.s-suggest .opt:last-child{border-bottom:none}
+.s-suggest .opt:hover,.s-suggest .opt.hl{background:var(--bg3);color:var(--accent)}
+.s-suggest .empty{padding:10px 12px;font-size:12px;color:var(--text3)}
+
 .loading{padding:60px 20px;text-align:center;color:var(--text2);font-size:13px}
 .loading::after{content:'';display:block;width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:14px auto 0}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -160,6 +174,7 @@ a{color:inherit;text-decoration:none}
   .toolbar .group{padding:3px;gap:2px}
   .toolbar .group .chip{padding:5px 8px;font-size:11px}
   .toolbar .sep{display:none}
+  .s-tags{max-width:100%;min-width:0;flex:1 1 100%}
   /* Summary grand 1 col */
   .summary-grand{grid-template-columns:1fr 1fr;gap:8px}
   .summary-grand .sg-paid,.summary-grand .sg-pot,.summary-grand .sg-pct{padding:11px 12px;border-radius:10px}
@@ -222,6 +237,13 @@ a{color:inherit;text-decoration:none}
       <button class="btn btn--secondary btn--sm" onclick="collapseAll()">⊟ Згорнути</button>
 
       <input type="text" id="searchIn" placeholder="🔎 Пошук клієнта, менеджера, № замовлення…">
+
+      <span class="sep"></span>
+      <span class="lbl">виключити</span>
+      <span class="s-tags" id="sExcludeTags">
+        <input type="text" id="sExcludeIn" placeholder="Почни вводити…" autocomplete="off">
+        <div id="sExcludeSuggest" class="s-suggest" style="display:none"></div>
+      </span>
     </div>
 
     <div class="mc-block">
@@ -302,6 +324,106 @@ const state = {
   openKeys: new Set(),
   loading: false,
   fx: null,
+  excludeList: [],
+};
+
+const DEFAULT_EXCLUDES = [
+  'Дистрибуція',
+  'ТОВ "ГЕНЕРАЦІЯ ЕНЕРДЖІ" Киев',
+  'ТОВ "ГЕНЕРАЦІЯ ЕНЕРДЖІ" Київ ',
+  'ТОВ "ГЕНЕРАЦІЯ ЕНЕРДЖІ" Одеса',
+];
+(function _restoreExclude(){
+  try {
+    const ex = localStorage.getItem('sales_exclude');
+    if (ex !== null) {
+      const a = JSON.parse(ex);
+      if (Array.isArray(a)) state.excludeList = a;
+    } else {
+      state.excludeList = DEFAULT_EXCLUDES.slice();
+      localStorage.setItem('sales_exclude', JSON.stringify(state.excludeList));
+    }
+  } catch (_) {}
+})();
+
+function allClients() {
+  if (!state.data || !state.data.byOrg) return [];
+  const set = new Set();
+  Object.values(state.data.byOrg).forEach(od => {
+    (od.managers || []).forEach(m => {
+      (m.currencies || []).forEach(C => {
+        (C.clients || []).forEach(c => { if (c.name) set.add(c.name); });
+      });
+    });
+  });
+  return [...set].sort((a, b) => a.localeCompare(b, 'uk'));
+}
+
+const salesTagInput = {
+  save() { localStorage.setItem('sales_exclude', JSON.stringify(state.excludeList)); },
+  renderTags() {
+    const host = document.getElementById('sExcludeTags');
+    if (!host) return;
+    host.querySelectorAll('.s-tag').forEach(t => t.remove());
+    const inp = document.getElementById('sExcludeIn');
+    state.excludeList.forEach(name => {
+      const tag = document.createElement('span');
+      tag.className = 's-tag';
+      tag.innerHTML = `<span class="name" title="${esc(name)}">${esc(name)}</span><span class="x" data-name="${esc(name)}">&times;</span>`;
+      host.insertBefore(tag, inp);
+    });
+  },
+  add(name) {
+    if (!name || state.excludeList.some(n => n.toLowerCase() === name.toLowerCase())) return;
+    state.excludeList.push(name);
+    this.save(); this.renderTags();
+    document.getElementById('sExcludeIn').value = '';
+    this.hide();
+    render();
+  },
+  remove(name) {
+    state.excludeList = state.excludeList.filter(n => n.toLowerCase() !== name.toLowerCase());
+    this.save(); this.renderTags(); render();
+  },
+  hide() {
+    const s = document.getElementById('sExcludeSuggest');
+    if (s) { s.style.display = 'none'; s.innerHTML = ''; }
+  },
+  onInput() {
+    const inp = document.getElementById('sExcludeIn');
+    const q = (inp.value || '').toLowerCase().trim();
+    const sug = document.getElementById('sExcludeSuggest');
+    const exSet = new Set(state.excludeList.map(n => n.toLowerCase()));
+    const opts = allClients().filter(n => !exSet.has(n.toLowerCase()) && (!q || n.toLowerCase().includes(q)));
+    if (!opts.length) {
+      sug.innerHTML = '<div class="empty">Нічого не знайдено</div>';
+      sug.style.display = 'block';
+      return;
+    }
+    sug.innerHTML = opts.slice(0, 30).map(n => `<div class="opt" data-name="${esc(n)}">${esc(n)}</div>`).join('');
+    sug.style.display = 'block';
+    sug.scrollTop = 0;
+  },
+  onKey(ev) {
+    const sug = document.getElementById('sExcludeSuggest');
+    const opts = sug.querySelectorAll('.opt');
+    const hl = sug.querySelector('.opt.hl');
+    if (ev.key === 'ArrowDown') {
+      ev.preventDefault();
+      if (!hl) { if (opts[0]) opts[0].classList.add('hl'); }
+      else { const i = [...opts].indexOf(hl); hl.classList.remove('hl'); if (opts[i+1]) opts[i+1].classList.add('hl'); else if (opts[0]) opts[0].classList.add('hl'); }
+    } else if (ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      if (hl) { const i = [...opts].indexOf(hl); hl.classList.remove('hl'); if (i > 0) opts[i-1].classList.add('hl'); else opts[opts.length-1].classList.add('hl'); }
+    } else if (ev.key === 'Enter') {
+      ev.preventDefault();
+      if (hl) this.add(hl.dataset.name);
+    } else if (ev.key === 'Escape') {
+      this.hide();
+    } else if (ev.key === 'Backspace' && !document.getElementById('sExcludeIn').value && state.excludeList.length) {
+      this.remove(state.excludeList[state.excludeList.length - 1]);
+    }
+  },
 };
 
 function toUsd(amount, cur) {
@@ -453,6 +575,20 @@ document.addEventListener('DOMContentLoaded', () => {
     state.search = e.target.value.toLowerCase().trim();
     render();
   });
+
+  const exIn = document.getElementById('sExcludeIn');
+  exIn.addEventListener('input', () => salesTagInput.onInput());
+  exIn.addEventListener('focus',  () => salesTagInput.onInput());
+  exIn.addEventListener('blur',   () => setTimeout(() => salesTagInput.hide(), 200));
+  exIn.addEventListener('keydown', e => salesTagInput.onKey(e));
+  salesTagInput.renderTags();
+
+  document.addEventListener('click', function(ev) {
+    const x = ev.target.closest('.s-tag .x[data-name]');
+    if (x) { salesTagInput.remove(x.dataset.name); return; }
+    const opt = ev.target.closest('.s-suggest .opt[data-name]');
+    if (opt) { salesTagInput.add(opt.dataset.name); return; }
+  });
 });
 
 function expandAll() {
@@ -553,10 +689,22 @@ function getManagers() {
   })).sort((a, b) => b.paidUsd - a.paidUsd);
 }
 
+function applyExclude(managers) {
+  const exSet = new Set((state.excludeList || []).map(s => (s || '').toLowerCase()));
+  if (!exSet.size) return managers;
+  return managers.map(m => {
+    const currencies = m.currencies.map(C => {
+      const clients = C.clients.filter(c => !exSet.has((c.name || '').toLowerCase()));
+      return { ...C, clients, total: clients.reduce((s,c) => s+c.total,0), paid: clients.reduce((s,c) => s+c.paid,0), paidUsd: clients.reduce((s,c) => s+(c.paidUsd||0),0), remain: clients.reduce((s,c) => s+c.remain,0) };
+    }).filter(C => C.clients.length > 0);
+    return { ...m, currencies, total: currencies.reduce((s,C) => s+C.total,0), paid: currencies.reduce((s,C) => s+C.paid,0), paidUsd: currencies.reduce((s,C) => s+(C.paidUsd||0),0), remain: currencies.reduce((s,C) => s+C.remain,0) };
+  }).filter(m => m.currencies.length > 0);
+}
+
 // ─── Render ───
 function render() {
   if (!state.data) return;
-  const managers = getManagers();
+  const managers = applyExclude(getManagers());
 
   renderSummaryGrid(managers);
 
