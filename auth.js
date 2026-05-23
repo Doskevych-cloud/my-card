@@ -65,15 +65,14 @@
     admin: 'Адмін-панель',
   };
 
-  // Старі/великі ключі що можуть забити 5MB ліміт localStorage
-  const STALE_LS_KEYS = ['sigText', 'ssjText', 'dashboard_cache', 'dashboard_classic_cache'];
+  const KEEP_LS_KEYS = new Set([
+    TOKEN_KEY, USER_CACHE_KEY, ADMIN_TOKEN_BAK, ADMIN_USER_BAK, IMPERSONATED_BY_KEY, 'theme',
+  ]);
 
   function purgeStaleStorage() {
-    for (const k of STALE_LS_KEYS) localStorage.removeItem(k);
-    // Видалити кеші дашборду з динамічними ключами
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const k = localStorage.key(i);
-      if (k && (k.startsWith('dash_cache_') || k.startsWith('exec_cache_'))) localStorage.removeItem(k);
+      if (k && !KEEP_LS_KEYS.has(k)) localStorage.removeItem(k);
     }
   }
 
