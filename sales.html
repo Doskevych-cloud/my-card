@@ -360,7 +360,7 @@ function allClients() {
 }
 
 const salesTagInput = {
-  save() { localStorage.setItem('sales_exclude', JSON.stringify(state.excludeList)); },
+  save() { try { localStorage.setItem('sales_exclude', JSON.stringify(state.excludeList)); } catch(_){} },
   renderTags() {
     const host = document.getElementById('sExcludeTags');
     if (!host) return;
