@@ -445,6 +445,7 @@ function initDelegation() {
 }
 
 async function impersonate(email) {
+  if (email === currentUser.email) { toast('Не можна зайти під собою', 'err'); return; }
   if (!confirm(`Зайти як ${email}?\n\nВи побачите систему його очима — свої доступи, свої сторінки. У верхній частині буде жовта смуга «Ви переглядаєте від імені…» з кнопкою повернення.`)) return;
   try {
     await Auth.startImpersonate(email);
