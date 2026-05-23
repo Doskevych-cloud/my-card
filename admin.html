@@ -90,6 +90,17 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
 .tab-panel { display:none; }
 .tab-panel.active { display:block; }
 
+.role-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+.role-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; }
+.role-card-head { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+.role-card-head input { flex:1; background:var(--card2); border:1px solid var(--border); color:var(--text); padding:7px 10px; border-radius:8px; font:inherit; font-size:14px; font-weight:600; }
+.role-perms { display:grid; grid-template-columns:1fr 1fr; gap:4px 12px; margin-bottom:12px; }
+.role-perms label { font-size:12px; color:var(--text2); display:flex; align-items:center; gap:6px; cursor:pointer; padding:3px 0; }
+.role-perms input { accent-color:var(--accent); }
+.role-card-foot { display:flex; align-items:center; gap:8px; }
+.role-card-foot .meta { margin-left:auto; font-size:11px; color:var(--text3); }
+td .role-select { background:var(--card2); border:1px solid var(--border); color:var(--text); padding:5px 8px; border-radius:6px; font:inherit; font-size:12px; cursor:pointer; min-width:140px; }
+
 @media (max-width: 640px) {
   table thead { display:none }
   tbody td { display: block; border: 0; padding: 6px 14px }
@@ -106,6 +117,7 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
 
   <div class="tab-bar">
     <button class="tab active" data-tab="users">Користувачі</button>
+    <button class="tab" data-tab="roles">Ролі</button>
     <button class="tab" data-tab="sync">Синхронізація</button>
     <button class="tab" data-tab="bot">Бот</button>
   </div>
@@ -125,17 +137,8 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
       <table>
         <thead>
           <tr>
-            <th style="width: 28%">Користувач</th>
-            <th style="text-align:center">Дашборд</th>
-            <th style="text-align:center">Порівняння цін</th>
-            <th style="text-align:center">Закупівлі</th>
-            <th style="text-align:center">Склад</th>
-            <th style="text-align:center">Продажі</th>
-            <th style="text-align:center">Звіти</th>
-            <th style="text-align:center">Фінанси</th>
-            <th style="text-align:center">Контрагенти</th>
-            <th style="text-align:center">Прайс</th>
-            <th style="text-align:center">Адмін</th>
+            <th style="width: 35%">Користувач</th>
+            <th>Роль</th>
             <th style="text-align:center">Реакт</th>
             <th style="text-align:center">Генерація</th>
             <th style="text-align:center">Останній вхід</th>
@@ -143,7 +146,7 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
           </tr>
         </thead>
         <tbody id="tbody">
-          <tr><td colspan="15" class="loading">Завантаження…</td></tr>
+          <tr><td colspan="6" class="loading">Завантаження…</td></tr>
         </tbody>
       </table>
     </div>
@@ -153,6 +156,17 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
     Новий користувач з'являється в таблиці після першого входу через Google. Також можна додати email вручну —
     тоді доступи застосуються, щойно він увійде.
   </p>
+  </div>
+
+  <div id="tab-roles" class="tab-panel">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <h2 style="margin:0;font-size:16px">Ролі доступу</h2>
+      <div style="flex:1"></div>
+      <button class="btn btn--ghost" onclick="createRole()">+ Нова роль</button>
+    </div>
+    <div id="rolesContainer" class="role-cards">
+      <div class="loading">Завантаження…</div>
+    </div>
   </div>
 
   <div id="tab-sync" class="tab-panel">
@@ -291,17 +305,27 @@ document.querySelector('.tab-bar').addEventListener('click', e => {
   const t = e.target.closest('.tab');
   if (t) switchTab(t.dataset.tab);
 });
-(function() { const h = location.hash.slice(1); if (['users','sync','bot'].includes(h)) switchTab(h); })();
+(function() { const h = location.hash.slice(1); if (['users','roles','sync','bot'].includes(h)) switchTab(h); })();
 
 let currentUser = null;
 let users = [];
+let roles = [];
 let inviteOpen = false;
+
+const MODULE_LABELS = {
+  dashboard:'Дашборд', home:'Порівняння цін', forecast:'Закупівлі',
+  warehouses:'Склад', sales:'Продажі', reports:'Звіти', finance:'Фінанси',
+  suppliers:'Постачальники', customers:'Покупці', counterparties:'Контрагенти',
+  prices:'Прайс', admin:'Адмін',
+};
+const ALL_MODULES = Object.keys(MODULE_LABELS);
 
 const BOT_API = 'https://react-bot.doskevich.workers.dev/';
 
-Auth.require('admin').then(user => {
+Auth.require('admin').then(async user => {
   currentUser = user;
   AppHeader.mount({ active: 'admin', user });
+  await loadRoles();
   loadUsers();
   loadAutosyncStatus();
   loadBotPrompt();
@@ -350,7 +374,7 @@ async function loadUsers() {
     renderTable();
     initDelegation();
   } catch (e) {
-    document.getElementById('tbody').innerHTML = `<tr><td colspan="14" class="loading">❌ ${escapeHtml(e.message)}</td></tr>`;
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="6" class="loading">${escapeHtml(e.message)}</td></tr>`;
   }
 }
 
@@ -361,14 +385,21 @@ function fmtDate(iso) {
   return d.toLocaleDateString('uk-UA', { day:'2-digit', month:'2-digit', year:'2-digit' }) + ' ' + d.toLocaleTimeString('uk-UA', { hour:'2-digit', minute:'2-digit' });
 }
 
+function roleOptions(selected) {
+  let html = '<option value="">— без ролі —</option>';
+  for (const r of roles) {
+    html += `<option value="${escapeHtml(r.id)}" ${selected === r.id ? 'selected' : ''}>${escapeHtml(r.name)}</option>`;
+  }
+  return html;
+}
+
 function userRow(u) {
   const initials = (u.name || u.email || '?').slice(0,1).toUpperCase();
   const av = u.picture
     ? `<img class="avatar" src="${escapeHtml(u.picture)}" referrerpolicy="no-referrer" alt="">`
     : `<span class="avatar">${escapeHtml(initials)}</span>`;
   const disableDelete = u.email === currentUser.email;
-  // Change/click handlers wire up via event delegation (initDelegation) so
-  // u.email never lands inside an `onclick=` JS-string literal.
+  const roleName = roles.find(r => r.id === u.role);
   return `
     <tr data-email="${escapeHtml(u.email)}">
       <td>
@@ -380,9 +411,7 @@ function userRow(u) {
           </div>
         </div>
       </td>
-      ${['dashboard','home','forecast','warehouses','sales','reports','finance','counterparties','prices','admin'].map(r => `
-        <td class="role-box"><input type="checkbox" ${u.roles && u.roles[r] ? 'checked' : ''} data-act="role" data-key="${r}"></td>
-      `).join('')}
+      <td><select class="role-select" data-act="assign-role">${roleOptions(u.role)}</select></td>
       ${['Реакт','Генерація'].map(o => `
         <td class="role-box"><input type="checkbox" ${u.orgs && u.orgs[o] ? 'checked' : ''} data-act="org" data-key="${escapeHtml(o)}"></td>
       `).join('')}
@@ -402,7 +431,7 @@ function initDelegation() {
     const row = e.target.closest('tr[data-email]'); if (!row) return;
     const email = row.dataset.email;
     const act = e.target.dataset.act;
-    if (act === 'role') toggleRole(email, e.target.dataset.key, e.target.checked);
+    if (act === 'assign-role') assignRole(email, e.target.value);
     else if (act === 'org') toggleOrg(email, e.target.dataset.key, e.target.checked);
   });
   tb.addEventListener('click', (e) => {
@@ -436,16 +465,7 @@ function renderTable() {
     html += `
       <tr class="invite-row">
         <td><input id="inviteEmail" placeholder="name@gmail.com" autofocus></td>
-        <td class="role-box"><input type="checkbox" id="inv_dashboard" checked></td>
-        <td class="role-box"><input type="checkbox" id="inv_home"></td>
-        <td class="role-box"><input type="checkbox" id="inv_forecast"></td>
-        <td class="role-box"><input type="checkbox" id="inv_warehouses"></td>
-        <td class="role-box"><input type="checkbox" id="inv_sales"></td>
-        <td class="role-box"><input type="checkbox" id="inv_reports"></td>
-        <td class="role-box"><input type="checkbox" id="inv_finance"></td>
-        <td class="role-box"><input type="checkbox" id="inv_counterparties"></td>
-        <td class="role-box"><input type="checkbox" id="inv_prices"></td>
-        <td class="role-box"><input type="checkbox" id="inv_admin"></td>
+        <td><select id="inviteRole" class="role-select">${roleOptions('')}</select></td>
         <td class="role-box"><input type="checkbox" id="inv_org_react" checked></td>
         <td class="role-box"><input type="checkbox" id="inv_org_gen"></td>
         <td></td>
@@ -457,7 +477,7 @@ function renderTable() {
     `;
   }
   if (!filtered.length) {
-    html += `<tr><td colspan="15" class="empty">Нічого не знайдено</td></tr>`;
+    html += `<tr><td colspan="6" class="empty">Нічого не знайдено</td></tr>`;
   } else {
     html += filtered.map(userRow).join('');
   }
@@ -480,24 +500,13 @@ const EMAIL_RE = /^[a-z0-9][a-z0-9._+\-]*@[a-z0-9-]+(?:\.[a-z0-9-]+)+$/;
 async function saveInvite() {
   const email = document.getElementById('inviteEmail').value.trim().toLowerCase();
   if (!EMAIL_RE.test(email)) { toast('Вкажіть коректний email', 'err'); return; }
-  const roles = {
-    dashboard: document.getElementById('inv_dashboard').checked,
-    home: document.getElementById('inv_home').checked,
-    forecast: document.getElementById('inv_forecast').checked,
-    warehouses: document.getElementById('inv_warehouses').checked,
-    sales: document.getElementById('inv_sales').checked,
-    reports: document.getElementById('inv_reports').checked,
-    finance: document.getElementById('inv_finance').checked,
-    counterparties: document.getElementById('inv_counterparties').checked,
-    prices: document.getElementById('inv_prices').checked,
-    admin: document.getElementById('inv_admin').checked,
-  };
+  const role = document.getElementById('inviteRole').value || null;
   const orgs = {
     'Реакт': document.getElementById('inv_org_react').checked,
     'Генерація': document.getElementById('inv_org_gen').checked,
   };
   try {
-    const r = await Auth.apiFetch('admin_user_update', { method: 'POST', body: { email, roles, orgs } });
+    const r = await Auth.apiFetch('admin_user_update', { method: 'POST', body: { email, role, orgs } });
     const idx = users.findIndex(u => u.email === email);
     if (idx >= 0) users[idx] = r.user; else users.push(r.user);
     users.sort((a, b) => (a.email || '').localeCompare(b.email || ''));
@@ -507,15 +516,11 @@ async function saveInvite() {
   } catch (e) { toast(e.message, 'err'); }
 }
 
-async function toggleRole(email, role, checked) {
-  const u = users.find(x => x.email === email);
-  if (!u) return;
-  const newRoles = Object.assign({}, u.roles, { [role]: checked });
+async function assignRole(email, roleId) {
   try {
-    const r = await Auth.apiFetch('admin_user_update', { method: 'POST', body: { email, roles: newRoles } });
+    const r = await Auth.apiFetch('admin_user_update', { method: 'POST', body: { email, role: roleId || null } });
     const idx = users.findIndex(x => x.email === email);
     users[idx] = r.user;
-    // Renders only this user to preserve scroll
     const tr = document.querySelector(`tr[data-email="${CSS.escape(email)}"]`);
     if (tr) tr.outerHTML = userRow(r.user);
   } catch (e) {
@@ -547,6 +552,83 @@ async function deleteUser(email) {
     users = users.filter(u => u.email !== email);
     renderTable();
     toast('Видалено: ' + email, 'ok');
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+// ─── Roles (RBAC) ────────────────────────────────────────────────
+async function loadRoles() {
+  try {
+    const r = await Auth.apiFetch('admin_roles');
+    roles = r.roles || [];
+    renderRoles();
+  } catch (e) {
+    document.getElementById('rolesContainer').innerHTML = `<div class="loading">Помилка: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function renderRoles() {
+  const c = document.getElementById('rolesContainer');
+  if (!roles.length) { c.innerHTML = '<div class="empty">Немає ролей</div>'; return; }
+  const userCounts = {};
+  for (const u of users) { if (u.role) userCounts[u.role] = (userCounts[u.role] || 0) + 1; }
+  c.innerHTML = roles.map(r => {
+    const perms = r.permissions || {};
+    const cnt = userCounts[r.id] || 0;
+    return `
+    <div class="role-card" data-role-id="${escapeHtml(r.id)}">
+      <div class="role-card-head">
+        <input type="text" value="${escapeHtml(r.name)}" data-field="name">
+        ${r.id === 'admin' ? '' : `<button class="btn btn--danger btn--sm" onclick="deleteRole('${escapeHtml(r.id)}')" title="Видалити роль">✕</button>`}
+      </div>
+      <div class="role-perms">
+        ${ALL_MODULES.map(m => `
+          <label><input type="checkbox" data-mod="${m}" ${perms[m] ? 'checked' : ''}> ${MODULE_LABELS[m]}</label>
+        `).join('')}
+      </div>
+      <div class="role-card-foot">
+        <button class="btn btn--primary btn--sm" onclick="saveRoleCard('${escapeHtml(r.id)}')">Зберегти</button>
+        <span class="meta">${cnt} ${cnt === 1 ? 'користувач' : 'користувачів'}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function saveRoleCard(id) {
+  const card = document.querySelector(`.role-card[data-role-id="${CSS.escape(id)}"]`);
+  if (!card) return;
+  const name = card.querySelector('[data-field="name"]').value.trim();
+  if (!name) { toast('Назва обовʼязкова', 'err'); return; }
+  const permissions = {};
+  card.querySelectorAll('[data-mod]').forEach(cb => { permissions[cb.dataset.mod] = cb.checked; });
+  try {
+    await Auth.apiFetch('admin_role_update', { method: 'POST', body: { id, name, permissions } });
+    toast('Роль збережено', 'ok');
+    await loadRoles();
+    await loadUsers();
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+async function createRole() {
+  const name = prompt('Назва нової ролі:');
+  if (!name) return;
+  const id = name.toLowerCase().replace(/[^a-zа-яіїєґ0-9]+/g, '_').replace(/^_|_$/g, '');
+  const safeId = id.replace(/[^a-z0-9_]/g, '') || 'role_' + Date.now();
+  try {
+    await Auth.apiFetch('admin_role_update', { method: 'POST', body: { id: safeId, name, create: true, permissions: { dashboard: true } } });
+    toast('Роль створено', 'ok');
+    await loadRoles();
+    renderRoles();
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+async function deleteRole(id) {
+  const r = roles.find(x => x.id === id);
+  if (!confirm(`Видалити роль «${r ? r.name : id}»?\n\nКористувачі з цією роллю втратять прив'язку (доступи залишаться).`)) return;
+  try {
+    await Auth.apiFetch('admin_role_delete', { method: 'POST', body: { id } });
+    toast('Роль видалено', 'ok');
+    await loadRoles();
+    await loadUsers();
   } catch (e) { toast(e.message, 'err'); }
 }
 
