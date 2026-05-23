@@ -231,6 +231,17 @@ tbody tr:hover { background: rgba(255,131,25,.04); }
 
 <div class="card" style="margin-top:24px">
   <div class="card-head">
+    <h2>Бот: відгуки</h2>
+    <div class="spacer"></div>
+    <span id="feedbackStats" style="font-size:12px;color:var(--text3)"></span>
+  </div>
+  <div style="padding:12px 16px" id="botFeedbackWrap">
+    <div style="color:var(--text3);font-size:13px">Завантаження...</div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:24px">
+  <div class="card-head">
     <h2>Бот: системний промпт</h2>
     <div class="spacer"></div>
     <span id="promptUpdatedAt" style="font-size:11px;color:var(--text3)"></span>
@@ -263,6 +274,7 @@ Auth.require('admin').then(user => {
   loadAutosyncStatus();
   loadBotPrompt();
   loadBotSettings();
+  loadBotFeedback();
 });
 
 // Найсвіжіший last_synced_at з sync_state — показуємо поряд із кнопкою autosync.
@@ -719,6 +731,51 @@ function formatSyncResult(r) {
   if (r.counts) parts.push(Object.entries(r.counts).map(([k,v]) => `${k}=${v}`).join(' · '));
   if (r.from && r.to) parts.push(`[${String(r.from).slice(0,10)}..${String(r.to).slice(0,10)}]`);
   return parts.length ? parts.join(' · ') : JSON.stringify(r).slice(0, 200);
+}
+
+// ─── Bot feedback ────────────────────────────────────────────────
+async function loadBotFeedback() {
+  const wrap = document.getElementById('botFeedbackWrap');
+  const stats = document.getElementById('feedbackStats');
+  try {
+    const token = localStorage.getItem('session_token');
+    const r = await fetch(`${BOT_API}?action=bot_feedback_list`, { headers: { Authorization: `Bearer ${token}` } });
+    const d = await r.json();
+    if (d.error) { wrap.innerHTML = `<div style="color:var(--red)">${d.error}</div>`; return; }
+    const rows = d.feedback || [];
+    if (!rows.length) { wrap.innerHTML = '<div style="color:var(--text3);font-size:13px">Ще немає відгуків. Ставте 👍/👎 на повідомлення бота в Telegram.</div>'; return; }
+    const likes = rows.filter(r => r.reaction === 'like').length;
+    const dislikes = rows.filter(r => r.reaction === 'dislike').length;
+    const pct = rows.length ? Math.round(likes / rows.length * 100) : 0;
+    stats.textContent = `👍 ${likes}  👎 ${dislikes}  (${pct}% позитивних)`;
+    let html = '<table style="width:100%"><thead><tr><th style="width:40px"></th><th>Запит дилера</th><th>Відповідь бота</th><th style="width:100px">Хто</th><th style="width:90px">Коли</th><th style="width:50px"></th></tr></thead><tbody>';
+    for (const fb of rows) {
+      const icon = fb.reaction === 'like' ? '👍' : '👎';
+      const rowColor = fb.reaction === 'dislike' ? 'background:rgba(255,59,48,0.06)' : '';
+      const when = fb.created_at ? fb.created_at.slice(5, 16).replace('T', ' ') : '';
+      html += `<tr style="${rowColor}">`;
+      html += `<td style="font-size:18px;text-align:center">${icon}</td>`;
+      html += `<td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(fb.user_text||'').replace(/"/g,'&quot;')}">${fb.user_text || '—'}</td>`;
+      html += `<td style="font-size:12px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(fb.bot_text||'').replace(/"/g,'&quot;')}">${fb.bot_text || '—'}</td>`;
+      html += `<td style="font-size:12px;color:var(--text3)">@${fb.reactor_username || '?'}</td>`;
+      html += `<td style="font-size:11px;color:var(--text3)">${when}</td>`;
+      html += `<td><button class="btn btn--ghost" style="font-size:11px;padding:2px 6px" onclick="deleteFeedback(${fb.id})">×</button></td>`;
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  } catch (e) { wrap.innerHTML = `<div style="color:var(--red)">Помилка: ${e.message}</div>`; }
+}
+
+async function deleteFeedback(id) {
+  if (!confirm('Видалити цей відгук?')) return;
+  try {
+    const token = localStorage.getItem('session_token');
+    await fetch(`${BOT_API}?action=bot_feedback_delete&id=${id}`, {
+      method: 'POST', headers: { Authorization: `Bearer ${token}` }
+    });
+    loadBotFeedback();
+  } catch (e) { toast(e.message, 'err'); }
 }
 
 // ─── Bot settings ────────────────────────────────────────────────
