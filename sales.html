@@ -478,14 +478,25 @@ async function load() {
   if (window._mc) window._mc.reload({ org: state.org });
 }
 
-// Месячний графік виторгу: paidUsd за період
+// Месячний графік виторгу: paidUsd за період (з урахуванням excludeList)
 function _salesPaidUsdFromPayload(payload, orgFilter) {
   if (!payload) return 0;
+  const exSet = new Set((state.excludeList || []).map(s => (s || '').toLowerCase()));
+  function sumManager(m) {
+    if (!exSet.size) return Number(m.paidUsd || 0);
+    let s = 0;
+    (m.currencies || []).forEach(C => {
+      (C.clients || []).forEach(c => {
+        if (!exSet.has((c.name || '').toLowerCase())) s += Number(c.paidUsd || 0);
+      });
+    });
+    return s;
+  }
   if (payload.byOrg && typeof payload.byOrg === 'object') {
     let total = 0;
     Object.entries(payload.byOrg).forEach(([orgName, data]) => {
       if (orgFilter && orgName !== orgFilter) return;
-      (data.managers || []).forEach(m => { total += Number(m.paidUsd || 0); });
+      (data.managers || []).forEach(m => { total += sumManager(m); });
     });
     return total;
   }
@@ -493,9 +504,7 @@ function _salesPaidUsdFromPayload(payload, orgFilter) {
     let total = 0;
     payload.managers.forEach(mgr => {
       if (orgFilter && mgr.org && mgr.org !== orgFilter) return;
-      if (Array.isArray(mgr.payments)) {
-        mgr.payments.forEach(p => { if (p && typeof p.amountUsd === 'number') total += p.amountUsd; });
-      } else if (typeof mgr.paidUsd === 'number') total += mgr.paidUsd;
+      total += sumManager(mgr);
     });
     return total;
   }
