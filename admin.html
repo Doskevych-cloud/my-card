@@ -162,6 +162,7 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
       <h2 style="margin:0;font-size:16px">Ролі доступу</h2>
       <div style="flex:1"></div>
+      <button class="btn btn--primary" onclick="saveAllRoles()">Зберегти</button>
       <button class="btn btn--ghost" onclick="createRole()">+ Нова роль</button>
     </div>
     <div id="rolesContainer" class="role-cards">
@@ -587,26 +588,31 @@ function renderRoles() {
         `).join('')}
       </div>
       <div class="role-card-foot">
-        <button class="btn btn--primary btn--sm" onclick="saveRoleCard('${escapeHtml(r.id)}')">Зберегти</button>
         <span class="meta">${cnt} ${cnt === 1 ? 'користувач' : 'користувачів'}</span>
       </div>
     </div>`;
   }).join('');
 }
 
-async function saveRoleCard(id) {
-  const card = document.querySelector(`.role-card[data-role-id="${CSS.escape(id)}"]`);
-  if (!card) return;
-  const name = card.querySelector('[data-field="name"]').value.trim();
-  if (!name) { toast('Назва обовʼязкова', 'err'); return; }
-  const permissions = {};
-  card.querySelectorAll('[data-mod]').forEach(cb => { permissions[cb.dataset.mod] = cb.checked; });
-  try {
-    await Auth.apiFetch('admin_role_update', { method: 'POST', body: { id, name, permissions } });
-    toast('Роль збережено', 'ok');
+async function saveAllRoles() {
+  const cards = document.querySelectorAll('.role-card[data-role-id]');
+  let saved = 0, errors = 0;
+  for (const card of cards) {
+    const id = card.dataset.roleId;
+    const name = card.querySelector('[data-field="name"]').value.trim();
+    if (!name) { toast(`Роль ${id}: назва обовʼязкова`, 'err'); errors++; continue; }
+    const permissions = {};
+    card.querySelectorAll('[data-mod]').forEach(cb => { permissions[cb.dataset.mod] = cb.checked; });
+    try {
+      await Auth.apiFetch('admin_role_update', { method: 'POST', body: { id, name, permissions } });
+      saved++;
+    } catch (e) { toast(`${name}: ${e.message}`, 'err'); errors++; }
+  }
+  if (saved) {
+    toast(`Збережено ${saved} ${saved === 1 ? 'роль' : 'ролей'}`, 'ok');
     await loadRoles();
     await loadUsers();
-  } catch (e) { toast(e.message, 'err'); }
+  }
 }
 
 async function createRole() {
