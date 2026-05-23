@@ -420,7 +420,6 @@
     // Single source of truth for nav items — used by both desktop nav and mobile drawer.
     const navItems = [
       { role: 'dashboard',     active: 'dashboard',     href: '/',                  label: '🧭 Дашборд' },
-      { role: 'home',          active: 'home',          href: '/prices.html',       label: '🏠 Порівняння цін' },
       { role: 'prices',        active: 'prices-admin',  href: '/admin-prices.html', label: '🔧 Прайс' },
       { role: 'forecast',      active: 'forecast',      href: '/forecast.html',     label: '📊 Закупівлі' },
       { role: 'warehouses',    active: 'warehouses',    href: '/warehouses.html',   label: '📦 Склад' },

@@ -52,7 +52,7 @@
 
   const MODULE_LABEL = {
     dashboard: 'Дашборд',
-    home: 'Порівняння цін',
+    sales_prices: 'Продажі — Порівняння цін',
     forecast: 'Прогноз кабелю',
     warehouses: 'Склад',
     sales: 'Продажі — Продажі менеджерів',
@@ -212,8 +212,8 @@
   // юзер без ролі «dashboard» не зациклювався на denyScreen.
   const HOME_PAGES = [
     { role: 'dashboard', href: 'index.html' },
-    { role: 'home',          href: 'prices.html' },
     { role: 'sales',         href: 'sales.html' },
+    { role: 'sales_prices',  href: 'prices.html' },
     { role: 'forecast',      href: 'forecast.html' },
     { role: 'warehouses',    href: 'warehouses.html' },
     { role: 'counterparties',href: 'counterparties.html' },
