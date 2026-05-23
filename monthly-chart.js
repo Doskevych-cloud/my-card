@@ -35,10 +35,12 @@
   function buildMonthBuckets(n) {
     const out = [];
     const today = new Date();
+    const todayIso = _iso(today);
     for (let i = n - 1; i >= 0; i--) {
       const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
       const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-      out.push({ from: _iso(d), to: _iso(last), label: _monthLabel(d) });
+      const to = _iso(last) > todayIso ? todayIso : _iso(last);
+      out.push({ from: _iso(d), to, label: _monthLabel(d) });
     }
     return out;
   }
