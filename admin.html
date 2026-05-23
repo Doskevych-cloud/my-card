@@ -325,12 +325,14 @@ const BOT_API = 'https://react-bot.doskevich.workers.dev/';
 Auth.require('admin').then(user => {
   currentUser = user;
   AppHeader.mount({ active: 'admin', user });
-  loadRoles();
-  loadUsers();
-  loadAutosyncStatus();
-  loadBotPrompt();
-  loadBotSettings();
-  loadBotFeedback();
+  setTimeout(() => {
+    loadRoles();
+    loadUsers();
+    loadAutosyncStatus();
+    loadBotPrompt();
+    loadBotSettings();
+    loadBotFeedback();
+  }, 0);
 });
 
 // Найсвіжіший last_synced_at з sync_state — показуємо поряд із кнопкою autosync.
