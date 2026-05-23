@@ -790,7 +790,7 @@ async function loadBotFeedback() {
       html += `<td style="font-size:18px;text-align:center">${icon}</td>`;
       html += `<td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(fb.user_text||'').replace(/"/g,'&quot;')}">${fb.user_text || '—'}</td>`;
       html += `<td style="font-size:12px;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(fb.bot_text||'').replace(/"/g,'&quot;')}">${fb.bot_text || '—'}</td>`;
-      html += `<td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:${corr ? 'var(--green)' : 'var(--text3)'}" title="${corr.replace(/"/g,'&quot;')}">${corr || '—'}</td>`;
+      html += `<td style="font-size:12px;max-width:200px;color:${corr ? 'var(--green)' : 'var(--text3)'};cursor:pointer" title="Натисни щоб редагувати" onclick="editCorrection(${fb.id}, this)" data-corr="${corr.replace(/"/g,'&quot;')}">${corr || '—'}</td>`;
       html += `<td style="font-size:12px;color:var(--text3)">@${fb.reactor_username || '?'}</td>`;
       html += `<td style="font-size:11px;color:var(--text3)">${when}</td>`;
       html += `<td><button class="btn btn--ghost" style="font-size:11px;padding:2px 6px" onclick="deleteFeedback(${fb.id})">×</button></td>`;
@@ -799,6 +799,30 @@ async function loadBotFeedback() {
     html += '</tbody></table>';
     wrap.innerHTML = html;
   } catch (e) { wrap.innerHTML = `<div style="color:var(--red)">Помилка: ${e.message}</div>`; }
+}
+
+function editCorrection(id, td) {
+  if (td.querySelector('textarea')) return; // already editing
+  const current = td.dataset.corr || '';
+  td.innerHTML = `<textarea style="width:100%;min-height:50px;padding:4px 6px;font-size:12px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--text);resize:vertical">${current}</textarea>
+    <div style="margin-top:4px;display:flex;gap:4px">
+      <button class="btn btn--primary" style="font-size:11px;padding:2px 8px" onclick="saveCorrection(${id}, this.closest('td'))">Зберегти</button>
+      <button class="btn btn--ghost" style="font-size:11px;padding:2px 8px" onclick="loadBotFeedback()">Скасувати</button>
+    </div>`;
+  td.querySelector('textarea').focus();
+}
+
+async function saveCorrection(id, td) {
+  const text = td.querySelector('textarea').value;
+  try {
+    const token = localStorage.getItem('session_token');
+    await fetch(`${BOT_API}?action=bot_feedback_update&id=${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ correction: text }),
+    });
+    loadBotFeedback();
+  } catch (e) { toast(e.message, 'err'); }
 }
 
 async function deleteFeedback(id) {
