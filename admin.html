@@ -825,7 +825,7 @@ async function loadBotSettings() {
     for (const s of rows) {
       const isToggle = s.key === 'bot_enabled';
       const inputStyle = 'padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;width:100%';
-      const isLong = s.key === 'trigger_markers' || s.key === 'holidays';
+      const isLong = s.key === 'trigger_markers' || s.key === 'holidays' || s.key === 'feedback_dislike_markers' || s.key === 'feedback_like_markers';
       if (isToggle) {
         html += `<label style="font-size:13px;color:var(--text2)">${s.label || s.key}</label>`;
         html += `<select data-setting="${s.key}" style="${inputStyle}"><option value="1"${s.value==='1'?' selected':''}>Увімкнено</option><option value="0"${s.value==='0'?' selected':''}>Вимкнено</option></select>`;
