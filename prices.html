@@ -102,8 +102,6 @@ body{font-family:'Inter',-apple-system,'Segoe UI',sans-serif;background:var(--bg
 .supplier-slot .icon{font-size:22px;margin-bottom:4px}
 .supplier-slot .label{font-weight:600;font-size:12px;margin-bottom:2px;color:var(--text)}
 .supplier-slot .hint{font-size:10px;color:var(--text3);line-height:1.3}
-.supplier-slot .hint a{color:var(--text3);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px}
-.supplier-slot .hint a:hover{color:var(--accent)}
 .supplier-slot .file-name{font-size:10px;color:var(--green);margin-top:4px;word-break:break-all;font-weight:500}
 .supplier-slot .remove-btn{position:absolute;top:4px;right:6px;background:none;border:none;font-size:14px;color:var(--text3);cursor:pointer;line-height:1}
 .supplier-slot .remove-btn:hover{color:var(--red)}
@@ -384,43 +382,43 @@ tr:hover td{background:var(--bg3) !important}
     <div class="supplier-slot slot-gen" data-supplier="gen" id="genSlot" onclick="openLinkModal('gen')">
       <div class="icon">🌐</div>
       <div class="label">Реакт</div>
-      <div class="hint"><a href="https://react.ink" target="_blank" rel="noopener" onclick="event.stopPropagation()">react.ink</a></div>
+      <div class="hint">авто</div>
       <div class="file-name" id="genStatus"></div>
     </div>
     <div class="supplier-slot slot-hel" data-supplier="hel" id="helSlot" onclick="openLinkModal('hel')">
       <div class="icon">🌐</div>
       <div class="label">Хеліус</div>
-      <div class="hint"><a href="https://docs.google.com/spreadsheets/d/1ddbl4d574RN5Q4WDMg4WW13heV_hOyYy" target="_blank" rel="noopener" onclick="event.stopPropagation()">Google Sheets</a></div>
+      <div class="hint">авто</div>
       <div class="file-name" id="helStatus"></div>
     </div>
     <div class="supplier-slot slot-dol" data-supplier="dol" id="dolSlot" onclick="openLinkModal('dol')">
       <div class="icon">🌐</div>
       <div class="label">Доля</div>
-      <div class="hint"><a href="https://docs.google.com/spreadsheets/d/1Mt-FMjFO6p96hL_hJ-0SVuzupsf9wFeuN2OIo0oNq18" target="_blank" rel="noopener" onclick="event.stopPropagation()">Google Sheets</a></div>
+      <div class="hint">авто</div>
       <div class="file-name" id="dolStatus"></div>
     </div>
     <div class="supplier-slot slot-se" data-supplier="se" id="seSlot" onclick="openLinkModal('se')">
       <div class="icon">🌐</div>
       <div class="label">Сучасна</div>
-      <div class="hint"><a href="https://se.net.ua" target="_blank" rel="noopener" onclick="event.stopPropagation()">se.net.ua</a></div>
+      <div class="hint">авто</div>
       <div class="file-name" id="seStatus"></div>
     </div>
     <div class="supplier-slot slot-pe" data-supplier="pe" id="peSlot" onclick="openLinkModal('pe')">
       <div class="icon">🌐</div>
       <div class="label">Правильне</div>
-      <div class="hint"><a href="https://docs.google.com/spreadsheets/d/1dXuNar4t3aemQSk5LnPOXxcB7DAqqEzraWEFASa2r4g" target="_blank" rel="noopener" onclick="event.stopPropagation()">Google Sheets</a></div>
+      <div class="hint">авто</div>
       <div class="file-name" id="peStatus"></div>
     </div>
     <div class="supplier-slot slot-sv" data-supplier="sv" id="svSlot" onclick="openLinkModal('sv')">
       <div class="icon">🌐</div>
       <div class="label">Солар Верс</div>
-      <div class="hint"><a href="" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:none"></a><span>приватний лист (GAS)</span></div>
+      <div class="hint">авто</div>
       <div class="file-name" id="svStatus"></div>
     </div>
     <div class="supplier-slot slot-iso" data-supplier="iso" id="isoSlot" onclick="openLinkModal('iso')">
       <div class="icon">🌐</div>
       <div class="label">Айсолар</div>
-      <div class="hint"><a href="" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:none"></a><span>SharePoint (авто)</span></div>
+      <div class="hint">авто</div>
       <div class="file-name" id="isoStatus"></div>
     </div>
     <div class="supplier-slot slot-atm" data-supplier="atm" onclick="triggerUpload(this)">
@@ -477,11 +475,16 @@ tr:hover td{background:var(--bg3) !important}
 <div class="sig-modal" id="linkModal" style="display:none" onclick="if(event.target===this)closeLinkModal()">
   <div class="sig-modal-content">
     <h3 id="linkModalTitle">Посилання на прайс</h3>
-    <input type="text" id="linkModalUrl" style="width:100%;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:10px;font-size:12px;font-family:monospace" placeholder="https://..." onkeydown="if(event.key==='Enter')saveLinkUrl()">
-    <div class="sig-modal-actions">
-      <button onclick="saveLinkUrl()">Зберегти</button>
-      <button onclick="openLinkExternal()" style="background:var(--bg3);color:var(--text2)">Відкрити ↗</button>
-      <button onclick="closeLinkModal()" class="sig-cancel">Скасувати</button>
+    <div id="linkViewMode" style="display:flex;align-items:center;gap:8px">
+      <a id="linkModalLink" href="" target="_blank" rel="noopener" style="flex:1;color:var(--accent);font-size:12px;font-family:monospace;word-break:break-all;text-decoration:underline"></a>
+      <button onclick="showLinkEdit()" style="flex-shrink:0;padding:6px 14px;border:none;border-radius:4px;font-size:12px;cursor:pointer;background:var(--bg3);color:var(--text2)">Редагувати</button>
+    </div>
+    <div id="linkEditMode" style="display:none">
+      <input type="text" id="linkModalUrl" style="width:100%;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:10px;font-size:12px;font-family:monospace;margin-bottom:12px" placeholder="https://..." onkeydown="if(event.key==='Enter')saveLinkUrl()">
+      <div class="sig-modal-actions">
+        <button onclick="saveLinkUrl()">Зберегти</button>
+        <button onclick="hideLinkEdit()" class="sig-cancel">Скасувати</button>
+      </div>
     </div>
   </div>
 </div>
@@ -571,11 +574,22 @@ function getSupplierUrl(key) {
 
 function openLinkModal(key) {
   _linkModalKey = key;
+  const url = getSupplierUrl(key);
   document.getElementById('linkModalTitle').textContent = (SUPPLIER_NAMES[key] || key) + ' — посилання на прайс';
-  document.getElementById('linkModalUrl').value = getSupplierUrl(key);
-  const m = document.getElementById('linkModal');
-  m.style.display = 'flex';
-  document.getElementById('linkModalUrl').focus();
+  const link = document.getElementById('linkModalLink');
+  const viewMode = document.getElementById('linkViewMode');
+  const editMode = document.getElementById('linkEditMode');
+  if (url) {
+    link.href = url;
+    link.textContent = url.replace(/^https?:\/\//, '');
+    viewMode.style.display = 'flex';
+  } else {
+    viewMode.style.display = 'none';
+  }
+  editMode.style.display = url ? 'none' : 'block';
+  document.getElementById('linkModalUrl').value = url;
+  document.getElementById('linkModal').style.display = 'flex';
+  if (!url) document.getElementById('linkModalUrl').focus();
 }
 
 function closeLinkModal() {
@@ -583,42 +597,23 @@ function closeLinkModal() {
   _linkModalKey = null;
 }
 
+function showLinkEdit() {
+  document.getElementById('linkEditMode').style.display = 'block';
+  document.getElementById('linkModalUrl').focus();
+}
+
+function hideLinkEdit() {
+  document.getElementById('linkEditMode').style.display = 'none';
+  document.getElementById('linkModalUrl').value = getSupplierUrl(_linkModalKey);
+}
+
 function saveLinkUrl() {
   if (!_linkModalKey) return;
   const url = document.getElementById('linkModalUrl').value.trim();
   if (url) localStorage.setItem('price_link_' + _linkModalKey, url);
   else localStorage.removeItem('price_link_' + _linkModalKey);
-  applyLinkToSlot(_linkModalKey, url);
   closeLinkModal();
 }
-
-function openLinkExternal() {
-  const url = document.getElementById('linkModalUrl').value.trim();
-  if (url) window.open(url, '_blank');
-}
-
-function applyLinkToSlot(key, url) {
-  const slot = document.querySelector('[data-supplier="' + key + '"]');
-  if (!slot) return;
-  const hint = slot.querySelector('.hint');
-  if (!hint) return;
-  const a = hint.querySelector('a');
-  const span = hint.querySelector('span');
-  if (url) {
-    if (a) { a.href = url; a.textContent = url.replace(/^https?:\/\//, '').replace(/\/.*/, ''); a.style.display = ''; }
-    if (span) span.style.display = 'none';
-  } else {
-    if (a) a.style.display = 'none';
-    if (span) span.style.display = '';
-  }
-}
-
-(function initSupplierLinks() {
-  for (const key of Object.keys(SUPPLIER_DEFAULT_URLS)) {
-    const saved = localStorage.getItem('price_link_' + key);
-    if (saved) applyLinkToSlot(key, saved);
-  }
-})();
 
 // ═══════════════════════════════════════════════
 // UPLOAD UI
