@@ -657,6 +657,7 @@ function updateCalcFlow() {
   const beforeVat = supplierPerM + logEU + logUA;
   const vat = beforeVat * VAT_RATE;
   const kyivPerM = beforeVat + vat;
+  const basePrice = kyivPerM * TIERS[0].markup;
 
   const nf = (v, d) => v.toLocaleString('uk-UA', { minimumFractionDigits:d||2, maximumFractionDigits:d||2 });
 
@@ -670,12 +671,12 @@ function updateCalcFlow() {
   const tiersHtml = TIERS.map(t => {
     const perM = kyivPerM * t.markup;
     const perCoil = perM * COIL_M;
-    const markupPct = (t.markup - 1) * 100;
+    const disc = (perM - basePrice) / basePrice * 100;
     return `<div class="tier-card ${t.transit?'transit':''} ${t.base?'base':''}">
       <div class="tier-h">
         ${t.transit ? '<span class="dot-accent"></span>' : ''}
         <span class="tname">${t.name}</span>
-        <span class="tier-tag tag-base">+${markupPct.toFixed(0)}%</span>
+        ${t.base ? '<span class="tier-tag tag-base">базова</span>' : `<span class="tier-tag tag-pos">${disc.toFixed(1)}%</span>`}
       </div>
       <div class="tprice"><span>${perM.toFixed(2)}</span><span class="u">€/м</span></div>
       <div class="tmeta"><span>${t.coil}</span><span>${fmt(Math.round(perCoil))} €/бухта</span></div>
