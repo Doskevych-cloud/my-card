@@ -513,7 +513,7 @@ tr:hover td{background:var(--bg3) !important}
       <thead>
         <tr>
           <th class="gh gh-tovar bl" colspan="2">ТОВАР</th>
-          <th class="gh gh-best bl" colspan="2">НАЙКРАЩА</th>
+          <th class="gh gh-best bl" colspan="5">НАЙКРАЩА</th>
           <th class="gh gh-gen bl" colspan="4">Реакт</th>
           <th class="gh gh-hel bl" colspan="6">Хеліус</th>
           <th class="gh gh-dol bl" colspan="5">Доля</th>
@@ -527,7 +527,7 @@ tr:hover td{background:var(--bg3) !important}
         </tr>
         <tr>
           <th class="sh sh-tovar bl">&#8470;</th><th class="sh sh-tovar">Назва</th>
-          <th class="sh sh-best bl">Хто</th><th class="sh sh-best">Ціна</th>
+          <th class="sh sh-best bl">Хто</th><th class="sh sh-best">Ціна без ПДВ</th><th class="sh sh-best">&Delta;%</th><th class="sh sh-best">Ціна з ПДВ</th><th class="sh sh-best">&Delta;%</th>
           <th class="sh sh-gen bl">Залишки</th><th class="sh sh-gen">Статус</th><th class="sh sh-gen">Ціна без ПДВ</th><th class="sh sh-gen">Ціна з ПДВ</th>
           <th class="sh sh-hel bl">Статус</th><th class="sh sh-hel">Ціна без ПДВ</th><th class="sh sh-hel">&Delta;%</th><th class="sh sh-hel">Ціна з ПДВ</th><th class="sh sh-hel">&Delta;%</th><th class="sh sh-hel">РРЦ</th>
           <th class="sh sh-dol bl">Статус</th><th class="sh sh-dol">Ціна без ПДВ</th><th class="sh sh-dol">&Delta;%</th><th class="sh sh-dol">Ціна з ПДВ</th><th class="sh sh-dol">&Delta;%</th>
@@ -541,7 +541,7 @@ tr:hover td{background:var(--bg3) !important}
         </tr>
       </thead>
       <tbody id="data"></tbody>
-      <tfoot><tr><td colspan="49">&nbsp;</td></tr></tfoot>
+      <tfoot><tr><td colspan="52">&nbsp;</td></tr></tfoot>
     </table>
   </div>
 </div>
@@ -1803,23 +1803,27 @@ function renderTable(rows) {
   for (const rd of rows) {
     if (rd.cat !== currentCat) {
       currentCat = rd.cat;
-      tb.innerHTML += `<tr class="cat"><td colspan="49"><span class="cat-label">${currentCat}</span></td></tr>`;
+      tb.innerHTML += `<tr class="cat"><td colspan="52"><span class="cat-label">${currentCat}</span></td></tr>`;
     }
     n++;
     const e = n % 2 === 0 ? 'even' : '';
     const r = rd;
-    // Best price
-    const prices = [['Реакт',r.gNV,r.gC],['Хеліус',r.hNV,r.hC],['Доля',r.dNV,r.dC],['Сучасна',r.sNV,r.sC],['Правильне',r.pNV,r.pC],['Солар Верс',r.vNV,r.vC],['Айсолар',r.lNV,r.lC],['Атмосфера',r.aNV,r.aC],['СІГ',r.iNV,r.iC],['SSJ',r.jNV,r.jC]].filter(p=>p[1]!=null);
+    // Best price (by price_no_vat)
+    const prices = [['Реакт',r.gNV,r.gV,r.gC],['Хеліус',r.hNV,r.hV,r.hC],['Доля',r.dNV,r.dV,r.dC],['Сучасна',r.sNV,r.sV,r.sC],['Правильне',r.pNV,r.pV,r.pC],['Солар Верс',r.vNV,r.vV,r.vC],['Айсолар',r.lNV,r.lV,r.lC],['Атмосфера',r.aNV,r.aV,r.aC],['СІГ',r.iNV,r.iV,r.iC],['SSJ',r.jNV,r.jV,r.jC]].filter(p=>p[1]!=null);
     const best = prices.length ? prices.reduce((a,b) => b[1] < a[1] ? b : a) : null;
     const bestWho = best ? prices.filter(p => p[1] === best[1]).map(p => p[0]).join(' / ') : '';
-    const bestP = best ? best[1] : null;
-    const bestC = best ? best[2] : 'USD';
+    const bestNV = best ? best[1] : null;
+    const bestV = best ? best[2] : null;
+    const bestC = best ? best[3] : 'USD';
 
     tb.innerHTML += `<tr>
       <td class="t-tovar ${e} bl">${n}</td>
       <td class="t-tovar ${e} art">${r.name}</td>
       <td class="t-best ${e} bl">${bestWho}</td>
-      <td class="t-best ${e} bold">${fmt(bestP,bestC)}</td>
+      <td class="t-best ${e} bold">${fmt(bestNV,bestC)}</td>
+      <td class="d-best ${e}">${delta(bestNV,r.gNV)}</td>
+      <td class="t-best ${e} bold">${fmt(bestV,bestC)}</td>
+      <td class="d-best ${e}">${delta(bestV,r.gV)}</td>
       <td class="t-gen ${e} bl stock">${r.gStock != null ? r.gStock : ''}</td>
       <td class="t-gen ${e} status">${r.gSt||''}</td>
       <td class="t-gen ${e}">${fmt(r.gNV,r.gC)}</td>
