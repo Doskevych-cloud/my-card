@@ -595,7 +595,7 @@ function renderKpis(f) {
     { lbl:'У резерві', val:fmt(totalReserve), u:'м', delta:`${f.reserveList.filter(r=>r.qty>0).length} активних замовлень`, cls:'up', click:'reserve' },
     { lbl:'В дорозі', val:fmt(totalTransit), u:'м', delta:totalTransitFree ? `вільне: ${fmt(totalTransitFree)}` : `${(t.byWh||[]).length} партій`, cls:'up', click:'transit' },
     { lbl:'До замовлення', val:fmt(totalOrder), u:'м', delta:totalOrder > 0 ? `запас на ${coverDays} дн.` : 'покрито', alarm:totalOrder > 0, cls:totalOrder > 0 ? 'down' : 'up', click:'must' },
-    { lbl:'WMA прогноз / день', val:fmt(wma.total,1), u:'м', delta:`на 1 міс ≈ ${fmt(wma.total*30)} м`, cls:'up', spark:shipSpk, click:'wma' },
+    { lbl:'WMA прогноз / місяць', val:fmt(wma.total*30), u:'м', delta:`на 1 день ≈ ${fmt(wma.total,1)} м`, cls:'up', spark:shipSpk, click:'wma' },
   ];
 
   const html = cells.map(c => `
