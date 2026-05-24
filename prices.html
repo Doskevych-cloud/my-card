@@ -405,32 +405,32 @@ tr:hover td{background:var(--bg3) !important}
     </div>
     <div class="supplier-slot slot-pe" data-supplier="pe" id="peSlot" style="cursor:default">
       <div class="icon">🌐</div>
-      <div class="label">ПЕ</div>
+      <div class="label">PE</div>
       <div class="hint">Google Sheets (авто)</div>
       <div class="file-name" id="peStatus"></div>
     </div>
     <div class="supplier-slot slot-sv" data-supplier="sv" id="svSlot" style="cursor:default">
       <div class="icon">🌐</div>
-      <div class="label">Solar Verse</div>
+      <div class="label">SV</div>
       <div class="hint">Google Sheets (авто)</div>
       <div class="file-name" id="svStatus"></div>
     </div>
     <div class="supplier-slot slot-iso" data-supplier="iso" id="isoSlot" style="cursor:default">
       <div class="icon">🌐</div>
-      <div class="label">iSolar</div>
+      <div class="label">IS</div>
       <div class="hint">SharePoint (авто)</div>
       <div class="file-name" id="isoStatus"></div>
     </div>
     <div class="supplier-slot slot-atm" data-supplier="atm" onclick="triggerUpload(this)">
       <div class="icon">📁</div>
-      <div class="label">Атмосфера</div>
+      <div class="label">Atm</div>
       <div class="file-name"></div>
       <button class="remove-btn" onclick="removeFile(event,'atm')" style="display:none">&times;</button>
       <input type="file" accept=".xlsx,.xls" onchange="fileSelected(this,'atm')">
     </div>
     <div class="supplier-slot slot-sig" data-supplier="sig" onclick="openSigModal()">
       <div class="icon">💬</div>
-      <div class="label">СІГ</div>
+      <div class="label">SIG</div>
       <div class="hint">Вставте текст з Telegram</div>
       <div class="file-name" id="sigStatus"></div>
       <button class="remove-btn" onclick="removeSig(event)" style="display:none">&times;</button>
@@ -452,7 +452,7 @@ tr:hover td{background:var(--bg3) !important}
 
 <div class="sig-modal" id="sigModal" style="display:none">
   <div class="sig-modal-content">
-    <h3>СІГ — вставте прайс з Telegram</h3>
+    <h3>SIG — вставте прайс з Telegram</h3>
     <textarea id="sigText" rows="15" placeholder="Вставте повідомлення з Telegram тут..."></textarea>
     <div class="sig-modal-actions">
       <button onclick="applySigText()">Застосувати</button>
@@ -480,15 +480,15 @@ tr:hover td{background:var(--bg3) !important}
 <div id="results">
   <div class="col-toggle" id="colToggle">
     <span class="ct-label">Показати:</span>
-    <span class="ct-chip ct-gen active" onclick="toggleCol('gen',this)">Генерація</span>
-    <span class="ct-chip ct-hel active" onclick="toggleCol('hel',this)">Helius</span>
-    <span class="ct-chip ct-dol active" onclick="toggleCol('dol',this)">Dolya</span>
+    <span class="ct-chip ct-gen active" onclick="toggleCol('gen',this)">RE</span>
+    <span class="ct-chip ct-hel active" onclick="toggleCol('hel',this)">HE</span>
+    <span class="ct-chip ct-dol active" onclick="toggleCol('dol',this)">DO</span>
     <span class="ct-chip ct-se active" onclick="toggleCol('se',this)">SE</span>
-    <span class="ct-chip ct-pe active" onclick="toggleCol('pe',this)">ПЕ</span>
+    <span class="ct-chip ct-pe active" onclick="toggleCol('pe',this)">PE</span>
     <span class="ct-chip ct-sv active" onclick="toggleCol('sv',this)">SV</span>
-    <span class="ct-chip ct-iso active" onclick="toggleCol('iso',this)">iSolar</span>
-    <span class="ct-chip ct-atm active" onclick="toggleCol('atm',this)">Атмосфера</span>
-    <span class="ct-chip ct-sig active" onclick="toggleCol('sig',this)">СІГ</span>
+    <span class="ct-chip ct-iso active" onclick="toggleCol('iso',this)">IS</span>
+    <span class="ct-chip ct-atm active" onclick="toggleCol('atm',this)">Atm</span>
+    <span class="ct-chip ct-sig active" onclick="toggleCol('sig',this)">SIG</span>
     <span class="ct-chip ct-ssj active" onclick="toggleCol('ssj',this)">SSJ</span>
   </div>
   <div class="wrap">
@@ -497,15 +497,15 @@ tr:hover td{background:var(--bg3) !important}
         <tr>
           <th class="gh gh-tovar bl" colspan="2">ТОВАР</th>
           <th class="gh gh-best bl" colspan="2">НАЙКРАЩА</th>
-          <th class="gh gh-gen bl" colspan="4">Генерація</th>
-          <th class="gh gh-hel bl" colspan="6">Helius</th>
-          <th class="gh gh-dol bl" colspan="5">Dolya Solar</th>
-          <th class="gh gh-se bl" colspan="5">SE (se.net.ua)</th>
-          <th class="gh gh-pe bl" colspan="5">ПЕ</th>
-          <th class="gh gh-sv bl" colspan="5">Solar Verse</th>
-          <th class="gh gh-iso bl" colspan="5">iSolar</th>
-          <th class="gh gh-atm bl" colspan="5">Атмосфера</th>
-          <th class="gh gh-sig bl" colspan="5">СІГ</th>
+          <th class="gh gh-gen bl" colspan="4">RE</th>
+          <th class="gh gh-hel bl" colspan="6">HE</th>
+          <th class="gh gh-dol bl" colspan="5">DO</th>
+          <th class="gh gh-se bl" colspan="5">SE</th>
+          <th class="gh gh-pe bl" colspan="5">PE</th>
+          <th class="gh gh-sv bl" colspan="5">SV</th>
+          <th class="gh gh-iso bl" colspan="5">IS</th>
+          <th class="gh gh-atm bl" colspan="5">Atm</th>
+          <th class="gh gh-sig bl" colspan="5">SIG</th>
           <th class="gh gh-ssj bl" colspan="5">SSJ</th>
         </tr>
         <tr>
@@ -1714,7 +1714,7 @@ function renderTable(rows) {
     const e = n % 2 === 0 ? 'even' : '';
     const r = rd;
     // Best price
-    const prices = [['Генерація',r.gNV,r.gC],['Helius',r.hNV,r.hC],['Dolya',r.dNV,r.dC],['SE',r.sNV,r.sC],['ПЕ',r.pNV,r.pC],['SV',r.vNV,r.vC],['iSolar',r.lNV,r.lC],['Атмосфера',r.aNV,r.aC],['СІГ',r.iNV,r.iC],['SSJ',r.jNV,r.jC]].filter(p=>p[1]!=null);
+    const prices = [['RE',r.gNV,r.gC],['HE',r.hNV,r.hC],['DO',r.dNV,r.dC],['SE',r.sNV,r.sC],['PE',r.pNV,r.pC],['SV',r.vNV,r.vC],['IS',r.lNV,r.lC],['Atm',r.aNV,r.aC],['SIG',r.iNV,r.iC],['SSJ',r.jNV,r.jC]].filter(p=>p[1]!=null);
     const best = prices.length ? prices.reduce((a,b) => b[1] < a[1] ? b : a) : null;
     const bestWho = best ? prices.filter(p => p[1] === best[1]).map(p => p[0]).join(' / ') : '';
     const bestP = best ? best[1] : null;
@@ -1945,7 +1945,7 @@ async function runComparison() {
     const warnings = [];
 
     // Генерація — auto-fetch from Google Sheets
-    progText.textContent = 'Завантаження: Генерація...';
+    progText.textContent = 'Завантаження: RE...';
     progBar.style.width = '10%';
     let genProds = [];
     try {
@@ -1966,7 +1966,7 @@ async function runComparison() {
 
     // Auto-fetch Helius from Google Sheets
     let helProds = [];
-    progText.textContent = 'Завантаження: Helius (Google Sheets)...';
+    progText.textContent = 'Завантаження: HE...';
     progBar.style.width = '25%';
     try {
       const helRes = await fetch(API_URL + '?action=hel_data');
@@ -1982,7 +1982,7 @@ async function runComparison() {
 
     // Parse Dolya — auto-fetch parsed data from GAS (no images, fast)
     let dolProds = [];
-    progText.textContent = 'Завантаження: Dolya Solar...';
+    progText.textContent = 'Завантаження: DO...';
     progBar.style.width = '40%';
     try {
       const dolRes = await fetch(API_URL + '?action=dolya_data');
@@ -1998,7 +1998,7 @@ async function runComparison() {
 
     // SE — auto-fetch from website
     let seProds = [];
-    progText.textContent = 'Завантаження: SE (se.net.ua)...';
+    progText.textContent = 'Завантаження: SE...';
     progBar.style.width = '55%';
     try {
       const res = await fetch(API_URL + '?action=se_proxy');
@@ -2014,7 +2014,7 @@ async function runComparison() {
 
     // Auto-fetch ПЕ from Google Sheets
     let peProds = [];
-    progText.textContent = 'Завантаження: ПЕ (Google Sheets)...';
+    progText.textContent = 'Завантаження: PE...';
     progBar.style.width = '65%';
     try {
       const peRes = await fetch(API_URL + '?action=pe_data');
@@ -2030,7 +2030,7 @@ async function runComparison() {
 
     // Auto-fetch Solar Verse from Google Sheets
     let svProds = [];
-    progText.textContent = 'Завантаження: Solar Verse (Google Sheets)...';
+    progText.textContent = 'Завантаження: SV...';
     progBar.style.width = '72%';
     try {
       const svRes = await fetch(API_URL + '?action=sv_data');
@@ -2046,7 +2046,7 @@ async function runComparison() {
 
     // Auto-fetch iSolar from SharePoint
     let isoProds = [];
-    progText.textContent = 'Завантаження: iSolar (SharePoint)...';
+    progText.textContent = 'Завантаження: IS...';
     progBar.style.width = '74%';
     try {
       const isoData = await Auth.apiFetch('isolar_data');
@@ -2061,7 +2061,7 @@ async function runComparison() {
     // Parse Атмосфера (file upload)
     let atmProds = [];
     if (files.atm) {
-      progText.textContent = 'Парсинг: Атмосфера...';
+      progText.textContent = 'Парсинг: Atm...';
       progBar.style.width = '76%';
       atmProds = await parseAtmosfera(files.atm);
       if (!atmProds.length) warnings.push('Атмосфера: 0 товарів — можливо змінилась структура прайсу');
@@ -2070,7 +2070,7 @@ async function runComparison() {
     // Parse СІГ (text paste)
     let sigProds = [];
     if (sigRawText) {
-      progText.textContent = 'Парсинг: СІГ...';
+      progText.textContent = 'Парсинг: SIG...';
       progBar.style.width = '78%';
       sigProds = parseSIG(sigRawText);
       if (sigProds.length) {
@@ -2155,15 +2155,15 @@ async function runComparison() {
     progText.textContent = `Готово! ${rows.length} товарів, ${rows.filter(r=>r.hNV||r.dNV||r.sNV||r.pNV||r.vNV||r.lNV||r.aNV||r.iNV||r.jNV).length} зі збігами`;
 
     // Save to history
-    const supplierFiles = [{key:'gen',name:'Генерація'}];
-    if (helProds.length) supplierFiles.push({key:'hel',name:'Helius'});
-    if (dolProds.length) supplierFiles.push({key:'dol',name:'Dolya Solar'});
+    const supplierFiles = [{key:'gen',name:'RE'}];
+    if (helProds.length) supplierFiles.push({key:'hel',name:'HE'});
+    if (dolProds.length) supplierFiles.push({key:'dol',name:'DO'});
     if (seProds.length) supplierFiles.push({key:'se',name:'SE'});
-    if (peProds.length) supplierFiles.push({key:'pe',name:'ПЕ'});
-    if (svProds.length) supplierFiles.push({key:'sv',name:'Solar Verse'});
-    if (isoProds.length) supplierFiles.push({key:'iso',name:'iSolar'});
-    if (files.atm) supplierFiles.push({key:'atm',name:'Атмосфера'});
-    if (sigProds.length) supplierFiles.push({key:'sig',name:'СІГ'});
+    if (peProds.length) supplierFiles.push({key:'pe',name:'PE'});
+    if (svProds.length) supplierFiles.push({key:'sv',name:'SV'});
+    if (isoProds.length) supplierFiles.push({key:'iso',name:'IS'});
+    if (files.atm) supplierFiles.push({key:'atm',name:'Atm'});
+    if (sigProds.length) supplierFiles.push({key:'sig',name:'SIG'});
     if (ssjProds.length) supplierFiles.push({key:'ssj',name:'SSJ'});
     saveComparison(rows, {hel:helProds.length,dol:dolProds.length,se:seProds.length,pe:peProds.length,sv:svProds.length,iso:isoProds.length,atm:atmProds.length,sig:sigProds.length,ssj:ssjProds.length}, supplierFiles);
 
