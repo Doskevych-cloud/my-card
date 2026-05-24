@@ -278,8 +278,7 @@ a{color:inherit;text-decoration:none}
     <span class="fx-info" id="fxPill" style="display:none"> · USD/UAH <b id="fxUsd">—</b> · EUR/UAH <b id="fxEur">—</b></span>
     <div class="spacer"></div>
     <div class="actions">
-      <button class="btn" id="refreshPublicBtn" onclick="refreshPublicPrices(this)">↻ Оновити ціни</button>
-      <button class="btn" id="refreshStocksBtn" onclick="refreshStocks(this)">↻ Оновити залишки</button>
+      <button class="btn" id="refreshBtn" onclick="refreshAll(this)">Оновити</button>
       <button class="btn" onclick="openCatModal()">+ Категорія</button>
       <button class="btn btn--primary" onclick="openItemModal()">+ Позиція</button>
     </div>
@@ -530,55 +529,33 @@ async function apiCall(action, opts = {}) {
   return data;
 }
 
-// Повне оновлення публічних цін на react.ink: 1С → D1 → invalidate price-api KV
-// → refresh react-pricelist KV. Триває 5-10 секунд через OData fetch.
-async function refreshPublicPrices(btn) {
+async function refreshAll(btn) {
   const orig = btn.textContent;
   btn.disabled = true;
-  btn.textContent = '↻ Оновлюю…';
+  btn.textContent = 'Оновлюю…';
+  const errors = [];
   try {
-    const r = await apiCall('_admin_public_prices_refresh');
-    if (Array.isArray(r.steps)) {
-      const failed = r.steps.filter(s => !s.ok);
-      const totalMs = r.steps.reduce((a, s) => a + (s.ms || 0), 0);
-      if (failed.length === 0) {
-        toast(`Ціни оновлено за ${(totalMs/1000).toFixed(1)}s · 4/4 кроків`, 'ok');
-        // Оновлюємо локальні дані щоб нові ціни одразу були видні в адмінці.
-        load();
-      } else {
-        const f = failed.map(s => `${s.step}: ${s.error || 'fail'}`).join('; ');
-        toast(`Помилка на кроках: ${f}`, 'err');
-      }
-    } else {
-      toast('Невідома відповідь сервера', 'err');
+    const [prices, stocks] = await Promise.all([
+      apiCall('_admin_public_prices_refresh').catch(e => ({ _err: e })),
+      apiCall('_admin_sync_stock').catch(e => ({ _err: e })),
+    ]);
+    if (prices._err) {
+      errors.push('Ціни: ' + (prices._err.message || prices._err));
+    } else if (Array.isArray(prices.steps)) {
+      const failed = prices.steps.filter(s => !s.ok);
+      if (failed.length) errors.push('Ціни: ' + failed.map(s => s.error || 'fail').join('; '));
     }
-  } catch (e) {
-    toast('Помилка: ' + (e.message || e), 'err');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = orig;
-  }
-}
-
-// Sync залишків Реакту/Генерації з 1С → D1 (stock_balances).
-// Триває 5–15s — OData fetch + bulk insert. price_list_stocks не кешується,
-// тому одразу після sync load() видасть свіжі цифри.
-async function refreshStocks(btn) {
-  const orig = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = '↻ Синхронізую…';
-  const t0 = Date.now();
-  try {
-    const r = await apiCall('_admin_sync_stock');
-    const ms = Date.now() - t0;
-    if (r && r.entity === 'stock_balances') {
-      toast(`Залишки оновлено · ${r.rows} рядків · ${(ms/1000).toFixed(1)}s`, 'ok');
-      load();
-    } else if (r && r.error) {
-      toast('Помилка: ' + r.error, 'err');
-    } else {
-      toast('Невідома відповідь сервера', 'err');
+    if (stocks._err) {
+      errors.push('Залишки: ' + (stocks._err.message || stocks._err));
+    } else if (stocks.error) {
+      errors.push('Залишки: ' + stocks.error);
     }
+    if (errors.length) {
+      toast(errors.join(' · '), 'err');
+    } else {
+      toast('Ціни і залишки оновлено', 'ok');
+    }
+    load();
   } catch (e) {
     toast('Помилка: ' + (e.message || e), 'err');
   } finally {
