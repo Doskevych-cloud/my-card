@@ -4,9 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Порівняння цін постачальників</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
@@ -14,58 +11,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
 <script src="auth.js?v=mobhdr20260430"></script>
 <script src="header.js?v=mobhdr20260430"></script>
+<link rel="stylesheet" href="theme.css">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{
-  /* Binance dark + generacia orange */
-  --bg:#0b0e11;--bg2:#1e2026;--bg3:#2b2f36;--bg4:#363a45;
-  --surface:#181a20;--surface2:#1e2026;
-  --border:#2b2f36;--border2:#363a45;
-  --text:#eaecef;--text2:#848e9c;--text3:#5e6673;
-  --accent:#ff8319;--accent2:#f79743;--accent-hover:#e6720f;--accent-bg:rgba(255,131,25,.1);
-  --green:#0ecb81;--green-bg:rgba(14,203,129,.08);--green-text:#0ecb81;
-  --red:#f6465d;--red-bg:rgba(246,70,93,.08);--red-text:#f6465d;
-  --header-bg:#0b0e11;
-  --row-odd:#181a20;--row-even:#1e2026;
-  --cat-bg:rgba(255,131,25,.08);--cat-border:rgba(255,131,25,.25);--cat-text:#f79743;
-  --sticky-shadow:3px 0 8px rgba(0,0,0,.5);
-  --sup-gen:#5c6bc0;--sup-hel:#a1887f;--sup-dol:#66bb6a;--sup-se:#ce93d8;--sup-atm:#ffb74d;
-  --sup-pe:#4db6ac;--sup-pe-bg:rgba(77,182,172,.12);
-  --sup-sv:#42a5f5;--sup-sv-bg:rgba(66,165,245,.12);
-  --sup-iso:#ef5350;--sup-iso-bg:rgba(239,83,80,.12);--sup-iso-bg2:rgba(239,83,80,.07);
-  --sup-gen-bg:rgba(92,107,192,.12);--sup-hel-bg:rgba(161,136,127,.12);--sup-dol-bg:rgba(102,187,106,.12);
-  --sup-se-bg:rgba(206,147,216,.12);--sup-sv-bg2:rgba(66,165,245,.07);--sup-atm-bg:rgba(255,183,77,.12);
-  --delta-bg:rgba(255,255,255,.02);--delta-bg2:rgba(255,255,255,.04);
-  --best-bg:rgba(255,131,25,.06);--best-bg2:rgba(255,131,25,.12);
-  --slot-border:#2b2f36;--slot-hover:rgba(255,255,255,.03);
-  --slot-active-border:var(--green);--slot-active-bg:rgba(14,203,129,.06);
-  --panel-shadow:none;
-  --btn-bg:var(--accent);--btn-hover:var(--accent-hover);--btn-text:#0b0e11;
-  --btn-disabled:#2b2f36;--btn-disabled-text:#5e6673;
-}
-[data-theme="light"]{
-  --bg:#fafafa;--bg2:#fff;--bg3:#f5f5f5;--bg4:#eee;
-  --surface:#fff;--surface2:#f5f5f5;
-  --border:#eee;--border2:#e0e0e0;
-  --text:#1e2329;--text2:#707a8a;--text3:#aeb4bc;
-  --accent:#ff8319;--accent2:#f79743;--accent-hover:#e6720f;--accent-bg:rgba(255,131,25,.08);
-  --green:#03a66d;--green-bg:rgba(3,166,109,.06);--green-text:#03a66d;
-  --red:#cf304a;--red-bg:rgba(207,48,74,.06);--red-text:#cf304a;
-  --header-bg:#fff;
-  --row-odd:#fff;--row-even:#fafafa;
-  --cat-bg:rgba(255,131,25,.06);--cat-border:rgba(255,131,25,.2);--cat-text:#e6720f;
-  --sticky-shadow:3px 0 6px rgba(0,0,0,.06);
-  --sup-gen:#3f51b5;--sup-hel:#8d6e63;--sup-dol:#43a047;--sup-se:#9c27b0;--sup-atm:#ef6c00;
-  --sup-gen-bg:rgba(63,81,181,.07);--sup-hel-bg:rgba(141,110,99,.07);--sup-dol-bg:rgba(67,160,71,.07);
-  --sup-se-bg:rgba(156,39,176,.07);--sup-atm-bg:rgba(239,108,0,.07);
-  --delta-bg:rgba(0,0,0,.015);--delta-bg2:rgba(0,0,0,.03);
-  --best-bg:rgba(255,131,25,.05);--best-bg2:rgba(255,131,25,.1);
-  --slot-border:#e0e0e0;--slot-hover:rgba(0,0,0,.02);
-  --slot-active-border:var(--green);--slot-active-bg:rgba(3,166,109,.05);
-  --panel-shadow:0 1px 4px rgba(0,0,0,.06);
-  --btn-bg:var(--accent);--btn-hover:var(--accent-hover);--btn-text:#fff;
-  --btn-disabled:#eee;--btn-disabled-text:#aeb4bc;
-}
+
 body{font-family:'Inter',-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);transition:background .25s,color .25s;-webkit-font-smoothing:antialiased}
 /* ─── Header ─── */
 .header{background:var(--header-bg);color:var(--text);padding:0 24px;height:48px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border)}
@@ -352,7 +301,6 @@ tr:hover td{background:var(--bg3) !important}
   </div>
   <div id="customResultsBox"></div>
 </div>
-
 
 <div class="page-head">
   <h1>Порівняння цін постачальників сонячного обладнання</h1>
@@ -649,7 +597,6 @@ function removeFile(e, key) {
 function updateBtn() {
   document.getElementById('btnRun').disabled = false;
 }
-
 
 // ═══════════════════════════════════════════════
 // CYRILLIC → LATIN MAP

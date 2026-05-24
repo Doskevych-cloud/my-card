@@ -45,10 +45,10 @@
     }
     .app-topbar .brand .logo{
       width:34px; height:34px; border-radius:9px;
-      background: linear-gradient(135deg,#ff8319 0%, #ff5a2e 100%);
+      background: linear-gradient(135deg,#9ab4ff 0%, #7090e5 100%);
       display:flex; align-items:center; justify-content:center;
       color:#fff; font-weight:800; font-size:16px;
-      box-shadow:0 4px 12px rgba(255,131,25,.35);
+      box-shadow:0 4px 12px rgba(154,180,255,.30);
     }
     .app-topbar .brand .name{
       height:28px; display:block;
@@ -74,7 +74,7 @@
     }
     .app-topbar .nav a:hover{ background: var(--bg3, rgba(255,255,255,.05)); color: var(--text, #eaecef) }
     .app-topbar .nav a.active{
-      background: rgba(255,131,25,.12); color:#ff8319; font-weight:600;
+      background: rgba(154,180,255,.12); color:#9ab4ff; font-weight:600;
     }
 
     .app-topbar .theme-btn{
@@ -86,7 +86,7 @@
       display:inline-flex; align-items:center; justify-content:center;
       transition: border-color .15s, color .15s;
     }
-    .app-topbar .theme-btn:hover{ border-color:#ff8319; color:#ff8319 }
+    .app-topbar .theme-btn:hover{ border-color:#9ab4ff; color:#9ab4ff }
     .app-topbar .theme-btn svg{ width:16px; height:16px; fill:currentColor }
 
     .app-topbar .admin-link{
@@ -95,7 +95,7 @@
       text-decoration:underline; text-underline-offset:3px;
       padding:6px 4px;
     }
-    .app-topbar .admin-link:hover{ color:#ff8319 }
+    .app-topbar .admin-link:hover{ color:#9ab4ff }
 
     .app-topbar .user-btn{
       display:inline-flex; align-items:center; gap:8px;
@@ -109,7 +109,7 @@
     .app-topbar .user-btn:hover{ border-color: var(--border2, rgba(255,255,255,.15)) }
     .app-topbar .user-btn .avatar{
       width:26px; height:26px; border-radius:50%;
-      background:#ff8319; color:#111;
+      background:#9ab4ff; color:#111;
       display:inline-flex; align-items:center; justify-content:center;
       font-weight:700; font-size:12px; object-fit:cover;
     }
@@ -141,11 +141,11 @@
       padding:8px 10px; border-radius:8px;
       cursor:pointer; font:inherit;
     }
-    .app-topbar .user-menu button:hover{ background: rgba(255,131,25,.10); color:#ff8319 }
+    .app-topbar .user-menu button:hover{ background: rgba(154,180,255,.10); color:#9ab4ff }
 
     .app-topbar a:focus-visible,
     .app-topbar button:focus-visible{
-      outline:2px solid #ff8319; outline-offset:2px; border-radius:8px;
+      outline:2px solid #9ab4ff; outline-offset:2px; border-radius:8px;
     }
 
     /* Burger button — hidden on desktop, shown via media query below */
@@ -159,7 +159,7 @@
       align-items:center; justify-content:center;
       transition: border-color .15s, color .15s;
     }
-    .app-topbar .burger:hover{ border-color:#ff8319; color:#ff8319 }
+    .app-topbar .burger:hover{ border-color:#9ab4ff; color:#9ab4ff }
     .app-topbar .burger svg{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round }
 
     /* Slide-out nav drawer (mobile only) */
@@ -196,7 +196,7 @@
     }
     .nav-drawer .nd-avatar{
       width:36px; height:36px; border-radius:50%;
-      background:#ff8319; color:#111;
+      background:#9ab4ff; color:#111;
       display:inline-flex; align-items:center; justify-content:center;
       font-weight:700; font-size:14px;
       flex:0 0 auto; object-fit:cover;
@@ -234,8 +234,8 @@
     }
     .nav-drawer .nd-list a:hover{ background: var(--bg3, rgba(255,255,255,.05)) }
     .nav-drawer .nd-list a.active{
-      background: rgba(255,131,25,.12);
-      color:#ff8319; font-weight:600;
+      background: rgba(154,180,255,.12);
+      color:#9ab4ff; font-weight:600;
     }
     .nav-drawer .nd-foot{
       padding:10px;
@@ -255,7 +255,7 @@
       cursor:pointer; text-decoration:none;
     }
     .nav-drawer .nd-foot a:hover,
-    .nav-drawer .nd-foot button:hover{ color:#ff8319; border-color:#ff8319 }
+    .nav-drawer .nd-foot button:hover{ color:#9ab4ff; border-color:#9ab4ff }
     body.nav-drawer-open{ overflow:hidden }
 
     /* ══ Unified button system — primary / secondary / ghost / danger + --sm ══ */
@@ -270,10 +270,10 @@
       transition:background .12s, border-color .12s, color .12s, transform .12s;
     }
     .btn:disabled{ opacity:.5; cursor:not-allowed }
-    .btn:focus-visible{ outline:2px solid var(--accent, #ff8319); outline-offset:2px }
+    .btn:focus-visible{ outline:2px solid var(--accent, #9ab4ff); outline-offset:2px }
     .btn:active{ transform:scale(.97) }
-    .btn--primary{ background:var(--accent, #ff8319); color:#111; border-color:var(--accent, #ff8319) }
-    .btn--primary:hover{ background:#ff9540; border-color:#ff9540 }
+    .btn--primary{ background:var(--accent, #9ab4ff); color:#111; border-color:var(--accent, #9ab4ff) }
+    .btn--primary:hover{ background:#b0c8ff; border-color:#b0c8ff }
     .btn--secondary{ background:var(--surface, var(--bg2, #141414)); color:var(--text, #eaecef); border-color:var(--border, #262626) }
     .btn--secondary:hover{ background:var(--surface2, var(--bg3, #1c1c1c)); border-color:var(--text3, #737373) }
     .btn--ghost{ background:transparent; color:var(--text2, #a3a3a3); border-color:var(--border, #262626) }

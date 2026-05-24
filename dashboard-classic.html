@@ -4,9 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Дашборд · RE:ACT</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
@@ -17,38 +14,8 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/uk.js"></script>
 <script src="date-range.js?v=20260522"></script>
+<link rel="stylesheet" href="theme.css">
 <style>
-:root{
-  /* Уніфікована палітра (та сама що warehouses / sales / finance / osp) */
-  --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
-  --surface:#141414; --surface2:#1c1c1c; --surface3:#242424;
-  --border:#262626; --border2:#333;
-  --text:#f5f5f5; --text2:#a3a3a3; --text3:#737373;
-  --accent:#ff8319; --accent-bg:rgba(255,131,25,.12);
-  --red:#e74c3c; --red-bg:rgba(231,76,60,.12);
-  --green:#22c55e; --green-bg:rgba(34,197,94,.12);
-  --blue:#3b82f6; --blue-bg:rgba(59,130,246,.12);
-  --yellow:#eab308; --yellow-bg:rgba(234,179,8,.12);
-  --purple:#9775fa; --purple-bg:rgba(151,117,250,.14);
-  --cyan:#22d3ee; --cyan-bg:rgba(34,211,238,.12);
-  --shadow-md:0 4px 20px rgba(0,0,0,.4);
-  --shadow-sm:0 2px 8px rgba(0,0,0,.3);
-}
-:root[data-theme="light"]{
-  --bg:#f5f5f7; --bg2:#ffffff; --bg3:#ececef;
-  --surface:#ffffff; --surface2:#ffffff; --surface3:#f0f2f5;
-  --border:#e5e5ea; --border2:#d1d1d6;
-  --text:#1c1c1e; --text2:#48484a; --text3:#8e8e93;
-  --accent:#e07017; --accent-bg:rgba(224,112,23,.12);
-  --red:#d93025; --red-bg:rgba(217,48,37,.10);
-  --green:#15803d; --green-bg:rgba(21,128,61,.10);
-  --blue:#1d4ed8; --blue-bg:rgba(29,78,216,.10);
-  --yellow:#a16207; --yellow-bg:rgba(161,98,7,.10);
-  --purple:#6d28d9; --purple-bg:rgba(109,40,217,.12);
-  --cyan:#0891b2; --cyan-bg:rgba(8,145,178,.12);
-  --shadow-md:0 4px 20px rgba(0,0,0,.08);
-  --shadow-sm:0 2px 6px rgba(0,0,0,.04);
-}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
@@ -89,7 +56,7 @@ a{color:inherit;text-decoration:none}
 .kpi{padding:18px 20px;background:var(--bg2);border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;gap:7px;position:relative;overflow:hidden;min-height:140px;transition:border-color .15s,background .15s,transform .15s}
 .kpi.clickable{cursor:pointer}
 .kpi.clickable:hover{background:var(--surface3);border-color:var(--border2);transform:translateY(-1px)}
-.kpi.selected{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent),0 0 16px rgba(255,131,25,.12)}
+.kpi.selected{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent),0 0 16px var(--accent-bg)}
 .kpi.selected::after{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--accent)}
 .kpi .kpi-head{display:flex;align-items:center;gap:7px}
 .kpi .kpi-ico{font-size:14px;opacity:.85}
@@ -136,7 +103,7 @@ a{color:inherit;text-decoration:none}
 .leader-sub{font-size:11px;color:var(--text3);font-weight:500;margin-left:6px}
 .leader-val{font-size:13px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;text-align:right}
 .leader-bar{grid-column:2 / -1;height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;margin-top:4px}
-.leader-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),rgba(255,131,25,.3));border-radius:2px;transition:width .6s ease}
+.leader-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),rgba(154,180,255,.3));border-radius:2px;transition:width .6s ease}
 .leader-row.mgr .leader-bar-fill{background:linear-gradient(90deg,var(--green),rgba(14,203,129,.3))}
 .leader-row.stock .leader-bar-fill{background:linear-gradient(90deg,var(--blue),rgba(51,117,187,.3))}
 .leader-row.ar .leader-bar-fill{background:linear-gradient(90deg,var(--red),rgba(246,70,93,.3))}
@@ -418,7 +385,6 @@ function bindToolbar() {
     onChange: function(from, to) { state.from = from; state.to = to; dashDateChanged(); }
   });
 }
-
 
 function setPreset(p) {
   state.preset = p;
@@ -1026,10 +992,10 @@ function drawSparkline(canvasId, series, opts = {}) {
   const range = max - min || 1;
   const step = (W - 4 * dpr) / (series.length - 1);
   const y = v => H - 2 * dpr - ((v - min) / range) * (H - 4 * dpr);
-  const color = getComputedStyle(canvas).getPropertyValue('color') || '#ff8319';
+  const color = getComputedStyle(canvas).getPropertyValue('color') || 'var(--accent)';
   const cssColor = opts.color && opts.color.startsWith('var(')
     ? getComputedStyle(document.documentElement).getPropertyValue(opts.color.slice(4, -1)).trim() || '#22c55e'
-    : (opts.color || '#ff8319');
+    : (opts.color || 'var(--accent)');
   // Fill gradient
   const grad = ctx.createLinearGradient(0, 0, 0, H);
   grad.addColorStop(0, cssColor + '55');
@@ -1500,7 +1466,7 @@ function renderModalChart(buckets, values, gran, metric) {
     const tick = isDark ? '#a3a3a3' : '#48484a';
     const grid = isDark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.05)';
     const greenCss = getComputedStyle(document.documentElement).getPropertyValue('--green').trim() || '#22c55e';
-    const accentCss = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#ff8319';
+    const accentCss = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || 'var(--accent)';
 
     const ctx = canvas.getContext('2d');
     // Area gradient (green → fade)

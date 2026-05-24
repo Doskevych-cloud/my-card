@@ -261,17 +261,17 @@
                 border-radius: 16px; }
         .deny h1 { margin:0 0 12px; font-size: 22px; }
         .deny p  { margin: 10px 0; color:#9aa4b2; line-height:1.5; }
-        .deny .email { color:#ff8319; font-weight:600; }
+        .deny .email { color:#9ab4ff; font-weight:600; }
         .deny .btns { display:flex; gap: 10px; justify-content:center; flex-wrap:wrap; margin-top:18px }
         .deny button, .deny a.btn { display:inline-block; padding:10px 18px;
-                background:#ff8319; color:#111; text-decoration:none; font-weight:600;
+                background:#9ab4ff; color:#111; text-decoration:none; font-weight:600;
                 border:0; border-radius:10px; cursor:pointer; font-size:14px; font-family:inherit }
         .deny a.btn.ghost { background: transparent; color: #eaecef; border: 1px solid rgba(255,255,255,.12) }
         .deny button.imp-back { background:#f0b90b }
         .deny button.imp-back:hover { background:#ffcc33 }
         .deny .muted { margin-top:14px; font-size:12px; color:#6b7280; }
         .deny .avatar { width:56px; height:56px; border-radius:50%; margin:0 auto 16px;
-                background:#ff8319; color:#111; display:flex; align-items:center; justify-content:center;
+                background:#9ab4ff; color:#111; display:flex; align-items:center; justify-content:center;
                 font-weight:700; font-size:22px; }
         .deny img.avatar { object-fit:cover; }
       </style>
