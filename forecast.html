@@ -173,6 +173,12 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 .mkt-block .mkt-d.neg{color:var(--neg)}
 .mkt-hint{font-family:var(--mono);font-size:10.5px;color:var(--mute-2)}
 .mkt-hint b{color:var(--fg-2);font-weight:500}
+.cu-months{display:flex;align-items:flex-end;gap:2px;margin-top:2px}
+.cu-months .cm{display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;cursor:default}
+.cu-months .cm-bar{width:100%;min-height:2px;border-radius:2px 2px 0 0;background:var(--bar-fill-2);transition:background .15s}
+.cu-months .cm.latest .cm-bar{background:var(--bar-fill)}
+.cu-months .cm:hover .cm-bar{background:var(--bar-fill)}
+.cu-months .cm-lbl{font-size:7.5px;color:var(--mute-2);font-family:var(--mono);margin-top:2px;line-height:1}
 
 /* Shipments */
 .shipments{grid-column:span 8}
@@ -634,6 +640,7 @@ function renderCalcFlow(r) {
   if (!months.length) return;
   if (!calcMonth) calcMonth = r.previousMonth ? r.previousMonth.ym : months[0].ym;
   updateCalcFlow();
+  renderCuMonths();
 }
 
 function updateCalcFlow() {
@@ -740,7 +747,8 @@ function renderMarket(cuData, fxData) {
         </div>
       </div>
       ${areaSvg(vals, 86)}
-      <div class="mkt-hint">7д <b>${fmt(cuData.avg7,2)}</b> · 30д <b>${fmt(cuData.avg30,2)}</b></div>`;
+      <div class="cu-months" id="cuMonths"></div>`;
+    renderCuMonths();
   } else {
     cuEl.innerHTML = '<div class="error">Дані про мідь недоступні</div>';
   }
@@ -763,6 +771,22 @@ function renderMarket(cuData, fxData) {
   } else {
     fxEl.innerHTML = '<div class="error">Дані EUR/ГРН недоступні</div>';
   }
+}
+
+function renderCuMonths() {
+  const el = document.getElementById('cuMonths');
+  if (!el || !copperAvgData || !copperAvgData.months) return;
+  const months = copperAvgData.months.slice(0, 12).reverse();
+  if (!months.length) return;
+  const prices = months.map(m => m.price);
+  const mn = Math.min(...prices), mx = Math.max(...prices), rng = mx - mn || 1;
+  el.innerHTML = months.map((m, i) => {
+    const h = 4 + ((m.price - mn) / rng) * 28;
+    const mi = parseInt(m.ym.split('-')[1]) - 1;
+    const lbl = UA_MONTHS[mi];
+    const cls = i === months.length - 1 ? ' latest' : '';
+    return `<div class="cm${cls}" title="${fmt(m.price,2)} €/100кг · ${lbl}"><div class="cm-bar" style="height:${h}px"></div><div class="cm-lbl">${lbl}</div></div>`;
+  }).join('');
 }
 
 // ─── Warehouses ───
