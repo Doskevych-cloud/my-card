@@ -3,402 +3,279 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Прогноз закупівель — кабель</title>
+<title>Прогноз закупівель — кабель 6мм²</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="auth.js?v=mobhdr20260430"></script>
-<script src="header.js?v=mobhdr20260430"></script>
+<script src="auth.js?v=fc20260524"></script>
+<script src="header.js?v=fc20260524"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#0a0b0f;
-  --bg2:#13151b;
-  --bg3:#1a1d25;
-  --surface:#15171e;
-  --surface2:#1c1f28;
-  --border:rgba(255,255,255,.06);
-  --border2:rgba(255,255,255,.1);
-  --text:#f3f4f8;
-  --text2:#8b92a1;
-  --text3:#5a6172;
-  --accent:#ff8319;
-  --accent2:#ffa84d;
-  --accent-hover:#e6720f;
-  --accent-bg:rgba(255,131,25,.12);
-  --green:#00d68f;
-  --green-bg:rgba(0,214,143,.12);
-  --red:#ff5a6b;
-  --red-bg:rgba(255,90,107,.12);
-  --yellow:#ffcc4d;
-  --yellow-bg:rgba(255,204,77,.14);
-  --blue:#3ea6ff;
-  --blue-bg:rgba(62,166,255,.12);
-  --purple:#b794ff;
-  --purple-bg:rgba(183,148,255,.12);
-  --cable-black:#2a2d35;
-  --cable-red:#e63946;
-  --shadow-lg:0 20px 60px rgba(0,0,0,.5);
-  --shadow-md:0 8px 24px rgba(0,0,0,.3);
-  --shadow-sm:0 2px 8px rgba(0,0,0,.2);
-  --grad-accent:linear-gradient(135deg,#ff8319 0%,#ff5a2e 100%);
-  --grad-red:linear-gradient(135deg,#ff5a6b 0%,#e6294a 100%);
-  --grad-dark:linear-gradient(135deg,#2a2d35 0%,#13151b 100%);
-  --grad-green:linear-gradient(135deg,#00d68f 0%,#00a86b 100%);
-  --grad-blue:linear-gradient(135deg,#3ea6ff 0%,#0b7dd9 100%);
-  --grad-surface:linear-gradient(180deg,#1c1f28 0%,#15171e 100%);
+:root,[data-theme="dark"]{
+  --bg:#0a0a0b;--panel:#0f1011;--panel-2:#131416;--raised:#17181b;
+  --line:#1f2125;--line-2:#2a2d32;
+  --fg:#f2f3f5;--fg-2:#c9ccd1;--mute:#7a7e86;--mute-2:#54585f;
+  --pos:#7dd3a4;--neg:#e88a8a;--warn:#d9c47a;--accent:#9ab4ff;
+  --grid:rgba(255,255,255,.04);--grid-strong:rgba(255,255,255,.08);
+  --stock-line:#f2f3f5;--bar-fill:#cfd2d8;--bar-fill-2:#3a3d44;
+  --tip-bg:#1a1c20;--hatch:rgba(232,138,138,.25);
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  /* header.js compat */
+  --bg2:#0f1011;--bg3:#17181b;--surface:#0f1011;--surface2:#131416;
+  --border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.1);
+  --text:#f2f3f5;--text2:#7a7e86;--text3:#54585f;
   --glass-bg:rgba(255,255,255,.02);
+  --green:#7dd3a4;--red:#e88a8a;--yellow:#d9c47a;
+  --accent-bg:rgba(154,180,255,.12);
 }
 [data-theme="light"]{
-  --bg:#f6f7fb;
-  --bg2:#fff;
-  --bg3:#f0f2f7;
-  --surface:#fff;
-  --surface2:#fbfcfe;
-  --border:rgba(0,0,0,.06);
-  --border2:rgba(0,0,0,.1);
-  --text:#131620;
-  --text2:#656c7d;
-  --text3:#a3a9b8;
-  --accent:#ff7a00;
-  --accent2:#ffa84d;
-  --accent-hover:#e66c00;
-  --accent-bg:rgba(255,122,0,.1);
-  --green:#00a86b;
-  --green-bg:rgba(0,168,107,.1);
-  --red:#e63946;
-  --red-bg:rgba(230,57,70,.1);
-  --yellow:#e5a51a;
-  --yellow-bg:rgba(229,165,26,.14);
-  --blue:#0b7dd9;
-  --blue-bg:rgba(11,125,217,.1);
-  --purple:#7e5bdf;
-  --purple-bg:rgba(126,91,223,.1);
-  --shadow-lg:0 20px 60px rgba(16,24,40,.08);
-  --shadow-md:0 4px 16px rgba(16,24,40,.06);
-  --shadow-sm:0 1px 3px rgba(16,24,40,.04);
-  --grad-accent:linear-gradient(135deg,#ff8319 0%,#ff5a2e 100%);
-  --grad-red:linear-gradient(135deg,#ff5a6b 0%,#e6294a 100%);
-  --grad-dark:linear-gradient(135deg,#383b47 0%,#1f222c 100%);
-  --grad-green:linear-gradient(135deg,#00d68f 0%,#00a86b 100%);
-  --grad-blue:linear-gradient(135deg,#3ea6ff 0%,#0b7dd9 100%);
-  --grad-surface:linear-gradient(180deg,#fff 0%,#fbfcfe 100%);
+  --bg:#f7f7f8;--panel:#ffffff;--panel-2:#f3f3f5;--raised:#ebebee;
+  --line:#e6e6ea;--line-2:#d6d6db;
+  --fg:#16181c;--fg-2:#34373d;--mute:#6b6f78;--mute-2:#9aa0a8;
+  --pos:#2f9469;--neg:#c44b4b;--warn:#a17a1c;--accent:#3a5cd0;
+  --grid:rgba(0,0,0,.05);--grid-strong:rgba(0,0,0,.12);
+  --stock-line:#16181c;--bar-fill:#34373d;--bar-fill-2:#c8cad0;
+  --tip-bg:#ffffff;--hatch:rgba(196,75,75,.20);
+  --bg2:#ffffff;--bg3:#ebebee;--surface:#ffffff;--surface2:#f3f3f5;
+  --border:rgba(0,0,0,.06);--border2:rgba(0,0,0,.1);
+  --text:#16181c;--text2:#6b6f78;--text3:#9aa0a8;
   --glass-bg:rgba(0,0,0,.015);
+  --green:#2f9469;--red:#c44b4b;--yellow:#a17a1c;
+  --accent-bg:rgba(58,92,208,.1);
 }
-html,body{background:var(--bg)}
-body{font-family:'Inter','SF Pro Display',-apple-system,'Segoe UI',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s}
-body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle at 10% 0%,rgba(255,131,25,.08) 0%,transparent 40%),radial-gradient(circle at 90% 20%,rgba(62,166,255,.05) 0%,transparent 40%);pointer-events:none;z-index:0}
-[data-theme="light"] body::before{background:radial-gradient(circle at 10% 0%,rgba(255,122,0,.05) 0%,transparent 40%),radial-gradient(circle at 90% 20%,rgba(11,125,217,.03) 0%,transparent 40%)}
 
-/* ─── Top bar ─── */
-.topbar{position:sticky;top:0;z-index:50;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:color-mix(in srgb,var(--bg) 80%,transparent);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;justify-content:space-between;align-items:center}
-.brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:14px;letter-spacing:-.2px}
-.brand .dot{width:32px;height:32px;background:var(--grad-accent);border-radius:9px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(255,131,25,.35)}
-.brand .dot svg{width:18px;height:18px;fill:#fff}
-.brand .txt{line-height:1.1}
-.brand .sub{font-size:10px;color:var(--text2);font-weight:500;text-transform:uppercase;letter-spacing:1px}
-.topbar-right{display:flex;align-items:center;gap:10px}
-/* buttons unified via header.js (.btn + .btn--secondary/--sm) */
-.btn svg{width:14px;height:14px;fill:currentColor}
-.app-nav{display:inline-flex;align-items:center;gap:4px;padding:3px;border:1px solid var(--border);border-radius:10px;background:var(--glass-bg)}
-.app-nav .nav-pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:var(--text2);text-decoration:none;padding:6px 11px;border-radius:7px;transition:all .15s;white-space:nowrap}
-.app-nav .nav-pill:hover{background:var(--bg3,rgba(255,255,255,.04));color:var(--text)}
-.app-nav .nav-pill.active{background:var(--accent-bg);color:var(--accent);font-weight:600}
-@media (max-width:720px){
-  .app-nav .nav-pill{padding:6px 8px;font-size:11px}
-  .wrap{padding:14px}
-  .page-title{font-size:22px;letter-spacing:-.4px;gap:10px}
-  .page-title .emoji{width:34px;height:34px;font-size:16px;border-radius:10px}
-  .page-sub{font-size:12px}
-  .page-head{margin-bottom:16px}
-  .kpi{padding:14px 16px;border-radius:12px}
-  .kpi-label{font-size:10px;letter-spacing:1px;margin-bottom:6px}
-  .kpi-val{font-size:22px;letter-spacing:-.5px}
-  .kpi-sub{font-size:10.5px}
-  .hero-grid{gap:8px;margin-bottom:16px}
-}
-.live-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);padding:6px 10px;background:var(--glass-bg);border:1px solid var(--border);border-radius:20px}
-.live-badge::before{content:'';width:6px;height:6px;background:var(--green);border-radius:50%;box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.theme-toggle{width:36px;height:36px;background:var(--glass-bg);border:1px solid var(--border2);border-radius:8px;cursor:pointer;color:var(--text2);display:flex;align-items:center;justify-content:center;transition:all .2s;padding:0}
-.theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
-.theme-toggle svg{width:16px;height:16px;fill:currentColor}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+::selection{background:var(--line-2);color:var(--fg)}
 
-/* ─── Container ─── */
-.wrap{position:relative;z-index:1;margin:0 auto;padding:14px 16px}
-.page-head{margin-bottom:24px}
-.page-title{font-size:34px;font-weight:700;letter-spacing:-1px;display:flex;align-items:center;gap:14px;margin-bottom:6px}
-.page-title .emoji{display:inline-flex;width:44px;height:44px;background:var(--grad-accent);border-radius:12px;align-items:center;justify-content:center;font-size:20px;box-shadow:0 8px 24px rgba(255,131,25,.3)}
-.page-sub{font-size:13px;color:var(--text2)}
+.wrap{position:relative;z-index:1;min-height:calc(100vh - 60px)}
+.pagehead{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding:18px 20px 14px;border-bottom:1px solid var(--line);background:var(--bg)}
+.pagehead h1{font-size:20px;font-weight:600;letter-spacing:-.2px}
+.pagehead h1 span{color:var(--mute)}
+.pagehead .sub{color:var(--mute);font-size:12.5px;margin-top:4px}
+.pagehead .sub code{font-family:var(--mono);color:var(--fg-2);background:var(--raised);border:1px solid var(--line);padding:1px 6px;border-radius:4px;font-size:11.5px}
+.filters{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:7px;overflow:hidden;background:var(--panel-2)}
+.seg button{padding:6px 10px;font-size:12px;color:var(--mute);border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--raised);color:var(--fg)}
+.seg button:hover{color:var(--fg)}
 
-/* ─── Hero KPIs ─── */
-.hero-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px}
-@media(max-width:1280px){.hero-grid{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:860px){.hero-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:520px){.hero-grid{grid-template-columns:1fr}}
-.kpi{position:relative;padding:20px 22px;background:var(--grad-surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-md);transition:transform .25s,box-shadow .25s,border-color .2s;cursor:pointer}
-.kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);border-color:var(--border2)}
-.kpi:active{transform:translateY(0)}
-.kpi::after{content:'›';position:absolute;top:14px;right:16px;font-size:18px;color:var(--text3);opacity:.6;transition:transform .2s,opacity .2s;line-height:1}
-.kpi:hover::after{opacity:1;transform:translateX(3px);color:var(--accent)}
-/* kpi ::before color-bars прибрано — акцент тільки через колір значень */
-.kpi-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1.5px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px}
-.kpi-val{font-size:30px;font-weight:700;letter-spacing:-1px;line-height:1;font-variant-numeric:tabular-nums}
-.kpi-sub{font-size:11px;color:var(--text2);margin-top:8px;display:flex;align-items:center;gap:8px}
-.kpi-trend{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:2px 7px;border-radius:4px}
-.kpi-trend.up{color:var(--red);background:var(--red-bg)}
-.kpi-trend.down{color:var(--green);background:var(--green-bg)}
-.kpi-trend.stable{color:var(--text2);background:var(--bg3)}
-.kpi-spark{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:80px;height:36px;opacity:.85;pointer-events:none}
+.body{padding:14px 16px 32px;display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
 
-/* ─── Card base ─── */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:var(--shadow-md)}
-.card-head{padding:18px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
-.card-head h3{font-size:14px;font-weight:700;letter-spacing:-.1px;display:flex;align-items:center;gap:10px}
-.card-head h3 .ico{width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:14px}
-.card-head .hint{font-size:11px;color:var(--text3)}
-.card-body{padding:22px 24px}
+/* Banner */
+.banner{grid-column:span 12;display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:9px;background:var(--panel-2);border:1px solid var(--line);color:var(--fg-2);font-size:12.5px}
+.banner .icon{width:18px;height:18px;border-radius:50%;background:rgba(217,196,122,.15);border:1px solid rgba(217,196,122,.3);display:grid;place-items:center;color:var(--warn);font-family:var(--mono);font-size:12px;font-weight:600;flex:0 0 18px}
+.banner .m{flex:1}
+.banner b{color:var(--fg)}
+.banner code{font-family:var(--mono);background:var(--raised);border:1px solid var(--line);padding:1px 6px;border-radius:4px;color:var(--fg-2);font-size:11.5px}
 
-/* ─── Layout grid ─── */
-.row-2{display:grid;grid-template-columns:1.4fr 1fr;gap:20px;margin-bottom:24px}
-@media(max-width:1100px){.row-2{grid-template-columns:1fr}}
+/* KPI strip */
+.kpis{grid-column:span 12;display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden}
+.kpi{padding:14px 16px;border-right:1px solid var(--line);position:relative;min-width:0;cursor:pointer;transition:background .1s}
+.kpi:last-child{border-right:0}
+.kpi:hover{background:var(--panel-2)}
+.kpi .lbl{display:flex;align-items:center;gap:6px;color:var(--mute);font-size:11.5px;letter-spacing:.3px;text-transform:uppercase}
+.kpi .val{font-family:var(--mono);font-size:26px;font-weight:500;margin-top:6px;color:var(--fg);letter-spacing:-.5px}
+.kpi .val .u{color:var(--mute);font-size:13px;margin-left:4px}
+.kpi .delta{font-family:var(--mono);font-size:11.5px;color:var(--mute);margin-top:4px;display:flex;gap:8px;align-items:center}
+.kpi .delta .up{color:var(--pos)}
+.kpi .delta .down{color:var(--neg)}
+.kpi.alarm .val{color:var(--warn)}
+.kpi .spark{position:absolute;right:14px;top:14px;opacity:.9}
 
-/* ─── Product cable cards ─── */
-.cable-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:760px){.cable-grid{grid-template-columns:1fr}}
-.cable-card{position:relative;padding:22px;border-radius:14px;background:var(--surface2);border:1px solid var(--border);overflow:hidden}
-.cable-card::after{content:'';position:absolute;top:0;left:0;right:0;height:4px}
-.cable-card.black::after{background:var(--grad-dark)}
-.cable-card.red::after{background:var(--grad-red)}
-.cable-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;gap:12px}
-.cable-name{font-size:13px;font-weight:600;line-height:1.3}
-.cable-tag{font-size:10px;font-weight:700;padding:4px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.8px;flex-shrink:0}
-.cable-tag.black{background:var(--grad-dark);color:#fff}
-.cable-tag.red{background:var(--grad-red);color:#fff}
-.cable-ring-row{display:flex;align-items:center;gap:22px;margin-bottom:16px}
-.ring{position:relative;width:110px;height:110px;flex-shrink:0}
-.ring svg{transform:rotate(-90deg)}
-.ring-bg{fill:none;stroke:var(--bg3);stroke-width:9}
-.ring-fg{fill:none;stroke-width:9;stroke-linecap:round;transition:stroke-dashoffset .9s cubic-bezier(.2,.8,.2,1)}
-.ring-ok .ring-fg{stroke:var(--green)}
-.ring-warn .ring-fg{stroke:var(--yellow)}
-.ring-urgent .ring-fg{stroke:var(--red)}
-.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-.ring-big{font-size:22px;font-weight:700;letter-spacing:-.5px;line-height:1}
-.ring-small{font-size:10px;color:var(--text2);margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
-.cable-metrics{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.metric{padding:10px 12px;border-radius:9px;background:var(--bg3)}
-.metric .m-label{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
-.metric .m-val{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
-.metric.free .m-val{color:var(--green)}
-.metric.reserve .m-val{color:var(--yellow)}
-.status-big{padding:12px 14px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600}
-.status-big.urgent{background:var(--red-bg);color:var(--red)}
-.status-big.warn{background:var(--yellow-bg);color:var(--yellow)}
-.status-big.ok{background:var(--green-bg);color:var(--green)}
-.status-big .need{font-size:11px;opacity:.85}
-.status-big strong{font-size:14px}
+/* Cards */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 14px;border-bottom:1px solid var(--line);min-height:42px}
+.card-h .title{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--fg-2);font-weight:500;letter-spacing:.2px}
+.card-h .title .kbd{font-family:var(--mono);font-size:10.5px;color:var(--mute);border:1px solid var(--line-2);padding:1px 5px;border-radius:4px;background:var(--panel-2)}
+.card-h .meta{color:var(--mute);font-size:11.5px;font-family:var(--mono)}
+.card-b{padding:14px}
+.tabs{display:inline-flex;gap:2px;background:var(--panel-2);border:1px solid var(--line);border-radius:7px;padding:2px}
+.tabs button{padding:4px 9px;font-size:11.5px;color:var(--mute);border-radius:5px}
+.tabs button.on{background:var(--raised);color:var(--fg)}
+.tabs button:hover{color:var(--fg)}
 
-/* ─── Reserves ─── */
-.reserves{margin-top:18px;padding-top:18px;border-top:1px dashed var(--border2)}
-.reserves h4{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;font-weight:700}
-.reserve-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;font-size:12px;border-bottom:1px dashed var(--border)}
-.reserve-row:last-child{border-bottom:none}
-.reserve-row .r-client{display:flex;align-items:center;gap:8px;flex:1;min-width:0;color:var(--text2)}
-.reserve-row .r-client span.nm{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rtag{font-size:9px;padding:3px 7px;border-radius:3px;font-weight:700;letter-spacing:.5px;flex-shrink:0}
-.rtag.black{background:var(--cable-black);color:#fff}
-.rtag.red{background:var(--cable-red);color:#fff}
-.r-qty{font-weight:700;font-variant-numeric:tabular-nums}
+/* Forecast chart */
+.forecast{grid-column:span 12}
+.chart{position:relative}
+.chart svg{display:block;width:100%}
+.ax-label{fill:var(--mute);font-family:var(--mono);font-size:10.5px}
+.ax-line{stroke:var(--grid);stroke-width:1}
+.ax-line.strong{stroke:var(--grid-strong)}
+.tip{position:absolute;pointer-events:none;background:var(--tip-bg);border:1px solid var(--line-2);border-radius:7px;padding:8px 10px;font-size:11.5px;font-family:var(--mono);color:var(--fg);box-shadow:0 6px 24px rgba(0,0,0,.18);transform:translate(-50%,-110%);white-space:nowrap;z-index:5}
+.tip .row{display:flex;justify-content:space-between;gap:14px}
+.tip .row+.row{margin-top:2px}
+.tip b{color:var(--fg)}
+.tip .lbl{color:var(--mute)}
+.legend{display:flex;gap:14px;align-items:center;font-size:11.5px;color:var(--mute);font-family:var(--mono)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .sw i{width:10px;height:2px;background:var(--fg);display:inline-block;border-radius:2px}
+.legend .sw.dash i{background:repeating-linear-gradient(to right,var(--fg-2) 0 3px,transparent 3px 6px);height:2px;width:14px}
+.legend .sw.area i{background:var(--accent);opacity:.6;width:10px;height:8px;border-radius:2px}
 
-/* ─── Market tiles ─── */
-.market-tile{padding:20px 22px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;position:relative;overflow:hidden}
-.market-tile + .market-tile{margin-top:12px}
-.mt-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.mt-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;font-weight:600}
-.mt-src{font-size:10px;color:var(--text3)}
-.mt-body{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
-.mt-price-block{display:flex;align-items:baseline;gap:4px}
-.mt-price{font-size:26px;font-weight:700;letter-spacing:-1px;font-variant-numeric:tabular-nums;line-height:1}
-.mt-unit{font-size:11px;color:var(--text3);font-weight:500}
-.mt-spark{height:46px;margin-top:10px;position:relative}
-.mt-stats{display:flex;gap:14px;margin-top:8px;font-size:11px;color:var(--text2)}
-.mt-stats strong{color:var(--text)}
+/* Calc flow */
+.calc-row{grid-column:span 12;display:grid;grid-template-columns:1fr;gap:14px;min-width:0}
+.flow{display:grid;grid-template-columns:1fr 24px 1.05fr 24px 1.1fr;gap:0;align-items:stretch;padding:4px 0 6px}
+.flow-arrow{display:grid;place-items:center;color:var(--mute-2);padding-top:36px}
+.stage{display:flex;flex-direction:column;min-width:0;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2)}
+.stage.accent{border-color:rgba(154,180,255,.35);box-shadow:0 0 0 1px rgba(154,180,255,.12) inset;background:linear-gradient(180deg,rgba(154,180,255,.04),var(--panel-2))}
+.stage .stage-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.stage .stage-h .num{width:22px;height:22px;border-radius:6px;border:1px solid var(--line-2);background:var(--panel);display:grid;place-items:center;font-family:var(--mono);font-size:11px;color:var(--mute);font-weight:600;flex:0 0 22px}
+.stage.accent .stage-h .num{border-color:var(--accent);color:var(--accent);background:rgba(154,180,255,.08)}
+.stage .stage-h .slbl{font-size:12.5px;color:var(--fg);font-weight:600;letter-spacing:.2px;line-height:1.2}
+.stage .stage-h .shint{font-size:10.5px;color:var(--mute);font-family:var(--mono);margin-top:2px}
+.stage-body{display:flex;flex-direction:column;gap:6px;flex:1}
+.row-l{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px dashed var(--line);min-width:0}
+.row-l:last-child{border-bottom:0}
+.row-l .rl{color:var(--fg-2);font-size:12.5px;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.row-l .rl .formula{color:var(--mute);font-family:var(--mono);font-size:10.5px;margin-left:6px}
+.row-l .rv{font-family:var(--mono);font-size:13px;color:var(--fg);font-variant-numeric:tabular-nums;white-space:nowrap}
+.row-l .rv .u{font-size:10.5px;color:var(--mute);margin-left:3px}
+.stage-total{margin-top:12px;padding:10px 12px;background:var(--raised);border:1px solid var(--line-2);border-radius:8px}
+.stage.accent .stage-total{background:rgba(154,180,255,.10);border-color:rgba(154,180,255,.3)}
+.stage-total .t-lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--mute);font-family:var(--mono)}
+.stage.accent .stage-total .t-lbl{color:var(--accent)}
+.stage-total .t-val{font-family:var(--mono);font-size:22px;font-weight:500;color:var(--fg);margin-top:2px;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.stage-total .t-val .u{font-size:11px;color:var(--mute);margin-left:4px;font-weight:400;letter-spacing:0}
+.stage-total .t-sub{font-family:var(--mono);font-size:11.5px;color:var(--mute);margin-top:3px}
 
-/* ─── Shipments ─── */
-.ship-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
-@media(max-width:980px){.ship-stats{grid-template-columns:repeat(2,1fr)}}
-.ship-stat{padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
-.ship-stat.accent{background:var(--accent-bg);border-color:var(--accent)}
-.ship-stat .lab{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px;font-weight:600}
-.ship-stat .val{font-size:17px;font-weight:700;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
-.ship-stat.accent .val{color:var(--accent)}
-.chart-wrap{height:280px;position:relative}
+/* Tier cards */
+.tiers-stage{padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2)}
+.tiers-body{display:flex;flex-direction:column;gap:6px}
+.tier-card{padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--panel);display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;gap:2px 8px;align-items:baseline}
+.tier-card.base{border-color:var(--line-2)}
+.tier-card.transit{border-color:rgba(154,180,255,.3);background:linear-gradient(0deg,rgba(154,180,255,.05),var(--panel))}
+.tier-card .tier-h{display:flex;align-items:center;gap:6px;grid-column:1;grid-row:1}
+.tier-card .tname{font-size:12px;color:var(--fg);font-weight:500}
+.tier-card .tier-tag{margin-left:auto;font-family:var(--mono);font-size:11px;letter-spacing:.2px}
+.tier-card .tier-tag.tag-base{color:var(--mute-2)}
+.tier-card .tier-tag.tag-pos{color:var(--pos)}
+.tier-card .tprice{grid-column:2;grid-row:1;font-family:var(--mono);font-size:16px;font-weight:500;color:var(--fg);letter-spacing:-.2px;text-align:right;display:flex;align-items:baseline;gap:3px;justify-content:flex-end}
+.tier-card .tprice .u{font-size:10px;color:var(--mute);font-weight:400}
+.tier-card .tmeta{grid-column:1/-1;grid-row:2;display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:10.5px;color:var(--mute)}
+.dot-accent{width:5px;height:5px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px rgba(154,180,255,.18);display:inline-block}
 
-/* ─── Warehouses ─── */
-.wh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
-.wh-card{background:var(--surface2);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:transform .2s,box-shadow .2s}
-.wh-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:var(--border2)}
-.wh-card-head{padding:14px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;transition:background .15s}
-.wh-card-head:hover{background:var(--bg3)}
-.wh-title-row{display:flex;align-items:center;gap:10px}
-.wh-ico{width:32px;height:32px;background:var(--blue-bg);color:var(--blue);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.wh-ico svg{width:16px;height:16px;fill:currentColor}
-.wh-title{font-size:13px;font-weight:600;letter-spacing:-.1px}
-.wh-meta{font-size:10px;color:var(--text3);margin-top:2px}
-.wh-chev{color:var(--text3);transition:transform .2s;font-size:14px}
-.wh-card-head.open .wh-chev{transform:rotate(90deg)}
-.wh-card-body{display:none;padding:0 16px 14px;max-height:300px;overflow:auto}
-.wh-card-body.open{display:block}
-.wh-card-body::-webkit-scrollbar{width:6px}
-.wh-card-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
-.wh-tbl{width:100%;border-collapse:collapse;font-size:11px}
-.wh-tbl th{padding:8px 6px;color:var(--text3);font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.4px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface2);z-index:1}
-.wh-tbl th:not(:first-child){text-align:right}
-.wh-tbl td{padding:7px 6px;border-bottom:1px solid var(--border);color:var(--text)}
-.wh-tbl td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
-.wh-tbl td.neg{color:var(--red);font-weight:600}
+.flow-foot{margin-top:14px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2);display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--mute);font-family:var(--mono)}
+.flow-foot code{font-family:var(--mono);background:var(--raised);border:1px solid var(--line);padding:1px 5px;border-radius:4px;color:var(--fg-2);font-size:11px}
 
-/* ─── Cable-only warehouse cards ─── */
-.wh-cable-section{margin-bottom:22px}
-.wh-cable-section-head{display:flex;align-items:baseline;gap:10px;margin:14px 0 10px;padding:0 2px}
-.wh-cable-section-head h3{font-size:13px;font-weight:700;color:var(--text);letter-spacing:-.2px}
-.wh-cable-section-head h3 span{color:var(--text3);font-weight:500;font-size:12px;margin-left:4px}
-.wh-cable-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
-.wh-cable-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;transition:transform .15s,box-shadow .15s}
-.wh-cable-card:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm, 0 2px 8px rgba(0,0,0,.12));border-color:var(--border2)}
-/* wh-cable-card border-left accents прибрано */
-.wh-cable-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.wh-cable-ico{font-size:18px;line-height:1;flex-shrink:0}
-.wh-cable-title{flex:1;font-size:12px;font-weight:600;color:var(--text);line-height:1.3}
-.wh-cable-total{font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap;font-variant-numeric:tabular-nums}
-.wh-cable-tbl{width:100%;border-collapse:collapse;font-size:11px}
-.wh-cable-tbl th{padding:6px 4px;color:var(--text3);font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.3px;text-align:right;border-bottom:1px solid var(--border)}
-.wh-cable-tbl th:first-child{text-align:left}
-.wh-cable-tbl td{padding:7px 4px;font-variant-numeric:tabular-nums;text-align:right;color:var(--text)}
-.wh-cable-tbl td:first-child{text-align:left;font-weight:500}
-.wh-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
-.wh-dot.black{background:#444}
-.wh-dot.red{background:var(--red, #e74c3c)}
-.wh-cable-grid .empty{grid-column:1/-1;padding:20px;text-align:center;color:var(--text3);font-size:12px}
-.section-hint{font-size:11px;color:var(--text3);margin-left:auto}
+/* Market */
+.market-row{grid-column:span 12;display:grid;grid-template-columns:1fr;gap:14px;min-width:0}
+.mkt-block{padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2);display:flex;flex-direction:column;gap:8px;min-width:0}
+.mkt-block .mkt-h{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px}
+.mkt-block .ll{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--mute);font-family:var(--mono)}
+.mkt-block .ll .period{margin-left:6px;color:var(--mute-2);font-size:10px}
+.mkt-block .rr{display:flex;align-items:baseline;gap:6px}
+.mkt-block .mkt-v{font-family:var(--mono);font-size:18px;color:var(--fg);font-weight:500;letter-spacing:-.2px}
+.mkt-block .mkt-u{font-size:10.5px;color:var(--mute);font-family:var(--mono)}
+.mkt-block .mkt-d{font-family:var(--mono);font-size:11px;color:var(--pos);margin-left:4px}
+.mkt-block .mkt-d.neg{color:var(--neg)}
+.mkt-hint{font-family:var(--mono);font-size:10.5px;color:var(--mute-2)}
+.mkt-hint b{color:var(--fg-2);font-weight:500}
 
-/* ─── Section heads ─── */
-.section-head{display:flex;justify-content:space-between;align-items:center;margin:28px 0 14px;padding:0 2px}
-.section-head h2{font-size:16px;font-weight:700;letter-spacing:-.3px;display:flex;align-items:center;gap:10px}
-.section-head h2 .tag{font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-bg);padding:3px 8px;border-radius:4px;letter-spacing:.5px}
+/* Shipments */
+.shipments{grid-column:span 8}
+.warehouses{grid-column:span 4}
 
-/* ─── Loading / error ─── */
-.loading{padding:40px;text-align:center;color:var(--text2);font-size:12px}
-.loading::after{content:'';display:block;width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:12px auto 0}
-@keyframes spin{to{transform:rotate(360deg)}}
-.error{padding:18px;text-align:center;color:var(--red);font-size:12px;background:var(--red-bg);border-radius:10px}
-.skeleton{background:linear-gradient(90deg,var(--bg3) 0%,var(--surface2) 50%,var(--bg3) 100%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:8px;height:14px;margin:6px 0}
-@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+/* Warehouses table */
+table.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th,.tbl td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+.tbl thead th{font-weight:500;color:var(--mute);font-size:11px;letter-spacing:.4px;text-transform:uppercase;background:var(--panel-2);position:sticky;top:0}
+.tbl tbody tr:hover{background:var(--panel-2)}
+.tbl td.num{font-family:var(--mono);text-align:right}
+.tbl .bar-cell{width:120px}
+.tbl .bar{height:6px;background:var(--line);border-radius:2px;overflow:hidden}
+.tbl .bar>i{display:block;height:100%;background:var(--fg-2);border-radius:2px}
+.tag{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border-radius:4px;background:var(--panel-2);border:1px solid var(--line-2);font-size:11px;color:var(--fg-2);font-family:var(--mono)}
+.tag.t-warn{color:var(--warn);border-color:rgba(217,196,122,.3)}
+.tag.t-neg{color:var(--neg);border-color:rgba(232,138,138,.3)}
+.tag.t-pos{color:var(--pos);border-color:rgba(125,211,164,.3)}
 
-/* ─── Modal / Drawer ─── */
-.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:200;opacity:0;pointer-events:none;transition:opacity .2s}
+/* Modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);z-index:200;opacity:0;pointer-events:none;transition:opacity .2s}
 .modal-backdrop.open{opacity:1;pointer-events:auto}
-.modal{position:fixed;top:50%;left:50%;transform:translate(-50%,calc(-50% + 20px));background:var(--surface);border:1px solid var(--border2);border-radius:18px;width:min(640px,calc(100% - 32px));max-height:85vh;overflow:hidden;z-index:201;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;box-shadow:var(--shadow-lg);display:flex;flex-direction:column}
+.modal{position:fixed;top:50%;left:50%;transform:translate(-50%,calc(-50% + 20px));background:var(--panel);border:1px solid var(--line-2);border-radius:14px;width:min(640px,calc(100% - 32px));max-height:85vh;overflow:hidden;z-index:201;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;box-shadow:0 20px 60px rgba(0,0,0,.4);display:flex;flex-direction:column}
 .modal.open{opacity:1;transform:translate(-50%,-50%);pointer-events:auto}
-.modal-head{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;flex-shrink:0}
-.modal-head .m-ico{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;flex-shrink:0}
-.modal-head .m-ico.accent{background:var(--grad-accent)}
-.modal-head .m-ico.red{background:var(--grad-red)}
-.modal-head .m-ico.green{background:var(--grad-green)}
-.modal-head .m-ico.blue{background:var(--grad-blue)}
-.modal-head .m-ico.purple{background:linear-gradient(135deg,#b794ff 0%,#7e5bdf 100%)}
+.modal-head{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-shrink:0}
+.modal-head .m-ico{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;background:var(--raised);border:1px solid var(--line-2)}
 .modal-head .m-title{flex:1;min-width:0}
-.modal-head .m-title h3{font-size:15px;font-weight:700;letter-spacing:-.2px;margin-bottom:2px}
-.modal-head .m-title p{font-size:11px;color:var(--text2)}
-.modal-close{width:32px;height:32px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0;flex-shrink:0}
-.modal-close:hover{color:var(--red);border-color:var(--red)}
-.modal-close svg{width:14px;height:14px;fill:currentColor}
-.modal-body{padding:20px 24px;overflow-y:auto;flex:1}
-.modal-body::-webkit-scrollbar{width:6px}
-.modal-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
-.m-big{font-size:36px;font-weight:700;letter-spacing:-1.2px;line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums}
-.m-sub{font-size:12px;color:var(--text2);margin-bottom:18px}
-.m-split{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.m-split .m-col{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;position:relative;overflow:hidden}
-/* m-col ::before color-bars прибрано */
-.m-split .m-col .m-col-label{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;font-weight:700;margin-bottom:6px}
-.m-split .m-col .m-col-val{font-size:22px;font-weight:700;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
-.m-split .m-col .m-col-sub{font-size:11px;color:var(--text2);margin-top:4px}
-.m-list{display:flex;flex-direction:column;gap:6px}
-.m-row{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;font-size:12px}
-.m-row .m-row-main{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
-.m-row .m-row-main .nm{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.m-row .m-row-val{font-weight:700;font-variant-numeric:tabular-nums;flex-shrink:0;margin-left:10px}
-.m-section-title{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:20px 0 10px}
+.modal-head .m-title h3{font-size:14px;font-weight:600;letter-spacing:-.1px;margin-bottom:1px}
+.modal-head .m-title p{font-size:11px;color:var(--mute)}
+.modal-close{width:28px;height:28px;background:var(--raised);border:1px solid var(--line);border-radius:6px;color:var(--mute);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0;flex-shrink:0}
+.modal-close:hover{color:var(--neg);border-color:var(--neg)}
+.modal-close svg{width:12px;height:12px;fill:currentColor}
+.modal-body{padding:16px 18px;overflow-y:auto;flex:1}
+.modal-body::-webkit-scrollbar{width:5px}
+.modal-body::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:3px}
+.m-big{font-family:var(--mono);font-size:28px;font-weight:600;letter-spacing:-.8px;line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums}
+.m-sub{font-size:12px;color:var(--mute);margin-bottom:16px}
+.m-split{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.m-col{padding:12px 14px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px}
+.m-col .m-col-label{font-size:10px;color:var(--mute);text-transform:uppercase;letter-spacing:.7px;font-weight:600;margin-bottom:4px}
+.m-col .m-col-val{font-family:var(--mono);font-size:18px;font-weight:600;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.m-col .m-col-sub{font-size:11px;color:var(--mute);margin-top:3px}
+.m-section-title{font-size:10.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin:16px 0 8px}
 .m-section-title:first-child{margin-top:0}
-.m-formula{padding:14px 16px;background:var(--accent-bg);border:1px solid var(--accent);border-left-width:3px;border-radius:10px;font-size:12px;line-height:1.6;margin-top:16px}
-.m-banner{margin:14px 0 6px;padding:12px 14px;background:rgba(255,193,7,.10);border:1px solid rgba(255,193,7,.45);border-left:3px solid #ffc107;border-radius:10px;font-size:12px;line-height:1.6;color:var(--text1)}
-.m-kept{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:10px;font-weight:600;letter-spacing:.3px}
-.m-kept.collapsed{background:rgba(255,107,107,.12);border-color:rgba(255,107,107,.35);color:#ff8b8b}
-.m-tbl tr.focus{background:rgba(255,131,25,.18) !important;outline:2px solid var(--accent);outline-offset:-2px}
-.m-tbl tr.muted td{color:var(--text3)}
-.m-tbl td.up{color:#22c55e;font-weight:600}
-.m-tbl td.down{color:#ef4444;font-weight:600}
-.chart-wrap canvas{cursor:pointer}
-.mt-spark canvas{cursor:pointer}
-.m-formula code{background:rgba(255,131,25,.15);padding:1px 6px;border-radius:3px;font-family:'SF Mono','Monaco',monospace;font-size:11px}
-.m-tbl{width:100%;border-collapse:collapse;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
-.m-tbl th,.m-tbl td{padding:10px 14px;text-align:right;font-variant-numeric:tabular-nums}
+.m-tbl{width:100%;border-collapse:collapse;font-size:12px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.m-tbl th,.m-tbl td{padding:8px 12px;text-align:right;font-variant-numeric:tabular-nums}
 .m-tbl th:first-child,.m-tbl td:first-child{text-align:left}
-.m-tbl thead th{background:var(--bg3);color:var(--text2);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px}
-.m-tbl tbody tr{border-top:1px solid var(--border)}
-.m-tbl tbody tr:hover{background:var(--bg3)}
-.m-tbl tfoot td{border-top:2px solid var(--accent);font-weight:700;background:var(--accent-bg)}
-.m-badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
-.m-badge.black{background:var(--cable-black);color:#fff}
-.m-badge.red{background:var(--cable-red);color:#fff}
-.tr-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.3px;white-space:nowrap;flex-shrink:0}
-.tr-tag.transit{background:rgba(151,117,250,.18);color:#b399ff;border:1px solid rgba(151,117,250,.3)}
-.tr-tag.mixed{background:rgba(59,130,246,.14);color:#93bbff;border:1px solid rgba(59,130,246,.3);font-variant-numeric:tabular-nums}
+.m-tbl thead th{background:var(--panel-2);color:var(--mute);font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+.m-tbl tbody tr{border-top:1px solid var(--line)}
+.m-tbl tbody tr:hover{background:var(--panel-2)}
+.m-tbl tfoot td{border-top:2px solid var(--accent);font-weight:600;background:rgba(154,180,255,.08)}
+.m-tbl td.up{color:var(--pos);font-weight:600}
+.m-tbl td.down{color:var(--neg);font-weight:600}
+.m-tbl tr.focus{background:rgba(154,180,255,.12)!important;outline:1px solid var(--accent);outline-offset:-1px}
+.m-tbl tr.muted td{color:var(--mute-2)}
+.m-formula{padding:12px 14px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;font-size:11.5px;line-height:1.6;margin-top:14px;color:var(--mute)}
+.m-formula strong{color:var(--fg-2)}
+.m-formula code{font-family:var(--mono);background:var(--raised);border:1px solid var(--line);padding:1px 5px;border-radius:4px;color:var(--fg-2);font-size:10.5px}
+.m-formula a{color:var(--accent);text-decoration:none}
+.m-formula a:hover{text-decoration:underline}
+.m-banner{margin:12px 0 6px;padding:10px 12px;background:rgba(217,196,122,.08);border:1px solid rgba(217,196,122,.3);border-radius:8px;font-size:12px;line-height:1.6;color:var(--fg-2)}
+.m-list{display:flex;flex-direction:column;gap:4px}
+.m-row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;font-size:12px}
+.m-row .m-row-main{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.m-row .m-row-main .nm{color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.m-row .m-row-val{font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0;margin-left:8px}
+.m-badge{display:inline-flex;padding:2px 6px;border-radius:3px;font-size:10px;font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+.m-badge.black{background:#2a2d35;color:#fff}
+.m-badge.red{background:#c44b4b;color:#fff}
+.m-kept{display:inline-block;margin-left:4px;padding:1px 6px;border-radius:10px;background:var(--panel-2);border:1px solid var(--line);color:var(--mute);font-size:10px;font-weight:500}
+.m-kept.collapsed{background:rgba(232,138,138,.12);border-color:rgba(232,138,138,.35);color:var(--neg)}
+.tr-tag{display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:500;letter-spacing:.2px;white-space:nowrap;flex-shrink:0}
+.tr-tag.transit{background:rgba(154,180,255,.12);color:var(--accent);border:1px solid rgba(154,180,255,.25)}
+.tr-tag.mixed{background:rgba(154,180,255,.08);color:var(--fg-2);border:1px solid rgba(154,180,255,.2);font-variant-numeric:tabular-nums}
 
-/* ─── Cable price (6mm²) ─── */
-.cable-price-wrap{display:flex;flex-direction:column;gap:16px}
-.cp-hero{position:relative;padding:22px 24px;border-radius:16px;background:linear-gradient(135deg,rgba(255,131,25,.18) 0%,rgba(255,131,25,.04) 60%,transparent 100%);border:1px solid var(--accent);overflow:hidden}
-.cp-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(255,131,25,.35) 0%,transparent 70%);pointer-events:none}
-.cp-hero-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;position:relative}
-.cp-hero-value{font-size:36px;font-weight:800;letter-spacing:-1.2px;line-height:1;font-variant-numeric:tabular-nums;color:var(--text);position:relative}
-.cp-hero-sub{margin-top:6px;font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums;position:relative}
-.cp-breakdown{display:flex;flex-direction:column;gap:6px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
-.cp-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 6px;font-size:12px;border-bottom:1px dashed var(--border)}
-.cp-row:last-child{border-bottom:none}
-.cp-row .cp-k{color:var(--text2);flex:1;min-width:0}
-.cp-row .cp-v{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
-.cp-row.cp-row-total{margin-top:2px;padding:10px 6px;border-top:1px solid var(--accent);border-bottom:none;background:var(--accent-bg);border-radius:8px}
-.cp-row.cp-row-total .cp-k{color:var(--text);font-weight:700}
-.cp-row.cp-row-total .cp-v{color:var(--accent);font-weight:800}
-.cp-months{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
-@media(max-width:520px){.cp-months{grid-template-columns:repeat(4,minmax(0,1fr))}}
-.cp-m-cell{padding:8px 4px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;text-align:center;transition:transform .15s,border-color .15s}
-.cp-m-cell:hover{transform:translateY(-1px);border-color:var(--border2)}
-.cp-m-cell.cur{background:var(--accent-bg);border-color:var(--accent)}
-.cp-m-ym{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600;margin-bottom:2px}
-.cp-m-cell.cur .cp-m-ym{color:var(--accent)}
-.cp-m-val{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text)}
+/* Loading / error */
+.loading{padding:30px;text-align:center;color:var(--mute);font-size:12px;font-family:var(--mono)}
+.loading::after{content:'';display:block;width:20px;height:20px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:10px auto 0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error{padding:14px;text-align:center;color:var(--neg);font-size:12px;background:rgba(232,138,138,.08);border:1px solid rgba(232,138,138,.2);border-radius:8px}
 
-/* ─── Info line ─── */
-.info-line{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--blue-bg);border:1px solid var(--blue);border-left-width:3px;border-radius:10px;font-size:12px;color:var(--text);margin-top:16px}
-.info-line svg{width:16px;height:16px;fill:var(--blue);flex-shrink:0}
-.info-line a{color:var(--blue);text-decoration:none;font-weight:600}
-.info-line a:hover{text-decoration:underline}
-.info-line sub{font-size:9px;color:var(--text2)}
-
-/* ─── Responsive ─── */
+/* Responsive */
+@media(max-width:1280px){
+  .flow{grid-template-columns:1fr;gap:14px}
+  .flow-arrow{transform:rotate(90deg);padding:0;justify-self:center}
+}
+@media(max-width:1100px){
+  .forecast,.shipments{grid-column:span 12}
+  .warehouses{grid-column:span 12}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .kpi{border-bottom:1px solid var(--line)}
+}
+@media(max-width:900px){
+  .pagehead{flex-direction:column;align-items:flex-start}
+}
 @media(max-width:640px){
-  .wrap{padding:18px}
-  .topbar{padding:12px 18px}
-  .page-title{font-size:26px}
-  .card-body{padding:16px}
-  .card-head{padding:14px 16px}
+  .body{padding:10px 12px 24px;gap:10px}
+  .pagehead{padding:14px 16px 12px}
+  .pagehead h1{font-size:17px}
 }
 </style>
 </head>
@@ -407,482 +284,563 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
 <div id="appHeader"></div>
 
 <div class="wrap">
-
-  <div class="page-head">
-    <div class="page-title"><span class="emoji">📦</span> Планування закупівлі</div>
-    <div class="page-sub">Прогноз дефіциту кабелю 6мм на <strong id="ltBanner"></strong> днів (виробництво + логістика)</div>
-  </div>
-
-  <!-- Hero KPIs -->
-  <div class="hero-grid" id="heroGrid">
-    <div class="kpi accent" onclick="openKpi('free')"><div class="kpi-label">Вільно на складах</div><div class="kpi-val" id="kpiFree">—</div><div class="kpi-sub">завантаження…</div></div>
-    <div class="kpi blue" onclick="openKpi('reserve')"><div class="kpi-label">У резерві</div><div class="kpi-val" id="kpiReserve">—</div><div class="kpi-sub">завантаження…</div></div>
-    <div class="kpi purple" onclick="openKpi('transit')"><div class="kpi-label">Кабель в дорозі</div><div class="kpi-val" id="kpiTransit">—</div><div class="kpi-sub">завантаження…</div></div>
-    <div class="kpi red" onclick="openKpi('must')"><div class="kpi-label">Замовити</div><div class="kpi-val" id="kpiMust">—</div><div class="kpi-sub">завантаження…</div></div>
-    <div class="kpi green" onclick="openKpi('wma')"><div class="kpi-label">WMA прогноз / день</div><div class="kpi-val" id="kpiWma">—</div><div class="kpi-sub">завантаження…</div></div>
-  </div>
-
-  <!-- Modal -->
-  <div class="modal-backdrop" id="modalBackdrop" onclick="closeKpi()"></div>
-  <div class="modal" id="modal" role="dialog" aria-modal="true">
-    <div class="modal-head">
-      <div class="m-ico" id="modalIco">📊</div>
-      <div class="m-title"><h3 id="modalTitle">—</h3><p id="modalSub">—</p></div>
-      <button class="modal-close" onclick="closeKpi()" aria-label="Закрити"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+  <div class="pagehead">
+    <div>
+      <h1>Прогноз закупівель — кабель <span>6мм²</span></h1>
+      <div class="sub">Оновлено <code id="updatedAt">—</code></div>
     </div>
-    <div class="modal-body" id="modalBody"></div>
-  </div>
-
-  <!-- Row 1: planning + market -->
-  <div class="row-2">
-    <div class="card">
-      <div class="card-head">
-        <h3><span class="ico" style="background:var(--accent-bg);color:var(--accent)">💰</span>Поточна ціна кабелю 6мм²</h3>
-        <span class="hint" id="cuMonthInfo">з урахуванням ціни міді</span>
-      </div>
-      <div class="card-body" id="planBody">
-        <div class="loading">Розрахунок за westmetall…</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-head">
-        <h3><span class="ico" style="background:var(--blue-bg);color:var(--blue)">📈</span>Ринок</h3>
-        <span class="hint">Фактори ціни</span>
-      </div>
-      <div class="card-body">
-        <div class="market-tile" id="tileCopper"><div class="loading">Мідь…</div></div>
-        <div class="market-tile" id="tileEurUsd"><div class="loading">EUR/USD…</div></div>
+    <div class="filters">
+      <div class="seg" id="segProduct">
+        <button class="on" data-p="all">Усі SKU</button>
+        <button data-p="black">Чорний 6мм²</button>
+        <button data-p="red">Червоний 6мм²</button>
       </div>
     </div>
   </div>
 
-  <!-- Shipments -->
-  <div class="section-head">
-    <h2>🚚 Динаміка відвантажень <span class="tag">30 ДНІВ</span></h2>
-  </div>
-  <div class="card">
-    <div class="card-body" id="shipBody">
-      <div class="loading">Завантаження історії відвантажень…</div>
+  <div class="body">
+    <div class="banner" id="deficitBanner" style="display:none"></div>
+
+    <div class="kpis" id="kpiStrip">
+      <div class="kpi"><div class="lbl">Вільно на складах</div><div class="val">—</div><div class="delta">завантаження…</div></div>
+      <div class="kpi"><div class="lbl">У резерві</div><div class="val">—</div><div class="delta">завантаження…</div></div>
+      <div class="kpi"><div class="lbl">В дорозі</div><div class="val">—</div><div class="delta">завантаження…</div></div>
+      <div class="kpi"><div class="lbl">До замовлення</div><div class="val">—</div><div class="delta">завантаження…</div></div>
+      <div class="kpi"><div class="lbl">WMA прогноз / день</div><div class="val">—</div><div class="delta">завантаження…</div></div>
+    </div>
+
+    <div class="card forecast" id="forecastCard">
+      <div class="card-h">
+        <div class="title">Прогноз залишків
+          <span class="legend" style="margin-left:14px">
+            <span class="sw"><i></i> залишок</span>
+            <span class="sw dash"><i></i> базовий попит</span>
+            <span class="sw" style="color:var(--neg)"><i style="background:var(--neg)"></i> дефіцит</span>
+          </span>
+        </div>
+      </div>
+      <div class="card-b" style="padding:10px 8px 4px">
+        <div class="loading">Побудова графіку…</div>
+      </div>
+    </div>
+
+    <div class="calc-row">
+      <div class="card calc-flow" id="calcFlowCard">
+        <div class="card-h">
+          <div class="title">Калькуляція ціни — від міді до клієнта <span class="kbd">6мм²</span></div>
+        </div>
+        <div class="card-b">
+          <div class="loading">Розрахунок за westmetall…</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="market-row">
+      <div class="card" id="marketCard">
+        <div class="card-h">
+          <div class="title">Ринок · фактори ціни</div>
+          <div class="meta">westmetall · Yahoo Finance</div>
+        </div>
+        <div class="card-b" style="display:grid;grid-template-columns:1.4fr 1fr;gap:18px">
+          <div class="mkt-block" id="mktCu"><div class="loading">Мідь…</div></div>
+          <div class="mkt-block" id="mktFx"><div class="loading">EUR/USD…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shipments" id="shipmentsCard">
+      <div class="card-h">
+        <div class="title">Відвантаження — 30 днів
+          <span class="legend" style="margin-left:14px">
+            <span class="sw"><i style="background:var(--bar-fill)"></i> робочий день</span>
+            <span class="sw"><i style="background:var(--bar-fill-2)"></i> вихідний</span>
+          </span>
+        </div>
+        <div class="meta" id="shipMeta">—</div>
+      </div>
+      <div class="card-b"><div class="loading">Завантаження…</div></div>
+    </div>
+
+    <div class="card warehouses" id="whCard">
+      <div class="card-h">
+        <div class="title">Кабель по складах</div>
+        <div class="tabs" id="whTabs">
+          <button class="on" data-s="id">За кодом</button>
+          <button data-s="free">За залишком</button>
+          <button data-s="reserved">За резервом</button>
+        </div>
+      </div>
+      <div class="card-b" style="padding:0"><div class="loading">Завантаження…</div></div>
     </div>
   </div>
+</div>
 
-  <!-- Warehouses (cable only) -->
-  <div class="section-head">
-    <h2>🏭 Кабель по складах</h2>
-    <span class="section-hint">Тільки чорний 6мм + червоний 6мм. Для повного перегляду складів натисни «📦 Склад» у шапці.</span>
+<!-- Modal -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="closeModal()"></div>
+<div class="modal" id="modal" role="dialog" aria-modal="true">
+  <div class="modal-head">
+    <div class="m-ico" id="modalIco"></div>
+    <div class="m-title"><h3 id="modalTitle">—</h3><p id="modalSub">—</p></div>
+    <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
   </div>
-  <div id="whBody"><div class="loading">Завантаження…</div></div>
-
+  <div class="modal-body" id="modalBody"></div>
 </div>
 
 <script>
-// ─── Session gate (Google login + forecast role) + unified header ───
 Auth.require('forecast').then(user => {
   window.__user = user;
   AppHeader.mount({ active: 'forecast', user });
 });
 
-const API_URL = 'https://price-api.doskevich.workers.dev/';
-const LEAD_TIME_DAYS = 14;
-const LT_TOTAL = LEAD_TIME_DAYS + 27;
+const API = 'https://price-api.doskevich.workers.dev/';
+const LEAD_TIME = 14;
+const LT_TOTAL = LEAD_TIME + 27;
+const CABLE = { base: 108.9, weight: 57.6 };
+const COIL_M = 500;
+const TRUCK_KM = 288;
+const TRUCK_EU = 2000;
+const TRUCK_UA = 1000;
+const VAT_RATE = 0.20;
+const TIERS = [
+  { id:'t1', name:'Від 0,5 км', coil:'Від 1 бухти', markup: 0.13, base:true },
+  { id:'t6', name:'Від 3 км',   coil:'Від 6 бухт', markup: 0.06 },
+  { id:'t24',name:'Від 12 км',  coil:'Від 24 бухт', markup: 0.00 },
+  { id:'tr', name:'В дорозі',   coil:'предзамовлення 100% передплата', markup:-0.05, transit:true },
+];
+const UA_MONTHS = ['січ','лют','бер','квіт','трав','чер','лип','серп','вер','жовт','лист','груд'];
 
-document.getElementById('ltBanner').textContent = LT_TOTAL;
-
-function fmt(n, dec){ if (n == null) return '—'; return Number(n).toLocaleString('uk-UA', { minimumFractionDigits: dec || 0, maximumFractionDigits: dec || 0 }); }
-function fmtDate(iso){ const d = new Date(iso); return d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit' }); }
-function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
-
-function trendBadge(trend, diff){
-  const cls = trend === 'UP' ? 'up' : trend === 'DOWN' ? 'down' : 'stable';
-  const arrow = trend === 'UP' ? '▲' : trend === 'DOWN' ? '▼' : '■';
-  return `<span class="kpi-trend ${cls}">${arrow} ${diff}</span>`;
-}
-
-// ─── Ring (SVG circular progress) ───
-function buildRing(pct, variant){
-  // variant: 'ok' | 'warn' | 'urgent'
-  const r = 48, c = 2 * Math.PI * r;
-  const p = Math.max(0, Math.min(1, pct));
-  const off = c * (1 - p);
-  return `
-    <div class="ring ring-${variant}">
-      <svg viewBox="0 0 110 110" width="110" height="110">
-        <circle class="ring-bg" cx="55" cy="55" r="${r}"/>
-        <circle class="ring-fg" cx="55" cy="55" r="${r}" stroke-dasharray="${c}" stroke-dashoffset="${off}"/>
-      </svg>
-    </div>
-  `;
-}
-
-// ─── Market tiles ───
-function renderMarketTile(container, d, unit, decimals, source, label){
-  if (!d.data.length || d.error) {
-    container.innerHTML = `
-      <div class="mt-head"><span class="mt-label">${label}</span><span class="mt-src">${source}</span></div>
-      <div class="mt-body"><div class="mt-price-block"><span class="mt-price">—</span></div></div>
-      <div style="font-size:11px;color:var(--text3);margin-top:6px">Дані недоступні ${d.error ? '· ' + d.error : ''}</div>
-    `;
-    return;
-  }
-  container.innerHTML = `
-    <div class="mt-head">
-      <span class="mt-label">${label}</span>
-      <span class="mt-src">${source}</span>
-    </div>
-    <div class="mt-body">
-      <div class="mt-price-block"><span class="mt-price">${fmt(d.current, decimals)}</span><span class="mt-unit">${unit}</span></div>
-      ${trendBadge(d.trend, d.diff)}
-    </div>
-    <div class="mt-stats">
-      <span>7д <strong>${fmt(d.avg7, decimals)}</strong></span>
-      <span>30д <strong>${fmt(d.avg30, decimals)}</strong></span>
-    </div>
-    <div class="mt-spark"><canvas id="${container.id}_chart"></canvas></div>
-  `;
-  const ctx = document.getElementById(container.id + '_chart');
-  const reversed = d.data.slice().reverse();
-  // Cache payload for modal drill-down
-  const kind = container.id === 'tileCopper' ? 'copper' : 'eurusd';
-  marketData[kind] = { d, unit, decimals, source, label, reversed };
-  const chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: reversed.map(x => fmtDate(x.date)),
-      datasets: [{
-        data: reversed.map(x => x.price),
-        borderColor: css('--accent'),
-        backgroundColor: 'rgba(255,131,25,0.15)',
-        borderWidth: 2, fill: true, tension: 0.35,
-        pointRadius: 0, pointHoverRadius: 3,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
-      scales: { x: { display: false }, y: { display: false } },
-      onClick: (event, elements) => {
-        const idx = elements.length ? elements[0].index : null;
-        openMarketDetail(kind, idx);
-      },
-      onHover: (evt, els) => { evt.native.target.style.cursor = els[0] ? 'pointer' : 'default'; }
-    }
-  });
-  // Also allow clicking the container area (not just the line)
-  container.style.cursor = 'pointer';
-  container.onclick = (e) => {
-    // Don't steal clicks from chart itself (Chart.js handles point hits)
-    if (e.target.tagName === 'CANVAS') return;
-    openMarketDetail(kind, null);
-  };
-}
-
-const marketData = { copper: null, eurusd: null };
-
-async function loadMarket(){
-  try {
-    const [cuRes, erRes] = await Promise.all([
-      fetch(API_URL + '?action=copper_data').then(r => r.json()),
-      fetch(API_URL + '?action=eurusd_data').then(r => r.json()),
-    ]);
-    renderMarketTile(document.getElementById('tileCopper'), cuRes, ' EUR/100кг', 2, 'Westmetall', 'Мідь');
-    renderMarketTile(document.getElementById('tileEurUsd'), erRes, '', 4, 'Yahoo Finance', 'EUR/USD');
-  } catch (e) {
-    document.getElementById('tileCopper').innerHTML = `<div class="error">${e.message}</div>`;
-    document.getElementById('tileEurUsd').innerHTML = `<div class="error">${e.message}</div>`;
-  }
-}
-
-// ─── Cable price (6mm²) based on last-month average Cu ───
-// Formula (from user's reference sheet):
-//   copper_cost €/km   = Cu_price (€/100 kg) × weight (kg/km) / 100
-//   price       €/km   = base + copper_cost
-//   price       €/m    = price €/km / 1000
-// 6mm² constants: base = 108.9 €/km, copper weight = 57.6 kg/km.
-const CABLE_6MM = { base: 108.9, weight: 57.6, label: '6мм²' };
-const UA_MONTHS = ['січень','лютий','березень','квітень','травень','червень','липень','серпень','вересень','жовтень','листопад','грудень'];
-
-function ukMonth(ym){
-  if (!ym) return '—';
-  const [y, m] = ym.split('-');
-  const idx = parseInt(m, 10) - 1;
-  return (UA_MONTHS[idx] || m) + ' ' + y;
-}
-
-async function loadCablePrice(){
-  const host = document.getElementById('planBody');
-  try {
-    const r = await fetch(API_URL + '?action=copper_avg').then(r => r.json());
-    if (!r || !r.previousMonth || !isFinite(r.previousMonth.price)) {
-      throw new Error(r && r.error ? r.error : 'не вдалося отримати середню ціну міді');
-    }
-    renderCablePrice(r);
-  } catch (e) {
-    host.innerHTML = `<div class="error">❌ ${e.message}</div>`;
-  }
-}
-
-function renderCablePrice(r){
-  const cu = r.previousMonth.price;              // €/100 kg
-  const { base, weight, label } = CABLE_6MM;
-  const copperCostKm = cu * weight / 100;         // €/km
-  const priceKm = base + copperCostKm;            // €/km
-  const priceM  = priceKm / 1000;                 // €/m
-
-  // 12-month mini sparkline of Cu averages (newest → oldest).
-  const months = (r.months || []).slice(0, 12);
-  const ymLabel = ukMonth(r.previousMonth.ym);
-
-  // Update card subtitle with the month we used
-  const info = document.getElementById('cuMonthInfo');
-  if (info) info.textContent = `Мідь · середнє за ${ymLabel}`;
-
-  const host = document.getElementById('planBody');
-  host.innerHTML = `
-    <div class="cable-price-wrap">
-      <div class="cp-hero">
-        <div class="cp-hero-label">${label} · ціна за метр</div>
-        <div class="cp-hero-value">€ ${priceM.toFixed(4)}</div>
-        <div class="cp-hero-sub">€ ${priceKm.toFixed(2)} / км</div>
-      </div>
-
-      <div class="cp-breakdown">
-        <div class="cp-row">
-          <span class="cp-k">База (без міді)</span>
-          <span class="cp-v">€ ${base.toFixed(2)} / км</span>
-        </div>
-        <div class="cp-row">
-          <span class="cp-k">Мідь · ${cu.toFixed(2)} €/100кг × ${weight} кг/км</span>
-          <span class="cp-v">€ ${copperCostKm.toFixed(2)} / км</span>
-        </div>
-        <div class="cp-row cp-row-total">
-          <span class="cp-k">Разом</span>
-          <span class="cp-v">€ ${priceKm.toFixed(2)} / км</span>
-        </div>
-      </div>
-
-      <div class="cp-months">
-        ${months.map(m => `
-          <div class="cp-m-cell${m.ym === r.previousMonth.ym ? ' cur' : ''}">
-            <div class="cp-m-ym">${m.ym.slice(5)}/${m.ym.slice(2,4)}</div>
-            <div class="cp-m-val">${m.price.toFixed(0)}</div>
-          </div>`).join('')}
-      </div>
-
-      <div class="info-line">
-        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1s1 .45 1 1v4c0 .55-.45 1-1 1zm1-8h-2V7h2v2z"/></svg>
-        <span>Без доставки, митного, брокера, ПДВ. Формула: <strong>база + Cu<sub>€/100кг</sub> × вага<sub>кг/км</sub> / 100</strong>. Джерело міді: <a href="https://www.westmetall.com/en/markdaten.php?action=averages&field=WM_Cu_low" target="_blank" rel="noopener">westmetall monthly averages</a>.</span>
-      </div>
-    </div>
-  `;
-}
-
-// ─── Planning ───
-function getStatus(cover, need){
-  if (cover < need) return { cls: 'urgent', label: 'ТЕРМІНОВО', ring: 'urgent' };
-  if (cover < need * 1.3) return { cls: 'warn', label: 'УВАГА', ring: 'warn' };
-  return { cls: 'ok', label: 'В НОРМІ', ring: 'ok' };
-}
-
-function cableCardHtml(variant, name, free, reserve, wma, must, need, transitFree){
-  // Покриття планового попиту (need) = Вільно + Вільне в дорозі (кабель
-  // вже замовлений, скоро прибуде). Те, що в резерві — вже продано і не
-  // зменшує потребу у новому замовленні.
-  const tFree = transitFree || 0;
-  const cover = free + tFree;
-  const status = getStatus(cover, need);
-  const orderQty = Math.max(0, need - cover);
-  const pct = need > 0 ? Math.min(1, cover / need) : 1;
-  const tag = variant === 'black' ? 'ЧОРНИЙ' : 'ЧЕРВОНИЙ';
-  const days = wma > 0 ? Math.round(cover / wma) : '∞';
-  return `
-    <div class="cable-card ${variant}">
-      <div class="cable-head">
-        <div class="cable-name">${name}</div>
-        <span class="cable-tag ${variant}">${tag}</span>
-      </div>
-      <div class="cable-ring-row">
-        ${buildRing(pct, status.ring)}
-        <div class="ring-center" style="position:absolute;width:110px;height:110px;pointer-events:none"></div>
-        <div class="cable-metrics">
-          <div class="metric free"><div class="m-label">Вільно</div><div class="m-val">${fmt(free)}</div></div>
-          <div class="metric reserve"><div class="m-label">Резерв</div><div class="m-val">${fmt(reserve)}</div></div>
-          <div class="metric"><div class="m-label">В дорозі (вільне)</div><div class="m-val">${fmt(tFree)}</div></div>
-          <div class="metric"><div class="m-label">WMA/день</div><div class="m-val">${fmt(wma, 1)}</div></div>
-          <div class="metric"><div class="m-label">Запас</div><div class="m-val">${days} дн</div></div>
-        </div>
-      </div>
-      <div class="status-big ${status.cls}">
-        <span>${status.label}</span>
-        <span class="need">Замовити: <strong>${fmt(orderQty)}</strong></span>
-      </div>
-    </div>
-  `;
-}
-
-// Center text for rings (rendered separately since SVG + text overlay)
-function addRingCenters(){
-  document.querySelectorAll('.cable-card').forEach(c => {
-    const ring = c.querySelector('.ring');
-    if (!ring || ring.querySelector('.ring-center')) return;
-    const freeVal = c.querySelector('.metric.free .m-val').textContent;
-    ring.insertAdjacentHTML('beforeend', `
-      <div class="ring-center">
-        <div class="ring-big">${freeVal}</div>
-        <div class="ring-small">вільно</div>
-      </div>
-    `);
-  });
-}
-
-function renderPlanning(f){
-  const s = f.stock;
-  const t = f.inTransit || { blackFree: 0, redFree: 0 };
-  const adsB = f.wma.black, adsR = f.wma.red;
-  const mustB = Math.round(adsB * LT_TOTAL + s.black.reserve);
-  const mustR = Math.round(adsR * LT_TOTAL + s.red.reserve);
-  const needB = mustB - s.black.reserve;
-  const needR = mustR - s.red.reserve;
-  const freeB = s.black.free, freeR = s.red.free;
-  const tFreeB = t.blackFree || 0, tFreeR = t.redFree || 0;
-  const orderB = Math.max(0, needB - freeB - tFreeB);
-  const orderR = Math.max(0, needR - freeR - tFreeR);
-
-  // Cable planning cards were moved out of this tile — the slot now shows
-  // the current per-meter cable price (renderCablePrice). Keep the KPI block:
-  // hero tiles still pull the order / free / reserve metrics from here.
-
-  // Fill hero KPIs
-  const totalFree = freeB + freeR;
-  const totalReserve = s.black.reserve + s.red.reserve;
-  const totalMust = mustB + mustR;
-  const totalOrder = orderB + orderR;
-  const totalTransitFree = tFreeB + tFreeR;
-  const totalWma = adsB + adsR;
-
-  document.getElementById('kpiFree').textContent = fmt(totalFree) + ' м';
-  document.getElementById('kpiFree').nextElementSibling.innerHTML = `ч: <strong style="color:var(--text)">${fmt(freeB)}</strong> · ч: <strong style="color:var(--text)">${fmt(freeR)}</strong>`;
-
-  document.getElementById('kpiReserve').textContent = fmt(totalReserve) + ' м';
-  document.getElementById('kpiReserve').nextElementSibling.innerHTML = `${f.reserveList.length} активних замовлень`;
-
-  // «Замовити» — фактична кількість до замовлення. Якщо покриття вистачає — 0, без зайвого тексту.
-  document.getElementById('kpiMust').textContent = fmt(totalOrder) + ' м';
-  document.getElementById('kpiMust').nextElementSibling.innerHTML = totalOrder > 0
-    ? `ч: <strong style="color:var(--text)">${fmt(orderB)}</strong> · ч: <strong style="color:var(--text)">${fmt(orderR)}</strong>${totalTransitFree > 0 ? ` · <span style="color:var(--text3)">в дорозі ${fmt(totalTransitFree)}</span>` : ''}`
-    : `<span class="kpi-trend down">✓ покрито</span>`;
-
-  document.getElementById('kpiWma').textContent = fmt(totalWma, 1) + ' м';
-  document.getElementById('kpiWma').nextElementSibling.innerHTML = `На 1 міс ≈ <strong style="color:var(--text)">${fmt(totalWma * 30)}</strong> м`;
-}
-
-// Shipments rendering — chart is clickable per bar, opens day detail modal
-let shipStatsForModal = null;
-function renderShipments(f){
-  const all = f.dailyStats.slice().reverse(); // oldest → newest, up to 60 days
-  shipStatsForModal = all;
-  // Chart shows last 30 days for readability; modal drill-down shows all 60
-  const stats = all.slice(-30);
-  const total30 = stats.reduce((a, b) => a + b.total, 0);
-  const avg7 = stats.slice(-7).reduce((a, b) => a + b.total, 0) / 7;
-  const avg30 = stats.reduce((a, b) => a + b.total, 0) / stats.length;
-  const diff = avg30 > 0 ? ((avg7 / avg30) - 1) * 100 : 0;
-  let trendStr = '■ СТАБІЛЬНО', trendCls = 'stable';
-  if (diff > 5) { trendStr = '▲ РІСТ'; trendCls = 'up'; }
-  else if (diff < -5) { trendStr = '▼ ПАДІННЯ'; trendCls = 'down'; }
-
-  document.getElementById('shipBody').innerHTML = `
-    <div class="ship-stats">
-      <div class="ship-stat"><div class="lab">За 30 днів</div><div class="val">${fmt(total30)} м</div></div>
-      <div class="ship-stat"><div class="lab">Середнє 7 днів</div><div class="val">${fmt(avg7, 1)} м/д</div></div>
-      <div class="ship-stat"><div class="lab">Середнє 30 днів</div><div class="val">${fmt(avg30, 1)} м/д</div></div>
-      <div class="ship-stat"><div class="lab">Тренд тижня</div><div class="val"><span class="kpi-trend ${trendCls}">${trendStr}</span></div></div>
-      <div class="ship-stat accent"><div class="lab">Прогноз WMA</div><div class="val">${fmt(f.wma.total, 1)} м/д</div></div>
-      <div class="ship-stat"><div class="lab">Архів</div><div class="val"><button class="btn btn--secondary btn--sm" onclick="openShipDetail(null)">60 днів →</button></div></div>
-    </div>
-    <div class="chart-wrap"><canvas id="shipChart"></canvas></div>
-  `;
-
-  new Chart(document.getElementById('shipChart'), {
-    type: 'bar',
-    data: {
-      labels: stats.map(s => fmtDate(s.date)),
-      datasets: [
-        { label: 'Чорний', data: stats.map(s => s.black), backgroundColor: css('--text3'), borderRadius: 3, borderSkipped: false },
-        { label: 'Червоний', data: stats.map(s => s.red), backgroundColor: css('--red'), borderRadius: 3, borderSkipped: false },
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'top', align: 'end', labels: { color: css('--text2'), boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } } },
-        tooltip: { mode: 'index', intersect: false, backgroundColor: css('--surface2'), titleColor: css('--text'), bodyColor: css('--text2'), borderColor: css('--border2'), borderWidth: 1, padding: 10, cornerRadius: 8 }
-      },
-      scales: {
-        x: { stacked: true, ticks: { color: css('--text2'), font: { size: 10 } }, grid: { display: false } },
-        y: { stacked: true, beginAtZero: true, ticks: { color: css('--text2'), font: { size: 10 } }, grid: { color: css('--border') } }
-      },
-      onClick: (event, elements) => {
-        if (!elements.length) return;
-        const chartIdx = elements[0].index;
-        // Chart shows last 30 of 60 days — map to full index in shipStatsForModal
-        const full = shipStatsForModal || [];
-        const offset = Math.max(0, full.length - 30);
-        openShipDetail(offset + chartIdx);
-      },
-      onHover: (evt, els) => { evt.native.target.style.cursor = els[0] ? 'pointer' : 'default'; }
-    }
-  });
-}
-
-// Hold the latest forecast payload for modal drill-downs
 let forecastData = null;
+let copperAvgData = null;
+let calcMonth = null;
 
-async function loadForecast(){
-  try {
-    const res = await fetch(API_URL + '?action=cable_forecast');
-    const f = await res.json();
-    if (f.error) throw new Error(f.error);
-    forecastData = f;
-    renderPlanning(f);
-    renderShipments(f);
-    renderTransitKpi(f);
-    renderCableWh(f);
-  } catch (e) {
-    document.getElementById('planBody').innerHTML = `<div class="error">${e.message}</div>`;
-    document.getElementById('shipBody').innerHTML = `<div class="error">${e.message}</div>`;
-    document.getElementById('whBody').innerHTML = `<div class="error">${e.message}</div>`;
+function fmt(n, d) {
+  if (n == null || isNaN(n)) return '—';
+  return Number(n).toLocaleString('uk-UA', { minimumFractionDigits: d||0, maximumFractionDigits: d||0 });
+}
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('uk-UA', { day:'2-digit', month:'short' }).replace('.','');
+}
+function fmtNow() {
+  const d = new Date();
+  return d.toLocaleDateString('uk-UA',{day:'2-digit',month:'short'}) + ' · ' + d.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
+}
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// SVG sparkline (for KPI cards)
+function sparkSvg(values, w, h, color) {
+  w = w||72; h = h||22; color = color||'var(--fg-2)';
+  const min = Math.min(...values), max = Math.max(...values), span = max-min||1;
+  const pts = values.map((v,i) => [i/(values.length-1)*w, h-(v-min)/span*h]);
+  const d = pts.map((p,i) => (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><path d="${d}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+// SVG area chart (for EUR/USD)
+function areaSvg(data, h, accent) {
+  const W = 360; h = h||60; accent = accent||'var(--accent)';
+  const min = Math.min(...data), max = Math.max(...data), span = max-min||1;
+  const pts = data.map((v,i) => [i/(data.length-1)*W, h-(v-min)/span*(h-8)-4]);
+  const line = pts.map((p,i) => (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const area = `M0 ${h} L${pts.map(p => p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' L')} L${W} ${h} Z`;
+  const gid = 'ag' + Math.random().toString(36).slice(2,7);
+  return `<svg viewBox="0 0 ${W} ${h}" preserveAspectRatio="none" style="width:100%;height:${h}px;display:block">
+    <defs><linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="${accent}" stop-opacity=".22"/><stop offset="100%" stop-color="${accent}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${area}" fill="url(#${gid})"/><path d="${line}" fill="none" stroke="${accent}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+// ─── Forecast chart (SVG) ───
+function renderForecastChart(f) {
+  const card = document.getElementById('forecastCard');
+  const body = card.querySelector('.card-b');
+  const s = f.stock;
+  const t = f.inTransit || {};
+  const totalFree = s.black.free + s.red.free;
+  const totalTransit = (t.totalFree||0);
+  const wma = f.wma.total;
+  const horizon = 45;
+  let stock = totalFree + totalTransit;
+
+  const days = [];
+  const today = new Date();
+  for (let i = 0; i <= horizon; i++) {
+    const d = new Date(today); d.setDate(d.getDate() + i);
+    const dow = d.getDay();
+    const dayDemand = dow === 0 ? 0 : dow === 6 ? wma * 0.4 : wma;
+    if (i > 0) stock -= dayDemand;
+    days.push({ i, date: d, stock, demand: dayDemand });
+  }
+
+  const W = 1400, H = 280, PX = 52, PT = 14, PB = 28;
+  const maxY = Math.max(...days.map(d => d.stock)) * 1.1;
+  const minY = Math.min(0, ...days.map(d => d.stock)) * 1.1;
+  const xs = i => PX + i/(days.length-1)*(W-PX-12);
+  const ys = v => PT + (1-(v-minY)/(maxY-minY))*(H-PT-PB);
+
+  const stockoutIdx = days.findIndex(d => d.stock < 0);
+  const stockPath = days.map((d,i) => (i?'L':'M')+xs(i).toFixed(1)+' '+ys(d.stock).toFixed(1)).join(' ');
+
+  const demandBaseline = days.map((d,i) => {
+    const v = (totalFree + totalTransit) - wma * i;
+    return (i?'L':'M')+xs(i).toFixed(1)+' '+ys(v).toFixed(1);
+  }).join(' ');
+
+  const ticks = 5;
+  const yticks = Array.from({length:ticks+1}, (_,i) => minY + (maxY-minY)*i/ticks);
+  const xticks = days.filter((d,i) => i%7===0);
+
+  let stockoutSvg = '';
+  if (stockoutIdx > 0) {
+    const sx = xs(stockoutIdx);
+    stockoutSvg = `
+      <rect x="${sx}" y="${PT}" width="${W-12-sx}" height="${H-PT-PB}" fill="url(#hatch)"/>
+      <line x1="${sx}" x2="${sx}" y1="${PT}" y2="${H-PB}" stroke="var(--neg)" stroke-width="1.2" stroke-dasharray="4 3"/>
+      <circle cx="${sx}" cy="${ys(0)}" r="3.5" fill="var(--neg)"/>
+      <text x="${sx+8}" y="${PT+14}" class="ax-label" style="fill:var(--neg)">дефіцит · ${fmtDate(days[stockoutIdx].date)}</text>`;
+  }
+
+  const svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="height:280px">
+    <defs><pattern id="hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="var(--hatch)" stroke-width="1.5"/></pattern></defs>
+    ${yticks.map((v,i) => `<g><line x1="${PX}" x2="${W-12}" y1="${ys(v)}" y2="${ys(v)}" class="ax-line ${v===0?'strong':''}"/><text x="${PX-8}" y="${ys(v)+3}" text-anchor="end" class="ax-label">${fmt(v)}</text></g>`).join('')}
+    ${xticks.map(d => `<g><line x1="${xs(d.i)}" x2="${xs(d.i)}" y1="${PT}" y2="${H-PB}" class="ax-line"/><text x="${xs(d.i)}" y="${H-10}" text-anchor="middle" class="ax-label">${fmtDate(d.date)}</text></g>`).join('')}
+    ${stockoutSvg}
+    <path d="${demandBaseline}" fill="none" stroke="var(--mute)" stroke-width="1.3" stroke-dasharray="3 3" opacity=".7"/>
+    <path d="${stockPath}" fill="none" stroke="var(--stock-line)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+    <line x1="${xs(0)}" x2="${xs(0)}" y1="${PT}" y2="${H-PB}" stroke="var(--line-2)" stroke-width="1"/>
+    <text x="${xs(0)+4}" y="${PT+11}" class="ax-label">сьогодні</text>
+  </svg>`;
+
+  body.innerHTML = `<div class="chart">${svg}</div>`;
+
+  const titleEl = card.querySelector('.card-h .title');
+  const daysToDeficit = stockoutIdx > 0 ? stockoutIdx : '∞';
+  titleEl.childNodes[0].textContent = `Прогноз залишків — ${horizon} днів (дефіцит через ${daysToDeficit} дн.) `;
+}
+
+// ─── Shipments chart (SVG) ───
+function renderShipments(f) {
+  const card = document.getElementById('shipmentsCard');
+  const body = card.querySelector('.card-b');
+  const all = (f.dailyStats || []).slice().reverse();
+  const stats = all.slice(-30);
+  if (!stats.length) { body.innerHTML = '<div class="error">Немає даних</div>'; return; }
+
+  const total = stats.reduce((a,b) => a+b.total, 0);
+  const maxVal = Math.max(...stats.map(d => d.total));
+  const avg = total / stats.length;
+  document.getElementById('shipMeta').textContent = `сума: ${fmt(total)} м · max: ${fmt(maxVal)} м`;
+
+  const W = 1400, H = 180, PX = 48, PT = 12, PB = 28;
+  const max = maxVal * 1.1;
+  const bw = (W-PX-12)/stats.length - 2;
+  const ys = v => PT + (1-v/max)*(H-PT-PB);
+  const xb = i => PX + i*((W-PX-12)/stats.length) + 1;
+
+  const ticks = 4;
+  const yticks = Array.from({length:ticks+1}, (_,i) => max*i/ticks);
+
+  const bars = stats.map((d,i) => {
+    const h = H-PT-PB-(ys(d.total)-PT);
+    const dt = new Date(d.date);
+    const isWe = dt.getDay()===0 || dt.getDay()===6;
+    return `<rect x="${xb(i)}" y="${ys(d.total)}" width="${bw}" height="${Math.max(1,h)}" fill="${isWe?'var(--bar-fill-2)':'var(--bar-fill)'}" rx="1"/>`;
+  }).join('');
+
+  const xlabels = stats.filter((_,i) => i%5===0).map((d,k) =>
+    `<text x="${xb(k*5)+bw/2}" y="${H-10}" text-anchor="middle" class="ax-label">${fmtDate(d.date)}</text>`
+  ).join('');
+
+  const svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="height:180px">
+    ${yticks.map((v,i) => `<g><line x1="${PX}" x2="${W-12}" y1="${ys(v)}" y2="${ys(v)}" class="ax-line"/><text x="${PX-8}" y="${ys(v)+3}" text-anchor="end" class="ax-label">${fmt(Math.round(v))}</text></g>`).join('')}
+    ${bars}
+    <line x1="${PX}" x2="${W-12}" y1="${ys(avg)}" y2="${ys(avg)}" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="3 3" opacity=".8"/>
+    <text x="${W-14}" y="${ys(avg)-4}" text-anchor="end" class="ax-label" style="fill:var(--accent)">сер. ${fmt(Math.round(avg))} м/д</text>
+    ${xlabels}
+  </svg>`;
+
+  body.innerHTML = `<div class="chart">${svg}</div>`;
+}
+
+// ─── KPI strip ───
+function renderKpis(f) {
+  const s = f.stock;
+  const t = f.inTransit || {};
+  const tFreeB = t.blackFree||0, tFreeR = t.redFree||0;
+  const totalFree = s.black.free + s.red.free;
+  const totalReserve = s.black.reserve + s.red.reserve;
+  const totalTransit = t.total||0;
+  const totalTransitFree = (t.totalFree||0);
+  const wma = f.wma;
+
+  const needB = Math.round(wma.black * LT_TOTAL);
+  const needR = Math.round(wma.red * LT_TOTAL);
+  const orderB = Math.max(0, needB - s.black.free - tFreeB);
+  const orderR = Math.max(0, needR - s.red.free - tFreeR);
+  const totalOrder = orderB + orderR;
+  const coverDays = wma.total > 0 ? Math.round((totalFree + totalTransitFree) / wma.total) : '∞';
+
+  const stats30 = (f.dailyStats||[]).slice(-30).reverse();
+  const freeSpk = stats30.map(d => d.stockBlack + d.stockRed).slice(0,7).reverse();
+  const shipSpk = stats30.map(d => d.total).slice(0,7).reverse();
+
+  const cells = [
+    { lbl:'Вільно на складах', val:fmt(totalFree), u:'м', delta:`ч: ${fmt(s.black.free)} · ч: ${fmt(s.red.free)}`, cls:'up', spark:freeSpk, click:'free' },
+    { lbl:'У резерві', val:fmt(totalReserve), u:'м', delta:`${f.reserveList.length} активних замовлень`, cls:'up', click:'reserve' },
+    { lbl:'В дорозі', val:fmt(totalTransit), u:'м', delta:totalTransitFree ? `вільне: ${fmt(totalTransitFree)}` : `${(t.byWh||[]).length} партій`, cls:'up', click:'transit' },
+    { lbl:'До замовлення', val:fmt(totalOrder), u:'м', delta:totalOrder > 0 ? `запас на ${coverDays} дн.` : 'покрито', alarm:totalOrder > 0, cls:totalOrder > 0 ? 'down' : 'up', click:'must' },
+    { lbl:'WMA прогноз / день', val:fmt(wma.total,1), u:'м', delta:`на 1 міс ≈ ${fmt(wma.total*30)} м`, cls:'up', spark:shipSpk, click:'wma' },
+  ];
+
+  const html = cells.map(c => `
+    <div class="kpi ${c.alarm?'alarm':''}" onclick="openKpi('${c.click}')">
+      <div class="lbl">${c.lbl}</div>
+      <div class="val">${c.val} <span class="u">${c.u}</span></div>
+      <div class="delta"><span class="${c.cls}">${c.cls==='up'?'▲':'▼'}</span> ${c.delta}</div>
+      ${c.spark && c.spark.length > 2 ? `<div class="spark">${sparkSvg(c.spark)}</div>` : ''}
+    </div>`).join('');
+
+  document.getElementById('kpiStrip').innerHTML = html;
+}
+
+// ─── Deficit banner ───
+function renderBanner(f) {
+  const el = document.getElementById('deficitBanner');
+  const s = f.stock;
+  const t = f.inTransit || {};
+  const totalFree = s.black.free + s.red.free;
+  const totalTransitFree = t.totalFree||0;
+  const wma = f.wma.total;
+  const coverDays = wma > 0 ? Math.round((totalFree + totalTransitFree) / wma) : 999;
+
+  const needB = Math.round(f.wma.black * LT_TOTAL);
+  const needR = Math.round(f.wma.red * LT_TOTAL);
+  const orderB = Math.max(0, needB - s.black.free - (t.blackFree||0));
+  const orderR = Math.max(0, needR - s.red.free - (t.redFree||0));
+  const totalOrder = orderB + orderR;
+
+  if (totalOrder <= 0) { el.style.display = 'none'; return; }
+
+  const deadline = new Date(); deadline.setDate(deadline.getDate() + Math.max(0, coverDays - LEAD_TIME));
+  const dlStr = deadline.toLocaleDateString('uk-UA', { day:'2-digit', month:'short', year:'numeric' });
+
+  el.style.display = '';
+  el.innerHTML = `
+    <div class="icon">!</div>
+    <div class="m">За поточним темпом споживання <b>дефіцит настане через ${coverDays} днів</b> — рекомендовано замовити <b>${fmt(totalOrder)} м</b> кабелю 6мм² до <code>${dlStr}</code>. Орієнтовний термін поставки — <code>${LEAD_TIME} днів</code>.</div>`;
+}
+
+// ─── Calc flow card ───
+function renderCalcFlow(r) {
+  copperAvgData = r;
+  const months = (r.months || []).slice(0, 12);
+  if (!months.length) return;
+  if (!calcMonth) calcMonth = r.previousMonth ? r.previousMonth.ym : months[0].ym;
+  updateCalcFlow();
+}
+
+function updateCalcFlow() {
+  if (!copperAvgData) return;
+  const r = copperAvgData;
+  const months = (r.months || []).slice(0, 12);
+  const m = months.find(x => x.ym === calcMonth) || months[0];
+  const mIdx = months.indexOf(m);
+  const prev = months[mIdx + 1];
+  const cu = m.price;
+
+  const copperPerKm = cu * CABLE.weight / 100;
+  const supplierPerKm = CABLE.base + copperPerKm;
+  const supplierPerM = supplierPerKm / 1000;
+  const logEU = TRUCK_EU / TRUCK_KM / 1000;
+  const logUA = TRUCK_UA / TRUCK_KM / 1000;
+  const beforeVat = supplierPerM + logEU + logUA;
+  const vat = beforeVat * VAT_RATE;
+  const kyivPerM = beforeVat + vat;
+  const basePrice = kyivPerM + TIERS[0].markup;
+
+  const nf = (v, d) => v.toLocaleString('uk-UA', { minimumFractionDigits:d||2, maximumFractionDigits:d||2 });
+
+  const monthLabel = ym => {
+    const [y,mo] = ym.split('-');
+    return (UA_MONTHS[+mo-1]||mo) + ' ' + y;
+  };
+
+  const arrow = `<div class="flow-arrow" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>`;
+
+  const tiersHtml = TIERS.map(t => {
+    const perM = kyivPerM + t.markup;
+    const perCoil = perM * COIL_M;
+    const disc = (perM - basePrice) / basePrice * 100;
+    return `<div class="tier-card ${t.transit?'transit':''} ${t.base?'base':''}">
+      <div class="tier-h">
+        ${t.transit ? '<span class="dot-accent"></span>' : ''}
+        <span class="tname">${t.name}</span>
+        ${t.base ? '<span class="tier-tag tag-base">базова</span>' : `<span class="tier-tag tag-pos">${disc.toFixed(1)}%</span>`}
+      </div>
+      <div class="tprice"><span>${perM.toFixed(2)}</span><span class="u">€/м</span></div>
+      <div class="tmeta"><span>${t.coil}</span><span>${fmt(Math.round(perCoil))} €/бухта</span></div>
+    </div>`;
+  }).join('');
+
+  const card = document.getElementById('calcFlowCard');
+  card.querySelector('.card-b').innerHTML = `
+    <div class="flow">
+      <div class="stage">
+        <div class="stage-h"><span class="num">1</span><div><div class="slbl">Постачальник</div></div></div>
+        <div class="stage-body">
+          <div class="row-l"><span class="rl">Базова ціна</span><span class="rv">${nf(CABLE.base)}<span class="u">€/км</span></span></div>
+          <div class="row-l"><span class="rl">Ціна на мідь <span class="formula">сер. за ${monthLabel(calcMonth)}</span></span><span class="rv">${nf(cu)}<span class="u">€/100кг</span></span></div>
+          <div class="row-l"><span class="rl">Мідь на 1 км кабелю <span class="formula">× ${(CABLE.weight/100).toFixed(3)}</span></span><span class="rv">${nf(copperPerKm)}<span class="u">€/км</span></span></div>
+        </div>
+        <div class="stage-total">
+          <div class="t-lbl">Ціна постачальника</div>
+          <div class="t-val">${nf(supplierPerM,4)}<span class="u">€/м</span></div>
+          <div class="t-sub">${nf(supplierPerM*COIL_M)} €/бухта · 500 м</div>
+        </div>
+      </div>
+      ${arrow}
+      <div class="stage accent">
+        <div class="stage-h"><span class="num">2</span><div><div class="slbl">У Києві</div></div></div>
+        <div class="stage-body">
+          <div class="row-l"><span class="rl">Ціна постачальника</span><span class="rv">${nf(supplierPerM,4)}<span class="u">€/м</span></span></div>
+          <div class="row-l"><span class="rl">+ Доставка до кордону</span><span class="rv">${nf(TRUCK_EU,0)}<span class="u">€/фура</span></span></div>
+          <div class="row-l"><span class="rl">+ Доставка по Україні</span><span class="rv">${nf(TRUCK_UA,0)}<span class="u">€/фура</span></span></div>
+          <div class="row-l"><span class="rl">+ ПДВ <span class="formula">20%</span></span><span class="rv">${nf(vat,4)}<span class="u">€/м</span></span></div>
+        </div>
+        <div class="stage-total">
+          <div class="t-lbl">Ціна в Києві</div>
+          <div class="t-val">${nf(kyivPerM,4)}<span class="u">€/м</span></div>
+          <div class="t-sub">${nf(kyivPerM*COIL_M)} €/бухта · 500 м</div>
+        </div>
+      </div>
+      ${arrow}
+      <div class="tiers-stage">
+        <div class="stage-h"><span class="num">3</span><div><div class="slbl">Замовникам</div><div class="shint">за бухту · 500 м</div></div></div>
+        <div class="stage-body tiers-body">${tiersHtml}</div>
+      </div>
+    </div>
+    <div class="flow-foot">
+      <span>1 фура = ${TRUCK_KM} км кабелю · ПДВ нарахований після логістики · мідь: <code>${monthLabel(calcMonth)}</code></span>
+    </div>`;
+}
+
+// ─── Market card ───
+function renderMarket(cuData, fxData) {
+  const cuEl = document.getElementById('mktCu');
+  const fxEl = document.getElementById('mktFx');
+
+  if (cuData && cuData.data && cuData.data.length) {
+    const reversed = cuData.data.slice().reverse();
+    const vals = reversed.map(x => x.price);
+    const cuMom = cuData.avg7 && cuData.avg30 ? ((cuData.avg7/cuData.avg30)-1)*100 : 0;
+    cuEl.innerHTML = `
+      <div class="mkt-h">
+        <div class="ll">МІДЬ · daily <span class="period">30 днів</span></div>
+        <div class="rr">
+          <span class="mkt-v">${fmt(cuData.current,2)}</span>
+          <span class="mkt-u">€/100кг</span>
+          <span class="mkt-d ${cuMom<0?'neg':''}">${cuMom>=0?'▲':'▼'} ${Math.abs(cuMom).toFixed(2)}% 7д/30д</span>
+        </div>
+      </div>
+      ${areaSvg(vals, 86)}
+      <div class="mkt-hint">7д <b>${fmt(cuData.avg7,2)}</b> · 30д <b>${fmt(cuData.avg30,2)}</b></div>`;
+  } else {
+    cuEl.innerHTML = '<div class="error">Дані про мідь недоступні</div>';
+  }
+
+  if (fxData && fxData.data && fxData.data.length) {
+    const reversed = fxData.data.slice().reverse();
+    const vals = reversed.map(x => x.price);
+    const fxMom = fxData.avg7 && fxData.avg30 ? ((fxData.avg7/fxData.avg30)-1)*100 : 0;
+    fxEl.innerHTML = `
+      <div class="mkt-h">
+        <div class="ll">EUR / USD <span class="period">30 днів</span></div>
+        <div class="rr">
+          <span class="mkt-v">${fmt(fxData.current,4)}</span>
+          <span class="mkt-d ${fxMom<0?'neg':''}">${fxMom>=0?'▲':'▼'} ${Math.abs(fxMom).toFixed(2)}% д/д</span>
+        </div>
+      </div>
+      ${areaSvg(vals, 86)}
+      <div class="mkt-hint">7д <b>${fmt(fxData.avg7,4)}</b> · 30д <b>${fmt(fxData.avg30,4)}</b></div>`;
+  } else {
+    fxEl.innerHTML = '<div class="error">Дані EUR/USD недоступні</div>';
   }
 }
 
-function renderTransitKpi(f){
-  const t = f.inTransit || { black: 0, red: 0, total: 0, byWh: [], totalFree: 0, totalReserve: 0 };
-  document.getElementById('kpiTransit').textContent = fmt(t.total) + ' м';
-  const whs = t.byWh.length;
-  const next = t.byWh[0];
-  const free = t.totalFree || 0;
-  const res = t.totalReserve || 0;
-  const split = (free || res) ? `вільне: <strong style="color:var(--text)">${fmt(free)}</strong> · у резерві: <strong style="color:var(--text)">${fmt(res)}</strong>` : '';
-  document.getElementById('kpiTransit').nextElementSibling.innerHTML =
-    whs ? (split || `${whs} партія${whs === 1 ? '' : whs < 5 ? 'ї' : 'й'} · найближча: <strong style="color:var(--text)">${next.name.replace(/В дорозі\s*/, '')}</strong>`)
-        : 'немає партій у дорозі';
+// ─── Warehouses ───
+let whData = null;
+function renderWarehouses(f) {
+  const onHand = (f.stockByWh || []).map(w => ({
+    name: w.name,
+    bF: w.black.free, bR: w.black.reserve,
+    rF: w.red.free, rR: w.red.reserve,
+    total: w.black.free + w.black.reserve + w.red.free + w.red.reserve,
+    free: w.black.free + w.red.free,
+    reserved: w.black.reserve + w.red.reserve,
+  })).filter(w => w.total > 0);
+
+  const transit = ((f.inTransit && f.inTransit.byWh) || []).map(w => ({
+    name: w.name,
+    bF: w.blackFree||0, bR: w.blackReserve||0,
+    rF: w.redFree||0, rR: w.redReserve||0,
+    total: (w.blackFree||0)+(w.blackReserve||0)+(w.redFree||0)+(w.redReserve||0),
+    free: (w.blackFree||0)+(w.redFree||0),
+    reserved: (w.blackReserve||0)+(w.redReserve||0),
+  })).filter(w => w.total > 0);
+
+  whData = [...onHand, ...transit.map(w => ({...w, isTransit:true}))];
+  renderWhTable('id');
 }
 
-// ─── KPI Drill-down modal ───
+function renderWhTable(sortBy) {
+  if (!whData) return;
+  const rows = [...whData];
+  if (sortBy === 'free') rows.sort((a,b) => b.free - a.free);
+  else if (sortBy === 'reserved') rows.sort((a,b) => b.reserved - a.reserved);
+
+  const maxTotal = Math.max(...rows.map(r => r.total), 1);
+  const tbody = rows.map(w => {
+    const fill = w.total / maxTotal;
+    const status = w.total === 0 ? 't-neg' : w.free < w.reserved ? 't-warn' : 't-pos';
+    const statusTxt = w.total === 0 ? 'out' : w.free < w.reserved ? 'low' : 'ok';
+    return `<tr>
+      <td><div style="font-family:var(--mono);color:var(--mute);font-size:11px">${w.isTransit ? '🚛' : '🏢'}</div><div style="color:var(--fg)">${w.name}</div></td>
+      <td class="num">${fmt(w.bF + w.bR)}</td>
+      <td class="num">${fmt(w.rF + w.rR)}</td>
+      <td class="num" style="color:var(--mute)">${fmt(w.reserved)}</td>
+      <td class="bar-cell"><div class="bar"><i style="width:${Math.min(100,fill*100)}%;${fill>0.85?'background:var(--warn)':''}"></i></div><div style="font-family:var(--mono);font-size:10.5px;color:var(--mute);margin-top:3px">${fmt(w.total)} м</div></td>
+      <td><span class="tag ${status}">${statusTxt}</span></td>
+    </tr>`;
+  }).join('');
+
+  const card = document.getElementById('whCard');
+  card.querySelector('.card-b').innerHTML = `<table class="tbl"><thead><tr>
+    <th>Склад</th><th style="text-align:right">Чорний</th><th style="text-align:right">Червоний</th><th style="text-align:right">Резерв</th><th>Обсяг</th><th></th>
+  </tr></thead><tbody>${tbody}</tbody></table>`;
+}
+
+document.getElementById('whTabs').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-s]');
+  if (!btn) return;
+  document.querySelectorAll('#whTabs button').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  renderWhTable(btn.dataset.s);
+});
+
+// ─── Modal system ───
 const KPI_META = {
-  free:    { ico: '📦', cls: 'accent', title: 'Вільно на складах', sub: 'Поточні залишки, не в резерві' },
-  reserve: { ico: '🔒', cls: 'blue',   title: 'У резерві',          sub: 'Залишки, закріплені за замовленнями клієнтів' },
-  transit: { ico: '🚛', cls: 'purple', title: 'Кабель в дорозі',    sub: 'Партії на складах «В дорозі» (виробництво + логістика)' },
-  must:    { ico: '⚠️',  cls: 'red',    title: 'Замовити', sub: `max(0, WMA × ${LT_TOTAL} днів − Вільно − В дорозі (вільне))` },
-  wma:     { ico: '📈', cls: 'green',  title: 'WMA прогноз / день', sub: 'Weighted moving average 14д/30д/60д з фільтром по низькому стоку' },
+  free:    { ico:'📦', title:'Вільно на складах', sub:'Поточні залишки, не в резерві' },
+  reserve: { ico:'🔒', title:'У резерві', sub:'Залишки, закріплені за замовленнями клієнтів' },
+  transit: { ico:'🚛', title:'Кабель в дорозі', sub:'Партії на складах «В дорозі»' },
+  must:    { ico:'⚠️', title:'До замовлення', sub:`max(0, WMA × ${LT_TOTAL} днів − Вільно − В дорозі)` },
+  wma:     { ico:'📈', title:'WMA прогноз / день', sub:'Weighted moving average з фільтром по стоку' },
 };
 
-function openKpi(kind){
+function openKpi(kind) {
   if (!forecastData) return;
   const meta = KPI_META[kind]; if (!meta) return;
-  const ico = document.getElementById('modalIco');
-  ico.className = 'm-ico ' + meta.cls;
-  ico.textContent = meta.ico;
+  document.getElementById('modalIco').textContent = meta.ico;
   document.getElementById('modalTitle').textContent = meta.title;
   document.getElementById('modalSub').textContent = meta.sub;
   document.getElementById('modalBody').innerHTML = modalTemplate(kind, forecastData);
@@ -890,404 +848,136 @@ function openKpi(kind){
   document.getElementById('modal').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
-function closeKpi(){
+
+function closeModal() {
   document.getElementById('modalBackdrop').classList.remove('open');
   document.getElementById('modal').classList.remove('open');
   document.body.style.overflow = '';
 }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeKpi(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-// ─── Chart drill-down modals (reuse same modal element) ───
-function openMarketDetail(kind, focusIdx){
-  const m = marketData[kind];
-  if (!m) return;
-  const { d, unit, decimals, source, label, reversed } = m;
-  const ico = document.getElementById('modalIco');
-  ico.className = 'm-ico accent';
-  ico.textContent = kind === 'copper' ? '🟠' : '💶';
-  document.getElementById('modalTitle').textContent = `${label} — історія 30 днів`;
-  document.getElementById('modalSub').textContent = `Поточна ціна ${fmt(d.current, decimals)}${unit} · джерело: ${source}`;
-
-  const rows = reversed.slice().reverse().map((x, i) => {
-    const prev = reversed.slice().reverse()[i + 1];
-    const chg = prev ? (x.price - prev.price) : 0;
-    const chgPct = prev && prev.price ? (chg / prev.price * 100) : 0;
-    const cls = chg > 0 ? 'up' : chg < 0 ? 'down' : '';
-    const sign = chg > 0 ? '+' : '';
-    const realIdx = reversed.length - 1 - i; // index in original reversed array
-    const isFocus = focusIdx !== null && realIdx === focusIdx;
-    return `<tr class="${isFocus ? 'focus' : ''}"><td>${fmtDate(x.date)}</td><td>${fmt(x.price, decimals)}${unit}</td><td class="${cls}">${chg ? sign + fmt(chg, decimals) : '—'}</td><td class="${cls}">${chg ? sign + chgPct.toFixed(2) + '%' : '—'}</td></tr>`;
-  }).join('');
-
-  document.getElementById('modalBody').innerHTML = `
-    <div class="m-big">${fmt(d.current, decimals)}${unit}</div>
-    <div class="m-sub">${d.trend === 'UP' ? '▲ Зростання' : d.trend === 'DOWN' ? '▼ Падіння' : '■ Стабільно'} · ${d.diff} відносно 7д середнього</div>
-    <div class="m-split">
-      <div class="m-col"><div class="m-col-label">Середнє 7 днів</div><div class="m-col-val">${fmt(d.avg7, decimals)}${unit}</div></div>
-      <div class="m-col"><div class="m-col-label">Середнє 30 днів</div><div class="m-col-val">${fmt(d.avg30, decimals)}${unit}</div></div>
-    </div>
-    <div class="m-section-title">Історія</div>
-    <table class="m-tbl">
-      <thead><tr><th>Дата</th><th>Ціна</th><th>Зміна</th><th>%</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <div class="m-formula">
-      Джерело: <a href="${kind === 'copper' ? 'https://www.westmetall.com/en/markdaten.php?action=table&field=WM_Cu_low' : 'https://finance.yahoo.com/quote/EURUSD%3DX/history'}" target="_blank" rel="noopener" style="color:var(--accent)">${source}</a>.
-      Дані оновлюються раз на годину (KV cache).
-      ${focusIdx !== null ? '<br>Підсвічений рядок — точка, на яку ти натиснув на графіку.' : ''}
-    </div>
-  `;
-  document.getElementById('modalBackdrop').classList.add('open');
-  document.getElementById('modal').classList.add('open');
-  document.body.style.overflow = 'hidden';
-  // Scroll focused row into view after DOM update
-  if (focusIdx !== null) {
-    requestAnimationFrame(() => {
-      const row = document.querySelector('#modal .m-tbl tr.focus');
-      if (row) row.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    });
-  }
-}
-
-function openShipDetail(focusIdx){
-  if (!forecastData || !shipStatsForModal) return;
-  const f = forecastData;
-  const stats = shipStatsForModal; // already chronological (oldest→newest)
-
-  // Aggregate blackLog/redLog by date for quick lookup
-  // blackLog entries: [displayDate, docNumber, client, qty]
-  const byDate = {};
-  const addLog = (log, type) => {
-    (log || []).forEach(([displayDate, num, client, qty]) => {
-      // Convert uk-UA DD.MM.YYYY to YYYY-MM-DD
-      const m = (displayDate || '').match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
-      if (!m) return;
-      const iso = `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
-      if (!byDate[iso]) byDate[iso] = [];
-      byDate[iso].push({ type, num, client, qty });
-    });
-  };
-  addLog(f.blackLog, 'black');
-  addLog(f.redLog, 'red');
-
-  const ico = document.getElementById('modalIco');
-  ico.className = 'm-ico accent';
-  ico.textContent = '📦';
-
-  if (focusIdx !== null) {
-    const s = stats[focusIdx];
-    const docs = (byDate[s.date] || []).sort((a, b) => b.qty - a.qty);
-    document.getElementById('modalTitle').textContent = `Відвантаження за ${fmtDate(s.date)}`;
-    document.getElementById('modalSub').textContent = `Всього ${fmt(s.total)} м · чорний ${fmt(s.black)} · червоний ${fmt(s.red)}`;
-    const docRows = docs.length
-      ? docs.map(doc => `<tr><td><span class="wh-dot ${doc.type}"></span>${doc.type === 'black' ? 'Чорний' : 'Червоний'}</td><td>${doc.num}</td><td>${escapeHtml(doc.client)}</td><td>${fmt(doc.qty)} м</td></tr>`).join('')
-      : '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">Відвантажень цього дня не було</td></tr>';
-    const excl = s.excludedBlack || s.excludedRed;
-    document.getElementById('modalBody').innerHTML = `
-      <div class="m-big">${fmt(s.total)} м</div>
-      <div class="m-sub">Обсяг відвантажень за день</div>
-      <div class="m-split">
-        <div class="m-col black"><div class="m-col-label">Чорний</div><div class="m-col-val">${fmt(s.black)} м</div><div class="m-col-sub">Запас на початок дня: ${fmt(s.stockBlack)} м ${s.excludedBlack ? '⚠️' : ''}</div></div>
-        <div class="m-col red"><div class="m-col-label">Червоний</div><div class="m-col-val">${fmt(s.red)} м</div><div class="m-col-sub">Запас на початок дня: ${fmt(s.stockRed)} м ${s.excludedRed ? '⚠️' : ''}</div></div>
-      </div>
-      ${excl ? '<div class="m-banner">⚠️ Цей день виключений з WMA (запас був нижче 10 000 м — обмеження наявністю).</div>' : ''}
-      <div class="m-section-title">Документи</div>
-      <table class="m-tbl">
-        <thead><tr><th>Колір</th><th>№ документа</th><th>Клієнт</th><th>К-ть</th></tr></thead>
-        <tbody>${docRows}</tbody>
-      </table>
-    `;
-  } else {
-    // Full history
-    document.getElementById('modalTitle').textContent = 'Відвантаження — історія 60 днів';
-    document.getElementById('modalSub').textContent = `Натисни на рядок для деталей дня`;
-    const rows = stats.slice().reverse().map((s, i) => {
-      const excl = s.excludedBlack || s.excludedRed;
-      return `<tr class="${excl ? 'muted' : ''}" data-ship-idx="${stats.length - 1 - i}" onclick="openShipDetail(${stats.length - 1 - i})" style="cursor:pointer">
-        <td>${fmtDate(s.date)}</td>
-        <td>${fmt(s.black)}</td>
-        <td>${fmt(s.red)}</td>
-        <td><strong>${fmt(s.total)}</strong></td>
-        <td>${fmt(s.stockBlack)}</td>
-        <td>${fmt(s.stockRed)}</td>
-        <td>${excl ? '⚠️' : '✓'}</td>
-      </tr>`;
-    }).join('');
-    document.getElementById('modalBody').innerHTML = `
-      <div class="m-section-title">Історія відвантажень (60 днів)</div>
-      <table class="m-tbl">
-        <thead><tr><th>Дата</th><th>Чорний</th><th>Черв.</th><th>Разом</th><th>Стокч.</th><th>Стокчрв.</th><th>WMA</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <div class="m-formula">
-        ⚠️ у колонці WMA = день виключений з прогнозу (запас був нижче 10 000 м). Натисни рядок для деталей.
-      </div>
-    `;
-  }
-
-  document.getElementById('modalBackdrop').classList.add('open');
-  document.getElementById('modal').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function escapeHtml(s) {
-  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-function modalTemplate(kind, f){
+function modalTemplate(kind, f) {
   const s = f.stock;
-  const ab = f.avgBreakdown || {};
-  const t = f.inTransit || { black: 0, red: 0, total: 0, byWh: [], blackFree: 0, redFree: 0, blackReserve: 0, redReserve: 0, totalFree: 0, totalReserve: 0 };
-  const tFreeB = t.blackFree || 0, tFreeR = t.redFree || 0;
-  const mustB = Math.round(f.wma.black * LT_TOTAL + s.black.reserve);
-  const mustR = Math.round(f.wma.red * LT_TOTAL + s.red.reserve);
-  const needB = mustB - s.black.reserve;
-  const needR = mustR - s.red.reserve;
+  const t = f.inTransit || { black:0,red:0,total:0,byWh:[],blackFree:0,redFree:0,blackReserve:0,redReserve:0,totalFree:0,totalReserve:0 };
+  const tFreeB = t.blackFree||0, tFreeR = t.redFree||0;
+  const needB = Math.round(f.wma.black * LT_TOTAL);
+  const needR = Math.round(f.wma.red * LT_TOTAL);
   const orderB = Math.max(0, needB - s.black.free - tFreeB);
   const orderR = Math.max(0, needR - s.red.free - tFreeR);
 
   if (kind === 'free') {
     const totalFree = s.black.free + s.red.free;
-    const whRows = (f.stockByWh || []).map(w => `
-      <tr><td>${w.name}</td><td>${fmt(w.black.free)}</td><td>${fmt(w.red.free)}</td><td><strong>${fmt(w.black.free + w.red.free)}</strong></td></tr>
-    `).join('');
-    return `
-      <div class="m-big">${fmt(totalFree)} м</div>
-      <div class="m-sub">Вільний залишок — доступний до продажу або резерву прямо зараз</div>
-      <div class="m-split">
-        <div class="m-col black"><div class="m-col-label">Чорний кабель</div><div class="m-col-val">${fmt(s.black.free)} м</div><div class="m-col-sub">Загалом з резервом: ${fmt(s.black.free + s.black.reserve)}</div></div>
-        <div class="m-col red"><div class="m-col-label">Червоний кабель</div><div class="m-col-val">${fmt(s.red.free)} м</div><div class="m-col-sub">Загалом з резервом: ${fmt(s.red.free + s.red.reserve)}</div></div>
-      </div>
-      <div class="m-section-title">Розподіл по складах</div>
-      <table class="m-tbl">
-        <thead><tr><th>Склад</th><th>Чорний</th><th>Черв.</th><th>Разом</th></tr></thead>
-        <tbody>${whRows || '<tr><td colspan="4" style="text-align:center;color:var(--text3)">Немає даних</td></tr>'}</tbody>
-      </table>
-      <div class="m-formula">
-        <strong>Джерело:</strong> 1С UNF, регістр <code>Запасы/Balance</code><br>
-        <strong>Фільтр:</strong> організація РЕАКТ + склади <code>2 Одеса</code> та <code>Київ КЛАУД</code>, <code>ЗаказПокупателя = 0</code> (без резерву)
-      </div>
-    `;
+    const whRows = (f.stockByWh||[]).map(w => `<tr><td>${w.name}</td><td>${fmt(w.black.free)}</td><td>${fmt(w.red.free)}</td><td><strong>${fmt(w.black.free+w.red.free)}</strong></td></tr>`).join('');
+    return `<div class="m-big">${fmt(totalFree)} м</div><div class="m-sub">Вільний залишок — доступний до продажу</div>
+      <div class="m-split"><div class="m-col"><div class="m-col-label">Чорний</div><div class="m-col-val">${fmt(s.black.free)} м</div></div><div class="m-col"><div class="m-col-label">Червоний</div><div class="m-col-val">${fmt(s.red.free)} м</div></div></div>
+      <div class="m-section-title">По складах</div><table class="m-tbl"><thead><tr><th>Склад</th><th>Чорний</th><th>Черв.</th><th>Разом</th></tr></thead><tbody>${whRows||'<tr><td colspan="4" style="text-align:center;color:var(--mute)">Немає</td></tr>'}</tbody></table>
+      <div class="m-formula"><strong>Джерело:</strong> 1С UNF, регістр <code>Запасы/Balance</code>, організація РЕАКТ, <code>ЗаказПокупателя = 0</code></div>`;
   }
-
   if (kind === 'reserve') {
-    const black = f.reserveList.filter(r => r.type === 'black');
-    const red = f.reserveList.filter(r => r.type === 'red');
-    const list = [...f.reserveList].sort((a, b) => b.qty - a.qty);
-    const totalTransit = f.reserveList.reduce((a, r) => a + (r.fromTransit || 0), 0);
-    const totalOnHand = f.reserveList.reduce((a, r) => a + (r.fromOnHand || 0), 0);
-    return `
-      <div class="m-big">${fmt(s.black.reserve + s.red.reserve)} м</div>
-      <div class="m-sub">${f.reserveList.length} активних резервів · на складі ${fmt(totalOnHand)} м · в дорозі ${fmt(totalTransit)} м</div>
-      <div class="m-split">
-        <div class="m-col black"><div class="m-col-label">Чорний резерв</div><div class="m-col-val">${fmt(s.black.reserve)} м</div><div class="m-col-sub">${black.length} замовлень</div></div>
-        <div class="m-col red"><div class="m-col-label">Червоний резерв</div><div class="m-col-val">${fmt(s.red.reserve)} м</div><div class="m-col-sub">${red.length} замовлень</div></div>
-      </div>
-      <div class="m-section-title">Замовлення клієнтів</div>
-      <div class="m-list">
-        ${list.map(r => {
-          const onHand = r.fromOnHand || 0;
-          const transit = r.fromTransit || 0;
-          let tagHtml = '';
-          if (onHand && transit) {
-            tagHtml = `<span class="tr-tag mixed" title="Частина на складі, частина в дорозі">📦 ${fmt(onHand)} + 🚛 ${fmt(transit)}</span>`;
-          } else if (transit) {
-            tagHtml = `<span class="tr-tag transit" title="Резерв на складі «в дорозі»">🚛 в дорозі</span>`;
-          }
-          return `<div class="m-row"><div class="m-row-main"><span class="m-badge ${r.type}">${r.type === 'black' ? 'ЧОРН' : 'ЧЕРВ'}</span><span class="nm">${r.client}</span>${tagHtml}</div><span class="m-row-val">${fmt(r.qty)} м</span></div>`;
-        }).join('')}
-      </div>
-      <div class="m-formula"><strong>Джерело:</strong> позиції залишків де <code>ЗаказПокупателя_Key ≠ 0</code> — <strong>включно з резервами на складах «в дорозі»</strong>, з підтягуванням контрагента з <code>Document_ЗаказПокупателя</code></div>
-    `;
+    const list = [...f.reserveList].sort((a,b) => b.qty-a.qty);
+    const totalTransit = list.reduce((a,r) => a+(r.fromTransit||0), 0);
+    const totalOnHand = list.reduce((a,r) => a+(r.fromOnHand||0), 0);
+    return `<div class="m-big">${fmt(s.black.reserve+s.red.reserve)} м</div><div class="m-sub">${list.length} резервів · на складі ${fmt(totalOnHand)} м · в дорозі ${fmt(totalTransit)} м</div>
+      <div class="m-split"><div class="m-col"><div class="m-col-label">Чорний резерв</div><div class="m-col-val">${fmt(s.black.reserve)} м</div></div><div class="m-col"><div class="m-col-label">Червоний резерв</div><div class="m-col-val">${fmt(s.red.reserve)} м</div></div></div>
+      <div class="m-section-title">Замовлення клієнтів</div><div class="m-list">${list.map(r => {
+        let tagH = '';
+        if ((r.fromOnHand||0) && (r.fromTransit||0)) tagH = `<span class="tr-tag mixed">📦${fmt(r.fromOnHand)}+🚛${fmt(r.fromTransit)}</span>`;
+        else if (r.fromTransit) tagH = '<span class="tr-tag transit">🚛 в дорозі</span>';
+        return `<div class="m-row"><div class="m-row-main"><span class="m-badge ${r.type}">${r.type==='black'?'ЧОРН':'ЧЕРВ'}</span><span class="nm">${escapeHtml(r.client)}</span>${tagH}</div><span class="m-row-val">${fmt(r.qty)} м</span></div>`;
+      }).join('')}</div>
+      <div class="m-formula"><strong>Джерело:</strong> позиції залишків де <code>ЗаказПокупателя_Key ≠ 0</code> — включно з резервами на складах «в дорозі»</div>`;
   }
-
   if (kind === 'transit') {
-    const whRows = t.byWh.map(w => {
-      const bF = w.blackFree || 0, bR = w.blackReserve || 0;
-      const rF = w.redFree || 0, rR = w.redReserve || 0;
-      const fmtCell = (free, res) => {
-        if (free && res) return `${fmt(free)} <span style="color:var(--text3)">+ ${fmt(res)} рез</span>`;
-        if (res) return `<span style="color:var(--text3)">${fmt(res)} рез</span>`;
-        return fmt(free);
-      };
-      return `<tr><td>${w.name}</td><td>${fmtCell(bF, bR)}</td><td>${fmtCell(rF, rR)}</td><td><strong>${fmt(w.black + w.red)}</strong></td></tr>`;
+    const whRows = (t.byWh||[]).map(w => {
+      const fmtC = (fr,rs) => { if(fr&&rs) return `${fmt(fr)} + ${fmt(rs)} рез`; if(rs) return `${fmt(rs)} рез`; return fmt(fr); };
+      return `<tr><td>${w.name}</td><td>${fmtC(w.blackFree||0,w.blackReserve||0)}</td><td>${fmtC(w.redFree||0,w.redReserve||0)}</td><td><strong>${fmt((w.black||0)+(w.red||0))}</strong></td></tr>`;
     }).join('');
-    return `
-      <div class="m-big">${fmt(t.total)} м</div>
-      <div class="m-sub">Кабель, який рухається до складів. <strong>Вільне</strong> — зменшить «Замовити»; <strong>в резерві</strong> — вже продане клієнту.</div>
-      <div class="m-split">
-        <div class="m-col black"><div class="m-col-label">Чорний в дорозі</div><div class="m-col-val">${fmt(t.black)} м</div><div class="m-col-sub">вільне: <strong>${fmt(tFreeB)}</strong> · у резерві: ${fmt(t.blackReserve || 0)}</div></div>
-        <div class="m-col red"><div class="m-col-label">Червоний в дорозі</div><div class="m-col-val">${fmt(t.red)} м</div><div class="m-col-sub">вільне: <strong>${fmt(tFreeR)}</strong> · у резерві: ${fmt(t.redReserve || 0)}</div></div>
-      </div>
-      <div class="m-section-title">Розподіл по партіях</div>
-      <table class="m-tbl">
-        <thead><tr><th>Партія</th><th>Чорний</th><th>Черв.</th><th>Разом</th></tr></thead>
-        <tbody>${whRows || '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">Немає партій у дорозі</td></tr>'}</tbody>
-        ${t.byWh.length > 1 ? `<tfoot><tr><td>Разом</td><td>${fmt(t.black)}</td><td>${fmt(t.red)}</td><td>${fmt(t.total)}</td></tr></tfoot>` : ''}
-      </table>
-      <div class="m-formula">
-        <strong>Джерело:</strong> залишки на складах з назвою <code>"В дорозі *"</code> (січень–грудень) по організації РЕАКТ.<br>
-        <strong>Вільне в дорозі</strong> — вже замовлений кабель; у плані закупівель зменшує «Замовити».<br>
-        <strong>У резерві в дорозі</strong> — вже проданий клієнту (включено в «У резерві»).
-      </div>
-    `;
+    return `<div class="m-big">${fmt(t.total)} м</div><div class="m-sub">Кабель що рухається до складів</div>
+      <div class="m-split"><div class="m-col"><div class="m-col-label">Чорний в дорозі</div><div class="m-col-val">${fmt(t.black)} м</div><div class="m-col-sub">вільне: ${fmt(tFreeB)} · резерв: ${fmt(t.blackReserve||0)}</div></div><div class="m-col"><div class="m-col-label">Червоний в дорозі</div><div class="m-col-val">${fmt(t.red)} м</div><div class="m-col-sub">вільне: ${fmt(tFreeR)} · резерв: ${fmt(t.redReserve||0)}</div></div></div>
+      <div class="m-section-title">По партіях</div><table class="m-tbl"><thead><tr><th>Партія</th><th>Чорний</th><th>Черв.</th><th>Разом</th></tr></thead><tbody>${whRows||'<tr><td colspan="4" style="text-align:center;color:var(--mute)">Немає</td></tr>'}</tbody>${(t.byWh||[]).length>1?`<tfoot><tr><td>Разом</td><td>${fmt(t.black)}</td><td>${fmt(t.red)}</td><td>${fmt(t.total)}</td></tr></tfoot>`:''}</table>
+      <div class="m-formula"><strong>Джерело:</strong> залишки на складах <code>"В дорозі *"</code> по організації РЕАКТ</div>`;
   }
-
   if (kind === 'must') {
-    const ltB = Math.round(f.wma.black * LT_TOTAL);
-    const ltR = Math.round(f.wma.red * LT_TOTAL);
-    return `
-      <div class="m-big">${fmt(mustB + mustR)} м</div>
-      <div class="m-sub">Стільки має бути на складі, щоб покрити період виробництва + логістики (${LT_TOTAL} днів)</div>
-      <div class="m-split">
-        <div class="m-col black"><div class="m-col-label">Чорний · Замовити</div><div class="m-col-val">${fmt(orderB)} м</div><div class="m-col-sub">Має бути: ${fmt(mustB)} · мінус ${fmt(s.black.free)} вільно ${tFreeB ? `· мінус ${fmt(tFreeB)} в дорозі` : ''}</div></div>
-        <div class="m-col red"><div class="m-col-label">Червоний · Замовити</div><div class="m-col-val">${fmt(orderR)} м</div><div class="m-col-sub">Має бути: ${fmt(mustR)} · мінус ${fmt(s.red.free)} вільно ${tFreeR ? `· мінус ${fmt(tFreeR)} в дорозі` : ''}</div></div>
-      </div>
-      <div class="m-section-title">Формула</div>
-      <table class="m-tbl">
-        <thead><tr><th>Компонент</th><th>Чорний</th><th>Червоний</th></tr></thead>
-        <tbody>
-          <tr><td>WMA / день</td><td>${fmt(f.wma.black, 1)}</td><td>${fmt(f.wma.red, 1)}</td></tr>
-          <tr><td>× L/T (${LT_TOTAL} днів)</td><td>${fmt(ltB)}</td><td>${fmt(ltR)}</td></tr>
-          <tr><td>+ Резерв (вкл. резерви в дорозі)</td><td>${fmt(s.black.reserve)}</td><td>${fmt(s.red.reserve)}</td></tr>
-          <tr><td><strong>= Має бути</strong></td><td><strong>${fmt(mustB)}</strong></td><td><strong>${fmt(mustR)}</strong></td></tr>
-          <tr><td>− Вільно на складі</td><td>−${fmt(s.black.free)}</td><td>−${fmt(s.red.free)}</td></tr>
-          <tr><td>− Резерв (уже відкладено)</td><td>−${fmt(s.black.reserve)}</td><td>−${fmt(s.red.reserve)}</td></tr>
-          <tr><td>− В дорозі (вільне, вже замовлено)</td><td>−${fmt(tFreeB)}</td><td>−${fmt(tFreeR)}</td></tr>
-        </tbody>
-        <tfoot><tr><td>= Замовити</td><td>${fmt(orderB)}</td><td>${fmt(orderR)}</td></tr></tfoot>
-      </table>
-      <div class="m-formula">
-        <code>Має бути = WMA × L/T + Резерв</code><br>
-        <code>Замовити = max(0, WMA × L/T − Вільно − В дорозі (вільне))</code><br>
-        <strong>Логіка:</strong> кабель, що вже їде (вільний) — це вже замовлення, тому відлічується; кабель у резерві в дорозі — вже проданий і закриє резерв при надходженні.
-      </div>
-    `;
+    const ltB = Math.round(f.wma.black*LT_TOTAL), ltR = Math.round(f.wma.red*LT_TOTAL);
+    const mustB = ltB + s.black.reserve, mustR = ltR + s.red.reserve;
+    return `<div class="m-big">${fmt(orderB+orderR)} м</div><div class="m-sub">Стільки замовити щоб покрити ${LT_TOTAL} днів</div>
+      <div class="m-split"><div class="m-col"><div class="m-col-label">Чорний · Замовити</div><div class="m-col-val">${fmt(orderB)} м</div></div><div class="m-col"><div class="m-col-label">Червоний · Замовити</div><div class="m-col-val">${fmt(orderR)} м</div></div></div>
+      <div class="m-section-title">Формула</div><table class="m-tbl"><thead><tr><th>Компонент</th><th>Чорний</th><th>Червоний</th></tr></thead><tbody>
+        <tr><td>WMA / день</td><td>${fmt(f.wma.black,1)}</td><td>${fmt(f.wma.red,1)}</td></tr>
+        <tr><td>× ${LT_TOTAL} днів</td><td>${fmt(ltB)}</td><td>${fmt(ltR)}</td></tr>
+        <tr><td>− Вільно</td><td>−${fmt(s.black.free)}</td><td>−${fmt(s.red.free)}</td></tr>
+        <tr><td>− В дорозі (вільне)</td><td>−${fmt(tFreeB)}</td><td>−${fmt(tFreeR)}</td></tr>
+      </tbody><tfoot><tr><td>= Замовити</td><td>${fmt(orderB)}</td><td>${fmt(orderR)}</td></tr></tfoot></table>
+      <div class="m-formula"><code>Замовити = max(0, WMA × L/T − Вільно − В дорозі)</code></div>`;
   }
-
   if (kind === 'wma') {
-    const b = ab.black || {}, r = ab.red || {};
-    const thr = ab.threshold || 10000;
-    const lbk = ab.lookbackDays || 60;
-    const minK = ab.minKeptForValid || 3;
-    const exclB = (f.dailyStats || []).filter(d => d.excludedBlack).length;
-    const exclR = (f.dailyStats || []).filter(d => d.excludedRed).length;
-    const keptNote = (kept, total) => {
-      const collapsed = (kept ?? 0) < minK;
-      return `<span class="m-kept ${collapsed ? 'collapsed' : ''}" title="${collapsed ? 'Вікно згорнуто: мало даних' : 'Достатньо даних'}">${kept}/${total}</span>`;
-    };
-    const wBase = ab.baseWeights || { w14: 0.6, w30: 0.3, w60: 0.1 };
-    const uwB = b.usedWeights || { w14: 0, w30: 0, w60: 0 };
-    const uwR = r.usedWeights || { w14: 0, w30: 0, w60: 0 };
-    const pct = (v) => (v * 100).toFixed(0) + '%';
-    const collapsedAny = b.collapsed || r.collapsed;
-    return `
-      <div class="m-big">${fmt(f.wma.total, 1)} м / день</div>
-      <div class="m-sub">Прогнозний добовий обсяг продажів кабелю (WMA, lookback ${lbk} днів)</div>
-      <div class="m-split">
-        <div class="m-col black"><div class="m-col-label">Чорний WMA</div><div class="m-col-val">${fmt(f.wma.black, 1)} м/д</div><div class="m-col-sub">На 1 міс ≈ ${fmt(f.wma.black * 30)} м</div></div>
-        <div class="m-col red"><div class="m-col-label">Червоний WMA</div><div class="m-col-val">${fmt(f.wma.red, 1)} м/д</div><div class="m-col-sub">На 1 міс ≈ ${fmt(f.wma.red * 30)} м</div></div>
-      </div>
-      <div class="m-banner">
-        ⚠️ Дні з запасом &lt; <b>${fmt(thr)} м</b> виключаються — обмежені наявністю, не попитом.<br>
-        Виключено: чорний <b>${exclB}</b> з ${lbk} дн., червоний <b>${exclR}</b> з ${lbk} дн.
-        ${collapsedAny ? '<br>⚠️ Частина вікон згорнуті (менш ніж ' + minK + ' валідних днів) — їхня вага перерозподілена.' : ''}
-      </div>
-      <div class="m-section-title">Середні значення за періодами (відфільтровані)</div>
-      <table class="m-tbl">
-        <thead><tr><th>Період</th><th>Чорний м/д</th><th>Червоний м/д</th><th>База ваги</th><th>Фактична вага</th></tr></thead>
-        <tbody>
-          <tr><td>Середнє 7 днів ${keptNote(b.kept7, 7)}</td><td>${fmt(b.avg7, 1)}</td><td>${fmt(r.avg7, 1)}</td><td>—</td><td>—</td></tr>
-          <tr><td>Середнє 14 днів ${keptNote(b.kept14, 14)}</td><td>${fmt(b.avg14, 1)}</td><td>${fmt(r.avg14, 1)}</td><td>${pct(wBase.w14)}</td><td>${pct(uwB.w14)} / ${pct(uwR.w14)}</td></tr>
-          <tr><td>Середнє 30 днів ${keptNote(b.kept30, 30)}</td><td>${fmt(b.avg30, 1)}</td><td>${fmt(r.avg30, 1)}</td><td>${pct(wBase.w30)}</td><td>${pct(uwB.w30)} / ${pct(uwR.w30)}</td></tr>
-          <tr><td>Середнє 60 днів ${keptNote(b.kept60, 60)}</td><td>${fmt(b.avg60, 1)}</td><td>${fmt(r.avg60, 1)}</td><td>${pct(wBase.w60)}</td><td>${pct(uwB.w60)} / ${pct(uwR.w60)}</td></tr>
-        </tbody>
-        <tfoot><tr><td>WMA</td><td>${fmt(f.wma.black, 1)}</td><td>${fmt(f.wma.red, 1)}</td><td>100%</td><td>100%</td></tr></tfoot>
-      </table>
-      <div class="m-formula">
-        <code>WMA = (w14·avg14 + w30·avg30 + w60·avg60) / Σw</code><br>
-        Базові ваги: 14д=${pct(wBase.w14)}, 30д=${pct(wBase.w30)}, 60д=${pct(wBase.w60)}. Якщо у вікні &lt; ${minK} валідних днів — вага цього вікна = 0, ваги перерозподіляються.<br>
-        «Фактична вага» показана як <i>чорний / червоний</i> — вони можуть відрізнятися, якщо один колір має згорнуте вікно.
-      </div>
-    `;
+    const ab = f.avgBreakdown||{};
+    const b = ab.black||{}, r = ab.red||{};
+    const lbk = ab.lookbackDays||60;
+    const minK = ab.minKeptForValid||3;
+    const exclB = (f.dailyStats||[]).filter(d => d.excludedBlack).length;
+    const exclR = (f.dailyStats||[]).filter(d => d.excludedRed).length;
+    const kn = (k,t) => { const col = (k??0)<minK; return `<span class="m-kept ${col?'collapsed':''}">${k}/${t}</span>`; };
+    const wB = ab.baseWeights||{w14:.6,w30:.3,w60:.1};
+    const uwB = b.usedWeights||{w14:0,w30:0,w60:0}, uwR = r.usedWeights||{w14:0,w30:0,w60:0};
+    const p = v => (v*100).toFixed(0)+'%';
+    return `<div class="m-big">${fmt(f.wma.total,1)} м / день</div><div class="m-sub">Прогнозний добовий обсяг (WMA, lookback ${lbk} днів)</div>
+      <div class="m-split"><div class="m-col"><div class="m-col-label">Чорний WMA</div><div class="m-col-val">${fmt(f.wma.black,1)} м/д</div><div class="m-col-sub">На 1 міс ≈ ${fmt(f.wma.black*30)} м</div></div><div class="m-col"><div class="m-col-label">Червоний WMA</div><div class="m-col-val">${fmt(f.wma.red,1)} м/д</div><div class="m-col-sub">На 1 міс ≈ ${fmt(f.wma.red*30)} м</div></div></div>
+      <div class="m-banner">Дні з запасом &lt; <b>${fmt(ab.threshold||10000)} м</b> виключаються. Виключено: чорний <b>${exclB}</b>, червоний <b>${exclR}</b> з ${lbk} дн.</div>
+      <div class="m-section-title">Середні за періодами</div><table class="m-tbl"><thead><tr><th>Період</th><th>Чорний</th><th>Червоний</th><th>Вага</th></tr></thead><tbody>
+        <tr><td>14 днів ${kn(b.kept14,14)}</td><td>${fmt(b.avg14,1)}</td><td>${fmt(r.avg14,1)}</td><td>${p(wB.w14)}</td></tr>
+        <tr><td>30 днів ${kn(b.kept30,30)}</td><td>${fmt(b.avg30,1)}</td><td>${fmt(r.avg30,1)}</td><td>${p(wB.w30)}</td></tr>
+        <tr><td>60 днів ${kn(b.kept60,60)}</td><td>${fmt(b.avg60,1)}</td><td>${fmt(r.avg60,1)}</td><td>${p(wB.w60)}</td></tr>
+      </tbody><tfoot><tr><td>WMA</td><td>${fmt(f.wma.black,1)}</td><td>${fmt(f.wma.red,1)}</td><td>100%</td></tr></tfoot></table>
+      <div class="m-formula"><code>WMA = (w14·avg14 + w30·avg30 + w60·avg60) / Σw</code></div>`;
   }
-
-  return `<div class="error">Немає даних для цього показника</div>`;
+  return '<div class="error">Немає даних</div>';
 }
 
-// ─── Warehouses ───
-function renderCableWh(f){
-  // On-hand warehouses (free+reserve, split black/red)
-  const onHand = (f.stockByWh || []).map(w => ({
-    name: w.name,
-    blackFree: w.black.free, blackRes: w.black.reserve,
-    redFree: w.red.free, redRes: w.red.reserve,
-    total: w.black.free + w.black.reserve + w.red.free + w.red.reserve,
-  })).filter(w => w.total > 0);
-
-  // In-transit warehouses — мають той самий free/reserve split, що й on-hand
-  const inTransit = (f.inTransit && f.inTransit.byWh || []).map(w => ({
-    name: w.name,
-    blackFree: w.blackFree || 0, blackRes: w.blackReserve || 0,
-    redFree: w.redFree || 0, redRes: w.redReserve || 0,
-    total: (w.blackFree || 0) + (w.blackReserve || 0) + (w.redFree || 0) + (w.redReserve || 0),
-  })).filter(w => w.total > 0);
-
-  const rowOnHand = w => `
-    <div class="wh-cable-card on-hand">
-      <div class="wh-cable-head">
-        <div class="wh-cable-ico">🏢</div>
-        <div class="wh-cable-title">${w.name}</div>
-        <div class="wh-cable-total">${fmt(w.total)} м</div>
-      </div>
-      <table class="wh-cable-tbl">
-        <thead><tr><th>Колір</th><th>Залишок</th><th>Резерв</th><th>Вільно</th></tr></thead>
-        <tbody>
-          <tr><td><span class="wh-dot black"></span>Чорний</td><td><strong>${fmt(w.blackFree + w.blackRes)}</strong></td><td>${fmt(w.blackRes)}</td><td>${fmt(w.blackFree)}</td></tr>
-          <tr><td><span class="wh-dot red"></span>Червоний</td><td><strong>${fmt(w.redFree + w.redRes)}</strong></td><td>${fmt(w.redRes)}</td><td>${fmt(w.redFree)}</td></tr>
-        </tbody>
-      </table>
-    </div>`;
-
-  const rowTransit = w => `
-    <div class="wh-cable-card in-transit">
-      <div class="wh-cable-head">
-        <div class="wh-cable-ico">🚛</div>
-        <div class="wh-cable-title">${w.name}</div>
-        <div class="wh-cable-total">${fmt(w.total)} м</div>
-      </div>
-      <table class="wh-cable-tbl">
-        <thead><tr><th>Колір</th><th>Залишок</th><th>Резерв</th><th>Вільно</th></tr></thead>
-        <tbody>
-          <tr><td><span class="wh-dot black"></span>Чорний</td><td><strong>${fmt(w.blackFree + w.blackRes)}</strong></td><td>${fmt(w.blackRes)}</td><td>${fmt(w.blackFree)}</td></tr>
-          <tr><td><span class="wh-dot red"></span>Червоний</td><td><strong>${fmt(w.redFree + w.redRes)}</strong></td><td>${fmt(w.redRes)}</td><td>${fmt(w.redFree)}</td></tr>
-        </tbody>
-      </table>
-    </div>`;
-
-  const onHandSum = onHand.reduce((a, w) => a + w.total, 0);
-  const transitSum = inTransit.reduce((a, w) => a + w.total, 0);
-
-  const html = `
-    <div class="wh-cable-section">
-      <div class="wh-cable-section-head">
-        <h3>🏢 На складі <span>(${onHand.length} · ${fmt(onHandSum)} м)</span></h3>
-      </div>
-      <div class="wh-cable-grid">${onHand.map(rowOnHand).join('') || '<div class="empty">Немає</div>'}</div>
-    </div>
-    <div class="wh-cable-section">
-      <div class="wh-cable-section-head">
-        <h3>🚛 В дорозі <span>(${inTransit.length} партій · ${fmt(transitSum)} м)</span></h3>
-      </div>
-      <div class="wh-cable-grid">${inTransit.map(rowTransit).join('') || '<div class="empty">Партій у дорозі немає</div>'}</div>
-    </div>
-  `;
-  document.getElementById('whBody').innerHTML = html;
+// ─── Data loading ───
+async function loadForecast() {
+  try {
+    const res = await fetch(API + '?action=cable_forecast');
+    const f = await res.json();
+    if (f.error) throw new Error(f.error);
+    forecastData = f;
+    renderKpis(f);
+    renderBanner(f);
+    renderForecastChart(f);
+    renderShipments(f);
+    renderWarehouses(f);
+  } catch (e) {
+    document.getElementById('kpiStrip').innerHTML = `<div class="kpi" style="grid-column:span 5"><div class="error">${e.message}</div></div>`;
+  }
 }
 
-loadMarket();
-loadCablePrice();
+async function loadCablePrice() {
+  try {
+    const r = await fetch(API + '?action=copper_avg').then(r => r.json());
+    if (!r || !r.previousMonth || !isFinite(r.previousMonth.price)) throw new Error('Немає даних по міді');
+    renderCalcFlow(r);
+  } catch (e) {
+    document.getElementById('calcFlowCard').querySelector('.card-b').innerHTML = `<div class="error">${e.message}</div>`;
+  }
+}
+
+async function loadMarket() {
+  try {
+    const [cu, fx] = await Promise.all([
+      fetch(API + '?action=copper_data').then(r => r.json()),
+      fetch(API + '?action=eurusd_data').then(r => r.json()),
+    ]);
+    renderMarket(cu, fx);
+  } catch (e) {
+    document.getElementById('mktCu').innerHTML = `<div class="error">${e.message}</div>`;
+    document.getElementById('mktFx').innerHTML = `<div class="error">${e.message}</div>`;
+  }
+}
+
+document.getElementById('updatedAt').textContent = fmtNow();
 loadForecast();
+loadCablePrice();
+loadMarket();
 </script>
 </body>
 </html>
