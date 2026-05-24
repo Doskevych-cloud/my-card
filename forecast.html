@@ -176,9 +176,10 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 .mkt-chart{position:relative;cursor:crosshair}
 .mkt-chart .hover-line{position:absolute;top:0;bottom:0;width:1px;background:var(--mute-2);pointer-events:none;opacity:0;transition:opacity .1s}
 .cu-months{display:flex;align-items:flex-end;gap:3px;margin-top:2px;justify-content:flex-start}
-.cu-months .cm{display:flex;flex-direction:column;align-items:center;width:28px;flex:0 0 28px;cursor:default}
+.cu-months .cm{display:flex;flex-direction:column;align-items:center;width:28px;flex:0 0 28px;cursor:pointer}
 .cu-months .cm-bar{width:100%;min-height:3px;border-radius:2px 2px 0 0;background:var(--bar-fill-2);transition:background .15s}
-.cu-months .cm.latest .cm-bar{background:var(--bar-fill)}
+.cu-months .cm.active .cm-bar{background:var(--bar-fill)}
+.cu-months .cm.active .cm-lbl{color:var(--fg-2)}
 .cu-months .cm:hover .cm-bar{background:var(--bar-fill)}
 .cu-months .cm-lbl{font-size:7.5px;color:var(--mute-2);font-family:var(--mono);margin-top:2px;line-height:1}
 
@@ -806,9 +807,16 @@ function renderCuMonths() {
     const h = 4 + ((m.price - mn) / rng) * 28;
     const mi = parseInt(m.ym.split('-')[1]) - 1;
     const lbl = UA_MONTHS[mi];
-    const cls = i === months.length - 1 ? ' latest' : '';
-    return `<div class="cm${cls}" title="${fmt(m.price,2)} €/100кг · ${lbl}"><div class="cm-bar" style="height:${h}px"></div><div class="cm-lbl">${lbl}</div></div>`;
+    const active = m.ym === calcMonth ? ' active' : '';
+    return `<div class="cm${active}" data-ym="${m.ym}" title="${fmt(m.price,2)} €/100кг · ${lbl}"><div class="cm-bar" style="height:${h}px"></div><div class="cm-lbl">${lbl}</div></div>`;
   }).join('');
+  el.onclick = e => {
+    const cm = e.target.closest('.cm[data-ym]');
+    if (!cm) return;
+    calcMonth = cm.dataset.ym;
+    updateCalcFlow();
+    el.querySelectorAll('.cm').forEach(c => c.classList.toggle('active', c.dataset.ym === calcMonth));
+  };
 }
 
 // ─── Warehouses ───
