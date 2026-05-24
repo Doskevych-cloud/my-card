@@ -339,11 +339,11 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
       <div class="card" id="marketCard">
         <div class="card-h">
           <div class="title">Ринок · фактори ціни</div>
-          <div class="meta">westmetall · Yahoo Finance</div>
+          <div class="meta">westmetall · НБУ</div>
         </div>
         <div class="card-b" style="display:grid;grid-template-columns:1.4fr 1fr;gap:18px">
           <div class="mkt-block" id="mktCu"><div class="loading">Мідь…</div></div>
-          <div class="mkt-block" id="mktFx"><div class="loading">EUR/USD…</div></div>
+          <div class="mkt-block" id="mktFx"><div class="loading">EUR/ГРН…</div></div>
         </div>
       </div>
     </div>
@@ -438,7 +438,7 @@ function sparkSvg(values, w, h, color) {
   return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><path d="${d}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 
-// SVG area chart (for EUR/USD)
+// SVG area chart (for EUR/UAH)
 function areaSvg(data, h, accent) {
   const W = 360; h = h||60; accent = accent||'var(--accent)';
   const min = Math.min(...data), max = Math.max(...data), span = max-min||1;
@@ -755,16 +755,17 @@ function renderMarket(cuData, fxData) {
     const fxMom = fxData.avg7 && fxData.avg30 ? ((fxData.avg7/fxData.avg30)-1)*100 : 0;
     fxEl.innerHTML = `
       <div class="mkt-h">
-        <div class="ll">EUR / USD <span class="period">30 днів</span></div>
+        <div class="ll">EUR / ГРН · НБУ <span class="period">30 днів</span></div>
         <div class="rr">
-          <span class="mkt-v">${fmt(fxData.current,4)}</span>
-          <span class="mkt-d ${fxMom<0?'neg':''}">${fxMom>=0?'▲':'▼'} ${Math.abs(fxMom).toFixed(2)}% д/д</span>
+          <span class="mkt-v">${fmt(fxData.current,2)}</span>
+          <span class="mkt-u">₴/€</span>
+          <span class="mkt-d ${fxMom<0?'neg':''}">${fxMom>=0?'▲':'▼'} ${Math.abs(fxMom).toFixed(2)}% 7д/30д</span>
         </div>
       </div>
       ${areaSvg(vals, 86)}
-      <div class="mkt-hint">7д <b>${fmt(fxData.avg7,4)}</b> · 30д <b>${fmt(fxData.avg30,4)}</b></div>`;
+      <div class="mkt-hint">7д <b>${fmt(fxData.avg7,2)}</b> · 30д <b>${fmt(fxData.avg30,2)}</b></div>`;
   } else {
-    fxEl.innerHTML = '<div class="error">Дані EUR/USD недоступні</div>';
+    fxEl.innerHTML = '<div class="error">Дані EUR/ГРН недоступні</div>';
   }
 }
 
@@ -961,11 +962,39 @@ async function loadCablePrice() {
   }
 }
 
+async function fetchNbuEurUah(days = 30) {
+  const NBU = 'https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange';
+  const today = new Date();
+  const reqs = [];
+  for (let i = 0; i < days; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    reqs.push(
+      fetch(`${NBU}?valcode=EUR&date=${yyyy}${mm}${dd}&json`)
+        .then(r => r.ok ? r.json() : [])
+        .then(arr => (arr && arr.length && isFinite(arr[0].rate)) ? { price: arr[0].rate } : null)
+        .catch(() => null)
+    );
+  }
+  const series = (await Promise.all(reqs)).filter(Boolean);
+  if (!series.length) return { data: [] };
+  const avg = (arr, n) => arr.slice(0, n).reduce((s, x) => s + x.price, 0) / Math.min(arr.length, n);
+  return {
+    data: series,
+    current: series[0].price,
+    avg7: avg(series, 7),
+    avg30: avg(series, 30),
+  };
+}
+
 async function loadMarket() {
   try {
     const [cu, fx] = await Promise.all([
       fetch(API + '?action=copper_data').then(r => r.json()),
-      fetch(API + '?action=eurusd_data').then(r => r.json()),
+      fetchNbuEurUah(30),
     ]);
     renderMarket(cu, fx);
   } catch (e) {
