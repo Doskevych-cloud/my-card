@@ -56,18 +56,14 @@ a{color:inherit;text-decoration:none}
 .btn--ghost{border-color:transparent;color:var(--text3)}
 .btn--ghost:hover{color:var(--text);background:var(--bg3);border-color:transparent}
 
-/* ─── Summary / stats bar ─── */
-.stats{display:flex;gap:22px;padding:10px 14px;margin-bottom:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap;align-items:center;font-size:12px}
-.stats .stat{display:inline-flex;align-items:baseline;gap:6px}
-.stats .stat .num{font-variant-numeric:tabular-nums;font-weight:600;font-size:13.5px}
-.stats .stat .lbl{color:var(--text3);font-size:11.5px}
-.stats .stat.warn .num{color:var(--red)}
-.stats .sep{width:1px;height:16px;background:var(--border)}
-.stats .spacer{flex:1}
-.stats .as-of{color:var(--text3);font-size:11.5px}
-.stats .as-of b{color:var(--text2);font-weight:500}
 
 /* FX-статус — окремий пілл праворуч у page-head */
+.fx-pill{display:inline-flex;align-items:center;gap:10px;padding:6px 11px;border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.fx-pill .fx-pair{display:inline-flex;align-items:baseline;gap:4px}
+.fx-pill .fx-pair .lbl{color:var(--text3);font-size:11px}
+.fx-pill b{color:var(--text);font-weight:600}
+.fx-pill .fx-age{color:var(--text3);font-size:11px;padding-left:8px;border-left:1px solid var(--border)}
+.fx-pill.stale .fx-age{color:var(--red)}
 
 /* ─── Toolbar ─── */
 .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
@@ -254,8 +250,6 @@ a{color:inherit;text-decoration:none}
   .page-head h1{font-size:18px}
   .page-head .actions{width:100%;margin-top:4px}
   .page-head .actions .btn{flex:1}
-  .stats{gap:10px 14px;padding:8px 12px}
-  .stats .sep{display:none}
   .toolbar{gap:8px}
   .search{min-width:100%;max-width:none}
   .toolbar .right-ctl{margin-left:0}
@@ -286,6 +280,11 @@ a{color:inherit;text-decoration:none}
     <h1>Адмінка прайсу</h1>
     <span class="sub">редагує <a href="https://react.ink" target="_blank" rel="noopener">публічний прайс ↗</a></span>
     <div class="spacer"></div>
+    <div class="fx-pill" id="fxPill" style="display:none" title="Курс НБУ +1% · оновлюється раз на добу о 09:00">
+      <span class="fx-pair"><span class="lbl">USD/UAH</span><b id="fxUsd">—</b></span>
+      <span class="fx-pair"><span class="lbl">EUR/UAH</span><b id="fxEur">—</b></span>
+      <span class="fx-age" id="fxAge">—</span>
+    </div>
     </div>
     <div class="actions">
       <button class="btn" id="refreshPublicBtn" onclick="refreshPublicPrices(this)">↻ Оновити ціни</button>
@@ -295,17 +294,6 @@ a{color:inherit;text-decoration:none}
     </div>
   </div>
 
-  <div class="stats" id="stats" style="display:none">
-    <div class="stat"><span class="num" id="s_items">–</span><span class="lbl">позицій</span></div>
-    <div class="sep"></div>
-    <div class="stat"><span class="num" id="s_cats">–</span><span class="lbl">категорій</span></div>
-    <div class="sep"></div>
-    <div class="stat" id="s_no1c_wrap"><span class="num" id="s_no1c">–</span><span class="lbl">без привʼязки 1С</span></div>
-    <div class="sep"></div>
-    <div class="stat" id="s_noprice_wrap"><span class="num" id="s_noprice">–</span><span class="lbl">без ціни</span></div>
-    <div class="spacer"></div>
-    <div class="as-of" id="s_asof"></div>
-  </div>
 
   <div class="toolbar" id="toolbar" style="display:none">
     <div class="search" id="searchBox">
@@ -608,6 +596,27 @@ async function refreshStocks(btn) {
   }
 }
 
+async function loadFxStatus() {
+  try {
+    const r = await fetch(`${API}/?action=fx_nbu`);
+    if (!r.ok) return;
+    const d = await r.json();
+    const usd = d?.rates?.USD?.sell, eur = d?.rates?.EUR?.sell;
+    const fmt = v => Number(v).toFixed(2).replace('.', ',');
+    if (usd) document.getElementById('fxUsd').textContent = fmt(usd);
+    if (eur) document.getElementById('fxEur').textContent = fmt(eur);
+    const ageMs = d.fetched_at ? (Date.now() - new Date(d.fetched_at).getTime()) : null;
+    const ageStr = ageMs == null ? '—'
+      : ageMs < 60_000     ? `${Math.round(ageMs/1000)}с тому`
+      : ageMs < 3_600_000  ? `${Math.floor(ageMs/60_000)}хв тому`
+      : ageMs < 86_400_000 ? `${Math.floor(ageMs/3_600_000)}г тому`
+                           : `${Math.floor(ageMs/86_400_000)}д тому`;
+    const pill = document.getElementById('fxPill');
+    document.getElementById('fxAge').textContent = ageStr;
+    pill.classList.toggle('stale', ageMs != null && ageMs > 2 * 3_600_000);
+    pill.style.display = '';
+  } catch (_) {}
+}
 
 async function load() {
   const qs = `pt_no=${encodeURIComponent(PT_NO_VAT)}&pt_with=${encodeURIComponent(PT_WITH_VAT)}`;
@@ -674,17 +683,6 @@ function renderStats() {
       else none++;
     }
   }
-  document.getElementById('s_items').textContent = items;
-  document.getElementById('s_cats').textContent = (STATE.categories || []).length;
-  document.getElementById('s_no1c').textContent = no1c;
-  document.getElementById('s_noprice').textContent = noprice;
-  document.getElementById('s_no1c_wrap').classList.toggle('warn', no1c > 0);
-  document.getElementById('s_noprice_wrap').classList.toggle('warn', noprice > 0);
-  const asof = STATE._stocks_as_of;
-  document.getElementById('s_asof').innerHTML = asof
-    ? `залишки на <b>${formatDate(asof)}</b>` : '';
-  document.getElementById('stats').style.display = '';
-
   document.getElementById('cnt_all').textContent = items;
   document.getElementById('cnt_no1c').textContent = no1c;
   document.getElementById('cnt_noprice').textContent = noprice;
@@ -1327,6 +1325,8 @@ Auth.require('prices').then(user => {
   load().catch(e => {
     document.getElementById('content').innerHTML = `<div class="empty" style="color:var(--red)">Помилка: ${esc(e.message)}</div>`;
   });
+  loadFxStatus();
+  setInterval(loadFxStatus, 60_000);
 });
 </script>
 </body>
