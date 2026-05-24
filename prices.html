@@ -381,46 +381,46 @@ tr:hover td{background:var(--bg3) !important}
 
 <div class="upload-panel" id="uploadPanel">
   <div class="supplier-grid">
-    <div class="supplier-slot slot-gen" data-supplier="gen" id="genSlot" style="cursor:default">
+    <div class="supplier-slot slot-gen" data-supplier="gen" id="genSlot" onclick="openLinkModal('gen')">
       <div class="icon">🌐</div>
       <div class="label">Реакт</div>
-      <div class="hint"><a href="https://react.ink" target="_blank" rel="noopener">react.ink</a></div>
+      <div class="hint"><a href="https://react.ink" target="_blank" rel="noopener" onclick="event.stopPropagation()">react.ink</a></div>
       <div class="file-name" id="genStatus"></div>
     </div>
-    <div class="supplier-slot slot-hel" data-supplier="hel" id="helSlot" style="cursor:default">
+    <div class="supplier-slot slot-hel" data-supplier="hel" id="helSlot" onclick="openLinkModal('hel')">
       <div class="icon">🌐</div>
       <div class="label">Хеліус</div>
-      <div class="hint"><a href="https://docs.google.com/spreadsheets/d/1ddbl4d574RN5Q4WDMg4WW13heV_hOyYy" target="_blank" rel="noopener">Google Sheets</a></div>
+      <div class="hint"><a href="https://docs.google.com/spreadsheets/d/1ddbl4d574RN5Q4WDMg4WW13heV_hOyYy" target="_blank" rel="noopener" onclick="event.stopPropagation()">Google Sheets</a></div>
       <div class="file-name" id="helStatus"></div>
     </div>
-    <div class="supplier-slot slot-dol" data-supplier="dol" id="dolSlot" style="cursor:default">
+    <div class="supplier-slot slot-dol" data-supplier="dol" id="dolSlot" onclick="openLinkModal('dol')">
       <div class="icon">🌐</div>
       <div class="label">Доля</div>
-      <div class="hint"><a href="https://docs.google.com/spreadsheets/d/1Mt-FMjFO6p96hL_hJ-0SVuzupsf9wFeuN2OIo0oNq18" target="_blank" rel="noopener">Google Sheets</a></div>
+      <div class="hint"><a href="https://docs.google.com/spreadsheets/d/1Mt-FMjFO6p96hL_hJ-0SVuzupsf9wFeuN2OIo0oNq18" target="_blank" rel="noopener" onclick="event.stopPropagation()">Google Sheets</a></div>
       <div class="file-name" id="dolStatus"></div>
     </div>
-    <div class="supplier-slot slot-se" data-supplier="se" id="seSlot" style="cursor:default">
+    <div class="supplier-slot slot-se" data-supplier="se" id="seSlot" onclick="openLinkModal('se')">
       <div class="icon">🌐</div>
       <div class="label">Сучасна</div>
-      <div class="hint"><a href="https://se.net.ua" target="_blank" rel="noopener">se.net.ua</a></div>
+      <div class="hint"><a href="https://se.net.ua" target="_blank" rel="noopener" onclick="event.stopPropagation()">se.net.ua</a></div>
       <div class="file-name" id="seStatus"></div>
     </div>
-    <div class="supplier-slot slot-pe" data-supplier="pe" id="peSlot" style="cursor:default">
+    <div class="supplier-slot slot-pe" data-supplier="pe" id="peSlot" onclick="openLinkModal('pe')">
       <div class="icon">🌐</div>
       <div class="label">Правильне</div>
-      <div class="hint"><a href="https://docs.google.com/spreadsheets/d/1dXuNar4t3aemQSk5LnPOXxcB7DAqqEzraWEFASa2r4g" target="_blank" rel="noopener">Google Sheets</a></div>
+      <div class="hint"><a href="https://docs.google.com/spreadsheets/d/1dXuNar4t3aemQSk5LnPOXxcB7DAqqEzraWEFASa2r4g" target="_blank" rel="noopener" onclick="event.stopPropagation()">Google Sheets</a></div>
       <div class="file-name" id="peStatus"></div>
     </div>
-    <div class="supplier-slot slot-sv" data-supplier="sv" id="svSlot" style="cursor:default">
+    <div class="supplier-slot slot-sv" data-supplier="sv" id="svSlot" onclick="openLinkModal('sv')">
       <div class="icon">🌐</div>
       <div class="label">Солар Верс</div>
-      <div class="hint">приватний лист (GAS)</div>
+      <div class="hint"><a href="" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:none"></a><span>приватний лист (GAS)</span></div>
       <div class="file-name" id="svStatus"></div>
     </div>
-    <div class="supplier-slot slot-iso" data-supplier="iso" id="isoSlot" style="cursor:default">
+    <div class="supplier-slot slot-iso" data-supplier="iso" id="isoSlot" onclick="openLinkModal('iso')">
       <div class="icon">🌐</div>
       <div class="label">Айсолар</div>
-      <div class="hint">SharePoint (авто)</div>
+      <div class="hint"><a href="" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:none"></a><span>SharePoint (авто)</span></div>
       <div class="file-name" id="isoStatus"></div>
     </div>
     <div class="supplier-slot slot-atm" data-supplier="atm" onclick="triggerUpload(this)">
@@ -470,6 +470,18 @@ tr:hover td{background:var(--bg3) !important}
     <div class="sig-modal-actions">
       <button onclick="applySsjText()">Застосувати</button>
       <button onclick="closeSsjModal()" class="sig-cancel">Скасувати</button>
+    </div>
+  </div>
+</div>
+
+<div class="sig-modal" id="linkModal" style="display:none" onclick="if(event.target===this)closeLinkModal()">
+  <div class="sig-modal-content">
+    <h3 id="linkModalTitle">Посилання на прайс</h3>
+    <input type="text" id="linkModalUrl" style="width:100%;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:10px;font-size:12px;font-family:monospace" placeholder="https://..." onkeydown="if(event.key==='Enter')saveLinkUrl()">
+    <div class="sig-modal-actions">
+      <button onclick="saveLinkUrl()">Зберегти</button>
+      <button onclick="openLinkExternal()" style="background:var(--bg3);color:var(--text2)">Відкрити ↗</button>
+      <button onclick="closeLinkModal()" class="sig-cancel">Скасувати</button>
     </div>
   </div>
 </div>
@@ -537,6 +549,76 @@ tr:hover td{background:var(--bg3) !important}
 // ═══════════════════════════════════════════════
 const files = { gen: null, hel: null, dol: null, se: null, pe: null, sv: null, atm: null };
 const rawData = { gen: null, hel: null, dol: null, se: null, pe: null, sv: null, atm: null };
+
+// ═══════════════════════════════════════════════
+// SUPPLIER LINK MODAL
+// ═══════════════════════════════════════════════
+const SUPPLIER_DEFAULT_URLS = {
+  gen: 'https://react.ink',
+  hel: 'https://docs.google.com/spreadsheets/d/1ddbl4d574RN5Q4WDMg4WW13heV_hOyYy',
+  dol: 'https://docs.google.com/spreadsheets/d/1Mt-FMjFO6p96hL_hJ-0SVuzupsf9wFeuN2OIo0oNq18',
+  se:  'https://se.net.ua',
+  pe:  'https://docs.google.com/spreadsheets/d/1dXuNar4t3aemQSk5LnPOXxcB7DAqqEzraWEFASa2r4g',
+  sv:  '',
+  iso: ''
+};
+const SUPPLIER_NAMES = { gen:'Реакт', hel:'Хеліус', dol:'Доля', se:'Сучасна', pe:'Правильне', sv:'Солар Верс', iso:'Айсолар' };
+let _linkModalKey = null;
+
+function getSupplierUrl(key) {
+  return localStorage.getItem('price_link_' + key) || SUPPLIER_DEFAULT_URLS[key] || '';
+}
+
+function openLinkModal(key) {
+  _linkModalKey = key;
+  document.getElementById('linkModalTitle').textContent = (SUPPLIER_NAMES[key] || key) + ' — посилання на прайс';
+  document.getElementById('linkModalUrl').value = getSupplierUrl(key);
+  const m = document.getElementById('linkModal');
+  m.style.display = 'flex';
+  document.getElementById('linkModalUrl').focus();
+}
+
+function closeLinkModal() {
+  document.getElementById('linkModal').style.display = 'none';
+  _linkModalKey = null;
+}
+
+function saveLinkUrl() {
+  if (!_linkModalKey) return;
+  const url = document.getElementById('linkModalUrl').value.trim();
+  if (url) localStorage.setItem('price_link_' + _linkModalKey, url);
+  else localStorage.removeItem('price_link_' + _linkModalKey);
+  applyLinkToSlot(_linkModalKey, url);
+  closeLinkModal();
+}
+
+function openLinkExternal() {
+  const url = document.getElementById('linkModalUrl').value.trim();
+  if (url) window.open(url, '_blank');
+}
+
+function applyLinkToSlot(key, url) {
+  const slot = document.querySelector('[data-supplier="' + key + '"]');
+  if (!slot) return;
+  const hint = slot.querySelector('.hint');
+  if (!hint) return;
+  const a = hint.querySelector('a');
+  const span = hint.querySelector('span');
+  if (url) {
+    if (a) { a.href = url; a.textContent = url.replace(/^https?:\/\//, '').replace(/\/.*/, ''); a.style.display = ''; }
+    if (span) span.style.display = 'none';
+  } else {
+    if (a) a.style.display = 'none';
+    if (span) span.style.display = '';
+  }
+}
+
+(function initSupplierLinks() {
+  for (const key of Object.keys(SUPPLIER_DEFAULT_URLS)) {
+    const saved = localStorage.getItem('price_link_' + key);
+    if (saved) applyLinkToSlot(key, saved);
+  }
+})();
 
 // ═══════════════════════════════════════════════
 // UPLOAD UI
