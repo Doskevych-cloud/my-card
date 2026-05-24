@@ -1511,6 +1511,12 @@ function parseSSJ(text) {
     if ((/🔴/.test(line) || /⚠️/.test(line)) && /АКБ/i.test(line)) { currentCat = 'АКУМУЛЯТОРИ'; payType = null; continue; }
     if (/^[🔴⚠️⚡️\s]+$/.test(line)) continue;
 
+    // Per-line emoji category (SSJ format)
+    if (/^☀/.test(line)) currentCat = 'МОДУЛІ';
+    else if (/^✅/.test(line)) currentCat = 'ІНВЕРТОРИ';
+    else if (/^⚡/.test(line) || /^🔋/.test(line)) currentCat = 'АКУМУЛЯТОРИ';
+    else if (/^⛽/.test(line)) continue;
+
     // Payment type sub-headers
     if (/^Готівка\s*$/i.test(line)) { payType = 'cash'; continue; }
     if (/^Безготівка\s*$/i.test(line)) { payType = 'noncash'; continue; }
@@ -1545,17 +1551,27 @@ function parseSSJ(text) {
         price = parseFloat(priceStr.replace(',', '.'));
       }
     } else {
-      // No dash — panels with per-watt pricing
-      const pm = cleaned.match(/^(.+?)\s+([\d.,]+)\s*\$/);
+      // No dash — panels: price$/price$ (без ПДВ / з ПДВ) or single price$
+      const pm = cleaned.match(/^(.+?)\s+([\d.,]+)\s*\$\s*(?:\/\s*([\d.,]+)\s*\$)?/);
       if (!pm) continue;
       name = pm[1].trim();
-      price = parseFloat(pm[2].replace(',', '.'));
+      const p1 = parseFloat(pm[2].replace(',', '.'));
+      const p2 = pm[3] ? parseFloat(pm[3].replace(',', '.')) : null;
+      if (p2 != null && !isNaN(p2)) {
+        priceNoVat = p1; priceVat = p2;
+      } else {
+        price = p1;
+      }
       // Per-watt? If < 10 and panels → multiply by wattage
-      if (currentCat === 'МОДУЛІ' && price < 10) {
+      if (currentCat === 'МОДУЛІ') {
         const wm = name.match(/(\d{3,4})\s*[MWВмв]?\b/i);
         if (wm) {
           const watts = parseInt(wm[1]);
-          if (watts >= 100 && watts <= 900) price = Math.round(price * watts * 100) / 100;
+          if (watts >= 100 && watts <= 900) {
+            if (priceNoVat != null && priceNoVat < 10) priceNoVat = Math.round(priceNoVat * watts * 100) / 100;
+            if (priceVat != null && priceVat < 10) priceVat = Math.round(priceVat * watts * 100) / 100;
+            if (price != null && price < 10) price = Math.round(price * watts * 100) / 100;
+          }
         }
       }
     }
