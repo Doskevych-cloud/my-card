@@ -57,13 +57,10 @@ a{color:inherit;text-decoration:none}
 .btn--ghost:hover{color:var(--text);background:var(--bg3);border-color:transparent}
 
 
-/* FX-статус — окремий пілл праворуч у page-head */
-.fx-pill{display:inline-flex;align-items:center;gap:10px;padding:6px 11px;border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums;white-space:nowrap}
-.fx-pill .fx-pair{display:inline-flex;align-items:baseline;gap:4px}
-.fx-pill .fx-pair .lbl{color:var(--text3);font-size:11px}
-.fx-pill b{color:var(--text);font-weight:600}
-.fx-pill .fx-age{color:var(--text3);font-size:11px;padding-left:8px;border-left:1px solid var(--border)}
-.fx-pill.stale .fx-age{color:var(--red)}
+/* FX-статус */
+.fx-info{display:inline-flex;align-items:baseline;gap:14px;font-size:12px;color:var(--text3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.fx-info b{color:var(--text2);font-weight:500}
+.fx-info .fx-date{font-size:11px}
 
 /* ─── Toolbar ─── */
 .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
@@ -280,18 +277,15 @@ a{color:inherit;text-decoration:none}
     <h1>Адмінка прайсу</h1>
     <span class="sub">редагує <a href="https://react.ink" target="_blank" rel="noopener">публічний прайс ↗</a></span>
     <div class="spacer"></div>
-    <div class="fx-pill" id="fxPill" style="display:none" title="Курс НБУ +1% · оновлюється раз на добу о 09:00">
-      <span class="fx-pair"><span class="lbl">USD/UAH</span><b id="fxUsd">—</b></span>
-      <span class="fx-pair"><span class="lbl">EUR/UAH</span><b id="fxEur">—</b></span>
-      <span class="fx-age" id="fxAge">—</span>
-    </div>
-    </div>
     <div class="actions">
       <button class="btn" id="refreshPublicBtn" onclick="refreshPublicPrices(this)">↻ Оновити ціни</button>
       <button class="btn" id="refreshStocksBtn" onclick="refreshStocks(this)">↻ Оновити залишки</button>
       <button class="btn" onclick="openCatModal()">+ Категорія</button>
       <button class="btn btn--primary" onclick="openItemModal()">+ Позиція</button>
     </div>
+  </div>
+  <div class="fx-info" id="fxPill" style="display:none">
+    USD/UAH <b id="fxUsd">—</b> · EUR/UAH <b id="fxEur">—</b> <span class="fx-date" id="fxDate"></span>
   </div>
 
 
@@ -605,16 +599,13 @@ async function loadFxStatus() {
     const fmt = v => Number(v).toFixed(2).replace('.', ',');
     if (usd) document.getElementById('fxUsd').textContent = fmt(usd);
     if (eur) document.getElementById('fxEur').textContent = fmt(eur);
-    const ageMs = d.fetched_at ? (Date.now() - new Date(d.fetched_at).getTime()) : null;
-    const ageStr = ageMs == null ? '—'
-      : ageMs < 60_000     ? `${Math.round(ageMs/1000)}с тому`
-      : ageMs < 3_600_000  ? `${Math.floor(ageMs/60_000)}хв тому`
-      : ageMs < 86_400_000 ? `${Math.floor(ageMs/3_600_000)}г тому`
-                           : `${Math.floor(ageMs/86_400_000)}д тому`;
-    const pill = document.getElementById('fxPill');
-    document.getElementById('fxAge').textContent = ageStr;
-    pill.classList.toggle('stale', ageMs != null && ageMs > 2 * 3_600_000);
-    pill.style.display = '';
+    if (d.fetched_at) {
+      const dt = new Date(d.fetched_at);
+      const dd = String(dt.getDate()).padStart(2, '0');
+      const mm = String(dt.getMonth() + 1).padStart(2, '0');
+      document.getElementById('fxDate').textContent = `на ${dd}.${mm}`;
+    }
+    document.getElementById('fxPill').style.display = '';
   } catch (_) {}
 }
 
@@ -1326,7 +1317,6 @@ Auth.require('prices').then(user => {
     document.getElementById('content').innerHTML = `<div class="empty" style="color:var(--red)">Помилка: ${esc(e.message)}</div>`;
   });
   loadFxStatus();
-  setInterval(loadFxStatus, 60_000);
 });
 </script>
 </body>
