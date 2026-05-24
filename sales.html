@@ -307,21 +307,12 @@ const state = {
   excludeList: [],
 };
 
-const DEFAULT_EXCLUDES = [
-  'Дистрибуція',
-  'ТОВ "ГЕНЕРАЦІЯ ЕНЕРДЖІ" Киев',
-  'ТОВ "ГЕНЕРАЦІЯ ЕНЕРДЖІ" Київ ',
-  'ТОВ "ГЕНЕРАЦІЯ ЕНЕРДЖІ" Одеса',
-];
 (function _restoreExclude(){
   try {
-    const ex = localStorage.getItem('sales_exclude');
+    const ex = sessionStorage.getItem('sales_exclude');
     if (ex !== null) {
       const a = JSON.parse(ex);
       if (Array.isArray(a)) state.excludeList = a;
-    } else {
-      state.excludeList = DEFAULT_EXCLUDES.slice();
-      localStorage.setItem('sales_exclude', JSON.stringify(state.excludeList));
     }
   } catch (_) {}
 })();
@@ -340,7 +331,7 @@ function allClients() {
 }
 
 const salesTagInput = {
-  save() { try { localStorage.setItem('sales_exclude', JSON.stringify(state.excludeList)); } catch(_){} },
+  save() { try { sessionStorage.setItem('sales_exclude', JSON.stringify(state.excludeList)); } catch(_){} },
   renderTags() {
     const host = document.getElementById('sExcludeTags');
     if (!host) return;
