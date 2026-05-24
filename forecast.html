@@ -173,9 +173,11 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 .mkt-block .mkt-d.neg{color:var(--neg)}
 .mkt-hint{font-family:var(--mono);font-size:10.5px;color:var(--mute-2)}
 .mkt-hint b{color:var(--fg-2);font-weight:500}
-.cu-months{display:flex;align-items:flex-end;gap:2px;margin-top:2px}
-.cu-months .cm{display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;cursor:default}
-.cu-months .cm-bar{width:100%;min-height:2px;border-radius:2px 2px 0 0;background:var(--bar-fill-2);transition:background .15s}
+.mkt-chart{position:relative;cursor:crosshair}
+.mkt-chart .hover-line{position:absolute;top:0;bottom:0;width:1px;background:var(--mute-2);pointer-events:none;opacity:0;transition:opacity .1s}
+.cu-months{display:flex;align-items:flex-end;gap:3px;margin-top:2px;justify-content:flex-start}
+.cu-months .cm{display:flex;flex-direction:column;align-items:center;width:28px;flex:0 0 28px;cursor:default}
+.cu-months .cm-bar{width:100%;min-height:3px;border-radius:2px 2px 0 0;background:var(--bar-fill-2);transition:background .15s}
 .cu-months .cm.latest .cm-bar{background:var(--bar-fill)}
 .cu-months .cm:hover .cm-bar{background:var(--bar-fill)}
 .cu-months .cm-lbl{font-size:7.5px;color:var(--mute-2);font-family:var(--mono);margin-top:2px;line-height:1}
@@ -718,7 +720,7 @@ function updateCalcFlow() {
         </div>
       </div>
       ${arrow}
-      <div class="tiers-stage">
+      <div class="stage tiers-stage">
         <div class="stage-h"><span class="num">3</span><div><div class="slbl">Замовникам</div><div class="shint">за бухту · 500 м</div></div></div>
         <div class="stage-body tiers-body">${tiersHtml}</div>
       </div>
@@ -746,8 +748,9 @@ function renderMarket(cuData, fxData) {
           <span class="mkt-d ${cuMom<0?'neg':''}">${cuMom>=0?'▲':'▼'} ${Math.abs(cuMom).toFixed(2)}% 7д/30д</span>
         </div>
       </div>
-      ${areaSvg(vals, 86)}
+      <div class="mkt-chart">${areaSvg(vals, 86)}</div>
       <div class="cu-months" id="cuMonths"></div>`;
+    setupChartHover(cuEl.querySelector('.mkt-chart'), vals, cuEl.querySelector('.mkt-v'), cuData.current, 2);
     renderCuMonths();
   } else {
     cuEl.innerHTML = '<div class="error">Дані про мідь недоступні</div>';
@@ -766,11 +769,30 @@ function renderMarket(cuData, fxData) {
           <span class="mkt-d ${fxMom<0?'neg':''}">${fxMom>=0?'▲':'▼'} ${Math.abs(fxMom).toFixed(2)}% 7д/30д</span>
         </div>
       </div>
-      ${areaSvg(vals, 86)}
-      <div class="mkt-hint">7д <b>${fmt(fxData.avg7,2)}</b> · 30д <b>${fmt(fxData.avg30,2)}</b></div>`;
+      <div class="mkt-chart">${areaSvg(vals, 86)}</div>`;
+    setupChartHover(fxEl.querySelector('.mkt-chart'), vals, fxEl.querySelector('.mkt-v'), fxData.current, 2);
   } else {
     fxEl.innerHTML = '<div class="error">Дані EUR/ГРН недоступні</div>';
   }
+}
+
+function setupChartHover(chartEl, vals, valSpan, origPrice, decimals) {
+  const svg = chartEl.querySelector('svg');
+  const line = document.createElement('div');
+  line.className = 'hover-line';
+  chartEl.appendChild(line);
+  svg.addEventListener('mousemove', e => {
+    const rect = svg.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const i = Math.max(0, Math.min(vals.length - 1, Math.round(x * (vals.length - 1))));
+    valSpan.textContent = fmt(vals[i], decimals);
+    line.style.left = (x * 100) + '%';
+    line.style.opacity = '1';
+  });
+  svg.addEventListener('mouseleave', () => {
+    valSpan.textContent = fmt(origPrice, decimals);
+    line.style.opacity = '0';
+  });
 }
 
 function renderCuMonths() {
@@ -895,7 +917,7 @@ function modalTemplate(kind, f) {
       <div class="m-formula"><strong>Джерело:</strong> 1С UNF, регістр <code>Запасы/Balance</code>, організація РЕАКТ, <code>ЗаказПокупателя = 0</code></div>`;
   }
   if (kind === 'reserve') {
-    const list = [...f.reserveList].sort((a,b) => b.qty-a.qty);
+    const list = [...f.reserveList].filter(r => r.qty > 0).sort((a,b) => b.qty-a.qty);
     const totalTransit = list.reduce((a,r) => a+(r.fromTransit||0), 0);
     const totalOnHand = list.reduce((a,r) => a+(r.fromOnHand||0), 0);
     return `<div class="m-big">${fmt(s.black.reserve+s.red.reserve)} м</div><div class="m-sub">${list.length} резервів · на складі ${fmt(totalOnHand)} м · в дорозі ${fmt(totalTransit)} м</div>
