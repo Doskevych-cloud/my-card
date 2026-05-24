@@ -431,7 +431,7 @@ async function loadFxPosition() {
     });
     return;
   }
-  const rt = r.rates || {}, sw = rt.swift || {}, doc = rt.doc_1c || {};
+  const rt = r.rates || {}, sw = rt.nbu || {}, doc = rt.doc_1c || {};
   document.getElementById('ratesSub').textContent = `${rt.source || '—'} · станом на ${rt.date || '—'}`;
   const fmtS = v => v != null && isFinite(v) ? v.toFixed(2).replace('.', ',') : '—';
   document.getElementById('ratesBody').innerHTML = `

@@ -618,12 +618,11 @@ async function refreshStocks(btn) {
   }
 }
 
-// FX-статус — поточний SWIFT-курс PrivatBank (USD/EUR проти UAH) + час
-// останнього оновлення в KV. Cron `*/15 * * * *` + `0 6,7,8 * * *` тримає
-// KV свіжим, handler віддає кешоване <30 хв або робить live при потребі.
+// FX-статус — курс НБУ+1% (USD/EUR проти UAH) + час останнього оновлення в KV.
+// Cron `*/15 * * * *` + `0 6,7,8 * * *` тримає KV свіжим.
 async function loadFxStatus() {
   try {
-    const r = await fetch(`${API}/?action=fx_swift`);
+    const r = await fetch(`${API}/?action=fx_nbu`);
     if (!r.ok) return;
     const d = await r.json();
     const usd = d?.rates?.USD?.sell, eur = d?.rates?.EUR?.sell;

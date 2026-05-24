@@ -2134,7 +2134,7 @@ async function loadFxPosition() {
 
   // Rates: основний — НБУ +1% (sell), референс — 1c_doc
   const rt = r.rates || {};
-  const sw = rt.swift || {};
+  const sw = rt.nbu || {};
   const doc = rt.doc_1c || {};
   document.getElementById('b7RatesSub').textContent = `${rt.source || '—'} · станом на ${rt.date || '—'}`;
   const fmtS = v => v != null && isFinite(v) ? v.toFixed(2).replace('.', ',') : '—';
