@@ -421,14 +421,20 @@
     const navItems = [
       { role: 'dashboard',     active: 'dashboard',     href: '/',                  label: '🧭 Дашборд' },
       { role: 'prices',        active: 'prices-admin',  href: '/admin-prices.html', label: '🔧 Прайс' },
-      { role: 'forecast',      active: 'forecast',      href: '/forecast.html',     label: '📊 Закупівлі' },
+      { role: 'forecast',      active: 'forecast',      href: '/forecast.html',     label: '📊 Закупівлі', orgRequired: 'Реакт' },
       { role: 'warehouses',    active: 'warehouses',    href: '/warehouses.html',   label: '📦 Склад' },
       { role: 'sales',         active: 'sales',         href: '/sales.html',        label: '📈 Продажі' },
       { role: 'counterparties',active: 'counterparties',href: '/counterparties.html', label: '👥 Контрагенти' },
       { role: '_admin',        active: 'finance',       href: '/finance.html',      label: '💰 Фінанси' },
       { role: 'reports',       active: 'reports',       href: '/reports.html',      label: '📑 Звіти' },
     ];
-    const visibleItems = navItems.filter(it => it.role === '_admin' ? isAdmin : can(it.role));
+    const userOrgs = (user && user.orgs) || {};
+    const visibleItems = navItems.filter(it => {
+      if (it.role === '_admin') return isAdmin;
+      if (!can(it.role)) return false;
+      if (it.orgRequired && !isAdmin && !userOrgs[it.orgRequired]) return false;
+      return true;
+    });
     const navLinksHtml = visibleItems.map(it =>
       `<a href="${it.href}" class="${active === it.active ? 'active' : ''}">${it.label}</a>`
     ).join('');
