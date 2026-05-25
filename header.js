@@ -432,7 +432,7 @@
     const visibleItems = navItems.filter(it => {
       if (it.role === '_admin') return isAdmin;
       if (!can(it.role)) return false;
-      if (it.orgRequired && !isAdmin && !userOrgs[it.orgRequired]) return false;
+      if (it.orgRequired && (!isAdmin || impersonating) && !userOrgs[it.orgRequired]) return false;
       return true;
     });
     const navLinksHtml = visibleItems.map(it =>

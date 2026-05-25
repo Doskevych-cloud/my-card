@@ -1262,7 +1262,8 @@ document.addEventListener('click', e => {
 Auth.require('prices').then(user => {
   const userOrgs = user.orgs || {};
   const isAdmin = !!(user.roles && user.roles.admin);
-  if (!isAdmin && !userOrgs['Реакт']) {
+  const impersonating = !!(Auth.isImpersonating && Auth.isImpersonating());
+  if ((!isAdmin || impersonating) && !userOrgs['Реакт']) {
     document.getElementById('content').innerHTML = `
       <div style="display:flex;align-items:center;justify-content:center;min-height:60vh;color:var(--mute);font-size:15px;text-align:center;padding:40px">
         <div>

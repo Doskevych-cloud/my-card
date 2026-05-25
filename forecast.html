@@ -395,7 +395,8 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
 Auth.require('forecast').then(user => {
   const userOrgs = user.orgs || {};
   const isAdmin = !!(user.roles && user.roles.admin);
-  if (!isAdmin && !userOrgs['Реакт']) {
+  const impersonating = !!(Auth.isImpersonating && Auth.isImpersonating());
+  if ((!isAdmin || impersonating) && !userOrgs['Реакт']) {
     document.querySelector('.wrap').innerHTML = `
       <div style="display:flex;align-items:center;justify-content:center;min-height:60vh;color:var(--mute);font-size:15px;text-align:center;padding:40px">
         <div>
