@@ -346,9 +346,17 @@
 
   function filterSubNav(user) {
     const roles = (user && user.roles) || {};
-    if (roles.admin) return;
-    document.querySelectorAll('[data-perm]').forEach(el => {
-      if (!roles[el.dataset.perm]) el.style.display = 'none';
+    const userOrgs = (user && user.orgs) || {};
+    const isAdmin = !!roles.admin;
+    const imp = !!(global.Auth && global.Auth.isImpersonating && global.Auth.isImpersonating());
+    if (!isAdmin) {
+      document.querySelectorAll('[data-perm]').forEach(el => {
+        if (!roles[el.dataset.perm]) el.style.display = 'none';
+      });
+    }
+    document.querySelectorAll('[data-org-required]').forEach(el => {
+      const req = el.dataset.orgRequired;
+      if ((!isAdmin || imp) && !userOrgs[req]) el.style.display = 'none';
     });
   }
 

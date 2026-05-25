@@ -180,10 +180,10 @@ a{color:inherit;text-decoration:none}
       <a href="/top_products.html" class="ptab" data-perm="sales_top_products">📦 Останні продажі</a>
       <a href="/osp.html" class="ptab" data-perm="sales_osp">📋 Оплата та відвантаження</a>
       <span class="ptab active" data-perm="sales_ar_aging">⏱ Заборгованість покупців</span>
-      <a href="/active_clients.html" class="ptab" data-perm="sales_active_clients">👥 Клієнтська база</a>
+      <a href="/active_clients.html" class="ptab" data-org-required="Реакт" data-perm="sales_active_clients">👥 Клієнтська база</a>
       <a href="/inventory.html" class="ptab" data-perm="sales_inventory">📊 Обіговість запасів</a>
       <a href="/sla.html" class="ptab" data-perm="sales_sla">⚡ SLA</a>
-      <a href="/broadcast.html" class="ptab" data-perm="sales_broadcast">📢 Розсилка</a>
+      <a href="/broadcast.html" class="ptab" data-org-required="Реакт" data-perm="sales_broadcast">📢 Розсилка</a>
     </div>
 
     <div class="toolbar">
@@ -622,6 +622,22 @@ AppHeader.mount({ active: 'sales' });
 Auth.require('sales_ar_aging').then(user => {
   AppHeader.mount({ active: 'sales', user });
   Auth.filterSubNav(user);
+  const userOrgs = user.orgs || {};
+  const hasAnyOrg = Object.values(userOrgs).some(v => v);
+  if (hasAnyOrg) {
+    const allowedOrgs = ['Реакт', 'Генерація'].filter(o => userOrgs[o]);
+    const orgChips = document.querySelectorAll('.chip[data-org]');
+    orgChips.forEach(chip => {
+      const org = chip.dataset.org;
+      if (org === '') {
+        if (allowedOrgs.length < 2) chip.style.display = 'none';
+      } else {
+        if (!userOrgs[org]) chip.style.display = 'none';
+      }
+    });
+    const defaultOrg = allowedOrgs.length === 1 ? allowedOrgs[0] : '';
+    orgChips.forEach(c => c.classList.toggle('active', c.dataset.org === defaultOrg));
+  }
   setToday();
 }).catch(() => {});
 </script>
