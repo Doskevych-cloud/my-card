@@ -170,6 +170,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 .mkt-block .mkt-v{font-family:var(--mono);font-size:18px;color:var(--fg);font-weight:500;letter-spacing:-.2px}
 .mkt-block .mkt-u{font-size:10.5px;color:var(--mute);font-family:var(--mono)}
 .mkt-block .mkt-d{font-family:var(--mono);font-size:11px;color:var(--pos);margin-left:4px}
+.mkt-block .mkt-dt{font-family:var(--mono);font-size:10.5px;color:var(--mute);opacity:0;transition:opacity .15s;margin-right:4px}
 .mkt-block .mkt-d.neg{color:var(--neg)}
 .mkt-hint{font-family:var(--mono);font-size:10.5px;color:var(--mute-2)}
 .mkt-hint b{color:var(--fg-2);font-weight:500}
@@ -754,11 +755,13 @@ function renderMarket(cuData, fxData) {
   if (cuData && cuData.data && cuData.data.length) {
     const reversed = cuData.data.slice().reverse();
     const vals = reversed.map(x => x.price);
+    const dates = reversed.map(x => x.date);
     const cuMom = cuData.avg7 && cuData.avg30 ? ((cuData.avg7/cuData.avg30)-1)*100 : 0;
     cuEl.innerHTML = `
       <div class="mkt-h">
         <div class="ll">МІДЬ · daily <span class="period">30 днів</span></div>
         <div class="rr">
+          <span class="mkt-dt"></span>
           <span class="mkt-v">${fmt(cuData.current,2)}</span>
           <span class="mkt-u">€/100кг</span>
           <span class="mkt-d ${cuMom<0?'neg':''}">${cuMom>=0?'▲':'▼'} ${Math.abs(cuMom).toFixed(2)}% 7д/30д</span>
@@ -766,7 +769,7 @@ function renderMarket(cuData, fxData) {
       </div>
       <div class="mkt-chart">${areaSvg(vals, 86)}</div>
       <div class="cu-months" id="cuMonths"></div>`;
-    setupChartHover(cuEl.querySelector('.mkt-chart'), vals, cuEl.querySelector('.mkt-v'), cuData.current, 2);
+    setupChartHover(cuEl.querySelector('.mkt-chart'), vals, cuEl.querySelector('.mkt-v'), cuData.current, 2, dates);
     renderCuMonths();
   } else {
     cuEl.innerHTML = '<div class="error">Дані про мідь недоступні</div>';
@@ -775,38 +778,47 @@ function renderMarket(cuData, fxData) {
   if (fxData && fxData.data && fxData.data.length) {
     const reversed = fxData.data.slice().reverse();
     const vals = reversed.map(x => x.price);
+    const fxDates = reversed.map(x => x.date);
     const fxMom = fxData.avg7 && fxData.avg30 ? ((fxData.avg7/fxData.avg30)-1)*100 : 0;
     fxEl.innerHTML = `
       <div class="mkt-h">
         <div class="ll">EUR / ГРН · НБУ <span class="period">30 днів</span></div>
         <div class="rr">
+          <span class="mkt-dt"></span>
           <span class="mkt-v">${fmt(fxData.current,2)}</span>
           <span class="mkt-u">₴/€</span>
           <span class="mkt-d ${fxMom<0?'neg':''}">${fxMom>=0?'▲':'▼'} ${Math.abs(fxMom).toFixed(2)}% 7д/30д</span>
         </div>
       </div>
       <div class="mkt-chart">${areaSvg(vals, 86)}</div>`;
-    setupChartHover(fxEl.querySelector('.mkt-chart'), vals, fxEl.querySelector('.mkt-v'), fxData.current, 2);
+    setupChartHover(fxEl.querySelector('.mkt-chart'), vals, fxEl.querySelector('.mkt-v'), fxData.current, 2, fxDates);
   } else {
     fxEl.innerHTML = '<div class="error">Дані EUR/ГРН недоступні</div>';
   }
 }
 
-function setupChartHover(chartEl, vals, valSpan, origPrice, decimals) {
+function setupChartHover(chartEl, vals, valSpan, origPrice, decimals, dates) {
   const svg = chartEl.querySelector('svg');
   const line = document.createElement('div');
   line.className = 'hover-line';
   chartEl.appendChild(line);
+  const dtSpan = chartEl.closest('.mkt-block')?.querySelector('.mkt-dt');
   svg.addEventListener('mousemove', e => {
     const rect = svg.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
     const i = Math.max(0, Math.min(vals.length - 1, Math.round(x * (vals.length - 1))));
     valSpan.textContent = fmt(vals[i], decimals);
+    if (dtSpan && dates && dates[i]) {
+      const [y, m, d] = dates[i].split('-');
+      dtSpan.textContent = `${d}.${m}`;
+      dtSpan.style.opacity = '1';
+    }
     line.style.left = (x * 100) + '%';
     line.style.opacity = '1';
   });
   svg.addEventListener('mouseleave', () => {
     valSpan.textContent = fmt(origPrice, decimals);
+    if (dtSpan) dtSpan.style.opacity = '0';
     line.style.opacity = '0';
   });
 }
@@ -1040,7 +1052,7 @@ async function fetchNbuEurUah(days = 30) {
     reqs.push(
       fetch(`${NBU}?valcode=EUR&date=${yyyy}${mm}${dd}&json`)
         .then(r => r.ok ? r.json() : [])
-        .then(arr => (arr && arr.length && isFinite(arr[0].rate)) ? { price: arr[0].rate } : null)
+        .then(arr => (arr && arr.length && isFinite(arr[0].rate)) ? { price: arr[0].rate, date: `${yyyy}-${mm}-${dd}` } : null)
         .catch(() => null)
     );
   }
