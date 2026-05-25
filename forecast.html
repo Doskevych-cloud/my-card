@@ -393,6 +393,20 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
 
 <script>
 Auth.require('forecast').then(user => {
+  const userOrgs = user.orgs || {};
+  const isAdmin = !!(user.roles && user.roles.admin);
+  if (!isAdmin && !userOrgs['Реакт']) {
+    document.querySelector('.wrap').innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;min-height:60vh;color:var(--mute);font-size:15px;text-align:center;padding:40px">
+        <div>
+          <div style="font-size:32px;margin-bottom:12px">⛔</div>
+          <div>Цей звіт доступний лише для організації <b style="color:var(--fg)">Реакт</b></div>
+          <div style="margin-top:8px;font-size:13px">Зверніться до адміністратора для отримання доступу.</div>
+        </div>
+      </div>`;
+    AppHeader.mount({ active: 'forecast', user });
+    return;
+  }
   window.__user = user;
   AppHeader.mount({ active: 'forecast', user });
 });
