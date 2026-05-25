@@ -1260,6 +1260,20 @@ document.addEventListener('click', e => {
 });
 
 Auth.require('prices').then(user => {
+  const userOrgs = user.orgs || {};
+  const isAdmin = !!(user.roles && user.roles.admin);
+  if (!isAdmin && !userOrgs['Реакт']) {
+    document.getElementById('content').innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;min-height:60vh;color:var(--mute);font-size:15px;text-align:center;padding:40px">
+        <div>
+          <div style="font-size:32px;margin-bottom:12px">⛔</div>
+          <div>Цей розділ доступний лише для організації <b style="color:var(--fg)">Реакт</b></div>
+          <div style="margin-top:8px;font-size:13px">Зверніться до адміністратора для отримання доступу.</div>
+        </div>
+      </div>`;
+    AppHeader.mount({ active: 'prices-admin', user });
+    return;
+  }
   AppHeader.mount({ active: 'prices-admin', user });
   load().catch(e => {
     document.getElementById('content').innerHTML = `<div class="empty" style="color:var(--red)">Помилка: ${esc(e.message)}</div>`;
