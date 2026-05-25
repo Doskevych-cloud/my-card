@@ -795,50 +795,6 @@ function render() {
   });
   html += `</div>`;
 
-  // Managers
-  html += `
-  <div class="section-h"><h2>👥 По менеджерах</h2><span class="hint">Сортування — за кількістю угод</span></div>
-  <div class="mgr-wrap">
-    <table class="mgr-table">
-      <thead><tr><th>Менеджер</th><th>Угод</th><th>Успіх</th><th>Провал</th><th>В роботі</th><th>Конверсія</th></tr></thead>
-      <tbody>`;
-  a.managers.forEach(m => {
-    const cr = m.total ? m.success / m.total : 0;
-    html += `
-      <tr>
-        <td>${esc(m.name)}</td>
-        <td>${fmt(m.total)}</td>
-        <td class="success">${m.success ? fmt(m.success) : '—'}</td>
-        <td class="fail">${m.fail ? fmt(m.fail) : '—'}</td>
-        <td class="progress">${m.inProgress ? fmt(m.inProgress) : '—'}</td>
-        <td class="conv">${pct(cr)}<span class="conv-bar"><i style="width:${Math.round(cr*100)}%"></i></span></td>
-      </tr>`;
-  });
-  html += `</tbody></table></div>`;
-
-  // Channels (тільки для sheet-режиму)
-  if (state.source === 'sheet' && a.channels && a.channels.length) {
-    html += `
-    <div class="section-h"><h2>🌐 Канали реклами</h2><span class="hint">Унікальні угоди по джерелу</span></div>
-    <div class="mgr-wrap">
-      <table class="mgr-table">
-        <thead><tr><th>Канал</th><th>Угод</th><th>Успіх</th><th>Провал</th><th>В роботі</th><th>Конверсія</th></tr></thead>
-        <tbody>`;
-    a.channels.forEach(c => {
-      const cr = c.total ? c.success / c.total : 0;
-      html += `
-        <tr>
-          <td>${esc(c.name)}</td>
-          <td>${fmt(c.total)}</td>
-          <td class="success">${c.success ? fmt(c.success) : '—'}</td>
-          <td class="fail">${c.fail ? fmt(c.fail) : '—'}</td>
-          <td class="progress">${c.inProgress ? fmt(c.inProgress) : '—'}</td>
-          <td class="conv">${pct(cr)}<span class="conv-bar"><i style="width:${Math.round(cr*100)}%"></i></span></td>
-        </tr>`;
-    });
-    html += `</tbody></table></div>`;
-  }
-
   // Усі ліди (sheet only) — сортовна таблиця
   if (state.source === 'sheet' && a.leadsList && a.leadsList.length) {
     let list = a.leadsList;
