@@ -843,7 +843,12 @@ function render() {
   if (state.source === 'sheet' && a.leadsList && a.leadsList.length) {
     let list = a.leadsList;
     if (state.stageFilter !== null) {
-      list = list.filter(l => (l.maxStageIdx ?? -1) >= state.stageFilter);
+      const stageName = (a.stages[state.stageFilter] || '').replace(/^\d+\.\s*/, '');
+      list = list.filter(l => {
+        if (l.currentStatus === stageName) return true;
+        if (stageName === 'Аванс отримано' && l.currentStatus === 'Успішно реалізовано') return true;
+        return false;
+      });
     }
     list = [...list].sort((x, y) => {
       const col = leadsSort.col;
