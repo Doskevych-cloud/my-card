@@ -195,6 +195,14 @@ a{color:inherit;text-decoration:none}
 
     <span class="sep"></span>
 
+    <span class="lbl">Клас</span>
+    <span class="chip active" data-lc="" onclick="setLeadClass('')">Усі</span>
+    <span class="chip" data-lc="A" onclick="setLeadClass('A')">A</span>
+    <span class="chip" data-lc="B" onclick="setLeadClass('B')">B</span>
+    <span class="chip" data-lc="C" onclick="setLeadClass('C')">C</span>
+
+    <span class="sep"></span>
+
     <button class="btn btn--secondary btn--sm" id="btnRefresh">↻ Оновити</button>
 
     <span class="spacer"></span>
@@ -227,6 +235,7 @@ const state = {
   preset: 'month',
   org: '',
   clientType: '',       // '' | 'private' | 'business'
+  leadClass: '',        // '' | 'A' | 'B' | 'C'
   loading: false,
   stageFilter: null,    // null | 0..7 — drilldown по funnel: показувати лідів які доходили до цієї стадії або далі
 };
@@ -263,6 +272,7 @@ Auth.require('reports').then(user => {
   syncPresetChips();
   syncOrgChips();
   syncClientTypeChips();
+  syncLeadClassChips();
   syncModeChips();
   attachEvents();
   load();
@@ -277,6 +287,7 @@ function saveStateToUrl() {
   if (state.org)    h.set('org', state.org);
   if (state.source !== 'planfix') h.set('src', state.source);
   if (state.clientType) h.set('ct', state.clientType);
+  if (state.leadClass) h.set('lc', state.leadClass);
   if (state.mode && state.mode !== 'period') h.set('mode', state.mode);
   if (state.report && state.report !== 'funnel') h.set('rep', state.report);
   history.replaceState(null, '', '#' + h.toString());
@@ -289,6 +300,7 @@ function hydrateFromHash() {
   if (h.get('org'))    state.org    = h.get('org');
   if (h.get('src'))    state.source = h.get('src');
   if (h.get('ct'))     state.clientType = h.get('ct');
+  if (h.get('lc'))     state.leadClass = h.get('lc');
   if (h.get('mode'))   state.mode = h.get('mode');
   if (h.get('rep'))    state.report = h.get('rep');
   if (!h.get('preset')) state.preset = detectPreset(state.from, state.to);
@@ -357,6 +369,15 @@ function setClientType(v) {
   state.clientType = v || '';
   syncClientTypeChips(); saveStateToUrl(); load();
 }
+function syncLeadClassChips() {
+  document.querySelectorAll('.chip[data-lc]').forEach(c => {
+    c.classList.toggle('active', (c.dataset.lc || '') === (state.leadClass || ''));
+  });
+}
+function setLeadClass(v) {
+  state.leadClass = v || '';
+  syncLeadClassChips(); saveStateToUrl(); load();
+}
 function syncModeChips() {
   document.querySelectorAll('.chip[data-mode]').forEach(c => {
     c.classList.toggle('active', (c.dataset.mode || 'period') === (state.mode || 'period'));
@@ -410,6 +431,7 @@ async function load(force = false) {
     const action = REPORT_ACTION[state.report] || 'sheet_funnel';
     const params = new URLSearchParams({ action, from: state.from, to: state.to });
     if (state.clientType) params.set('clientType', state.clientType);
+    if (state.leadClass) params.set('leadClass', state.leadClass);
     if (state.report === 'funnel' && state.mode && state.mode !== 'period') {
       params.set('mode', state.mode);
     }
