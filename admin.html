@@ -95,10 +95,26 @@ tbody tr:hover { background: rgba(154,180,255,.04); }
 .role-card-foot .meta { margin-left:auto; font-size:11px; color:var(--text3); }
 td .role-select { background:var(--card2); border:1px solid var(--border); color:var(--text); padding:5px 8px; border-radius:6px; font:inherit; font-size:12px; cursor:pointer; min-width:140px; }
 
+.conv-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s}
+.conv-item:hover{background:var(--card2)}
+.conv-item.active{background:rgba(154,180,255,.08)}
+.conv-item .ci-title{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.conv-item .ci-meta{font-size:11px;color:var(--text3);display:flex;gap:8px;margin-top:2px}
+.msg-wrap{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;max-height:600px}
+.msg-bubble{max-width:80%;padding:8px 12px;border-radius:10px;font-size:13px;line-height:1.5;word-break:break-word;white-space:pre-wrap}
+.msg-bubble.user{align-self:flex-start;background:var(--card2);border:1px solid var(--border)}
+.msg-bubble.bot{align-self:flex-end;background:rgba(154,180,255,.1);border:1px solid rgba(154,180,255,.15)}
+.msg-bubble .msg-time{font-size:10px;color:var(--text3);margin-top:4px}
+.msg-bubble .msg-fb{font-size:11px;margin-top:4px;padding:3px 6px;border-radius:4px;background:var(--card2);display:inline-block}
+.msg-header{padding:12px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.msg-header .mh-org{font-size:11px;color:var(--text3);font-weight:400}
+
 @media (max-width: 640px) {
   table thead { display:none }
   tbody td { display: block; border: 0; padding: 6px 14px }
   tbody tr { border-bottom: 1px solid var(--border); padding: 8px 0 }
+  #convContainer{flex-direction:column}
+  #convList{width:100%;max-height:250px;border-right:none;border-bottom:1px solid var(--border)}
 }
 </style>
 </head>
@@ -248,7 +264,27 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
   </div>
 
   <div id="tab-bot" class="tab-panel">
+
   <div class="card">
+    <div class="card-head">
+      <h2>Переписки</h2>
+      <div class="spacer"></div>
+      <span id="convCount" style="font-size:12px;color:var(--text3)"></span>
+    </div>
+    <div style="display:flex;min-height:480px;border-top:1px solid var(--border)" id="convContainer">
+      <div id="convList" style="width:300px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;max-height:600px">
+        <input type="text" id="convSearch" placeholder="Пошук чату…" style="width:100%;padding:10px 14px;background:var(--card2);border:none;border-bottom:1px solid var(--border);color:var(--text);font:inherit;font-size:13px;outline:none">
+        <div id="convListInner" style="padding:0">
+          <div style="padding:20px;color:var(--text3);font-size:13px;text-align:center">Завантаження…</div>
+        </div>
+      </div>
+      <div id="convMessages" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px">Оберіть чат зліва</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:24px">
     <div class="card-head">
       <h2>Налаштування</h2>
     </div>
@@ -368,6 +404,7 @@ Auth.require('admin').then(user => {
   loadBotPrompt();
   loadBotSettings();
   loadBotFeedback();
+  loadConversations();
 });
 
 // Найсвіжіший last_synced_at з sync_state — показуємо поряд із кнопкою autosync.
@@ -1118,6 +1155,83 @@ function toast(text, kind) {
   setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; }, 2500);
   setTimeout(() => el.remove(), 2900);
 }
+
+let _convData = [];
+let _activeChat = null;
+
+async function loadConversations() {
+  const token = Auth.token();
+  try {
+    const r = await fetch(`${BOT_API}?action=bot_conversations_list`, { headers: { Authorization: `Bearer ${token}` } });
+    const d = await r.json();
+    _convData = d.conversations || [];
+    document.getElementById('convCount').textContent = _convData.length + ' чатів';
+    renderConvList(_convData);
+  } catch (e) {
+    document.getElementById('convListInner').innerHTML = '<div style="padding:20px;color:var(--red);font-size:13px">Помилка завантаження</div>';
+  }
+}
+
+function renderConvList(list) {
+  const el = document.getElementById('convListInner');
+  if (!list.length) { el.innerHTML = '<div style="padding:20px;color:var(--text3);font-size:13px;text-align:center">Немає переписок</div>'; return; }
+  el.innerHTML = list.map(c => {
+    const title = c.chat_title || c.counterparty_name || 'Chat ' + c.chat_id;
+    const ago = c.last_msg_at ? fmtAgo(c.last_msg_at) : '';
+    return `<div class="conv-item${_activeChat == c.chat_id ? ' active' : ''}" data-cid="${c.chat_id}" onclick="openConv('${c.chat_id}',this)">
+      <div class="ci-title">${esc(title)}</div>
+      <div class="ci-meta"><span>${c.msg_count} повідомл.</span><span>${c.org || ''}</span>${ago ? '<span>' + ago + '</span>' : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('convSearch').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  const filtered = _convData.filter(c => {
+    const title = (c.chat_title || c.counterparty_name || '').toLowerCase();
+    return title.includes(q);
+  });
+  renderConvList(filtered);
+});
+
+async function openConv(chatId, el) {
+  _activeChat = chatId;
+  document.querySelectorAll('.conv-item').forEach(i => i.classList.toggle('active', i.dataset.cid === chatId));
+  const panel = document.getElementById('convMessages');
+  panel.innerHTML = '<div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px">Завантаження…</div>';
+  const token = Auth.token();
+  try {
+    const r = await fetch(`${BOT_API}?action=bot_conversation_messages&chat_id=${chatId}&limit=200`, { headers: { Authorization: `Bearer ${token}` } });
+    const d = await r.json();
+    const conv = _convData.find(c => c.chat_id == chatId);
+    const title = conv ? (conv.chat_title || conv.counterparty_name || 'Chat ' + chatId) : 'Chat ' + chatId;
+    const org = conv?.org || '';
+    let html = `<div class="msg-header">${esc(title)}${org ? ' <span class="mh-org">' + esc(org) + '</span>' : ''}<div class="spacer"></div><span style="font-size:11px;color:var(--text3)">${d.total} повідомл.</span></div>`;
+    html += '<div class="msg-wrap">';
+    if (!d.messages?.length) {
+      html += '<div style="text-align:center;color:var(--text3);font-size:13px;padding:40px">Немає повідомлень</div>';
+    } else {
+      for (const m of d.messages) {
+        const cls = m.role === 'bot' ? 'bot' : 'user';
+        const time = m.created_at ? new Date(m.created_at + 'Z').toLocaleString('uk-UA', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+        let fb = '';
+        if (m.reaction) {
+          const icon = m.reaction === 'like' ? '👍' : m.reaction === 'dislike' ? '👎' : '❓';
+          fb = `<div class="msg-fb">${icon} ${esc(m.reactor_username || '')}${m.correction ? ' — ' + esc(m.correction) : ''}</div>`;
+        }
+        html += `<div class="msg-bubble ${cls}"><div>${esc(m.text || '')}</div><div class="msg-time">${m.role === 'bot' ? 'Бот' : 'Дилер'} · ${time}</div>${fb}</div>`;
+      }
+    }
+    html += '</div>';
+    panel.innerHTML = html;
+    const wrap = panel.querySelector('.msg-wrap');
+    if (wrap) wrap.scrollTop = wrap.scrollHeight;
+  } catch (e) {
+    panel.innerHTML = '<div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--red);font-size:13px">Помилка завантаження</div>';
+  }
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 </script>
 </body>
 </html>
