@@ -8,8 +8,8 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
-<script src="auth.js?v=bc20260522"></script>
-<script src="header.js?v=bc20260522"></script>
+<script src="auth.js?v=bc20260528"></script>
+<script src="header.js?v=bc20260528"></script>
 <link rel="stylesheet" href="theme.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -22,6 +22,15 @@ a{color:inherit;text-decoration:none}
 .ptab:hover{background:var(--bg3);color:var(--text)}
 .ptab.active{background:var(--accent-bg);color:var(--accent)}
 
+/* ─ Inner tabs ─ */
+.inner-tabs{display:inline-flex;gap:4px;padding:3px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:14px}
+.itab{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s;user-select:none}
+.itab:hover{color:var(--text)}
+.itab.active{background:var(--accent-bg);color:var(--accent)}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* ─ Blocks ─ */
 .bc-block{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
 .bc-block h2{font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text)}
 
@@ -44,13 +53,17 @@ a{color:inherit;text-decoration:none}
 .chat-row:hover{background:var(--bg3)}
 .chat-row input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px;flex-shrink:0;cursor:pointer}
 .chat-row .cr-name{font-size:12px;font-weight:500;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.chat-row .cr-org{font-size:10px;color:var(--text3);font-weight:600;flex-shrink:0}
+.chat-row .cr-meta{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.chat-row .cr-org{font-size:10px;color:var(--text3);font-weight:600}
+.chat-row .cr-sent{font-size:10px;color:var(--text3);font-variant-numeric:tabular-nums}
 
 .bc-footer{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .bc-count{font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums}
 .bc-btn{padding:10px 24px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .15s}
 .bc-btn:hover{opacity:.9}
 .bc-btn:disabled{opacity:.4;cursor:not-allowed}
+.bc-btn-secondary{padding:6px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s}
+.bc-btn-secondary:hover{background:var(--bg3);color:var(--text)}
 
 .bc-result{margin-top:14px;padding:12px 14px;border-radius:10px;font-size:12px;display:none}
 .bc-result.ok{display:block;background:var(--green-bg);color:var(--green);border:1px solid color-mix(in srgb,var(--green) 30%,transparent)}
@@ -58,11 +71,47 @@ a{color:inherit;text-decoration:none}
 
 .loading-msg{text-align:center;padding:30px;color:var(--text3);font-size:12px}
 
+/* ─ History ─ */
+.hist-list{display:flex;flex-direction:column;gap:6px}
+.hist-row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:background .1s}
+.hist-row:hover{background:var(--bg3)}
+.hist-date{font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums;white-space:nowrap;min-width:90px}
+.hist-text{font-size:12px;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist-stats{display:flex;align-items:center;gap:6px;flex-shrink:0;font-size:11px;font-variant-numeric:tabular-nums}
+.hist-ok{color:var(--green);font-weight:600}
+.hist-fail{color:var(--red);font-weight:600}
+.hist-by{font-size:10px;color:var(--text3);min-width:60px;text-align:right}
+
+/* ─ Detail modal ─ */
+.detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:16px}
+.detail-overlay.open{display:flex}
+.detail-box{background:var(--bg);border:1px solid var(--border);border-radius:14px;max-width:600px;width:100%;max-height:80vh;overflow:hidden;display:flex;flex-direction:column}
+.detail-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.detail-head h3{font-size:13px;font-weight:700;flex:1}
+.detail-close{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.detail-close:hover{background:var(--bg3);color:var(--text)}
+.detail-body{padding:14px 16px;overflow-y:auto;flex:1}
+.detail-msg{font-size:12px;color:var(--text2);padding:10px 12px;background:var(--bg2);border-radius:8px;margin-bottom:12px;white-space:pre-wrap;word-break:break-word;max-height:120px;overflow-y:auto}
+.detail-summary{font-size:12px;color:var(--text2);margin-bottom:10px;display:flex;gap:12px;flex-wrap:wrap}
+.detail-recipients{display:flex;flex-direction:column;gap:3px;max-height:300px;overflow-y:auto}
+.dr-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:12px}
+.dr-row:nth-child(odd){background:var(--bg2)}
+.dr-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dr-org{font-size:10px;color:var(--text3);font-weight:600}
+.dr-status{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px}
+.dr-status.ok{color:var(--green);background:var(--green-bg)}
+.dr-status.failed{color:var(--red);background:var(--red-bg)}
+.dr-not-sent{font-size:10px;color:var(--text3);font-style:italic}
+
+/* ─ Filter chips for history ─ */
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+
 @media(max-width:600px){
   .page-tabs{display:flex;flex-wrap:wrap;gap:3px;padding:3px}
   .ptab{padding:6px 10px;font-size:11.5px}
   .bc-footer{flex-direction:column;align-items:stretch}
   .bc-btn{text-align:center}
+  .detail-box{max-width:100%;max-height:90vh}
 }
 </style>
 </head>
@@ -83,32 +132,59 @@ a{color:inherit;text-decoration:none}
     </div>
     <script>requestAnimationFrame(()=>{var a=document.querySelector('.ptab.active');if(a)a.scrollIntoView({inline:'center',block:'nearest'});})</script>
 
-    <div class="bc-block">
-      <h2>Повідомлення</h2>
-      <textarea id="msgText" class="bc-textarea" placeholder="Текст повідомлення…"></textarea>
-      <div class="char-count"><span id="charCount">0</span> символів</div>
+    <div class="inner-tabs">
+      <span class="itab active" data-tab="compose" onclick="switchTab('compose')">Нова розсилка</span>
+      <span class="itab" data-tab="history" onclick="switchTab('history')">Історія</span>
     </div>
 
-    <div class="bc-block">
-      <h2>Обрати чати</h2>
-      <div class="bc-toolbar">
-        <input type="text" id="searchChats" class="bc-search" placeholder="Пошук чату…">
+    <!-- ═══ Tab: compose ═══ -->
+    <div id="tab-compose" class="tab-pane active">
+      <div class="bc-block">
+        <h2>Повідомлення</h2>
+        <textarea id="msgText" class="bc-textarea" placeholder="Текст повідомлення…"></textarea>
+        <div class="char-count"><span id="charCount">0</span> символів</div>
+      </div>
+
+      <div class="bc-block">
+        <h2>Обрати чати</h2>
+        <div class="bc-toolbar">
+          <input type="text" id="searchChats" class="bc-search" placeholder="Пошук чату…">
+          <span style="flex-grow:1"></span>
+          <span class="bc-chip" onclick="toggleAll(true)">Обрати все</span>
+          <span class="bc-chip" onclick="toggleAll(false)">Зняти все</span>
+          <span class="bc-chip" id="chipNotSent" onclick="selectNotSent()">Не отримали останню</span>
+        </div>
+        <div id="chatList" class="chat-list">
+          <div class="loading-msg">Завантаження чатів…</div>
+        </div>
+      </div>
+
+      <div class="bc-footer">
+        <span class="bc-count">Обрано: <b id="selCount">0</b> чатів</span>
         <span style="flex-grow:1"></span>
-        <span class="bc-chip" onclick="toggleAll(true)">Обрати все</span>
-        <span class="bc-chip" onclick="toggleAll(false)">Зняти все</span>
+        <button id="sendBtn" class="bc-btn" disabled onclick="sendBroadcast()">Відправити</button>
       </div>
-      <div id="chatList" class="chat-list">
-        <div class="loading-msg">Завантаження чатів…</div>
-      </div>
+
+      <div id="result" class="bc-result"></div>
     </div>
 
-    <div class="bc-footer">
-      <span class="bc-count">Обрано: <b id="selCount">0</b> чатів</span>
-      <span style="flex-grow:1"></span>
-      <button id="sendBtn" class="bc-btn" disabled onclick="sendBroadcast()">Відправити</button>
+    <!-- ═══ Tab: history ═══ -->
+    <div id="tab-history" class="tab-pane">
+      <div id="histList" class="hist-list">
+        <div class="loading-msg">Завантаження…</div>
+      </div>
     </div>
+  </div>
+</div>
 
-    <div id="result" class="bc-result"></div>
+<!-- ═══ Detail overlay ═══ -->
+<div id="detailOverlay" class="detail-overlay" onclick="if(event.target===this)closeDetail()">
+  <div class="detail-box">
+    <div class="detail-head">
+      <h3 id="detailTitle">Розсилка</h3>
+      <button class="detail-close" onclick="closeDetail()">&times;</button>
+    </div>
+    <div class="detail-body" id="detailBody"></div>
   </div>
 </div>
 
@@ -116,13 +192,15 @@ a{color:inherit;text-decoration:none}
 const BOT_API = 'https://react-bot.doskevich.workers.dev/';
 let allChats = [];
 let searchQuery = '';
+let lastBroadcastId = null;
 
 function getToken() {
   return localStorage.getItem('session_token') || '';
 }
 
 async function apiFetch(action, opts = {}) {
-  const url = BOT_API + '?action=' + action;
+  const params = new URLSearchParams({ action, ...(opts.params || {}) });
+  const url = BOT_API + '?' + params;
   const headers = { 'Authorization': 'Bearer ' + getToken() };
   if (opts.body) headers['Content-Type'] = 'application/json';
   const r = await fetch(url, {
@@ -133,9 +211,43 @@ async function apiFetch(action, opts = {}) {
   return r.json();
 }
 
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'Z');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  return `${dd}.${mm} ${hh}:${mi}`;
+}
+
+function relDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'Z');
+  const now = new Date();
+  const diffMs = now - d;
+  const diffH = Math.floor(diffMs / 3600000);
+  if (diffH < 1) return 'щойно';
+  if (diffH < 24) return `${diffH} год тому`;
+  const diffD = Math.floor(diffH / 24);
+  if (diffD === 1) return 'вчора';
+  if (diffD < 7) return `${diffD} дн тому`;
+  return fmtDate(iso);
+}
+
+// ─── Tab switching ───
+function switchTab(tab) {
+  document.querySelectorAll('.itab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
+  if (tab === 'history') loadHistory();
+}
+
+// ─── Compose tab ───
 async function loadChats() {
   const data = await apiFetch('broadcast_chats');
-  if (data.error) { document.getElementById('chatList').innerHTML = `<div class="loading-msg" style="color:var(--red)">${data.error}</div>`; return; }
+  if (data.error) { document.getElementById('chatList').innerHTML = `<div class="loading-msg" style="color:var(--red)">${esc(data.error)}</div>`; return; }
   allChats = (data.chats || []).map(c => ({ ...c, selected: false }));
   renderChats();
 }
@@ -148,12 +260,16 @@ function renderChats() {
   });
   const el = document.getElementById('chatList');
   if (!filtered.length) { el.innerHTML = '<div class="loading-msg">Нічого не знайдено</div>'; updateCount(); return; }
-  el.innerHTML = filtered.map((c, i) => {
+  el.innerHTML = filtered.map(c => {
     const idx = allChats.indexOf(c);
+    const sentInfo = c.last_broadcast_at ? relDate(c.last_broadcast_at) : '';
     return `<label class="chat-row">
       <input type="checkbox" data-idx="${idx}" ${c.selected ? 'checked' : ''} onchange="toggleChat(${idx}, this.checked)">
       <span class="cr-name">${esc(c.chat_title || c.counterparty_name)}</span>
-      <span class="cr-org">${esc(c.org || '')}</span>
+      <span class="cr-meta">
+        ${sentInfo ? `<span class="cr-sent" title="Остання розсилка: ${esc(sentInfo)}">${sentInfo}</span>` : '<span class="cr-sent" style="color:var(--red)" title="Ще не отримував розсилок">нова</span>'}
+        <span class="cr-org">${esc(c.org || '')}</span>
+      </span>
     </label>`;
   }).join('');
   updateCount();
@@ -170,6 +286,17 @@ function toggleAll(val) {
     if (q && !(c.chat_title || '').toLowerCase().includes(q) && !(c.counterparty_name || '').toLowerCase().includes(q)) return;
     c.selected = val;
   });
+  renderChats();
+}
+
+function selectNotSent() {
+  if (!lastBroadcastId) {
+    allChats.forEach(c => { c.selected = !c.last_broadcast_at; });
+  } else {
+    allChats.forEach(c => {
+      c.selected = !c.last_broadcast_id || c.last_broadcast_id < lastBroadcastId;
+    });
+  }
   renderChats();
 }
 
@@ -196,6 +323,8 @@ async function sendBroadcast() {
     if (data.error) throw new Error(data.error);
     res.className = 'bc-result ok';
     res.textContent = `Відправлено: ${data.sent}` + (data.failed ? `, помилок: ${data.failed}` : '');
+    if (data.broadcast_id) lastBroadcastId = data.broadcast_id;
+    loadChats();
   } catch (e) {
     res.className = 'bc-result err';
     res.textContent = 'Помилка: ' + e.message;
@@ -204,8 +333,84 @@ async function sendBroadcast() {
   updateCount();
 }
 
-function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+// ─── History tab ───
+async function loadHistory() {
+  const el = document.getElementById('histList');
+  el.innerHTML = '<div class="loading-msg">Завантаження…</div>';
+  const data = await apiFetch('broadcast_history', { params: { limit: 50 } });
+  if (data.error) { el.innerHTML = `<div class="loading-msg" style="color:var(--red)">${esc(data.error)}</div>`; return; }
+  const rows = data.broadcasts || [];
+  if (!rows.length) { el.innerHTML = '<div class="loading-msg">Розсилок ще не було</div>'; return; }
+  el.innerHTML = rows.map(b => `
+    <div class="hist-row" onclick="openDetail(${b.id})">
+      <span class="hist-date">${fmtDate(b.created_at)}</span>
+      <span class="hist-text">${esc(b.text.substring(0, 100))}${b.text.length > 100 ? '…' : ''}</span>
+      <span class="hist-stats">
+        <span class="hist-ok">${b.sent_ok}</span>
+        ${b.sent_fail ? `<span class="hist-fail">/ ${b.sent_fail}</span>` : ''}
+        <span style="color:var(--text3)">/ ${b.total_chats}</span>
+      </span>
+      <span class="hist-by">${esc(b.sent_by || '')}</span>
+    </div>
+  `).join('');
+}
 
+// ─── Detail overlay ───
+async function openDetail(id) {
+  const overlay = document.getElementById('detailOverlay');
+  const body = document.getElementById('detailBody');
+  overlay.classList.add('open');
+  body.innerHTML = '<div class="loading-msg">Завантаження…</div>';
+
+  const data = await apiFetch('broadcast_detail', { params: { id } });
+  if (data.error) { body.innerHTML = `<div class="loading-msg" style="color:var(--red)">${esc(data.error)}</div>`; return; }
+
+  const b = data.broadcast;
+  const recipients = data.recipients || [];
+
+  const sentChatIds = new Set(recipients.map(r => r.chat_id));
+  const notSent = allChats.filter(c => !sentChatIds.has(c.chat_id));
+
+  document.getElementById('detailTitle').textContent = `Розсилка — ${fmtDate(b.created_at)}`;
+
+  body.innerHTML = `
+    <div class="detail-msg">${esc(b.text)}</div>
+    <div class="detail-summary">
+      <span>Відправив: <b>${esc(b.sent_by || '—')}</b></span>
+      <span>Доставлено: <b style="color:var(--green)">${b.sent_ok}</b></span>
+      ${b.sent_fail ? `<span>Помилок: <b style="color:var(--red)">${b.sent_fail}</b></span>` : ''}
+      <span>Всього: <b>${b.total_chats}</b></span>
+      ${notSent.length ? `<span>Не отримали: <b style="color:var(--text3)">${notSent.length}</b></span>` : ''}
+    </div>
+    <div class="detail-recipients">
+      ${recipients.map(r => `
+        <div class="dr-row">
+          <span class="dr-name">${esc(r.chat_title || r.counterparty_name || r.chat_id)}</span>
+          <span class="dr-org">${esc(r.org || '')}</span>
+          <span class="dr-status ${r.status}">${r.status === 'ok' ? 'доставлено' : 'помилка'}</span>
+        </div>
+      `).join('')}
+      ${notSent.length ? `
+        <div style="padding:8px 0 4px;font-size:11px;font-weight:700;color:var(--text3)">Не отримали цю розсилку:</div>
+        ${notSent.map(c => `
+          <div class="dr-row">
+            <span class="dr-name">${esc(c.chat_title || c.counterparty_name)}</span>
+            <span class="dr-org">${esc(c.org || '')}</span>
+            <span class="dr-not-sent">не надсилалося</span>
+          </div>
+        `).join('')}
+      ` : ''}
+    </div>
+  `;
+}
+
+function closeDetail() {
+  document.getElementById('detailOverlay').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+
+// ─── Init ───
 document.getElementById('msgText').addEventListener('input', function() {
   document.getElementById('charCount').textContent = this.value.length;
   updateCount();
