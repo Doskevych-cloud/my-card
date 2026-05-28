@@ -104,6 +104,7 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
 .msg-bubble{max-width:80%;padding:8px 12px;border-radius:10px;font-size:13px;line-height:1.5;word-break:break-word;white-space:pre-wrap}
 .msg-bubble.user{align-self:flex-start;background:var(--card2);border:1px solid var(--border)}
 .msg-bubble.bot{align-self:flex-end;background:rgba(154,180,255,.1);border:1px solid rgba(154,180,255,.15)}
+.msg-bubble.mgr{align-self:flex-end;background:rgba(255,180,100,.08);border:1px solid rgba(255,180,100,.15)}
 .msg-bubble .msg-time{font-size:10px;color:var(--text3);margin-top:4px}
 .msg-bubble .msg-fb{font-size:11px;margin-top:4px;padding:3px 6px;border-radius:4px;background:var(--card2);display:inline-block}
 .msg-header{padding:12px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;flex-shrink:0}
@@ -1212,14 +1213,15 @@ async function openConv(chatId, el) {
       html += '<div style="text-align:center;color:var(--text3);font-size:13px;padding:40px">Немає повідомлень</div>';
     } else {
       for (const m of d.messages) {
-        const cls = m.role === 'bot' ? 'bot' : 'user';
-        const time = m.created_at ? new Date(m.created_at + 'Z').toLocaleString('uk-UA', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+        const cls = m.role === 'bot' ? 'bot' : m.role === 'manager' ? 'mgr' : 'user';
+        const time = m.created_at ? new Date(m.created_at + (m.created_at.includes('Z') ? '' : 'Z')).toLocaleString('uk-UA', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
         let fb = '';
         if (m.reaction) {
           const icon = m.reaction === 'like' ? '👍' : m.reaction === 'dislike' ? '👎' : '❓';
           fb = `<div class="msg-fb">${icon} ${esc(m.reactor_username || '')}${m.correction ? ' — ' + esc(m.correction) : ''}</div>`;
         }
-        html += `<div class="msg-bubble ${cls}"><div>${esc(m.text || '')}</div><div class="msg-time">${m.role === 'bot' ? 'Бот' : 'Дилер'} · ${time}</div>${fb}</div>`;
+        const label = m.role === 'bot' ? 'Бот' : m.sender_name || (m.role === 'manager' ? 'Менеджер' : 'Дилер');
+        html += `<div class="msg-bubble ${cls}"><div>${esc(m.text || '')}</div><div class="msg-time">${esc(label)} · ${time}</div>${fb}</div>`;
       }
     }
     html += '</div>';
