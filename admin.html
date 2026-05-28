@@ -1160,7 +1160,7 @@ let _convData = [];
 let _activeChat = null;
 
 async function loadConversations() {
-  const token = Auth.token();
+  const token = Auth.getToken();
   try {
     const r = await fetch(`${BOT_API}?action=bot_conversations_list`, { headers: { Authorization: `Bearer ${token}` } });
     const d = await r.json();
@@ -1199,7 +1199,7 @@ async function openConv(chatId, el) {
   document.querySelectorAll('.conv-item').forEach(i => i.classList.toggle('active', i.dataset.cid === chatId));
   const panel = document.getElementById('convMessages');
   panel.innerHTML = '<div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px">Завантаження…</div>';
-  const token = Auth.token();
+  const token = Auth.getToken();
   try {
     const r = await fetch(`${BOT_API}?action=bot_conversation_messages&chat_id=${chatId}&limit=200`, { headers: { Authorization: `Bearer ${token}` } });
     const d = await r.json();
