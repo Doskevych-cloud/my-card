@@ -376,7 +376,10 @@ async function sendBroadcast() {
     res.className = 'bc-result ok';
     res.textContent = `Відправлено: ${data.sent}` + (data.failed ? `, помилок: ${data.failed}` : '');
     if (data.broadcast_id) lastBroadcastId = data.broadcast_id;
-    loadChats();
+    const selectedIds = new Set(chatIds);
+    await loadChats();
+    allChats.forEach(c => { if (selectedIds.has(c.chat_id)) c.selected = true; });
+    renderChats();
   } catch (e) {
     res.className = 'bc-result err';
     res.textContent = 'Помилка: ' + e.message;
