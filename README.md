@@ -61,7 +61,7 @@ Typographic scale (з прототипу):
 - `h2` категорій: `22px / 700`, `letter-spacing: -0.02em`
 - Назва товару: `15px / 500`
 - Ціна: `15px / 500`, `font-variant-numeric: tabular-nums` ОБОВ'ЯЗКОВО
-- Label'и (Офіс, Склад, Катерина, Олександра): Mono, `10px / 500`, `text-transform: uppercase`, `letter-spacing: 0.09em`, колір `--ink-3`
+- Label'и (Офіс, Склад, Олександра): Mono, `10px / 500`, `text-transform: uppercase`, `letter-spacing: 0.09em`, колір `--ink-3`
 - Телефон в топбарі: `13px`, `font-variant-numeric: tabular-nums`
 - Назва категорії в хедері таблиці: Mono, `11px / 500`, uppercase, `letter-spacing: 0.08em`
 
@@ -85,7 +85,7 @@ Typographic scale (з прототипу):
 
 **Структура:**
 ```
-[Logo] [spacer flex:1] [Contact: Катерина] [Contact: Олександра] [FX pill] [Друк button]
+[Logo] [spacer flex:1] [Contact: Олександра] [FX pill] [Друк button]
 ```
 
 - Висота: авто (padding `18px 32px`)
@@ -320,8 +320,7 @@ md: 768px (або кастом 860px через theme.extend.screens)
 ## Assets
 
 Всі в папці `assets/`:
-- `kateryna.jpg` — аватар менеджерки Катерини (квадратний, для круглого crop)
-- `oleksandra.jpg` — аватар менеджерки Олександри
+- `oleksandra.jpg` — аватар менеджерки Олександри (квадратний, для круглого crop)
 - `logo.png` — лого React (повне)
 - `logo-transparent.png` — лого з прозорим фоном (використовується в топбарі)
 
@@ -344,7 +343,6 @@ md: 768px (або кастом 860px через theme.extend.screens)
 
 | Ім'я | Телефон | Telegram |
 |---|---|---|
-| Катерина | `+380 67 577 73 40` | `https://t.me/kateryna_react` |
 | Олександра | `+380 63 325 61 10` | `https://t.me/oleksandra_react` |
 
 **⚠️ У проді** ці дані мають жити в CMS / env / БД, не в JSX. Також перевірте правильність Telegram-хендлів — у прототипі вказано плейсхолдери.
