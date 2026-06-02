@@ -2946,7 +2946,7 @@ document.addEventListener('DOMContentLoaded', function() {
    WAREHOUSE VALUE TAB (Вартісна оцінка складу)
    Дані з D1: stock_balances + weighted-avg cost per (nom × org)
    ═══════════════════════════════════════════════════ */
-const whState = { on: '', org: '', _loaded: false, data: null, search: '', limit: 200, includeList: [] };
+const whState = { on: '', org: '', _loaded: false, data: null, search: '', limit: 200, includeList: [], openWh: new Set() };
 
 function whSetPreset(p) {
   const now = new Date(), y = now.getFullYear(), m = now.getMonth();
@@ -3131,8 +3131,6 @@ function whRender() {
   const incSet = new Set((whState.includeList || []).map(s => s.toLowerCase()));
   const allOrgItems = (data.items || []).filter(it => orgMatch(it.organization_tag));
   const items = incSet.size ? allOrgItems.filter(it => incSet.has((it.nomenclature_name || '').toLowerCase())) : allOrgItems;
-  const byWh = (data.by_warehouse || []).filter(w => orgMatch(w.organization_tag));
-  const byOrg = (data.by_organization || []).filter(o => orgMatch(o.organization_tag));
 
   // Сумарна вартість (з фільтра).
   let totalValue = 0, totalQty = 0, unpricedQty = 0;
@@ -3159,16 +3157,47 @@ function whRender() {
       card('Без собівартості', fmt(unpricedQty, 0) + ' од.', items.filter(it=>it.value_usd==null).length + ' позицій не оцінено') +
     '</div>';
 
-  // ── Таблиця: по складах ──
-  const whRows = byWh.length ? byWh.map(w =>
-    '<tr class="itm">' +
-      '<td>' + esc(w.warehouse_name) + '</td>' +
-      '<td>' + esc(w.organization_tag) + '</td>' +
-      '<td class="col-total">' + fmt(w.items_count, 0) + '</td>' +
-      '<td class="col-total">' + fmt(w.total_qty, 0) + '</td>' +
-      '<td class="col-total" style="color:var(--green)">' + fmt(w.total_value_usd, 0) + ' $</td>' +
-    '</tr>'
-  ).join('') : '<tr class="itm"><td colspan="5" style="text-align:center;color:var(--text3);padding:16px">— немає складів —</td></tr>';
+  // ── Таблиця: по складах (дерево: склад → товари) ──
+  // Групуємо відфільтровані items по (склад × організація), щоб заголовок складу
+  // дорівнював сумі його розгорнутих товарів (консистентно з org- і товарним фільтром).
+  const whGroups = new Map(); // key → { wh_name, org_tag, items, qty, val }
+  for (const it of items) {
+    const gk = (it.warehouse_ref_key || '') + '|' + (it.organization_ref_key || '');
+    let g = whGroups.get(gk);
+    if (!g) { g = { key: gk, wh_name: it.warehouse_name || '—', org_tag: it.organization_tag || '', items: [], qty: 0, val: 0 }; whGroups.set(gk, g); }
+    g.items.push(it);
+    g.qty += it.qty || 0;
+    if (it.value_usd != null) g.val += it.value_usd;
+  }
+  const whGroupList = [...whGroups.values()].sort((a, b) => b.val - a.val);
+
+  const whRows = whGroupList.length ? whGroupList.map((g, gi) => {
+    const open = whState.openWh.has(g.key);
+    const childRows = g.items.slice()
+      .sort((a, b) => (b.value_usd ?? -1) - (a.value_usd ?? -1))
+      .map(it => {
+        const unpriced = it.value_usd == null;
+        const valStr = unpriced ? '<span style="color:var(--text3)">н/д</span>' : fmt(it.value_usd, 0) + ' $';
+        const nameHtml = esc(it.nomenclature_name || '—') +
+          (it.nomenclature_article ? '<span style="color:var(--text3);font-size:11px;margin-left:6px">' + esc(it.nomenclature_article) + '</span>' : '');
+        return '<tr class="itm' + (open ? '' : ' collapsed-hidden') + '" data-wh="' + gi + '">' +
+          '<td>' + nameHtml + '</td>' +
+          '<td></td>' +
+          '<td class="col-total"></td>' +
+          '<td class="col-total">' + fmt(it.qty, it.qty < 100 ? 2 : 0) + '</td>' +
+          '<td class="col-total"' + (unpriced ? '' : ' style="color:var(--green)"') + '>' + valStr + '</td>' +
+        '</tr>';
+      }).join('');
+    const header =
+      '<tr class="grp" data-wh="' + gi + '" data-whkey="' + esc(g.key) + '" data-is-wh="1" data-collapsed="' + (open ? 'false' : 'true') + '">' +
+        '<td><span class="tri">▾</span>' + esc(g.wh_name) + '</td>' +
+        '<td>' + esc(g.org_tag) + '</td>' +
+        '<td class="col-total">' + fmt(g.items.length, 0) + '</td>' +
+        '<td class="col-total">' + fmt(g.qty, 0) + '</td>' +
+        '<td class="col-total" style="color:var(--green)">' + fmt(g.val, 0) + ' $</td>' +
+      '</tr>';
+    return header + childRows;
+  }).join('') : '<tr class="itm"><td colspan="5" style="text-align:center;color:var(--text3);padding:16px">— немає складів —</td></tr>';
 
   const whTableHtml =
     '<div class="pnl-wrap" style="margin-bottom:14px">' +
@@ -3246,6 +3275,10 @@ function whRender() {
 
   document.getElementById('whBody').innerHTML = whTableHtml + itemsTableHtml;
 
+  // Дерево «склад → товари»: клік на рядок складу розгортає його позиції
+  const whTbl = document.querySelector('#whBody .pnl-table');
+  if (whTbl) whBindWhTree(whTbl);
+
   // Привʼязуємо пошук (debounce)
   const si = document.getElementById('whSearchIn');
   if (si) {
@@ -3256,6 +3289,21 @@ function whRender() {
     });
   }
 
+}
+function whBindWhTree(tbl) {
+  tbl.querySelectorAll('tr[data-is-wh]').forEach(tr => {
+    const cell = tr.querySelector('td');
+    if (!cell) return;
+    cell.addEventListener('click', () => {
+      const gi  = tr.getAttribute('data-wh');
+      const key = tr.getAttribute('data-whkey');
+      const wasOpen = whState.openWh.has(key);
+      if (wasOpen) whState.openWh.delete(key); else whState.openWh.add(key);
+      tr.setAttribute('data-collapsed', wasOpen ? 'true' : 'false');
+      tbl.querySelectorAll('tr[data-wh="' + gi + '"]:not([data-is-wh])')
+        .forEach(r => r.classList.toggle('collapsed-hidden', wasOpen));
+    });
+  });
 }
 function whShowMore() {
   whState.limit = (whState.limit || 200) + 300;
