@@ -135,6 +135,12 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 .row-l .rl .formula{color:var(--mute);font-family:var(--mono);font-size:10.5px;margin-left:6px}
 .row-l .rv{font-family:var(--mono);font-size:13px;color:var(--fg);font-variant-numeric:tabular-nums;white-space:nowrap}
 .row-l .rv .u{font-size:10.5px;color:var(--mute);margin-left:3px}
+.row-l .rl.rl-cu{overflow:visible}
+.row-l .rv .cu-input{font-family:var(--mono);font-size:13px;color:var(--fg);font-variant-numeric:tabular-nums;width:8ch;text-align:right;background:transparent;border:0;border-bottom:1px dashed var(--line-2);padding:1px 2px;border-radius:0;transition:border-color .12s,background .12s}
+.row-l .rv .cu-input:hover{border-bottom-color:var(--mute)}
+.row-l .rv .cu-input:focus{outline:none;border-bottom-color:var(--accent);background:var(--accent-bg)}
+.cu-reset{font-family:var(--mono);font-size:10px;color:var(--mute);margin-left:8px;border:1px solid var(--line);border-radius:4px;padding:0 6px;line-height:16px;background:transparent;white-space:nowrap}
+.cu-reset:hover{color:var(--accent);border-color:var(--accent)}
 .stage-total{margin-top:12px;padding:10px 12px;background:var(--raised);border:1px solid var(--line-2);border-radius:8px}
 .stage-total .t-lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--mute);font-family:var(--mono)}
 .stage-total .t-val{font-family:var(--mono);font-size:22px;font-weight:500;color:var(--fg);margin-top:2px;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
@@ -434,6 +440,8 @@ const UA_MONTHS = ['січ','лют','бер','квіт','трав','чер','л
 let forecastData = null;
 let copperAvgData = null;
 let calcMonth = null;
+let cuOverride = null;   // ручне значення ціни на мідь (перебиває середнє за місяць)
+let calcMonthCu = 0;     // середнє за вибраний місяць (фолбек при скиданні override)
 
 function fmt(n, d) {
   if (n == null || isNaN(n)) return '—';
@@ -663,38 +671,59 @@ function renderCalcFlow(r) {
   renderCuMonths();
 }
 
-function updateCalcFlow() {
-  if (!copperAvgData) return;
-  const r = copperAvgData;
-  const months = (r.months || []).slice(0, 12);
-  const m = months.find(x => x.ym === calcMonth) || months[0];
-  const mIdx = months.indexOf(m);
-  const prev = months[mIdx + 1];
-  const cu = m.price;
+// ── математика розрахунку: чиста функція, щоб і повний рендер, і live-перерахунок при редагуванні міді йшли з одного джерела ──
+const nf = (v, d) => v.toLocaleString('uk-UA', { minimumFractionDigits:d||2, maximumFractionDigits:d||2 });
+const monthLabel = ym => { const [y,mo] = String(ym||'').split('-'); return (UA_MONTHS[+mo-1]||mo||'') + ' ' + (y||''); };
+const cuInputFmt = v => v.toLocaleString('uk-UA', { useGrouping:false, minimumFractionDigits:2, maximumFractionDigits:2 });
+const parseCu = s => parseFloat(String(s).replace(/\s/g,'').replace(',', '.'));
 
+function computeFlow(cu) {
   const copperPerKm = cu * CABLE.weight / 100;
-  const supplierPerKm = CABLE.base + copperPerKm;
-  const supplierPerM = supplierPerKm / 1000;
+  const supplierPerM = (CABLE.base + copperPerKm) / 1000;
   const logEU = TRUCK_EU / TRUCK_KM / 1000;
   const logUA = TRUCK_UA / TRUCK_KM / 1000;
   const beforeVat = supplierPerM + logEU + logUA;
   const vat = beforeVat * VAT_RATE;
   const kyivPerM = beforeVat + vat;
   const basePrice = kyivPerM * TIERS[0].markup;
+  return { copperPerKm, supplierPerM, vat, kyivPerM, basePrice };
+}
 
-  const nf = (v, d) => v.toLocaleString('uk-UA', { minimumFractionDigits:d||2, maximumFractionDigits:d||2 });
+// Оновлює ЛИШЕ числові комірки (без ре-рендеру) — щоб інпут міді не втрачав фокус/каретку при наборі.
+// Відсотки (націнка, знижка) тут не чіпаємо: вони не залежать від ціни міді.
+function applyFlow(cu) {
+  const f = computeFlow(cu);
+  const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+  set('cf_cuPerKm', nf(f.copperPerKm));
+  set('cf_supTot',  nf(f.supplierPerM, 4));
+  set('cf_supCoil', nf(f.supplierPerM * COIL_M));
+  set('cf_kSup',    nf(f.supplierPerM, 4));
+  set('cf_kVat',    nf(f.vat, 4));
+  set('cf_kyivTot', nf(f.kyivPerM, 4));
+  set('cf_kyivCoil',nf(f.kyivPerM * COIL_M));
+  TIERS.forEach(t => {
+    const perM = f.kyivPerM * t.markup;
+    set('cf_m_' + t.id, perM.toFixed(2));
+    set('cf_c_' + t.id, fmt(Math.round(perM * COIL_M)));
+  });
+}
 
-  const monthLabel = ym => {
-    const [y,mo] = ym.split('-');
-    return (UA_MONTHS[+mo-1]||mo) + ' ' + y;
-  };
+function updateCalcFlow() {
+  if (!copperAvgData) return;
+  const months = (copperAvgData.months || []).slice(0, 12);
+  const m = months.find(x => x.ym === calcMonth) || months[0];
+  if (!m) return;
+  calcMonthCu = m.price;
+  const overridden = cuOverride != null;
+  const cu = overridden ? cuOverride : calcMonthCu;
+  const f = computeFlow(cu);
 
   const arrow = `<div class="flow-arrow" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>`;
 
   const tiersHtml = TIERS.map(t => {
-    const perM = kyivPerM * t.markup;
+    const perM = f.kyivPerM * t.markup;
     const perCoil = perM * COIL_M;
-    const disc = (perM - basePrice) / basePrice * 100;
+    const disc = (perM - f.basePrice) / f.basePrice * 100;
     const mk = Math.round((t.markup - 1) * 1000) / 10;
     return `<div class="tier-card ${t.transit?'transit':''} ${t.base?'base':''}">
       <div class="tier-h">
@@ -703,8 +732,8 @@ function updateCalcFlow() {
         <span class="tmk" title="націнка до собівартості у Києві">+${mk}%</span>
         ${t.base ? '<span class="tier-tag tag-base">базова</span>' : `<span class="tier-tag tag-pos">${disc.toFixed(1)}%</span>`}
       </div>
-      <div class="tprice"><span>${perM.toFixed(2)}</span><span class="u">€/м</span></div>
-      <div class="tmeta"><span>${t.coil}</span><span>${fmt(Math.round(perCoil))} €/бухта</span></div>
+      <div class="tprice"><span id="cf_m_${t.id}">${perM.toFixed(2)}</span><span class="u">€/м</span></div>
+      <div class="tmeta"><span>${t.coil}</span><span><span id="cf_c_${t.id}">${fmt(Math.round(perCoil))}</span> €/бухта</span></div>
     </div>`;
   }).join('');
 
@@ -715,28 +744,28 @@ function updateCalcFlow() {
         <div class="stage-h"><span class="num">1</span><div><div class="slbl">Постачальник</div></div></div>
         <div class="stage-body">
           <div class="row-l"><span class="rl">Базова ціна</span><span class="rv">${nf(CABLE.base)}<span class="u">€/км</span></span></div>
-          <div class="row-l"><span class="rl">Ціна на мідь <span class="formula">сер. за ${monthLabel(calcMonth)}</span></span><span class="rv">${nf(cu)}<span class="u">€/100кг</span></span></div>
-          <div class="row-l"><span class="rl">Мідь на 1 км кабелю <span class="formula">× ${(CABLE.weight/100).toFixed(3)}</span></span><span class="rv">${nf(copperPerKm)}<span class="u">€/км</span></span></div>
+          <div class="row-l"><span class="rl rl-cu">Ціна на мідь <span class="formula" id="cf_cuLabel">${overridden ? 'вручну' : 'сер. за ' + monthLabel(calcMonth)}</span><button type="button" class="cu-reset" id="cf_cuReset" title="Повернути середнє за місяць" style="${overridden ? '' : 'display:none'}">↺ авто</button></span><span class="rv"><input id="cf_cuInput" class="cu-input" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="${cuInputFmt(cu)}" aria-label="Ціна на мідь — редагується"><span class="u">€/100кг</span></span></div>
+          <div class="row-l"><span class="rl">Мідь на 1 км кабелю <span class="formula">× ${(CABLE.weight/100).toFixed(3)}</span></span><span class="rv"><span id="cf_cuPerKm">${nf(f.copperPerKm)}</span><span class="u">€/км</span></span></div>
         </div>
         <div class="stage-total">
           <div class="t-lbl">Ціна постачальника</div>
-          <div class="t-val">${nf(supplierPerM,4)}<span class="u">€/м</span></div>
-          <div class="t-sub">${nf(supplierPerM*COIL_M)} €/бухта · 500 м</div>
+          <div class="t-val"><span id="cf_supTot">${nf(f.supplierPerM,4)}</span><span class="u">€/м</span></div>
+          <div class="t-sub"><span id="cf_supCoil">${nf(f.supplierPerM*COIL_M)}</span> €/бухта · 500 м</div>
         </div>
       </div>
       ${arrow}
       <div class="stage">
         <div class="stage-h"><span class="num">2</span><div><div class="slbl">У Києві</div></div></div>
         <div class="stage-body">
-          <div class="row-l"><span class="rl">Ціна постачальника</span><span class="rv">${nf(supplierPerM,4)}<span class="u">€/м</span></span></div>
+          <div class="row-l"><span class="rl">Ціна постачальника</span><span class="rv"><span id="cf_kSup">${nf(f.supplierPerM,4)}</span><span class="u">€/м</span></span></div>
           <div class="row-l"><span class="rl">+ Доставка до кордону</span><span class="rv">${nf(TRUCK_EU,0)}<span class="u">€/фура</span></span></div>
           <div class="row-l"><span class="rl">+ Доставка по Україні</span><span class="rv">${nf(TRUCK_UA,0)}<span class="u">€/фура</span></span></div>
-          <div class="row-l"><span class="rl">+ ПДВ <span class="formula">20%</span></span><span class="rv">${nf(vat,4)}<span class="u">€/м</span></span></div>
+          <div class="row-l"><span class="rl">+ ПДВ <span class="formula">20%</span></span><span class="rv"><span id="cf_kVat">${nf(f.vat,4)}</span><span class="u">€/м</span></span></div>
         </div>
         <div class="stage-total">
           <div class="t-lbl">Ціна в Києві</div>
-          <div class="t-val">${nf(kyivPerM,4)}<span class="u">€/м</span></div>
-          <div class="t-sub">${nf(kyivPerM*COIL_M)} €/бухта · 500 м</div>
+          <div class="t-val"><span id="cf_kyivTot">${nf(f.kyivPerM,4)}</span><span class="u">€/м</span></div>
+          <div class="t-sub"><span id="cf_kyivCoil">${nf(f.kyivPerM*COIL_M)}</span> €/бухта · 500 м</div>
         </div>
       </div>
       ${arrow}
@@ -746,8 +775,25 @@ function updateCalcFlow() {
       </div>
     </div>
     <div class="flow-foot">
-      <span>1 фура = ${TRUCK_KM} км кабелю · ПДВ нарахований після логістики · мідь: <code>${monthLabel(calcMonth)}</code></span>
+      <span>1 фура = ${TRUCK_KM} км кабелю · ПДВ нарахований після логістики · мідь: <code id="cf_foot">${overridden ? 'вручну' : monthLabel(calcMonth)}</code></span>
     </div>`;
+
+  // ── редагування ціни на мідь: live-перерахунок без ре-рендеру ──
+  const inp = document.getElementById('cf_cuInput');
+  if (inp) {
+    inp.addEventListener('focus', () => inp.select());
+    inp.addEventListener('input', () => {
+      const v = parseCu(inp.value);
+      cuOverride = (isFinite(v) && v > 0) ? v : null;
+      applyFlow(cuOverride != null ? cuOverride : calcMonthCu);
+      const on = cuOverride != null;
+      const lbl = document.getElementById('cf_cuLabel'); if (lbl) lbl.textContent = on ? 'вручну' : 'сер. за ' + monthLabel(calcMonth);
+      const rst = document.getElementById('cf_cuReset'); if (rst) rst.style.display = on ? '' : 'none';
+      const foot = document.getElementById('cf_foot'); if (foot) foot.textContent = on ? 'вручну' : monthLabel(calcMonth);
+    });
+  }
+  const rstBtn = document.getElementById('cf_cuReset');
+  if (rstBtn) rstBtn.addEventListener('click', () => { cuOverride = null; updateCalcFlow(); });
 }
 
 // ─── Market card ───
@@ -844,6 +890,7 @@ function renderCuMonths() {
     const cm = e.target.closest('.cm[data-ym]');
     if (!cm) return;
     calcMonth = cm.dataset.ym;
+    cuOverride = null;   // вибір місяця → беремо його середнє, скидаємо ручне значення
     updateCalcFlow();
     el.querySelectorAll('.cm').forEach(c => c.classList.toggle('active', c.dataset.ym === calcMonth));
   };
