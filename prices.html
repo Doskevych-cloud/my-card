@@ -272,6 +272,49 @@ tr:hover td{background:var(--bg3) !important}
 .ptab.active{background:var(--accent-bg);color:var(--accent)}
 @media(max-width:700px){.page-tabs{display:flex;flex-wrap:wrap;gap:3px;padding:3px;max-width:100%}}
 </style>
+<style>
+/* Таблиця порівняння — відновлені токени як до резизайну c078f89.
+   theme.css не переніс ці змінні → дельти втратили green/red, постачальники й
+   best/категорії втратили підсвітку. Глобальний --accent лишається steel-blue. */
+:root,[data-theme="dark"]{
+  --green-text:#0ecb81;--green-bg:rgba(14,203,129,.08);
+  --red-text:#f6465d;--red-bg:rgba(246,70,93,.08);
+  --row-odd:#181a20;--row-even:#1e2026;
+  --delta-bg:rgba(255,255,255,.02);--delta-bg2:rgba(255,255,255,.04);
+  --best-bg:rgba(255,131,25,.06);--best-bg2:rgba(255,131,25,.12);--best-accent:#ff8319;
+  --cat-bg:rgba(255,131,25,.08);--cat-border:rgba(255,131,25,.25);--cat-text:#f79743;
+  --sup-gen:#5c6bc0;--sup-hel:#a1887f;--sup-dol:#66bb6a;--sup-se:#ce93d8;--sup-atm:#ffb74d;
+  --sup-pe:#4db6ac;--sup-sv:#42a5f5;--sup-iso:#ef5350;
+  --sup-gen-bg:rgba(92,107,192,.12);--sup-hel-bg:rgba(161,136,127,.12);--sup-dol-bg:rgba(102,187,106,.12);
+  --sup-se-bg:rgba(206,147,216,.12);--sup-sv-bg:rgba(66,165,245,.12);--sup-iso-bg:rgba(239,83,80,.12);
+  --sup-iso-bg2:rgba(239,83,80,.07);--sup-atm-bg:rgba(255,183,77,.12);
+  --sticky-shadow:3px 0 8px rgba(0,0,0,.5);
+  --header-bg:#0b0e11;--bg4:#363a45;--panel-shadow:none;
+  --slot-border:#2b2f36;--slot-hover:rgba(255,255,255,.03);--slot-active-border:var(--green);--slot-active-bg:rgba(14,203,129,.06);
+  --accent-hover:#7d9bff;
+  --btn-bg:var(--accent);--btn-hover:var(--accent-hover);--btn-text:#0b0e11;--btn-disabled:#2b2f36;--btn-disabled-text:#5e6673;
+}
+[data-theme="light"]{
+  --green-text:#03a66d;--green-bg:rgba(3,166,109,.06);
+  --red-text:#cf304a;--red-bg:rgba(207,48,74,.06);
+  --row-odd:#fff;--row-even:#fafafa;
+  --delta-bg:rgba(0,0,0,.015);--delta-bg2:rgba(0,0,0,.03);
+  --best-bg:rgba(255,131,25,.05);--best-bg2:rgba(255,131,25,.1);--best-accent:#e6720f;
+  --cat-bg:rgba(255,131,25,.06);--cat-border:rgba(255,131,25,.2);--cat-text:#e6720f;
+  --sup-gen:#3f51b5;--sup-hel:#8d6e63;--sup-dol:#43a047;--sup-se:#9c27b0;--sup-atm:#ef6c00;
+  --sup-gen-bg:rgba(63,81,181,.07);--sup-hel-bg:rgba(141,110,99,.07);--sup-dol-bg:rgba(67,160,71,.07);
+  --sup-se-bg:rgba(156,39,176,.07);--sup-atm-bg:rgba(239,108,0,.07);
+  --sticky-shadow:3px 0 6px rgba(0,0,0,.06);
+  --header-bg:#fff;--bg4:#eee;--panel-shadow:0 1px 4px rgba(0,0,0,.06);
+  --slot-border:#e0e0e0;--slot-hover:rgba(0,0,0,.02);--slot-active-bg:rgba(3,166,109,.05);
+  --accent-hover:#3a5fd0;
+  --btn-text:#fff;--btn-disabled:#eee;--btn-disabled-text:#aeb4bc;
+}
+/* best-колонка — помаранчева підсвітка як до резизайну (header + жирна ціна) */
+.gh-best{background:var(--best-accent);color:#0b0e11}
+[data-theme="light"] .gh-best{color:#fff}
+.t-best.bold{color:var(--best-accent)}
+</style>
 </head>
 <body>
 
