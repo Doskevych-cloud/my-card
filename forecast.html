@@ -155,9 +155,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 .tier-card .tprice{grid-column:2;grid-row:1;font-family:var(--mono);font-size:16px;font-weight:500;color:var(--fg);letter-spacing:-.2px;text-align:right;display:flex;align-items:baseline;gap:3px;justify-content:flex-end}
 .tier-card .tprice .u{font-size:10px;color:var(--mute);font-weight:400}
 .tier-card .tmeta{grid-column:1/-1;grid-row:2;display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:10.5px;color:var(--mute)}
-.tier-card .tmeta-r{display:flex;align-items:baseline;gap:6px}
-.tier-card .tmk{color:var(--fg-2)}
-.tier-card .tmeta .sep{color:var(--mute-2)}
+.tier-card .tmk{font-family:var(--mono);font-size:11px;color:var(--fg-2);letter-spacing:.2px}
 .dot-accent{width:5px;height:5px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px rgba(154,180,255,.18);display:inline-block}
 
 .flow-foot{margin-top:14px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2);display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--mute);font-family:var(--mono)}
@@ -702,10 +700,11 @@ function updateCalcFlow() {
       <div class="tier-h">
         ${t.transit ? '<span class="dot-accent"></span>' : ''}
         <span class="tname">${t.name}</span>
+        <span class="tmk" title="націнка до собівартості у Києві">+${mk}%</span>
         ${t.base ? '<span class="tier-tag tag-base">базова</span>' : `<span class="tier-tag tag-pos">${disc.toFixed(1)}%</span>`}
       </div>
       <div class="tprice"><span>${perM.toFixed(2)}</span><span class="u">€/м</span></div>
-      <div class="tmeta"><span>${t.coil}</span><span class="tmeta-r"><span class="tmk" title="націнка до собівартості у Києві">+${mk}%</span><span class="sep">·</span><span>${fmt(Math.round(perCoil))} €/бухта</span></span></div>
+      <div class="tmeta"><span>${t.coil}</span><span>${fmt(Math.round(perCoil))} €/бухта</span></div>
     </div>`;
   }).join('');
 
