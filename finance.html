@@ -3178,6 +3178,7 @@ function whRender() {
       .map(it => {
         const unpriced = it.value_usd == null;
         const valStr = unpriced ? '<span style="color:var(--text3)">н/д</span>' : fmt(it.value_usd, 0) + ' $';
+        const unitStr = it.avg_cost_usd != null ? fmt(it.avg_cost_usd, 2) + ' $' : '<span style="color:var(--text3)">—</span>';
         const nameHtml = esc(it.nomenclature_name || '—') +
           (it.nomenclature_article ? '<span style="color:var(--text3);font-size:11px;margin-left:6px">' + esc(it.nomenclature_article) + '</span>' : '');
         return '<tr class="itm' + (open ? '' : ' collapsed-hidden') + '" data-wh="' + gi + '">' +
@@ -3185,6 +3186,7 @@ function whRender() {
           '<td></td>' +
           '<td class="col-total"></td>' +
           '<td class="col-total">' + fmt(it.qty, it.qty < 100 ? 2 : 0) + '</td>' +
+          '<td class="col-total">' + unitStr + '</td>' +
           '<td class="col-total"' + (unpriced ? '' : ' style="color:var(--green)"') + '>' + valStr + '</td>' +
         '</tr>';
       }).join('');
@@ -3194,10 +3196,11 @@ function whRender() {
         '<td>' + esc(g.org_tag) + '</td>' +
         '<td class="col-total">' + fmt(g.items.length, 0) + '</td>' +
         '<td class="col-total">' + fmt(g.qty, 0) + '</td>' +
+        '<td class="col-total"></td>' +
         '<td class="col-total" style="color:var(--green)">' + fmt(g.val, 0) + ' $</td>' +
       '</tr>';
     return header + childRows;
-  }).join('') : '<tr class="itm"><td colspan="5" style="text-align:center;color:var(--text3);padding:16px">— немає складів —</td></tr>';
+  }).join('') : '<tr class="itm"><td colspan="6" style="text-align:center;color:var(--text3);padding:16px">— немає складів —</td></tr>';
 
   const whTableHtml =
     '<div class="pnl-wrap" style="margin-bottom:14px">' +
@@ -3207,6 +3210,7 @@ function whRender() {
           '<th>Організація</th>' +
           '<th class="col-total">Позицій</th>' +
           '<th class="col-total">К-сть</th>' +
+          '<th class="col-total">За 1 шт, USD</th>' +
           '<th class="col-total">Вартість, USD</th>' +
         '</tr></thead>' +
         '<tbody>' + whRows + '</tbody>' +
@@ -3214,6 +3218,7 @@ function whRender() {
           '<td>Разом</td><td></td>' +
           '<td class="col-total">' + fmt(items.length, 0) + '</td>' +
           '<td class="col-total">' + fmt(totalQty, 0) + '</td>' +
+          '<td class="col-total"></td>' +
           '<td class="col-total" style="color:var(--green)">' + fmt(totalValue, 0) + ' $</td>' +
         '</tr></tfoot>' +
       '</table>' +
