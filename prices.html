@@ -1997,7 +1997,8 @@ async function runComparison() {
     try {
       const genRes = await fetch(API_URL + '?action=gen_data');
       const genData = await genRes.json();
-      if (!genData.error && genData.products) {
+      if (genData.error) throw new Error(genData.error);
+      if (genData.products) {
         genProds = genData.products;
         for (const p of genProds) {
           p.model = extractModel(p.name);
@@ -2007,8 +2008,8 @@ async function runComparison() {
         document.getElementById('genStatus').textContent = genProds.length + ' товарів';
         document.getElementById('genSlot').classList.add('has-file');
       }
-    } catch(e) { console.warn('Gen auto-fetch error', e); }
-    if (!genProds.length) warnings.push('Генерація: 0 товарів — перевірте Google Sheet або GAS');
+      if (!genProds.length) warnings.push('Генерація: 0 товарів — перевірте Google Sheet або GAS');
+    } catch(e) { console.warn('Gen auto-fetch error', e); warnings.push('Генерація: помилка завантаження — ' + e.message); }
 
     // Auto-fetch Helius from Google Sheets
     let helProds = [];
@@ -2033,7 +2034,8 @@ async function runComparison() {
     try {
       const dolRes = await fetch(API_URL + '?action=dolya_data');
       const dolData = await dolRes.json();
-      if (!dolData.error && dolData.products) {
+      if (dolData.error) throw new Error(dolData.error);
+      if (dolData.products) {
         dolProds = dolData.products;
         for (const p of dolProds) { p.model = extractModel(p.name); }
         document.getElementById('dolStatus').textContent = dolProds.length + ' товарів';
@@ -2049,7 +2051,8 @@ async function runComparison() {
     try {
       const res = await fetch(API_URL + '?action=se_proxy');
       const data = await res.json();
-      if (!data.error && data.products) {
+      if (data.error) throw new Error(data.error);
+      if (data.products) {
         seProds = data.products;
         for (const p of seProds) { p.model = extractModel(p.name); }
         document.getElementById('seStatus').textContent = seProds.length + ' товарів';
