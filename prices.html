@@ -1798,7 +1798,7 @@ function guessCategory(name) {
   // Кабелі
   if (['КАБЕЛ', 'KBE'].some(w => u.includes(w))) return 'КАБЕЛІ';
   // Акумулятори — перевіряємо першими бо BOS/PYLONTECH/LUNA однозначно акуми
-  if (['АКУМУЛЯТ', 'АКБ', 'BOS-', 'PYLONTECH', 'BMS ', 'RW-M', 'RW-F', 'AI-W', 'US2000', 'US3000', 'US5000', 'HVB', 'DYNESS', 'LUNA', 'БАТАРЕЯ', 'BATTERY', 'БАТАРЕЙ', 'EP6', 'EP12', 'CQ ', 'CQ16', 'SE-F5', 'SE-G5', 'GE-F', 'HRACK', 'СТІЙКА'].some(w => u.includes(w))) return 'АКУМУЛЯТОРИ';
+  if (['АКУМУЛЯТ', 'АКБ', 'BOS-', 'PYLONTECH', 'BMS ', 'RW-M', 'RW-F', 'AI-W', 'US2000', 'US3000', 'US5000', 'HVB', 'DYNESS', 'LUNA', 'БАТАРЕЯ', 'BATTERY', 'БАТАРЕЙ', 'EP6', 'EP12', 'CQ ', 'CQ16', 'SE-F5', 'SE-G5', 'GE-F', 'LVWES', 'HVWES', 'HRACK', 'СТІЙКА'].some(w => u.includes(w))) return 'АКУМУЛЯТОРИ';
   // Інвертори — тільки якщо в назві є слово "інвертор" або модель SUN-xxK
   if (u.includes('ІНВЕРТОР') || cu.includes('IHBEPTOP') || /SUN-?\d+K-SG/i.test(u) || /SUN2000/i.test(u) || /H[13]-.*\d/i.test(u) || /KH\d/i.test(u) || /P3-\d/i.test(u)) return 'ІНВЕРТОРИ';
   // Модулі
