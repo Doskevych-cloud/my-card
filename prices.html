@@ -132,6 +132,14 @@ thead tr:last-child th{top:30px}
 .h-tag-sf{background:rgba(236,64,122,.12);color:#ec407a}
 .ct-chip.ct-sf.active{background:#ec407a;border-color:#ec407a}
 table.hide-sf .gh-sf,table.hide-sf .sh-sf,table.hide-sf .t-sf,table.hide-sf .d-sf{display:none}
+.t-sb{background:var(--row-odd)}.t-sb.even{background:var(--row-even)}
+.d-sb{background:var(--delta-bg)}.d-sb.even{background:var(--delta-bg2)}
+.gh-sb{background:#ff7043}
+.sh-sb{background:rgba(255,112,67,.1)}
+.slot-sb{border-color:rgba(255,112,67,.4)}.slot-sb.has-file{border-color:#ff7043;background:rgba(255,112,67,.12)}
+.h-tag-sb{background:rgba(255,112,67,.12);color:#ff7043}
+.ct-chip.ct-sb.active{background:#ff7043;border-color:#ff7043}
+table.hide-sb .gh-sb,table.hide-sb .sh-sb,table.hide-sb .t-sb,table.hide-sb .d-sb{display:none}
 .sig-modal{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.6);align-items:center;justify-content:center}
 .sig-modal-content{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:24px;width:90%;max-width:600px;box-shadow:0 8px 32px rgba(0,0,0,.5)}
 .sig-modal-content h3{font-size:14px;margin-bottom:12px;color:var(--text)}
@@ -447,6 +455,13 @@ tr:hover td{background:var(--bg3) !important}
       <div class="file-name" id="ssjStatus"></div>
       <button class="remove-btn" onclick="removeSsj(event)" style="display:none">&times;</button>
     </div>
+    <div class="supplier-slot slot-sb" data-supplier="sb" onclick="openSolarbizModal()">
+      <div class="icon">💬</div>
+      <div class="label">Солар Біз</div>
+      <div class="hint">Вставте текстовий прайс</div>
+      <div class="file-name" id="sbStatus"></div>
+      <button class="remove-btn" onclick="removeSolarbiz(event)" style="display:none">&times;</button>
+    </div>
   </div>
   <div class="progress" id="progress" style="display:none">
     <div id="progressText">Парсинг файлів...</div>
@@ -473,6 +488,17 @@ tr:hover td{background:var(--bg3) !important}
     <div class="sig-modal-actions">
       <button onclick="applySsjText()">Застосувати</button>
       <button onclick="closeSsjModal()" class="sig-cancel">Скасувати</button>
+    </div>
+  </div>
+</div>
+
+<div class="sig-modal" id="solarbizModal" style="display:none">
+  <div class="sig-modal-content">
+    <h3>Солар Біз — вставте текстовий прайс</h3>
+    <textarea id="solarbizText" rows="15" placeholder="Назва / ціна / наявність — по 3 рядки на позицію"></textarea>
+    <div class="sig-modal-actions">
+      <button onclick="applySolarbizText()">Застосувати</button>
+      <button onclick="closeSolarbizModal()" class="sig-cancel">Скасувати</button>
     </div>
   </div>
 </div>
@@ -513,6 +539,7 @@ tr:hover td{background:var(--bg3) !important}
     <span class="ct-chip ct-atm active" onclick="toggleCol('atm',this)">Атмосфера</span>
     <span class="ct-chip ct-sig active" onclick="toggleCol('sig',this)">СІГ</span>
     <span class="ct-chip ct-ssj active" onclick="toggleCol('ssj',this)">SSJ</span>
+    <span class="ct-chip ct-sb active" onclick="toggleCol('sb',this)">Солар Біз</span>
   </div>
   <div class="wrap">
     <table id="mainTable">
@@ -531,6 +558,7 @@ tr:hover td{background:var(--bg3) !important}
           <th class="gh gh-atm bl" colspan="5">Атмосфера</th>
           <th class="gh gh-sig bl" colspan="5">СІГ</th>
           <th class="gh gh-ssj bl" colspan="5">SSJ</th>
+          <th class="gh gh-sb bl" colspan="5">Солар Біз</th>
         </tr>
         <tr>
           <th class="sh sh-tovar bl">&#8470;</th><th class="sh sh-tovar">Назва</th>
@@ -546,10 +574,11 @@ tr:hover td{background:var(--bg3) !important}
           <th class="sh sh-atm bl">Статус</th><th class="sh sh-atm">Ціна без ПДВ</th><th class="sh sh-atm">&Delta;%</th><th class="sh sh-atm">Ціна з ПДВ</th><th class="sh sh-atm">&Delta;%</th>
           <th class="sh sh-sig bl">Статус</th><th class="sh sh-sig">Ціна без ПДВ</th><th class="sh sh-sig">&Delta;%</th><th class="sh sh-sig">Ціна з ПДВ</th><th class="sh sh-sig">&Delta;%</th>
           <th class="sh sh-ssj bl">Статус</th><th class="sh sh-ssj">Ціна без ПДВ</th><th class="sh sh-ssj">&Delta;%</th><th class="sh sh-ssj">Ціна з ПДВ</th><th class="sh sh-ssj">&Delta;%</th>
+          <th class="sh sh-sb bl">Статус</th><th class="sh sh-sb">Ціна без ПДВ</th><th class="sh sh-sb">&Delta;%</th><th class="sh sh-sb">Ціна з ПДВ</th><th class="sh sh-sb">&Delta;%</th>
         </tr>
       </thead>
       <tbody id="data"></tbody>
-      <tfoot><tr><td colspan="62">&nbsp;</td></tr></tfoot>
+      <tfoot><tr><td colspan="67">&nbsp;</td></tr></tfoot>
     </table>
   </div>
 </div>
@@ -1502,6 +1531,142 @@ function removeSsj(e) {
   slot.querySelector('.remove-btn').style.display = 'none';
 }
 
+// ── Солар Біз (текстовий прайс: 3 рядки на позицію — назва / ціна / наявність) ──
+const SOLARBIZ_SEED = `Deye SUN-6K-SG05LP1-EU-P
+742
+в наявностІ
+Deye SUN-8K-SG05LP1-EU-AM2-P
+1080
+в наявності
+Deye SUN-10K-SG02LP1-EU-AM3
+1510
+в наявностІ
+Deye SUN-10K-SG05LP3-EU-SM2
+1630
+в наявності
+Deye SUN-12K-SG02LP1-EU-AM3
+1715
+в наявностІ
+Deye SUN-12K-SG05LP3-EU-SM2
+1685
+в наявності
+Deye SUN-15K-SG05LP3-EU-SM2
+1870
+в наявностІ
+Deye SUN-20K-SG05LP3-EU-SM2
+2500
+в наявностІ
+Deye SUN-20K-SG01HP3-EU-AM2
+1855
+в наявності
+Deye SUN-25K-SG01HP3-EU-AM2
+1940
+в наявності
+Deye SUN-30K-SG02HP3-EU-AM3
+2820
+в наявностІ
+Deye SUN-50K-SG01HP3-EU-BM4
+4390
+в наявностІ
+Deye SUN-80K-SG02HP3-EU-EM6
+6250
+в наявностІ
+Deye SUN-125K-SG02HP3-EU-GM10
+6700
+15.07.2026
+АКБ Deye SE-F5 Pro-C
+757
+в наявності
+АКБ Deye 51.2B 230A, SE-F12-C
+1400
+11.05.2026
+АКБ Deye 51.2B 313A, SE-F16-C
+1600
+15.05.2026
+АКБ Deye BOS-GM5.1 Pro
+798
+11.05.2026
+BMS Deye BOS-G-Pro-PDU-2
+732
+11.05.2026
+АКБ Deye BOS-B-Pack16-A3
+1685
+05.08.2026
+BMS Контролер BOS-B-PDU-2-A Deye
+900
+05.08.2026
+BOS-B-Pro Набір кабелів та конекторів
+515
+05.08.2026
+АКБ 48B 100A US5000, Pylontech
+900
+в наявності
+АКБ Deye GE-F60
+14400
+в наявності
+ціни тільки без пдв`;
+let solarbizRawText = localStorage.getItem('solarbizText');
+if (solarbizRawText === null) { solarbizRawText = SOLARBIZ_SEED; localStorage.setItem('solarbizText', SOLARBIZ_SEED); }
+function initSolarbizSlot() {
+  if (!solarbizRawText) return;
+  const slot = document.querySelector('[data-supplier="sb"]');
+  if (!slot) return;
+  slot.classList.add('has-file');
+  slot.querySelector('.file-name').textContent = parseSolarBiz(solarbizRawText).length + ' позицій';
+  slot.querySelector('.remove-btn').style.display = '';
+}
+function openSolarbizModal() {
+  document.getElementById('solarbizText').value = solarbizRawText;
+  document.getElementById('solarbizModal').style.display = 'flex';
+}
+function closeSolarbizModal() {
+  document.getElementById('solarbizModal').style.display = 'none';
+}
+function applySolarbizText() {
+  solarbizRawText = document.getElementById('solarbizText').value.trim();
+  localStorage.setItem('solarbizText', solarbizRawText);
+  closeSolarbizModal();
+  const slot = document.querySelector('[data-supplier="sb"]');
+  if (solarbizRawText) {
+    slot.classList.add('has-file');
+    slot.querySelector('.file-name').textContent = parseSolarBiz(solarbizRawText).length + ' позицій';
+    slot.querySelector('.remove-btn').style.display = '';
+  } else {
+    slot.classList.remove('has-file');
+    slot.querySelector('.file-name').textContent = '';
+    slot.querySelector('.remove-btn').style.display = 'none';
+  }
+}
+function removeSolarbiz(e) {
+  e.stopPropagation();
+  solarbizRawText = '';
+  localStorage.setItem('solarbizText', ''); // порожній, щоб seed не повертався
+  const slot = document.querySelector('[data-supplier="sb"]');
+  slot.classList.remove('has-file');
+  slot.querySelector('.file-name').textContent = '';
+  slot.querySelector('.remove-btn').style.display = 'none';
+}
+// Рядок-ціна = чисте число (не дата) → попередній рядок = назва, наступний = наявність/дата.
+function parseSolarBiz(text) {
+  if (!text) return [];
+  const lines = text.split('\n').map(l => l.trim());
+  const isNum = s => /^\d[\d\s]*(?:[.,]\d+)?$/.test(s);
+  const isDate = s => /\d{1,2}\.\d{1,2}\.\d{2,4}/.test(s);
+  const out = [];
+  for (let i = 1; i < lines.length; i++) {
+    const ln = lines[i];
+    if (!ln || isDate(ln) || !isNum(ln)) continue;
+    const price = parseFloat(ln.replace(/\s/g, '').replace(',', '.'));
+    if (!price || isNaN(price)) continue;
+    const name = lines[i - 1];
+    if (!name || isNum(name) || isDate(name)) continue;
+    const next = lines[i + 1] || '';
+    const status = (next && !isNum(next)) ? next : null;
+    out.push({ name, model: extractModel(name), category: guessCategory(name), status, price_no_vat: price, price_vat: null, currency: 'USD' });
+  }
+  return out;
+}
+
 function parseSSJ(text) {
   if (!text) return [];
   const lines = text.split('\n');
@@ -1633,12 +1798,26 @@ function guessCategory(name) {
   // Кабелі
   if (['КАБЕЛ', 'KBE'].some(w => u.includes(w))) return 'КАБЕЛІ';
   // Акумулятори — перевіряємо першими бо BOS/PYLONTECH/LUNA однозначно акуми
-  if (['АКУМУЛЯТ', 'BOS-', 'PYLONTECH', 'BMS ', 'RW-M', 'RW-F', 'AI-W', 'US2000', 'US3000', 'US5000', 'HVB', 'DYNESS', 'LUNA', 'БАТАРЕЯ', 'BATTERY', 'БАТАРЕЙ', 'EP6', 'EP12', 'CQ ', 'CQ16', 'SE-F5', 'SE-G5', 'HRACK', 'СТІЙКА'].some(w => u.includes(w))) return 'АКУМУЛЯТОРИ';
+  if (['АКУМУЛЯТ', 'АКБ', 'BOS-', 'PYLONTECH', 'BMS ', 'RW-M', 'RW-F', 'AI-W', 'US2000', 'US3000', 'US5000', 'HVB', 'DYNESS', 'LUNA', 'БАТАРЕЯ', 'BATTERY', 'БАТАРЕЙ', 'EP6', 'EP12', 'CQ ', 'CQ16', 'SE-F5', 'SE-G5', 'GE-F', 'HRACK', 'СТІЙКА'].some(w => u.includes(w))) return 'АКУМУЛЯТОРИ';
   // Інвертори — тільки якщо в назві є слово "інвертор" або модель SUN-xxK
   if (u.includes('ІНВЕРТОР') || cu.includes('IHBEPTOP') || /SUN-?\d+K-SG/i.test(u) || /SUN2000/i.test(u) || /H[13]-.*\d/i.test(u) || /KH\d/i.test(u) || /P3-\d/i.test(u)) return 'ІНВЕРТОРИ';
   // Модулі
   if (['ПАНЕЛ', 'SOLAR', 'МОДУЛЬ', 'DHN-', 'LONGI', 'TRINA', 'LR7-', 'LR8-', 'JAM', 'TSM-', 'HSM-', 'CS6', 'CS7', 'AIKO', 'ФОТОМОД', 'ФОТОЕЛЕКТ'].some(w => u.includes(w))) return 'МОДУЛІ';
   return null;
+}
+
+// Панелі зводимо до єдиної одиниці $/Вт. Якщо ціна за модуль (>$30) — ділимо на
+// потужність (найбільше 3-знач. число 400–750 у назві, напр. LR8-…-445M → 445).
+// Якщо вже $/Вт (≤$30) — лишаємо. Ідемпотентно (після ділення ціна <$30).
+function panelToPerWatt(p) {
+  if (!p) return;
+  const cat = p.category || guessCategory(p.name);
+  if (cat !== 'МОДУЛІ') return;
+  const nums = (String(p.name).match(/\d{3,4}/g) || []).map(Number).filter(n => n >= 400 && n <= 750);
+  if (!nums.length) return;
+  const w = Math.max(...nums);
+  if (p.price_no_vat != null && p.price_no_vat > 30) p.price_no_vat = Math.round(p.price_no_vat / w * 1000) / 1000;
+  if (p.price_vat != null && p.price_vat > 30) p.price_vat = Math.round(p.price_vat / w * 1000) / 1000;
 }
 
 function findStock(name, model, stockMap) {
@@ -1659,13 +1838,14 @@ function findStock(name, model, stockMap) {
   return null;
 }
 
-function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds, isoProds, sfProds, atmProds, sigProds, ssjProds, stockMap) {
+function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds, isoProds, sfProds, atmProds, sigProds, ssjProds, sbProds, stockMap) {
   const categories = ['ІНВЕРТОРИ', 'АКУМУЛЯТОРИ', 'МОДУЛІ', 'КАБЕЛІ'];
   const rows = [];
 
   // Pre-compute identities for all supplier products
-  for (const list of [genProds, helProds, dolProds, seProds, peProds, svProds, isoProds, sfProds, atmProds, sigProds, ssjProds]) {
+  for (const list of [genProds, helProds, dolProds, seProds, peProds, svProds, isoProds, sfProds, atmProds, sigProds, ssjProds, sbProds]) {
     for (const p of list) {
+      panelToPerWatt(p);
       if (!p._identity) p._identity = buildIdentity(p.name, p.model, p.category || guessCategory(p.name));
     }
   }
@@ -1687,6 +1867,7 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds
       const am = findMatch(gp.model, gp.name, gpPrice, atmProds, isPanel, gId);
       const im = findMatch(gp.model, gp.name, gpPrice, sigProds, isPanel, gId);
       const jm = findMatch(gp.model, gp.name, gpPrice, ssjProds, isPanel, gId);
+      const bm = findMatch(gp.model, gp.name, gpPrice, sbProds, isPanel, gId);
       const stock = findStock(gp.name, gp.model, stockMap);
       rows.push({
         cat, name: gp.name, model: gp.model,
@@ -1711,7 +1892,9 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds
         jV: jm ? jm.price_vat : null, jC: jm ? (jm.currency || 'USD') : 'USD',
         fSt: fm ? fm.status : null, fNV: fm ? fm.price_no_vat : null,
         fV: fm ? fm.price_vat : null, fC: fm ? (fm.currency || 'USD') : 'USD',
-        _hm: hm, _dm: dm, _sm: sm, _pm: pm, _vm: vm, _lm: lm, _fm: fm, _am: am, _im: im, _jm: jm,
+        bSt: bm ? bm.status : null, bNV: bm ? bm.price_no_vat : null,
+        bV: bm ? bm.price_vat : null, bC: bm ? (bm.currency || 'USD') : 'USD',
+        _hm: hm, _dm: dm, _sm: sm, _pm: pm, _vm: vm, _lm: lm, _fm: fm, _bm: bm, _am: am, _im: im, _jm: jm,
       });
     }
   }
@@ -1727,7 +1910,8 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds
   const usedA = new Set(rows.filter(r=>r._am).map(r=>r._am));
   const usedI = new Set(rows.filter(r=>r._im).map(r=>r._im));
   const usedJ = new Set(rows.filter(r=>r._jm).map(r=>r._jm));
-  rows.forEach(r => { delete r._hm; delete r._dm; delete r._sm; delete r._pm; delete r._vm; delete r._lm; delete r._fm; delete r._am; delete r._im; delete r._jm; });
+  const usedB = new Set(rows.filter(r=>r._bm).map(r=>r._bm));
+  rows.forEach(r => { delete r._hm; delete r._dm; delete r._sm; delete r._pm; delete r._vm; delete r._lm; delete r._fm; delete r._bm; delete r._am; delete r._im; delete r._jm; });
 
   const panelSources = [
     {prods: helProds, used: usedH, key: 'h'},
@@ -1740,6 +1924,7 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds
     {prods: atmProds, used: usedA, key: 'a'},
     {prods: sigProds, used: usedI, key: 'i'},
     {prods: ssjProds, used: usedJ, key: 'j'},
+    {prods: sbProds, used: usedB, key: 'b'},
   ];
   const extraPanels = new Map();
   for (const {prods, used, key} of panelSources) {
@@ -1752,12 +1937,12 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds
       if (!nm) continue;
       let entry = null;
       for (const [k, v] of extraPanels) { if (fuzzyMatch(k, nm)) { entry = v; break; } }
-      if (!entry) { entry = {name: p.name, model: nm, h:null, d:null, s:null, p:null, v:null, l:null, f:null, a:null, i:null, j:null}; extraPanels.set(nm, entry); }
+      if (!entry) { entry = {name: p.name, model: nm, h:null, d:null, s:null, p:null, v:null, l:null, f:null, a:null, i:null, j:null, b:null}; extraPanels.set(nm, entry); }
       if (!entry[key]) entry[key] = p;
     }
   }
   for (const ex of extraPanels.values()) {
-    const hm = ex.h, dm = ex.d, sm = ex.s, pm = ex.p, vm = ex.v, lm = ex.l, fmx = ex.f, am = ex.a, imx = ex.i, jmx = ex.j;
+    const hm = ex.h, dm = ex.d, sm = ex.s, pm = ex.p, vm = ex.v, lm = ex.l, fmx = ex.f, am = ex.a, imx = ex.i, jmx = ex.j, bmx = ex.b;
     rows.push({
       cat: 'МОДУЛІ', name: ex.name, model: ex.model,
       gSt: null, gNV: null, gV: null, gC: 'USD', gStock: null,
@@ -1781,6 +1966,8 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds
       jV: jmx ? jmx.price_vat : null, jC: jmx ? (jmx.currency || 'USD') : 'USD',
       fSt: fmx ? fmx.status : null, fNV: fmx ? fmx.price_no_vat : null,
       fV: fmx ? fmx.price_vat : null, fC: fmx ? (fmx.currency || 'USD') : 'USD',
+      bSt: bmx ? bmx.status : null, bNV: bmx ? bmx.price_no_vat : null,
+      bV: bmx ? bmx.price_vat : null, bC: bmx ? (bmx.currency || 'USD') : 'USD',
     });
   }
 
@@ -1818,13 +2005,13 @@ function renderTable(rows) {
   for (const rd of rows) {
     if (rd.cat !== currentCat) {
       currentCat = rd.cat;
-      tb.innerHTML += `<tr class="cat"><td colspan="62"><span class="cat-label">${currentCat}</span></td></tr>`;
+      tb.innerHTML += `<tr class="cat"><td colspan="67"><span class="cat-label">${currentCat}</span></td></tr>`;
     }
     n++;
     const e = n % 2 === 0 ? 'even' : '';
     const r = rd;
     // Best price (by price_no_vat)
-    const prices = [['Реакт',r.gNV,r.gV,r.gC],['Хеліус',r.hNV,r.hV,r.hC],['Доля',r.dNV,r.dV,r.dC],['Сучасна',r.sNV,r.sV,r.sC],['Правильне',r.pNV,r.pV,r.pC],['Солар Верс',r.vNV,r.vV,r.vC],['Айсолар',r.lNV,r.lV,r.lC],['СоларФлоу',r.fNV,r.fV,r.fC],['Атмосфера',r.aNV,r.aV,r.aC],['СІГ',r.iNV,r.iV,r.iC],['SSJ',r.jNV,r.jV,r.jC]].filter(p=>p[1]!=null);
+    const prices = [['Реакт',r.gNV,r.gV,r.gC],['Хеліус',r.hNV,r.hV,r.hC],['Доля',r.dNV,r.dV,r.dC],['Сучасна',r.sNV,r.sV,r.sC],['Правильне',r.pNV,r.pV,r.pC],['Солар Верс',r.vNV,r.vV,r.vC],['Айсолар',r.lNV,r.lV,r.lC],['СоларФлоу',r.fNV,r.fV,r.fC],['Атмосфера',r.aNV,r.aV,r.aC],['СІГ',r.iNV,r.iV,r.iC],['SSJ',r.jNV,r.jV,r.jC],['Солар Біз',r.bNV,r.bV,r.bC]].filter(p=>p[1]!=null);
     const best = prices.length ? prices.reduce((a,b) => b[1] < a[1] ? b : a) : null;
     const bestWho = best ? prices.filter(p => p[1] === best[1]).map(p => p[0]).join(' / ') : '';
     const bestNV = best ? best[1] : null;
@@ -1894,6 +2081,11 @@ function renderTable(rows) {
       <td class="d-ssj ${e}">${delta(r.jNV,r.gNV)}</td>
       <td class="t-ssj ${e}">${fmt(r.jV,r.jC)}</td>
       <td class="d-ssj ${e}">${delta(r.jV,r.gV)}</td>
+      <td class="t-sb ${e} bl status">${r.bSt||''}</td>
+      <td class="t-sb ${e}">${fmt(r.bNV,r.bC)}</td>
+      <td class="d-sb ${e}">${delta(r.bNV,r.gNV)}</td>
+      <td class="t-sb ${e}">${fmt(r.bV,r.bC)}</td>
+      <td class="d-sb ${e}">${delta(r.bV,r.gV)}</td>
     </tr>`;
   }
 }
@@ -1947,17 +2139,18 @@ async function loadAllSupplierProds() {
       fetchProds('isolar_data'), fetchProds('solarflow_data'),
     ]);
     // Hydrate model + category
-    for (const p of genRaw) { p.model = extractModel(p.name); p.category = guessCategory(p.name); }
+    for (const p of genRaw) { p.model = extractModel(p.name); p.category = guessCategory(p.name); panelToPerWatt(p); }
     const gen = genRaw.filter(p => p.category);
     for (const list of [helRaw, dolRaw, seRaw, peRaw, svRaw, isoRaw, sfRaw]) {
-      for (const p of list) { p.model = extractModel(p.name); }
+      for (const p of list) { p.model = extractModel(p.name); panelToPerWatt(p); }
     }
     // Local sources (file/text) — лише якщо користувач їх ввів у цій сесії
     let atm = [];
     if (files.atm) { try { atm = await parseAtmosfera(files.atm); } catch(e){} }
     const sig = sigRawText ? parseSIG(sigRawText) : [];
     const ssj = ssjRawText ? parseSSJ(ssjRawText) : [];
-    return { gen, hel: helRaw, dol: dolRaw, se: seRaw, pe: peRaw, sv: svRaw, iso: isoRaw, sf: sfRaw, atm, sig, ssj, _errors: errors };
+    const sb = solarbizRawText ? parseSolarBiz(solarbizRawText) : [];
+    return { gen, hel: helRaw, dol: dolRaw, se: seRaw, pe: peRaw, sv: svRaw, iso: isoRaw, sf: sfRaw, atm, sig, ssj, sb, _errors: errors };
   })();
   try {
     const out = await __loadingSupProds;
@@ -1990,7 +2183,7 @@ async function customSearch() {
   const S = window.__supProds;
 
   // Pre-compute identities — потрібні для findMatch як у головному порівнянні
-  for (const list of [S.gen, S.hel, S.dol, S.se, S.pe, S.sv, S.iso || [], S.sf || [], S.atm, S.sig, S.ssj]) {
+  for (const list of [S.gen, S.hel, S.dol, S.se, S.pe, S.sv, S.iso || [], S.sf || [], S.atm, S.sig, S.ssj, S.sb || []]) {
     for (const p of list) {
       if (!p._identity) p._identity = buildIdentity(p.name, p.model, p.category || guessCategory(p.name));
     }
@@ -2015,8 +2208,9 @@ async function customSearch() {
   const am = match(S.atm);
   const im = match(S.sig);
   const jm = match(S.ssj);
+  const bm = match(S.sb);
 
-  const anyMatch = gm || hm || dm || sm || pm || vm || lm || fm || am || im || jm;
+  const anyMatch = gm || hm || dm || sm || pm || vm || lm || fm || am || im || jm || bm;
   if (!anyMatch) {
     if (host) host.innerHTML = `<div class="cs-empty">Нічого не знайдено для «<b>${escapeHtml(q)}</b>» у жодного постачальника. Спробуйте змінити запит (модель або бренд + потужність).</div>`;
     return;
@@ -2041,6 +2235,7 @@ async function customSearch() {
     aSt: am ? am.status : null, aNV: am ? am.price_no_vat : null, aV: am ? am.price_vat : null, aC: am ? (am.currency || 'USD') : 'USD',
     iSt: im ? im.status : null, iNV: im ? im.price_no_vat : null, iV: im ? im.price_vat : null, iC: im ? (im.currency || 'USD') : 'USD',
     jSt: jm ? jm.status : null, jNV: jm ? jm.price_no_vat : null, jV: jm ? jm.price_vat : null, jC: jm ? (jm.currency || 'USD') : 'USD',
+    bSt: bm ? bm.status : null, bNV: bm ? bm.price_no_vat : null, bV: bm ? bm.price_vat : null, bC: bm ? (bm.currency || 'USD') : 'USD',
   };
 
   // Вставляємо в головну таблицю через той самий renderTable
@@ -2231,6 +2426,19 @@ async function runComparison() {
       if (!ssjProds.length) warnings.push('SSJ: 0 товарів — перевірте текст');
     }
 
+    // Parse Солар Біз (text paste)
+    let sbProds = [];
+    if (solarbizRawText) {
+      progText.textContent = 'Парсинг: Солар Біз...';
+      progBar.style.width = '83%';
+      sbProds = parseSolarBiz(solarbizRawText);
+      if (sbProds.length) {
+        document.getElementById('sbStatus').textContent = sbProds.length + ' позицій';
+        document.querySelector('[data-supplier="sb"]').classList.add('has-file');
+      }
+      if (!sbProds.length) warnings.push('Солар Біз: 0 позицій — перевірте текст');
+    }
+
     // Fetch stock from 1C OData
     let stockMap = {};
     progText.textContent = 'Завантаження залишків (1С)...';
@@ -2245,12 +2453,12 @@ async function runComparison() {
     if (warnings.length) alert('Увага!\n\n' + warnings.join('\n'));
 
     // Cache raw supplier lists for custom search (user typing arbitrary product names)
-    window.__supProds = { gen: genProds, hel: helProds, dol: dolProds, se: seProds, pe: peProds, sv: svProds, iso: isoProds, sf: sfProds, atm: atmProds, sig: sigProds, ssj: ssjProds };
+    window.__supProds = { gen: genProds, hel: helProds, dol: dolProds, se: seProds, pe: peProds, sv: svProds, iso: isoProds, sf: sfProds, atm: atmProds, sig: sigProds, ssj: ssjProds, sb: sbProds };
 
     // Match
     progText.textContent = 'Зіставлення моделей...';
     progBar.style.width = '90%';
-    const rows = buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds, isoProds, sfProds, atmProds, sigProds, ssjProds, stockMap);
+    const rows = buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds, isoProds, sfProds, atmProds, sigProds, ssjProds, sbProds, stockMap);
 
     // Render
     progText.textContent = 'Побудова таблиці...';
@@ -2269,6 +2477,7 @@ async function runComparison() {
       atm: rows.filter(r => r.aNV != null || r.aV != null).length,
       sig: rows.filter(r => r.iNV != null || r.iV != null).length,
       ssj: rows.filter(r => r.jNV != null || r.jV != null).length,
+      sb:  rows.filter(r => r.bNV != null || r.bV != null).length,
     };
     const setSlotStatus = (slotKey, prodsCount, matchCount) => {
       const el = document.getElementById(slotKey + 'Status');
@@ -2285,6 +2494,7 @@ async function runComparison() {
     setSlotStatus('sf',  sfProds.length,  matchCounts.sf);
     setSlotStatus('sig', sigProds.length, matchCounts.sig);
     setSlotStatus('ssj', ssjProds.length, matchCounts.ssj);
+    setSlotStatus('sb',  sbProds.length,  matchCounts.sb);
 
     // Show
     const today = new Date();
@@ -2292,7 +2502,7 @@ async function runComparison() {
       'Оновлено: ' + today.toLocaleDateString('uk-UA');
     document.getElementById('results').style.display = 'block';
     progBar.style.width = '100%';
-    progText.textContent = `Готово! ${rows.length} товарів, ${rows.filter(r=>r.hNV||r.dNV||r.sNV||r.pNV||r.vNV||r.lNV||r.fNV||r.aNV||r.iNV||r.jNV).length} зі збігами`;
+    progText.textContent = `Готово! ${rows.length} товарів, ${rows.filter(r=>r.hNV||r.dNV||r.sNV||r.pNV||r.vNV||r.lNV||r.fNV||r.aNV||r.iNV||r.jNV||r.bNV).length} зі збігами`;
 
     // Save to history
     const supplierFiles = [{key:'gen',name:'Реакт'}];
@@ -2306,7 +2516,8 @@ async function runComparison() {
     if (files.atm) supplierFiles.push({key:'atm',name:'Атмосфера'});
     if (sigProds.length) supplierFiles.push({key:'sig',name:'СІГ'});
     if (ssjProds.length) supplierFiles.push({key:'ssj',name:'SSJ'});
-    saveComparison(rows, {hel:helProds.length,dol:dolProds.length,se:seProds.length,pe:peProds.length,sv:svProds.length,iso:isoProds.length,sf:sfProds.length,atm:atmProds.length,sig:sigProds.length,ssj:ssjProds.length}, supplierFiles);
+    if (sbProds.length) supplierFiles.push({key:'sb',name:'Солар Біз'});
+    saveComparison(rows, {hel:helProds.length,dol:dolProds.length,se:seProds.length,pe:peProds.length,sv:svProds.length,iso:isoProds.length,sf:sfProds.length,atm:atmProds.length,sig:sigProds.length,ssj:ssjProds.length,sb:sbProds.length}, supplierFiles);
 
     // Scroll to results
     setTimeout(() => {
@@ -2351,7 +2562,7 @@ async function saveComparison(rows, counts, supplierFiles) {
     id,
     date: new Date().toLocaleString('uk-UA'),
     totalItems: rows.length,
-    matches: rows.filter(r => r.hNV || r.dNV || r.sNV || r.pNV || r.vNV || r.lNV || r.fNV || r.aNV || r.iNV || r.jNV).length,
+    matches: rows.filter(r => r.hNV || r.dNV || r.sNV || r.pNV || r.vNV || r.lNV || r.fNV || r.aNV || r.iNV || r.jNV || r.bNV).length,
     suppliers: supplierFiles,
     rows,
     counts
@@ -2589,6 +2800,7 @@ document.getElementById('dateLabel').textContent = new Date().toLocaleDateString
   loadSchedule();
   initSigSlot();
   initSsjSlot();
+  initSolarbizSlot();
 })();
 window.addEventListener('hashchange', () => { if (location.hash.startsWith('#h=') || location.hash.startsWith('#d=')) loadFromHash(); });
 
