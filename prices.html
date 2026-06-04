@@ -140,6 +140,14 @@ table.hide-sf .gh-sf,table.hide-sf .sh-sf,table.hide-sf .t-sf,table.hide-sf .d-s
 .h-tag-sb{background:rgba(255,112,67,.12);color:#ff7043}
 .ct-chip.ct-sb.active{background:#ff7043;border-color:#ff7043}
 table.hide-sb .gh-sb,table.hide-sb .sh-sb,table.hide-sb .t-sb,table.hide-sb .d-sb{display:none}
+.t-alt{background:var(--row-odd)}.t-alt.even{background:var(--row-even)}
+.d-alt{background:var(--delta-bg)}.d-alt.even{background:var(--delta-bg2)}
+.gh-alt{background:#00acc1}
+.sh-alt{background:rgba(0,172,193,.1)}
+.slot-alt{border-color:rgba(0,172,193,.4)}.slot-alt.has-file{border-color:#00acc1;background:rgba(0,172,193,.12)}
+.h-tag-alt{background:rgba(0,172,193,.12);color:#00acc1}
+.ct-chip.ct-alt.active{background:#00acc1;border-color:#00acc1}
+table.hide-alt .gh-alt,table.hide-alt .sh-alt,table.hide-alt .t-alt,table.hide-alt .d-alt{display:none}
 .sig-modal{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.6);align-items:center;justify-content:center}
 .sig-modal-content{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:24px;width:90%;max-width:600px;box-shadow:0 8px 32px rgba(0,0,0,.5)}
 .sig-modal-content h3{font-size:14px;margin-bottom:12px;color:var(--text)}
@@ -462,6 +470,13 @@ tr:hover td{background:var(--bg3) !important}
       <div class="file-name" id="sbStatus"></div>
       <button class="remove-btn" onclick="removeSolarbiz(event)" style="display:none">&times;</button>
     </div>
+    <div class="supplier-slot slot-alt" data-supplier="alt" onclick="openAltekModal()">
+      <div class="icon">💬</div>
+      <div class="label">Альтек</div>
+      <div class="hint">Вставте текст з Telegram</div>
+      <div class="file-name" id="altStatus"></div>
+      <button class="remove-btn" onclick="removeAltek(event)" style="display:none">&times;</button>
+    </div>
   </div>
   <div class="progress" id="progress" style="display:none">
     <div id="progressText">Парсинг файлів...</div>
@@ -503,6 +518,17 @@ tr:hover td{background:var(--bg3) !important}
   </div>
 </div>
 
+<div class="sig-modal" id="altekModal" style="display:none">
+  <div class="sig-modal-content">
+    <h3>Альтек — вставте прайс з Telegram</h3>
+    <textarea id="altekText" rows="15" placeholder="Назва — ціна $/вт (як у телеграм-пості)"></textarea>
+    <div class="sig-modal-actions">
+      <button onclick="applyAltekText()">Застосувати</button>
+      <button onclick="closeAltekModal()" class="sig-cancel">Скасувати</button>
+    </div>
+  </div>
+</div>
+
 <div class="sig-modal" id="linkModal" style="display:none" onclick="if(event.target===this)closeLinkModal()">
   <div class="sig-modal-content">
     <h3 id="linkModalTitle">Посилання на прайс</h3>
@@ -540,6 +566,7 @@ tr:hover td{background:var(--bg3) !important}
     <span class="ct-chip ct-sig active" onclick="toggleCol('sig',this)">СІГ</span>
     <span class="ct-chip ct-ssj active" onclick="toggleCol('ssj',this)">SSJ</span>
     <span class="ct-chip ct-sb active" onclick="toggleCol('sb',this)">Солар Біз</span>
+    <span class="ct-chip ct-alt active" onclick="toggleCol('alt',this)">Альтек</span>
   </div>
   <div class="wrap">
     <table id="mainTable">
@@ -559,6 +586,7 @@ tr:hover td{background:var(--bg3) !important}
           <th class="gh gh-sig bl" colspan="5">СІГ</th>
           <th class="gh gh-ssj bl" colspan="5">SSJ</th>
           <th class="gh gh-sb bl" colspan="5">Солар Біз</th>
+          <th class="gh gh-alt bl" colspan="5">Альтек</th>
         </tr>
         <tr>
           <th class="sh sh-tovar bl">&#8470;</th><th class="sh sh-tovar">Назва</th>
@@ -575,10 +603,11 @@ tr:hover td{background:var(--bg3) !important}
           <th class="sh sh-sig bl">Статус</th><th class="sh sh-sig">Ціна без ПДВ</th><th class="sh sh-sig">&Delta;%</th><th class="sh sh-sig">Ціна з ПДВ</th><th class="sh sh-sig">&Delta;%</th>
           <th class="sh sh-ssj bl">Статус</th><th class="sh sh-ssj">Ціна без ПДВ</th><th class="sh sh-ssj">&Delta;%</th><th class="sh sh-ssj">Ціна з ПДВ</th><th class="sh sh-ssj">&Delta;%</th>
           <th class="sh sh-sb bl">Статус</th><th class="sh sh-sb">Ціна без ПДВ</th><th class="sh sh-sb">&Delta;%</th><th class="sh sh-sb">Ціна з ПДВ</th><th class="sh sh-sb">&Delta;%</th>
+          <th class="sh sh-alt bl">Статус</th><th class="sh sh-alt">Ціна без ПДВ</th><th class="sh sh-alt">&Delta;%</th><th class="sh sh-alt">Ціна з ПДВ</th><th class="sh sh-alt">&Delta;%</th>
         </tr>
       </thead>
       <tbody id="data"></tbody>
-      <tfoot><tr><td colspan="67">&nbsp;</td></tr></tfoot>
+      <tfoot><tr><td colspan="72">&nbsp;</td></tr></tfoot>
     </table>
   </div>
 </div>
@@ -1667,6 +1696,82 @@ function parseSolarBiz(text) {
   return out;
 }
 
+// ── Альтек (текстовий прайс з Telegram: "<назва> — <ціна> $/вт", панелі) ──
+const ALTEK_SEED = `📉 Зниження цін на панелі Jinko:
+
+Jinko-720 (bifacial) — 0,161 $/вт ✅
+Jinko-620 (bifacial) — 0,163 $/вт ✅
+Jinko-635 (bifacial) — 0,165 $/вт ✅
+JKM-460N-48HL4M-DV — 0,174 $/вт ✅
+
+Luxen-625 (bifacial) — 0,153 $/вт
+Luxen-455 (bifacial full black) — 0,163 $/вт
+
+Всі панелі в наявності
+
+🎁 Додаткова знижка від 3 палет!`;
+let altekRawText = localStorage.getItem('altekText');
+if (altekRawText === null) { altekRawText = ALTEK_SEED; localStorage.setItem('altekText', ALTEK_SEED); }
+function initAltekSlot() {
+  if (!altekRawText) return;
+  const slot = document.querySelector('[data-supplier="alt"]');
+  if (!slot) return;
+  slot.classList.add('has-file');
+  slot.querySelector('.file-name').textContent = parseAltek(altekRawText).length + ' позицій';
+  slot.querySelector('.remove-btn').style.display = '';
+}
+function openAltekModal() {
+  document.getElementById('altekText').value = altekRawText;
+  document.getElementById('altekModal').style.display = 'flex';
+}
+function closeAltekModal() {
+  document.getElementById('altekModal').style.display = 'none';
+}
+function applyAltekText() {
+  altekRawText = document.getElementById('altekText').value.trim();
+  localStorage.setItem('altekText', altekRawText);
+  closeAltekModal();
+  const slot = document.querySelector('[data-supplier="alt"]');
+  if (altekRawText) {
+    slot.classList.add('has-file');
+    slot.querySelector('.file-name').textContent = parseAltek(altekRawText).length + ' позицій';
+    slot.querySelector('.remove-btn').style.display = '';
+  } else {
+    slot.classList.remove('has-file');
+    slot.querySelector('.file-name').textContent = '';
+    slot.querySelector('.remove-btn').style.display = 'none';
+  }
+}
+function removeAltek(e) {
+  e.stopPropagation();
+  altekRawText = '';
+  localStorage.setItem('altekText', ''); // порожній, щоб seed не повертався
+  const slot = document.querySelector('[data-supplier="alt"]');
+  slot.classList.remove('has-file');
+  slot.querySelector('.file-name').textContent = '';
+  slot.querySelector('.remove-btn').style.display = 'none';
+}
+// Рядок "<назва> — <ціна> $/вт" (тире в оточенні пробілів відділяє назву від ціни;
+// дефіси в моделі JKM-460N не плутаються). Емодзі-шапка/футер без тире — пропускаються.
+function parseAltek(text) {
+  if (!text) return [];
+  const out = [];
+  for (const raw of text.split('\n')) {
+    const line = raw.trim();
+    if (!line) continue;
+    const m = line.match(/^(.+?)\s+[—–-]\s+(.+)$/);
+    if (!m) continue;
+    const name = m[1].trim();
+    const pm = m[2].match(/(\d+(?:[.,]\d+)?)\s*\$\s*\/?\s*(?:[вВ]т)?/);
+    if (!name || !pm) continue;
+    const price = parseFloat(pm[1].replace(',', '.'));
+    if (!price || isNaN(price)) continue;
+    const model = name.replace(/\s*\([^)]*\)\s*/g, ' ').trim();
+    out.push({ name, model, category: guessCategory(name) || 'МОДУЛІ', status: 'в наявності', price_no_vat: price, price_vat: null, currency: 'USD' });
+  }
+  return out;
+}
+
 function parseSSJ(text) {
   if (!text) return [];
   const lines = text.split('\n');
@@ -1838,12 +1943,12 @@ function findStock(name, model, stockMap) {
   return null;
 }
 
-function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds, isoProds, sfProds, atmProds, sigProds, ssjProds, sbProds, stockMap) {
+function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds, isoProds, sfProds, atmProds, sigProds, ssjProds, sbProds, kProds, stockMap) {
   const categories = ['ІНВЕРТОРИ', 'АКУМУЛЯТОРИ', 'МОДУЛІ', 'КАБЕЛІ'];
   const rows = [];
 
   // Pre-compute identities for all supplier products
-  for (const list of [genProds, helProds, dolProds, seProds, peProds, svProds, isoProds, sfProds, atmProds, sigProds, ssjProds, sbProds]) {
+  for (const list of [genProds, helProds, dolProds, seProds, peProds, svProds, isoProds, sfProds, atmProds, sigProds, ssjProds, sbProds, kProds]) {
     for (const p of list) {
       panelToPerWatt(p);
       if (!p._identity) p._identity = buildIdentity(p.name, p.model, p.category || guessCategory(p.name));
@@ -1868,6 +1973,7 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds
       const im = findMatch(gp.model, gp.name, gpPrice, sigProds, isPanel, gId);
       const jm = findMatch(gp.model, gp.name, gpPrice, ssjProds, isPanel, gId);
       const bm = findMatch(gp.model, gp.name, gpPrice, sbProds, isPanel, gId);
+      const km = findMatch(gp.model, gp.name, gpPrice, kProds, isPanel, gId);
       const stock = findStock(gp.name, gp.model, stockMap);
       rows.push({
         cat, name: gp.name, model: gp.model,
@@ -1894,7 +2000,9 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds
         fV: fm ? fm.price_vat : null, fC: fm ? (fm.currency || 'USD') : 'USD',
         bSt: bm ? bm.status : null, bNV: bm ? bm.price_no_vat : null,
         bV: bm ? bm.price_vat : null, bC: bm ? (bm.currency || 'USD') : 'USD',
-        _hm: hm, _dm: dm, _sm: sm, _pm: pm, _vm: vm, _lm: lm, _fm: fm, _bm: bm, _am: am, _im: im, _jm: jm,
+        kSt: km ? km.status : null, kNV: km ? km.price_no_vat : null,
+        kV: km ? km.price_vat : null, kC: km ? (km.currency || 'USD') : 'USD',
+        _hm: hm, _dm: dm, _sm: sm, _pm: pm, _vm: vm, _lm: lm, _fm: fm, _bm: bm, _km: km, _am: am, _im: im, _jm: jm,
       });
     }
   }
@@ -1911,7 +2019,8 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds
   const usedI = new Set(rows.filter(r=>r._im).map(r=>r._im));
   const usedJ = new Set(rows.filter(r=>r._jm).map(r=>r._jm));
   const usedB = new Set(rows.filter(r=>r._bm).map(r=>r._bm));
-  rows.forEach(r => { delete r._hm; delete r._dm; delete r._sm; delete r._pm; delete r._vm; delete r._lm; delete r._fm; delete r._bm; delete r._am; delete r._im; delete r._jm; });
+  const usedK = new Set(rows.filter(r=>r._km).map(r=>r._km));
+  rows.forEach(r => { delete r._hm; delete r._dm; delete r._sm; delete r._pm; delete r._vm; delete r._lm; delete r._fm; delete r._bm; delete r._km; delete r._am; delete r._im; delete r._jm; });
 
   const panelSources = [
     {prods: helProds, used: usedH, key: 'h'},
@@ -1925,6 +2034,7 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds
     {prods: sigProds, used: usedI, key: 'i'},
     {prods: ssjProds, used: usedJ, key: 'j'},
     {prods: sbProds, used: usedB, key: 'b'},
+    {prods: kProds, used: usedK, key: 'k'},
   ];
   const extraPanels = new Map();
   for (const {prods, used, key} of panelSources) {
@@ -1937,12 +2047,12 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds
       if (!nm) continue;
       let entry = null;
       for (const [k, v] of extraPanels) { if (fuzzyMatch(k, nm)) { entry = v; break; } }
-      if (!entry) { entry = {name: p.name, model: nm, h:null, d:null, s:null, p:null, v:null, l:null, f:null, a:null, i:null, j:null, b:null}; extraPanels.set(nm, entry); }
+      if (!entry) { entry = {name: p.name, model: nm, h:null, d:null, s:null, p:null, v:null, l:null, f:null, a:null, i:null, j:null, b:null, k:null}; extraPanels.set(nm, entry); }
       if (!entry[key]) entry[key] = p;
     }
   }
   for (const ex of extraPanels.values()) {
-    const hm = ex.h, dm = ex.d, sm = ex.s, pm = ex.p, vm = ex.v, lm = ex.l, fmx = ex.f, am = ex.a, imx = ex.i, jmx = ex.j, bmx = ex.b;
+    const hm = ex.h, dm = ex.d, sm = ex.s, pm = ex.p, vm = ex.v, lm = ex.l, fmx = ex.f, am = ex.a, imx = ex.i, jmx = ex.j, bmx = ex.b, kmx = ex.k;
     rows.push({
       cat: 'МОДУЛІ', name: ex.name, model: ex.model,
       gSt: null, gNV: null, gV: null, gC: 'USD', gStock: null,
@@ -1968,6 +2078,8 @@ function buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds
       fV: fmx ? fmx.price_vat : null, fC: fmx ? (fmx.currency || 'USD') : 'USD',
       bSt: bmx ? bmx.status : null, bNV: bmx ? bmx.price_no_vat : null,
       bV: bmx ? bmx.price_vat : null, bC: bmx ? (bmx.currency || 'USD') : 'USD',
+      kSt: kmx ? kmx.status : null, kNV: kmx ? kmx.price_no_vat : null,
+      kV: kmx ? kmx.price_vat : null, kC: kmx ? (kmx.currency || 'USD') : 'USD',
     });
   }
 
@@ -2005,13 +2117,13 @@ function renderTable(rows) {
   for (const rd of rows) {
     if (rd.cat !== currentCat) {
       currentCat = rd.cat;
-      tb.innerHTML += `<tr class="cat"><td colspan="67"><span class="cat-label">${currentCat}</span></td></tr>`;
+      tb.innerHTML += `<tr class="cat"><td colspan="72"><span class="cat-label">${currentCat}</span></td></tr>`;
     }
     n++;
     const e = n % 2 === 0 ? 'even' : '';
     const r = rd;
     // Best price (by price_no_vat)
-    const prices = [['Реакт',r.gNV,r.gV,r.gC],['Хеліус',r.hNV,r.hV,r.hC],['Доля',r.dNV,r.dV,r.dC],['Сучасна',r.sNV,r.sV,r.sC],['Правильне',r.pNV,r.pV,r.pC],['Солар Верс',r.vNV,r.vV,r.vC],['Айсолар',r.lNV,r.lV,r.lC],['СоларФлоу',r.fNV,r.fV,r.fC],['Атмосфера',r.aNV,r.aV,r.aC],['СІГ',r.iNV,r.iV,r.iC],['SSJ',r.jNV,r.jV,r.jC],['Солар Біз',r.bNV,r.bV,r.bC]].filter(p=>p[1]!=null);
+    const prices = [['Реакт',r.gNV,r.gV,r.gC],['Хеліус',r.hNV,r.hV,r.hC],['Доля',r.dNV,r.dV,r.dC],['Сучасна',r.sNV,r.sV,r.sC],['Правильне',r.pNV,r.pV,r.pC],['Солар Верс',r.vNV,r.vV,r.vC],['Айсолар',r.lNV,r.lV,r.lC],['СоларФлоу',r.fNV,r.fV,r.fC],['Атмосфера',r.aNV,r.aV,r.aC],['СІГ',r.iNV,r.iV,r.iC],['SSJ',r.jNV,r.jV,r.jC],['Солар Біз',r.bNV,r.bV,r.bC],['Альтек',r.kNV,r.kV,r.kC]].filter(p=>p[1]!=null);
     const best = prices.length ? prices.reduce((a,b) => b[1] < a[1] ? b : a) : null;
     const bestWho = best ? prices.filter(p => p[1] === best[1]).map(p => p[0]).join(' / ') : '';
     const bestNV = best ? best[1] : null;
@@ -2086,6 +2198,11 @@ function renderTable(rows) {
       <td class="d-sb ${e}">${delta(r.bNV,r.gNV)}</td>
       <td class="t-sb ${e}">${fmt(r.bV,r.bC)}</td>
       <td class="d-sb ${e}">${delta(r.bV,r.gV)}</td>
+      <td class="t-alt ${e} bl status">${r.kSt||''}</td>
+      <td class="t-alt ${e}">${fmt(r.kNV,r.kC)}</td>
+      <td class="d-alt ${e}">${delta(r.kNV,r.gNV)}</td>
+      <td class="t-alt ${e}">${fmt(r.kV,r.kC)}</td>
+      <td class="d-alt ${e}">${delta(r.kV,r.gV)}</td>
     </tr>`;
   }
 }
@@ -2150,7 +2267,8 @@ async function loadAllSupplierProds() {
     const sig = sigRawText ? parseSIG(sigRawText) : [];
     const ssj = ssjRawText ? parseSSJ(ssjRawText) : [];
     const sb = solarbizRawText ? parseSolarBiz(solarbizRawText) : [];
-    return { gen, hel: helRaw, dol: dolRaw, se: seRaw, pe: peRaw, sv: svRaw, iso: isoRaw, sf: sfRaw, atm, sig, ssj, sb, _errors: errors };
+    const k = altekRawText ? parseAltek(altekRawText) : [];
+    return { gen, hel: helRaw, dol: dolRaw, se: seRaw, pe: peRaw, sv: svRaw, iso: isoRaw, sf: sfRaw, atm, sig, ssj, sb, alt: k, _errors: errors };
   })();
   try {
     const out = await __loadingSupProds;
@@ -2183,7 +2301,7 @@ async function customSearch() {
   const S = window.__supProds;
 
   // Pre-compute identities — потрібні для findMatch як у головному порівнянні
-  for (const list of [S.gen, S.hel, S.dol, S.se, S.pe, S.sv, S.iso || [], S.sf || [], S.atm, S.sig, S.ssj, S.sb || []]) {
+  for (const list of [S.gen, S.hel, S.dol, S.se, S.pe, S.sv, S.iso || [], S.sf || [], S.atm, S.sig, S.ssj, S.sb || [], S.alt || []]) {
     for (const p of list) {
       if (!p._identity) p._identity = buildIdentity(p.name, p.model, p.category || guessCategory(p.name));
     }
@@ -2209,8 +2327,9 @@ async function customSearch() {
   const im = match(S.sig);
   const jm = match(S.ssj);
   const bm = match(S.sb);
+  const km = match(S.alt);
 
-  const anyMatch = gm || hm || dm || sm || pm || vm || lm || fm || am || im || jm || bm;
+  const anyMatch = gm || hm || dm || sm || pm || vm || lm || fm || am || im || jm || bm || km;
   if (!anyMatch) {
     if (host) host.innerHTML = `<div class="cs-empty">Нічого не знайдено для «<b>${escapeHtml(q)}</b>» у жодного постачальника. Спробуйте змінити запит (модель або бренд + потужність).</div>`;
     return;
@@ -2236,6 +2355,7 @@ async function customSearch() {
     iSt: im ? im.status : null, iNV: im ? im.price_no_vat : null, iV: im ? im.price_vat : null, iC: im ? (im.currency || 'USD') : 'USD',
     jSt: jm ? jm.status : null, jNV: jm ? jm.price_no_vat : null, jV: jm ? jm.price_vat : null, jC: jm ? (jm.currency || 'USD') : 'USD',
     bSt: bm ? bm.status : null, bNV: bm ? bm.price_no_vat : null, bV: bm ? bm.price_vat : null, bC: bm ? (bm.currency || 'USD') : 'USD',
+    kSt: km ? km.status : null, kNV: km ? km.price_no_vat : null, kV: km ? km.price_vat : null, kC: km ? (km.currency || 'USD') : 'USD',
   };
 
   // Вставляємо в головну таблицю через той самий renderTable
@@ -2439,6 +2559,19 @@ async function runComparison() {
       if (!sbProds.length) warnings.push('Солар Біз: 0 позицій — перевірте текст');
     }
 
+    // Parse Альтек (text paste)
+    let kProds = [];
+    if (altekRawText) {
+      progText.textContent = 'Парсинг: Альтек...';
+      progBar.style.width = '84%';
+      kProds = parseAltek(altekRawText);
+      if (kProds.length) {
+        document.getElementById('altStatus').textContent = kProds.length + ' позицій';
+        document.querySelector('[data-supplier="alt"]').classList.add('has-file');
+      }
+      if (!kProds.length) warnings.push('Альтек: 0 позицій — перевірте текст');
+    }
+
     // Fetch stock from 1C OData
     let stockMap = {};
     progText.textContent = 'Завантаження залишків (1С)...';
@@ -2453,12 +2586,12 @@ async function runComparison() {
     if (warnings.length) alert('Увага!\n\n' + warnings.join('\n'));
 
     // Cache raw supplier lists for custom search (user typing arbitrary product names)
-    window.__supProds = { gen: genProds, hel: helProds, dol: dolProds, se: seProds, pe: peProds, sv: svProds, iso: isoProds, sf: sfProds, atm: atmProds, sig: sigProds, ssj: ssjProds, sb: sbProds };
+    window.__supProds = { gen: genProds, hel: helProds, dol: dolProds, se: seProds, pe: peProds, sv: svProds, iso: isoProds, sf: sfProds, atm: atmProds, sig: sigProds, ssj: ssjProds, sb: sbProds, alt: kProds };
 
     // Match
     progText.textContent = 'Зіставлення моделей...';
     progBar.style.width = '90%';
-    const rows = buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds, isoProds, sfProds, atmProds, sigProds, ssjProds, sbProds, stockMap);
+    const rows = buildComparison(genProds, helProds, dolProds, seProds, peProds, svProds, isoProds, sfProds, atmProds, sigProds, ssjProds, sbProds, kProds, stockMap);
 
     // Render
     progText.textContent = 'Побудова таблиці...';
@@ -2478,6 +2611,7 @@ async function runComparison() {
       sig: rows.filter(r => r.iNV != null || r.iV != null).length,
       ssj: rows.filter(r => r.jNV != null || r.jV != null).length,
       sb:  rows.filter(r => r.bNV != null || r.bV != null).length,
+      alt: rows.filter(r => r.kNV != null || r.kV != null).length,
     };
     const setSlotStatus = (slotKey, prodsCount, matchCount) => {
       const el = document.getElementById(slotKey + 'Status');
@@ -2495,6 +2629,7 @@ async function runComparison() {
     setSlotStatus('sig', sigProds.length, matchCounts.sig);
     setSlotStatus('ssj', ssjProds.length, matchCounts.ssj);
     setSlotStatus('sb',  sbProds.length,  matchCounts.sb);
+    setSlotStatus('alt', kProds.length,  matchCounts.alt);
 
     // Show
     const today = new Date();
@@ -2502,7 +2637,7 @@ async function runComparison() {
       'Оновлено: ' + today.toLocaleDateString('uk-UA');
     document.getElementById('results').style.display = 'block';
     progBar.style.width = '100%';
-    progText.textContent = `Готово! ${rows.length} товарів, ${rows.filter(r=>r.hNV||r.dNV||r.sNV||r.pNV||r.vNV||r.lNV||r.fNV||r.aNV||r.iNV||r.jNV||r.bNV).length} зі збігами`;
+    progText.textContent = `Готово! ${rows.length} товарів, ${rows.filter(r=>r.hNV||r.dNV||r.sNV||r.pNV||r.vNV||r.lNV||r.fNV||r.aNV||r.iNV||r.jNV||r.bNV||r.kNV).length} зі збігами`;
 
     // Save to history
     const supplierFiles = [{key:'gen',name:'Реакт'}];
@@ -2517,7 +2652,8 @@ async function runComparison() {
     if (sigProds.length) supplierFiles.push({key:'sig',name:'СІГ'});
     if (ssjProds.length) supplierFiles.push({key:'ssj',name:'SSJ'});
     if (sbProds.length) supplierFiles.push({key:'sb',name:'Солар Біз'});
-    saveComparison(rows, {hel:helProds.length,dol:dolProds.length,se:seProds.length,pe:peProds.length,sv:svProds.length,iso:isoProds.length,sf:sfProds.length,atm:atmProds.length,sig:sigProds.length,ssj:ssjProds.length,sb:sbProds.length}, supplierFiles);
+    if (kProds.length) supplierFiles.push({key:'alt',name:'Альтек'});
+    saveComparison(rows, {hel:helProds.length,dol:dolProds.length,se:seProds.length,pe:peProds.length,sv:svProds.length,iso:isoProds.length,sf:sfProds.length,atm:atmProds.length,sig:sigProds.length,ssj:ssjProds.length,sb:sbProds.length,alt:kProds.length}, supplierFiles);
 
     // Scroll to results
     setTimeout(() => {
@@ -2562,7 +2698,7 @@ async function saveComparison(rows, counts, supplierFiles) {
     id,
     date: new Date().toLocaleString('uk-UA'),
     totalItems: rows.length,
-    matches: rows.filter(r => r.hNV || r.dNV || r.sNV || r.pNV || r.vNV || r.lNV || r.fNV || r.aNV || r.iNV || r.jNV || r.bNV).length,
+    matches: rows.filter(r => r.hNV || r.dNV || r.sNV || r.pNV || r.vNV || r.lNV || r.fNV || r.aNV || r.iNV || r.jNV || r.bNV || r.kNV).length,
     suppliers: supplierFiles,
     rows,
     counts
@@ -2801,6 +2937,7 @@ document.getElementById('dateLabel').textContent = new Date().toLocaleDateString
   initSigSlot();
   initSsjSlot();
   initSolarbizSlot();
+  initAltekSlot();
 })();
 window.addEventListener('hashchange', () => { if (location.hash.startsWith('#h=') || location.hash.startsWith('#d=')) loadFromHash(); });
 
