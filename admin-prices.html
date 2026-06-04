@@ -132,7 +132,7 @@ a{color:inherit;text-decoration:none}
 .tbl .row-act button:hover{color:var(--text);background:var(--bg3);border-color:var(--border)}
 .tbl .row-act button.danger:hover{color:var(--red);border-color:rgba(231,76,60,.3)}
 
-/* PDF link badge */
+/* Dat / Cert link badge */
 .ds-link{display:inline-flex;align-items:center;padding:1px 5px;font-size:10px;border:1px solid var(--border2);border-radius:4px;color:var(--text2);text-decoration:none;vertical-align:middle}
 .ds-link:hover{color:var(--accent);border-color:var(--accent)}
 
@@ -338,8 +338,12 @@ a{color:inherit;text-decoration:none}
         </div>
       </div>
       <div class="field">
-        <label>Datasheet URL</label>
+        <label>Dat (Datasheet) URL</label>
         <input id="f_datasheet_url" placeholder="https://...">
+      </div>
+      <div class="field">
+        <label>Cert (Сертифікат) URL</label>
+        <input id="f_cert_url" placeholder="https://...">
       </div>
       <div class="preview-card" id="pvCard" style="display:none">
         <div class="lbl">Так буде виглядати на прайсі</div>
@@ -811,7 +815,10 @@ function renderRow(it, c) {
   };
 
   const dsBadge = it.datasheet_url
-    ? ` <a href="${esc(it.datasheet_url)}" target="_blank" rel="noopener" class="ds-link" onclick="event.stopPropagation()">PDF ↗</a>`
+    ? ` <a href="${esc(it.datasheet_url)}" target="_blank" rel="noopener" class="ds-link" onclick="event.stopPropagation()">Dat ↗</a>`
+    : '';
+  const certBadge = it.cert_url
+    ? ` <a href="${esc(it.cert_url)}" target="_blank" rel="noopener" class="ds-link" onclick="event.stopPropagation()">Cert ↗</a>`
     : '';
 
   const warnIco = flags.no1c
@@ -831,7 +838,7 @@ function renderRow(it, c) {
   return `
     <tr class="${hidden ? 'row-hidden' : ''}" data-id="${it.id}">
       <td class="prod-cell">
-        <div class="name">${warnIco}${esc(it.display_name || '—')}${dsBadge}</div>
+        <div class="name">${warnIco}${esc(it.display_name || '—')}${dsBadge}${certBadge}</div>
         ${specLine}
       </td>
       <td>${stockPill}</td>
@@ -945,6 +952,7 @@ function addMissingToPrice(nom) {
   document.getElementById('f_display_spec').value = '';
   setSegStock('в наявності');
   document.getElementById('f_datasheet_url').value = '';
+  document.getElementById('f_cert_url').value = '';
   document.getElementById('f_override_no_vat').value = '';
   document.getElementById('f_override_with_vat').value = '';
   document.getElementById('deleteBtn').style.display = 'none';
@@ -1008,6 +1016,7 @@ function openItemModal(item, preSlug) {
   document.getElementById('f_display_spec').value = (item && item.display_spec) || '';
   setSegStock((item && item.stock) || 'в наявності');
   document.getElementById('f_datasheet_url').value = (item && item.datasheet_url) || '';
+  document.getElementById('f_cert_url').value = (item && item.cert_url) || '';
   document.getElementById('f_override_no_vat').value   = (item && item.override_price_no_vat   != null) ? item.override_price_no_vat   : '';
   document.getElementById('f_override_with_vat').value = (item && item.override_price_with_vat != null) ? item.override_price_with_vat : '';
   document.getElementById('deleteBtn').style.display = EDIT_ID ? '' : 'none';
@@ -1178,6 +1187,7 @@ async function saveItem() {
     display_spec: document.getElementById('f_display_spec').value.trim() || null,
     stock: getSegStock(),
     datasheet_url: document.getElementById('f_datasheet_url').value.trim() || null,
+    cert_url: document.getElementById('f_cert_url').value.trim() || null,
     override_price_no_vat:   document.getElementById('f_override_no_vat').value.trim()   || null,
     override_price_with_vat: document.getElementById('f_override_with_vat').value.trim() || null,
     sort_order: 0,
