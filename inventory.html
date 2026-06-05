@@ -32,6 +32,22 @@ a{color:inherit;text-decoration:none}
 .toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
 .toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
 .toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 2px}
+.toolbar select{padding:7px 30px 7px 11px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;outline:none;font-family:inherit;cursor:pointer;-webkit-appearance:none;appearance:none;max-width:230px;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");background-repeat:no-repeat;background-position:right 11px center}
+.toolbar select:focus{border-color:var(--accent)}
+
+/* Product typeahead picker */
+.ac-wrap{position:relative;display:inline-flex;align-items:center}
+.ac-wrap input{padding-right:26px}
+.ac-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:16px;height:16px;display:flex;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;color:var(--text3);font-size:11px;line-height:1;user-select:none}
+.ac-clear:hover{color:var(--text);background:var(--bg3)}
+.ac-list{position:absolute;top:calc(100% + 4px);left:0;min-width:300px;max-height:320px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:9px;box-shadow:0 8px 20px rgba(0,0,0,.35);z-index:50;display:none}
+.ac-list.open{display:block}
+.ac-item{padding:8px 11px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border);line-height:1.35}
+.ac-item:last-child{border-bottom:none}
+.ac-item:hover{background:var(--bg2)}
+.ac-item .art{font-size:10.5px;color:var(--text3);margin-top:2px}
+.ac-item mark{background:var(--accent-bg);color:var(--accent);padding:0;border-radius:2px}
+.ac-item .empty-row{color:var(--text3);font-style:italic}
 
 /* KPI cards — top row */
 .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
@@ -96,6 +112,9 @@ a{color:inherit;text-decoration:none}
   .toolbar .chip{padding:6px 10px;font-size:11px}
   .toolbar .group{padding:3px;gap:2px}
   .toolbar .group .chip{padding:5px 8px;font-size:11px}
+  .toolbar select{max-width:150px;padding:6px 26px 6px 9px;font-size:11px}
+  .toolbar input[type=text]{min-width:150px}
+  .ac-list{min-width:220px;max-width:78vw}
   .toolbar .sep{display:none}
   .kpi-row{grid-template-columns:1fr 1fr 1fr;gap:8px}
   .kpi{padding:11px 12px;border-radius:10px}
@@ -138,8 +157,15 @@ a{color:inherit;text-decoration:none}
         <span class="chip" data-org="Генерація" onclick="setOrg(this)">Генерація</span>
       </span>
       <div class="sep"></div>
-      <span class="lbl">Пошук</span>
-      <input type="text" id="searchIn" placeholder="Назва або артикул…" oninput="applyFilters()">
+      <span class="lbl">Група</span>
+      <select id="groupSel" onchange="setGroup(this.value)"><option value="">Всі групи</option></select>
+      <div class="sep"></div>
+      <span class="lbl">Товар</span>
+      <span class="ac-wrap">
+        <input type="text" id="searchIn" placeholder="Назва або артикул…" autocomplete="off" oninput="onSearchInput()">
+        <span class="ac-clear" id="acClear" onclick="clearProduct()" style="display:none">✕</span>
+        <div class="ac-list" id="acList"></div>
+      </span>
       <div class="sep"></div>
       <span class="lbl">ABC</span>
       <span class="group" id="abcGroup">
@@ -158,7 +184,7 @@ a{color:inherit;text-decoration:none}
 
 <script>
 const API = 'https://price-api.doskevich.workers.dev/';
-const state = { org: 'Реакт', statusFilter: null, abcFilter: '', sortCol: 'excess_val', sortAsc: false };
+const state = { org: 'Реакт', group: '', productKey: null, statusFilter: null, abcFilter: '', sortCol: 'excess_val', sortAsc: false };
 let DATA = null;
 
 const fmt  = (v, d=0) => v == null ? '—' : Number(v).toLocaleString('uk-UA', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -187,7 +213,122 @@ function setSort(col) {
   else { state.sortCol = col; state.sortAsc = false; }
   render();
 }
-function applyFilters() { render(); }
+function setGroup(v) { state.group = v; render(); }
+
+// ── Product typeahead ──────────────────────────────────────────────
+function hl(text, q) {
+  const t = String(text || '');
+  if (!q) return esc(t);
+  const i = t.toLowerCase().indexOf(q.toLowerCase());
+  if (i < 0) return esc(t);
+  return esc(t.slice(0, i)) + '<mark>' + esc(t.slice(i, i + q.length)) + '</mark>' + esc(t.slice(i + q.length));
+}
+function onSearchInput() {
+  state.productKey = null; // typing → unpin specific product
+  const inp = document.getElementById('searchIn');
+  const q = (inp.value || '').trim();
+  document.getElementById('acClear').style.display = q ? 'flex' : 'none';
+  const list = document.getElementById('acList');
+  if (!q) { list.classList.remove('open'); render(); return; }
+  let pool = DATA ? DATA.items : [];
+  if (state.group) pool = pool.filter(i => (i.category || '') === state.group);
+  const ql = q.toLowerCase();
+  const matches = pool.filter(i =>
+    (i.name || '').toLowerCase().includes(ql) ||
+    (i.article || '').toLowerCase().includes(ql) ||
+    (i.code || '').toLowerCase().includes(ql)
+  ).slice(0, 12);
+  list.innerHTML = matches.length
+    ? matches.map(m => `<div class="ac-item" onclick="pickProduct('${m.nom_key}')">
+        <div>${hl(m.name, q)}</div>
+        ${m.article ? `<div class="art">арт. ${hl(m.article, q)}</div>` : ''}
+      </div>`).join('')
+    : `<div class="ac-item"><span class="empty-row">Нічого не знайдено</span></div>`;
+  list.classList.add('open');
+  render(); // live substring scope
+}
+function pickProduct(nomKey) {
+  const it = DATA && DATA.items.find(i => i.nom_key === nomKey);
+  if (!it) return;
+  state.productKey = nomKey;
+  document.getElementById('searchIn').value = it.name;
+  document.getElementById('acClear').style.display = 'flex';
+  document.getElementById('acList').classList.remove('open');
+  render();
+}
+function clearProduct() {
+  state.productKey = null;
+  const inp = document.getElementById('searchIn');
+  inp.value = '';
+  document.getElementById('acClear').style.display = 'none';
+  document.getElementById('acList').classList.remove('open');
+  inp.focus();
+  render();
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.ac-wrap')) document.getElementById('acList')?.classList.remove('open');
+});
+
+// Populate group selector from categories present in stock
+function populateGroups() {
+  const sel = document.getElementById('groupSel');
+  if (!sel || !DATA) return;
+  const counts = new Map();
+  for (const it of DATA.items) {
+    const g = it.category || '';
+    if (g) counts.set(g, (counts.get(g) || 0) + 1);
+  }
+  const groups = [...counts.keys()].sort((a, b) => a.localeCompare(b, 'uk'));
+  let html = '<option value="">Всі групи</option>';
+  for (const g of groups) html += `<option value="${esc(g)}">${esc(g)} (${counts.get(g)})</option>`;
+  sel.innerHTML = html;
+  if (state.group && counts.has(state.group)) sel.value = state.group;
+  else { state.group = ''; sel.value = ''; }
+}
+
+// Items in the current selection scope (group ∧ product/search ∧ ABC).
+// Status is the breakdown dimension → applied to the table only, not the scope.
+function scopedItems() {
+  let items = DATA.items.slice();
+  if (state.group) items = items.filter(i => (i.category || '') === state.group);
+  if (state.productKey) {
+    items = items.filter(i => i.nom_key === state.productKey);
+  } else {
+    const q = (document.getElementById('searchIn')?.value || '').toLowerCase().trim();
+    if (q) items = items.filter(i =>
+      (i.name || '').toLowerCase().includes(q) ||
+      (i.article || '').toLowerCase().includes(q) ||
+      (i.code || '').toLowerCase().includes(q));
+  }
+  if (state.abcFilter) items = items.filter(i => i.abc === state.abcFilter);
+  return items;
+}
+
+// Recompute summary KPIs over an arbitrary item subset (mirrors worker §8).
+function computeSummary(items) {
+  let totSku = 0, totStockVal = 0, totCogs = 0, totGm = 0, totExcess = 0;
+  let deadSku = 0, deadVal = 0, slowSku = 0, slowVal = 0;
+  for (const it of items) {
+    totSku++;
+    totStockVal += it.stock_val || 0;
+    totCogs += it.cogs_365d || 0;
+    totGm += it.gm_365d || 0;
+    totExcess += it.excess_val || 0;
+    if (it.status === 'dead') { deadSku++; deadVal += it.stock_val || 0; }
+    if (it.status === 'slow') { slowSku++; slowVal += it.stock_val || 0; }
+  }
+  const itr = totStockVal > 0 ? totCogs / totStockVal : null;
+  const dsi = (itr != null && itr > 0) ? Math.round(365 / itr) : null;
+  const gmroi = totStockVal > 0 ? totGm / totStockVal : null;
+  return {
+    total_sku: totSku,
+    stock_value_usd: totStockVal,
+    itr, dsi, gmroi,
+    dead: { sku: deadSku, value_usd: deadVal },
+    slow: { sku: slowSku, value_usd: slowVal },
+    excess_value_usd: totExcess,
+  };
+}
 
 async function load() {
   document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
@@ -200,6 +341,7 @@ async function load() {
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     DATA = await r.json();
+    populateGroups();
     render();
   } catch (e) {
     document.getElementById('body').innerHTML = `<div class="error">${e.message}</div>`;
@@ -208,7 +350,8 @@ async function load() {
 
 function render() {
   if (!DATA) return;
-  const s = DATA.summary;
+  const scoped = scopedItems();         // group ∧ product/search ∧ ABC
+  const s = computeSummary(scoped);     // KPIs follow the selection
 
   // KPI cards
   document.getElementById('kpis').innerHTML = `<div class="kpi-row">
@@ -248,7 +391,7 @@ function render() {
   const statuses = ['fast', 'normal', 'slow', 'dead'];
   const byStatus = {};
   for (const st of statuses) byStatus[st] = { sku: 0, val: 0 };
-  for (const it of DATA.items) {
+  for (const it of scoped) {
     const b = byStatus[it.status];
     if (b) { b.sku++; b.val += it.stock_val || 0; }
   }
@@ -266,16 +409,9 @@ function render() {
   stHtml += '</div>';
   document.getElementById('statusCards').innerHTML = stHtml;
 
-  // Filter items
-  let items = DATA.items.slice();
+  // Table rows = scope narrowed by the status card (status is table-only)
+  let items = scoped.slice();
   if (state.statusFilter) items = items.filter(i => i.status === state.statusFilter);
-  if (state.abcFilter) items = items.filter(i => i.abc === state.abcFilter);
-  const q = (document.getElementById('searchIn')?.value || '').toLowerCase().trim();
-  if (q) items = items.filter(i =>
-    (i.name || '').toLowerCase().includes(q) ||
-    (i.article || '').toLowerCase().includes(q) ||
-    (i.code || '').toLowerCase().includes(q)
-  );
 
   // Sort
   items.sort((a, b) => {
