@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Дилери · Доступи</title>
+<script>
+  try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
+</script>
+<script src="auth.js?v=mobhdr20260430"></script>
+<script src="header.js?v=mobhdr20260430"></script>
+<link rel="stylesheet" href="theme.css">
+<style>
+* { box-sizing: border-box }
+html, body { margin:0; padding:0 }
+body { font-family:'Inter',-apple-system,sans-serif; background: var(--bg); color: var(--text); min-height:100vh }
+
+.page { max-width: 1100px; margin: 28px auto; padding: 0 20px; }
+.page h1 { font-size: 22px; margin: 0 0 4px }
+.page .sub { color: var(--text2); margin: 0 0 24px; font-size: 14px }
+
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-bottom: 22px; }
+.card-head { display:flex; align-items:center; gap:12px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+.card-head h2 { margin:0; font-size: 15px; font-weight: 600; }
+.card-head .count { color: var(--text3); font-size: 12px; }
+.card-body { padding: 18px; }
+
+.frm { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.fld { display: flex; flex-direction: column; gap: 6px; }
+.fld.full { grid-column: 1 / -1; }
+.fld label { font-size: 12px; color: var(--text3); }
+.fld label .req { color: var(--accent); }
+.fld input, .fld textarea {
+  background: var(--card2); border:1px solid var(--border); color:var(--text);
+  border-radius: 10px; padding: 9px 12px; font: inherit; font-size: 14px; width: 100%;
+}
+.fld textarea { resize: vertical; min-height: 54px; }
+.fld input:focus, .fld textarea:focus { outline: none; border-color: var(--accent); }
+.frm-foot { display:flex; align-items:center; gap: 14px; margin-top: 16px; }
+
+.result { display:none; margin-top: 16px; padding: 14px 16px; border:1px solid var(--border); border-radius: 12px; background: var(--card2); }
+.result.show { display:block; }
+.result .lbl { font-size: 12px; color: var(--text3); margin-bottom: 6px; }
+.result .link-row { display:flex; gap: 10px; align-items:center; }
+.result code { flex:1; font-family: ui-monospace, monospace; font-size: 13px; word-break: break-all; color: var(--text); }
+
+table { width: 100%; border-collapse: collapse; }
+thead th { text-align:left; font-size: 11px; text-transform: uppercase; letter-spacing:.06em;
+  color: var(--text3); padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--card2); }
+thead th.r, tbody td.r { text-align: right; }
+tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 14px; vertical-align: middle; }
+tbody tr:last-child td { border-bottom: 0 }
+tbody tr:hover { background: rgba(154,180,255,.04); }
+tbody tr.off { opacity: .5; }
+.company { font-weight: 600; }
+.muted { color: var(--text3); font-size: 12px; }
+.disc { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+.badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--card2); color: var(--text2); border:1px solid var(--border); }
+.badge.on { color: var(--green, #4caf7d); border-color: rgba(76,175,125,.4); }
+.row-actions { display:flex; gap: 8px; justify-content:flex-end; }
+.empty { padding: 28px; text-align:center; color: var(--text3); font-size: 14px; }
+
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--card); border:1px solid var(--border); color: var(--text); padding: 10px 18px;
+  border-radius: 10px; font-size: 14px; opacity: 0; transition: all .2s; pointer-events:none; z-index: 999; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.err { border-color: var(--red, #e0564a); }
+
+@media (max-width: 680px) { .frm { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div id="appHeader"></div>
+
+<div class="page">
+  <h1>Дилерські доступи</h1>
+  <p class="sub">Видача персональних посилань у кабінет react.ink/cabinet. Ціни = гуртовий прайс мінус індивідуальний % знижки.</p>
+
+  <div class="card">
+    <div class="card-head"><h2>Видати доступ</h2></div>
+    <div class="card-body">
+      <form id="frm" class="frm">
+        <div class="fld">
+          <label>Компанія <span class="req">*</span></label>
+          <input name="company" placeholder="ТОВ «Сонячний дім»" required>
+        </div>
+        <div class="fld">
+          <label>Місто</label>
+          <input name="city" placeholder="Київ">
+        </div>
+        <div class="fld">
+          <label>Знижка, %</label>
+          <input name="discount_pct" type="number" min="0" max="90" step="0.5" placeholder="0">
+        </div>
+        <div class="fld">
+          <label>Менеджер</label>
+          <input name="manager_name" placeholder="Катерина">
+        </div>
+        <div class="fld">
+          <label>Контакт менеджера</label>
+          <input name="manager_contact" placeholder="+380 67 577 73 40">
+        </div>
+        <div class="fld">
+          <label>ЄДРПОУ / ref 1С (опц.)</label>
+          <input name="counterparty_ref_key" placeholder="—">
+        </div>
+        <div class="fld full">
+          <label>Нотатка (внутрішня)</label>
+          <textarea name="note" placeholder="напр. умови, домовленості"></textarea>
+        </div>
+        <div class="frm-foot full">
+          <button type="submit" class="btn btn--primary" id="createBtn">Створити доступ</button>
+        </div>
+      </form>
+      <div class="result" id="result">
+        <div class="lbl">Готово. Надішліть це посилання дилеру:</div>
+        <div class="link-row">
+          <code id="resultLink"></code>
+          <button class="btn btn--secondary btn--sm" id="copyResult">Копіювати</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Дилери</h2><span class="count" id="count"></span></div>
+    <div id="listWrap">
+      <div class="empty">Завантаження…</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'https://price-api.doskevich.workers.dev/';
+const $ = (id) => document.getElementById(id);
+
+function toast(msg, err) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!err);
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 2400);
+}
+function cabLink(token) { return 'https://react.ink/cabinet?token=' + token; }
+async function copy(text) {
+  try { await navigator.clipboard.writeText(text); toast('Скопійовано'); }
+  catch (_) { toast('Не вдалося скопіювати', true); }
+}
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso.replace(' ', 'T') + 'Z');
+  if (isNaN(d)) return iso;
+  return d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: '2-digit' });
+}
+function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+Auth.require('admin').then(user => {
+  AppHeader.mount({ active: 'dealers', user });
+  loadList();
+});
+
+$('frm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const payload = Object.fromEntries(fd.entries());
+  payload.discount_pct = Number(payload.discount_pct) || 0;
+  if (!payload.company.trim()) return toast('Вкажіть компанію', true);
+  const btn = $('createBtn');
+  btn.disabled = true; const lbl = btn.textContent; btn.textContent = 'Створюємо…';
+  try {
+    const r = await fetch(`${API}?action=_admin_dealer_create`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    const out = await r.json();
+    if (!r.ok || !out.ok) throw new Error(out.error || 'fail');
+    $('resultLink').textContent = out.link;
+    $('result').classList.add('show');
+    $('copyResult').onclick = () => copy(out.link);
+    e.target.reset();
+    toast('Доступ створено');
+    loadList();
+  } catch (err) {
+    toast('Помилка: ' + err.message, true);
+  } finally {
+    btn.disabled = false; btn.textContent = lbl;
+  }
+});
+
+async function loadList() {
+  try {
+    const r = await fetch(`${API}?action=_admin_dealer_list`);
+    const out = await r.json();
+    if (!out.ok) throw new Error(out.error || 'fail');
+    renderList(out.dealers || []);
+  } catch (err) {
+    $('listWrap').innerHTML = `<div class="empty">Не вдалося завантажити: ${esc(err.message)}</div>`;
+  }
+}
+
+function renderList(rows) {
+  $('count').textContent = rows.length ? `${rows.length}` : '';
+  if (!rows.length) { $('listWrap').innerHTML = '<div class="empty">Поки немає виданих доступів</div>'; return; }
+  let html = `<table><thead><tr>
+    <th>Компанія</th><th>Менеджер</th><th class="r">Знижка</th><th>Статус</th><th>Вхід</th><th class="r"></th>
+    </tr></thead><tbody>`;
+  for (const d of rows) {
+    const active = Number(d.active) === 1;
+    html += `<tr class="${active ? '' : 'off'}">
+      <td><span class="company">${esc(d.company)}</span>${d.city ? `<span class="muted"> · ${esc(d.city)}</span>` : ''}</td>
+      <td>${esc(d.manager_name || '—')}${d.manager_contact ? `<span class="muted"><br>${esc(d.manager_contact)}</span>` : ''}</td>
+      <td class="r"><span class="disc">${d.discount_pct ? '−' + d.discount_pct + '%' : '0'}</span></td>
+      <td><span class="badge ${active ? 'on' : ''}">${active ? 'активний' : 'відкликаний'}</span></td>
+      <td class="muted">${fmtDate(d.last_login_at)}</td>
+      <td class="r"><div class="row-actions">
+        <button class="btn btn--ghost btn--sm" data-copy="${esc(d.token)}">Лінк</button>
+        <button class="btn ${active ? 'btn--danger' : 'btn--secondary'} btn--sm" data-token="${esc(d.token)}" data-active="${active ? 0 : 1}">${active ? 'Відкликати' : 'Відновити'}</button>
+      </div></td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  $('listWrap').innerHTML = html;
+  $('listWrap').querySelectorAll('[data-copy]').forEach(b => b.onclick = () => copy(cabLink(b.dataset.copy)));
+  $('listWrap').querySelectorAll('[data-token]').forEach(b => b.onclick = () => revoke(b.dataset.token, Number(b.dataset.active)));
+}
+
+async function revoke(token, active) {
+  try {
+    const r = await fetch(`${API}?action=_admin_dealer_revoke`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, active }),
+    });
+    const out = await r.json();
+    if (!out.ok) throw new Error(out.error || 'fail');
+    toast(active ? 'Доступ відновлено' : 'Доступ відкликано');
+    loadList();
+  } catch (err) { toast('Помилка: ' + err.message, true); }
+}
+</script>
+</body>
+</html>
