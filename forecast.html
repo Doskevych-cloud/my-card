@@ -195,6 +195,31 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 .shipments{grid-column:span 8}
 .warehouses{grid-column:span 4}
 
+/* Supply plan (надходження від постачальників) */
+.supply{grid-column:span 12}
+.sp-list{display:flex;flex-direction:column}
+.sp-row{display:grid;grid-template-columns:104px 1fr auto 110px;gap:16px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}
+.sp-row:first-child{padding-top:2px}
+.sp-row:last-child{border-bottom:0}
+.sp-date .d{font-family:var(--mono);font-size:14px;color:var(--fg);font-weight:500;white-space:nowrap}
+.sp-date .rel{font-family:var(--mono);font-size:10.5px;color:var(--mute);margin-top:3px;white-space:nowrap}
+.sp-row.next .sp-date .d{color:var(--pos)}
+.sp-row.overdue .sp-date .d{color:var(--neg)}
+.sp-row.overdue .sp-date .rel{color:var(--neg);opacity:.8}
+.sp-who .name{font-size:12.5px;color:var(--fg-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-who .sub{font-family:var(--mono);font-size:11px;color:var(--mute);margin-top:3px;display:flex;gap:10px}
+.sp-m{display:flex;gap:14px;font-family:var(--mono);font-size:12.5px;color:var(--fg-2);justify-content:flex-end}
+.sp-m .it{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.sp-m .sw{width:9px;height:9px;border-radius:2px;flex:0 0 9px}
+.sp-m .sw.b{background:var(--bar-fill)}
+.sp-m .sw.r{background:var(--neg)}
+.sp-sum{font-family:var(--mono);font-size:13px;color:var(--fg);text-align:right;white-space:nowrap}
+.sp-row.muted{opacity:.6}
+.sp-more{font-family:var(--mono);font-size:11.5px;color:var(--mute);padding:11px 0 1px;cursor:pointer;user-select:none;transition:color .1s}
+.sp-more:hover{color:var(--accent)}
+.sp-empty{color:var(--mute);font-size:12.5px;padding:6px 0}
+@media(max-width:720px){.sp-row{grid-template-columns:1fr;gap:5px;padding:12px 0}.sp-date{display:flex;align-items:baseline;gap:8px}.sp-date .rel{margin-top:0}.sp-m{justify-content:flex-start}.sp-sum{text-align:left}}
+
 /* Warehouses table */
 table.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
 .tbl th,.tbl td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
@@ -361,6 +386,14 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
       </div>
     </div>
 
+    <div class="card supply" id="supplyPlanCard">
+      <div class="card-h">
+        <div class="title">Поставки кабелю — план надходжень</div>
+        <div class="meta" id="supplyMeta">—</div>
+      </div>
+      <div class="card-b"><div class="loading">Завантаження…</div></div>
+    </div>
+
     <div class="card shipments" id="shipmentsCard">
       <div class="card-h">
         <div class="title">Відвантаження — 30 днів
@@ -454,6 +487,13 @@ function fmtDate(iso) {
 function fmtNow() {
   const d = new Date();
   return d.toLocaleDateString('uk-UA',{day:'2-digit',month:'short'}) + ' · ' + d.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
+}
+// Дата з роком, якщо рік не поточний (для плану поставок: «26 чер» / «31 бер ’25»).
+function fmtDateY(iso) {
+  if (!iso) return 'без дати';
+  const d = new Date(iso);
+  const base = d.toLocaleDateString('uk-UA', { day:'2-digit', month:'short' }).replace('.','');
+  return d.getFullYear() === new Date().getFullYear() ? base : `${base} ’${String(d.getFullYear()).slice(2)}`;
 }
 function escapeHtml(s) {
   return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -591,6 +631,62 @@ function renderShipments(f) {
   </svg>`;
 
   body.innerHTML = `<div class="chart">${svg}</div>`;
+}
+
+// ─── Supply plan (надходження від постачальників) ───
+function spRow(r, opts = {}) {
+  const cls = [opts.next ? 'next' : '', r.overdue ? 'overdue' : '', opts.muted ? 'muted' : ''].filter(Boolean).join(' ');
+  const rel = r.daysLeft == null ? ''
+    : r.daysLeft > 0 ? `через ${r.daysLeft} дн`
+    : r.daysLeft === 0 ? 'сьогодні'
+    : `прострочено ${-r.daysLeft} дн`;
+  const m = [];
+  if (r.black > 0) m.push(`<span class="it"><i class="sw b"></i>${fmt(r.black)}</span>`);
+  if (r.red > 0)   m.push(`<span class="it"><i class="sw r"></i>${fmt(r.red)}</span>`);
+  return `<div class="sp-row ${cls}">
+    <div class="sp-date"><div class="d">${fmtDateY(r.arrival)}</div><div class="rel">${rel}</div></div>
+    <div class="sp-who"><div class="name">${r.supplier}</div><div class="sub"><span>${r.number || '—'}</span><span>${r.org}</span></div></div>
+    <div class="sp-m">${m.join('') || '<span class="it">—</span>'}</div>
+    <div class="sp-sum">${fmt(r.sum)}&nbsp;${r.sym || ''}</div>
+  </div>`;
+}
+
+function renderSupplyPlan(p) {
+  const card = document.getElementById('supplyPlanCard');
+  const body = card.querySelector('.card-b');
+  const meta = document.getElementById('supplyMeta');
+  const rows = (p && p.rows) || [];
+  if (!rows.length) {
+    meta.textContent = '—';
+    body.innerHTML = '<div class="sp-empty">Немає відкритих замовлень постачальнику по кабелю</div>';
+    return;
+  }
+  const upcoming = rows.filter(r => !r.overdue);
+  const overdue = rows.filter(r => r.overdue);
+  meta.textContent = upcoming.length
+    ? `очікується ${upcoming.length} · ${fmt(p.summary.upcomingM)} м`
+    : `прострочено ${overdue.length}`;
+
+  let html = '<div class="sp-list">';
+  html += upcoming.length
+    ? upcoming.map((r, i) => spRow(r, { next: i === 0 })).join('')
+    : '<div class="sp-empty">Попереду поставок немає — усі відкриті замовлення прострочені</div>';
+
+  if (overdue.length) {
+    const lbl = n => `Прострочені · не отримані (${overdue.length}) ${n}`;
+    html += `<div class="sp-more" id="spOverToggle">${lbl('▾')}</div>`;
+    html += `<div id="spOverList" style="display:none">${overdue.map(r => spRow(r, { muted: true })).join('')}</div>`;
+    body.innerHTML = html + '</div>';
+    const tog = document.getElementById('spOverToggle');
+    tog.onclick = () => {
+      const list = document.getElementById('spOverList');
+      const show = list.style.display === 'none';
+      list.style.display = show ? '' : 'none';
+      tog.textContent = lbl(show ? '▴' : '▾');
+    };
+    return;
+  }
+  body.innerHTML = html + '</div>';
 }
 
 // ─── KPI strip ───
@@ -1079,6 +1175,18 @@ async function loadForecast() {
   }
 }
 
+async function loadSupplyPlan() {
+  const body = document.getElementById('supplyPlanCard').querySelector('.card-b');
+  try {
+    const p = await fetch(API + '?action=cable_supply_plan').then(r => r.json());
+    if (p.error) throw new Error(p.error);
+    renderSupplyPlan(p);
+  } catch (e) {
+    document.getElementById('supplyMeta').textContent = '—';
+    body.innerHTML = `<div class="error">${e.message}</div>`;
+  }
+}
+
 async function loadCablePrice() {
   try {
     const r = await fetch(API + '?action=copper_avg').then(r => r.json());
@@ -1132,6 +1240,7 @@ async function loadMarket() {
 
 document.getElementById('updatedAt').textContent = fmtNow();
 loadForecast();
+loadSupplyPlan();
 loadCablePrice();
 loadMarket();
 </script>
