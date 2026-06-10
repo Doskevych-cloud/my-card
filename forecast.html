@@ -462,6 +462,8 @@ const TRUCK_KM = 288;
 const TRUCK_EU = 2000;
 const TRUCK_UA = 1000;
 const VAT_RATE = 0.20;
+const CU_SURCHARGE = 1.01; // постачальник рахує мідь як середньомісячна ціна +1%
+const CU_SURCHARGE_LBL = '+' + Math.round((CU_SURCHARGE - 1) * 100) + '%';
 const TIERS = [
   { id:'t1', name:'Від 0,5 км', coil:'Від 1 бухти', markup: 1.14, base:true },
   { id:'t6', name:'Від 3 км',   coil:'Від 6 бухт', markup: 1.13 },
@@ -809,7 +811,7 @@ function updateCalcFlow() {
   const months = (copperAvgData.months || []).slice(0, 12);
   const m = months.find(x => x.ym === calcMonth) || months[0];
   if (!m) return;
-  calcMonthCu = m.price;
+  calcMonthCu = m.price * CU_SURCHARGE;
   const overridden = cuOverride != null;
   const cu = overridden ? cuOverride : calcMonthCu;
   const f = computeFlow(cu);
@@ -840,7 +842,7 @@ function updateCalcFlow() {
         <div class="stage-h"><span class="num">1</span><div><div class="slbl">Постачальник</div></div></div>
         <div class="stage-body">
           <div class="row-l"><span class="rl">Базова ціна</span><span class="rv">${nf(CABLE.base)}<span class="u">€/км</span></span></div>
-          <div class="row-l"><span class="rl rl-cu">Ціна на мідь <span class="formula" id="cf_cuLabel">${overridden ? 'вручну' : 'сер. за ' + monthLabel(calcMonth)}</span><button type="button" class="cu-reset" id="cf_cuReset" title="Повернути середнє за місяць" style="${overridden ? '' : 'display:none'}">↺ авто</button></span><span class="rv"><input id="cf_cuInput" class="cu-input" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="${cuInputFmt(cu)}" aria-label="Ціна на мідь — редагується"><span class="u">€/100кг</span></span></div>
+          <div class="row-l"><span class="rl rl-cu">Ціна на мідь <span class="formula" id="cf_cuLabel">${overridden ? 'вручну' : 'сер. за ' + monthLabel(calcMonth) + ' ' + CU_SURCHARGE_LBL}</span><button type="button" class="cu-reset" id="cf_cuReset" title="Повернути середнє за місяць" style="${overridden ? '' : 'display:none'}">↺ авто</button></span><span class="rv"><input id="cf_cuInput" class="cu-input" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="${cuInputFmt(cu)}" aria-label="Ціна на мідь — редагується"><span class="u">€/100кг</span></span></div>
           <div class="row-l"><span class="rl">Мідь на 1 км кабелю <span class="formula">× ${(CABLE.weight/100).toFixed(3)}</span></span><span class="rv"><span id="cf_cuPerKm">${nf(f.copperPerKm)}</span><span class="u">€/км</span></span></div>
         </div>
         <div class="stage-total">
@@ -871,7 +873,7 @@ function updateCalcFlow() {
       </div>
     </div>
     <div class="flow-foot">
-      <span>1 фура = ${TRUCK_KM} км кабелю · ПДВ нарахований після логістики · мідь: <code id="cf_foot">${overridden ? 'вручну' : monthLabel(calcMonth)}</code></span>
+      <span>1 фура = ${TRUCK_KM} км кабелю · ПДВ нарахований після логістики · мідь: <code id="cf_foot">${overridden ? 'вручну' : monthLabel(calcMonth) + ' ' + CU_SURCHARGE_LBL}</code></span>
     </div>`;
 
   // ── редагування ціни на мідь: live-перерахунок без ре-рендеру ──
@@ -883,9 +885,9 @@ function updateCalcFlow() {
       cuOverride = (isFinite(v) && v > 0) ? v : null;
       applyFlow(cuOverride != null ? cuOverride : calcMonthCu);
       const on = cuOverride != null;
-      const lbl = document.getElementById('cf_cuLabel'); if (lbl) lbl.textContent = on ? 'вручну' : 'сер. за ' + monthLabel(calcMonth);
+      const lbl = document.getElementById('cf_cuLabel'); if (lbl) lbl.textContent = on ? 'вручну' : 'сер. за ' + monthLabel(calcMonth) + ' ' + CU_SURCHARGE_LBL;
       const rst = document.getElementById('cf_cuReset'); if (rst) rst.style.display = on ? '' : 'none';
-      const foot = document.getElementById('cf_foot'); if (foot) foot.textContent = on ? 'вручну' : monthLabel(calcMonth);
+      const foot = document.getElementById('cf_foot'); if (foot) foot.textContent = on ? 'вручну' : monthLabel(calcMonth) + ' ' + CU_SURCHARGE_LBL;
     });
   }
   const rstBtn = document.getElementById('cf_cuReset');
