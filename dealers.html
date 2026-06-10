@@ -101,6 +101,10 @@ tbody tr.off { opacity: .5; }
           <input name="manager_contact" placeholder="+380 67 577 73 40">
         </div>
         <div class="fld">
+          <label>Google-пошта дилера (для входу через Google)</label>
+          <input name="email" type="email" placeholder="dealer@gmail.com">
+        </div>
+        <div class="fld">
           <label>ЄДРПОУ / ref 1С (опц.)</label>
           <input name="counterparty_ref_key" placeholder="—">
         </div>
@@ -209,7 +213,7 @@ function renderList(rows) {
   for (const d of rows) {
     const active = Number(d.active) === 1;
     html += `<tr class="${active ? '' : 'off'}">
-      <td><span class="company">${esc(d.company)}</span>${d.city ? `<span class="muted"> · ${esc(d.city)}</span>` : ''}</td>
+      <td><span class="company">${esc(d.company)}</span>${d.city ? `<span class="muted"> · ${esc(d.city)}</span>` : ''}${d.email ? `<span class="muted"><br>${esc(d.email)}</span>` : ''}</td>
       <td>${esc(d.manager_name || '—')}${d.manager_contact ? `<span class="muted"><br>${esc(d.manager_contact)}</span>` : ''}</td>
       <td class="r"><span class="disc">${d.discount_pct ? '−' + d.discount_pct + '%' : '0'}</span></td>
       <td><span class="badge ${active ? 'on' : ''}">${active ? 'активний' : 'відкликаний'}</span></td>
