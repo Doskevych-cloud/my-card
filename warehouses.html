@@ -14,6 +14,8 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/uk.js"></script>
 <script src="date-range.js?v=20260522"></script>
+<!-- SheetJS (xlsx) for Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="theme.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -192,6 +194,7 @@ a{color:inherit;text-decoration:none}
 
       <button class="btn btn--secondary btn--sm" onclick="expandAll()">⊞ Розгорнути</button>
       <button class="btn btn--secondary btn--sm" onclick="collapseAll()">⊟ Згорнути</button>
+      <button class="btn btn--secondary btn--sm" onclick="downloadXLSX()" title="Вигрузити відфільтроване в Excel">⬇ Excel</button>
 
       <span class="wh-tags" id="whIncludeTags">
         <input type="text" id="searchIn" placeholder="🔎 Пошук по товару чи клієнту…" autocomplete="off">
@@ -527,6 +530,85 @@ function render() {
   else renderPerWh();
 }
 
+// ─── Експорт у Excel (вигрузка того, що відфільтроване на екрані) ───
+function downloadXLSX() {
+  if (typeof XLSX === 'undefined') {
+    alert('Excel-бібліотека не завантажилась. Перевірте інтернет-з\'єднання.');
+    return;
+  }
+  if (!state.data) { alert('Немає даних для експорту'); return; }
+
+  const asOf      = state.asOf || _todayISO();
+  const orgLabel  = state.org || 'Всі';
+  const viewLabel = state.view === 'combined' ? 'Разом' : 'За складами';
+  const dt        = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' });
+
+  const stockAoa = [];
+  const resAoa   = [];
+
+  if (state.view === 'combined') {
+    const items = getCombinedItems();
+    if (!items.length) { alert('Немає даних для експорту'); return; }
+    stockAoa.push(['Товар', 'Всього', 'Резерв', 'Вільно']);
+    resAoa.push(['Товар', 'Клієнт', '№ замовлення', 'Дата', 'Кількість']);
+    items.forEach(s => {
+      stockAoa.push([s.name, s.total || 0, s.reserve || 0, s.free || 0]);
+      (s.reserves || []).forEach(r => {
+        resAoa.push([s.name, r.client || '', r.orderNumber || '', fmtDate(r.orderDate), r.qty || 0]);
+      });
+    });
+  } else {
+    const sections = getFilteredWarehouses().filter(x => x.items.length);
+    if (!sections.length) { alert('Немає даних для експорту'); return; }
+    stockAoa.push(['Склад', 'Організація', 'Товар', 'Всього', 'Резерв', 'Вільно']);
+    resAoa.push(['Склад', 'Товар', 'Клієнт', '№ замовлення', 'Дата', 'Кількість']);
+    sections.forEach(({ w, items }) => {
+      items.forEach(it => {
+        stockAoa.push([w.name, w.org, it.name, it.total || 0, it.reserve || 0, it.free || 0]);
+        const rs = (w.reservesByItem && w.reservesByItem[it.name]) || [];
+        rs.forEach(r => resAoa.push([w.name, it.name, r.client || '', r.orderNumber || '', fmtDate(r.orderDate), r.qty || 0]));
+      });
+    });
+  }
+
+  const wb = XLSX.utils.book_new();
+
+  // Мета-аркуш з параметрами вигрузки
+  const meta = [
+    ['Склад · залишки'],
+    [],
+    ['На дату', asOf],
+    ['Вигляд', viewLabel],
+    ['Організація', orgLabel],
+    ['Показувати відсутні', state.showEmpty ? 'так' : 'ні'],
+  ];
+  if ((state.includeList || []).length) meta.push(['Фільтр товарів', state.includeList.join(', ')]);
+  else if (state.search)               meta.push(['Пошук', state.search]);
+  meta.push([], ['Згенеровано', dt]);
+  const metaWs = XLSX.utils.aoa_to_sheet(meta);
+  metaWs['!cols'] = [{ wch: 22 }, { wch: 50 }];
+  XLSX.utils.book_append_sheet(wb, metaWs, 'Звіт');
+
+  // Аркуш «Залишки»
+  const stockWs = XLSX.utils.aoa_to_sheet(stockAoa);
+  stockWs['!cols'] = state.view === 'combined'
+    ? [{ wch: 46 }, { wch: 12 }, { wch: 12 }, { wch: 12 }]
+    : [{ wch: 28 }, { wch: 12 }, { wch: 40 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+  XLSX.utils.book_append_sheet(wb, stockWs, 'Залишки');
+
+  // Аркуш «Резерви» — лише якщо є резерви
+  if (resAoa.length > 1) {
+    const resWs = XLSX.utils.aoa_to_sheet(resAoa);
+    resWs['!cols'] = state.view === 'combined'
+      ? [{ wch: 40 }, { wch: 28 }, { wch: 16 }, { wch: 14 }, { wch: 12 }]
+      : [{ wch: 24 }, { wch: 36 }, { wch: 26 }, { wch: 16 }, { wch: 14 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, resWs, 'Резерви');
+  }
+
+  const filename = `Склад залишки · ${asOf} · ${viewLabel} · ${orgLabel}.xlsx`;
+  XLSX.writeFile(wb, filename);
+}
+
 function renderCombined() {
   const items = getCombinedItems();
   if (!items.length) {
@@ -549,17 +631,14 @@ function renderCombined() {
   bindItemRows();
 }
 
-function renderPerWh() {
-  let warehouses = (state.data.warehouses || []).filter(w => !state.org || w.org === state.org);
-  if (!warehouses.length) {
-    document.getElementById('body').innerHTML = '<div class="empty">Складів не знайдено</div>';
-    return;
-  }
-  const sections = warehouses.map(w => {
-    const isTransit = w.name.startsWith(IN_TRANSIT_MARKER);
+// Org + showEmpty + includeList/search фільтри по складах — спільний шлях для
+// renderPerWh і експорту, щоб вигрузка дорівнювала тому, що на екрані.
+function getFilteredWarehouses() {
+  const warehouses = (state.data.warehouses || []).filter(w => !state.org || w.org === state.org);
+  const incSet = new Set((state.includeList || []).map(n => n.toLowerCase()));
+  return warehouses.map(w => {
     let items = w.items || [];
     if (!state.showEmpty) items = items.filter(it => it.total > 0);
-    const incSet = new Set((state.includeList || []).map(n => n.toLowerCase()));
     if (incSet.size) {
       items = items.filter(it => incSet.has((it.name || '').toLowerCase()));
     } else if (state.search) {
@@ -569,7 +648,19 @@ function renderPerWh() {
                rs.some(r => (r.client||'').toLowerCase().includes(state.search) || (r.orderNumber||'').toLowerCase().includes(state.search));
       });
     }
+    return { w, items };
+  });
+}
+
+function renderPerWh() {
+  const all = getFilteredWarehouses();
+  if (!all.length) {
+    document.getElementById('body').innerHTML = '<div class="empty">Складів не знайдено</div>';
+    return;
+  }
+  const sections = all.map(({ w, items }) => {
     if (!items.length) return '';
+    const isTransit = w.name.startsWith(IN_TRANSIT_MARKER);
     const totalTot = items.reduce((a, it) => a + it.total, 0);
     const totalRes = items.reduce((a, it) => a + it.reserve, 0);
     const rows = items.map(it => {
