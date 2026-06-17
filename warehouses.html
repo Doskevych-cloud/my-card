@@ -104,7 +104,7 @@ a{color:inherit;text-decoration:none}
 /* Рівень замовлення (під розкритим покупцем) */
 .tree-tbl tr.order-row td{background:var(--bg3);padding:6px 12px 6px 58px;font-size:11px;color:var(--text2);border-bottom:1px solid var(--border)}
 .tree-tbl tr.order-row td:first-child{padding-left:58px}
-.tree-tbl tr.order-row .ord{color:var(--text)}
+.tree-tbl tr.order-row .client{color:var(--text)}
 .tree-tbl tr.order-row .meta{color:var(--text3);font-size:10.5px;margin-left:8px}
 .tree-tbl td.qty-pos{color:var(--green);font-weight:600}
 .tree-tbl td.qty-res{color:var(--blue);font-weight:600}
@@ -678,8 +678,8 @@ function renderReserveTree(itemKey, reserves) {
     if (copen) {
       out += g.orders.map(r => `<tr class="order-row">
         <td>
-          <span class="ord">${r.orderNumber ? esc(r.orderNumber) : '—'}</span>
-          <span class="meta">${fmtDate(r.orderDate)}</span>
+          <span class="client">${esc(g.client)}</span>
+          <span class="meta">${r.orderNumber ? esc(r.orderNumber) : '—'} · ${fmtDate(r.orderDate)}</span>
           ${whBreakdownHtml(r)}
         </td>
         <td></td>
