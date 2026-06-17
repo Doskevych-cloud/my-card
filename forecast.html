@@ -775,7 +775,8 @@ function renderCalcFlow(r) {
 
 // ── математика розрахунку: чиста функція, щоб і повний рендер, і live-перерахунок при редагуванні міді йшли з одного джерела ──
 const nf = (v, d) => v.toLocaleString('uk-UA', { minimumFractionDigits:d||2, maximumFractionDigits:d||2 });
-const usdCoilTxt = eur => (eurUsdRate ? fmt(Math.round(eur * eurUsdRate)) : '—'); // €-сума → $ за крос-курсом НБУ+1%
+const usdCoilTxt = eur => (eurUsdRate ? fmt(Math.round(eur * eurUsdRate)) : '—'); // €-сума → $ за крос-курсом НБУ+1% (округлено, для тірок)
+const usdCoilNf  = eur => (eurUsdRate ? nf(eur * eurUsdRate) : '—');             // те саме з копійками — для стейдж-тоталів
 const monthLabel = ym => { const [y,mo] = String(ym||'').split('-'); return (UA_MONTHS[+mo-1]||mo||'') + ' ' + (y||''); };
 const cuInputFmt = v => v.toLocaleString('uk-UA', { useGrouping:false, minimumFractionDigits:2, maximumFractionDigits:2 });
 const parseCu = s => parseFloat(String(s).replace(/\s/g,'').replace(',', '.'));
@@ -800,10 +801,12 @@ function applyFlow(cu) {
   set('cf_cuPerKm', nf(f.copperPerKm));
   set('cf_supTot',  nf(f.supplierPerM, 4));
   set('cf_supCoil', nf(f.supplierPerM * COIL_M));
+  set('cf_supCoilUsd', usdCoilNf(f.supplierPerM * COIL_M));
   set('cf_kSup',    nf(f.supplierPerM, 4));
   set('cf_kVat',    nf(f.vat, 4));
   set('cf_kyivTot', nf(f.kyivPerM, 4));
   set('cf_kyivCoil',nf(f.kyivPerM * COIL_M));
+  set('cf_kyivCoilUsd', usdCoilNf(f.kyivPerM * COIL_M));
   TIERS.forEach(t => {
     const perM = f.kyivPerM * t.markup;
     set('cf_m_' + t.id, perM.toFixed(2));
@@ -854,7 +857,7 @@ function updateCalcFlow() {
         <div class="stage-total">
           <div class="t-lbl">Ціна постачальника</div>
           <div class="t-val"><span id="cf_supTot">${nf(f.supplierPerM,4)}</span><span class="u">€/м</span></div>
-          <div class="t-sub"><span id="cf_supCoil">${nf(f.supplierPerM*COIL_M)}</span> €/бухта · 500 м</div>
+          <div class="t-sub"><span id="cf_supCoil">${nf(f.supplierPerM*COIL_M)}</span> €/бухта · <span id="cf_supCoilUsd">${usdCoilNf(f.supplierPerM*COIL_M)}</span> $/бухта · 500 м</div>
         </div>
       </div>
       ${arrow}
@@ -869,7 +872,7 @@ function updateCalcFlow() {
         <div class="stage-total">
           <div class="t-lbl">Ціна в Києві</div>
           <div class="t-val"><span id="cf_kyivTot">${nf(f.kyivPerM,4)}</span><span class="u">€/м</span></div>
-          <div class="t-sub"><span id="cf_kyivCoil">${nf(f.kyivPerM*COIL_M)}</span> €/бухта · 500 м</div>
+          <div class="t-sub"><span id="cf_kyivCoil">${nf(f.kyivPerM*COIL_M)}</span> €/бухта · <span id="cf_kyivCoilUsd">${usdCoilNf(f.kyivPerM*COIL_M)}</span> $/бухта · 500 м</div>
         </div>
       </div>
       ${arrow}
