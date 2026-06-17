@@ -160,7 +160,10 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 .tier-card .tier-tag.tag-pos{color:var(--pos)}
 .tier-card .tprice{grid-column:2;grid-row:1;font-family:var(--mono);font-size:16px;font-weight:500;color:var(--fg);letter-spacing:-.2px;text-align:right;display:flex;align-items:baseline;gap:3px;justify-content:flex-end}
 .tier-card .tprice .u{font-size:10px;color:var(--mute);font-weight:400}
-.tier-card .tmeta{grid-column:1/-1;grid-row:2;display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:10.5px;color:var(--mute)}
+.tier-card .tmeta{grid-column:1/-1;grid-row:2;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10.5px;color:var(--mute)}
+.tier-card .tprices{display:flex;flex-direction:column;align-items:flex-end;gap:2px;line-height:1.25}
+.tier-card .tprices .tp-eur{color:var(--fg-2)}
+.tier-card .tprices .tp-usd{color:var(--mute)}
 .tier-card .tmk{font-family:var(--mono);font-size:11px;color:var(--fg-2);letter-spacing:.2px}
 .dot-accent{width:5px;height:5px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px rgba(154,180,255,.18);display:inline-block}
 
@@ -834,7 +837,7 @@ function updateCalcFlow() {
         ${t.base ? '<span class="tier-tag tag-base">базова</span>' : `<span class="tier-tag tag-pos">${disc.toFixed(1)}%</span>`}
       </div>
       <div class="tprice"><span id="cf_m_${t.id}">${perM.toFixed(2)}</span><span class="u">€/м</span></div>
-      <div class="tmeta"><span>${t.coil}</span><span><span id="cf_c_${t.id}">${fmt(Math.round(perCoil))}</span> €/бухта · <span id="cf_cu_${t.id}">${usdCoilTxt(perCoil)}</span> $/бухта</span></div>
+      <div class="tmeta"><span class="tcoil">${t.coil}</span><span class="tprices"><span class="tp-eur"><span id="cf_c_${t.id}">${fmt(Math.round(perCoil))}</span> €/бухта</span><span class="tp-usd"><span id="cf_cu_${t.id}">${usdCoilTxt(perCoil)}</span> $/бухта</span></span></div>
     </div>`;
   }).join('');
 
