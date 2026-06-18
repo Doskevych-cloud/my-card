@@ -161,7 +161,7 @@ function fmtDate(iso) {
 }
 function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-Auth.require('admin').then(user => {
+Auth.require('dealers').then(user => {
   AppHeader.mount({ active: 'dealers', user });
   loadList();
 });
