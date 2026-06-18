@@ -66,6 +66,15 @@ tbody tr.off { opacity: .5; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast.err { border-color: var(--red, #e0564a); }
 
+.combo { position: relative; }
+.combo__list { position:absolute; z-index:30; top:calc(100% + 4px); left:0; right:0; margin:0; padding:5px; list-style:none;
+  background: var(--card); border:1px solid var(--border); border-radius:10px; box-shadow:0 18px 44px -20px rgba(0,0,0,.6);
+  max-height:240px; overflow-y:auto; }
+.combo__opt { display:flex; justify-content:space-between; gap:10px; padding:8px 10px; border-radius:7px; font-size:14px; color:var(--text); cursor:pointer; }
+.combo__opt.is-active { background: var(--card2); }
+.combo__opt .rgn { color: var(--text3); font-size:12px; white-space:nowrap; }
+.combo__empty { padding:10px; font-size:13px; color:var(--text3); text-align:center; }
+
 @media (max-width: 680px) { .frm { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -85,8 +94,12 @@ tbody tr.off { opacity: .5; }
           <input name="company" placeholder="ТОВ «Сонячний дім»" required>
         </div>
         <div class="fld">
-          <label>Місто</label>
-          <input name="city" placeholder="Київ">
+          <label>Місто / населений пункт</label>
+          <div class="combo" id="cityCombo">
+            <input name="city" id="f_city" placeholder="Почніть вводити…" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list">
+            <ul class="combo__list" role="listbox" hidden></ul>
+          </div>
+          <input type="hidden" name="region" id="f_region">
         </div>
         <div class="fld">
           <label>Знижка, % (поки не діє — ціни базові)</label>
@@ -160,6 +173,54 @@ function fmtDate(iso) {
   return d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }
 function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// Місто — NP searchSettlements (вся Україна, без ключа/проксі — NP віддає CORS).
+// Обрану область пишемо в прихований #f_region (для поля «Область» у Planfix).
+(function initCityCombo(){
+  const box=$('cityCombo'), input=$('f_city'), region=$('f_region');
+  if(!box||!input||!region) return;
+  const list=box.querySelector('.combo__list');
+  let open=false, active=-1, current=[], seq=0, timer=null;
+  function fmt(a){
+    const t=(a.SettlementTypeCode||'').trim();
+    const rgn=(a.Region||'').trim();
+    const name=(a.MainDescription||'').trim();
+    const value=`${t?t+' ':''}${name}${rgn?`, ${rgn} р-н`:''}`;
+    return { value, area:(a.Area||'').trim() };
+  }
+  function openMsg(m){open=true;list.hidden=false;input.setAttribute('aria-expanded','true');list.innerHTML=`<li class="combo__empty">${m}</li>`;}
+  function close(){open=false;list.hidden=true;input.setAttribute('aria-expanded','false');active=-1;}
+  function render(){
+    if(!current.length){openMsg('Нічого не знайдено');return;}
+    open=true;list.hidden=false;input.setAttribute('aria-expanded','true');
+    list.innerHTML=current.map((o,i)=>`<li class="combo__opt${i===active?' is-active':''}" role="option" data-i="${i}"><span>${o.value}</span>${o.area?`<span class="rgn">${o.area} обл.</span>`:''}</li>`).join('');
+  }
+  function choose(o){input.value=o.value;region.value=o.area;close();}
+  async function search(q){
+    if(q.length<2){current=[];openMsg('Введіть мінімум 2 літери');return;}
+    const my=++seq; openMsg('Шукаю…');
+    try{
+      const res=await fetch('https://api.novaposhta.ua/v2.0/json/',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({apiKey:'',modelName:'Address',calledMethod:'searchSettlements',methodProperties:{CityName:q,Limit:'30',Page:'1'}})});
+      const j=await res.json();
+      if(my!==seq)return;
+      const addrs=((j.data||[])[0]||{}).Addresses||[];
+      const seen=new Set();
+      current=addrs.map(fmt).filter(o=>{const k=o.value+'|'+o.area;if(seen.has(k))return false;seen.add(k);return true;});
+      active=0; render();
+    }catch(_){ if(my===seq){current=[];openMsg('Nova Poshta недоступна — введіть вручну');} }
+  }
+  input.addEventListener('focus',()=>{const q=input.value.trim();if(current.length)render();else if(q.length>=2)search(q);});
+  input.addEventListener('input',()=>{region.value='';active=0;clearTimeout(timer);const q=input.value.trim();timer=setTimeout(()=>search(q),250);});
+  input.addEventListener('keydown',(e)=>{
+    if(e.key==='ArrowDown'){e.preventDefault();active=Math.min(active+1,current.length-1);render();}
+    else if(e.key==='ArrowUp'){e.preventDefault();active=Math.max(active-1,0);render();}
+    else if(e.key==='Enter'){if(open&&current[active]){e.preventDefault();choose(current[active]);}}
+    else if(e.key==='Escape'){close();}
+  });
+  list.addEventListener('mousedown',(e)=>{const li=e.target.closest('.combo__opt');if(li){e.preventDefault();choose(current[+li.dataset.i]);}});
+  document.addEventListener('mousedown',(e)=>{if(!box.contains(e.target))close();});
+})();
 
 Auth.require('dealers').then(user => {
   AppHeader.mount({ active: 'dealers', user });
