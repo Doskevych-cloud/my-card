@@ -30,13 +30,28 @@ body { font-family:'Inter',-apple-system,sans-serif; background: var(--bg); colo
 .fld.full { grid-column: 1 / -1; }
 .fld label { font-size: 12px; color: var(--text3); }
 .fld label .req { color: var(--accent); }
-.fld input, .fld textarea {
+.fld input, .fld textarea, .fld select {
   background: var(--card2); border:1px solid var(--border); color:var(--text);
   border-radius: 10px; padding: 9px 12px; font: inherit; font-size: 14px; width: 100%;
 }
+.fld select { appearance: none; -webkit-appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b8f97' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; padding-right: 34px; }
 .fld textarea { resize: vertical; min-height: 54px; }
-.fld input:focus, .fld textarea:focus { outline: none; border-color: var(--accent); }
+.fld input:focus, .fld textarea:focus, .fld select:focus { outline: none; border-color: var(--accent); }
+.fld.hide { display: none; }
 .frm-foot { display:flex; align-items:center; gap: 14px; margin-top: 16px; }
+
+/* Заявки на розгляді (pending) */
+.pend { display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
+  padding:14px 18px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.pend:last-child { border-bottom:0; }
+.pend__main { min-width:220px; flex:1; }
+.pend__meta { color: var(--text3); font-size:12px; margin-top:4px; line-height:1.55; }
+.pend__act { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.pend__act input { background: var(--card2); border:1px solid var(--border); color:var(--text);
+  border-radius:8px; padding:7px 10px; font:inherit; font-size:13px; }
+.pend__disc { width:84px; } .pend__mgr { width:128px; }
 
 .result { display:none; margin-top: 16px; padding: 14px 16px; border:1px solid var(--border); border-radius: 12px; background: var(--card2); }
 .result.show { display:block; }
@@ -89,9 +104,31 @@ tbody tr.off { opacity: .5; }
     <div class="card-head"><h2>Видати доступ</h2></div>
     <div class="card-body">
       <form id="frm" class="frm">
-        <div class="fld">
+        <div class="fld full">
+          <label>Тип контрагента</label>
+          <select name="org_type" id="f_orgtype">
+            <option>ТОВ</option><option>ФОП</option><option>Фізособа</option>
+          </select>
+        </div>
+        <div class="fld" data-field="company">
           <label>Компанія <span class="req">*</span></label>
-          <input name="company" placeholder="ТОВ «Сонячний дім»" required>
+          <input name="company" id="f_company" placeholder="ТОВ «Сонячний дім»">
+        </div>
+        <div class="fld" data-field="edrpou">
+          <label id="edrpouLbl">ЄДРПОУ</label>
+          <input name="edrpou" id="f_edrpou" inputmode="numeric" placeholder="00000000">
+        </div>
+        <div class="fld">
+          <label>Контактна особа</label>
+          <input name="contact_person" placeholder="Імʼя та прізвище">
+        </div>
+        <div class="fld">
+          <label>Телефон</label>
+          <input name="phone" placeholder="+380 67 577 73 40">
+        </div>
+        <div class="fld">
+          <label>Google-пошта дилера (для входу через Google)</label>
+          <input name="email" type="email" placeholder="dealer@gmail.com">
         </div>
         <div class="fld">
           <label>Місто / населений пункт</label>
@@ -100,6 +137,22 @@ tbody tr.off { opacity: .5; }
             <ul class="combo__list" role="listbox" hidden></ul>
           </div>
           <input type="hidden" name="region" id="f_region">
+        </div>
+        <div class="fld">
+          <label>Профіль діяльності</label>
+          <select name="profile">
+            <option value="">—</option>
+            <option>Інсталятор</option><option>Магазин / Роздріб</option>
+            <option>Проєктна організація</option><option>Субдистрибʼютор</option><option>Інше</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label>Очікуваний обсяг / міс</label>
+          <select name="volume">
+            <option value="">—</option>
+            <option>до $5 000</option><option>$5 000 – $20 000</option>
+            <option>$20 000 – $50 000</option><option>$50 000 – $200 000</option><option>понад $200 000</option>
+          </select>
         </div>
         <div class="fld">
           <label>Знижка, % (поки не діє — ціни базові)</label>
@@ -114,11 +167,7 @@ tbody tr.off { opacity: .5; }
           <input name="manager_contact" placeholder="+380 67 577 73 40">
         </div>
         <div class="fld">
-          <label>Google-пошта дилера (для входу через Google)</label>
-          <input name="email" type="email" placeholder="dealer@gmail.com">
-        </div>
-        <div class="fld">
-          <label>ЄДРПОУ / ref 1С (опц.)</label>
+          <label>ref 1С (опц.)</label>
           <input name="counterparty_ref_key" placeholder="—">
         </div>
         <div class="fld full">
@@ -137,6 +186,11 @@ tbody tr.off { opacity: .5; }
         </div>
       </div>
     </div>
+  </div>
+
+  <div class="card" id="pendingCard" style="display:none">
+    <div class="card-head"><h2>Заявки на розгляді</h2><span class="count" id="pendingCount"></span></div>
+    <div id="pendingWrap"></div>
   </div>
 
   <div class="card">
@@ -222,6 +276,24 @@ function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replac
   document.addEventListener('mousedown',(e)=>{if(!box.contains(e.target))close();});
 })();
 
+// Тип контрагента: Фізособа — без назви компанії та ЄДРПОУ; ФОП → ІПН.
+(function initOrgType(){
+  const sel = $('f_orgtype');
+  const companyFld = document.querySelector('[data-field="company"]');
+  const edrpouFld = document.querySelector('[data-field="edrpou"]');
+  const company = $('f_company'), edrpou = $('f_edrpou'), lbl = $('edrpouLbl');
+  function apply(){
+    const t = sel.value, fiz = t === 'Фізособа';
+    companyFld.classList.toggle('hide', fiz);
+    edrpouFld.classList.toggle('hide', fiz);
+    if (fiz) { company.value = ''; edrpou.value = ''; }
+    if (lbl) lbl.textContent = t === 'ФОП' ? 'ІПН' : 'ЄДРПОУ';
+    edrpou.placeholder = t === 'ФОП' ? '0000000000' : '00000000';
+  }
+  sel.addEventListener('change', apply);
+  apply();
+})();
+
 Auth.require('dealers').then(user => {
   AppHeader.mount({ active: 'dealers', user });
   loadList();
@@ -232,7 +304,9 @@ $('frm').addEventListener('submit', async (e) => {
   const fd = new FormData(e.target);
   const payload = Object.fromEntries(fd.entries());
   payload.discount_pct = Number(payload.discount_pct) || 0;
-  if (!payload.company.trim()) return toast('Вкажіть компанію', true);
+  const isFiz = payload.org_type === 'Фізособа';
+  if (!isFiz && !(payload.company || '').trim()) return toast('Вкажіть компанію', true);
+  if (isFiz && !(payload.contact_person || '').trim()) return toast('Вкажіть контактну особу', true);
   const btn = $('createBtn');
   btn.disabled = true; const lbl = btn.textContent; btn.textContent = 'Створюємо…';
   try {
@@ -266,22 +340,68 @@ async function loadList() {
 }
 
 function renderList(rows) {
+  renderPending(rows.filter(d => d.status === 'pending'));
+  renderDealers(rows.filter(d => d.status !== 'pending'));
+}
+
+// Рядок-резюме заявки: контакт · телефон · email · область, нп · профіль · обсяг.
+function metaLine(d) {
+  const parts = [];
+  if (d.contact_person) parts.push(esc(d.contact_person));
+  if (d.phone) parts.push(esc(d.phone));
+  if (d.email) parts.push(esc(d.email));
+  const loc = [d.region, d.city].filter(Boolean).map(esc).join(', ');
+  if (loc) parts.push(loc);
+  if (d.profile) parts.push(esc(d.profile));
+  if (d.volume) parts.push(esc(d.volume));
+  return parts.join(' · ');
+}
+
+function renderPending(rows) {
+  const card = $('pendingCard');
+  if (!rows.length) { card.style.display = 'none'; $('pendingWrap').innerHTML = ''; return; }
+  card.style.display = '';
+  $('pendingCount').textContent = `${rows.length}`;
+  let html = '';
+  for (const d of rows) {
+    const title = d.company || d.contact_person || '—';
+    html += `<div class="pend">
+      <div class="pend__main">
+        <span class="company">${esc(title)}</span>${d.org_type ? `<span class="muted"> · ${esc(d.org_type)}</span>` : ''}${d.edrpou ? `<span class="muted"> · ${esc(d.edrpou)}</span>` : ''}
+        <div class="pend__meta">${metaLine(d)}</div>${d.note ? `<div class="pend__meta">${esc(d.note)}</div>` : ''}
+      </div>
+      <div class="pend__act">
+        <input class="pend__disc" type="number" min="0" max="90" step="0.5" placeholder="знижка %" data-disc="${esc(d.token)}">
+        <input class="pend__mgr" placeholder="менеджер" data-mgr="${esc(d.token)}">
+        <button class="btn btn--primary btn--sm" data-approve="${esc(d.token)}">Підтвердити</button>
+        <button class="btn btn--ghost btn--sm" data-reject="${esc(d.token)}">Відхилити</button>
+      </div>
+    </div>`;
+  }
+  $('pendingWrap').innerHTML = html;
+  $('pendingWrap').querySelectorAll('[data-approve]').forEach(b => b.onclick = () => approve(b.dataset.approve));
+  $('pendingWrap').querySelectorAll('[data-reject]').forEach(b => b.onclick = () => reject(b.dataset.reject));
+}
+
+function renderDealers(rows) {
   $('count').textContent = rows.length ? `${rows.length}` : '';
   if (!rows.length) { $('listWrap').innerHTML = '<div class="empty">Поки немає виданих доступів</div>'; return; }
   let html = `<table><thead><tr>
     <th>Компанія</th><th>Менеджер</th><th class="r">Знижка</th><th>Статус</th><th>Вхід</th><th class="r"></th>
     </tr></thead><tbody>`;
   for (const d of rows) {
-    const active = Number(d.active) === 1;
-    html += `<tr class="${active ? '' : 'off'}">
-      <td><span class="company">${esc(d.company)}</span>${d.city ? `<span class="muted"> · ${esc(d.city)}</span>` : ''}${d.email ? `<span class="muted"><br>${esc(d.email)}</span>` : ''}</td>
+    const st = d.status || (Number(d.active) === 1 ? 'active' : 'revoked');
+    const isActive = st === 'active';
+    const label = isActive ? 'активний' : (st === 'rejected' ? 'відхилено' : 'відкликаний');
+    html += `<tr class="${isActive ? '' : 'off'}">
+      <td><span class="company">${esc(d.company || d.contact_person || '—')}</span>${d.city ? `<span class="muted"> · ${esc(d.city)}</span>` : ''}${d.email ? `<span class="muted"><br>${esc(d.email)}</span>` : ''}</td>
       <td>${esc(d.manager_name || '—')}${d.manager_contact ? `<span class="muted"><br>${esc(d.manager_contact)}</span>` : ''}</td>
       <td class="r"><span class="disc">${d.discount_pct ? '−' + d.discount_pct + '%' : '0'}</span></td>
-      <td><span class="badge ${active ? 'on' : ''}">${active ? 'активний' : 'відкликаний'}</span></td>
+      <td><span class="badge ${isActive ? 'on' : ''}">${label}</span></td>
       <td class="muted">${fmtDate(d.last_login_at)}</td>
       <td class="r"><div class="row-actions">
         <button class="btn btn--ghost btn--sm" data-copy="${esc(d.token)}">Лінк</button>
-        <button class="btn ${active ? 'btn--danger' : 'btn--secondary'} btn--sm" data-token="${esc(d.token)}" data-active="${active ? 0 : 1}">${active ? 'Відкликати' : 'Відновити'}</button>
+        <button class="btn ${isActive ? 'btn--danger' : 'btn--secondary'} btn--sm" data-token="${esc(d.token)}" data-active="${isActive ? 0 : 1}">${isActive ? 'Відкликати' : 'Відновити'}</button>
       </div></td>
     </tr>`;
   }
@@ -289,6 +409,37 @@ function renderList(rows) {
   $('listWrap').innerHTML = html;
   $('listWrap').querySelectorAll('[data-copy]').forEach(b => b.onclick = () => copy(cabLink(b.dataset.copy)));
   $('listWrap').querySelectorAll('[data-token]').forEach(b => b.onclick = () => revoke(b.dataset.token, Number(b.dataset.active)));
+}
+
+async function approve(token) {
+  const disc = $('pendingWrap').querySelector(`[data-disc="${token}"]`);
+  const mgr = $('pendingWrap').querySelector(`[data-mgr="${token}"]`);
+  const payload = { token };
+  if (disc && disc.value !== '') payload.discount_pct = Number(disc.value) || 0;
+  if (mgr && mgr.value.trim()) payload.manager_name = mgr.value.trim();
+  try {
+    const r = await fetch(`${API}?action=_admin_dealer_approve`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    const out = await r.json();
+    if (!out.ok) throw new Error(out.error || 'fail');
+    copy(out.link);
+    toast('Доступ видано, лінк скопійовано');
+    loadList();
+  } catch (err) { toast('Помилка: ' + err.message, true); }
+}
+
+async function reject(token) {
+  if (!confirm('Відхилити заявку?')) return;
+  try {
+    const r = await fetch(`${API}?action=_admin_dealer_reject`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }),
+    });
+    const out = await r.json();
+    if (!out.ok) throw new Error(out.error || 'fail');
+    toast('Заявку відхилено');
+    loadList();
+  } catch (err) { toast('Помилка: ' + err.message, true); }
 }
 
 async function revoke(token, active) {
