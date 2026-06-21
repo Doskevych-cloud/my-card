@@ -308,7 +308,10 @@ a{color:inherit;text-decoration:none}
   .toolbar input[type=text]{font-size:12px;padding:6px 8px;flex:1;min-width:140px}
   .toolbar .lbl{display:none}
   .toolbar .chip{padding:6px 10px;font-size:11px}
-  .toolbar .group{padding:3px;gap:2px}
+  /* Групи чіпів (пресети дат, org) — inline-flex не переносить діти сам,
+     тож на вузькому екрані 4 пресети ширші за viewport і дають
+     горизонтальний скрол усієї сторінки. Дозволяємо перенос усередині групи. */
+  .toolbar .group{padding:3px;gap:2px;flex-wrap:wrap}
   .toolbar .group .chip{padding:5px 8px;font-size:11px}
   .toolbar .sep{display:none}
   .pnl-collapse-ctl .chip{padding:6px 10px;font-size:11px}
