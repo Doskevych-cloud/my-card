@@ -340,6 +340,36 @@ a{color:inherit;text-decoration:none}
   .pnl-summary{grid-template-columns:1fr}
   .cb-grid{grid-template-columns:1fr}
 }
+/* ── Усі фінансові таблиці на телефоні (P&L, ВП, Фін.показники, Cash Flow,
+   Розрахунки, Взаєморозрахунки): вміщати у ширину екрана (прибрати
+   примусовий min-width:600px), переносити довгі назви та вирівнювати
+   перенесені рядки. Вузькі таблиці (2–4 колонки) перестають мати
+   горизонтальний скрол; широкі (з місяцями) лишаються прокручуваними. ── */
+@media(max-width:600px){
+  .pnl-table{min-width:0}
+  .pnl-table th:first-child,
+  .pnl-table td:first-child{min-width:120px;width:auto;white-space:normal;overflow-wrap:anywhere}
+  /* Компактніші відступи дерева + гарантовано ≥18px під трикутник/спейсер */
+  .pnl-table tr.cat td:first-child{padding-left:20px}
+  .pnl-table tr.sec:not([data-cat]) td:first-child{padding-left:20px}
+  .pnl-table tr.sec[data-cat] td:first-child{padding-left:26px}
+  .pnl-table tr.grp td:first-child{padding-left:30px}
+  .pnl-table tr.itm td:first-child{padding-left:32px}
+  .pnl-table tr.itm[data-grp] td:first-child{padding-left:42px}
+  .pnl-table tr.sub:not([data-cat]) td:first-child{padding-left:20px}
+  .pnl-table tr.sub[data-cat] td:first-child{padding-left:26px}
+  .pnl-table tr.grd td:first-child{padding-left:20px}
+  .pnl-table tr.pct td:first-child{padding-left:20px}
+  /* «Висячий» відступ для рядків із трикутником (.tri) або спейсером (::before),
+     щоб 2-й рядок назви вирівнювався під текстом, а не вилазив уліво */
+  .pnl-table tr.cat td:first-child,
+  .pnl-table tr.sec td:first-child,
+  .pnl-table tr.grp td:first-child,
+  .pnl-table tr.grd[data-is-grd-head] td:first-child,
+  .pnl-table tr.pct[data-is-pct-head] td:first-child,
+  .pnl-table tr.grd:not([data-is-grd-head]) td:first-child,
+  .pnl-table tr.sub:not([data-cat]) td:first-child{text-indent:-18px}
+}
 /* ── Склад (вкладка wh): на телефоні згортаємо до 3 ключових колонок
    (Назва · К-сть · Вартість), щоб таблиця вміщалась без горизонтального
    скролу — решта (Організація / Позицій / За 1 шт / Склад / Сер.собів)
