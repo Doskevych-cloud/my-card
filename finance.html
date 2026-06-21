@@ -363,8 +363,10 @@ a{color:inherit;text-decoration:none}
   .pnl-table.wh-compact td:nth-child(6){width:96px}
   .pnl-table.wh-compact td.col-total,
   .pnl-table.wh-compact th.col-total{padding-left:6px;padding-right:8px}
-  /* Менші відступи дерева на телефоні — більше місця під назву */
-  .pnl-table.wh-compact tr.grp td:first-child{padding-left:12px}
+  /* Менші відступи дерева на телефоні — більше місця під назву.
+     grp має трикутник .tri (18px) перед назвою → робимо «висячий» відступ
+     (text-indent), щоб 2-й рядок назви не вилазив уліво під трикутник. */
+  .pnl-table.wh-compact tr.grp td:first-child{padding-left:30px;text-indent:-18px}
   .pnl-table.wh-compact tr.itm td:first-child{padding-left:22px}
   .pnl-table.wh-compact tr.grd td:first-child,
   .pnl-table.wh-compact tr.sub td:first-child{padding-left:12px}
