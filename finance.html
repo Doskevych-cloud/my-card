@@ -345,19 +345,29 @@ a{color:inherit;text-decoration:none}
    скролу — решта (Організація / Позицій / За 1 шт / Склад / Сер.собів)
    ховається. Усі дані лишаються в Excel/PDF-експорті. ── */
 @media(max-width:600px){
-  .pnl-table.wh-compact{min-width:0}
+  .pnl-table.wh-compact{min-width:0;table-layout:fixed;width:100%}
   .pnl-table.wh-compact th:nth-child(2),
   .pnl-table.wh-compact td:nth-child(2),
   .pnl-table.wh-compact th:nth-child(3),
   .pnl-table.wh-compact td:nth-child(3),
   .pnl-table.wh-compact th:nth-child(5),
   .pnl-table.wh-compact td:nth-child(5){display:none}
+  /* Назва: займає решту ширини, довгі слова переносяться */
   .pnl-table.wh-compact th:first-child,
-  .pnl-table.wh-compact td:first-child{min-width:0 !important;width:auto;white-space:normal;position:static}
+  .pnl-table.wh-compact td:first-child{min-width:0 !important;width:auto;white-space:normal;overflow-wrap:anywhere;word-break:break-word;position:static}
   .pnl-table.wh-compact th:first-child{position:sticky}
-  /* трохи компактніші числові колонки, що лишились */
+  /* Числові колонки, що лишились (К-сть, Вартість) — стала ширина */
+  .pnl-table.wh-compact th:nth-child(4),
+  .pnl-table.wh-compact td:nth-child(4){width:58px}
+  .pnl-table.wh-compact th:nth-child(6),
+  .pnl-table.wh-compact td:nth-child(6){width:96px}
   .pnl-table.wh-compact td.col-total,
   .pnl-table.wh-compact th.col-total{padding-left:6px;padding-right:8px}
+  /* Менші відступи дерева на телефоні — більше місця під назву */
+  .pnl-table.wh-compact tr.grp td:first-child{padding-left:12px}
+  .pnl-table.wh-compact tr.itm td:first-child{padding-left:22px}
+  .pnl-table.wh-compact tr.grd td:first-child,
+  .pnl-table.wh-compact tr.sub td:first-child{padding-left:12px}
 }
 </style>
 </head>
