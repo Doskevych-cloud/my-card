@@ -55,6 +55,7 @@
     sales_prices: 'Продажі — Порівняння цін',
     forecast: 'Прогноз кабелю',
     warehouses: 'Склад',
+    brigades: 'Бригади (склади бригад)',
     sales: 'Продажі — Продажі менеджерів',
     sales_top_products: 'Продажі — Останні продажі',
     sales_osp: 'Продажі — Оплата та відвантаження',
@@ -217,6 +218,7 @@
     { role: 'sales_prices',  href: 'prices.html' },
     { role: 'forecast',      href: 'forecast.html' },
     { role: 'warehouses',    href: 'warehouses.html' },
+    { role: 'brigades',      href: 'brigades.html' },
     { role: 'counterparties',href: 'counterparties.html' },
     { role: 'reports',       href: 'reports.html' },
   ];

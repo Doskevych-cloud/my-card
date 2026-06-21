@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Бригади · Склади</title>
+<script>
+  // Apply saved theme BEFORE styles paint — avoids flash-of-wrong-theme
+  try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
+</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+<script src="auth.js?v=mobhdr20260430"></script>
+<script src="header.js?v=mobhdr20260430"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/uk.js"></script>
+<script src="date-range.js?v=20260522"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="theme.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+
+/* Layout */
+.wrap{margin:0 auto;padding:14px 16px;max-width:900px}
+.page-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px}
+.page-head h1{font-size:20px;font-weight:700;letter-spacing:-.4px}
+.page-head .sub{font-size:12px;color:var(--text3)}
+
+/* Info banner — movements not wired yet */
+.note{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;margin:10px 0;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;font-size:12px;color:var(--text2)}
+.note .ic{font-size:15px;line-height:1.2}
+
+/* Toolbar */
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;position:relative;z-index:10}
+.toolbar input[type=text]{flex:1;min-width:180px;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;transition:border .15s}
+.toolbar input:focus{border-color:var(--accent)}
+.toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.toolbar .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;display:inline-flex;align-items:center;gap:6px}
+.toolbar .chip:hover{background:var(--bg3);color:var(--text)}
+.toolbar .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 2px}
+.toolbar .group{display:inline-flex;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px}
+.toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
+.toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
+
+/* Summary strip */
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.sum-card{padding:11px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
+.sum-card .l{font-size:9.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+.sum-card .v{font-size:20px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;margin-top:2px}
+.sum-card .s{font-size:10.5px;color:var(--text3);font-variant-numeric:tabular-nums}
+
+/* Brigade cards */
+.brig{margin-bottom:10px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.brig-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none}
+.brig-head:hover{background:var(--bg3)}
+.brig-head .chev{flex:0 0 auto;width:12px;color:var(--text3);font-size:11px;transition:transform .15s}
+.brig.open .brig-head .chev{transform:rotate(90deg)}
+.brig-head .nm{flex:1;min-width:0;font-weight:700;color:var(--text);overflow-wrap:anywhere}
+.brig-head .badge{flex:0 0 auto;font-size:9.5px;font-weight:700;letter-spacing:.4px;padding:2px 8px;border-radius:4px}
+.brig-head .badge.Реакт{background:var(--accent-bg);color:var(--accent)}
+.brig-head .badge.Генерація{background:var(--purple-bg,rgba(151,117,250,.14));color:var(--purple-text,#b399ff)}
+.brig-head .stats{flex:0 0 auto;text-align:right;font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.brig-head .stats b{display:block;color:var(--text);font-size:13px;font-weight:700}
+
+.brig-body{display:none;border-top:1px solid var(--border)}
+.brig.open .brig-body{display:block}
+.brig-item{display:flex;align-items:baseline;gap:10px;padding:8px 14px 8px 30px;border-bottom:1px solid var(--border)}
+.brig-item:last-child{border-bottom:none}
+.brig-item .nm{flex:1;min-width:0;color:var(--text2);overflow-wrap:anywhere}
+.brig-item .nm .art{color:var(--text3);font-size:11px;margin-left:6px}
+.brig-item .q{flex:0 0 auto;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--text)}
+.brig-item .q .u{color:var(--text3);font-weight:400;font-size:11px;margin-left:3px}
+.brig-empty{padding:10px 14px 10px 30px;color:var(--text3);font-style:italic;font-size:12px}
+
+/* Per-brigade future-movements affordance */
+.brig-docs{display:flex;align-items:center;gap:8px;padding:9px 14px;background:var(--bg2);color:var(--text3);font-size:11.5px;border-top:1px dashed var(--border)}
+.brig-docs .ic{opacity:.8}
+
+/* Loading / empty / error */
+.loading{padding:60px 20px;text-align:center;color:var(--text2);font-size:13px}
+.loading::after{content:'';display:block;width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:14px auto 0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error{padding:20px;text-align:center;color:var(--red);background:var(--red-bg);border-radius:10px;font-size:12px;margin-top:16px}
+.empty{padding:40px 20px;text-align:center;color:var(--text3);font-size:12px}
+
+@media (max-width:720px){
+  .wrap{padding:12px}
+  .page-head h1{font-size:17px}
+  .toolbar{padding:8px;gap:6px}
+  .toolbar input[type=text]{flex:1 1 100%;min-width:0;font-size:12px;padding:6px 8px}
+  .toolbar .date-range-input{font-size:12px;padding:6px 8px;min-width:100px}
+  .toolbar .lbl{display:none}
+  .toolbar .chip{padding:6px 10px;font-size:11px}
+  .toolbar .group{padding:3px;gap:2px}
+  .toolbar .group .chip{padding:5px 8px;font-size:11px}
+  .toolbar .sep{display:none}
+  .summary{gap:6px}
+  .sum-card{padding:9px 10px}
+  .sum-card .v{font-size:17px}
+  .brig-head{padding:11px 12px}
+  .brig-item{padding-left:24px}
+}
+@media (max-width:430px){
+  .summary{grid-template-columns:1fr 1fr}
+  .summary .sum-card:nth-child(3){grid-column:1 / -1}
+}
+</style>
+</head>
+<body>
+
+<div id="appHeader"></div>
+<div id="app">
+  <div class="wrap">
+    <div class="page-head">
+      <h1>👷 Бригади</h1>
+      <span class="sub">склади бригад · залишки</span>
+    </div>
+
+    <div class="toolbar">
+      <span class="lbl">На дату</span>
+      <input type="text" id="asOfIn" class="date-range-input" readonly title="Залишки на кінець обраної дати">
+      <span class="chip" onclick="setToday()">Сьогодні</span>
+
+      <span class="sep"></span>
+
+      <span class="chip" data-org="" onclick="setOrg('')">Всі</span>
+      <span class="chip active" data-org="Реакт" onclick="setOrg('Реакт')">Реакт</span>
+      <span class="chip" data-org="Генерація" onclick="setOrg('Генерація')">Генерація</span>
+
+      <span class="sep"></span>
+
+      <span class="chip" onclick="expandAll()">⊞ Розгорнути</span>
+      <span class="chip" onclick="collapseAll()">⊟ Згорнути</span>
+      <span class="chip" onclick="downloadXLSX()" title="Вигрузити в Excel">⬇ Excel</span>
+
+      <input type="text" id="searchIn" placeholder="🔎 Пошук по бригаді або товару…" autocomplete="off">
+    </div>
+
+    <div class="note">
+      <span class="ic">📄</span>
+      <span>Документи переміщення (як формуються склади бригад) з'являться тут після підключення даних — наразі показано <b>залишки</b> кожного складу бригади на обрану дату.</span>
+    </div>
+
+    <div id="body"><div class="loading">Завантаження…</div></div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://price-api.doskevich.workers.dev';
+
+// ─── Які склади вважаємо «бригадними» (за назвою) ───
+// Легко розширити: додайте патерн у масив. Збіг — case-insensitive, по підрядку.
+const BRIGADE_PATTERNS = [/під\s*звіт/i, /інструмент/i];
+function isBrigade(name) {
+  const s = String(name || '');
+  return BRIGADE_PATTERNS.some(re => re.test(s));
+}
+
+// ─── State ───
+function _todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+const state = {
+  data: null,
+  org: 'Реакт',
+  search: '',
+  asOf: _todayISO(),
+  openKeys: new Set(),
+  loading: false,
+};
+
+function fmt(n, dec = 0) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return Number(n).toLocaleString('uk-UA', { maximumFractionDigits: dec, minimumFractionDigits: dec });
+}
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmtDatePretty(iso) {
+  if (!iso) return '—';
+  return iso.split('-').reverse().join('.');
+}
+
+// ─── Data ───
+async function load() {
+  state.loading = true;
+  if (_picker) _picker.setDate(state.asOf || _todayISO());
+  document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
+  try {
+    const q = state.asOf ? `?action=warehouses_stock&date=${state.asOf}` : '?action=warehouses_stock';
+    const res = await fetch(API_URL + q);
+    const d = await res.json();
+    if (d.error) throw new Error(d.error);
+    state.data = d;
+    state.loading = false;
+    render();
+  } catch (e) {
+    state.loading = false;
+    document.getElementById('body').innerHTML = `<div class="error">${esc(e.message)}</div>`;
+  }
+}
+
+// ─── Build the filtered brigade list for the current org/search ───
+function brigadeList() {
+  const all = (state.data && state.data.warehouses) || [];
+  const q = state.search;
+  return all
+    .filter(w => isBrigade(w.name))
+    .filter(w => !state.org || w.org === state.org)
+    .map(w => {
+      let items = (w.items || []).filter(it => (it.total || 0) > 0);
+      // Пошук: збіг по назві бригади показує всі товари; інакше — фільтр товарів.
+      const nameHit = q && w.name.toLowerCase().includes(q);
+      if (q && !nameHit) items = items.filter(it => (it.name || '').toLowerCase().includes(q));
+      items.sort((a, b) => (b.total || 0) - (a.total || 0));
+      const qty = items.reduce((s, it) => s + (it.total || 0), 0);
+      return { id: w.id, name: w.name, org: w.org, items, qty, positions: items.length };
+    })
+    .filter(b => !q || b.items.length || b.name.toLowerCase().includes(q))
+    .sort((a, b) => b.qty - a.qty);
+}
+
+// ─── Render ───
+function render() {
+  if (!state.data) return;
+  const list = brigadeList();
+  const body = document.getElementById('body');
+
+  if (!list.length) {
+    body.innerHTML = '<div class="empty">— немає складів бригад за цими умовами —</div>';
+    return;
+  }
+
+  const totBrig = list.length;
+  const totPos = list.reduce((s, b) => s + b.positions, 0);
+  const totQty = list.reduce((s, b) => s + b.qty, 0);
+
+  const summary =
+    '<div class="summary">' +
+      `<div class="sum-card"><div class="l">Бригад</div><div class="v">${fmt(totBrig)}</div><div class="s">складів під звіт</div></div>` +
+      `<div class="sum-card"><div class="l">Позицій</div><div class="v">${fmt(totPos)}</div><div class="s">номенклатури</div></div>` +
+      `<div class="sum-card"><div class="l">Одиниць</div><div class="v">${fmt(totQty)}</div><div class="s">сумарно на складах</div></div>` +
+    '</div>';
+
+  const cards = list.map(b => {
+    const key = String(b.id != null ? b.id : b.name);
+    const open = state.openKeys.has(key) || (state.search && b.items.length);
+    const itemsHtml = b.items.length
+      ? b.items.map(it =>
+          '<div class="brig-item">' +
+            '<span class="nm">' + esc(it.name) +
+              (it.article ? '<span class="art">' + esc(it.article) + '</span>' : '') +
+            '</span>' +
+            '<span class="q">' + fmt(it.total, it.total < 100 ? 2 : 0) + '<span class="u">шт</span></span>' +
+          '</div>'
+        ).join('')
+      : '<div class="brig-empty">— немає позицій із залишком —</div>';
+
+    return (
+      '<div class="brig' + (open ? ' open' : '') + '" data-key="' + esc(key) + '">' +
+        '<div class="brig-head">' +
+          '<span class="chev">▸</span>' +
+          '<span class="nm">' + esc(b.name) + '</span>' +
+          (b.org ? '<span class="badge ' + esc(b.org) + '">' + esc(b.org) + '</span>' : '') +
+          '<span class="stats"><b>' + fmt(b.qty) + ' шт</b>' + fmt(b.positions) + ' поз.</span>' +
+        '</div>' +
+        '<div class="brig-body">' +
+          itemsHtml +
+          '<div class="brig-docs"><span class="ic">📄</span> Документи переміщення — з\'являться після підключення даних</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+
+  body.innerHTML = summary + cards;
+}
+
+function toggle(key) {
+  if (state.openKeys.has(key)) state.openKeys.delete(key);
+  else state.openKeys.add(key);
+  render();
+}
+function expandAll() {
+  brigadeList().forEach(b => state.openKeys.add(String(b.id != null ? b.id : b.name)));
+  render();
+}
+// Delegated toggle — #body node persists across renders (only innerHTML changes).
+document.getElementById('body').addEventListener('click', function(ev) {
+  const head = ev.target.closest('.brig-head');
+  if (!head) return;
+  const card = head.closest('.brig[data-key]');
+  if (card) toggle(card.dataset.key);
+});
+function collapseAll() {
+  state.openKeys.clear();
+  render();
+}
+
+// ─── Controls ───
+function setOrg(v) {
+  state.org = v;
+  document.querySelectorAll('.chip[data-org]').forEach(c => c.classList.toggle('active', c.dataset.org === v));
+  render();
+}
+function setToday() {
+  state.asOf = _todayISO();
+  if (_picker) _picker.setDate(state.asOf);
+  load();
+}
+
+let _picker = (typeof initDateSingle === 'function') ? initDateSingle({
+  inputId: 'asOfIn',
+  date: state.asOf || _todayISO(),
+  onChange: function(d) { state.asOf = d; load(); }
+}) : null;
+
+document.getElementById('searchIn').addEventListener('input', e => {
+  state.search = e.target.value.toLowerCase().trim();
+  render();
+});
+
+// ─── Excel export ───
+function downloadXLSX() {
+  if (typeof XLSX === 'undefined') { alert('Excel-бібліотека не завантажилась.'); return; }
+  if (!state.data) { alert('Немає даних для експорту'); return; }
+  const list = brigadeList();
+  const aoa = [['Склад бригади', 'Організація', 'Товар', 'Артикул', 'Кількість, шт']];
+  list.forEach(b => b.items.forEach(it =>
+    aoa.push([b.name, b.org || '', it.name, it.article || '', it.total || 0])
+  ));
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{ wch: 28 }, { wch: 12 }, { wch: 44 }, { wch: 16 }, { wch: 12 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Бригади');
+  XLSX.writeFile(wb, `brigades_${state.asOf || _todayISO()}.xlsx`);
+}
+
+// ─── Session gate (Google login + brigades role) + unified header ───
+Auth.require('brigades').then(user => {
+  window.__user = user;
+  AppHeader.mount({ active: 'brigades', user });
+  // Org-level access: hide chips for orgs the user doesn't have access to.
+  const userOrgs = user.orgs || {};
+  const hasAnyOrg = Object.values(userOrgs).some(v => v);
+  if (hasAnyOrg) {
+    const allowedOrgs = ['Реакт', 'Генерація'].filter(o => userOrgs[o]);
+    const orgChips = document.querySelectorAll('.chip[data-org]');
+    orgChips.forEach(chip => {
+      const org = chip.dataset.org;
+      if (org === '') { if (allowedOrgs.length < 2) chip.style.display = 'none'; }
+      else if (!userOrgs[org]) chip.style.display = 'none';
+    });
+    const defaultOrg = allowedOrgs.length === 1 ? allowedOrgs[0] : '';
+    state.org = defaultOrg;
+    orgChips.forEach(c => c.classList.toggle('active', c.dataset.org === defaultOrg));
+  }
+  load();
+});
+</script>
+</body>
+</html>
