@@ -340,6 +340,25 @@ a{color:inherit;text-decoration:none}
   .pnl-summary{grid-template-columns:1fr}
   .cb-grid{grid-template-columns:1fr}
 }
+/* ── Склад (вкладка wh): на телефоні згортаємо до 3 ключових колонок
+   (Назва · К-сть · Вартість), щоб таблиця вміщалась без горизонтального
+   скролу — решта (Організація / Позицій / За 1 шт / Склад / Сер.собів)
+   ховається. Усі дані лишаються в Excel/PDF-експорті. ── */
+@media(max-width:600px){
+  .pnl-table.wh-compact{min-width:0}
+  .pnl-table.wh-compact th:nth-child(2),
+  .pnl-table.wh-compact td:nth-child(2),
+  .pnl-table.wh-compact th:nth-child(3),
+  .pnl-table.wh-compact td:nth-child(3),
+  .pnl-table.wh-compact th:nth-child(5),
+  .pnl-table.wh-compact td:nth-child(5){display:none}
+  .pnl-table.wh-compact th:first-child,
+  .pnl-table.wh-compact td:first-child{min-width:0 !important;width:auto;white-space:normal;position:static}
+  .pnl-table.wh-compact th:first-child{position:sticky}
+  /* трохи компактніші числові колонки, що лишились */
+  .pnl-table.wh-compact td.col-total,
+  .pnl-table.wh-compact th.col-total{padding-left:6px;padding-right:8px}
+}
 </style>
 </head>
 <body>
@@ -3204,7 +3223,7 @@ function whRender() {
 
   const whTableHtml =
     '<div class="pnl-wrap" style="margin-bottom:14px">' +
-      '<table class="pnl-table">' +
+      '<table class="pnl-table wh-compact">' +
         '<thead><tr>' +
           '<th style="min-width:260px">Склад</th>' +
           '<th>Організація</th>' +
@@ -3265,7 +3284,7 @@ function whRender() {
           'style="flex:1;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:13px;outline:none">' +
         '<span style="color:var(--text3);font-size:12px">показано ' + shown.length + ' з ' + sorted.length + (more > 0 ? ' · <span class="chip" onclick="whShowMore()" style="cursor:pointer">+' + Math.min(more, 300) + '</span>' : '') + '</span>' +
       '</div>' +
-      '<table class="pnl-table">' +
+      '<table class="pnl-table wh-compact">' +
         '<thead><tr>' +
           '<th style="min-width:260px">Номенклатура</th>' +
           '<th>Склад</th>' +
