@@ -58,20 +58,23 @@ a{color:inherit;text-decoration:none}
 .brig-item .q{flex:0 0 auto;min-width:120px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--text)}
 .brig-empty{padding:12px 16px;color:var(--text3);font-style:italic;font-size:12px}
 
-/* Переміщення — документи */
+/* Переміщення — таблиця документів (колонки: Напрям · Дата · № · Інший склад · Поз.) */
 .mv-hint{padding:12px 16px;color:var(--text3);font-size:12px;font-style:italic}
+.mv-th,.mv-doc-head{display:grid;grid-template-columns:132px 92px 116px minmax(0,1fr) 70px;gap:14px;align-items:center;padding:9px 16px}
+.mv-th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);font-weight:700;background:var(--bg2);border-bottom:1px solid var(--border)}
+.mv-th .r{text-align:right}
 .mv-doc{border-bottom:1px solid var(--border)}
 .mv-doc:last-child{border-bottom:none}
-.mv-doc-head{display:flex;align-items:center;gap:12px;padding:9px 16px;cursor:pointer}
+.mv-doc-head{cursor:pointer}
 .mv-doc-head:hover{background:var(--bg3)}
-.mv-dir{flex:0 0 auto;width:16px;text-align:center;font-size:14px;color:var(--text3)}
-.mv-main{flex:1;min-width:0}
-.mv-route{display:block;font-size:13px;font-weight:600;color:var(--text);overflow-wrap:anywhere}
-.mv-sub{display:block;font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums}
-.mv-cm-head{display:block;font-size:11.5px;color:var(--text2);font-style:italic;margin-top:3px;overflow-wrap:anywhere}
-.mv-no{color:var(--red)}
-.mv-cnt{flex:0 0 auto;font-size:11px;color:var(--text3);white-space:nowrap}
-.mv-items{display:none;padding:2px 16px 10px 44px}
+.mv-d{font-size:12px;font-weight:600;color:var(--text2);white-space:nowrap}
+.mv-dt{font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.mv-n{font-size:11.5px;color:var(--text3);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mv-w{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mv-c{font-size:11.5px;color:var(--text3);white-space:nowrap;text-align:right}
+.mv-no{color:var(--red);font-weight:600}
+.mv-cm{padding:0 16px 9px 398px;font-size:11.5px;color:var(--text2);font-style:italic;overflow-wrap:anywhere}
+.mv-items{display:none;padding:4px 16px 12px 16px}
 .mv-doc.open .mv-items{display:block}
 .mv-it{display:flex;align-items:baseline;gap:14px;padding:5px 0;font-size:12.5px;border-bottom:1px solid var(--border)}
 .mv-it:last-child{border-bottom:none}
@@ -97,7 +100,16 @@ a{color:inherit;text-decoration:none}
   .toolbar .sep{display:none}
   .brig-head{padding:11px 12px}
   .brig-item .q,.mv-it-q,.mv-money{min-width:0}
-  .mv-items{padding-left:28px}
+  /* Переміщення на мобільному: таблиця → стек */
+  .mv-th{display:none}
+  .mv-doc-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;padding:9px 12px}
+  .mv-d{order:1}
+  .mv-c{order:2;margin-left:auto}
+  .mv-w{order:3;flex:1 1 100%}
+  .mv-dt{order:4;font-size:11px;color:var(--text3)}
+  .mv-n{order:5;font-size:11px;color:var(--text3)}
+  .mv-cm{padding-left:12px}
+  .mv-items{padding-left:12px}
 }
 </style>
 </head>
@@ -280,29 +292,33 @@ function movementsHtml(ref) {
     const filtered = state.movePreset !== 'all' || state.moveDir !== 'all';
     return '<div class="mv-hint">' + (filtered ? 'Переміщень за фільтром немає' : 'Переміщень немає') + '</div>';
   }
-  return docs.map(d => {
+  const header = '<div class="mv-th"><span>Напрям</span><span>Дата</span><span>№</span><span>Інший склад</span><span class="r">Поз.</span></div>';
+  const rows = docs.map(d => {
     const inn = d.direction === 'in';
     const open = state.openDocs.has(d.ref_key);
-    const route = esc(d.from_name || '?') + ' → ' + esc(d.to_name || '?');
+    const contra = inn ? (d.from_name || '?') : (d.to_name || '?');   // звідки (прихід) / куди (видача)
     const itemsHtml = (d.items || []).map(it => {
       const unit = it.unit ? (' ' + esc(it.unit)) : '';
       const money = it.amount ? '<span class="mv-money">' + fmt(it.amount, it.amount < 100 ? 2 : 0) + ' грн</span>' : '';
       return '<div class="mv-it"><span class="mv-it-nm">' + esc(it.name || '—') + '</span>' +
              '<span class="mv-it-q">' + fmt(it.qty, it.qty < 100 ? 2 : 0) + unit + '</span>' + money + '</div>';
     }).join('');
+    const note = [];
+    if (!d.posted) note.push('<span class="mv-no">не проведено</span>');
+    if (d.comment) note.push(esc(d.comment));
+    const noteHtml = note.length ? '<div class="mv-cm">' + note.join(' · ') + '</div>' : '';
     return '<div class="mv-doc' + (open ? ' open' : '') + '" data-doc="' + esc(d.ref_key) + '">' +
       '<div class="mv-doc-head">' +
-        '<span class="mv-dir">' + (inn ? '↓' : '↑') + '</span>' +
-        '<span class="mv-main"><span class="mv-route">' + route + '</span>' +
-        '<span class="mv-sub">№' + esc(d.number || '—') + ' · ' + fmtDatePretty(d.date) +
-          (d.posted ? '' : ' · <span class="mv-no">не проведено</span>') + '</span>' +
-          (d.comment ? '<span class="mv-cm-head">' + esc(d.comment) + '</span>' : '') +
-        '</span>' +
-        '<span class="mv-cnt">' + (d.items || []).length + ' поз.</span>' +
-      '</div>' +
+        '<span class="mv-d">' + (inn ? '↓ Надходження' : '↑ Видача') + '</span>' +
+        '<span class="mv-dt">' + fmtDatePretty(d.date) + '</span>' +
+        '<span class="mv-n">№' + esc(d.number || '—') + '</span>' +
+        '<span class="mv-w">' + esc(contra) + '</span>' +
+        '<span class="mv-c">' + (d.items || []).length + ' поз.</span>' +
+      '</div>' + noteHtml +
       '<div class="mv-items">' + itemsHtml + '</div>' +
     '</div>';
   }).join('');
+  return header + rows;
 }
 async function ensureTransfers(ref) {
   if (!ref || state.transfers[ref] !== undefined) return;
