@@ -54,6 +54,17 @@ tbody tr:hover { background: rgba(154,180,255,.04); }
 
 .role-box { text-align: center; }
 .role-box input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); vertical-align: middle; }
+/* Модал прив'язки складів бригади */
+.wh-modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+.wh-modal-bg.open { display: flex; }
+.wh-modal { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; max-width: 460px; width: 100%; max-height: 82vh; display: flex; flex-direction: column; }
+.wh-modal h3 { padding: 16px 18px; font-size: 15px; font-weight: 700; border-bottom: 1px solid var(--border); }
+.wh-modal .wh-body { padding: 6px 18px; overflow-y: auto; }
+.wh-modal label { display: flex; align-items: center; gap: 10px; padding: 9px 0; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border); }
+.wh-modal label:last-child { border-bottom: none; }
+.wh-modal label input { width: 16px; height: 16px; accent-color: var(--accent); flex: 0 0 auto; }
+.wh-modal .foot { padding: 14px 18px; display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--border); }
+.wh-modal .wh-muted { color: var(--text3); font-size: 12px; padding: 10px 0; }
 
 /* buttons unified via header.js (.btn + .btn--primary/--secondary/--ghost/--danger/--sm) */
 
@@ -494,6 +505,7 @@ function userRow(u) {
       `).join('')}
       <td style="text-align:center;color:var(--text2);font-size:12px">${fmtDate(u.lastLogin)}</td>
       <td style="text-align:right;white-space:nowrap">
+        <button class="btn btn--ghost btn--sm" title="Прив'язати склади бригади" data-act="warehouses">🧰${u.warehouses && u.warehouses.length ? ' ' + u.warehouses.length : ''}</button>
         <button class="btn btn--ghost btn--sm" ${disableDelete ? 'disabled title="Це ваш акаунт"' : 'title="Зайти як цей користувач — побачите систему його очима"'} data-act="impersonate">👤 Як</button>
         <button class="btn btn--danger btn--sm" ${disableDelete ? 'disabled title="Ви не можете видалити власний акаунт"' : ''} data-act="delete">✕</button>
       </td>
@@ -517,6 +529,7 @@ function initDelegation() {
     const email = row.dataset.email;
     if (btn.dataset.act === 'impersonate') impersonate(email);
     else if (btn.dataset.act === 'delete') deleteUser(email);
+    else if (btn.dataset.act === 'warehouses') openWarehousesModal(email);
   });
 }
 
@@ -1236,6 +1249,53 @@ async function openConv(chatId, el) {
 }
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// ── Прив'язка складів бригади до користувача ──
+let _brigadeWh = null, _whModalEmail = null;
+async function ensureBrigadeWh() {
+  if (_brigadeWh) return _brigadeWh;
+  const r = await Auth.apiFetch('brigades_overview');
+  _brigadeWh = (r.warehouses || []).map(w => ({ ref_key: w.ref_key, name: w.name }));
+  return _brigadeWh;
+}
+async function openWarehousesModal(email) {
+  const u = users.find(x => x.email === email); if (!u) return;
+  _whModalEmail = email;
+  document.getElementById('whModalTitle').textContent = 'Склади бригади · ' + (u.name || u.email);
+  const body = document.getElementById('whModalBody');
+  body.innerHTML = '<div class="wh-muted">Завантаження…</div>';
+  document.getElementById('whModalBg').classList.add('open');
+  try {
+    const list = await ensureBrigadeWh();
+    const assigned = new Set(u.warehouses || []);
+    body.innerHTML = list.length
+      ? list.map(w => `<label><input type="checkbox" value="${escapeHtml(w.ref_key)}" ${assigned.has(w.ref_key) ? 'checked' : ''}><span>${escapeHtml(w.name)}</span></label>`).join('')
+      : '<div class="wh-muted">Бригадних складів не знайдено.</div>';
+  } catch (e) { body.innerHTML = '<div class="wh-muted">Помилка: ' + escapeHtml(e.message) + '</div>'; }
+}
+function closeWarehousesModal() { document.getElementById('whModalBg').classList.remove('open'); _whModalEmail = null; }
+async function saveWarehouses() {
+  if (!_whModalEmail) return;
+  const email = _whModalEmail;
+  const checked = [...document.querySelectorAll('#whModalBody input:checked')].map(i => i.value);
+  try {
+    const r = await Auth.apiFetch('admin_user_update', { method: 'POST', body: { email, warehouses: checked } });
+    const idx = users.findIndex(x => x.email === email); if (idx >= 0) users[idx] = r.user;
+    closeWarehousesModal();
+    renderTable();
+    toast('Склади оновлено (' + checked.length + ')', 'ok');
+  } catch (e) { toast(e.message, 'err'); }
+}
 </script>
+<div class="wh-modal-bg" id="whModalBg" onclick="if(event.target===this)closeWarehousesModal()">
+  <div class="wh-modal">
+    <h3 id="whModalTitle">Склади бригади</h3>
+    <div class="wh-body" id="whModalBody"></div>
+    <div class="foot">
+      <button class="btn btn--ghost btn--sm" onclick="closeWarehousesModal()">Скасувати</button>
+      <button class="btn btn--primary btn--sm" onclick="saveWarehouses()">Зберегти</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

@@ -74,9 +74,30 @@ a{color:inherit;text-decoration:none}
 .brig-item .q .u{color:var(--text3);font-weight:400;font-size:11px;margin-left:3px}
 .brig-empty{padding:10px 14px 10px 30px;color:var(--text3);font-style:italic;font-size:12px}
 
-/* Per-brigade future-movements affordance */
-.brig-docs{display:flex;align-items:center;gap:8px;padding:9px 14px;background:var(--bg2);color:var(--text3);font-size:11.5px;border-top:1px dashed var(--border)}
-.brig-docs .ic{opacity:.8}
+/* Section label всередині картки */
+.brig-sec{padding:9px 14px 3px 30px;font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:700}
+
+/* Переміщення (рухи) всередині картки */
+.mv{border-top:1px dashed var(--border);background:var(--bg2)}
+.mv-hint{padding:8px 14px 10px 30px;color:var(--text3);font-size:12px;font-style:italic}
+.mv-doc{border-top:1px solid var(--border)}
+.mv-doc:first-of-type{border-top:none}
+.mv-doc-head{display:flex;align-items:center;gap:8px;padding:8px 14px 8px 24px;cursor:pointer}
+.mv-doc-head:hover{background:var(--bg3)}
+.mv-dir{flex:0 0 auto;width:14px;text-align:center;color:var(--text3);font-size:13px}
+.mv-main{flex:1;min-width:0}
+.mv-route{display:block;font-size:12.5px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mv-sub{display:block;font-size:10.5px;color:var(--text3);font-variant-numeric:tabular-nums}
+.mv-no{color:var(--red)}
+.mv-cnt{flex:0 0 auto;font-size:10.5px;color:var(--text3);white-space:nowrap}
+.mv-items{display:none;padding:2px 14px 8px 24px}
+.mv-doc.open .mv-items{display:block}
+.mv-it{display:flex;align-items:baseline;gap:8px;padding:4px 0;font-size:12px;border-bottom:1px solid var(--border)}
+.mv-it:last-child{border-bottom:none}
+.mv-it-nm{flex:1;min-width:0;color:var(--text2);overflow-wrap:anywhere}
+.mv-it-q{flex:0 0 auto;font-variant-numeric:tabular-nums;font-weight:600;color:var(--text)}
+.mv-money{flex:0 0 auto;font-variant-numeric:tabular-nums;color:var(--text3);min-width:62px;text-align:right}
+.mv-cm{padding:5px 0 2px;font-size:11px;color:var(--text3);font-style:italic}
 
 /* Loading / empty / error */
 .loading{padding:60px 20px;text-align:center;color:var(--text2);font-size:13px}
@@ -138,11 +159,6 @@ a{color:inherit;text-decoration:none}
       <input type="text" id="searchIn" placeholder="🔎 Пошук по бригаді або товару…" autocomplete="off">
     </div>
 
-    <div class="note">
-      <span class="ic">📄</span>
-      <span>Документи переміщення (як формуються склади бригад) з'являться тут після підключення даних — наразі показано <b>залишки</b> кожного складу бригади на обрану дату.</span>
-    </div>
-
     <div id="body"><div class="loading">Завантаження…</div></div>
   </div>
 </div>
@@ -170,6 +186,8 @@ const state = {
   asOf: _todayISO(),
   openKeys: new Set(),
   loading: false,
+  transfers: {},        // wh id → масив документів | 'loading' | 'error'
+  openDocs: new Set(),  // ref_key розгорнутих документів переміщення
 };
 
 function fmt(n, dec = 0) {
@@ -260,7 +278,7 @@ function render() {
       : '<div class="brig-empty">— немає позицій із залишком —</div>';
 
     return (
-      '<div class="brig' + (open ? ' open' : '') + '" data-key="' + esc(key) + '">' +
+      '<div class="brig' + (open ? ' open' : '') + '" data-key="' + esc(key) + '" data-id="' + esc(b.id != null ? b.id : '') + '">' +
         '<div class="brig-head">' +
           '<span class="chev">▸</span>' +
           '<span class="nm">' + esc(b.name) + '</span>' +
@@ -268,8 +286,9 @@ function render() {
           '<span class="stats"><b>' + fmt(b.qty) + ' шт</b>' + fmt(b.positions) + ' поз.</span>' +
         '</div>' +
         '<div class="brig-body">' +
+          '<div class="brig-sec">Залишок</div>' +
           itemsHtml +
-          '<div class="brig-docs"><span class="ic">📄</span> Документи переміщення — з\'являться після підключення даних</div>' +
+          '<div class="mv">' + movementsHtml(b.id != null ? String(b.id) : '') + '</div>' +
         '</div>' +
       '</div>'
     );
@@ -278,21 +297,79 @@ function render() {
   body.innerHTML = summary + cards;
 }
 
-function toggle(key) {
+// ─── Переміщення (рухи) складу: lazy-load на розгортання картки ───
+function movementsHtml(id) {
+  if (!id) return '';
+  const t = state.transfers[id];
+  if (t === undefined) return '';                                  // ще не відкривали
+  if (t === 'loading') return '<div class="mv-hint">Завантаження переміщень…</div>';
+  if (t === 'error') return '<div class="mv-hint">Не вдалося завантажити переміщення</div>';
+  if (!t.length) return '<div class="mv-hint">Переміщень не знайдено</div>';
+  const rows = t.map(d => {
+    const inn = d.direction === 'in';
+    const other = inn ? d.from_name : d.to_name;
+    const open = state.openDocs.has(d.ref_key);
+    const route = inn ? (esc(other || '?') + ' → сюди') : ('сюди → ' + esc(other || '?'));
+    const itemsHtml = (d.items || []).map(it => {
+      const unit = it.unit ? (' ' + esc(it.unit)) : '';
+      const money = ('amount' in it) ? '<span class="mv-money">' + fmt(it.amount, it.amount < 100 ? 2 : 0) + ' грн</span>' : '';
+      return '<div class="mv-it"><span class="mv-it-nm">' + esc(it.name || '—') + '</span>' +
+             '<span class="mv-it-q">' + fmt(it.qty, it.qty < 100 ? 2 : 0) + unit + '</span>' + money + '</div>';
+    }).join('');
+    return '<div class="mv-doc' + (open ? ' open' : '') + '" data-doc="' + esc(d.ref_key) + '">' +
+      '<div class="mv-doc-head">' +
+        '<span class="mv-dir">' + (inn ? '↓' : '↑') + '</span>' +
+        '<span class="mv-main"><span class="mv-route">' + route + '</span>' +
+        '<span class="mv-sub">№' + esc(d.number || '—') + ' · ' + fmtDatePretty((d.date || '').slice(0, 10)) +
+          (d.posted ? '' : ' · <span class="mv-no">не проведено</span>') + '</span></span>' +
+        '<span class="mv-cnt">' + (d.items || []).length + ' поз.</span>' +
+      '</div>' +
+      '<div class="mv-items">' + itemsHtml + (d.comment ? '<div class="mv-cm">' + esc(d.comment) + '</div>' : '') + '</div>' +
+    '</div>';
+  }).join('');
+  return '<div class="brig-sec">Переміщення · ' + fmt(t.length) + '</div>' + rows;
+}
+async function ensureTransfers(id) {
+  if (!id || state.transfers[id] !== undefined) return;
+  state.transfers[id] = 'loading';
+  render();
+  try {
+    const res = await fetch(API_URL + '?action=brigade_transfers&wh=' + encodeURIComponent(id));
+    const d = await res.json();
+    if (d.error) throw new Error(d.error);
+    state.transfers[id] = d.transfers || [];
+  } catch (e) {
+    state.transfers[id] = 'error';
+  }
+  render();
+}
+
+function toggle(key, id) {
   if (state.openKeys.has(key)) state.openKeys.delete(key);
-  else state.openKeys.add(key);
+  else { state.openKeys.add(key); if (id) ensureTransfers(id); }
   render();
 }
 function expandAll() {
-  brigadeList().forEach(b => state.openKeys.add(String(b.id != null ? b.id : b.name)));
+  brigadeList().forEach(b => { state.openKeys.add(String(b.id != null ? b.id : b.name)); if (b.id != null) ensureTransfers(String(b.id)); });
   render();
 }
 // Delegated toggle — #body node persists across renders (only innerHTML changes).
 document.getElementById('body').addEventListener('click', function(ev) {
+  // Клік по документу переміщення — розгорнути/згорнути його позиції.
+  const docHead = ev.target.closest('.mv-doc-head');
+  if (docHead) {
+    const doc = docHead.closest('.mv-doc[data-doc]');
+    if (doc) {
+      const k = doc.dataset.doc;
+      if (state.openDocs.has(k)) state.openDocs.delete(k); else state.openDocs.add(k);
+      render();
+    }
+    return;
+  }
   const head = ev.target.closest('.brig-head');
   if (!head) return;
   const card = head.closest('.brig[data-key]');
-  if (card) toggle(card.dataset.key);
+  if (card) toggle(card.dataset.key, card.dataset.id);
 });
 function collapseAll() {
   state.openKeys.clear();
