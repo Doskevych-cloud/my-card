@@ -60,7 +60,7 @@ a{color:inherit;text-decoration:none}
 
 /* Переміщення — таблиця документів (колонки: Напрям · Дата · № · Інший склад · Поз.) */
 .mv-hint{padding:12px 16px;color:var(--text3);font-size:12px;font-style:italic}
-.mv-th,.mv-doc-head{display:grid;grid-template-columns:132px 92px 116px minmax(0,1fr) 70px;gap:14px;align-items:center;padding:9px 16px}
+.mv-th,.mv-doc-head{display:grid;grid-template-columns:128px 88px 108px minmax(120px,1fr) minmax(0,1.8fr) 64px;gap:14px;align-items:center;padding:9px 16px}
 .mv-th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);font-weight:700;background:var(--bg2);border-bottom:1px solid var(--border)}
 .mv-th .r{text-align:right}
 .mv-doc{border-bottom:1px solid var(--border)}
@@ -71,9 +71,10 @@ a{color:inherit;text-decoration:none}
 .mv-dt{font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums;white-space:nowrap}
 .mv-n{font-size:11.5px;color:var(--text3);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mv-w{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mv-cust{font-size:12.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mv-c{font-size:11.5px;color:var(--text3);white-space:nowrap;text-align:right}
 .mv-no{color:var(--red);font-weight:600}
-.mv-cm{padding:0 16px 9px 398px;font-size:11.5px;color:var(--text2);font-style:italic;overflow-wrap:anywhere}
+.mv-cm{padding:0 16px 9px 382px;font-size:11.5px;color:var(--text2);font-style:italic;overflow-wrap:anywhere}
 .mv-items{display:none;padding:4px 16px 12px 16px}
 .mv-doc.open .mv-items{display:block}
 .mv-it{display:flex;align-items:baseline;gap:14px;padding:5px 0;font-size:12.5px;border-bottom:1px solid var(--border)}
@@ -106,8 +107,9 @@ a{color:inherit;text-decoration:none}
   .mv-d{order:1}
   .mv-c{order:2;margin-left:auto}
   .mv-w{order:3;flex:1 1 100%}
-  .mv-dt{order:4;font-size:11px;color:var(--text3)}
-  .mv-n{order:5;font-size:11px;color:var(--text3)}
+  .mv-cust{order:4;flex:1 1 100%;white-space:normal;font-size:12px}
+  .mv-dt{order:5;font-size:11px;color:var(--text3)}
+  .mv-n{order:6;font-size:11px;color:var(--text3)}
   .mv-cm{padding-left:12px}
   .mv-items{padding-left:12px}
 }
@@ -292,7 +294,7 @@ function movementsHtml(ref) {
     const filtered = state.movePreset !== 'all' || state.moveDir !== 'all';
     return '<div class="mv-hint">' + (filtered ? 'Переміщень за фільтром немає' : 'Переміщень немає') + '</div>';
   }
-  const header = '<div class="mv-th"><span>Напрям</span><span>Дата</span><span>№</span><span>Інший склад</span><span class="r">Поз.</span></div>';
+  const header = '<div class="mv-th"><span>Напрям</span><span>Дата</span><span>№</span><span>Інший склад</span><span>Покупець</span><span class="r">Поз.</span></div>';
   const rows = docs.map(d => {
     const inn = d.direction === 'in';
     const open = state.openDocs.has(d.ref_key);
@@ -313,6 +315,7 @@ function movementsHtml(ref) {
         '<span class="mv-dt">' + fmtDatePretty(d.date) + '</span>' +
         '<span class="mv-n">№' + esc(d.number || '—') + '</span>' +
         '<span class="mv-w">' + esc(contra) + '</span>' +
+        '<span class="mv-cust">' + (d.customer ? esc(d.customer) : '—') + '</span>' +
         '<span class="mv-c">' + (d.items || []).length + ' поз.</span>' +
       '</div>' + noteHtml +
       '<div class="mv-items">' + itemsHtml + '</div>' +
