@@ -64,7 +64,7 @@ a{color:inherit;text-decoration:none}
 
 /* Переміщення — пласка таблиця (Дата · Відправник · Одержувач · Покупець · К-сть) */
 .mv-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.mv-th,.mv-doc-head{display:grid;grid-template-columns:108px minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,1.4fr) 70px;gap:14px;align-items:center;padding:10px 16px}
+.mv-th,.mv-doc-head{display:grid;grid-template-columns:104px minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.3fr) 64px;gap:14px;align-items:center;padding:10px 16px}
 .mv-th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);font-weight:700;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1}
 .mv-th .r{text-align:right}
 .mv-doc{border-bottom:1px solid var(--border)}
@@ -75,8 +75,10 @@ a{color:inherit;text-decoration:none}
 .mv-dt .mv-num{display:block;font-size:10.5px;color:var(--text3);margin-top:1px}
 .mv-dt .mv-cat{display:block;font-size:9.5px;margin-top:2px;text-transform:uppercase;letter-spacing:.3px;font-weight:700;color:var(--text3)}
 .mv-from,.mv-to{font-size:12.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mv-to{font-weight:600}
 .mv-cust{font-size:12.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mv-cm-col{font-size:11.5px;color:var(--text2);font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mv-th select.mv-hsel{width:100%;padding:5px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;font-weight:500;text-transform:none;letter-spacing:0;cursor:pointer;outline:none}
+.mv-th select.mv-hsel:focus{border-color:var(--accent)}
 .mv-c{font-size:11.5px;color:var(--text3);white-space:nowrap;text-align:right}
 .mv-no{color:var(--red);font-weight:600}
 .mv-cm{padding:0 16px 9px 122px;font-size:11.5px;color:var(--text2);font-style:italic;overflow-wrap:anywhere}
@@ -108,7 +110,9 @@ a{color:inherit;text-decoration:none}
   .mv-select{flex:1 1 100%;max-width:none}
   .brig-head{padding:11px 12px}
   .brig-item .q,.mv-it-q,.mv-money{min-width:0}
-  .mv-th{display:none}
+  .mv-th{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;position:static}
+  .mv-th .lbl{display:none}
+  .mv-th select.mv-hsel{flex:1 1 100%}
   .mv-doc-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;padding:9px 12px}
   .mv-dt{order:1;flex:1 1 100%;font-size:11px;color:var(--text3)}
   .mv-dt .mv-num{display:inline;margin-left:6px}
@@ -118,6 +122,7 @@ a{color:inherit;text-decoration:none}
   .mv-to{order:3}
   .mv-c{order:4;margin-left:auto;font-size:11px}
   .mv-cust{order:5;flex:1 1 100%;white-space:normal;font-size:12px;color:var(--text2)}
+  .mv-cm-col{order:6;flex:1 1 100%;white-space:normal;font-size:11.5px;color:var(--text2)}
   .mv-cm{padding-left:12px}
   .mv-items{padding-left:12px}
 }
@@ -147,9 +152,6 @@ a{color:inherit;text-decoration:none}
       </span>
       <!-- Переміщення -->
       <span class="mvf" id="mvFilters" style="display:none">
-        <select id="mvBrigade" class="mv-select" onchange="setBrigade(this.value)"><option value="all">Усі бригади</option></select>
-        <select id="mvCustomer" class="mv-select" onchange="setCustomer(this.value)"><option value="all">Усі покупці</option></select>
-        <span class="sep"></span>
         <input type="text" id="mvDateRange" class="date-range-input" readonly placeholder="📅 Період">
         <span class="chip mvp" data-preset="today" onclick="setPreset('today')">Сьогодні</span>
         <span class="chip mvp" data-preset="week" onclick="setPreset('week')">Тиждень</span>
@@ -238,10 +240,6 @@ async function load() {
     state.loaded = true;
     const sub = document.getElementById('sub');
     if (sub) sub.textContent = 'склади монтажних бригад' + (state.asOf ? ' · залишок на ' + fmtDatePretty(state.asOf) : '');
-    // заповнюємо select бригад
-    const bsel = document.getElementById('mvBrigade');
-    if (bsel) bsel.innerHTML = '<option value="all">Усі бригади</option>' +
-      state.list.map(b => `<option value="${esc(b.ref_key)}">${esc(b.name)}</option>`).join('');
     render();
   } catch (e) {
     document.getElementById('body').innerHTML = `<div class="error">${esc(e.message)}</div>`;
@@ -257,11 +255,6 @@ async function loadMoves() {
     const r = await fetch(API_URL + '?action=brigade_transfers_all').then(r => r.json());
     if (r.error) throw new Error(r.error);
     state.allMoves = r.transfers || [];
-    // select покупців
-    const custs = [...new Set(state.allMoves.map(d => d.customer).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'uk'));
-    const csel = document.getElementById('mvCustomer');
-    if (csel) csel.innerHTML = '<option value="all">Усі покупці</option>' +
-      custs.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
   } catch (e) { state.allMoves = 'error'; }
   render();
 }
@@ -338,10 +331,8 @@ function movesHtml() {
       return '<div class="mv-it"><span class="mv-it-nm">' + esc(it.name || '—') + '</span>' +
              '<span class="mv-it-q">' + fmt(it.qty, it.qty < 100 ? 2 : 0) + unit + '</span>' + money + '</div>';
     }).join('');
-    const note = [];
-    if (!d.posted) note.push('<span class="mv-no">не проведено</span>');
-    if (d.comment) note.push(esc(d.comment));
-    const noteHtml = note.length ? '<div class="mv-cm">' + note.join(' · ') + '</div>' : '';
+    const cmFull = (d.posted ? '' : 'не проведено · ') + (d.comment || '');
+    const cmCell = (d.posted ? '' : '<span class="mv-no">не проведено</span> ') + esc(d.comment || '');
     return '<div class="mv-doc' + (open ? ' open' : '') + '" data-doc="' + esc(d.ref_key) + '">' +
       '<div class="mv-doc-head">' +
         '<span class="mv-dt">' + fmtDatePretty(d.date) + '<span class="mv-num">№' + esc(d.number || '—') + '</span>' +
@@ -349,12 +340,19 @@ function movesHtml() {
         '<span class="mv-from">' + esc(d.from_name || '—') + '</span>' +
         '<span class="mv-to">' + esc(d.to_name || '—') + '</span>' +
         '<span class="mv-cust">' + (d.customer ? esc(d.customer) : '—') + '</span>' +
+        '<span class="mv-cm-col" title="' + esc(cmFull) + '">' + cmCell + '</span>' +
         '<span class="mv-c">' + (d.items || []).length + ' поз.</span>' +
-      '</div>' + noteHtml +
+      '</div>' +
       '<div class="mv-items">' + itemsHtml + '</div>' +
     '</div>';
   }).join('');
-  const head = '<div class="mv-th"><span>Дата</span><span>Відправник</span><span>Одержувач</span><span>Покупець</span><span class="r">К-сть</span></div>';
+  const brigSel = '<select class="mv-hsel" onchange="setBrigade(this.value)"><option value="all">Усі бригади</option>' +
+    state.list.map(b => '<option value="' + esc(b.ref_key) + '"' + (state.mvBrigade === String(b.ref_key) ? ' selected' : '') + '>' + esc(b.name) + '</option>').join('') + '</select>';
+  const custs = [...new Set(state.allMoves.map(d => d.customer).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'uk'));
+  const custSel = '<select class="mv-hsel" onchange="setCustomer(this.value)"><option value="all">Усі покупці</option>' +
+    custs.map(c => '<option value="' + esc(c) + '"' + (state.mvCustomer === c ? ' selected' : '') + '>' + esc(c) + '</option>').join('') + '</select>';
+  const head = '<div class="mv-th"><span class="lbl">Дата</span>' + brigSel + '<span class="lbl">Одержувач</span>' + custSel +
+    '<span class="lbl">Коментар</span><span class="lbl r">К-сть</span></div>';
   return '<div class="mv-count">Знайдено переміщень: ' + fmt(docs.length) + '</div><div class="mv-wrap">' + head + rows + '</div>';
 }
 
