@@ -77,8 +77,24 @@ a{color:inherit;text-decoration:none}
 .mv-from,.mv-to{font-size:12.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mv-cust{font-size:12.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mv-cm-col{font-size:11.5px;color:var(--text2);font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mv-th select.mv-hsel{width:100%;padding:5px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;font-weight:500;text-transform:none;letter-spacing:0;cursor:pointer;outline:none}
-.mv-th select.mv-hsel:focus{border-color:var(--accent)}
+select.mv-hsel{padding:5px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;font-weight:500;text-transform:none;letter-spacing:0;cursor:pointer;outline:none}
+select.mv-hsel:focus{border-color:var(--accent)}
+.mv-th select.mv-hsel{width:100%}
+/* Звірка (reconciliation) */
+.mv-fbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.mv-fbar select.mv-hsel{max-width:240px}
+.rec-hint{font-size:11px;color:var(--text3);font-style:italic}
+.rec-th,.rec-row{display:grid;grid-template-columns:minmax(0,1fr) 110px 110px 110px 120px;gap:14px;align-items:baseline;padding:9px 16px}
+.rec-th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);font-weight:700;background:var(--bg2);border-bottom:1px solid var(--border)}
+.rec-th .r,.rec-row .r{text-align:right;font-variant-numeric:tabular-nums}
+.rec-row{border-bottom:1px solid var(--border);font-size:12.5px}
+.rec-row:last-child{border-bottom:none}
+.rec-row:hover{background:var(--bg3)}
+.rec-nm{color:var(--text);overflow-wrap:anywhere}
+.rec-u{color:var(--text3);font-size:11px}
+.rec-d{font-weight:700;color:var(--text)}
+.rec-d.neg{color:var(--red)}
+.rec-d.zero{color:var(--green)}
 .mv-c{font-size:11.5px;color:var(--text3);white-space:nowrap;text-align:right}
 .mv-no{color:var(--red);font-weight:600}
 .mv-cm{padding:0 16px 9px 122px;font-size:11.5px;color:var(--text2);font-style:italic;overflow-wrap:anywhere}
@@ -123,6 +139,9 @@ a{color:inherit;text-decoration:none}
   .mv-c{order:4;margin-left:auto;font-size:11px}
   .mv-cust{order:5;flex:1 1 100%;white-space:normal;font-size:12px;color:var(--text2)}
   .mv-cm-col{order:6;flex:1 1 100%;white-space:normal;font-size:11.5px;color:var(--text2)}
+  .mv-fbar select.mv-hsel{flex:1 1 100%;max-width:none}
+  .mv-wrap{overflow-x:auto}
+  .rec-th,.rec-row{min-width:540px}
   .mv-cm{padding-left:12px}
   .mv-items{padding-left:12px}
 }
@@ -191,7 +210,7 @@ const state = {
   mvBrigade: 'all',     // ref складу або 'all'
   mvCustomer: 'all',    // покупець або 'all'
   moveFrom: null, moveTo: null,
-  moveCat: 'all',       // 'all' | 'received' | 'returned' | 'writtenoff'
+  moveCats: new Set(),  // мульти-вибір категорій; ≥2 → режим звірки
   openDocs: new Set(),
   loaded: false,
 };
@@ -302,27 +321,66 @@ function stockHtml(ref, b) {
   ).join('');
 }
 
-// Переміщення: плаский список усіх рухів + фільтри
-function filteredMoves() {
+// Переміщення: спільний фільтр (бригада/покупець/період) без категорії
+function baseMoves() {
   if (!Array.isArray(state.allMoves)) return [];
   let docs = state.allMoves;
   if (state.mvBrigade !== 'all') docs = docs.filter(d => d.from_ref === state.mvBrigade || d.to_ref === state.mvBrigade);
   if (state.mvCustomer !== 'all') docs = docs.filter(d => (d.customer || '') === state.mvCustomer);
   if (state.moveFrom) docs = docs.filter(d => (d.date || '').slice(0, 10) >= state.moveFrom);
   if (state.moveTo)   docs = docs.filter(d => (d.date || '').slice(0, 10) <= state.moveTo);
-  if (state.moveCat !== 'all') docs = docs.filter(d => d.cat === state.moveCat);
+  return docs;
+}
+function filteredMoves() {
+  let docs = baseMoves();
+  if (state.moveCats.size) docs = docs.filter(d => state.moveCats.has(d.cat));
   const q = state.search;
   if (q) docs = docs.filter(d =>
     (d.from_name || '').toLowerCase().includes(q) || (d.to_name || '').toLowerCase().includes(q) ||
     (d.customer || '').toLowerCase().includes(q) || (d.number || '').toLowerCase().includes(q));
   return docs;
 }
+function _brigSel() {
+  return '<select class="mv-hsel" onchange="setBrigade(this.value)"><option value="all">Усі бригади</option>' +
+    state.list.map(b => '<option value="' + esc(b.ref_key) + '"' + (state.mvBrigade === String(b.ref_key) ? ' selected' : '') + '>' + esc(b.name) + '</option>').join('') + '</select>';
+}
+function _custSel() {
+  const custs = [...new Set((Array.isArray(state.allMoves) ? state.allMoves : []).map(d => d.customer).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'uk'));
+  return '<select class="mv-hsel" onchange="setCustomer(this.value)"><option value="all">Усі покупці</option>' +
+    custs.map(c => '<option value="' + esc(c) + '"' + (state.mvCustomer === c ? ' selected' : '') + '>' + esc(c) + '</option>').join('') + '</select>';
+}
+function _fmtQ(n) { n = Number(n) || 0; return n.toLocaleString('uk-UA', { maximumFractionDigits: 2 }); }
+// Звірка: Отримано − Повернено − Списано = залишок на бригаді (все отримане має бути закрите)
+function reconcileHtml() {
+  const map = {};
+  for (const d of baseMoves()) {
+    for (const it of (d.items || [])) {
+      const nm = it.name || '—';
+      if (!map[nm]) map[nm] = { name: nm, unit: it.unit || '', received: 0, returned: 0, writtenoff: 0 };
+      map[nm][d.cat] += (Number(it.qty) || 0);
+    }
+  }
+  let rows = Object.values(map).map(r => { r.delta = r.received - r.returned - r.writtenoff; return r; });
+  const q = state.search;
+  if (q) rows = rows.filter(r => r.name.toLowerCase().includes(q));
+  rows.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta) || a.name.localeCompare(b.name, 'uk'));
+  const fbar = '<div class="mv-fbar">' + _brigSel() + _custSel() + '<span class="rec-hint">Звірка: Отримано − Повернено − Списано = залишок на бригаді</span></div>';
+  if (!rows.length) return fbar + '<div class="empty">— немає даних для звірки —</div>';
+  const head = '<div class="rec-th"><span>Номенклатура</span><span class="r">Отримано</span><span class="r">Повернено</span><span class="r">Списано</span><span class="r">Залишок</span></div>';
+  const body = rows.map(r =>
+    '<div class="rec-row"><span class="rec-nm">' + esc(r.name) + (r.unit ? ' <span class="rec-u">' + esc(r.unit) + '</span>' : '') + '</span>' +
+    '<span class="r">' + _fmtQ(r.received) + '</span><span class="r">' + _fmtQ(r.returned) + '</span><span class="r">' + _fmtQ(r.writtenoff) + '</span>' +
+    '<span class="r rec-d ' + (r.delta < 0 ? 'neg' : (Math.abs(r.delta) < 0.001 ? 'zero' : '')) + '">' + _fmtQ(r.delta) + '</span></div>'
+  ).join('');
+  return fbar + '<div class="mv-count">Звірка по позиціях: ' + fmt(rows.length) + '</div><div class="mv-wrap"><div class="rec-tbl">' + head + body + '</div></div>';
+}
 function movesHtml() {
   if (state.allMoves === 'loading' || state.allMoves === null) return '<div class="loading">Завантаження переміщень…</div>';
   if (state.allMoves === 'error') return '<div class="error">Не вдалося завантажити переміщення</div>';
+  if (state.moveCats.size >= 2) return reconcileHtml();   // ≥2 категорії → звірка балансу
   const docs = filteredMoves();
   if (!docs.length) return '<div class="empty">— переміщень за фільтром немає —</div>';
-  const showCat = state.moveCat === 'all';   // мітку типу показуємо лише в загальному списку
+  const showCat = state.moveCats.size === 0;   // мітку типу показуємо лише коли не звужено
   const rows = docs.map(d => {
     const open = state.openDocs.has(d.ref_key);
     const itemsHtml = (d.items || []).map(it => {
@@ -346,12 +404,7 @@ function movesHtml() {
       '<div class="mv-items">' + itemsHtml + '</div>' +
     '</div>';
   }).join('');
-  const brigSel = '<select class="mv-hsel" onchange="setBrigade(this.value)"><option value="all">Усі бригади</option>' +
-    state.list.map(b => '<option value="' + esc(b.ref_key) + '"' + (state.mvBrigade === String(b.ref_key) ? ' selected' : '') + '>' + esc(b.name) + '</option>').join('') + '</select>';
-  const custs = [...new Set(state.allMoves.map(d => d.customer).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'uk'));
-  const custSel = '<select class="mv-hsel" onchange="setCustomer(this.value)"><option value="all">Усі покупці</option>' +
-    custs.map(c => '<option value="' + esc(c) + '"' + (state.mvCustomer === c ? ' selected' : '') + '>' + esc(c) + '</option>').join('') + '</select>';
-  const head = '<div class="mv-th"><span class="lbl">Дата</span>' + brigSel + '<span class="lbl">Одержувач</span>' + custSel +
+  const head = '<div class="mv-th"><span class="lbl">Дата</span>' + _brigSel() + '<span class="lbl">Одержувач</span>' + _custSel() +
     '<span class="lbl">Коментар</span><span class="lbl r">К-сть</span></div>';
   return '<div class="mv-count">Знайдено переміщень: ' + fmt(docs.length) + '</div><div class="mv-wrap">' + head + rows + '</div>';
 }
@@ -399,8 +452,13 @@ function detectPreset() {
   document.querySelectorAll('.mvp').forEach(c => c.classList.toggle('active', c.dataset.preset === match));
 }
 function setCat(cat) {
-  state.moveCat = cat;
-  document.querySelectorAll('.mvcat').forEach(c => c.classList.toggle('active', c.dataset.cat === cat));
+  if (cat === 'all') state.moveCats.clear();
+  else if (state.moveCats.has(cat)) state.moveCats.delete(cat);
+  else state.moveCats.add(cat);
+  document.querySelectorAll('.mvcat').forEach(c => {
+    const v = c.dataset.cat;
+    c.classList.toggle('active', v === 'all' ? state.moveCats.size === 0 : state.moveCats.has(v));
+  });
   render();
 }
 
@@ -448,6 +506,18 @@ function downloadStockXLSX() {
 }
 function downloadMovesXLSX() {
   if (typeof XLSX === 'undefined') { alert('Excel не завантажився.'); return; }
+  if (state.moveCats.size >= 2) {   // експорт звірки
+    const map = {};
+    for (const d of baseMoves()) for (const it of (d.items || [])) { const nm = it.name || '—'; if (!map[nm]) map[nm] = { name: nm, unit: it.unit || '', received: 0, returned: 0, writtenoff: 0 }; map[nm][d.cat] += (Number(it.qty) || 0); }
+    let rows = Object.values(map);
+    const q = state.search; if (q) rows = rows.filter(r => r.name.toLowerCase().includes(q));
+    if (!rows.length) { alert('Немає даних'); return; }
+    rows.sort((a, b) => a.name.localeCompare(b.name, 'uk'));
+    const aoa = [['Номенклатура', 'Од', 'Отримано', 'Повернено', 'Списано', 'Залишок']];
+    rows.forEach(r => aoa.push([r.name, r.unit || '', r.received, r.returned, r.writtenoff, r.received - r.returned - r.writtenoff]));
+    _saveXLSX(aoa, [{ wch: 46 }, { wch: 8 }, { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 11 }], 'brigades_zvirka');
+    return;
+  }
   const docs = filteredMoves();
   if (!docs.length) { alert('Немає даних'); return; }
   const aoa = [['Дата', 'Тип', '№', 'Відправник', 'Одержувач', 'Покупець', 'Позицій', 'Коментар']];
