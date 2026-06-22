@@ -419,21 +419,25 @@ function downloadXLSX() {
 Auth.require('brigades').then(user => {
   window.__user = user;
   AppHeader.mount({ active: 'brigades', user });
-  // Org-level access: hide chips for orgs the user doesn't have access to.
+  // Org-фільтр: адмін бачить УСЕ (дефолт «Всі»); інакше — за доступними орг.
+  const isAdmin = !!(user.roles && user.roles.admin);
   const userOrgs = user.orgs || {};
   const hasAnyOrg = Object.values(userOrgs).some(v => v);
-  if (hasAnyOrg) {
+  const orgChips = document.querySelectorAll('.chip[data-org]');
+  if (isAdmin) {
+    state.org = '';                       // адмін — усі організації
+  } else if (hasAnyOrg) {
     const allowedOrgs = ['Реакт', 'Генерація'].filter(o => userOrgs[o]);
-    const orgChips = document.querySelectorAll('.chip[data-org]');
     orgChips.forEach(chip => {
       const org = chip.dataset.org;
       if (org === '') { if (allowedOrgs.length < 2) chip.style.display = 'none'; }
       else if (!userOrgs[org]) chip.style.display = 'none';
     });
-    const defaultOrg = allowedOrgs.length === 1 ? allowedOrgs[0] : '';
-    state.org = defaultOrg;
-    orgChips.forEach(c => c.classList.toggle('active', c.dataset.org === defaultOrg));
+    state.org = allowedOrgs.length === 1 ? allowedOrgs[0] : '';
+  } else {
+    state.org = '';                       // нема орг-доступу — «Всі» (бекенд скоупить бригадира по складах)
   }
+  orgChips.forEach(c => c.classList.toggle('active', c.dataset.org === state.org));
   load();
 });
 </script>
