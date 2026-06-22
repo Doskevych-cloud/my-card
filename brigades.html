@@ -17,68 +17,78 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
 a{color:inherit;text-decoration:none}
 
-/* Layout */
-.wrap{margin:0 auto;padding:14px 16px;max-width:900px}
-.page-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px}
+/* Layout — повна ширина як на інших сторінках */
+.wrap{margin:0 auto;padding:14px 16px}
+.page-head{display:flex;align-items:baseline;gap:12px;margin-bottom:8px}
 .page-head h1{font-size:20px;font-weight:700;letter-spacing:-.4px}
 .page-head .sub{font-size:12px;color:var(--text3)}
 
 /* Toolbar */
-.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;position:relative;z-index:10}
-.toolbar input[type=text]{flex:1;min-width:180px;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;transition:border .15s}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
+.toolbar input[type=text]{flex:1;min-width:200px;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;transition:border .15s}
 .toolbar input:focus{border-color:var(--accent)}
 .toolbar .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;display:inline-flex;align-items:center;gap:6px}
 .toolbar .chip:hover{background:var(--bg3);color:var(--text)}
 
 /* Summary strip */
-.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.sum-card{padding:11px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
+.summary{display:grid;grid-template-columns:repeat(3,minmax(0,260px));gap:10px;margin-bottom:14px}
+.sum-card{padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
 .sum-card .l{font-size:9.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
-.sum-card .v{font-size:20px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;margin-top:2px}
+.sum-card .v{font-size:22px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;margin-top:2px}
 .sum-card .s{font-size:10.5px;color:var(--text3);font-variant-numeric:tabular-nums}
 
 /* Brigade cards */
-.brig{margin-bottom:10px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.brig-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none}
+.brig{margin-bottom:8px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.brig-head{display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;user-select:none}
 .brig-head:hover{background:var(--bg3)}
 .brig-head .chev{flex:0 0 auto;width:12px;color:var(--text3);font-size:11px;transition:transform .15s}
-.brig.open .brig-head .chev{transform:rotate(90deg)}
-.brig-head .nm{flex:1;min-width:0;font-weight:700;color:var(--text);overflow-wrap:anywhere}
-.brig-head .stats{flex:0 0 auto;text-align:right;font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums;white-space:nowrap}
-.brig-head .stats b{display:block;color:var(--text);font-size:13px;font-weight:700}
+.brig.open>.brig-head .chev{transform:rotate(90deg)}
+.brig-head .nm{flex:1;min-width:0;font-weight:700;font-size:14px;color:var(--text);overflow-wrap:anywhere}
+.brig-head .stats{flex:0 0 auto;display:flex;align-items:baseline;gap:8px;font-size:11.5px;color:var(--text3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.brig-head .stats b{color:var(--text);font-size:14px;font-weight:700}
+.brig-head .stats .mvc{color:var(--text3)}
 
 .brig-body{display:none;border-top:1px solid var(--border)}
-.brig.open .brig-body{display:block}
-.brig-item{display:flex;align-items:baseline;gap:10px;padding:8px 14px 8px 30px;border-bottom:1px solid var(--border)}
-.brig-item:last-child{border-bottom:none}
+.brig.open>.brig-body{display:block}
+
+/* Section label */
+.brig-sec{padding:10px 16px 4px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:700}
+
+/* Залишок — рядки */
+.brig-item{display:flex;align-items:baseline;gap:14px;padding:8px 16px;border-bottom:1px solid var(--border)}
+.brig-item:last-of-type{border-bottom:none}
 .brig-item .nm{flex:1;min-width:0;color:var(--text2);overflow-wrap:anywhere}
-.brig-item .q{flex:0 0 auto;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--text)}
-.brig-empty{padding:10px 14px 10px 30px;color:var(--text3);font-style:italic;font-size:12px}
+.brig-item .q{flex:0 0 auto;min-width:120px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--text)}
+.brig-empty{padding:10px 16px;color:var(--text3);font-style:italic;font-size:12px}
 
-/* Section label всередині картки */
-.brig-sec{padding:9px 14px 3px 30px;font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:700}
+/* Переміщення — окрема випадайка */
+.mv-toggle{display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;user-select:none;border-top:1px solid var(--border);background:var(--bg2);font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;color:var(--text2)}
+.mv-toggle:hover{color:var(--text)}
+.mv-toggle .chev{flex:0 0 auto;width:12px;font-size:11px;color:var(--text3);transition:transform .15s}
+.mv-toggle.open .chev{transform:rotate(90deg)}
+.mv-toggle.mv-empty{cursor:default;color:var(--text3)}
+.mv-toggle.mv-empty:hover{color:var(--text3)}
+.mv-wrap{background:var(--bg2)}
 
-/* Переміщення (рухи) всередині картки */
-.mv{border-top:1px dashed var(--border);background:var(--bg2)}
-.mv-hint{padding:8px 14px 10px 30px;color:var(--text3);font-size:12px;font-style:italic}
+/* Переміщення — документи */
+.mv-hint{padding:10px 16px 12px;color:var(--text3);font-size:12px;font-style:italic}
 .mv-doc{border-top:1px solid var(--border)}
-.mv-doc:first-of-type{border-top:none}
-.mv-doc-head{display:flex;align-items:center;gap:8px;padding:8px 14px 8px 24px;cursor:pointer}
+.mv-doc-head{display:flex;align-items:center;gap:12px;padding:9px 16px 9px 28px;cursor:pointer}
 .mv-doc-head:hover{background:var(--bg3)}
-.mv-dir{flex:0 0 auto;width:14px;text-align:center;color:var(--text3);font-size:13px}
+.mv-dir{flex:0 0 auto;width:16px;text-align:center;font-size:14px;color:var(--text3)}
 .mv-main{flex:1;min-width:0}
-.mv-route{display:block;font-size:12.5px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mv-sub{display:block;font-size:10.5px;color:var(--text3);font-variant-numeric:tabular-nums}
+.mv-route{display:block;font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mv-sub{display:block;font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums}
 .mv-no{color:var(--red)}
-.mv-cnt{flex:0 0 auto;font-size:10.5px;color:var(--text3);white-space:nowrap}
-.mv-items{display:none;padding:2px 14px 8px 24px}
+.mv-cnt{flex:0 0 auto;font-size:11px;color:var(--text3);white-space:nowrap}
+.mv-items{display:none;padding:2px 16px 10px 28px}
 .mv-doc.open .mv-items{display:block}
-.mv-it{display:flex;align-items:baseline;gap:8px;padding:4px 0;font-size:12px;border-bottom:1px solid var(--border)}
+.mv-it{display:flex;align-items:baseline;gap:14px;padding:5px 0;font-size:12.5px;border-bottom:1px solid var(--border)}
 .mv-it:last-child{border-bottom:none}
 .mv-it-nm{flex:1;min-width:0;color:var(--text2);overflow-wrap:anywhere}
-.mv-it-q{flex:0 0 auto;font-variant-numeric:tabular-nums;font-weight:600;color:var(--text)}
-.mv-money{flex:0 0 auto;font-variant-numeric:tabular-nums;color:var(--text3);min-width:62px;text-align:right}
-.mv-cm{padding:5px 0 2px;font-size:11px;color:var(--text3);font-style:italic}
+.mv-it-q{flex:0 0 auto;min-width:110px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--text)}
+.mv-money{flex:0 0 auto;min-width:120px;text-align:right;font-variant-numeric:tabular-nums;color:var(--text3)}
+.mv-cm{padding:6px 0 2px;font-size:11.5px;color:var(--text3);font-style:italic}
 
 /* Loading / empty / error */
 .loading{padding:60px 20px;text-align:center;color:var(--text2);font-size:13px}
@@ -93,15 +103,13 @@ a{color:inherit;text-decoration:none}
   .toolbar{padding:8px;gap:6px}
   .toolbar input[type=text]{flex:1 1 100%;min-width:0;font-size:12px;padding:6px 8px}
   .toolbar .chip{padding:6px 10px;font-size:11px}
-  .summary{gap:6px}
-  .sum-card{padding:9px 10px}
-  .sum-card .v{font-size:17px}
-  .brig-head{padding:11px 12px}
-  .brig-item{padding-left:24px}
-}
-@media (max-width:430px){
-  .summary{grid-template-columns:1fr 1fr}
+  .summary{grid-template-columns:1fr 1fr;gap:6px}
   .summary .sum-card:nth-child(3){grid-column:1 / -1}
+  .sum-card{padding:9px 10px}
+  .sum-card .v{font-size:18px}
+  .brig-head{padding:11px 12px}
+  .brig-item .q,.mv-it-q{min-width:0}
+  .mv-money{min-width:0}
 }
 </style>
 </head>
@@ -118,7 +126,7 @@ a{color:inherit;text-decoration:none}
     <div class="toolbar">
       <span class="chip" onclick="expandAll()">⊞ Розгорнути</span>
       <span class="chip" onclick="collapseAll()">⊟ Згорнути</span>
-      <span class="chip" onclick="downloadXLSX()" title="Вигрузити в Excel">⬇ Excel</span>
+      <span class="chip" onclick="downloadXLSX()" title="Вигрузити залишки в Excel">⬇ Excel</span>
       <input type="text" id="searchIn" placeholder="🔎 Пошук по бригаді…" autocomplete="off">
     </div>
 
@@ -130,17 +138,20 @@ a{color:inherit;text-decoration:none}
 const API_URL = 'https://price-api.doskevich.workers.dev';
 
 // ─── State ───
-// Список складів бригад приходить з D1-ендпоінта brigades_overview (детект за
-// назвою на бекенді — бачить УСІ бригадні склади, без whitelist; admin = всі,
-// бригадир = лише прив'язані). Залишок і переміщення підвантажуються на розгортання.
+// Список складів бригад — з D1 brigades_overview (детект за назвою на бекенді:
+// бачить УСІ бригадні склади без whitelist; admin = всі, бригадир = прив'язані).
+// Залишок (brigade_stock) вантажиться при розгортанні картки.
+// Переміщення (brigade_transfers) вантажаться ОКРЕМО — при відкритті своєї випадайки
+// (важливо: активні бригади мають сотні документів, тож не блокуємо показ складу).
 const state = {
-  list: [],            // [{ref_key, name, items, qty, last_transfer}]
+  list: [],
   asOf: null,
   search: '',
-  openKeys: new Set(),
-  stock: {},           // ref → items[] | 'loading' | 'error'
-  transfers: {},       // ref → docs[] | 'loading' | 'error'
-  openDocs: new Set(), // ref_key розгорнутих документів переміщення
+  openKeys: new Set(),  // розгорнуті картки складів
+  openMv: new Set(),    // розгорнуті блоки «Переміщення»
+  openDocs: new Set(),  // розгорнуті документи (їх позиції)
+  stock: {},            // ref → items[] | 'loading' | 'error'
+  transfers: {},        // ref → docs[]  | 'loading' | 'error'
   loaded: false,
 };
 
@@ -176,9 +187,7 @@ async function load() {
 
 function brigadeList() {
   const q = state.search;
-  let list = state.list;
-  if (q) list = list.filter(b => (b.name || '').toLowerCase().includes(q));
-  return list;
+  return q ? state.list.filter(b => (b.name || '').toLowerCase().includes(q)) : state.list;
 }
 
 // ─── Render ───
@@ -196,24 +205,32 @@ function render() {
   const summary =
     '<div class="summary">' +
       `<div class="sum-card"><div class="l">Бригад</div><div class="v">${fmt(totBrig)}</div><div class="s">складів під звіт</div></div>` +
-      `<div class="sum-card"><div class="l">Позицій</div><div class="v">${fmt(totPos)}</div><div class="s">номенклатури</div></div>` +
-      `<div class="sum-card"><div class="l">Одиниць</div><div class="v">${fmt(totQty)}</div><div class="s">сумарно на складах</div></div>` +
+      `<div class="sum-card"><div class="l">Позицій</div><div class="v">${fmt(totPos)}</div><div class="s">номенклатури на складах</div></div>` +
+      `<div class="sum-card"><div class="l">Одиниць</div><div class="v">${fmt(totQty)}</div><div class="s">сумарно</div></div>` +
     '</div>';
 
   const cards = list.map(b => {
     const ref = String(b.ref_key);
     const open = state.openKeys.has(ref);
+    const mvOpen = state.openMv.has(ref);
+    const tc = b.transfers_count || 0;
+    const mvSection = tc > 0
+      ? '<div class="mv-toggle' + (mvOpen ? ' open' : '') + '" data-mv="' + esc(ref) + '">' +
+          '<span class="chev">▸</span>Переміщення · ' + fmt(tc) +
+        '</div>' +
+        '<div class="mv-wrap">' + (mvOpen ? movementsHtml(ref) : '') + '</div>'
+      : '<div class="mv-toggle mv-empty"><span class="chev" style="visibility:hidden">▸</span>Переміщень нема</div>';
     return (
       '<div class="brig' + (open ? ' open' : '') + '" data-key="' + esc(ref) + '">' +
         '<div class="brig-head">' +
           '<span class="chev">▸</span>' +
           '<span class="nm">' + esc(b.name) + '</span>' +
-          '<span class="stats"><b>' + fmt(b.qty) + '</b>' + fmt(b.items) + ' поз.</span>' +
+          '<span class="stats"><b>' + fmt(b.qty) + '</b><span>' + fmt(b.items) + ' поз.</span><span class="mvc">' + fmt(tc) + ' рух.</span></span>' +
         '</div>' +
         '<div class="brig-body">' +
           '<div class="brig-sec">Залишок</div>' +
           stockHtml(ref) +
-          '<div class="mv">' + movementsHtml(ref) + '</div>' +
+          mvSection +
         '</div>' +
       '</div>'
     );
@@ -221,11 +238,10 @@ function render() {
   body.innerHTML = summary + cards;
 }
 
-// ─── Залишок складу: lazy-load (brigade_stock) ───
+// ─── Залишок: lazy (brigade_stock) ───
 function stockHtml(ref) {
   const s = state.stock[ref];
-  if (s === undefined) return '';
-  if (s === 'loading') return '<div class="brig-empty">Завантаження залишку…</div>';
+  if (s === undefined || s === 'loading') return '<div class="brig-empty">Завантаження залишку…</div>';
   if (s === 'error') return '<div class="brig-empty">Не вдалося завантажити залишок</div>';
   if (!s.length) return '<div class="brig-empty">— немає позицій із залишком —</div>';
   return s.map(it =>
@@ -246,14 +262,13 @@ async function ensureStock(ref) {
   render();
 }
 
-// ─── Переміщення складу: lazy-load (brigade_transfers) ───
+// ─── Переміщення: lazy (brigade_transfers) — тільки при відкритті випадайки ───
 function movementsHtml(ref) {
   const t = state.transfers[ref];
-  if (t === undefined) return '';
-  if (t === 'loading') return '<div class="mv-hint">Завантаження переміщень…</div>';
+  if (t === undefined || t === 'loading') return '<div class="mv-hint">Завантаження переміщень…</div>';
   if (t === 'error') return '<div class="mv-hint">Не вдалося завантажити переміщення</div>';
   if (!t.length) return '<div class="mv-hint">Переміщень не знайдено</div>';
-  const rows = t.map(d => {
+  return t.map(d => {
     const inn = d.direction === 'in';
     const other = inn ? d.from_name : d.to_name;
     const open = state.openDocs.has(d.ref_key);
@@ -275,7 +290,6 @@ function movementsHtml(ref) {
       '<div class="mv-items">' + itemsHtml + (d.comment ? '<div class="mv-cm">' + esc(d.comment) + '</div>' : '') + '</div>' +
     '</div>';
   }).join('');
-  return '<div class="brig-sec">Переміщення · ' + fmt(t.length) + '</div>' + rows;
 }
 async function ensureTransfers(ref) {
   if (!ref || state.transfers[ref] !== undefined) return;
@@ -290,21 +304,25 @@ async function ensureTransfers(ref) {
   render();
 }
 
-// ─── Розгортання карток / документів ───
-function toggle(ref) {
+// ─── Розгортання ───
+function toggleCard(ref) {
   if (state.openKeys.has(ref)) state.openKeys.delete(ref);
-  else { state.openKeys.add(ref); ensureStock(ref); ensureTransfers(ref); }
+  else { state.openKeys.add(ref); ensureStock(ref); }
+  render();
+}
+function toggleMv(ref) {
+  if (state.openMv.has(ref)) state.openMv.delete(ref);
+  else { state.openMv.add(ref); ensureTransfers(ref); }
   render();
 }
 function expandAll() {
-  brigadeList().forEach(b => { const ref = String(b.ref_key); state.openKeys.add(ref); ensureStock(ref); ensureTransfers(ref); });
+  brigadeList().forEach(b => { const ref = String(b.ref_key); state.openKeys.add(ref); ensureStock(ref); });
   render();
 }
-function collapseAll() { state.openKeys.clear(); render(); }
+function collapseAll() { state.openKeys.clear(); state.openMv.clear(); render(); }
 
-// Delegated click — #body node persists across renders (only innerHTML changes).
+// Delegated click — #body persists across renders (тільки innerHTML міняється).
 document.getElementById('body').addEventListener('click', function(ev) {
-  // Клік по документу переміщення — розгорнути/згорнути його позиції.
   const docHead = ev.target.closest('.mv-doc-head');
   if (docHead) {
     const doc = docHead.closest('.mv-doc[data-doc]');
@@ -315,10 +333,12 @@ document.getElementById('body').addEventListener('click', function(ev) {
     }
     return;
   }
+  const mvT = ev.target.closest('.mv-toggle[data-mv]');
+  if (mvT) { toggleMv(mvT.dataset.mv); return; }
   const head = ev.target.closest('.brig-head');
   if (!head) return;
   const card = head.closest('.brig[data-key]');
-  if (card) toggle(card.dataset.key);
+  if (card) toggleCard(card.dataset.key);
 });
 
 document.getElementById('searchIn').addEventListener('input', e => {
@@ -346,7 +366,7 @@ async function downloadXLSX() {
     if (Array.isArray(s)) s.forEach(it => aoa.push([b.name, it.name, it.qty || 0]));
   });
   const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols'] = [{ wch: 30 }, { wch: 46 }, { wch: 12 }];
+  ws['!cols'] = [{ wch: 30 }, { wch: 48 }, { wch: 12 }];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Бригади');
   XLSX.writeFile(wb, 'brigades_' + (state.asOf || '') + '.xlsx');
