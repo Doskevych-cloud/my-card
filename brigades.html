@@ -73,6 +73,7 @@ a{color:inherit;text-decoration:none}
 .mv-doc-head:hover{background:var(--bg3)}
 .mv-dt{font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums;white-space:nowrap}
 .mv-dt .mv-num{display:block;font-size:10.5px;color:var(--text3);margin-top:1px}
+.mv-dt .mv-cat{display:block;font-size:9.5px;margin-top:2px;text-transform:uppercase;letter-spacing:.3px;font-weight:700;color:var(--text3)}
 .mv-from,.mv-to{font-size:12.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mv-to{font-weight:600}
 .mv-cust{font-size:12.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -111,6 +112,7 @@ a{color:inherit;text-decoration:none}
   .mv-doc-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;padding:9px 12px}
   .mv-dt{order:1;flex:1 1 100%;font-size:11px;color:var(--text3)}
   .mv-dt .mv-num{display:inline;margin-left:6px}
+  .mv-dt .mv-cat{display:inline;margin-left:6px}
   .mv-from{order:2}
   .mv-from::after{content:'→';margin:0 4px;color:var(--text3)}
   .mv-to{order:3}
@@ -155,9 +157,10 @@ a{color:inherit;text-decoration:none}
         <span class="chip mvp" data-preset="year" onclick="setPreset('year')">Рік</span>
         <span class="chip mvp active" data-preset="all" onclick="setPreset('all')">Весь час</span>
         <span class="sep"></span>
-        <span class="chip mvd active" data-dir="all" onclick="setDir('all')">Усі</span>
-        <span class="chip mvd" data-dir="in" onclick="setDir('in')">↓ Надходження</span>
-        <span class="chip mvd" data-dir="out" onclick="setDir('out')">↑ Видача</span>
+        <span class="chip mvcat active" data-cat="all" onclick="setCat('all')">Усі</span>
+        <span class="chip mvcat" data-cat="received" onclick="setCat('received')">↓ Отримано</span>
+        <span class="chip mvcat" data-cat="returned" onclick="setCat('returned')">↑ Повернено</span>
+        <span class="chip mvcat" data-cat="writtenoff" onclick="setCat('writtenoff')">✓ Списано</span>
         <span class="chip" onclick="downloadMovesXLSX()" title="Переміщення в Excel">⬇ Excel</span>
       </span>
       <input type="text" id="searchIn" placeholder="🔎 Пошук…" autocomplete="off">
@@ -169,6 +172,7 @@ a{color:inherit;text-decoration:none}
 
 <script>
 const API_URL = 'https://price-api.doskevich.workers.dev';
+const CAT_LABEL = { received: 'Отримано', returned: 'Повернено', writtenoff: 'Списано' };
 
 // Звіт лише по Генерації (монтажні бригади) — орг-фільтра свідомо немає.
 const state = {
@@ -185,7 +189,7 @@ const state = {
   mvBrigade: 'all',     // ref складу або 'all'
   mvCustomer: 'all',    // покупець або 'all'
   moveFrom: null, moveTo: null,
-  moveDir: 'all',
+  moveCat: 'all',       // 'all' | 'received' | 'returned' | 'writtenoff'
   openDocs: new Set(),
   loaded: false,
 };
@@ -313,8 +317,7 @@ function filteredMoves() {
   if (state.mvCustomer !== 'all') docs = docs.filter(d => (d.customer || '') === state.mvCustomer);
   if (state.moveFrom) docs = docs.filter(d => (d.date || '').slice(0, 10) >= state.moveFrom);
   if (state.moveTo)   docs = docs.filter(d => (d.date || '').slice(0, 10) <= state.moveTo);
-  if (state.moveDir === 'in')  docs = docs.filter(d => state.brigSet.has(d.to_ref));
-  if (state.moveDir === 'out') docs = docs.filter(d => state.brigSet.has(d.from_ref));
+  if (state.moveCat !== 'all') docs = docs.filter(d => d.cat === state.moveCat);
   const q = state.search;
   if (q) docs = docs.filter(d =>
     (d.from_name || '').toLowerCase().includes(q) || (d.to_name || '').toLowerCase().includes(q) ||
@@ -326,6 +329,7 @@ function movesHtml() {
   if (state.allMoves === 'error') return '<div class="error">Не вдалося завантажити переміщення</div>';
   const docs = filteredMoves();
   if (!docs.length) return '<div class="empty">— переміщень за фільтром немає —</div>';
+  const showCat = state.moveCat === 'all';   // мітку типу показуємо лише в загальному списку
   const rows = docs.map(d => {
     const open = state.openDocs.has(d.ref_key);
     const itemsHtml = (d.items || []).map(it => {
@@ -340,7 +344,8 @@ function movesHtml() {
     const noteHtml = note.length ? '<div class="mv-cm">' + note.join(' · ') + '</div>' : '';
     return '<div class="mv-doc' + (open ? ' open' : '') + '" data-doc="' + esc(d.ref_key) + '">' +
       '<div class="mv-doc-head">' +
-        '<span class="mv-dt">' + fmtDatePretty(d.date) + '<span class="mv-num">№' + esc(d.number || '—') + '</span></span>' +
+        '<span class="mv-dt">' + fmtDatePretty(d.date) + '<span class="mv-num">№' + esc(d.number || '—') + '</span>' +
+          (showCat ? '<span class="mv-cat ' + d.cat + '">' + (CAT_LABEL[d.cat] || '') + '</span>' : '') + '</span>' +
         '<span class="mv-from">' + esc(d.from_name || '—') + '</span>' +
         '<span class="mv-to">' + esc(d.to_name || '—') + '</span>' +
         '<span class="mv-cust">' + (d.customer ? esc(d.customer) : '—') + '</span>' +
@@ -395,9 +400,9 @@ function detectPreset() {
   document.querySelectorAll('.mvp').forEach(c => { const r = presetRange(c.dataset.preset); if (r && r.from === state.moveFrom && r.to === state.moveTo) match = c.dataset.preset; });
   document.querySelectorAll('.mvp').forEach(c => c.classList.toggle('active', c.dataset.preset === match));
 }
-function setDir(dir) {
-  state.moveDir = dir;
-  document.querySelectorAll('.mvd').forEach(c => c.classList.toggle('active', c.dataset.dir === dir));
+function setCat(cat) {
+  state.moveCat = cat;
+  document.querySelectorAll('.mvcat').forEach(c => c.classList.toggle('active', c.dataset.cat === cat));
   render();
 }
 
@@ -447,9 +452,9 @@ function downloadMovesXLSX() {
   if (typeof XLSX === 'undefined') { alert('Excel не завантажився.'); return; }
   const docs = filteredMoves();
   if (!docs.length) { alert('Немає даних'); return; }
-  const aoa = [['Дата', '№', 'Відправник', 'Одержувач', 'Покупець', 'Позицій', 'Коментар']];
-  docs.forEach(d => aoa.push([fmtDatePretty(d.date), d.number || '', d.from_name || '', d.to_name || '', d.customer || '', (d.items || []).length, d.comment || '']));
-  _saveXLSX(aoa, [{ wch: 12 }, { wch: 14 }, { wch: 28 }, { wch: 28 }, { wch: 30 }, { wch: 9 }, { wch: 40 }], 'brigades_moves');
+  const aoa = [['Дата', 'Тип', '№', 'Відправник', 'Одержувач', 'Покупець', 'Позицій', 'Коментар']];
+  docs.forEach(d => aoa.push([fmtDatePretty(d.date), CAT_LABEL[d.cat] || '', d.number || '', d.from_name || '', d.to_name || '', d.customer || '', (d.items || []).length, d.comment || '']));
+  _saveXLSX(aoa, [{ wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 28 }, { wch: 28 }, { wch: 30 }, { wch: 9 }, { wch: 40 }], 'brigades_moves');
 }
 function _saveXLSX(aoa, cols, name) {
   const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = cols;
