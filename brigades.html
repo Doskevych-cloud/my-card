@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Бригади · Склади</title>
 <script>
-  // Apply saved theme BEFORE styles paint — avoids flash-of-wrong-theme
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
 </script>
 <script src="auth.js?v=mobhdr20260430"></script>
@@ -19,23 +18,25 @@ a{color:inherit;text-decoration:none}
 
 /* Layout — повна ширина як на інших сторінках */
 .wrap{margin:0 auto;padding:14px 16px}
-.page-head{display:flex;align-items:baseline;gap:12px;margin-bottom:8px}
+.page-head{display:flex;align-items:baseline;gap:12px;margin-bottom:10px}
 .page-head h1{font-size:20px;font-weight:700;letter-spacing:-.4px}
 .page-head .sub{font-size:12px;color:var(--text3)}
 
-/* Toolbar */
+/* Підрозділи (саб-навігація) — як на інших сторінках */
+.page-tabs{display:inline-flex;gap:4px;padding:4px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:10px}
+.ptab{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;user-select:none;transition:background .15s,color .15s;white-space:nowrap}
+.ptab:hover{background:var(--bg3);color:var(--text)}
+.ptab.active{background:var(--accent-bg);color:var(--accent)}
+
+/* Toolbar (фільтри підрозділу) */
 .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
 .toolbar input[type=text]{flex:1;min-width:200px;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;transition:border .15s}
 .toolbar input:focus{border-color:var(--accent)}
 .toolbar .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;display:inline-flex;align-items:center;gap:6px}
 .toolbar .chip:hover{background:var(--bg3);color:var(--text)}
-
-/* Summary strip */
-.summary{display:grid;grid-template-columns:repeat(3,minmax(0,260px));gap:10px;margin-bottom:14px}
-.sum-card{padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
-.sum-card .l{font-size:9.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
-.sum-card .v{font-size:22px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;margin-top:2px}
-.sum-card .s{font-size:10.5px;color:var(--text3);font-variant-numeric:tabular-nums}
+.toolbar .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.toolbar .sep{width:1px;height:20px;background:var(--border);margin:0 2px}
+.mvf{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
 
 /* Brigade cards */
 .brig{margin-bottom:8px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
@@ -46,40 +47,22 @@ a{color:inherit;text-decoration:none}
 .brig-head .nm{flex:1;min-width:0;font-weight:700;font-size:14px;color:var(--text);overflow-wrap:anywhere}
 .brig-head .stats{flex:0 0 auto;display:flex;align-items:baseline;gap:8px;font-size:11.5px;color:var(--text3);font-variant-numeric:tabular-nums;white-space:nowrap}
 .brig-head .stats b{color:var(--text);font-size:14px;font-weight:700}
-.brig-head .stats .mvc{color:var(--text3)}
 
 .brig-body{display:none;border-top:1px solid var(--border)}
 .brig.open>.brig-body{display:block}
-
-/* Таби в картці: Склад / Переміщення */
-.card-tabs{display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid var(--border)}
-.ctab{padding:6px 16px;border-radius:7px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;user-select:none;transition:all .15s}
-.ctab:hover{background:var(--bg3);color:var(--text)}
-.ctab.active{background:var(--accent-bg);color:var(--accent)}
-
-/* Section label */
-.brig-sec{padding:10px 16px 4px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:700}
 
 /* Залишок — рядки */
 .brig-item{display:flex;align-items:baseline;gap:14px;padding:8px 16px;border-bottom:1px solid var(--border)}
 .brig-item:last-of-type{border-bottom:none}
 .brig-item .nm{flex:1;min-width:0;color:var(--text2);overflow-wrap:anywhere}
 .brig-item .q{flex:0 0 auto;min-width:120px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--text)}
-.brig-empty{padding:10px 16px;color:var(--text3);font-style:italic;font-size:12px}
-
-/* Переміщення — окрема випадайка */
-.mv-toggle{display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;user-select:none;border-top:1px solid var(--border);background:var(--bg2);font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;color:var(--text2)}
-.mv-toggle:hover{color:var(--text)}
-.mv-toggle .chev{flex:0 0 auto;width:12px;font-size:11px;color:var(--text3);transition:transform .15s}
-.mv-toggle.open .chev{transform:rotate(90deg)}
-.mv-toggle.mv-empty{cursor:default;color:var(--text3)}
-.mv-toggle.mv-empty:hover{color:var(--text3)}
-.mv-wrap{background:var(--bg2)}
+.brig-empty{padding:12px 16px;color:var(--text3);font-style:italic;font-size:12px}
 
 /* Переміщення — документи */
-.mv-hint{padding:10px 16px 12px;color:var(--text3);font-size:12px;font-style:italic}
-.mv-doc{border-top:1px solid var(--border)}
-.mv-doc-head{display:flex;align-items:center;gap:12px;padding:9px 16px 9px 28px;cursor:pointer}
+.mv-hint{padding:12px 16px;color:var(--text3);font-size:12px;font-style:italic}
+.mv-doc{border-bottom:1px solid var(--border)}
+.mv-doc:last-child{border-bottom:none}
+.mv-doc-head{display:flex;align-items:center;gap:12px;padding:9px 16px;cursor:pointer}
 .mv-doc-head:hover{background:var(--bg3)}
 .mv-dir{flex:0 0 auto;width:16px;text-align:center;font-size:14px;color:var(--text3)}
 .mv-main{flex:1;min-width:0}
@@ -88,14 +71,13 @@ a{color:inherit;text-decoration:none}
 .mv-cm-head{display:block;font-size:11.5px;color:var(--text2);font-style:italic;margin-top:3px;overflow-wrap:anywhere}
 .mv-no{color:var(--red)}
 .mv-cnt{flex:0 0 auto;font-size:11px;color:var(--text3);white-space:nowrap}
-.mv-items{display:none;padding:2px 16px 10px 28px}
+.mv-items{display:none;padding:2px 16px 10px 44px}
 .mv-doc.open .mv-items{display:block}
 .mv-it{display:flex;align-items:baseline;gap:14px;padding:5px 0;font-size:12.5px;border-bottom:1px solid var(--border)}
 .mv-it:last-child{border-bottom:none}
 .mv-it-nm{flex:1;min-width:0;color:var(--text2);overflow-wrap:anywhere}
 .mv-it-q{flex:0 0 auto;min-width:110px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--text)}
 .mv-money{flex:0 0 auto;min-width:120px;text-align:right;font-variant-numeric:tabular-nums;color:var(--text3)}
-.mv-cm{padding:6px 0 2px;font-size:11.5px;color:var(--text3);font-style:italic}
 
 /* Loading / empty / error */
 .loading{padding:60px 20px;text-align:center;color:var(--text2);font-size:13px}
@@ -107,16 +89,15 @@ a{color:inherit;text-decoration:none}
 @media (max-width:720px){
   .wrap{padding:12px}
   .page-head h1{font-size:17px}
+  .page-tabs{display:flex;width:100%}
+  .page-tabs .ptab{flex:1;justify-content:center;padding:8px 10px}
   .toolbar{padding:8px;gap:6px}
   .toolbar input[type=text]{flex:1 1 100%;min-width:0;font-size:12px;padding:6px 8px}
   .toolbar .chip{padding:6px 10px;font-size:11px}
-  .summary{grid-template-columns:1fr 1fr;gap:6px}
-  .summary .sum-card:nth-child(3){grid-column:1 / -1}
-  .sum-card{padding:9px 10px}
-  .sum-card .v{font-size:18px}
+  .toolbar .sep{display:none}
   .brig-head{padding:11px 12px}
-  .brig-item .q,.mv-it-q{min-width:0}
-  .mv-money{min-width:0}
+  .brig-item .q,.mv-it-q,.mv-money{min-width:0}
+  .mv-items{padding-left:28px}
 }
 </style>
 </head>
@@ -127,13 +108,28 @@ a{color:inherit;text-decoration:none}
   <div class="wrap">
     <div class="page-head">
       <h1>👷 Бригади</h1>
-      <span class="sub" id="sub">склади бригад</span>
+      <span class="sub" id="sub">склади монтажних бригад</span>
+    </div>
+
+    <div class="page-tabs">
+      <span class="ptab active" data-section="stock" onclick="setSection('stock')">📦 Склад</span>
+      <span class="ptab" data-section="moves" onclick="setSection('moves')">🔄 Переміщення</span>
     </div>
 
     <div class="toolbar">
       <span class="chip" onclick="expandAll()">⊞ Розгорнути</span>
       <span class="chip" onclick="collapseAll()">⊟ Згорнути</span>
-      <span class="chip" onclick="downloadXLSX()" title="Вигрузити залишки в Excel">⬇ Excel</span>
+      <span class="chip" id="xlsxBtn" onclick="downloadXLSX()" title="Вигрузити залишки в Excel">⬇ Excel</span>
+      <span class="mvf" id="mvFilters" style="display:none">
+        <span class="sep"></span>
+        <span class="chip mvp active" data-preset="all" onclick="setPreset('all')">Весь час</span>
+        <span class="chip mvp" data-preset="365" onclick="setPreset('365')">Рік</span>
+        <span class="chip mvp" data-preset="90" onclick="setPreset('90')">90 днів</span>
+        <span class="sep"></span>
+        <span class="chip mvd active" data-dir="all" onclick="setDir('all')">Усі</span>
+        <span class="chip mvd" data-dir="in" onclick="setDir('in')">↓ Надходження</span>
+        <span class="chip mvd" data-dir="out" onclick="setDir('out')">↑ Видача</span>
+      </span>
       <input type="text" id="searchIn" placeholder="🔎 Пошук по бригаді…" autocomplete="off">
     </div>
 
@@ -144,19 +140,16 @@ a{color:inherit;text-decoration:none}
 <script>
 const API_URL = 'https://price-api.doskevich.workers.dev';
 
-// ─── State ───
-// Список складів бригад — з D1 brigades_overview (детект за назвою на бекенді:
-// бачить УСІ бригадні склади без whitelist; admin = всі, бригадир = прив'язані).
-// Залишок (brigade_stock) вантажиться при розгортанні картки.
-// Переміщення (brigade_transfers) вантажаться ОКРЕМО — при відкритті своєї випадайки
-// (важливо: активні бригади мають сотні документів, тож не блокуємо показ складу).
+// Звіт лише по Генерації (монтажні бригади) — орг-фільтра свідомо немає.
 const state = {
+  section: 'stock',     // 'stock' | 'moves' — активний підрозділ
   list: [],
   asOf: null,
   search: '',
-  openKeys: new Set(),  // розгорнуті картки складів
-  tab: {},              // ref → 'stock' | 'moves' (активний таб у картці)
-  openDocs: new Set(),  // розгорнуті документи (їх позиції)
+  movePreset: 'all',    // 'all' | '365' | '90' — період переміщень
+  moveDir: 'all',       // 'all' | 'in' | 'out' — напрямок
+  openKeys: new Set(),
+  openDocs: new Set(),
   stock: {},            // ref → items[] | 'loading' | 'error'
   transfers: {},        // ref → docs[]  | 'loading' | 'error'
   loaded: false,
@@ -173,6 +166,12 @@ function fmtDatePretty(iso) {
   if (!iso) return '—';
   return String(iso).slice(0, 10).split('-').reverse().join('.');
 }
+function presetCutoff(p) {
+  if (p === 'all') return null;
+  const days = p === '90' ? 90 : 365;
+  const d = new Date(); d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
+}
 
 // ─── Дані ───
 async function load() {
@@ -185,7 +184,7 @@ async function load() {
     state.asOf = d.as_of_date || null;
     state.loaded = true;
     const sub = document.getElementById('sub');
-    if (sub) sub.textContent = 'склади бригад' + (state.asOf ? ' · залишок на ' + fmtDatePretty(state.asOf) : '');
+    if (sub) sub.textContent = 'склади монтажних бригад' + (state.asOf ? ' · залишок на ' + fmtDatePretty(state.asOf) : '');
     render();
   } catch (e) {
     document.getElementById('body').innerHTML = `<div class="error">${esc(e.message)}</div>`;
@@ -206,32 +205,28 @@ function render() {
     body.innerHTML = '<div class="empty">' + (state.search ? '— нічого не знайдено —' : '— немає доступних складів бригад —') + '</div>';
     return;
   }
-  const cards = list.map(b => {
+  const moves = state.section === 'moves';
+  body.innerHTML = list.map(b => {
     const ref = String(b.ref_key);
     const open = state.openKeys.has(ref);
-    const tab = state.tab[ref] || 'stock';
     const tc = b.transfers_count || 0;
+    const stats = moves
+      ? '<span class="stats"><b>' + fmt(tc) + '</b><span>рухів</span></span>'
+      : '<span class="stats"><b>' + fmt(b.qty) + '</b><span>' + fmt(b.items) + ' поз.</span></span>';
+    const content = moves ? movementsHtml(ref) : stockHtml(ref);
     return (
       '<div class="brig' + (open ? ' open' : '') + '" data-key="' + esc(ref) + '">' +
         '<div class="brig-head">' +
           '<span class="chev">▸</span>' +
-          '<span class="nm">' + esc(b.name) + '</span>' +
-          '<span class="stats"><b>' + fmt(b.qty) + '</b><span>' + fmt(b.items) + ' поз.</span><span class="mvc">' + fmt(tc) + ' рух.</span></span>' +
+          '<span class="nm">' + esc(b.name) + '</span>' + stats +
         '</div>' +
-        '<div class="brig-body">' +
-          '<div class="card-tabs">' +
-            '<span class="ctab' + (tab === 'stock' ? ' active' : '') + '" data-tab="stock" data-ref="' + esc(ref) + '">Склад</span>' +
-            '<span class="ctab' + (tab === 'moves' ? ' active' : '') + '" data-tab="moves" data-ref="' + esc(ref) + '">Переміщення · ' + fmt(tc) + '</span>' +
-          '</div>' +
-          '<div class="card-tabbody">' + (tab === 'moves' ? movementsHtml(ref) : stockHtml(ref)) + '</div>' +
-        '</div>' +
+        '<div class="brig-body">' + content + '</div>' +
       '</div>'
     );
   }).join('');
-  body.innerHTML = cards;
 }
 
-// ─── Залишок: lazy (brigade_stock) ───
+// ─── Залишок (brigade_stock) ───
 function stockHtml(ref) {
   const s = state.stock[ref];
   if (s === undefined || s === 'loading') return '<div class="brig-empty">Завантаження залишку…</div>';
@@ -255,20 +250,25 @@ async function ensureStock(ref) {
   render();
 }
 
-// ─── Переміщення: lazy (brigade_transfers) — тільки при відкритті випадайки ───
+// ─── Переміщення (brigade_transfers) — фільтр по періоду/напрямку клієнтський ───
 function movementsHtml(ref) {
   const t = state.transfers[ref];
   if (t === undefined || t === 'loading') return '<div class="mv-hint">Завантаження переміщень…</div>';
   if (t === 'error') return '<div class="mv-hint">Не вдалося завантажити переміщення</div>';
-  if (!t.length) return '<div class="mv-hint">Переміщень не знайдено</div>';
-  return t.map(d => {
+  const cutoff = presetCutoff(state.movePreset);
+  let docs = t;
+  if (cutoff) docs = docs.filter(d => (d.date || '') >= cutoff);
+  if (state.moveDir !== 'all') docs = docs.filter(d => d.direction === state.moveDir);
+  if (!docs.length) {
+    const filtered = state.movePreset !== 'all' || state.moveDir !== 'all';
+    return '<div class="mv-hint">' + (filtered ? 'Переміщень за фільтром немає' : 'Переміщень немає') + '</div>';
+  }
+  return docs.map(d => {
     const inn = d.direction === 'in';
     const open = state.openDocs.has(d.ref_key);
     const route = esc(d.from_name || '?') + ' → ' + esc(d.to_name || '?');
     const itemsHtml = (d.items || []).map(it => {
       const unit = it.unit ? (' ' + esc(it.unit)) : '';
-      // Сума (Сумма) — лише адміну (бекенд вирізає для бригад) І лише коли ≠ 0
-      // (зараз майже всі переміщення з нульовою сумою → не засмічуємо стовпцем).
       const money = it.amount ? '<span class="mv-money">' + fmt(it.amount, it.amount < 100 ? 2 : 0) + ' грн</span>' : '';
       return '<div class="mv-it"><span class="mv-it-nm">' + esc(it.name || '—') + '</span>' +
              '<span class="mv-it-q">' + fmt(it.qty, it.qty < 100 ? 2 : 0) + unit + '</span>' + money + '</div>';
@@ -300,24 +300,40 @@ async function ensureTransfers(ref) {
   render();
 }
 
-// ─── Розгортання ───
+// ─── Розгортання карток / документів ───
+function ensureData(ref) { if (state.section === 'moves') ensureTransfers(ref); else ensureStock(ref); }
 function toggleCard(ref) {
   if (state.openKeys.has(ref)) state.openKeys.delete(ref);
-  else { state.openKeys.add(ref); ensureStock(ref); }
-  render();
-}
-function switchTab(ref, tab) {
-  state.tab[ref] = tab;
-  if (tab === 'moves') ensureTransfers(ref); else ensureStock(ref);
+  else { state.openKeys.add(ref); ensureData(ref); }
   render();
 }
 function expandAll() {
-  brigadeList().forEach(b => { const ref = String(b.ref_key); state.openKeys.add(ref); ensureStock(ref); });
+  brigadeList().forEach(b => { const ref = String(b.ref_key); state.openKeys.add(ref); ensureData(ref); });
   render();
 }
 function collapseAll() { state.openKeys.clear(); render(); }
 
-// Delegated click — #body persists across renders (тільки innerHTML міняється).
+// ─── Підрозділи + фільтри ───
+function setSection(sec) {
+  state.section = sec;
+  document.querySelectorAll('.ptab[data-section]').forEach(t => t.classList.toggle('active', t.dataset.section === sec));
+  document.getElementById('xlsxBtn').style.display = sec === 'stock' ? '' : 'none';
+  document.getElementById('mvFilters').style.display = sec === 'moves' ? 'inline-flex' : 'none';
+  state.openKeys.forEach(ref => ensureData(ref));
+  render();
+}
+function setPreset(p) {
+  state.movePreset = p;
+  document.querySelectorAll('.mvp').forEach(c => c.classList.toggle('active', c.dataset.preset === p));
+  render();
+}
+function setDir(dir) {
+  state.moveDir = dir;
+  document.querySelectorAll('.mvd').forEach(c => c.classList.toggle('active', c.dataset.dir === dir));
+  render();
+}
+
+// Delegated click — #body persists across renders.
 document.getElementById('body').addEventListener('click', function(ev) {
   const docHead = ev.target.closest('.mv-doc-head');
   if (docHead) {
@@ -329,8 +345,6 @@ document.getElementById('body').addEventListener('click', function(ev) {
     }
     return;
   }
-  const ctab = ev.target.closest('.ctab[data-tab]');
-  if (ctab) { switchTab(ctab.dataset.ref, ctab.dataset.tab); return; }
   const head = ev.target.closest('.brig-head');
   if (!head) return;
   const card = head.closest('.brig[data-key]');
@@ -342,7 +356,7 @@ document.getElementById('searchIn').addEventListener('input', e => {
   render();
 });
 
-// ─── Excel: тягне залишок усіх складів і вивантажує позиції ───
+// ─── Excel: залишок усіх складів ───
 async function downloadXLSX() {
   if (typeof XLSX === 'undefined') { alert('Excel-бібліотека не завантажилась.'); return; }
   const list = brigadeList();
