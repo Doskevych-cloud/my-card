@@ -130,7 +130,7 @@ a{color:inherit;text-decoration:none}
         <span class="chip mvd" data-dir="in" onclick="setDir('in')">↓ Надходження</span>
         <span class="chip mvd" data-dir="out" onclick="setDir('out')">↑ Видача</span>
       </span>
-      <input type="text" id="searchIn" placeholder="🔎 Пошук по бригаді…" autocomplete="off">
+      <input type="text" id="searchIn" placeholder="🔎 Пошук по бригаді або товару…" autocomplete="off">
     </div>
 
     <div id="body"><div class="loading">Завантаження…</div></div>
@@ -177,11 +177,16 @@ function presetCutoff(p) {
 async function load() {
   document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
   try {
-    const res = await fetch(API_URL + '?action=brigades_overview');
-    const d = await res.json();
-    if (d.error) throw new Error(d.error);
-    state.list = (d.warehouses || []).slice().sort((a, b) => (b.qty || 0) - (a.qty || 0));
-    state.asOf = d.as_of_date || null;
+    // Список + увесь залишок одним заходом (щоб пошук працював по товарах одразу).
+    const [ov, st] = await Promise.all([
+      fetch(API_URL + '?action=brigades_overview').then(r => r.json()),
+      fetch(API_URL + '?action=brigade_stock_all').then(r => r.json()).catch(() => ({})),
+    ]);
+    if (ov.error) throw new Error(ov.error);
+    state.list = (ov.warehouses || []).slice().sort((a, b) => (b.qty || 0) - (a.qty || 0));
+    state.asOf = ov.as_of_date || null;
+    const allStock = (st && st.stock) || {};
+    for (const ref in allStock) state.stock[ref] = allStock[ref];
     state.loaded = true;
     const sub = document.getElementById('sub');
     if (sub) sub.textContent = 'склади монтажних бригад' + (state.asOf ? ' · залишок на ' + fmtDatePretty(state.asOf) : '');
@@ -193,7 +198,15 @@ async function load() {
 
 function brigadeList() {
   const q = state.search;
-  return q ? state.list.filter(b => (b.name || '').toLowerCase().includes(q)) : state.list;
+  if (!q) return state.list;
+  return state.list.filter(b => {
+    if ((b.name || '').toLowerCase().includes(q)) return true;       // збіг по бригаді
+    if (state.section === 'stock') {                                  // або по товару (Склад)
+      const s = state.stock[String(b.ref_key)];
+      return Array.isArray(s) && s.some(it => (it.name || '').toLowerCase().includes(q));
+    }
+    return false;
+  });
 }
 
 // ─── Render ───
@@ -208,12 +221,12 @@ function render() {
   const moves = state.section === 'moves';
   body.innerHTML = list.map(b => {
     const ref = String(b.ref_key);
-    const open = state.openKeys.has(ref);
+    const open = state.openKeys.has(ref) || (!moves && !!state.search);
     const tc = b.transfers_count || 0;
     const stats = moves
       ? '<span class="stats"><b>' + fmt(tc) + '</b><span>рухів</span></span>'
       : '<span class="stats"><b>' + fmt(b.qty) + '</b><span>' + fmt(b.items) + ' поз.</span></span>';
-    const content = moves ? movementsHtml(ref) : stockHtml(ref);
+    const content = moves ? movementsHtml(ref) : stockHtml(ref, b);
     return (
       '<div class="brig' + (open ? ' open' : '') + '" data-key="' + esc(ref) + '">' +
         '<div class="brig-head">' +
@@ -227,12 +240,16 @@ function render() {
 }
 
 // ─── Залишок (brigade_stock) ───
-function stockHtml(ref) {
+function stockHtml(ref, b) {
   const s = state.stock[ref];
   if (s === undefined || s === 'loading') return '<div class="brig-empty">Завантаження залишку…</div>';
   if (s === 'error') return '<div class="brig-empty">Не вдалося завантажити залишок</div>';
-  if (!s.length) return '<div class="brig-empty">— немає позицій із залишком —</div>';
-  return s.map(it =>
+  const q = state.search;
+  const nm = q && b && (b.name || '').toLowerCase().includes(q);
+  // Пошук по товару фільтрує позиції; збіг по назві бригади показує всі.
+  const items = (q && !nm) ? s.filter(it => (it.name || '').toLowerCase().includes(q)) : s;
+  if (!items.length) return '<div class="brig-empty">— немає позицій із залишком —</div>';
+  return items.map(it =>
     '<div class="brig-item"><span class="nm">' + esc(it.name) + '</span>' +
     '<span class="q">' + fmt(it.qty, it.qty < 100 ? 2 : 0) + '</span></div>'
   ).join('');
