@@ -20,19 +20,18 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
 a{color:inherit;text-decoration:none}
 
-/* Layout — повна ширина як на інших сторінках */
 .wrap{margin:0 auto;padding:14px 16px}
 .page-head{display:flex;align-items:baseline;gap:12px;margin-bottom:10px}
 .page-head h1{font-size:20px;font-weight:700;letter-spacing:-.4px}
 .page-head .sub{font-size:12px;color:var(--text3)}
 
-/* Підрозділи (саб-навігація) — як на інших сторінках */
+/* Підрозділи (саб-навігація) */
 .page-tabs{display:inline-flex;gap:4px;padding:4px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:10px}
 .ptab{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;user-select:none;transition:background .15s,color .15s;white-space:nowrap}
 .ptab:hover{background:var(--bg3);color:var(--text)}
 .ptab.active{background:var(--accent-bg);color:var(--accent)}
 
-/* Toolbar (фільтри підрозділу) */
+/* Toolbar */
 .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
 .toolbar input[type=text]{flex:1;min-width:200px;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;transition:border .15s}
 .toolbar input:focus{border-color:var(--accent)}
@@ -41,10 +40,12 @@ a{color:inherit;text-decoration:none}
 .toolbar .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
 .toolbar .sep{width:1px;height:20px;background:var(--border);margin:0 2px}
 .mvf{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
-.toolbar input.date-range-input{flex:0 0 auto;min-width:200px;cursor:pointer}
+.toolbar input.date-range-input{flex:0 0 auto;min-width:190px;cursor:pointer}
 .toolbar input.date-range-input.active,.toolbar input.date-range-input:focus{border-color:var(--accent)}
+.mv-select{flex:0 0 auto;max-width:240px;padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;cursor:pointer;outline:none}
+.mv-select:focus{border-color:var(--accent)}
 
-/* Brigade cards */
+/* Brigade cards (Склад) */
 .brig{margin-bottom:8px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
 .brig-head{display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;user-select:none}
 .brig-head:hover{background:var(--bg3)}
@@ -53,41 +54,39 @@ a{color:inherit;text-decoration:none}
 .brig-head .nm{flex:1;min-width:0;font-weight:700;font-size:14px;color:var(--text);overflow-wrap:anywhere}
 .brig-head .stats{flex:0 0 auto;display:flex;align-items:baseline;gap:8px;font-size:11.5px;color:var(--text3);font-variant-numeric:tabular-nums;white-space:nowrap}
 .brig-head .stats b{color:var(--text);font-size:14px;font-weight:700}
-
 .brig-body{display:none;border-top:1px solid var(--border)}
 .brig.open>.brig-body{display:block}
-
-/* Залишок — рядки */
 .brig-item{display:flex;align-items:baseline;gap:14px;padding:8px 16px;border-bottom:1px solid var(--border)}
 .brig-item:last-of-type{border-bottom:none}
 .brig-item .nm{flex:1;min-width:0;color:var(--text2);overflow-wrap:anywhere}
 .brig-item .q{flex:0 0 auto;min-width:120px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--text)}
 .brig-empty{padding:12px 16px;color:var(--text3);font-style:italic;font-size:12px}
 
-/* Переміщення — таблиця документів (колонки: Напрям · Дата · № · Інший склад · Поз.) */
-.mv-hint{padding:12px 16px;color:var(--text3);font-size:12px;font-style:italic}
-.mv-th,.mv-doc-head{display:grid;grid-template-columns:128px 88px 108px minmax(120px,1fr) minmax(0,1.8fr) 64px;gap:14px;align-items:center;padding:9px 16px}
-.mv-th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);font-weight:700;background:var(--bg2);border-bottom:1px solid var(--border)}
+/* Переміщення — пласка таблиця (Дата · Відправник · Одержувач · Покупець · К-сть) */
+.mv-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.mv-th,.mv-doc-head{display:grid;grid-template-columns:108px minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,1.4fr) 70px;gap:14px;align-items:center;padding:10px 16px}
+.mv-th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);font-weight:700;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1}
 .mv-th .r{text-align:right}
 .mv-doc{border-bottom:1px solid var(--border)}
 .mv-doc:last-child{border-bottom:none}
 .mv-doc-head{cursor:pointer}
 .mv-doc-head:hover{background:var(--bg3)}
-.mv-d{font-size:12px;font-weight:600;color:var(--text2);white-space:nowrap}
 .mv-dt{font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums;white-space:nowrap}
-.mv-n{font-size:11.5px;color:var(--text3);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mv-w{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mv-dt .mv-num{display:block;font-size:10.5px;color:var(--text3);margin-top:1px}
+.mv-from,.mv-to{font-size:12.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mv-to{font-weight:600}
 .mv-cust{font-size:12.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mv-c{font-size:11.5px;color:var(--text3);white-space:nowrap;text-align:right}
 .mv-no{color:var(--red);font-weight:600}
-.mv-cm{padding:0 16px 9px 382px;font-size:11.5px;color:var(--text2);font-style:italic;overflow-wrap:anywhere}
-.mv-items{display:none;padding:4px 16px 12px 16px}
+.mv-cm{padding:0 16px 9px 122px;font-size:11.5px;color:var(--text2);font-style:italic;overflow-wrap:anywhere}
+.mv-items{display:none;padding:4px 16px 12px 16px;background:var(--bg2)}
 .mv-doc.open .mv-items{display:block}
 .mv-it{display:flex;align-items:baseline;gap:14px;padding:5px 0;font-size:12.5px;border-bottom:1px solid var(--border)}
 .mv-it:last-child{border-bottom:none}
 .mv-it-nm{flex:1;min-width:0;color:var(--text2);overflow-wrap:anywhere}
 .mv-it-q{flex:0 0 auto;min-width:110px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--text)}
 .mv-money{flex:0 0 auto;min-width:120px;text-align:right;font-variant-numeric:tabular-nums;color:var(--text3)}
+.mv-count{font-size:11.5px;color:var(--text3);margin:2px 2px 8px}
 
 /* Loading / empty / error */
 .loading{padding:60px 20px;text-align:center;color:var(--text2);font-size:13px}
@@ -105,17 +104,18 @@ a{color:inherit;text-decoration:none}
   .toolbar input[type=text]{flex:1 1 100%;min-width:0;font-size:12px;padding:6px 8px}
   .toolbar .chip{padding:6px 10px;font-size:11px}
   .toolbar .sep{display:none}
+  .mv-select{flex:1 1 100%;max-width:none}
   .brig-head{padding:11px 12px}
   .brig-item .q,.mv-it-q,.mv-money{min-width:0}
-  /* Переміщення на мобільному: таблиця → стек */
   .mv-th{display:none}
-  .mv-doc-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;padding:9px 12px}
-  .mv-d{order:1}
-  .mv-c{order:2;margin-left:auto}
-  .mv-w{order:3;flex:1 1 100%}
-  .mv-cust{order:4;flex:1 1 100%;white-space:normal;font-size:12px}
-  .mv-dt{order:5;font-size:11px;color:var(--text3)}
-  .mv-n{order:6;font-size:11px;color:var(--text3)}
+  .mv-doc-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;padding:9px 12px}
+  .mv-dt{order:1;flex:1 1 100%;font-size:11px;color:var(--text3)}
+  .mv-dt .mv-num{display:inline;margin-left:6px}
+  .mv-from{order:2}
+  .mv-from::after{content:'→';margin:0 4px;color:var(--text3)}
+  .mv-to{order:3}
+  .mv-c{order:4;margin-left:auto;font-size:11px}
+  .mv-cust{order:5;flex:1 1 100%;white-space:normal;font-size:12px;color:var(--text2)}
   .mv-cm{padding-left:12px}
   .mv-items{padding-left:12px}
 }
@@ -137,24 +137,30 @@ a{color:inherit;text-decoration:none}
     </div>
 
     <div class="toolbar">
-      <span class="chip" onclick="expandAll()">⊞ Розгорнути</span>
-      <span class="chip" onclick="collapseAll()">⊟ Згорнути</span>
-      <span class="chip" id="xlsxBtn" onclick="downloadXLSX()" title="Вигрузити залишки в Excel">⬇ Excel</span>
+      <!-- Склад -->
+      <span class="mvf" id="stockTools">
+        <span class="chip" onclick="expandAll()">⊞ Розгорнути</span>
+        <span class="chip" onclick="collapseAll()">⊟ Згорнути</span>
+        <span class="chip" onclick="downloadStockXLSX()" title="Залишки в Excel">⬇ Excel</span>
+      </span>
+      <!-- Переміщення -->
       <span class="mvf" id="mvFilters" style="display:none">
+        <select id="mvBrigade" class="mv-select" onchange="setBrigade(this.value)"><option value="all">Усі бригади</option></select>
+        <select id="mvCustomer" class="mv-select" onchange="setCustomer(this.value)"><option value="all">Усі покупці</option></select>
         <span class="sep"></span>
         <input type="text" id="mvDateRange" class="date-range-input" readonly placeholder="📅 Період">
         <span class="chip mvp" data-preset="today" onclick="setPreset('today')">Сьогодні</span>
         <span class="chip mvp" data-preset="week" onclick="setPreset('week')">Тиждень</span>
         <span class="chip mvp" data-preset="month" onclick="setPreset('month')">Місяць</span>
-        <span class="chip mvp" data-preset="90" onclick="setPreset('90')">90 днів</span>
         <span class="chip mvp" data-preset="year" onclick="setPreset('year')">Рік</span>
         <span class="chip mvp active" data-preset="all" onclick="setPreset('all')">Весь час</span>
         <span class="sep"></span>
         <span class="chip mvd active" data-dir="all" onclick="setDir('all')">Усі</span>
         <span class="chip mvd" data-dir="in" onclick="setDir('in')">↓ Надходження</span>
         <span class="chip mvd" data-dir="out" onclick="setDir('out')">↑ Видача</span>
+        <span class="chip" onclick="downloadMovesXLSX()" title="Переміщення в Excel">⬇ Excel</span>
       </span>
-      <input type="text" id="searchIn" placeholder="🔎 Пошук по бригаді або товару…" autocomplete="off">
+      <input type="text" id="searchIn" placeholder="🔎 Пошук…" autocomplete="off">
     </div>
 
     <div id="body"><div class="loading">Завантаження…</div></div>
@@ -166,17 +172,21 @@ const API_URL = 'https://price-api.doskevich.workers.dev';
 
 // Звіт лише по Генерації (монтажні бригади) — орг-фільтра свідомо немає.
 const state = {
-  section: 'stock',     // 'stock' | 'moves' — активний підрозділ
-  list: [],
+  section: 'stock',
+  list: [],             // бригадні склади (overview) — картки Складу + select Бригада
   asOf: null,
   search: '',
-  moveFrom: null,       // період переміщень: ISO YYYY-MM-DD або null (весь час)
-  moveTo: null,
-  moveDir: 'all',       // 'all' | 'in' | 'out' — напрямок
+  // Склад
+  stock: {},            // ref → items[]
   openKeys: new Set(),
+  // Переміщення (плаский список)
+  allMoves: null,       // [] | null(не вантажили) | 'loading' | 'error'
+  brigSet: new Set(),   // refs бригадних складів (для напрямку)
+  mvBrigade: 'all',     // ref складу або 'all'
+  mvCustomer: 'all',    // покупець або 'all'
+  moveFrom: null, moveTo: null,
+  moveDir: 'all',
   openDocs: new Set(),
-  stock: {},            // ref → items[] | 'loading' | 'error'
-  transfers: {},        // ref → docs[]  | 'loading' | 'error'
   loaded: false,
 };
 
@@ -194,7 +204,6 @@ function fmtDatePretty(iso) {
 function _localISO(d) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
-// Пресет → {from, to} (ISO YYYY-MM-DD); 'all' → весь час (null/null).
 function presetRange(p) {
   const today = _localISO(new Date());
   const back = (days) => { const d = new Date(); d.setDate(d.getDate() - days); return _localISO(d); };
@@ -202,18 +211,16 @@ function presetRange(p) {
     case 'today': return { from: today,     to: today };
     case 'week':  return { from: back(7),   to: today };
     case 'month': return { from: back(30),  to: today };
-    case '90':    return { from: back(90),  to: today };
     case 'year':  return { from: back(365), to: today };
     case 'all':   return { from: null, to: null };
   }
   return null;
 }
 
-// ─── Дані ───
+// ─── Завантаження ───
 async function load() {
   document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
   try {
-    // Список + увесь залишок одним заходом (щоб пошук працював по товарах одразу).
     const [ov, st] = await Promise.all([
       fetch(API_URL + '?action=brigades_overview').then(r => r.json()),
       fetch(API_URL + '?action=brigade_stock_all').then(r => r.json()).catch(() => ({})),
@@ -221,106 +228,106 @@ async function load() {
     if (ov.error) throw new Error(ov.error);
     state.list = (ov.warehouses || []).slice().sort((a, b) => (b.qty || 0) - (a.qty || 0));
     state.asOf = ov.as_of_date || null;
+    state.brigSet = new Set(state.list.map(b => String(b.ref_key)));
     const allStock = (st && st.stock) || {};
     for (const ref in allStock) state.stock[ref] = allStock[ref];
     state.loaded = true;
     const sub = document.getElementById('sub');
     if (sub) sub.textContent = 'склади монтажних бригад' + (state.asOf ? ' · залишок на ' + fmtDatePretty(state.asOf) : '');
+    // заповнюємо select бригад
+    const bsel = document.getElementById('mvBrigade');
+    if (bsel) bsel.innerHTML = '<option value="all">Усі бригади</option>' +
+      state.list.map(b => `<option value="${esc(b.ref_key)}">${esc(b.name)}</option>`).join('');
     render();
   } catch (e) {
     document.getElementById('body').innerHTML = `<div class="error">${esc(e.message)}</div>`;
   }
 }
 
-function brigadeList() {
-  const q = state.search;
-  if (!q) return state.list;
-  return state.list.filter(b => {
-    if ((b.name || '').toLowerCase().includes(q)) return true;       // збіг по бригаді
-    if (state.section === 'stock') {                                  // або по товару (Склад)
-      const s = state.stock[String(b.ref_key)];
-      return Array.isArray(s) && s.some(it => (it.name || '').toLowerCase().includes(q));
-    }
-    return false;
-  });
+// Плаский список усіх переміщень (lazy — при першому вході в підрозділ).
+async function loadMoves() {
+  if (state.allMoves !== null && state.allMoves !== 'error') return;
+  state.allMoves = 'loading';
+  render();
+  try {
+    const r = await fetch(API_URL + '?action=brigade_transfers_all').then(r => r.json());
+    if (r.error) throw new Error(r.error);
+    state.allMoves = r.transfers || [];
+    // select покупців
+    const custs = [...new Set(state.allMoves.map(d => d.customer).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'uk'));
+    const csel = document.getElementById('mvCustomer');
+    if (csel) csel.innerHTML = '<option value="all">Усі покупці</option>' +
+      custs.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  } catch (e) { state.allMoves = 'error'; }
+  render();
 }
 
 // ─── Render ───
 function render() {
   if (!state.loaded) return;
-  const list = brigadeList();
   const body = document.getElementById('body');
-  if (!list.length) {
-    body.innerHTML = '<div class="empty">' + (state.search ? '— нічого не знайдено —' : '— немає доступних складів бригад —') + '</div>';
-    return;
-  }
-  const moves = state.section === 'moves';
+  if (state.section === 'moves') { body.innerHTML = movesHtml(); return; }
+  renderStock(body);
+}
+
+// Склад: картки бригад із залишком (пошук по бригаді/товару)
+function renderStock(body) {
+  const q = state.search;
+  let list = state.list;
+  if (q) list = list.filter(b => {
+    if ((b.name || '').toLowerCase().includes(q)) return true;
+    const s = state.stock[String(b.ref_key)];
+    return Array.isArray(s) && s.some(it => (it.name || '').toLowerCase().includes(q));
+  });
+  if (!list.length) { body.innerHTML = '<div class="empty">' + (q ? '— нічого не знайдено —' : '— немає доступних складів —') + '</div>'; return; }
   body.innerHTML = list.map(b => {
     const ref = String(b.ref_key);
-    const open = state.openKeys.has(ref) || (!moves && !!state.search);
-    const tc = b.transfers_count || 0;
-    const stats = moves
-      ? '<span class="stats"><b>' + fmt(tc) + '</b><span>рухів</span></span>'
-      : '<span class="stats"><b>' + fmt(b.qty) + '</b><span>' + fmt(b.items) + ' поз.</span></span>';
-    const content = moves ? movementsHtml(ref) : stockHtml(ref, b);
+    const open = state.openKeys.has(ref) || !!q;
     return (
       '<div class="brig' + (open ? ' open' : '') + '" data-key="' + esc(ref) + '">' +
-        '<div class="brig-head">' +
-          '<span class="chev">▸</span>' +
-          '<span class="nm">' + esc(b.name) + '</span>' + stats +
-        '</div>' +
-        '<div class="brig-body">' + content + '</div>' +
+        '<div class="brig-head"><span class="chev">▸</span><span class="nm">' + esc(b.name) + '</span>' +
+          '<span class="stats"><b>' + fmt(b.qty) + '</b><span>' + fmt(b.items) + ' поз.</span></span></div>' +
+        '<div class="brig-body">' + stockHtml(ref, b) + '</div>' +
       '</div>'
     );
   }).join('');
 }
-
-// ─── Залишок (brigade_stock) ───
 function stockHtml(ref, b) {
   const s = state.stock[ref];
   if (s === undefined || s === 'loading') return '<div class="brig-empty">Завантаження залишку…</div>';
   if (s === 'error') return '<div class="brig-empty">Не вдалося завантажити залишок</div>';
   const q = state.search;
   const nm = q && b && (b.name || '').toLowerCase().includes(q);
-  // Пошук по товару фільтрує позиції; збіг по назві бригади показує всі.
   const items = (q && !nm) ? s.filter(it => (it.name || '').toLowerCase().includes(q)) : s;
   if (!items.length) return '<div class="brig-empty">— немає позицій із залишком —</div>';
   return items.map(it =>
-    '<div class="brig-item"><span class="nm">' + esc(it.name) + '</span>' +
-    '<span class="q">' + fmt(it.qty, it.qty < 100 ? 2 : 0) + '</span></div>'
+    '<div class="brig-item"><span class="nm">' + esc(it.name) + '</span><span class="q">' + fmt(it.qty, it.qty < 100 ? 2 : 0) + '</span></div>'
   ).join('');
 }
-async function ensureStock(ref) {
-  if (!ref || state.stock[ref] !== undefined) return;
-  state.stock[ref] = 'loading';
-  render();
-  try {
-    const res = await fetch(API_URL + '?action=brigade_stock&wh=' + encodeURIComponent(ref));
-    const d = await res.json();
-    if (d.error) throw new Error(d.error);
-    state.stock[ref] = d.items || [];
-  } catch (e) { state.stock[ref] = 'error'; }
-  render();
-}
 
-// ─── Переміщення (brigade_transfers) — фільтр по періоду/напрямку клієнтський ───
-function movementsHtml(ref) {
-  const t = state.transfers[ref];
-  if (t === undefined || t === 'loading') return '<div class="mv-hint">Завантаження переміщень…</div>';
-  if (t === 'error') return '<div class="mv-hint">Не вдалося завантажити переміщення</div>';
-  let docs = t;
+// Переміщення: плаский список усіх рухів + фільтри
+function filteredMoves() {
+  if (!Array.isArray(state.allMoves)) return [];
+  let docs = state.allMoves;
+  if (state.mvBrigade !== 'all') docs = docs.filter(d => d.from_ref === state.mvBrigade || d.to_ref === state.mvBrigade);
+  if (state.mvCustomer !== 'all') docs = docs.filter(d => (d.customer || '') === state.mvCustomer);
   if (state.moveFrom) docs = docs.filter(d => (d.date || '').slice(0, 10) >= state.moveFrom);
   if (state.moveTo)   docs = docs.filter(d => (d.date || '').slice(0, 10) <= state.moveTo);
-  if (state.moveDir !== 'all') docs = docs.filter(d => d.direction === state.moveDir);
-  if (!docs.length) {
-    const filtered = state.moveFrom || state.moveTo || state.moveDir !== 'all';
-    return '<div class="mv-hint">' + (filtered ? 'Переміщень за фільтром немає' : 'Переміщень немає') + '</div>';
-  }
-  const header = '<div class="mv-th"><span>Напрям</span><span>Дата</span><span>№</span><span>Інший склад</span><span>Покупець</span><span class="r">Поз.</span></div>';
+  if (state.moveDir === 'in')  docs = docs.filter(d => state.brigSet.has(d.to_ref));
+  if (state.moveDir === 'out') docs = docs.filter(d => state.brigSet.has(d.from_ref));
+  const q = state.search;
+  if (q) docs = docs.filter(d =>
+    (d.from_name || '').toLowerCase().includes(q) || (d.to_name || '').toLowerCase().includes(q) ||
+    (d.customer || '').toLowerCase().includes(q) || (d.number || '').toLowerCase().includes(q));
+  return docs;
+}
+function movesHtml() {
+  if (state.allMoves === 'loading' || state.allMoves === null) return '<div class="loading">Завантаження переміщень…</div>';
+  if (state.allMoves === 'error') return '<div class="error">Не вдалося завантажити переміщення</div>';
+  const docs = filteredMoves();
+  if (!docs.length) return '<div class="empty">— переміщень за фільтром немає —</div>';
   const rows = docs.map(d => {
-    const inn = d.direction === 'in';
     const open = state.openDocs.has(d.ref_key);
-    const contra = inn ? (d.from_name || '?') : (d.to_name || '?');   // звідки (прихід) / куди (видача)
     const itemsHtml = (d.items || []).map(it => {
       const unit = it.unit ? (' ' + esc(it.unit)) : '';
       const money = it.amount ? '<span class="mv-money">' + fmt(it.amount, it.amount < 100 ? 2 : 0) + ' грн</span>' : '';
@@ -333,72 +340,59 @@ function movementsHtml(ref) {
     const noteHtml = note.length ? '<div class="mv-cm">' + note.join(' · ') + '</div>' : '';
     return '<div class="mv-doc' + (open ? ' open' : '') + '" data-doc="' + esc(d.ref_key) + '">' +
       '<div class="mv-doc-head">' +
-        '<span class="mv-d">' + (inn ? '↓ Надходження' : '↑ Видача') + '</span>' +
-        '<span class="mv-dt">' + fmtDatePretty(d.date) + '</span>' +
-        '<span class="mv-n">№' + esc(d.number || '—') + '</span>' +
-        '<span class="mv-w">' + esc(contra) + '</span>' +
+        '<span class="mv-dt">' + fmtDatePretty(d.date) + '<span class="mv-num">№' + esc(d.number || '—') + '</span></span>' +
+        '<span class="mv-from">' + esc(d.from_name || '—') + '</span>' +
+        '<span class="mv-to">' + esc(d.to_name || '—') + '</span>' +
         '<span class="mv-cust">' + (d.customer ? esc(d.customer) : '—') + '</span>' +
         '<span class="mv-c">' + (d.items || []).length + ' поз.</span>' +
       '</div>' + noteHtml +
       '<div class="mv-items">' + itemsHtml + '</div>' +
     '</div>';
   }).join('');
-  return header + rows;
-}
-async function ensureTransfers(ref) {
-  if (!ref || state.transfers[ref] !== undefined) return;
-  state.transfers[ref] = 'loading';
-  render();
-  try {
-    const res = await fetch(API_URL + '?action=brigade_transfers&wh=' + encodeURIComponent(ref));
-    const d = await res.json();
-    if (d.error) throw new Error(d.error);
-    state.transfers[ref] = d.transfers || [];
-  } catch (e) { state.transfers[ref] = 'error'; }
-  render();
+  const head = '<div class="mv-th"><span>Дата</span><span>Відправник</span><span>Одержувач</span><span>Покупець</span><span class="r">К-сть</span></div>';
+  return '<div class="mv-count">Знайдено переміщень: ' + fmt(docs.length) + '</div><div class="mv-wrap">' + head + rows + '</div>';
 }
 
-// ─── Розгортання карток / документів ───
-function ensureData(ref) { if (state.section === 'moves') ensureTransfers(ref); else ensureStock(ref); }
+// ─── Розгортання ───
 function toggleCard(ref) {
   if (state.openKeys.has(ref)) state.openKeys.delete(ref);
-  else { state.openKeys.add(ref); ensureData(ref); }
+  else { state.openKeys.add(ref); ensureStock(ref); }
   render();
 }
-function expandAll() {
-  brigadeList().forEach(b => { const ref = String(b.ref_key); state.openKeys.add(ref); ensureData(ref); });
+async function ensureStock(ref) {
+  if (!ref || state.stock[ref] !== undefined) return;
+  state.stock[ref] = 'loading'; render();
+  try {
+    const d = await fetch(API_URL + '?action=brigade_stock&wh=' + encodeURIComponent(ref)).then(r => r.json());
+    state.stock[ref] = d.items || [];
+  } catch (e) { state.stock[ref] = 'error'; }
   render();
 }
+function expandAll() { (state.search ? [] : state.list).forEach(b => { const r = String(b.ref_key); state.openKeys.add(r); ensureStock(r); }); render(); }
 function collapseAll() { state.openKeys.clear(); render(); }
 
-// ─── Підрозділи + фільтри ───
+// ─── Підрозділи + фільтри переміщень ───
 function setSection(sec) {
   state.section = sec;
   document.querySelectorAll('.ptab[data-section]').forEach(t => t.classList.toggle('active', t.dataset.section === sec));
-  document.getElementById('xlsxBtn').style.display = sec === 'stock' ? '' : 'none';
+  document.getElementById('stockTools').style.display = sec === 'stock' ? 'inline-flex' : 'none';
   document.getElementById('mvFilters').style.display = sec === 'moves' ? 'inline-flex' : 'none';
-  state.openKeys.forEach(ref => ensureData(ref));
-  render();
+  document.getElementById('searchIn').placeholder = sec === 'moves' ? '🔎 Пошук: склад / покупець / №' : '🔎 Пошук по бригаді або товару…';
+  if (sec === 'moves') loadMoves(); else render();
 }
+function setBrigade(v) { state.mvBrigade = v; render(); }
+function setCustomer(v) { state.mvCustomer = v; render(); }
 function setPreset(p) {
   const r = presetRange(p);
   if (!r) return;
-  state.moveFrom = r.from;
-  state.moveTo = r.to;
-  if (_picker) {
-    if (r.from && r.to) _picker.setDates(r.from, r.to);
-    else if (_picker.instance) _picker.instance.clear();   // «Весь час» — очистити календар
-  }
+  state.moveFrom = r.from; state.moveTo = r.to;
+  if (_picker) { if (r.from && r.to) _picker.setDates(r.from, r.to); else if (_picker.instance) _picker.instance.clear(); }
   document.querySelectorAll('.mvp').forEach(c => c.classList.toggle('active', c.dataset.preset === p));
   render();
 }
-// Підсвічує пресет, що збігається з поточним from/to (інакше діапазон кастомний з календаря).
 function detectPreset() {
   let match = null;
-  document.querySelectorAll('.mvp').forEach(c => {
-    const r = presetRange(c.dataset.preset);
-    if (r && r.from === state.moveFrom && r.to === state.moveTo) match = c.dataset.preset;
-  });
+  document.querySelectorAll('.mvp').forEach(c => { const r = presetRange(c.dataset.preset); if (r && r.from === state.moveFrom && r.to === state.moveTo) match = c.dataset.preset; });
   document.querySelectorAll('.mvp').forEach(c => c.classList.toggle('active', c.dataset.preset === match));
 }
 function setDir(dir) {
@@ -412,11 +406,7 @@ document.getElementById('body').addEventListener('click', function(ev) {
   const docHead = ev.target.closest('.mv-doc-head');
   if (docHead) {
     const doc = docHead.closest('.mv-doc[data-doc]');
-    if (doc) {
-      const k = doc.dataset.doc;
-      if (state.openDocs.has(k)) state.openDocs.delete(k); else state.openDocs.add(k);
-      render();
-    }
+    if (doc) { const k = doc.dataset.doc; if (state.openDocs.has(k)) state.openDocs.delete(k); else state.openDocs.add(k); render(); }
     return;
   }
   const head = ev.target.closest('.brig-head');
@@ -425,58 +415,49 @@ document.getElementById('body').addEventListener('click', function(ev) {
   if (card) toggleCard(card.dataset.key);
 });
 
-// Календар періоду (стандартний date-range) для підрозділу «Переміщення».
-// try/catch: якщо flatpickr не підвантажився — пресети все одно працюють, лише без календаря.
+// Календар (date-range) — try/catch: без flatpickr пресети все одно працюють.
 let _picker = null;
 try {
   if (typeof initDateRange === 'function') {
     const _t = _localISO(new Date());
     _picker = initDateRange({
-      inputId: 'mvDateRange',
-      from: _t, to: _t,                    // валідні дати для init (flatpickr падає на null)
-      onChange: function(from, to) {
-        state.moveFrom = from;
-        state.moveTo = to;
-        detectPreset();
-        render();
-      }
+      inputId: 'mvDateRange', from: _t, to: _t,
+      onChange: function(from, to) { state.moveFrom = from; state.moveTo = to; detectPreset(); render(); }
     });
-    if (_picker && _picker.instance) _picker.instance.clear();  // старт без періоду = «Весь час»
+    if (_picker && _picker.instance) _picker.instance.clear();
   }
 } catch (e) { _picker = null; }
 
+let _searchTimer = null;
 document.getElementById('searchIn').addEventListener('input', e => {
-  state.search = e.target.value.toLowerCase().trim();
-  render();
+  const v = e.target.value.toLowerCase().trim();
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(() => { state.search = v; render(); }, 150);
 });
 
-// ─── Excel: залишок усіх складів ───
-async function downloadXLSX() {
-  if (typeof XLSX === 'undefined') { alert('Excel-бібліотека не завантажилась.'); return; }
-  const list = brigadeList();
-  if (!list.length) { alert('Немає даних для експорту'); return; }
-  await Promise.all(list.map(async b => {
-    const ref = String(b.ref_key);
-    if (Array.isArray(state.stock[ref])) return;
-    try {
-      const res = await fetch(API_URL + '?action=brigade_stock&wh=' + encodeURIComponent(ref));
-      const d = await res.json();
-      state.stock[ref] = d.items || [];
-    } catch (e) { state.stock[ref] = []; }
-  }));
+// ─── Excel ───
+function downloadStockXLSX() {
+  if (typeof XLSX === 'undefined') { alert('Excel не завантажився.'); return; }
+  if (!state.list.length) { alert('Немає даних'); return; }
   const aoa = [['Склад бригади', 'Товар', 'Кількість']];
-  list.forEach(b => {
-    const s = state.stock[String(b.ref_key)];
-    if (Array.isArray(s)) s.forEach(it => aoa.push([b.name, it.name, it.qty || 0]));
-  });
-  const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols'] = [{ wch: 30 }, { wch: 48 }, { wch: 12 }];
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Бригади');
-  XLSX.writeFile(wb, 'brigades_' + (state.asOf || '') + '.xlsx');
+  state.list.forEach(b => { const s = state.stock[String(b.ref_key)]; if (Array.isArray(s)) s.forEach(it => aoa.push([b.name, it.name, it.qty || 0])); });
+  _saveXLSX(aoa, [{ wch: 30 }, { wch: 48 }, { wch: 12 }], 'brigades_stock_' + (state.asOf || ''));
+}
+function downloadMovesXLSX() {
+  if (typeof XLSX === 'undefined') { alert('Excel не завантажився.'); return; }
+  const docs = filteredMoves();
+  if (!docs.length) { alert('Немає даних'); return; }
+  const aoa = [['Дата', '№', 'Відправник', 'Одержувач', 'Покупець', 'Позицій', 'Коментар']];
+  docs.forEach(d => aoa.push([fmtDatePretty(d.date), d.number || '', d.from_name || '', d.to_name || '', d.customer || '', (d.items || []).length, d.comment || '']));
+  _saveXLSX(aoa, [{ wch: 12 }, { wch: 14 }, { wch: 28 }, { wch: 28 }, { wch: 30 }, { wch: 9 }, { wch: 40 }], 'brigades_moves');
+}
+function _saveXLSX(aoa, cols, name) {
+  const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = cols;
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Бригади');
+  XLSX.writeFile(wb, name + '.xlsx');
 }
 
-// ─── Session gate (Google login + brigades role) + unified header ───
+// ─── Session gate + header ───
 Auth.require('brigades').then(user => {
   window.__user = user;
   AppHeader.mount({ active: 'brigades', user });
