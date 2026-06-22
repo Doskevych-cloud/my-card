@@ -51,6 +51,12 @@ a{color:inherit;text-decoration:none}
 .brig-body{display:none;border-top:1px solid var(--border)}
 .brig.open>.brig-body{display:block}
 
+/* Таби в картці: Склад / Переміщення */
+.card-tabs{display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid var(--border)}
+.ctab{padding:6px 16px;border-radius:7px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;user-select:none;transition:all .15s}
+.ctab:hover{background:var(--bg3);color:var(--text)}
+.ctab.active{background:var(--accent-bg);color:var(--accent)}
+
 /* Section label */
 .brig-sec{padding:10px 16px 4px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:700}
 
@@ -149,7 +155,7 @@ const state = {
   asOf: null,
   search: '',
   openKeys: new Set(),  // розгорнуті картки складів
-  openMv: new Set(),    // розгорнуті блоки «Переміщення»
+  tab: {},              // ref → 'stock' | 'moves' (активний таб у картці)
   openDocs: new Set(),  // розгорнуті документи (їх позиції)
   stock: {},            // ref → items[] | 'loading' | 'error'
   transfers: {},        // ref → docs[]  | 'loading' | 'error'
@@ -200,27 +206,11 @@ function render() {
     body.innerHTML = '<div class="empty">' + (state.search ? '— нічого не знайдено —' : '— немає доступних складів бригад —') + '</div>';
     return;
   }
-  const totBrig = list.length;
-  const totPos = list.reduce((s, b) => s + (b.items || 0), 0);
-  const totQty = list.reduce((s, b) => s + (b.qty || 0), 0);
-  const summary =
-    '<div class="summary">' +
-      `<div class="sum-card"><div class="l">Бригад</div><div class="v">${fmt(totBrig)}</div><div class="s">складів під звіт</div></div>` +
-      `<div class="sum-card"><div class="l">Позицій</div><div class="v">${fmt(totPos)}</div><div class="s">номенклатури на складах</div></div>` +
-      `<div class="sum-card"><div class="l">Одиниць</div><div class="v">${fmt(totQty)}</div><div class="s">сумарно</div></div>` +
-    '</div>';
-
   const cards = list.map(b => {
     const ref = String(b.ref_key);
     const open = state.openKeys.has(ref);
-    const mvOpen = state.openMv.has(ref);
+    const tab = state.tab[ref] || 'stock';
     const tc = b.transfers_count || 0;
-    const mvSection = tc > 0
-      ? '<div class="mv-toggle' + (mvOpen ? ' open' : '') + '" data-mv="' + esc(ref) + '">' +
-          '<span class="chev">▸</span>Переміщення · ' + fmt(tc) +
-        '</div>' +
-        '<div class="mv-wrap">' + (mvOpen ? movementsHtml(ref) : '') + '</div>'
-      : '<div class="mv-toggle mv-empty"><span class="chev" style="visibility:hidden">▸</span>Переміщень нема</div>';
     return (
       '<div class="brig' + (open ? ' open' : '') + '" data-key="' + esc(ref) + '">' +
         '<div class="brig-head">' +
@@ -229,14 +219,16 @@ function render() {
           '<span class="stats"><b>' + fmt(b.qty) + '</b><span>' + fmt(b.items) + ' поз.</span><span class="mvc">' + fmt(tc) + ' рух.</span></span>' +
         '</div>' +
         '<div class="brig-body">' +
-          '<div class="brig-sec">Залишок</div>' +
-          stockHtml(ref) +
-          mvSection +
+          '<div class="card-tabs">' +
+            '<span class="ctab' + (tab === 'stock' ? ' active' : '') + '" data-tab="stock" data-ref="' + esc(ref) + '">Склад</span>' +
+            '<span class="ctab' + (tab === 'moves' ? ' active' : '') + '" data-tab="moves" data-ref="' + esc(ref) + '">Переміщення · ' + fmt(tc) + '</span>' +
+          '</div>' +
+          '<div class="card-tabbody">' + (tab === 'moves' ? movementsHtml(ref) : stockHtml(ref)) + '</div>' +
         '</div>' +
       '</div>'
     );
   }).join('');
-  body.innerHTML = summary + cards;
+  body.innerHTML = cards;
 }
 
 // ─── Залишок: lazy (brigade_stock) ───
@@ -275,7 +267,9 @@ function movementsHtml(ref) {
     const route = esc(d.from_name || '?') + ' → ' + esc(d.to_name || '?');
     const itemsHtml = (d.items || []).map(it => {
       const unit = it.unit ? (' ' + esc(it.unit)) : '';
-      const money = ('amount' in it) ? '<span class="mv-money">' + fmt(it.amount, it.amount < 100 ? 2 : 0) + ' грн</span>' : '';
+      // Сума (Сумма) — лише адміну (бекенд вирізає для бригад) І лише коли ≠ 0
+      // (зараз майже всі переміщення з нульовою сумою → не засмічуємо стовпцем).
+      const money = it.amount ? '<span class="mv-money">' + fmt(it.amount, it.amount < 100 ? 2 : 0) + ' грн</span>' : '';
       return '<div class="mv-it"><span class="mv-it-nm">' + esc(it.name || '—') + '</span>' +
              '<span class="mv-it-q">' + fmt(it.qty, it.qty < 100 ? 2 : 0) + unit + '</span>' + money + '</div>';
     }).join('');
@@ -312,16 +306,16 @@ function toggleCard(ref) {
   else { state.openKeys.add(ref); ensureStock(ref); }
   render();
 }
-function toggleMv(ref) {
-  if (state.openMv.has(ref)) state.openMv.delete(ref);
-  else { state.openMv.add(ref); ensureTransfers(ref); }
+function switchTab(ref, tab) {
+  state.tab[ref] = tab;
+  if (tab === 'moves') ensureTransfers(ref); else ensureStock(ref);
   render();
 }
 function expandAll() {
   brigadeList().forEach(b => { const ref = String(b.ref_key); state.openKeys.add(ref); ensureStock(ref); });
   render();
 }
-function collapseAll() { state.openKeys.clear(); state.openMv.clear(); render(); }
+function collapseAll() { state.openKeys.clear(); render(); }
 
 // Delegated click — #body persists across renders (тільки innerHTML міняється).
 document.getElementById('body').addEventListener('click', function(ev) {
@@ -335,8 +329,8 @@ document.getElementById('body').addEventListener('click', function(ev) {
     }
     return;
   }
-  const mvT = ev.target.closest('.mv-toggle[data-mv]');
-  if (mvT) { toggleMv(mvT.dataset.mv); return; }
+  const ctab = ev.target.closest('.ctab[data-tab]');
+  if (ctab) { switchTab(ctab.dataset.ref, ctab.dataset.tab); return; }
   const head = ev.target.closest('.brig-head');
   if (!head) return;
   const card = head.closest('.brig[data-key]');
