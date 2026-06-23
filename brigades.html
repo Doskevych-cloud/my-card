@@ -90,6 +90,13 @@ a{color:inherit;text-decoration:none}
 .rec-row{border-bottom:1px solid var(--border);font-size:12.5px}
 .rec-row:last-child{border-bottom:none}
 .rec-row:hover{background:var(--bg3)}
+/* Звірка по замовленню — 6 колонок (Замовлено/Видано/Списано/Повернено/Залишок) */
+.ord-th,.ord-row{display:grid;grid-template-columns:minmax(0,1fr) 88px 84px 84px 92px 96px;gap:12px;align-items:baseline;padding:9px 16px}
+.ord-th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);font-weight:700;background:var(--bg2);border-bottom:1px solid var(--border)}
+.ord-th .r,.ord-row .r{text-align:right;font-variant-numeric:tabular-nums}
+.ord-row{border-bottom:1px solid var(--border);font-size:12.5px}
+.ord-row:last-child{border-bottom:none}
+.ord-row:hover{background:var(--bg3)}
 .rec-nm{color:var(--text);overflow-wrap:anywhere}
 .rec-u{color:var(--text3);font-size:11px}
 .rec-d{font-weight:700;color:var(--text)}
@@ -140,6 +147,7 @@ a{color:inherit;text-decoration:none}
   .mv-cm-col{order:6;flex:1 1 100%;white-space:normal;font-size:11.5px;color:var(--text2)}
   .mv-wrap{overflow-x:auto}
   .rec-th,.rec-row{min-width:540px}
+  .ord-th,.ord-row{min-width:600px}
   .mv-cm{padding-left:12px}
   .mv-items{padding-left:12px}
 }
@@ -184,7 +192,8 @@ a{color:inherit;text-decoration:none}
         <span class="flt"><label>Відправник</label><input type="text" id="fSender" list="dl_from" placeholder="Почни вводити…" autocomplete="off"></span>
         <span class="flt"><label>Одержувач</label><input type="text" id="fReceiver" list="dl_to" placeholder="Почни вводити…" autocomplete="off"></span>
         <span class="flt"><label>Покупець</label><input type="text" id="fCust" list="dl_cust" placeholder="Почни вводити…" autocomplete="off"></span>
-        <datalist id="dl_from"></datalist><datalist id="dl_to"></datalist><datalist id="dl_cust"></datalist>
+        <span class="flt"><label>Замовлення</label><input type="text" id="fOrder" list="dl_order" placeholder="Почни вводити…" autocomplete="off"></span>
+        <datalist id="dl_from"></datalist><datalist id="dl_to"></datalist><datalist id="dl_cust"></datalist><datalist id="dl_order"></datalist>
         <span class="chip" onclick="downloadMovesXLSX()" title="Переміщення в Excel">⬇ Excel</span>
       </span>
       <input type="text" id="searchIn" placeholder="🔎 Пошук…" autocomplete="off">
@@ -210,7 +219,9 @@ const state = {
   // Переміщення (плаский список)
   allMoves: null,       // [] | null(не вантажили) | 'loading' | 'error'
   brigSet: new Set(),   // refs бригадних складів (для напрямку)
-  mvSender: '', mvReceiver: '', mvCustomer: '',  // фільтри-сутності (підрядок, lowercase; '' = вимкнено)
+  mvSender: '', mvReceiver: '', mvCustomer: '', mvOrder: '',  // фільтри-сутності (підрядок, lowercase; '' = вимкнено)
+  orderRefByNo: {},     // lowercase номер замовлення → ref (для точного збігу → звірка по замовленню)
+  orderRecon: {},       // ref замовлення → дані звірки | 'loading' | 'error'
   moveFrom: null, moveTo: null,
   moveCats: new Set(),  // мульти-вибір категорій; ≥2 → режим звірки
   openDocs: new Set(),
@@ -331,6 +342,7 @@ function baseMoves() {
   if (state.mvSender)   docs = docs.filter(d => (d.from_name || '').toLowerCase().includes(state.mvSender));
   if (state.mvReceiver) docs = docs.filter(d => (d.to_name   || '').toLowerCase().includes(state.mvReceiver));
   if (state.mvCustomer) docs = docs.filter(d => (d.customer  || '').toLowerCase().includes(state.mvCustomer));
+  if (state.mvOrder)    docs = docs.filter(d => (d.order_no  || '').toLowerCase().includes(state.mvOrder));
   if (state.moveFrom) docs = docs.filter(d => (d.date || '').slice(0, 10) >= state.moveFrom);
   if (state.moveTo)   docs = docs.filter(d => (d.date || '').slice(0, 10) <= state.moveTo);
   return docs;
@@ -352,6 +364,9 @@ function fillDatalists() {
   set('dl_from', uniq('from_name'));
   set('dl_to',   uniq('to_name'));
   set('dl_cust', uniq('customer'));
+  set('dl_order', uniq('order_no'));
+  state.orderRefByNo = {};
+  for (const d of moves) if (d.order_no && d.order_ref) state.orderRefByNo[String(d.order_no).toLowerCase()] = d.order_ref;
 }
 function _fmtQ(n) { n = Number(n) || 0; return n.toLocaleString('uk-UA', { maximumFractionDigits: 2 }); }
 // Звірка: Отримано − Повернено − Списано = залишок на бригаді (все отримане має бути закрите)
@@ -378,9 +393,44 @@ function reconcileHtml() {
   ).join('');
   return hint + '<div class="mv-count">Звірка по позиціях: ' + fmt(rows.length) + '</div><div class="mv-wrap"><div class="rec-tbl">' + head + body + '</div></div>';
 }
+// Звірка по замовленню: Замовлено (план) vs Видано vs Списано vs Повернено (дані з бекенда, по nomenclature_ref)
+function loadOrderRecon(ref) {
+  if (state.orderRecon[ref] !== undefined && state.orderRecon[ref] !== 'error') return;
+  state.orderRecon[ref] = 'loading';
+  fetch(API_URL + '?action=brigade_order_reconcile&order=' + encodeURIComponent(ref))
+    .then(r => r.json())
+    .then(d => { if (d.error) throw new Error(d.error); state.orderRecon[ref] = d; render(); })
+    .catch(() => { state.orderRecon[ref] = 'error'; render(); });
+}
+function orderReconcileHtml(ref) {
+  const data = state.orderRecon[ref];
+  if (data === undefined || data === 'loading') { loadOrderRecon(ref); return '<div class="loading">Завантаження звірки по замовленню…</div>'; }
+  if (data === 'error') return '<div class="error">Не вдалося завантажити звірку по замовленню</div>';
+  const ord = data.order || {};
+  let rows = (data.rows || []).slice();
+  const q = state.search;
+  if (q) rows = rows.filter(r => (r.name || '').toLowerCase().includes(q));
+  // спершу розриви (|залишок| desc), далі за назвою
+  rows.sort((a, b) => Math.abs(Number(b.remainder) || 0) - Math.abs(Number(a.remainder) || 0) || (a.name || '').localeCompare(b.name || '', 'uk'));
+  const cap = 'Замовлення ' + esc(ord.number || state.mvOrder) + (ord.customer ? ' · ' + esc(ord.customer) : '') + (ord.date ? ' · ' + fmtDatePretty(ord.date) : '');
+  const hint = '<span class="rec-hint">' + cap + ' — Видано − Списано − Повернено = залишок на бригаді</span>';
+  if (!rows.length) return hint + '<div class="empty">— у замовленні немає позицій або руху по бригадах —</div>';
+  const head = '<div class="ord-th"><span>Номенклатура</span><span class="r">Замовлено</span><span class="r">Видано</span><span class="r">Списано</span><span class="r">Повернено</span><span class="r">Залишок</span></div>';
+  const body = rows.map(r => {
+    const rem = Number(r.remainder) || 0;
+    const cls = rem < -0.001 ? 'neg' : (Math.abs(rem) < 0.001 ? 'zero' : '');
+    return '<div class="ord-row"><span class="rec-nm">' + esc(r.name || '—') + (r.unit ? ' <span class="rec-u">' + esc(r.unit) + '</span>' : '') + '</span>' +
+      '<span class="r">' + _fmtQ(r.ordered) + '</span><span class="r">' + _fmtQ(r.issued) + '</span>' +
+      '<span class="r">' + _fmtQ(r.writtenoff) + '</span><span class="r">' + _fmtQ(r.returned) + '</span>' +
+      '<span class="r rec-d ' + cls + '">' + _fmtQ(rem) + '</span></div>';
+  }).join('');
+  return hint + '<div class="mv-count">Позицій у звірці: ' + fmt(rows.length) + '</div><div class="mv-wrap"><div class="rec-tbl">' + head + body + '</div></div>';
+}
 function movesHtml() {
   if (state.allMoves === 'loading' || state.allMoves === null) return '<div class="loading">Завантаження переміщень…</div>';
   if (state.allMoves === 'error') return '<div class="error">Не вдалося завантажити переміщення</div>';
+  const orderRef = state.orderRefByNo[state.mvOrder];
+  if (orderRef) return orderReconcileHtml(orderRef);      // вибрано конкретне замовлення → звірка план/факт
   if (state.moveCats.size >= 2) return reconcileHtml();   // ≥2 категорії → звірка балансу
   const docs = filteredMoves();
   if (!docs.length) return '<div class="empty">— переміщень за фільтром немає —</div>';
@@ -503,6 +553,7 @@ try {
 _flt('fSender', 'mvSender');
 _flt('fReceiver', 'mvReceiver');
 _flt('fCust', 'mvCustomer');
+_flt('fOrder', 'mvOrder');
 
 let _searchTimer = null;
 document.getElementById('searchIn').addEventListener('input', e => {
@@ -521,6 +572,19 @@ function downloadStockXLSX() {
 }
 function downloadMovesXLSX() {
   if (typeof XLSX === 'undefined') { alert('Excel не завантажився.'); return; }
+  const orderRef = state.orderRefByNo[state.mvOrder];
+  if (orderRef) {   // експорт звірки по замовленню
+    const data = state.orderRecon[orderRef];
+    if (!data || typeof data !== 'object') { alert('Звірка ще вантажиться'); return; }
+    let rows = (data.rows || []).slice();
+    const q = state.search; if (q) rows = rows.filter(r => (r.name || '').toLowerCase().includes(q));
+    if (!rows.length) { alert('Немає даних'); return; }
+    rows.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'uk'));
+    const aoa = [['Номенклатура', 'Од', 'Замовлено', 'Видано', 'Списано', 'Повернено', 'Залишок на бригаді']];
+    rows.forEach(r => aoa.push([r.name, r.unit || '', r.ordered || 0, r.issued || 0, r.writtenoff || 0, r.returned || 0, r.remainder || 0]));
+    _saveXLSX(aoa, [{ wch: 46 }, { wch: 8 }, { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 15 }], 'brigades_order_' + ((data.order && data.order.number) || state.mvOrder));
+    return;
+  }
   if (state.moveCats.size >= 2) {   // експорт звірки
     const map = {};
     for (const d of baseMoves()) for (const it of (d.items || [])) { const nm = it.name || '—'; if (!map[nm]) map[nm] = { name: nm, unit: it.unit || '', received: 0, returned: 0, writtenoff: 0 }; map[nm][d.cat] += (Number(it.qty) || 0); }
