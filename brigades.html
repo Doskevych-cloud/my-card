@@ -411,23 +411,38 @@ function reconcileRows(showOrd) {
   rows.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta) || a.name.localeCompare(b.name, 'uk'));
   return { rows, planState };
 }
+// Колонки = ОБРАНІ чіпи (Замовлено/Отримано/Повернено/Списано). Залишок — лише коли ≥2 типи руху (є що балансувати).
+function reconCols() {
+  const s = state.moveCats;
+  const showR = s.has('received'), showP = s.has('returned'), showW = s.has('writtenoff');
+  const showDelta = (showR ? 1 : 0) + (showP ? 1 : 0) + (showW ? 1 : 0) >= 2;
+  const cols = [];
+  if (s.has('ordered')) cols.push({ key: 'ordered',    l: 'Замовлено' });
+  if (showR)            cols.push({ key: 'received',   l: 'Отримано' });
+  if (showP)            cols.push({ key: 'returned',   l: 'Повернено' });
+  if (showW)            cols.push({ key: 'writtenoff', l: 'Списано' });
+  if (showDelta)        cols.push({ key: 'delta',      l: 'Залишок', delta: true });
+  return { cols, showDelta, showOrd: s.has('ordered') };
+}
 function reconcileHtml() {
-  const showOrd = state.moveCats.has('ordered');   // «Замовлено» в порівнянні лише якщо чіп обрано
-  const { rows, planState } = reconcileRows(showOrd);
+  const { cols, showDelta, showOrd } = reconCols();
+  const { rows: allRows, planState } = reconcileRows(showOrd);
+  // лишаємо позиції, що мають значення хоч в одній ОБРАНІЙ колонці-вимірі
+  const dims = cols.filter(c => !c.delta).map(c => c.key);
+  let rows = allRows.filter(r => dims.some(k => r[k]));
+  rows.sort(showDelta ? (a, b) => Math.abs(b.delta) - Math.abs(a.delta) || a.name.localeCompare(b.name, 'uk')
+                      : (a, b) => a.name.localeCompare(b.name, 'uk'));
   const note = (showOrd && planState === 'toomany') ? ' <span class="rec-u">(звузьте фільтр, щоб порахувати «Замовлено»)</span>'
     : (showOrd && planState === 'loading') ? ' <span class="rec-u">(рахую «Замовлено»…)</span>' : '';
-  const hint = '<span class="rec-hint">Звірка: Отримано − Повернено − Списано = залишок на бригаді' + note + '</span>';
-  if (!rows.length) return hint + '<div class="empty">— немає даних для звірки —</div>';
-  const g = showOrd ? 'ord' : 'rec';   // .ord-* = 6 колонок (з Замовлено), .rec-* = 5
-  const head = '<div class="' + g + '-th"><span>Номенклатура</span>' + (showOrd ? '<span class="r">Замовлено</span>' : '') +
-    '<span class="r">Отримано</span><span class="r">Повернено</span><span class="r">Списано</span><span class="r">Залишок</span></div>';
-  const body = rows.map(r =>
-    '<div class="' + g + '-row"><span class="rec-nm">' + esc(r.name) + (r.unit ? ' <span class="rec-u">' + esc(r.unit) + '</span>' : '') + '</span>' +
-    (showOrd ? '<span class="r">' + _fmtQ(r.ordered) + '</span>' : '') +
-    '<span class="r">' + _fmtQ(r.received) + '</span><span class="r">' + _fmtQ(r.returned) + '</span><span class="r">' + _fmtQ(r.writtenoff) + '</span>' +
-    '<span class="r rec-d ' + (r.delta < 0 ? 'neg' : (Math.abs(r.delta) < 0.001 ? 'zero' : '')) + '">' + _fmtQ(r.delta) + '</span></div>'
+  const hint = '<span class="rec-hint">' + (showDelta ? 'Залишок на бригаді = Отримано − Повернено − Списано' : 'Зведення по позиціях за обраними колонками') + note + '</span>';
+  if (!cols.length) return hint + '<div class="empty">— обери чіп(и) вгорі —</div>';
+  if (!rows.length) return hint + '<div class="empty">— немає даних —</div>';
+  const grid = 'grid-template-columns:minmax(0,1fr) ' + cols.map(() => '104px').join(' ') + ';';
+  const head = '<div class="rec-th" style="' + grid + '"><span>Номенклатура</span>' + cols.map(c => '<span class="r">' + c.l + '</span>').join('') + '</div>';
+  const body = rows.map(r => '<div class="rec-row" style="' + grid + '"><span class="rec-nm">' + esc(r.name) + (r.unit ? ' <span class="rec-u">' + esc(r.unit) + '</span>' : '') + '</span>' +
+    cols.map(c => '<span class="r' + (c.delta ? ' rec-d ' + (r.delta < 0 ? 'neg' : (Math.abs(r.delta) < 0.001 ? 'zero' : '')) : '') + '">' + _fmtQ(r[c.key]) + '</span>').join('') + '</div>'
   ).join('');
-  return hint + '<div class="mv-count">Звірка по позиціях: ' + fmt(rows.length) + '</div><div class="mv-wrap"><div class="rec-tbl">' + head + body + '</div></div>';
+  return hint + '<div class="mv-count">Позицій: ' + fmt(rows.length) + '</div><div class="mv-wrap"><div class="rec-tbl">' + head + body + '</div></div>';
 }
 // Замовлено (план) для набору замовлень у скоупі. Повертає мапу name→{ordered,unit} | 'loading' | 'toomany'.
 function getPlan(orderRefs) {
@@ -627,15 +642,17 @@ function downloadStockXLSX() {
 }
 function downloadMovesXLSX() {
   if (typeof XLSX === 'undefined') { alert('Excel не завантажився.'); return; }
-  if (state.moveCats.size >= 2) {   // експорт звірки план/факт
-    const showOrd = state.moveCats.has('ordered');
-    const rows = reconcileRows(showOrd).rows.slice();
+  if (state.moveCats.has('ordered') || state.moveCats.size >= 2) {   // експорт звірки — колонки = обрані чіпи
+    const { cols, showOrd } = reconCols();
+    let rows = reconcileRows(showOrd).rows.slice();
+    const dims = cols.filter(c => !c.delta).map(c => c.key);
+    rows = rows.filter(r => dims.some(k => r[k]));
     if (!rows.length) { alert('Немає даних'); return; }
     rows.sort((a, b) => a.name.localeCompare(b.name, 'uk'));
-    const aoa = [['Номенклатура', 'Од'].concat(showOrd ? ['Замовлено'] : []).concat(['Отримано', 'Повернено', 'Списано', 'Залишок на бригаді'])];
-    rows.forEach(r => aoa.push([r.name, r.unit || ''].concat(showOrd ? [r.ordered || 0] : []).concat([r.received || 0, r.returned || 0, r.writtenoff || 0, r.delta || 0])));
-    const cols = [{ wch: 46 }, { wch: 8 }].concat(showOrd ? [{ wch: 11 }] : []).concat([{ wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 15 }]);
-    _saveXLSX(aoa, cols, 'brigades_zvirka');
+    const aoa = [['Номенклатура', 'Од'].concat(cols.map(c => c.delta ? 'Залишок на бригаді' : c.l))];
+    rows.forEach(r => aoa.push([r.name, r.unit || ''].concat(cols.map(c => r[c.key] || 0))));
+    const wcols = [{ wch: 46 }, { wch: 8 }].concat(cols.map(c => ({ wch: c.delta ? 15 : 11 })));
+    _saveXLSX(aoa, wcols, 'brigades_zvirka');
     return;
   }
   const docs = filteredMoves();
