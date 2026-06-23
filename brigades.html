@@ -447,7 +447,8 @@ function getPlan(orderRefs) {
 function movesHtml() {
   if (state.allMoves === 'loading' || state.allMoves === null) return '<div class="loading">Завантаження переміщень…</div>';
   if (state.allMoves === 'error') return '<div class="error">Не вдалося завантажити переміщення</div>';
-  if (state.moveCats.size >= 2) return reconcileHtml();   // ≥2 категорії → звірка (Замовлено/Отримано/Повернено/Списано/Залишок)
+  // звірка: коли обрано чіп «Замовлено» (план vs факт) АБО ≥2 категорії
+  if (state.moveCats.has('ordered') || state.moveCats.size >= 2) return reconcileHtml();
   const docs = filteredMoves();
   if (!docs.length) return '<div class="empty">— переміщень за фільтром немає —</div>';
   const rows = docs.map(d => {
@@ -473,7 +474,7 @@ function movesHtml() {
     '</div>';
   }).join('');
   const head = '<div class="mv-th"><span class="lbl">Дата</span><span class="lbl">Відправник</span><span class="lbl">Одержувач</span><span class="lbl">Покупець</span><span class="lbl">Коментар</span><span class="lbl r">К-сть</span></div>';
-  const tip = '<div class="mv-tip">Звірка: обери ≥2 чіпи вгорі. Чіп <b>Замовлено</b> додає колонку плану. Покупець/замовлення звужують скоуп.</div>';
+  const tip = '<div class="mv-tip">Звірка план/факт: обери чіп <b>Замовлено</b> (або ≥2 категорії) вгорі. Покупець/замовлення звужують скоуп.</div>';
   return tip + '<div class="mv-count">Знайдено переміщень: ' + fmt(docs.length) + '</div><div class="mv-wrap">' + head + rows + '</div>';
 }
 
