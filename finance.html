@@ -3290,11 +3290,14 @@ function whRender() {
 
   // ── Таблиця: номенклатура (з пошуком і пагінацією) ──
   const search = (whState.search || '').toLowerCase().trim();
-  const filtered = search
-    ? items.filter(it =>
-        (it.nomenclature_name || '').toLowerCase().includes(search) ||
-        (it.nomenclature_article || '').toLowerCase().includes(search) ||
-        (it.warehouse_name || '').toLowerCase().includes(search))
+  const terms = search ? search.split(/\s+/) : [];
+  const filtered = terms.length
+    ? items.filter(it => {
+        const hay = ((it.nomenclature_name || '') + ' ' +
+                     (it.nomenclature_article || '') + ' ' +
+                     (it.warehouse_name || '')).toLowerCase();
+        return terms.every(t => hay.includes(t));
+      })
     : items;
   const sorted = filtered.slice().sort((a, b) => {
     const va = a.value_usd ?? -1, vb = b.value_usd ?? -1;
