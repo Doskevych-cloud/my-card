@@ -191,6 +191,7 @@ a{color:inherit;text-decoration:none}
         <span class="chip mvp active" data-preset="all" onclick="setPreset('all')">Весь час</span>
         <span class="sep"></span>
         <span class="chip mvcat active" data-cat="all" onclick="setCat('all')">Усі</span>
+        <span class="chip mvcat" data-cat="ordered" onclick="setCat('ordered')">≡ Замовлено</span>
         <span class="chip mvcat" data-cat="received" onclick="setCat('received')">↓ Отримано</span>
         <span class="chip mvcat" data-cat="returned" onclick="setCat('returned')">↑ Повернено</span>
         <span class="chip mvcat" data-cat="writtenoff" onclick="setCat('writtenoff')">✓ Списано</span>
@@ -352,7 +353,8 @@ function baseMoves() {
 }
 function filteredMoves() {
   let docs = baseMoves();
-  if (state.moveCats.size) docs = docs.filter(d => state.moveCats.has(d.cat));
+  const cats = [...state.moveCats].filter(c => c !== 'ordered');   // «Замовлено» — не тип руху, не фільтрує список
+  if (cats.length) docs = docs.filter(d => cats.includes(d.cat));
   const q = state.search;
   if (q) docs = docs.filter(d =>
     (d.from_name || '').toLowerCase().includes(q) || (d.to_name || '').toLowerCase().includes(q) ||
@@ -381,7 +383,7 @@ function _orderCandidates() {
 function _fmtQ(n) { n = Number(n) || 0; return n.toLocaleString('uk-UA', { maximumFractionDigits: 2 }); }
 // Звірка: Замовлено · Отримано · Повернено · Списано · Залишок (скоуп = поточні фільтри + категорії).
 // Отримано/Повернено/Списано — клієнтська агрегація рухів; Замовлено — план замовлень у скоупі (з бекенда).
-function reconcileRows() {
+function reconcileRows(showOrd) {
   const moves = baseMoves();
   const map = {};
   for (const d of moves) {
@@ -391,29 +393,37 @@ function reconcileRows() {
       map[nm][d.cat] += (Number(it.qty) || 0);
     }
   }
-  const plan = getPlan([...new Set(moves.map(d => d.order_ref).filter(Boolean))]);
-  if (plan && typeof plan === 'object') {
-    for (const nm in plan) {
-      if (!map[nm]) map[nm] = { name: nm, unit: '', ordered: 0, received: 0, returned: 0, writtenoff: 0 };
-      map[nm].ordered = plan[nm].ordered;
-      if (plan[nm].unit && !map[nm].unit) map[nm].unit = plan[nm].unit;
+  let planState = null;
+  if (showOrd) {   // колонку «Замовлено» рахуємо ЛИШЕ коли обрано чіп «Замовлено»
+    const plan = getPlan([...new Set(moves.map(d => d.order_ref).filter(Boolean))]);
+    planState = plan;
+    if (plan && typeof plan === 'object') {
+      for (const nm in plan) {
+        if (!map[nm]) map[nm] = { name: nm, unit: '', ordered: 0, received: 0, returned: 0, writtenoff: 0 };
+        map[nm].ordered = plan[nm].ordered;
+        if (plan[nm].unit && !map[nm].unit) map[nm].unit = plan[nm].unit;
+      }
     }
   }
   let rows = Object.values(map).map(r => { r.delta = r.received - r.returned - r.writtenoff; return r; });
   const q = state.search;
   if (q) rows = rows.filter(r => r.name.toLowerCase().includes(q));
   rows.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta) || a.name.localeCompare(b.name, 'uk'));
-  return { rows, planState: plan };
+  return { rows, planState };
 }
 function reconcileHtml() {
-  const { rows, planState } = reconcileRows();
-  const note = planState === 'toomany' ? ' <span class="rec-u">(звузьте фільтр, щоб порахувати «Замовлено»)</span>' : (planState === 'loading' ? ' <span class="rec-u">(рахую «Замовлено»…)</span>' : '');
+  const showOrd = state.moveCats.has('ordered');   // «Замовлено» в порівнянні лише якщо чіп обрано
+  const { rows, planState } = reconcileRows(showOrd);
+  const note = (showOrd && planState === 'toomany') ? ' <span class="rec-u">(звузьте фільтр, щоб порахувати «Замовлено»)</span>'
+    : (showOrd && planState === 'loading') ? ' <span class="rec-u">(рахую «Замовлено»…)</span>' : '';
   const hint = '<span class="rec-hint">Звірка: Отримано − Повернено − Списано = залишок на бригаді' + note + '</span>';
   if (!rows.length) return hint + '<div class="empty">— немає даних для звірки —</div>';
-  const head = '<div class="ord-th"><span>Номенклатура</span><span class="r">Замовлено</span><span class="r">Отримано</span><span class="r">Повернено</span><span class="r">Списано</span><span class="r">Залишок</span></div>';
+  const g = showOrd ? 'ord' : 'rec';   // .ord-* = 6 колонок (з Замовлено), .rec-* = 5
+  const head = '<div class="' + g + '-th"><span>Номенклатура</span>' + (showOrd ? '<span class="r">Замовлено</span>' : '') +
+    '<span class="r">Отримано</span><span class="r">Повернено</span><span class="r">Списано</span><span class="r">Залишок</span></div>';
   const body = rows.map(r =>
-    '<div class="ord-row"><span class="rec-nm">' + esc(r.name) + (r.unit ? ' <span class="rec-u">' + esc(r.unit) + '</span>' : '') + '</span>' +
-    '<span class="r">' + _fmtQ(r.ordered) + '</span>' +
+    '<div class="' + g + '-row"><span class="rec-nm">' + esc(r.name) + (r.unit ? ' <span class="rec-u">' + esc(r.unit) + '</span>' : '') + '</span>' +
+    (showOrd ? '<span class="r">' + _fmtQ(r.ordered) + '</span>' : '') +
     '<span class="r">' + _fmtQ(r.received) + '</span><span class="r">' + _fmtQ(r.returned) + '</span><span class="r">' + _fmtQ(r.writtenoff) + '</span>' +
     '<span class="r rec-d ' + (r.delta < 0 ? 'neg' : (Math.abs(r.delta) < 0.001 ? 'zero' : '')) + '">' + _fmtQ(r.delta) + '</span></div>'
   ).join('');
@@ -463,7 +473,7 @@ function movesHtml() {
     '</div>';
   }).join('');
   const head = '<div class="mv-th"><span class="lbl">Дата</span><span class="lbl">Відправник</span><span class="lbl">Одержувач</span><span class="lbl">Покупець</span><span class="lbl">Коментар</span><span class="lbl r">К-сть</span></div>';
-  const tip = '<div class="mv-tip">Звірка план/факт (замовлено · отримано · повернено · списано · залишок): зафільтруй за покупцем/замовленням і обери ≥2 категорії (<b>Отримано/Повернено/Списано</b>) вгорі.</div>';
+  const tip = '<div class="mv-tip">Звірка: обери ≥2 чіпи вгорі. Чіп <b>Замовлено</b> додає колонку плану. Покупець/замовлення звужують скоуп.</div>';
   return tip + '<div class="mv-count">Знайдено переміщень: ' + fmt(docs.length) + '</div><div class="mv-wrap">' + head + rows + '</div>';
 }
 
@@ -617,12 +627,14 @@ function downloadStockXLSX() {
 function downloadMovesXLSX() {
   if (typeof XLSX === 'undefined') { alert('Excel не завантажився.'); return; }
   if (state.moveCats.size >= 2) {   // експорт звірки план/факт
-    const rows = reconcileRows().rows.slice();
+    const showOrd = state.moveCats.has('ordered');
+    const rows = reconcileRows(showOrd).rows.slice();
     if (!rows.length) { alert('Немає даних'); return; }
     rows.sort((a, b) => a.name.localeCompare(b.name, 'uk'));
-    const aoa = [['Номенклатура', 'Од', 'Замовлено', 'Отримано', 'Повернено', 'Списано', 'Залишок на бригаді']];
-    rows.forEach(r => aoa.push([r.name, r.unit || '', r.ordered || 0, r.received || 0, r.returned || 0, r.writtenoff || 0, r.delta || 0]));
-    _saveXLSX(aoa, [{ wch: 46 }, { wch: 8 }, { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 15 }], 'brigades_zvirka');
+    const aoa = [['Номенклатура', 'Од'].concat(showOrd ? ['Замовлено'] : []).concat(['Отримано', 'Повернено', 'Списано', 'Залишок на бригаді'])];
+    rows.forEach(r => aoa.push([r.name, r.unit || ''].concat(showOrd ? [r.ordered || 0] : []).concat([r.received || 0, r.returned || 0, r.writtenoff || 0, r.delta || 0])));
+    const cols = [{ wch: 46 }, { wch: 8 }].concat(showOrd ? [{ wch: 11 }] : []).concat([{ wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 15 }]);
+    _saveXLSX(aoa, cols, 'brigades_zvirka');
     return;
   }
   const docs = filteredMoves();
