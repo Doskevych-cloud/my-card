@@ -224,10 +224,8 @@ const state = {
   // Переміщення (плаский список)
   allMoves: null,       // [] | null(не вантажили) | 'loading' | 'error'
   brigSet: new Set(),   // refs бригадних складів (для напрямку)
-  mvSender: '', mvReceiver: '', mvCustomer: '', mvOrder: '',  // фільтри-сутності (підрядок, lowercase; '' = вимкнено)
-  orderRefByNo: {},     // lowercase номер замовлення → ref (точний збіг → звірка по замовленню)
-  custRefByName: {},    // lowercase назва покупця → ref (точний збіг → звірка по покупцю)
-  orderRecon: {},       // 'order:ref' | 'customer:ref' → дані звірки | 'loading' | 'error'
+  mvSender: '', mvReceiver: '', mvCustomer: '', mvOrder: '',  // фільтри-сутності документів (підрядок, lowercase; '' = вимкнено)
+  planCache: {},        // key(набір order_ref) → мапа name→{ordered,unit} | 'loading' (для колонки «Замовлено» у звірці)
   moveFrom: null, moveTo: null,
   moveCats: new Set(),  // мульти-вибір категорій; ≥2 → режим звірки
   openDocs: new Set(),
@@ -293,7 +291,6 @@ async function loadMoves() {
     const r = await fetch(API_URL + '?action=brigade_transfers_all').then(r => r.json());
     if (r.error) throw new Error(r.error);
     state.allMoves = r.transfers || [];
-    fillDatalists();
   } catch (e) { state.allMoves = 'error'; }
   render();
 }
@@ -363,15 +360,6 @@ function filteredMoves() {
   return docs;
 }
 // Будуємо мапи точного збігу (назва→ref) для перемикання у звірку
-function fillDatalists() {
-  const moves = Array.isArray(state.allMoves) ? state.allMoves : [];
-  state.orderRefByNo = {};
-  state.custRefByName = {};
-  for (const d of moves) {
-    if (d.order_no && d.order_ref) state.orderRefByNo[String(d.order_no).toLowerCase()] = d.order_ref;
-    if (d.customer && d.customer_ref) state.custRefByName[String(d.customer).toLowerCase()] = d.customer_ref;
-  }
-}
 // Нормалізація для пошуку: толерантна до укр. плутанини е/є, и/і/ї/й, апострофів і лапок
 function _norm(s) {
   return String(s == null ? '' : s).toLowerCase()
@@ -391,80 +379,65 @@ function _orderCandidates() {
   return [...new Set(sc.map(d => d.order_no).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'uk'));
 }
 function _fmtQ(n) { n = Number(n) || 0; return n.toLocaleString('uk-UA', { maximumFractionDigits: 2 }); }
-// Звірка: Отримано − Повернено − Списано = залишок на бригаді (все отримане має бути закрите)
-function reconcileHtml() {
+// Звірка: Замовлено · Отримано · Повернено · Списано · Залишок (скоуп = поточні фільтри + категорії).
+// Отримано/Повернено/Списано — клієнтська агрегація рухів; Замовлено — план замовлень у скоупі (з бекенда).
+function reconcileRows() {
+  const moves = baseMoves();
   const map = {};
-  for (const d of baseMoves()) {
+  for (const d of moves) {
     for (const it of (d.items || [])) {
       const nm = it.name || '—';
-      if (!map[nm]) map[nm] = { name: nm, unit: it.unit || '', received: 0, returned: 0, writtenoff: 0 };
+      if (!map[nm]) map[nm] = { name: nm, unit: it.unit || '', ordered: 0, received: 0, returned: 0, writtenoff: 0 };
       map[nm][d.cat] += (Number(it.qty) || 0);
+    }
+  }
+  const plan = getPlan([...new Set(moves.map(d => d.order_ref).filter(Boolean))]);
+  if (plan && typeof plan === 'object') {
+    for (const nm in plan) {
+      if (!map[nm]) map[nm] = { name: nm, unit: '', ordered: 0, received: 0, returned: 0, writtenoff: 0 };
+      map[nm].ordered = plan[nm].ordered;
+      if (plan[nm].unit && !map[nm].unit) map[nm].unit = plan[nm].unit;
     }
   }
   let rows = Object.values(map).map(r => { r.delta = r.received - r.returned - r.writtenoff; return r; });
   const q = state.search;
   if (q) rows = rows.filter(r => r.name.toLowerCase().includes(q));
   rows.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta) || a.name.localeCompare(b.name, 'uk'));
-  const hint = '<span class="rec-hint">Звірка: Отримано − Повернено − Списано = залишок на бригаді</span>';
+  return { rows, planState: plan };
+}
+function reconcileHtml() {
+  const { rows, planState } = reconcileRows();
+  const note = planState === 'toomany' ? ' <span class="rec-u">(звузьте фільтр, щоб порахувати «Замовлено»)</span>' : (planState === 'loading' ? ' <span class="rec-u">(рахую «Замовлено»…)</span>' : '');
+  const hint = '<span class="rec-hint">Звірка: Отримано − Повернено − Списано = залишок на бригаді' + note + '</span>';
   if (!rows.length) return hint + '<div class="empty">— немає даних для звірки —</div>';
-  const head = '<div class="rec-th"><span>Номенклатура</span><span class="r">Отримано</span><span class="r">Повернено</span><span class="r">Списано</span><span class="r">Залишок</span></div>';
+  const head = '<div class="ord-th"><span>Номенклатура</span><span class="r">Замовлено</span><span class="r">Отримано</span><span class="r">Повернено</span><span class="r">Списано</span><span class="r">Залишок</span></div>';
   const body = rows.map(r =>
-    '<div class="rec-row"><span class="rec-nm">' + esc(r.name) + (r.unit ? ' <span class="rec-u">' + esc(r.unit) + '</span>' : '') + '</span>' +
+    '<div class="ord-row"><span class="rec-nm">' + esc(r.name) + (r.unit ? ' <span class="rec-u">' + esc(r.unit) + '</span>' : '') + '</span>' +
+    '<span class="r">' + _fmtQ(r.ordered) + '</span>' +
     '<span class="r">' + _fmtQ(r.received) + '</span><span class="r">' + _fmtQ(r.returned) + '</span><span class="r">' + _fmtQ(r.writtenoff) + '</span>' +
     '<span class="r rec-d ' + (r.delta < 0 ? 'neg' : (Math.abs(r.delta) < 0.001 ? 'zero' : '')) + '">' + _fmtQ(r.delta) + '</span></div>'
   ).join('');
   return hint + '<div class="mv-count">Звірка по позиціях: ' + fmt(rows.length) + '</div><div class="mv-wrap"><div class="rec-tbl">' + head + body + '</div></div>';
 }
-// Звірка план/факт: Замовлено vs Видано vs Списано vs Повернено (дані з бекенда, по nomenclature_ref).
-// Вісь — замовлення (kind='order') або покупець (kind='customer', усі його бригадні замовлення).
-function _reconKey(kind, ref) { return kind + ':' + ref; }
-function loadRecon(kind, ref) {
-  const k = _reconKey(kind, ref);
-  if (state.orderRecon[k] !== undefined && state.orderRecon[k] !== 'error') return;
-  state.orderRecon[k] = 'loading';
-  fetch(API_URL + '?action=brigade_order_reconcile&' + kind + '=' + encodeURIComponent(ref))
+// Замовлено (план) для набору замовлень у скоупі. Повертає мапу name→{ordered,unit} | 'loading' | 'toomany'.
+function getPlan(orderRefs) {
+  if (!orderRefs.length) return {};
+  if (orderRefs.length > 90) return 'toomany';   // надто широкий скоуп — хай звузять фільтром
+  const key = orderRefs.slice().sort().join(',');
+  const c = state.planCache[key];
+  if (c && typeof c === 'object') return c;
+  if (c === 'loading') return 'loading';
+  state.planCache[key] = 'loading';
+  fetch(API_URL + '?action=brigade_orders_plan&orders=' + encodeURIComponent(orderRefs.join(',')))
     .then(r => r.json())
-    .then(d => { if (d.error) throw new Error(d.error); state.orderRecon[k] = d; render(); })
-    .catch(() => { state.orderRecon[k] = 'error'; render(); });
-}
-function reconView(kind, ref) {
-  const data = state.orderRecon[_reconKey(kind, ref)];
-  if (data === undefined || data === 'loading') { loadRecon(kind, ref); return '<div class="loading">Завантаження звірки…</div>'; }
-  if (data === 'error') return '<div class="error">Не вдалося завантажити звірку</div>';
-  let rows = (data.rows || []).slice();
-  const q = state.search;
-  if (q) rows = rows.filter(r => (r.name || '').toLowerCase().includes(q));
-  // спершу розриви (|залишок| desc), далі за назвою
-  rows.sort((a, b) => Math.abs(Number(b.remainder) || 0) - Math.abs(Number(a.remainder) || 0) || (a.name || '').localeCompare(b.name || '', 'uk'));
-  let cap;
-  if (kind === 'order') {
-    const o = data.order || {};
-    cap = 'Замовлення ' + esc(o.number || state.mvOrder) + (o.customer ? ' · ' + esc(o.customer) : '') + (o.date ? ' · ' + fmtDatePretty(o.date) : '');
-  } else {
-    const c = data.customer || {}; const ords = data.orders || [];
-    cap = 'Покупець ' + esc(c.name || state.mvCustomer) + (ords.length ? ' · замовлення: ' + esc(ords.join(', ')) : '');
-  }
-  const hint = '<span class="rec-hint">' + cap + ' — Видано − Списано − Повернено = залишок на бригаді</span>';
-  if (!rows.length) return hint + '<div class="empty">— немає позицій або руху по бригадах —</div>';
-  const head = '<div class="ord-th"><span>Номенклатура</span><span class="r">Замовлено</span><span class="r">Видано</span><span class="r">Списано</span><span class="r">Повернено</span><span class="r">Залишок</span></div>';
-  const body = rows.map(r => {
-    const rem = Number(r.remainder) || 0;
-    const cls = rem < -0.001 ? 'neg' : (Math.abs(rem) < 0.001 ? 'zero' : '');
-    return '<div class="ord-row"><span class="rec-nm">' + esc(r.name || '—') + (r.unit ? ' <span class="rec-u">' + esc(r.unit) + '</span>' : '') + '</span>' +
-      '<span class="r">' + _fmtQ(r.ordered) + '</span><span class="r">' + _fmtQ(r.issued) + '</span>' +
-      '<span class="r">' + _fmtQ(r.writtenoff) + '</span><span class="r">' + _fmtQ(r.returned) + '</span>' +
-      '<span class="r rec-d ' + cls + '">' + _fmtQ(rem) + '</span></div>';
-  }).join('');
-  return hint + '<div class="mv-count">Позицій у звірці: ' + fmt(rows.length) + '</div><div class="mv-wrap"><div class="rec-tbl">' + head + body + '</div></div>';
+    .then(d => { const m = {}; (d.plan || []).forEach(p => { m[p.name] = { ordered: Number(p.ordered) || 0, unit: p.unit || '' }; }); state.planCache[key] = m; render(); })
+    .catch(() => { state.planCache[key] = {}; render(); });
+  return 'loading';
 }
 function movesHtml() {
   if (state.allMoves === 'loading' || state.allMoves === null) return '<div class="loading">Завантаження переміщень…</div>';
   if (state.allMoves === 'error') return '<div class="error">Не вдалося завантажити переміщення</div>';
-  const orderRef = state.orderRefByNo[state.mvOrder];
-  if (orderRef) return reconView('order', orderRef);      // обрано конкретне замовлення → звірка план/факт
-  const custRef = state.custRefByName[state.mvCustomer];
-  if (custRef) return reconView('customer', custRef);     // обрано покупця → звірка по всіх його бригадних замовленнях
-  if (state.moveCats.size >= 2) return reconcileHtml();   // ≥2 категорії → звірка балансу
+  if (state.moveCats.size >= 2) return reconcileHtml();   // ≥2 категорії → звірка (Замовлено/Отримано/Повернено/Списано/Залишок)
   const docs = filteredMoves();
   if (!docs.length) return '<div class="empty">— переміщень за фільтром немає —</div>';
   const rows = docs.map(d => {
@@ -490,9 +463,7 @@ function movesHtml() {
     '</div>';
   }).join('');
   const head = '<div class="mv-th"><span class="lbl">Дата</span><span class="lbl">Відправник</span><span class="lbl">Одержувач</span><span class="lbl">Покупець</span><span class="lbl">Коментар</span><span class="lbl r">К-сть</span></div>';
-  const tip = Object.keys(state.orderRefByNo).length
-    ? '<div class="mv-tip">Звірка план/факт (замовлено · видано · списано · повернено · залишок) — оберіть конкретне <b>замовлення</b> або <b>покупця</b> у фільтрі вгорі.</div>'
-    : '';
+  const tip = '<div class="mv-tip">Звірка план/факт (замовлено · отримано · повернено · списано · залишок): зафільтруй за покупцем/замовленням і обери ≥2 категорії (<b>Отримано/Повернено/Списано</b>) вгорі.</div>';
   return tip + '<div class="mv-count">Знайдено переміщень: ' + fmt(docs.length) + '</div><div class="mv-wrap">' + head + rows + '</div>';
 }
 
@@ -645,32 +616,13 @@ function downloadStockXLSX() {
 }
 function downloadMovesXLSX() {
   if (typeof XLSX === 'undefined') { alert('Excel не завантажився.'); return; }
-  const oRef = state.orderRefByNo[state.mvOrder];
-  const cRef = !oRef && state.custRefByName[state.mvCustomer];
-  const pivot = oRef ? { kind: 'order', ref: oRef } : (cRef ? { kind: 'customer', ref: cRef } : null);
-  if (pivot) {   // експорт звірки план/факт (замовлення або покупець)
-    const data = state.orderRecon[_reconKey(pivot.kind, pivot.ref)];
-    if (!data || typeof data !== 'object') { alert('Звірка ще вантажиться'); return; }
-    let rows = (data.rows || []).slice();
-    const q = state.search; if (q) rows = rows.filter(r => (r.name || '').toLowerCase().includes(q));
-    if (!rows.length) { alert('Немає даних'); return; }
-    rows.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'uk'));
-    const aoa = [['Номенклатура', 'Од', 'Замовлено', 'Видано', 'Списано', 'Повернено', 'Залишок на бригаді']];
-    rows.forEach(r => aoa.push([r.name, r.unit || '', r.ordered || 0, r.issued || 0, r.writtenoff || 0, r.returned || 0, r.remainder || 0]));
-    const tag = pivot.kind === 'order' ? ((data.order && data.order.number) || state.mvOrder) : ((data.customer && data.customer.name) || state.mvCustomer);
-    _saveXLSX(aoa, [{ wch: 46 }, { wch: 8 }, { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 15 }], 'brigades_recon_' + tag);
-    return;
-  }
-  if (state.moveCats.size >= 2) {   // експорт звірки
-    const map = {};
-    for (const d of baseMoves()) for (const it of (d.items || [])) { const nm = it.name || '—'; if (!map[nm]) map[nm] = { name: nm, unit: it.unit || '', received: 0, returned: 0, writtenoff: 0 }; map[nm][d.cat] += (Number(it.qty) || 0); }
-    let rows = Object.values(map);
-    const q = state.search; if (q) rows = rows.filter(r => r.name.toLowerCase().includes(q));
+  if (state.moveCats.size >= 2) {   // експорт звірки план/факт
+    const rows = reconcileRows().rows.slice();
     if (!rows.length) { alert('Немає даних'); return; }
     rows.sort((a, b) => a.name.localeCompare(b.name, 'uk'));
-    const aoa = [['Номенклатура', 'Од', 'Отримано', 'Повернено', 'Списано', 'Залишок']];
-    rows.forEach(r => aoa.push([r.name, r.unit || '', r.received, r.returned, r.writtenoff, r.received - r.returned - r.writtenoff]));
-    _saveXLSX(aoa, [{ wch: 46 }, { wch: 8 }, { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 11 }], 'brigades_zvirka');
+    const aoa = [['Номенклатура', 'Од', 'Замовлено', 'Отримано', 'Повернено', 'Списано', 'Залишок на бригаді']];
+    rows.forEach(r => aoa.push([r.name, r.unit || '', r.ordered || 0, r.received || 0, r.returned || 0, r.writtenoff || 0, r.delta || 0]));
+    _saveXLSX(aoa, [{ wch: 46 }, { wch: 8 }, { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 15 }], 'brigades_zvirka');
     return;
   }
   const docs = filteredMoves();
