@@ -481,6 +481,8 @@ function collapseAll() { state.openKeys.clear(); render(); }
 // ─── Підрозділи + фільтри переміщень ───
 function setSection(sec) {
   state.section = sec;
+  // зберігаємо активний таб у hash → reload лишає на тому ж підрозділі
+  try { history.replaceState(null, '', sec === 'moves' ? '#moves' : location.pathname + location.search); } catch (e) {}
   document.querySelectorAll('.ptab[data-section]').forEach(t => t.classList.toggle('active', t.dataset.section === sec));
   document.getElementById('stockTools').style.display = sec === 'stock' ? 'inline-flex' : 'none';
   document.getElementById('mvFilters').style.display = sec === 'moves' ? 'inline-flex' : 'none';
@@ -610,10 +612,12 @@ function _saveXLSX(aoa, cols, name) {
 }
 
 // ─── Session gate + header ───
-Auth.require('brigades').then(user => {
+Auth.require('brigades').then(async user => {
   window.__user = user;
   AppHeader.mount({ active: 'brigades', user });
-  load();
+  await load();
+  // відновити активний таб після reload (#moves у hash) — і підвантажити переміщення
+  if (location.hash.replace(/^#/, '') === 'moves') setSection('moves');
 });
 </script>
 </body>
