@@ -3010,7 +3010,7 @@ document.addEventListener('DOMContentLoaded', function() {
    WAREHOUSE VALUE TAB (Вартісна оцінка складу)
    Дані з D1: stock_balances + weighted-avg cost per (nom × org)
    ═══════════════════════════════════════════════════ */
-const whState = { on: '', org: '', _loaded: false, data: null, search: '', limit: 200, includeList: [], openWh: new Set() };
+const whState = { on: '', org: '', _loaded: false, data: null, search: '', limit: 200, includeList: [], includeQuery: '', openWh: new Set() };
 
 function whSetPreset(p) {
   const now = new Date(), y = now.getFullYear(), m = now.getMonth();
@@ -3054,6 +3054,8 @@ const whTagInput = {
       this.save();
     }
     document.getElementById('whIncludeIn').value = '';
+    whState.includeQuery = '';
+    clearTimeout(this._qT);
     this.hide();
     this.renderTags();
     whRender();
@@ -3078,9 +3080,10 @@ const whTagInput = {
       const name = it.nomenclature_name || '';
       if (!name) return;
       const key = name.toLowerCase();
-      const prev = seen.get(key) || { name, val: 0, qty: 0 };
+      const prev = seen.get(key) || { name, val: 0, qty: 0, article: it.nomenclature_article || '' };
       prev.val += it.value_usd || 0;
       prev.qty += it.qty || 0;
+      if (!prev.article && it.nomenclature_article) prev.article = it.nomenclature_article;
       seen.set(key, prev);
     });
     return [...seen.values()].sort((a, b) => b.val - a.val);
@@ -3090,12 +3093,23 @@ const whTagInput = {
     const dd  = document.getElementById('whIncludeSuggest');
     if (!inp || !dd) return;
     const q = inp.value.trim().toLowerCase();
+    // Вільний текст у полі фільтрує таблицю по частинах запиту (не лише вибір конкретного товару).
+    if (q !== (whState.includeQuery || '')) {
+      whState.includeQuery = q;
+      clearTimeout(this._qT);
+      this._qT = setTimeout(() => whRender(), 200);
+    }
     const all = this.allItems();
     if (!all.length) { dd.style.display = 'none'; return; }
+    const terms = q ? q.split(/\s+/) : [];
     const taken = new Set(this.list().map(n => n.toLowerCase()));
     const matched = all
       .filter(o => !taken.has(o.name.toLowerCase()))
-      .filter(o => !q || o.name.toLowerCase().includes(q))
+      .filter(o => {
+        if (!terms.length) return true;
+        const hay = (o.name + ' ' + (o.article || '')).toLowerCase();
+        return terms.every(t => hay.includes(t));
+      })
       .slice(0, 50);
     if (!matched.length) { dd.innerHTML = '<div class="empty">Нічого не знайдено</div>'; dd.style.display = 'block'; return; }
     dd.innerHTML = matched.map((o, i) =>
@@ -3193,8 +3207,20 @@ function whRender() {
     return tag === orgFilter;
   };
   const incSet = new Set((whState.includeList || []).map(s => s.toLowerCase()));
+  const incTerms = (whState.includeQuery || '').trim() ? whState.includeQuery.trim().split(/\s+/) : [];
   const allOrgItems = (data.items || []).filter(it => orgMatch(it.organization_tag));
-  const items = incSet.size ? allOrgItems.filter(it => incSet.has((it.nomenclature_name || '').toLowerCase())) : allOrgItems;
+  // Чіпи (конкретні товари) мають пріоритет; інакше — фільтр по введеному тексту (по частинах: назва+артикул).
+  let items;
+  if (incSet.size) {
+    items = allOrgItems.filter(it => incSet.has((it.nomenclature_name || '').toLowerCase()));
+  } else if (incTerms.length) {
+    items = allOrgItems.filter(it => {
+      const hay = ((it.nomenclature_name || '') + ' ' + (it.nomenclature_article || '')).toLowerCase();
+      return incTerms.every(t => hay.includes(t));
+    });
+  } else {
+    items = allOrgItems;
+  }
 
   // Сумарна вартість (з фільтра).
   let totalValue = 0, totalQty = 0, unpricedQty = 0;
