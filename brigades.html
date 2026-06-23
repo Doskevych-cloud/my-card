@@ -366,7 +366,7 @@ function fillDatalists() {
   set('dl_from', uniq('from_name'));
   set('dl_to',   uniq('to_name'));
   set('dl_cust', uniq('customer'));
-  set('dl_order', uniq('order_no'));
+  refreshOrderDatalist();   // dl_order звужується до покупця, якщо обрано
   state.orderRefByNo = {};
   state.custRefByName = {};
   for (const d of moves) {
@@ -510,7 +510,7 @@ function setSection(sec) {
   if (sec === 'moves') loadMoves(); else render();
 }
 // Прив'язка фільтр-інпуту (Відправник/Одержувач/Покупець) → state[key], debounce 150ms
-function _flt(id, key) {
+function _flt(id, key, after) {
   const el = document.getElementById(id);
   if (!el) return;
   let t = null;
@@ -518,8 +518,21 @@ function _flt(id, key) {
     const v = el.value.toLowerCase().trim();
     el.classList.toggle('set', !!v);
     clearTimeout(t);
-    t = setTimeout(() => { state[key] = v; render(); }, 150);
+    t = setTimeout(() => { state[key] = v; if (after) after(); render(); }, 150);
   });
+}
+// Якщо обрано покупця — звузити список замовлень до його замовлень (і скинути вибране чуже замовлення)
+function refreshOrderDatalist() {
+  const moves = Array.isArray(state.allMoves) ? state.allMoves : [];
+  const scoped = state.mvCustomer ? moves.filter(d => (d.customer || '').toLowerCase().includes(state.mvCustomer)) : moves;
+  const orders = [...new Set(scoped.map(d => d.order_no).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'uk'));
+  const el = document.getElementById('dl_order');
+  if (el) el.innerHTML = orders.map(v => '<option value="' + esc(v) + '">').join('');
+}
+function onCustomerChange() {
+  const ord = document.getElementById('fOrder');
+  if (ord && ord.value) { ord.value = ''; ord.classList.remove('set'); state.mvOrder = ''; }  // скинути замовлення іншого покупця
+  refreshOrderDatalist();
 }
 function setPreset(p) {
   const r = presetRange(p);
@@ -574,7 +587,7 @@ try {
 
 _flt('fSender', 'mvSender');
 _flt('fReceiver', 'mvReceiver');
-_flt('fCust', 'mvCustomer');
+_flt('fCust', 'mvCustomer', onCustomerChange);
 _flt('fOrder', 'mvOrder');
 
 let _searchTimer = null;
