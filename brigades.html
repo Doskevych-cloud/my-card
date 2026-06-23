@@ -76,8 +76,13 @@ a{color:inherit;text-decoration:none}
 .mv-cust{font-size:12.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mv-cm-col{font-size:11.5px;color:var(--text2);font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Фільтри по сутності (Відправник / Одержувач / Покупець) — автокомпліт */
-.flt{display:inline-flex;align-items:center;gap:7px}
+.flt{display:inline-flex;align-items:center;gap:7px;position:relative}
 .flt label{font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:700;white-space:nowrap}
+/* Автокомпліт-дропдаун (підтягує сутність з довідника) */
+.ac-pop{position:absolute;background:var(--surface2);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.4);max-height:300px;overflow-y:auto;z-index:60;min-width:240px;max-width:min(460px,86vw)}
+.ac-pop .opt{padding:7px 11px;font-size:12px;cursor:pointer;color:var(--text);border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ac-pop .opt:last-child{border-bottom:none}
+.ac-pop .opt:hover,.ac-pop .opt.hl{background:var(--bg3);color:var(--accent)}
 /* .toolbar .flt input — специфічність МАЄ перебивати .toolbar input[type=text]{flex:1;min-width:200px} */
 .toolbar .flt input{flex:0 0 auto;width:170px;min-width:0;padding:7px 11px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;transition:border .15s}
 .toolbar .flt input::placeholder{color:var(--text3)}
@@ -190,11 +195,10 @@ a{color:inherit;text-decoration:none}
         <span class="chip mvcat" data-cat="returned" onclick="setCat('returned')">↑ Повернено</span>
         <span class="chip mvcat" data-cat="writtenoff" onclick="setCat('writtenoff')">✓ Списано</span>
         <span class="sep"></span>
-        <span class="flt"><label>Відправник</label><input type="text" id="fSender" list="dl_from" placeholder="Почни вводити…" autocomplete="off"></span>
-        <span class="flt"><label>Одержувач</label><input type="text" id="fReceiver" list="dl_to" placeholder="Почни вводити…" autocomplete="off"></span>
-        <span class="flt"><label>Покупець</label><input type="text" id="fCust" list="dl_cust" placeholder="Почни вводити…" autocomplete="off"></span>
-        <span class="flt"><label>Замовлення</label><input type="text" id="fOrder" list="dl_order" placeholder="Почни вводити…" autocomplete="off"></span>
-        <datalist id="dl_from"></datalist><datalist id="dl_to"></datalist><datalist id="dl_cust"></datalist><datalist id="dl_order"></datalist>
+        <span class="flt"><label>Відправник</label><input type="text" id="fSender" placeholder="Почни вводити…" autocomplete="off" data-1p-ignore data-lpignore="true"></span>
+        <span class="flt"><label>Одержувач</label><input type="text" id="fReceiver" placeholder="Почни вводити…" autocomplete="off" data-1p-ignore data-lpignore="true"></span>
+        <span class="flt"><label>Покупець</label><input type="text" id="fCust" placeholder="Почни вводити…" autocomplete="off" data-1p-ignore data-lpignore="true"></span>
+        <span class="flt"><label>Замовлення</label><input type="text" id="fOrder" placeholder="Почни вводити…" autocomplete="off" data-1p-ignore data-lpignore="true"></span>
         <span class="chip" onclick="downloadMovesXLSX()" title="Переміщення в Excel">⬇ Excel</span>
       </span>
       <input type="text" id="searchIn" placeholder="🔎 Пошук…" autocomplete="off">
@@ -341,10 +345,10 @@ function stockHtml(ref, b) {
 function baseMoves() {
   if (!Array.isArray(state.allMoves)) return [];
   let docs = state.allMoves;
-  if (state.mvSender)   docs = docs.filter(d => (d.from_name || '').toLowerCase().includes(state.mvSender));
-  if (state.mvReceiver) docs = docs.filter(d => (d.to_name   || '').toLowerCase().includes(state.mvReceiver));
-  if (state.mvCustomer) docs = docs.filter(d => (d.customer  || '').toLowerCase().includes(state.mvCustomer));
-  if (state.mvOrder)    docs = docs.filter(d => (d.order_no  || '').toLowerCase().includes(state.mvOrder));
+  if (state.mvSender)   { const n = _norm(state.mvSender);   docs = docs.filter(d => _norm(d.from_name).includes(n)); }
+  if (state.mvReceiver) { const n = _norm(state.mvReceiver); docs = docs.filter(d => _norm(d.to_name).includes(n)); }
+  if (state.mvCustomer) { const n = _norm(state.mvCustomer); docs = docs.filter(d => _norm(d.customer).includes(n)); }
+  if (state.mvOrder)    { const n = _norm(state.mvOrder);    docs = docs.filter(d => _norm(d.order_no).includes(n)); }
   if (state.moveFrom) docs = docs.filter(d => (d.date || '').slice(0, 10) >= state.moveFrom);
   if (state.moveTo)   docs = docs.filter(d => (d.date || '').slice(0, 10) <= state.moveTo);
   return docs;
@@ -358,21 +362,33 @@ function filteredMoves() {
     (d.customer || '').toLowerCase().includes(q) || (d.number || '').toLowerCase().includes(q));
   return docs;
 }
-// Наповнення datalist-ів для автокомпліту фільтрів (унікальні значення з усіх рухів)
+// Будуємо мапи точного збігу (назва→ref) для перемикання у звірку
 function fillDatalists() {
   const moves = Array.isArray(state.allMoves) ? state.allMoves : [];
-  const uniq = key => [...new Set(moves.map(d => d[key]).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'uk'));
-  const set = (id, vals) => { const el = document.getElementById(id); if (el) el.innerHTML = vals.map(v => '<option value="' + esc(v) + '">').join(''); };
-  set('dl_from', uniq('from_name'));
-  set('dl_to',   uniq('to_name'));
-  set('dl_cust', uniq('customer'));
-  refreshOrderDatalist();   // dl_order звужується до покупця, якщо обрано
   state.orderRefByNo = {};
   state.custRefByName = {};
   for (const d of moves) {
     if (d.order_no && d.order_ref) state.orderRefByNo[String(d.order_no).toLowerCase()] = d.order_ref;
     if (d.customer && d.customer_ref) state.custRefByName[String(d.customer).toLowerCase()] = d.customer_ref;
   }
+}
+// Нормалізація для пошуку: толерантна до укр. плутанини е/є, и/і/ї/й, апострофів і лапок
+function _norm(s) {
+  return String(s == null ? '' : s).toLowerCase()
+    .replace(/[єё]/g, 'е')
+    .replace(/[іїй]/g, 'и')
+    .replace(/[’ʼ'`«»"]/g, '');
+}
+// Кандидати автокомпліту (унікальні значення з рухів). Замовлення — звужені до обраного покупця.
+function _uniqMove(key) {
+  const m = Array.isArray(state.allMoves) ? state.allMoves : [];
+  return [...new Set(m.map(d => d[key]).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'uk'));
+}
+function _orderCandidates() {
+  const m = Array.isArray(state.allMoves) ? state.allMoves : [];
+  const nc = _norm(state.mvCustomer);
+  const sc = state.mvCustomer ? m.filter(d => _norm(d.customer).includes(nc)) : m;
+  return [...new Set(sc.map(d => d.order_no).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'uk'));
 }
 function _fmtQ(n) { n = Number(n) || 0; return n.toLocaleString('uk-UA', { maximumFractionDigits: 2 }); }
 // Звірка: Отримано − Повернено − Списано = залишок на бригаді (все отримане має бути закрите)
@@ -509,30 +525,52 @@ function setSection(sec) {
   document.getElementById('searchIn').placeholder = sec === 'moves' ? '🔎 Пошук: склад / покупець / №' : '🔎 Пошук по бригаді або товару…';
   if (sec === 'moves') loadMoves(); else render();
 }
-// Прив'язка фільтр-інпуту (Відправник/Одержувач/Покупець) → state[key], debounce 150ms
-function _flt(id, key, after) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  let t = null;
-  el.addEventListener('input', () => {
-    const v = el.value.toLowerCase().trim();
-    el.classList.toggle('set', !!v);
-    clearTimeout(t);
-    t = setTimeout(() => { state[key] = v; if (after) after(); render(); }, 150);
-  });
-}
-// Якщо обрано покупця — звузити список замовлень до його замовлень (і скинути вибране чуже замовлення)
-function refreshOrderDatalist() {
-  const moves = Array.isArray(state.allMoves) ? state.allMoves : [];
-  const scoped = state.mvCustomer ? moves.filter(d => (d.customer || '').toLowerCase().includes(state.mvCustomer)) : moves;
-  const orders = [...new Set(scoped.map(d => d.order_no).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'uk'));
-  const el = document.getElementById('dl_order');
-  if (el) el.innerHTML = orders.map(v => '<option value="' + esc(v) + '">').join('');
-}
+// При зміні покупця скидаємо вибране чуже замовлення (список замовлень звужується через _orderCandidates)
 function onCustomerChange() {
   const ord = document.getElementById('fOrder');
-  if (ord && ord.value) { ord.value = ''; ord.classList.remove('set'); state.mvOrder = ''; }  // скинути замовлення іншого покупця
-  refreshOrderDatalist();
+  if (ord && ord.value) { ord.value = ''; ord.classList.remove('set'); state.mvOrder = ''; }
+}
+// Кастомний автокомпліт: дропдаун з існуючих сутностей (підрядок, кирилиця-friendly), вибір → стейт+render.
+// Замінює нативний <datalist> (той не матчив кирилицю-підрядок і його перекривав 1Password).
+function setupAC(id, key, getList, after) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const pop = document.createElement('div');
+  pop.className = 'ac-pop'; pop.style.display = 'none';
+  el.parentNode.appendChild(pop);   // .flt має position:relative
+  let opts = [], hi = -1, t = null;
+  const place = () => {
+    pop.style.left = el.offsetLeft + 'px';
+    pop.style.top = (el.offsetTop + el.offsetHeight + 4) + 'px';
+    if (el.offsetWidth > 240) pop.style.minWidth = el.offsetWidth + 'px';
+  };
+  const showPop = () => {
+    const q = el.value.trim();
+    let list = getList();
+    if (q) { const nq = _norm(q); list = list.filter(v => _norm(v).includes(nq)); }
+    opts = list.slice(0, 60); hi = -1;
+    if (!opts.length) { pop.style.display = 'none'; return; }
+    pop.innerHTML = opts.map((v, i) => '<div class="opt" data-i="' + i + '">' + esc(v) + '</div>').join('');
+    place(); pop.style.display = 'block';
+  };
+  const paint = () => { [...pop.children].forEach((c, i) => c.classList.toggle('hl', i === hi)); const c = pop.children[hi]; if (c) c.scrollIntoView({ block: 'nearest' }); };
+  const pick = (v) => { el.value = v; el.classList.toggle('set', !!v); pop.style.display = 'none'; state[key] = v.toLowerCase().trim(); if (after) after(); render(); };
+  el.addEventListener('input', () => {
+    el.classList.toggle('set', !!el.value);
+    clearTimeout(t);
+    t = setTimeout(() => { state[key] = el.value.toLowerCase().trim(); if (after) after(); render(); }, 200);
+    showPop();
+  });
+  el.addEventListener('focus', showPop);
+  el.addEventListener('blur', () => setTimeout(() => { pop.style.display = 'none'; }, 180));
+  el.addEventListener('keydown', (e) => {
+    if (pop.style.display === 'none') return;
+    if (e.key === 'ArrowDown') { hi = Math.min(hi + 1, opts.length - 1); paint(); e.preventDefault(); }
+    else if (e.key === 'ArrowUp') { hi = Math.max(hi - 1, 0); paint(); e.preventDefault(); }
+    else if (e.key === 'Enter') { if (hi >= 0 && opts[hi] != null) { pick(opts[hi]); e.preventDefault(); } }
+    else if (e.key === 'Escape') { pop.style.display = 'none'; }
+  });
+  pop.addEventListener('mousedown', (e) => { const o = e.target.closest('.opt[data-i]'); if (!o) return; e.preventDefault(); pick(opts[Number(o.dataset.i)]); });
 }
 function setPreset(p) {
   const r = presetRange(p);
@@ -585,10 +623,10 @@ try {
   }
 } catch (e) { _picker = null; }
 
-_flt('fSender', 'mvSender');
-_flt('fReceiver', 'mvReceiver');
-_flt('fCust', 'mvCustomer', onCustomerChange);
-_flt('fOrder', 'mvOrder');
+setupAC('fSender', 'mvSender', () => _uniqMove('from_name'));
+setupAC('fReceiver', 'mvReceiver', () => _uniqMove('to_name'));
+setupAC('fCust', 'mvCustomer', () => _uniqMove('customer'), onCustomerChange);
+setupAC('fOrder', 'mvOrder', _orderCandidates);
 
 let _searchTimer = null;
 document.getElementById('searchIn').addEventListener('input', e => {
