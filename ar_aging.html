@@ -1024,15 +1024,21 @@ function downloadDebtorPDF() {
   const doc = buildDebtorOfficialDoc(dd);
 
   if (typeof html2pdf !== 'undefined') {
+    // Контейнер 1×1 з overflow:hidden ховає елемент візуально, але лишає його
+    // на валідних координатах (0,0) — інакше html2canvas віддає порожнє полотно
+    // (елемент за межами екрана через left:-10000px рендериться як пустий лист).
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;overflow:hidden;z-index:-1;opacity:1';
     const wrap = document.createElement('div');
     wrap.id = '__pdfDoc';
     wrap.innerHTML = `<style>
-      #__pdfDoc{position:absolute;left:-10000px;top:0;width:794px;background:#fff;color:#000;font-family:'Times New Roman','PT Serif',Georgia,serif;font-size:11pt;line-height:1.45}
+      #__pdfDoc{width:794px;background:#fff;color:#000;font-family:'Times New Roman','PT Serif',Georgia,serif;font-size:11pt;line-height:1.45}
       #__pdfDoc *{box-sizing:border-box}
       ${DEBTOR_DOC_CSS}
       #__pdfDoc .doc{max-width:none;margin:0;padding:14mm 14mm 16mm}
     </style>${doc}`;
-    document.body.appendChild(wrap);
+    host.appendChild(wrap);
+    document.body.appendChild(host);
     const opt = {
       margin: 0,
       filename: fname.replace(/[\\/:*?"<>|]+/g, ' ').trim() + '.pdf',
@@ -1043,7 +1049,7 @@ function downloadDebtorPDF() {
     };
     html2pdf().set(opt).from(wrap).save()
       .catch(e => { console.error('PDF error:', e); alert('Помилка створення PDF: ' + ((e && e.message) || e)); })
-      .finally(() => { try { document.body.removeChild(wrap); } catch (_) {} });
+      .finally(() => { try { document.body.removeChild(host); } catch (_) {} });
     return;
   }
 
