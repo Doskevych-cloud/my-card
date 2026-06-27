@@ -839,71 +839,209 @@ function renderDebtorDetail(name) {
      <div class="dd-report">${buildDebtorReportInner(dd)}</div>`;
 }
 
-// PDF: окреме вікно зі світлою темою → системний друк «Зберегти як PDF»
-// (надійніше за html2pdf, не залежить від поточної теми сторінки).
+// ── Сума прописом (українською) для офіційної довідки ─────────────
+const _ONES_M = ['','один','два','три','чотири',"п'ять",'шість','сім','вісім',"дев'ять"];
+const _ONES_F = ['','одна','дві','три','чотири',"п'ять",'шість','сім','вісім',"дев'ять"];
+const _TEENS  = ['десять','одинадцять','дванадцять','тринадцять','чотирнадцять',"п'ятнадцять",'шістнадцять','сімнадцять','вісімнадцять',"дев'ятнадцять"];
+const _TENS   = ['','','двадцять','тридцять','сорок',"п'ятдесят",'шістдесят','сімдесят','вісімдесят',"дев'яносто"];
+const _HUNDS  = ['','сто','двісті','триста','чотириста',"п'ятсот",'шістсот','сімсот','вісімсот',"дев'ятсот"];
+function _plUk(n, one, few, many) {
+  const a = Math.abs(n) % 100, b = a % 10;
+  if (a > 10 && a < 20) return many;
+  if (b > 1 && b < 5) return few;
+  if (b === 1) return one;
+  return many;
+}
+function _triadUk(num, fem) {
+  const ones = fem ? _ONES_F : _ONES_M;
+  const out = [];
+  const h = Math.floor(num / 100), t = Math.floor((num % 100) / 10), o = num % 10;
+  if (h) out.push(_HUNDS[h]);
+  if (t === 1) out.push(_TEENS[o]);
+  else { if (t) out.push(_TENS[t]); if (o) out.push(ones[o]); }
+  return out.join(' ');
+}
+function intToWordsUk(n, unitsFem) {
+  n = Math.floor(Math.abs(n));
+  if (n === 0) return 'нуль';
+  const tr = [];
+  let x = n;
+  while (x > 0) { tr.unshift(x % 1000); x = Math.floor(x / 1000); }
+  const cnt = tr.length;
+  const SC = { 1:{fem:true,one:'тисяча',few:'тисячі',many:'тисяч'},
+               2:{fem:false,one:'мільйон',few:'мільйони',many:'мільйонів'},
+               3:{fem:false,one:'мільярд',few:'мільярди',many:'мільярдів'} };
+  const out = [];
+  for (let i = 0; i < cnt; i++) {
+    const triad = tr[i];
+    if (!triad) continue;
+    const pos = cnt - 1 - i;
+    const sc = SC[pos];
+    const fem = pos === 0 ? !!unitsFem : (sc ? sc.fem : false);
+    out.push(_triadUk(triad, fem));
+    if (sc) out.push(_plUk(triad, sc.one, sc.few, sc.many));
+  }
+  return out.join(' ').replace(/\s+/g, ' ').trim();
+}
+const _CUR_WORDS = {
+  USD: { fem:false, one:'долар США', few:'долари США', many:'доларів США', cOne:'цент', cFew:'центи', cMany:'центів' },
+  EUR: { fem:false, one:'євро', few:'євро', many:'євро', cOne:'євроцент', cFew:'євроценти', cMany:'євроцентів' },
+  UAH: { fem:true,  one:'гривня', few:'гривні', many:'гривень', cOne:'копійка', cFew:'копійки', cMany:'копійок' },
+};
+function amountInWordsUk(amount, curName) {
+  const c = _CUR_WORDS[curName] || _CUR_WORDS.USD;
+  let whole = Math.floor(Math.abs(amount));
+  let frac = Math.round((Math.abs(amount) - whole) * 100);
+  if (frac === 100) { whole += 1; frac = 0; }
+  const words = intToWordsUk(whole, c.fem) + ' ' + _plUk(whole, c.one, c.few, c.many)
+              + ' ' + String(frac).padStart(2, '0') + ' ' + _plUk(frac, c.cOne, c.cFew, c.cMany);
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+function fmtMoney(n) {
+  return Number(n || 0).toLocaleString('uk-UA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+const _UK_MONTHS = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+function _dmy(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : (iso || '');
+}
+function _dateLong(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+  return m ? `${+m[3]} ${_UK_MONTHS[+m[2] - 1] || ''} ${m[1]} р.` : (iso || '');
+}
+
+// Офіційна довідка про дебіторську заборгованість (формат як в облікових
+// системах: шапка, реквізити, таблиці з рамками, сума прописом, підписи).
+function buildDebtorOfficialDoc(dd) {
+  const onDate = state.onDate || '';
+  const org = state.org || 'Усі організації';
+  const dtNow = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' });
+  const docNo = onDate.replace(/-/g, '') || '—';
+
+  const single = dd.entries.length === 1;
+  const docCur = single ? dd.entries[0].curName : 'USD';
+  const docTotal = single ? dd.entries[0].total : dd.totalUSD;
+  const docBuckets = single ? dd.entries[0].buckets : dd.bucketUSD;
+  const equiv = !single;
+  const curLabel = docCur === 'USD' ? 'долар США' : docCur === 'EUR' ? 'євро' : docCur === 'UAH' ? 'гривня' : docCur;
+  const TERM = { d7:'до 7 днів', d14:'від 8 до 14 днів', d30:'від 15 до 30 днів', d60:'від 31 до 60 днів', d61p:'понад 61 день' };
+  const pctOf = v => docTotal ? (v / docTotal) * 100 : 0;
+
+  const agingRows = BUCKET_ORDER.map((k, i) =>
+    `<tr><td class="c">${i + 1}</td><td class="term">${TERM[k]}</td><td>${fmtMoney(docBuckets[k] || 0)}</td><td class="c">${pctOf(docBuckets[k] || 0).toFixed(0)}</td></tr>`
+  ).join('');
+
+  let curBlock = '';
+  if (!single) {
+    const rows = dd.entries.map(e =>
+      `<tr><td class="term">${esc(e.curName)}</td><td>${fmtMoney(e.total)} ${curSign(e.curName)}</td><td class="c">${e.maxDaysOverdue > 0 ? e.maxDaysOverdue + ' дн.' : '—'}</td>` +
+      BUCKET_ORDER.map(k => `<td>${(e.buckets[k] || 0) >= 0.005 ? fmtMoney(e.buckets[k]) : '—'}</td>`).join('') + `</tr>`
+    ).join('');
+    curBlock = `
+      <div class="doc-sect">Розшифровка заборгованості за валютами обліку</div>
+      <table class="doc-tbl">
+        <thead><tr><th class="term">Валюта</th><th>Заборгованість</th><th>Прострочення</th><th>до 7</th><th>8–14</th><th>15–30</th><th>31–60</th><th>понад 61</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+
+  const wordsLine = docTotal >= 0.005 ? amountInWordsUk(docTotal, docCur) : '—';
+
+  return `
+  <div class="doc">
+    <div class="doc-letterhead">Організація-кредитор: <b>${esc(org)}</b></div>
+    <h1 class="doc-title">ДОВІДКА</h1>
+    <div class="doc-sub">про стан дебіторської заборгованості контрагента</div>
+    <div class="doc-no">№ ДЗ-${esc(docNo)} від ${esc(_dmy(onDate))} · станом на ${esc(_dateLong(onDate))}</div>
+
+    <div class="doc-parties">
+      <div><span class="lbl">Кредитор (організація):</span> ${esc(org)}</div>
+      <div><span class="lbl">Боржник (контрагент):</span> <b>${esc(dd.name)}</b></div>
+      <div><span class="lbl">Валюта обліку:</span> ${esc(curLabel)}${equiv ? ' (в еквіваленті)' : ''}${(equiv && dd.USD_UAH) ? `, курс ${dd.USD_UAH.toFixed(2)} грн/USD` : ''}</div>
+      <div><span class="lbl">Макс. термін прострочення:</span> ${dd.maxDays > 0 ? dd.maxDays + ' дн.' : '—'}</div>
+    </div>
+
+    <p class="doc-intro">Станом на ${esc(_dateLong(onDate))} загальна сума дебіторської заборгованості боржника <b>${esc(dd.name)}</b> перед організацією <b>${esc(org)}</b> становить <b>${fmtMoney(docTotal)} ${esc(docCur)}</b>${equiv ? ' (в еквіваленті долара США)' : ''}, у тому числі за термінами її виникнення:</p>
+
+    <table class="doc-tbl">
+      <thead><tr><th class="c">№</th><th class="term">Термін виникнення заборгованості</th><th>Сума, ${esc(docCur)}</th><th class="c">Частка, %</th></tr></thead>
+      <tbody>${agingRows}</tbody>
+      <tfoot><tr><td class="c"></td><td class="term">РАЗОМ</td><td>${fmtMoney(docTotal)}</td><td class="c">100</td></tr></tfoot>
+    </table>
+
+    <div class="doc-words"><span class="lbl">Сума заборгованості прописом:</span> ${esc(wordsLine)}.</div>
+
+    ${curBlock}
+
+    <table class="doc-sign">
+      <tr><td class="role">Керівник</td><td class="ln"></td><td class="ln"></td></tr>
+      <tr><td></td><td class="cap">(підпис)</td><td class="cap">(ініціали, прізвище)</td></tr>
+      <tr class="sp"><td colspan="3"></td></tr>
+      <tr><td class="role">Головний бухгалтер</td><td class="ln"></td><td class="ln"></td></tr>
+      <tr><td></td><td class="cap">(підпис)</td><td class="cap">(ініціали, прізвище)</td></tr>
+    </table>
+    <div class="doc-stamp">М.П.</div>
+
+    <div class="doc-foot">Документ сформовано автоматично ${esc(dtNow)} у системі обліку react.ink. Має інформаційно-довідковий характер.</div>
+  </div>`;
+}
+
+// PDF: офіційна довідка про заборгованість у новому вікні → системний друк
+// «Зберегти як PDF». Документ у світлій темі, незалежно від теми сторінки.
 function downloadDebtorPDF() {
   const dd = collectDebtor(state.detail);
   if (!dd) { alert('Немає даних для PDF.'); return; }
-  const fname = 'Заборгованість · ' + dd.name + ' · ' + (state.onDate || '');
-  const inner = buildDebtorReportInner(dd);
+  const fname = 'Довідка про заборгованість — ' + dd.name + ' — ' + (state.onDate || '');
+  const doc = buildDebtorOfficialDoc(dd);
   let win;
-  try { win = window.open('', '_blank', 'width=1000,height=850'); } catch (_) { win = null; }
+  try { win = window.open('', '_blank', 'width=900,height=1000'); } catch (_) { win = null; }
   if (!win) { alert('Дозвольте спливаючі вікна, щоб завантажити PDF.'); return; }
   win.document.open();
   win.document.write(`<!DOCTYPE html>
-<html lang="uk" data-theme="light">
+<html lang="uk">
 <head>
 <meta charset="UTF-8">
 <title>${esc(fname)}</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#fff;color:#1c1c1e;font-size:12px;line-height:1.5}
-  .page{padding:14mm 10mm}
-  .dd-head{margin-bottom:8mm;padding-bottom:4mm;border-bottom:1px solid #999}
-  .dd-head h2{font-size:18pt;font-weight:800;line-height:1.2}
-  .dd-head .dd-meta{font-size:9pt;color:#555;margin-top:3mm;display:flex;flex-wrap:wrap;gap:2mm 8mm}
-  .dd-head .dd-meta b{color:#1c1c1e;font-weight:700}
-  .ar-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:3mm;margin-bottom:6mm}
-  .ar-card{padding:3mm 4mm;background:#fafafa;border:1px solid #ddd;border-radius:2mm;display:flex;flex-direction:column;gap:1mm}
-  .ar-card .cl{font-size:7.5pt;color:#666;text-transform:uppercase;letter-spacing:.3px;font-weight:700}
-  .ar-card .cv{font-size:15pt;font-weight:800;color:#1c1c1e;font-variant-numeric:tabular-nums;line-height:1.15}
-  .ar-card .cv .ccy{font-size:10pt;font-weight:700;color:#888;margin-left:2px}
-  .ar-card .cs{font-size:7.5pt;color:#666}
-  .ar-card.c-b-d14 .cv{color:#1d4ed8}
-  .ar-card.c-b-d30 .cv{color:#a16207}
-  .ar-card.c-b-d60 .cv{color:#d66000}
-  .ar-card.c-b-d61p .cv{color:#c0392b}
-  .dd-bar-wrap{margin-bottom:6mm}
-  .dd-bar{display:flex;height:5mm;border-radius:2.5mm;overflow:hidden;background:#ececef;border:1px solid #ddd}
-  .dd-bar .seg{height:100%}
-  .dd-bar .seg-d7{background:#15803d}.dd-bar .seg-d14{background:#1d4ed8}.dd-bar .seg-d30{background:#a16207}.dd-bar .seg-d60{background:#d66000}.dd-bar .seg-d61p{background:#c0392b}
-  .dd-legend{display:flex;flex-wrap:wrap;gap:2mm 6mm;margin-top:3mm;font-size:8.5pt;color:#555}
-  .dd-legend .lg{display:inline-flex;align-items:center;gap:2mm}
-  .dd-legend .sw{display:inline-block;width:3mm;height:3mm;border-radius:1mm}
-  .dd-legend .lg-d7 .sw{background:#15803d}.dd-legend .lg-d14 .sw{background:#1d4ed8}.dd-legend .lg-d30 .sw{background:#a16207}.dd-legend .lg-d60 .sw{background:#d66000}.dd-legend .lg-d61p .sw{background:#c0392b}
-  .dd-legend b{color:#1c1c1e;font-weight:700;font-variant-numeric:tabular-nums}
-  .ar-wrap{border:1px solid #bbb;border-radius:2mm;overflow:hidden}
-  .ar-table{width:100%;border-collapse:collapse;font-size:9.5pt;font-variant-numeric:tabular-nums}
-  .ar-table th,.ar-table td{padding:2.5mm 3mm;text-align:right;white-space:nowrap}
-  .ar-table th:first-child,.ar-table td:first-child{text-align:left}
-  .ar-table th{font-size:7.5pt;color:#333;text-transform:uppercase;letter-spacing:.3px;font-weight:700;background:#f0f0f0;border-bottom:1px solid #999}
-  .ar-table th .sw{display:inline-block;width:9px;height:3px;border-radius:2px;margin-right:4px;vertical-align:2px}
-  .ar-table th.b-d7 .sw{background:#15803d}.ar-table th.b-d14 .sw{background:#1d4ed8}.ar-table th.b-d30 .sw{background:#a16207}.ar-table th.b-d60 .sw{background:#d66000}.ar-table th.b-d61p .sw{background:#c0392b}
-  .ar-table tr.ar-cur td{font-weight:700;border-top:1px solid #ddd}
-  .ar-table .cur-badge{display:inline-block;min-width:40px;padding:1px 7px;background:#fff;border:1px solid #ccc;border-radius:4px;font-size:8.5pt;font-weight:700;text-align:center}
-  .ar-table td.total{font-weight:700}
-  .ar-table td.num.zr{color:#aaa;font-weight:400}
-  .ar-table td.b-val.has.b-d7{color:#15803d}.ar-table td.b-val.has.b-d14{color:#1d4ed8}.ar-table td.b-val.has.b-d30{color:#a16207}.ar-table td.b-val.has.b-d60{color:#d66000}.ar-table td.b-val.has.b-d61p{color:#c0392b}
-  .pdf-actions{position:fixed;bottom:10mm;right:10mm;display:flex;gap:8px;z-index:9999}
-  .pdf-actions button{padding:9px 18px;border:0;border-radius:6px;font-size:11pt;font-weight:600;cursor:pointer;font-family:inherit}
-  .pdf-actions .pr{background:#d66000;color:#fff}
-  .pdf-actions .cls{background:#eee;color:#333}
-  @page{size:A4 portrait;margin:10mm}
-  @media print{.pdf-actions{display:none!important}.page{padding:0}}
+  body{font-family:'Times New Roman','PT Serif',Georgia,serif;background:#fff;color:#000;font-size:11pt;line-height:1.45}
+  .doc{max-width:182mm;margin:0 auto;padding:10mm 12mm 20mm}
+  .doc-letterhead{font-size:10pt;border-bottom:1.5px solid #000;padding-bottom:2.5mm;margin-bottom:7mm}
+  .doc-title{text-align:center;font-size:20pt;font-weight:700;letter-spacing:6px;margin-bottom:1mm}
+  .doc-sub{text-align:center;font-size:11.5pt;margin-bottom:1.5mm}
+  .doc-no{text-align:center;font-size:9.5pt;color:#333;margin-bottom:7mm}
+  .doc-parties{margin-bottom:5mm}
+  .doc-parties div{margin:1.2mm 0}
+  .doc-parties .lbl{display:inline-block;min-width:62mm;color:#333}
+  .doc-intro{margin-bottom:4.5mm;text-align:justify}
+  .doc-tbl{width:100%;border-collapse:collapse;margin-bottom:4mm;font-size:10.5pt}
+  .doc-tbl th,.doc-tbl td{border:1px solid #000;padding:1.8mm 2.5mm;text-align:right;font-variant-numeric:tabular-nums}
+  .doc-tbl th{background:#ececec;font-weight:700;text-align:center}
+  .doc-tbl td.term,.doc-tbl th.term{text-align:left}
+  .doc-tbl td.c,.doc-tbl th.c{text-align:center}
+  .doc-tbl tfoot td{font-weight:700;background:#f4f4f4}
+  .doc-tbl tr{page-break-inside:avoid}
+  .doc-words{margin-bottom:7mm}
+  .doc-words .lbl{font-weight:700}
+  .doc-sect{font-weight:700;margin:2mm 0 2mm}
+  .doc-sign{width:100%;border-collapse:collapse;margin-top:12mm;page-break-inside:avoid}
+  .doc-sign td{padding:0 4mm;vertical-align:bottom;font-size:10.5pt}
+  .doc-sign td.role{white-space:nowrap;padding-left:0;width:48mm}
+  .doc-sign td.ln{border-bottom:1px solid #000;height:7mm}
+  .doc-sign td.cap{font-size:8pt;color:#555;text-align:center;padding-top:.5mm;font-style:italic}
+  .doc-sign tr.sp td{height:8mm;border:0}
+  .doc-stamp{margin-top:5mm;font-size:10.5pt}
+  .doc-foot{margin-top:14mm;border-top:1px solid #999;padding-top:2mm;font-size:8.5pt;color:#555;text-align:center}
+  .pdf-actions{position:fixed;bottom:8mm;right:8mm;display:flex;gap:8px;z-index:9999}
+  .pdf-actions button{padding:9px 18px;border:0;border-radius:6px;font-size:11pt;font-weight:600;cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+  .pdf-actions .pr{background:#1c1c1e;color:#fff}
+  .pdf-actions .cls{background:#e5e5e5;color:#222}
+  @page{size:A4 portrait;margin:14mm}
+  @media print{.pdf-actions{display:none!important}.doc{max-width:none;margin:0;padding:0}}
 </style>
 </head>
 <body>
-  <div class="page">${inner}</div>
+  ${doc}
   <div class="pdf-actions">
     <button class="pr" id="btnPrint">Зберегти у PDF / Друкувати</button>
     <button class="cls" id="btnClose">Закрити</button>
