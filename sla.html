@@ -80,8 +80,11 @@ a{color:inherit;text-decoration:none}
 .mgr-card .mc-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mgr-card .mc-stats{font-size:11px;color:var(--text3);margin-top:1px}
 .mgr-card .mc-bar-bg{width:120px;height:6px;background:var(--bg2);border-radius:3px;overflow:hidden;flex-shrink:0}
-.mgr-card .mc-bar{height:100%;border-radius:3px;transition:width .4s ease}
-.mgr-card .mc-val{font-size:18px;font-weight:800;width:60px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.mgr-card .mc-bar{height:100%;border-radius:3px;transition:width .4s ease;background:var(--text3)}
+.mgr-card .mc-bar.clr-green{background:var(--green)}
+.mgr-card .mc-bar.clr-text{background:var(--text3)}
+.mgr-card .mc-bar.clr-red{background:var(--red)}
+.mgr-card .mc-val{font-size:18px;font-weight:800;min-width:64px;white-space:nowrap;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
 
 /* ── Expanded detail under manager card ── */
 .mgr-detail{display:none;margin:-2px 0 6px;padding:0 14px 12px;background:var(--surface2);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px}
@@ -93,8 +96,21 @@ a{color:inherit;text-decoration:none}
 .mgr-detail .md-cp-avg{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
 .mgr-detail .md-evts{margin-top:4px;display:none}
 .mgr-detail .md-evts.open{display:block}
-.mgr-detail .md-evt{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:11px;color:var(--text3)}
+.mgr-detail .md-evt{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 6px;margin:0 -6px;border-radius:6px;font-size:11px;color:var(--text3);cursor:pointer;transition:background .12s}
+.mgr-detail .md-evt:hover{background:var(--bg3)}
 .mgr-detail .md-evt-time{font-variant-numeric:tabular-nums}
+.mgr-detail .md-evt .md-caret{color:var(--text3);transition:transform .15s;display:inline-block;margin-right:4px}
+.mgr-detail .md-evt.open .md-caret{transform:rotate(90deg)}
+/* Повідомлення події (по яких рахувався ВО) */
+.mgr-detail .md-msgs{display:none;margin:2px 0 8px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px}
+.mgr-detail .md-msgs.open{display:block}
+.mgr-detail .md-msgs .mm{display:flex;gap:8px;align-items:baseline;padding:3px 0;font-size:11px;line-height:1.45;border-bottom:1px solid var(--border)}
+.mgr-detail .md-msgs .mm:last-child{border-bottom:none}
+.mgr-detail .md-msgs .mm-who{flex-shrink:0;width:88px;font-weight:600;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mgr-detail .md-msgs .mm.mm-mgr .mm-who{color:var(--accent)}
+.mgr-detail .md-msgs .mm-txt{flex:1;min-width:0;color:var(--text);white-space:pre-wrap;word-break:break-word}
+.mgr-detail .md-msgs .mm-time{flex-shrink:0;color:var(--text3);font-variant-numeric:tabular-nums}
+.mgr-detail .md-msgs .mm-info{font-size:11px;color:var(--text3)}
 
 /* ── Loading / empty ── */
 .loading{text-align:center;padding:48px;color:var(--text3);font-size:13px}
@@ -121,7 +137,7 @@ a{color:inherit;text-decoration:none}
   .metrics{grid-template-columns:1fr}
   .metric.hero .m-value{font-size:28px}
   .mgr-card .mc-bar-bg{display:none}
-  .mgr-card .mc-val{font-size:16px;width:50px}
+  .mgr-card .mc-val{font-size:16px;min-width:52px}
   .distrib .d-lbl{width:55px;font-size:10px}
 }
 </style>
@@ -340,10 +356,11 @@ function renderRanking(data) {
         </div>
         <div class="md-evts" id="${cpId}">`;
       for (const ev of cp.events) {
-        html += `<div class="md-evt">
-          <span class="md-evt-time">${fmtFull(ev.request_at)} → ${fmtTime(ev.response_at)}</span>
+        const ea = `'${ev.chat_id}','${encodeURIComponent(ev.request_at)}','${encodeURIComponent(ev.response_at)}'`;
+        html += `<div class="md-evt" onclick="event.stopPropagation();toggleEvtMsgs(this,${ea})">
+          <span class="md-evt-time"><span class="md-caret">▸</span>${fmtFull(ev.request_at)} → ${fmtTime(ev.response_at)}</span>
           <span style="color:${rColor(ev.reaction_min)};font-weight:600">${fmtR(ev.reaction_min)}</span>
-        </div>`;
+        </div><div class="md-msgs"></div>`;
       }
       html += '</div></div>';
     }
@@ -364,6 +381,34 @@ function toggleMgr(id) {
 }
 function toggleCp(id) {
   document.getElementById(id)?.classList.toggle('open');
+}
+
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+// Показати повідомлення, по яких рахувався ВО (вікно запит→відповідь)
+async function toggleEvtMsgs(evtEl, chatId, fromEnc, toEnc) {
+  const box = evtEl.nextElementSibling;
+  if (!box || !box.classList.contains('md-msgs')) return;
+  evtEl.classList.toggle('open');
+  if (box.dataset.loaded) { box.classList.toggle('open'); return; }
+  box.classList.add('open');
+  box.innerHTML = '<div class="mm-info">Завантаження…</div>';
+  try {
+    const qs = `chat_id=${encodeURIComponent(chatId)}&from=${fromEnc}&to=${toEnc}`;
+    const r = await fetch(API + '?action=sla_event_messages&' + qs).then(x => x.json());
+    const msgs = r.messages || [];
+    box.innerHTML = msgs.length ? msgs.map(m => `
+      <div class="mm ${m.is_manager ? 'mm-mgr' : 'mm-dlr'}">
+        <span class="mm-who">${escapeHtml(m.is_manager ? (m.sender_name || 'Менеджер') : 'Дилер')}</span>
+        <span class="mm-txt">${escapeHtml(m.text)}</span>
+        <span class="mm-time">${(m.created_at || '').slice(5, 16)}</span>
+      </div>`).join('') : '<div class="mm-info">Немає повідомлень у цьому вікні</div>';
+    box.dataset.loaded = '1';
+  } catch (e) {
+    box.innerHTML = '<div class="mm-info">Помилка: ' + escapeHtml(e.message) + '</div>';
+  }
 }
 
 // ── Render: Pending ──
