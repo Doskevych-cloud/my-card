@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SLA: Час реакції · RE:ACT ERP</title>
+<title>SLA: Час відповіді · RE:ACT ERP</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
@@ -14,6 +14,7 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/uk.js"></script>
 <script src="date-range.js?v=20260522"></script>
+<script src="sla-vo.js?v=vo20260627"></script>
 <link rel="stylesheet" href="theme.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -273,7 +274,7 @@ function renderMetrics(data) {
 
   el.innerHTML = `
     <div class="metric hero">
-      <div class="m-label">Середній час реакції</div>
+      <div class="m-label">Середній час відповіді</div>
       <div class="m-value" style="color:${rColor(avg)}">${fmtR(avg)}</div>
       <div class="m-sub">хвилин</div>
     </div>
@@ -298,7 +299,7 @@ function renderDistrib(managers) {
   const maxCount = Math.max(...buckets.map(b => b.count));
 
   wrap.innerHTML = `<div class="distrib">
-    <div class="d-title">Розподіл часу реакції</div>
+    <div class="d-title">Розподіл часу відповіді</div>
     ${buckets.map(b => `<div class="d-row">
       <div class="d-lbl">${b.label}</div>
       <div class="d-bar-bg"><div class="d-bar ${b.cls}" style="width:${maxCount ? (b.count / maxCount * 100) : 0}%"></div></div>
@@ -376,6 +377,41 @@ function renderPending(data) {
   ).join('');
 }
 
+// ── ВО: перерахунок часу реакції на РОБОЧІ хвилини (алгоритм таймера) ──
+// API віддає request_at/response_at; reaction_min з бекенду — наївний wall-clock.
+// Тут підмінюємо його на ВО (09:00–18:00, Пн–Пт, без свят) і перераховуємо середні.
+function applyVO(report) {
+  if (typeof SlaVO === 'undefined') return report; // модуль не завантажився — лишаємо як є
+  let totalSum = 0, totalCnt = 0;
+  for (const mgr of report.managers || []) {
+    let mSum = 0, mCnt = 0;
+    for (const cp of mgr.counterparties || []) {
+      let cpSum = 0;
+      for (const ev of cp.events || []) {
+        ev.wall_min = ev.reaction_min;                  // зберігаємо старе для довідки
+        ev.reaction_min = SlaVO.businessMinutes(ev.request_at, ev.response_at);
+        cpSum += ev.reaction_min;
+      }
+      cp.avg_min = cp.events.length ? Math.round((cpSum / cp.events.length) * 100) / 100 : 0;
+      mSum += cpSum; mCnt += cp.events.length;
+    }
+    mgr.avg_min = mCnt ? Math.round((mSum / mCnt) * 100) / 100 : 0;
+    totalSum += mSum; totalCnt += mCnt;
+  }
+  report.overall_avg_min = totalCnt ? Math.round((totalSum / totalCnt) * 100) / 100 : 0;
+  report.total_events = totalCnt;
+  return report;
+}
+// Для «без відповіді» рахуємо ВО від request_at до зараз (теж робочі хвилини).
+function applyVOPending(pending) {
+  if (typeof SlaVO === 'undefined' || !pending || !pending.pending) return pending;
+  const now = Date.now();
+  for (const p of pending.pending) {
+    if (p.request_at) p.waiting_min = SlaVO.businessMinutes(p.request_at, now);
+  }
+  return pending;
+}
+
 // ── Load ──
 async function load() {
   const loader = document.getElementById('loader');
@@ -392,6 +428,8 @@ async function load() {
     ]);
 
     loader.style.display = 'none';
+    applyVO(report);            // ← wall-clock → ВО (робочі хвилини)
+    applyVOPending(pending);
     if (!report.managers || !report.managers.length) {
       loader.textContent = 'Немає даних за обраний період';
       loader.style.display = '';
