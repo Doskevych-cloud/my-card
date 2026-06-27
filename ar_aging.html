@@ -914,7 +914,6 @@ function _dateLong(iso) {
 // системах: шапка, реквізити, таблиці з рамками, сума прописом, підписи).
 function buildDebtorOfficialDoc(dd) {
   const onDate = state.onDate || '';
-  const org = state.org || 'Усі організації';
   const dtNow = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' });
   const docNo = onDate.replace(/-/g, '') || '—';
 
@@ -949,19 +948,17 @@ function buildDebtorOfficialDoc(dd) {
 
   return `
   <div class="doc">
-    <div class="doc-letterhead">Організація-кредитор: <b>${esc(org)}</b></div>
     <h1 class="doc-title">ДОВІДКА</h1>
     <div class="doc-sub">про стан дебіторської заборгованості контрагента</div>
     <div class="doc-no">№ ДЗ-${esc(docNo)} від ${esc(_dmy(onDate))} · станом на ${esc(_dateLong(onDate))}</div>
 
     <div class="doc-parties">
-      <div><span class="lbl">Кредитор (організація):</span> ${esc(org)}</div>
       <div><span class="lbl">Боржник (контрагент):</span> <b>${esc(dd.name)}</b></div>
       <div><span class="lbl">Валюта обліку:</span> ${esc(curLabel)}${equiv ? ' (в еквіваленті)' : ''}${(equiv && dd.USD_UAH) ? `, курс ${dd.USD_UAH.toFixed(2)} грн/USD` : ''}</div>
       <div><span class="lbl">Макс. термін прострочення:</span> ${dd.maxDays > 0 ? dd.maxDays + ' дн.' : '—'}</div>
     </div>
 
-    <p class="doc-intro">Станом на ${esc(_dateLong(onDate))} загальна сума дебіторської заборгованості боржника <b>${esc(dd.name)}</b> перед організацією <b>${esc(org)}</b> становить <b>${fmtMoney(docTotal)} ${esc(docCur)}</b>${equiv ? ' (в еквіваленті долара США)' : ''}, у тому числі за термінами її виникнення:</p>
+    <p class="doc-intro">Станом на ${esc(_dateLong(onDate))} загальна сума дебіторської заборгованості боржника <b>${esc(dd.name)}</b> становить <b>${fmtMoney(docTotal)} ${esc(docCur)}</b>${equiv ? ' (в еквіваленті долара США)' : ''}, у тому числі за термінами її виникнення:</p>
 
     <table class="doc-tbl">
       <thead><tr><th class="c">№</th><th class="term">Термін виникнення заборгованості</th><th>Сума, ${esc(docCur)}</th><th class="c">Частка, %</th></tr></thead>
@@ -982,7 +979,7 @@ function buildDebtorOfficialDoc(dd) {
     </table>
     <div class="doc-stamp">М.П.</div>
 
-    <div class="doc-foot">Документ сформовано автоматично ${esc(dtNow)} у системі обліку react.ink. Має інформаційно-довідковий характер.</div>
+    <div class="doc-foot">Документ сформовано автоматично ${esc(dtNow)}. Має інформаційно-довідковий характер.</div>
   </div>`;
 }
 
