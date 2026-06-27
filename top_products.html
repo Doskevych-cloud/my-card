@@ -274,8 +274,20 @@ function render() {
   }[state.sort] || ((a, b) => 0);
   items.sort(cmp);
 
-  // Summary KPI
-  const t = d.totals || {};
+  // Summary KPI — без пошуку беремо точні підсумки з бекенду,
+  // при активному пошуку рахуємо тільки по відфільтрованих рядках.
+  let t = d.totals || {};
+  if (state.search) {
+    const noms = new Set();
+    let revenue_usd = 0, qty = 0, receipts = 0;
+    items.forEach(it => {
+      noms.add(it.nom_key || it.nom_code || it.nom_name);
+      revenue_usd += it.revenue_usd || 0;
+      qty += it.qty || 0;
+      receipts += it.receipts || 0;
+    });
+    t = { revenue_usd, qty, receipts, products: noms.size };
+  }
   document.getElementById('summary').innerHTML = `
     <div class="summary">
       <div class="kpi">
