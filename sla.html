@@ -48,7 +48,7 @@ a{color:inherit;text-decoration:none}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* ── Metrics row ── */
-.metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 .metric{padding:16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
 .metric .m-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:4px}
 .metric .m-value{font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1.1;font-variant-numeric:tabular-nums}
@@ -279,14 +279,6 @@ function calcDistrib(managers) {
 function renderMetrics(data) {
   const el = document.getElementById('metricsRow');
   const avg = data.overall_avg_min;
-  const fastest = data.managers.reduce((f, m) => {
-    for (const cp of m.counterparties) for (const ev of cp.events) if (f === null || ev.reaction_min < f) f = ev.reaction_min;
-    return f;
-  }, null);
-  const slowest = data.managers.reduce((s, m) => {
-    for (const cp of m.counterparties) for (const ev of cp.events) if (s === null || ev.reaction_min > s) s = ev.reaction_min;
-    return s;
-  }, null);
 
   el.innerHTML = `
     <div class="metric hero">
@@ -298,11 +290,6 @@ function renderMetrics(data) {
       <div class="m-label">Подій за період</div>
       <div class="m-value">${data.total_events}</div>
       <div class="m-sub">${data.managers.length} менеджер${data.managers.length === 1 ? '' : 'ів'}</div>
-    </div>
-    <div class="metric">
-      <div class="m-label">Найшвидша / найповільніша</div>
-      <div class="m-value"><span style="color:var(--green)">${fmtR(fastest)}</span> <span style="color:var(--text3);font-size:16px;font-weight:400">/</span> <span style="color:var(--red)">${fmtR(slowest)}</span></div>
-      <div class="m-sub">хвилин</div>
     </div>
   `;
 }
