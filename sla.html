@@ -68,14 +68,17 @@ a{color:inherit;text-decoration:none}
 .d-bar.clr-green{background:var(--green)}
 .d-bar.clr-text{background:var(--text3)}
 .d-bar.clr-red{background:var(--red)}
-.distrib .distrib-wrap{display:flex;gap:22px;align-items:center;flex-wrap:wrap}
-.distrib .distrib-chart{flex-shrink:0}
-.distrib .distrib-legend{flex:1;min-width:200px;display:flex;flex-direction:column;gap:7px}
-.distrib .dl-row{display:flex;align-items:center;gap:8px;font-size:12px}
-.distrib .dl-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
-.distrib .dl-label{color:var(--text2);flex:1}
-.distrib .dl-count{color:var(--text);font-weight:700;font-variant-numeric:tabular-nums}
-.distrib .dl-pct{color:var(--text3);font-variant-numeric:tabular-nums;width:40px;text-align:right}
+.distrib .dgrp{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.distrib .dgrp-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+.distrib .dgrp-lbl{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px}
+.distrib .dgrp-val{font-size:26px;font-weight:800;line-height:1.1;margin-top:4px;font-variant-numeric:tabular-nums}
+.distrib .dgrp-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.distrib .dbar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-top:12px;gap:2px}
+.distrib .dbar>div{height:100%}
+.distrib .dbar-leg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:11px;color:var(--text3)}
+.distrib .dbar-leg .dl{display:flex;align-items:center;gap:6px}
+.distrib .dl-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+@media(max-width:560px){.distrib .dgrp{grid-template-columns:1fr}}
 
 /* ── Managers ranking ── */
 .ranking{margin-bottom:14px}
@@ -309,35 +312,37 @@ function renderDistrib(managers) {
   if (!total) { wrap.innerHTML = ''; return; }
 
   const colorOf = cls => cls === 'clr-green' ? 'var(--green)' : cls === 'clr-red' ? 'var(--red)' : 'var(--text3)';
-  const R = 54, sw = 22, cx = 70, cy = 70, C = 2 * Math.PI * R;
-  let acc = 0;
-  const segs = [];
-  for (const b of buckets) {
-    if (!b.count) continue;
-    const frac = b.count / total;
-    const dash = Math.max(frac * C - 2.5, 0.5);              // -2.5 = тонкий розділювач між секторами
-    const rot = acc * 360 - 90;                              // старт зверху (12 годин)
-    segs.push(`<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${colorOf(b.cls)}" stroke-width="${sw}" stroke-dasharray="${dash.toFixed(2)} ${C.toFixed(2)}" transform="rotate(${rot.toFixed(2)} ${cx} ${cy})"/>`);
-    acc += frac;
-  }
-  const legend = buckets.map(b => `
-    <div class="dl-row">
-      <span class="dl-dot" style="background:${colorOf(b.cls)}"></span>
-      <span class="dl-label">${b.label}</span>
-      <span class="dl-count">${b.count}</span>
-      <span class="dl-pct">${Math.round(b.count / total * 100)}%</span>
-    </div>`).join('');
+  const pct = n => Math.round(n / total * 100);
+
+  // 3 макро-категорії: швидко (≤3хв) / прийнятно (3–10хв) / повільно (>10хв)
+  const fast = buckets[0].count + buckets[1].count;
+  const okk = buckets[2].count + buckets[3].count;
+  const slow = buckets[4].count;
+  const cards = [
+    { lbl: 'Швидко · ≤3 хв', n: fast, color: 'var(--green)' },
+    { lbl: 'Прийнятно · 3–10 хв', n: okk, color: 'var(--text)' },
+    { lbl: 'Повільно · >10 хв', n: slow, color: 'var(--red)' },
+  ];
+
+  // тонка 5-сегментна стрічка (повна деталізація)
+  const segs = buckets.filter(b => b.count).map(b =>
+    `<div style="width:${(b.count / total * 100).toFixed(2)}%;background:${colorOf(b.cls)}" title="${b.label}: ${b.count}"></div>`
+  ).join('');
+  const legend = buckets.map(b =>
+    `<span class="dl"><span class="dl-dot" style="background:${colorOf(b.cls)}"></span>${b.label} · ${b.count}</span>`
+  ).join('');
 
   wrap.innerHTML = `<div class="distrib">
     <div class="d-title">Розподіл часу відповіді</div>
-    <div class="distrib-wrap">
-      <svg class="distrib-chart" width="140" height="140" viewBox="0 0 140 140" role="img">
-        ${segs.join('')}
-        <text x="${cx}" y="${cy - 3}" text-anchor="middle" font-size="26" font-weight="800" fill="var(--text)" font-variant-numeric="tabular-nums">${total}</text>
-        <text x="${cx}" y="${cy + 15}" text-anchor="middle" font-size="10" fill="var(--text3)">подій</text>
-      </svg>
-      <div class="distrib-legend">${legend}</div>
+    <div class="dgrp">
+      ${cards.map(c => `<div class="dgrp-card">
+        <div class="dgrp-lbl"><span class="dl-dot" style="background:${c.color}"></span>${c.lbl}</div>
+        <div class="dgrp-val" style="color:${c.color}">${pct(c.n)}%</div>
+        <div class="dgrp-sub">${c.n} подій</div>
+      </div>`).join('')}
     </div>
+    <div class="dbar">${segs}</div>
+    <div class="dbar-leg">${legend}</div>
   </div>`;
 }
 
