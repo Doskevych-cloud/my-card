@@ -410,6 +410,13 @@ function toggleCp(id) {
 function escapeHtml(s) {
   return (s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
+// Час повідомлення (UTC з БД) → локальний, як у шапці події
+function fmtMsgTime(s) {
+  if (!s) return '';
+  const iso = s.includes('T') ? s : s.replace(' ', 'T');
+  const d = new Date(/[Zz]|[+\-]\d\d:?\d\d$/.test(iso) ? iso : iso + 'Z');
+  return isNaN(d.getTime()) ? s : d.toLocaleString('uk-UA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
 
 // Показати повідомлення, по яких рахувався ВО (вікно запит→відповідь)
 async function toggleEvtMsgs(evtEl, chatId, fromEnc, toEnc) {
@@ -427,7 +434,7 @@ async function toggleEvtMsgs(evtEl, chatId, fromEnc, toEnc) {
       <div class="mm ${m.is_manager ? 'mm-mgr' : 'mm-dlr'}">
         <span class="mm-who">${escapeHtml(m.is_manager ? (m.sender_name || 'Менеджер') : 'Дилер')}</span>
         <span class="mm-txt">${escapeHtml(m.text)}</span>
-        <span class="mm-time">${(m.created_at || '').slice(5, 16)}</span>
+        <span class="mm-time">${fmtMsgTime(m.created_at)}</span>
       </div>`).join('') : '<div class="mm-info">Немає повідомлень у цьому вікні</div>';
     box.dataset.loaded = '1';
   } catch (e) {
