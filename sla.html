@@ -311,7 +311,6 @@ function renderDistrib(managers) {
   const { buckets, total } = calcDistrib(managers);
   if (!total) { wrap.innerHTML = ''; return; }
 
-  const colorOf = cls => cls === 'clr-green' ? 'var(--green)' : cls === 'clr-red' ? 'var(--red)' : 'var(--text3)';
   const pct = n => Math.round(n / total * 100);
 
   // 3 макро-категорії: швидко (≤3хв) / прийнятно (3–10хв) / повільно (>10хв)
@@ -319,30 +318,26 @@ function renderDistrib(managers) {
   const okk = buckets[2].count + buckets[3].count;
   const slow = buckets[4].count;
   const cards = [
-    { lbl: 'Швидко · ≤3 хв', n: fast, color: 'var(--green)' },
-    { lbl: 'Прийнятно · 3–10 хв', n: okk, color: 'var(--text)' },
-    { lbl: 'Повільно · >10 хв', n: slow, color: 'var(--red)' },
+    { lbl: 'Швидко · ≤3 хв', n: fast, color: 'var(--green)', bar: 'var(--green)' },
+    { lbl: 'Прийнятно · 3–10 хв', n: okk, color: 'var(--text)', bar: 'var(--text3)' },
+    { lbl: 'Повільно · >10 хв', n: slow, color: 'var(--red)', bar: 'var(--red)' },
   ];
 
-  // тонка 5-сегментна стрічка (повна деталізація)
-  const segs = buckets.filter(b => b.count).map(b =>
-    `<div style="width:${(b.count / total * 100).toFixed(2)}%;background:${colorOf(b.cls)}" title="${b.label}: ${b.count}"></div>`
-  ).join('');
-  const legend = buckets.map(b =>
-    `<span class="dl"><span class="dl-dot" style="background:${colorOf(b.cls)}"></span>${b.label} · ${b.count}</span>`
+  // стрічка на ті самі 3 категорії
+  const segs = cards.filter(c => c.n).map(c =>
+    `<div style="width:${(c.n / total * 100).toFixed(2)}%;background:${c.bar}" title="${c.lbl}: ${c.n}"></div>`
   ).join('');
 
   wrap.innerHTML = `<div class="distrib">
     <div class="d-title">Розподіл часу відповіді</div>
     <div class="dgrp">
       ${cards.map(c => `<div class="dgrp-card">
-        <div class="dgrp-lbl"><span class="dl-dot" style="background:${c.color}"></span>${c.lbl}</div>
+        <div class="dgrp-lbl"><span class="dl-dot" style="background:${c.bar}"></span>${c.lbl}</div>
         <div class="dgrp-val" style="color:${c.color}">${pct(c.n)}%</div>
         <div class="dgrp-sub">${c.n} подій</div>
       </div>`).join('')}
     </div>
     <div class="dbar">${segs}</div>
-    <div class="dbar-leg">${legend}</div>
   </div>`;
 }
 
