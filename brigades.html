@@ -95,6 +95,13 @@ a{color:inherit;text-decoration:none}
 .rec-oh-cust{font-size:13px;font-weight:600;color:var(--text)}
 .rec-oh-nums{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
 .rec-oh-num{font-size:11.5px;color:var(--accent);background:var(--accent-bg);border-radius:6px;padding:2px 8px;font-variant-numeric:tabular-nums}
+/* Режими «Переміщення»: Список / Звірка */
+.mvm-bar{display:inline-flex;gap:4px}
+#mvFilters.recon .mv-list-only{display:none}
+#mvFilters:not(.recon) .mv-recon-only{display:none}
+.rec-empty{border:1px dashed var(--border);border-radius:12px;padding:30px 20px;text-align:center;margin-top:4px}
+.rec-empty-t{font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px}
+.rec-empty-s{font-size:12.5px;color:var(--text2);max-width:540px;margin:0 auto;line-height:1.6}
 .rec-th,.rec-row{display:grid;grid-template-columns:minmax(0,1fr) 110px 110px 110px 120px;gap:14px;align-items:baseline;padding:9px 16px}
 .rec-th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);font-weight:700;background:var(--bg2);border-bottom:1px solid var(--border)}
 .rec-th .r,.rec-row .r{text-align:right;font-variant-numeric:tabular-nums}
@@ -189,24 +196,29 @@ a{color:inherit;text-decoration:none}
       </span>
       <!-- Переміщення -->
       <span class="mvf" id="mvFilters" style="display:none">
-        <input type="text" id="mvDateRange" class="date-range-input" readonly placeholder="📅 Період">
-        <span class="chip mvp" data-preset="today" onclick="setPreset('today')">Сьогодні</span>
-        <span class="chip mvp" data-preset="week" onclick="setPreset('week')">Тиждень</span>
-        <span class="chip mvp" data-preset="month" onclick="setPreset('month')">Місяць</span>
-        <span class="chip mvp" data-preset="year" onclick="setPreset('year')">Рік</span>
-        <span class="chip mvp active" data-preset="all" onclick="setPreset('all')">Весь час</span>
-        <span class="sep"></span>
-        <span class="chip mvcat active" data-cat="all" onclick="setCat('all')">Усі</span>
-        <span class="chip mvcat" data-cat="ordered" onclick="setCat('ordered')">≡ Замовлено</span>
-        <span class="chip mvcat" data-cat="received" onclick="setCat('received')">↓ Отримано</span>
-        <span class="chip mvcat" data-cat="returned" onclick="setCat('returned')">↑ Повернено</span>
-        <span class="chip mvcat" data-cat="writtenoff" onclick="setCat('writtenoff')">✓ Списано</span>
-        <span class="sep"></span>
-        <span class="flt"><label>Відправник</label><input type="text" id="fSender" placeholder="Почни вводити…" autocomplete="off" data-1p-ignore data-lpignore="true"></span>
-        <span class="flt"><label>Одержувач</label><input type="text" id="fReceiver" placeholder="Почни вводити…" autocomplete="off" data-1p-ignore data-lpignore="true"></span>
-        <span class="flt"><label>Покупець</label><input type="text" id="fCust" placeholder="Почни вводити…" autocomplete="off" data-1p-ignore data-lpignore="true"></span>
-        <span class="flt"><label>Замовлення</label><input type="text" id="fOrder" placeholder="Почни вводити…" autocomplete="off" data-1p-ignore data-lpignore="true"></span>
-        <span class="chip" onclick="downloadMovesXLSX()" title="Переміщення в Excel">⬇ Excel</span>
+        <span class="mvm-bar">
+          <span class="chip mvm active" data-mvm="list" onclick="setMvMode('list')">📋 Список рухів</span>
+          <span class="chip mvm" data-mvm="recon" onclick="setMvMode('recon')">🧮 Звірка</span>
+        </span>
+        <span class="sep mv-list-only"></span>
+        <input type="text" id="mvDateRange" class="date-range-input mv-list-only" readonly placeholder="📅 Період">
+        <span class="chip mvp mv-list-only" data-preset="today" onclick="setPreset('today')">Сьогодні</span>
+        <span class="chip mvp mv-list-only" data-preset="week" onclick="setPreset('week')">Тиждень</span>
+        <span class="chip mvp mv-list-only" data-preset="month" onclick="setPreset('month')">Місяць</span>
+        <span class="chip mvp mv-list-only" data-preset="year" onclick="setPreset('year')">Рік</span>
+        <span class="chip mvp active mv-list-only" data-preset="all" onclick="setPreset('all')">Весь час</span>
+        <span class="sep mv-list-only"></span>
+        <span class="chip mvcat active mv-list-only" data-cat="all" onclick="setCat('all')">Усі</span>
+        <span class="chip mvcat mv-list-only" data-cat="received" onclick="setCat('received')">↓ Отримано</span>
+        <span class="chip mvcat mv-list-only" data-cat="returned" onclick="setCat('returned')">↑ Повернено</span>
+        <span class="chip mvcat mv-list-only" data-cat="writtenoff" onclick="setCat('writtenoff')">✓ Списано</span>
+        <span class="sep mv-list-only"></span>
+        <span class="flt mv-list-only"><label>Відправник</label><input type="text" id="fSender" placeholder="Почни вводити…" autocomplete="off" data-1p-ignore data-lpignore="true"></span>
+        <span class="flt mv-list-only"><label>Одержувач</label><input type="text" id="fReceiver" placeholder="Почни вводити…" autocomplete="off" data-1p-ignore data-lpignore="true"></span>
+        <span class="flt mv-list-only"><label>Покупець</label><input type="text" id="fCust" placeholder="Почни вводити…" autocomplete="off" data-1p-ignore data-lpignore="true"></span>
+        <span class="flt mv-list-only"><label>Замовлення</label><input type="text" id="fOrder" placeholder="Почни вводити…" autocomplete="off" data-1p-ignore data-lpignore="true"></span>
+        <span class="flt mv-recon-only" style="min-width:300px"><label>Замовлення</label><input type="text" id="fReconOrder" placeholder="№ або покупець…" autocomplete="off" data-1p-ignore data-lpignore="true"></span>
+        <span class="chip" onclick="downloadMovesXLSX()" title="Експорт у Excel">⬇ Excel</span>
       </span>
       <input type="text" id="searchIn" placeholder="🔎 Пошук…" autocomplete="off">
     </div>
@@ -234,7 +246,9 @@ const state = {
   mvSender: '', mvReceiver: '', mvCustomer: '', mvOrder: '',  // фільтри-сутності документів (підрядок, lowercase; '' = вимкнено)
   planCache: {},        // key(набір order_ref) → мапа name→{ordered,unit} | 'loading' (для колонки «Замовлено» у звірці)
   moveFrom: null, moveTo: null,
-  moveCats: new Set(),  // мульти-вибір категорій; ≥2 → режим звірки
+  moveCats: new Set(),  // мульти-вибір типів руху (Отримано/Повернено/Списано) — фільтр списку
+  mvMode: 'list',       // 'list' (журнал рухів) | 'recon' (звірка по одному замовленню)
+  reconOrder: '',       // order_ref обраного замовлення для звірки ('' = не обрано)
   openDocs: new Set(),
   loaded: false,
 };
@@ -387,85 +401,66 @@ function _orderCandidates() {
   return [...new Set(sc.map(d => d.order_no).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'uk'));
 }
 function _fmtQ(n) { n = Number(n) || 0; return n.toLocaleString('uk-UA', { maximumFractionDigits: 2 }); }
-// Звірка: Замовлено · Отримано · Повернено · Списано · Залишок (скоуп = поточні фільтри + категорії).
-// Отримано/Повернено/Списано — клієнтська агрегація рухів; Замовлено — план замовлень у скоупі (з бекенда).
-function reconcileRows(showOrd) {
-  const moves = baseMoves();
+// Звірка по ОДНОМУ замовленню (на одне замовлення буває кілька переміщень).
+// Отримано/Повернено/Списано — агрегація рухів саме цього замовлення; Замовлено —
+// план з бекенда (getPlan завжди з 1 ref → без «toomany»). Залишок = Отр − Пов − Спис.
+function reconOrderRows(orderRef) {
   const map = {};
-  for (const d of moves) {
+  for (const d of (Array.isArray(state.allMoves) ? state.allMoves : [])) {
+    if (d.order_ref !== orderRef) continue;
     for (const it of (d.items || [])) {
       const nm = it.name || '—';
       if (!map[nm]) map[nm] = { name: nm, unit: it.unit || '', ordered: 0, received: 0, returned: 0, writtenoff: 0 };
       map[nm][d.cat] += (Number(it.qty) || 0);
     }
   }
-  let planState = null;
-  if (showOrd) {   // колонку «Замовлено» рахуємо ЛИШЕ коли обрано чіп «Замовлено»
-    const plan = getPlan([...new Set(moves.map(d => d.order_ref).filter(Boolean))]);
-    planState = plan;
-    if (plan && typeof plan === 'object') {
-      for (const nm in plan) {
-        if (!map[nm]) map[nm] = { name: nm, unit: '', ordered: 0, received: 0, returned: 0, writtenoff: 0 };
-        map[nm].ordered = plan[nm].ordered;
-        if (plan[nm].unit && !map[nm].unit) map[nm].unit = plan[nm].unit;
-      }
+  const plan = getPlan([orderRef]);
+  if (plan && typeof plan === 'object') {
+    for (const nm in plan) {
+      if (!map[nm]) map[nm] = { name: nm, unit: '', ordered: 0, received: 0, returned: 0, writtenoff: 0 };
+      map[nm].ordered = plan[nm].ordered;
+      if (plan[nm].unit && !map[nm].unit) map[nm].unit = plan[nm].unit;
     }
   }
   let rows = Object.values(map).map(r => { r.delta = r.received - r.returned - r.writtenoff; return r; });
+  const total = rows.length;   // до пошуку — щоб відрізнити «немає рухів» від «пошук нічого не знайшов»
   const q = state.search;
   if (q) rows = rows.filter(r => r.name.toLowerCase().includes(q));
-  rows.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta) || a.name.localeCompare(b.name, 'uk'));
-  return { rows, planState };
+  rows.sort((a, b) => a.name.localeCompare(b.name, 'uk'));
+  return { rows, plan, total };
 }
-// Колонки = ОБРАНІ чіпи (Замовлено/Отримано/Повернено/Списано). Залишок — лише коли ≥2 типи руху (є що балансувати).
-function reconCols() {
-  const s = state.moveCats;
-  const showR = s.has('received'), showP = s.has('returned'), showW = s.has('writtenoff');
-  const showDelta = (showR ? 1 : 0) + (showP ? 1 : 0) + (showW ? 1 : 0) >= 2;
-  const cols = [];
-  if (s.has('ordered')) cols.push({ key: 'ordered',    l: 'Замовлено' });
-  if (showR)            cols.push({ key: 'received',   l: 'Отримано' });
-  if (showP)            cols.push({ key: 'returned',   l: 'Повернено' });
-  if (showW)            cols.push({ key: 'writtenoff', l: 'Списано' });
-  if (showDelta)        cols.push({ key: 'delta',      l: 'Залишок', delta: true });
-  return { cols, showDelta, showOrd: s.has('ordered') };
-}
-// Замовлення в поточному скоупі — для шапки звірки (унікальні по order_ref).
-function scopeOrders() {
+// Унікальні замовлення (по order_ref) для пікера звірки — найновіші зверху.
+function _reconOrders() {
+  const m = Array.isArray(state.allMoves) ? state.allMoves : [];
   const seen = new Map();
-  for (const d of baseMoves()) {
-    if (d.order_ref && !seen.has(d.order_ref)) seen.set(d.order_ref, { no: d.order_no || '—', customer: d.customer || '', date: d.date });
+  for (const d of m) {
+    if (d.order_ref && !seen.has(d.order_ref)) seen.set(d.order_ref, { ref: d.order_ref, no: d.order_no || '—', customer: d.customer || '', date: d.date || '' });
   }
-  return [...seen.values()].sort((a, b) => String(a.no).localeCompare(String(b.no), 'uk'));
+  return [...seen.values()].sort((a, b) => String(b.date).localeCompare(String(a.date)));
 }
-// Шапка: які замовлення (та покупець) у скоупі. Лише коли скоуп звужено
-// (≤90 замовлень) — інакше сенсу нема (весь список), співпадає з лімітом «Замовлено».
-function reconcileOrdersHead() {
-  const ords = scopeOrders();
-  if (!ords.length || ords.length > 90) return '';
-  const custs = [...new Set(ords.map(o => o.customer).filter(Boolean))];
-  const custHtml = custs.length === 1 ? '<span class="rec-oh-cust">' + esc(custs[0]) + '</span>'
-    : custs.length > 1 ? '<span class="rec-oh-cust">' + custs.length + ' покупців</span>' : '';
-  const nums = ords.length <= 40
-    ? ords.map(o => '<span class="rec-oh-num" title="' + esc((o.customer || '') + (o.date ? ' · ' + fmtDatePretty(o.date) : '')) + '">' + esc(o.no) + '</span>').join('')
-    : '<span class="rec-oh-num">' + ords.length + ' замовлень</span>';
-  const lbl = 'Замовлення' + (ords.length > 1 ? ' (' + ords.length + ')' : '');
-  return '<div class="rec-oh"><span class="rec-oh-lbl">' + lbl + '</span>' + custHtml + '<span class="rec-oh-nums">' + nums + '</span></div>';
-}
-function reconcileHtml() {
-  const { cols, showDelta, showOrd } = reconCols();
-  const oh = reconcileOrdersHead();
-  const { rows: allRows, planState } = reconcileRows(showOrd);
-  // лишаємо позиції, що мають значення хоч в одній ОБРАНІЙ колонці-вимірі
-  const dims = cols.filter(c => !c.delta).map(c => c.key);
-  let rows = allRows.filter(r => dims.some(k => r[k]));
-  rows.sort(showDelta ? (a, b) => Math.abs(b.delta) - Math.abs(a.delta) || a.name.localeCompare(b.name, 'uk')
-                      : (a, b) => a.name.localeCompare(b.name, 'uk'));
-  const note = (showOrd && planState === 'toomany') ? ' <span class="rec-u">(звузьте фільтр, щоб порахувати «Замовлено»)</span>'
-    : (showOrd && planState === 'loading') ? ' <span class="rec-u">(рахую «Замовлено»…)</span>' : '';
-  const hint = '<span class="rec-hint">' + (showDelta ? 'Залишок на бригаді = Отримано − Повернено − Списано' : 'Зведення по позиціях за обраними колонками') + note + '</span>';
-  if (!cols.length) return oh + hint + '<div class="empty">— обери чіп(и) вгорі —</div>';
-  if (!rows.length) return oh + hint + '<div class="empty">— немає даних —</div>';
+function reconOrderHtml() {
+  if (!state.reconOrder) {
+    return '<div class="rec-empty"><div class="rec-empty-t">Оберіть замовлення</div>' +
+      '<div class="rec-empty-s">У полі «Замовлення» вгорі почніть вводити номер або покупця. ' +
+      'Звірка покаже по всіх переміщеннях цього замовлення: скільки замовлено, отримано бригадою, повернено, списано — і що лишилось на бригаді.</div></div>';
+  }
+  const o = _reconOrders().find(x => x.ref === state.reconOrder) || { no: '—', customer: '', date: '' };
+  const oh = '<div class="rec-oh"><span class="rec-oh-lbl">Замовлення</span>' +
+    (o.customer ? '<span class="rec-oh-cust">' + esc(o.customer) + '</span>' : '') +
+    (o.date ? '<span class="rec-u">від ' + fmtDatePretty(o.date) + '</span>' : '') +
+    '<span class="rec-oh-nums"><span class="rec-oh-num">' + esc(o.no) + '</span></span></div>';
+  const { rows, plan, total } = reconOrderRows(state.reconOrder);
+  const cols = [
+    { key: 'ordered', l: 'Замовлено' }, { key: 'received', l: 'Отримано' },
+    { key: 'returned', l: 'Повернено' }, { key: 'writtenoff', l: 'Списано' },
+    { key: 'delta', l: 'Залишок', delta: true },
+  ];
+  const note = plan === 'loading' ? ' <span class="rec-u">(рахую «Замовлено»…)</span>' : '';
+  const hint = '<span class="rec-hint">Залишок на бригаді = Отримано − Повернено − Списано' + note + '</span>';
+  if (!rows.length) {
+    const msg = (total && state.search) ? '— за пошуком «' + esc(state.search) + '» нічого не знайдено —' : '— по цьому замовленню рухів немає —';
+    return oh + hint + '<div class="empty">' + msg + '</div>';
+  }
   const grid = 'grid-template-columns:minmax(0,1fr) ' + cols.map(() => '104px').join(' ') + ';';
   const head = '<div class="rec-th" style="' + grid + '"><span>Номенклатура</span>' + cols.map(c => '<span class="r">' + c.l + '</span>').join('') + '</div>';
   const body = rows.map(r => '<div class="rec-row" style="' + grid + '"><span class="rec-nm">' + esc(r.name) + (r.unit ? ' <span class="rec-u">' + esc(r.unit) + '</span>' : '') + '</span>' +
@@ -491,8 +486,7 @@ function getPlan(orderRefs) {
 function movesHtml() {
   if (state.allMoves === 'loading' || state.allMoves === null) return '<div class="loading">Завантаження переміщень…</div>';
   if (state.allMoves === 'error') return '<div class="error">Не вдалося завантажити переміщення</div>';
-  // звірка: коли обрано чіп «Замовлено» (план vs факт) АБО ≥2 категорії
-  if (state.moveCats.has('ordered') || state.moveCats.size >= 2) return reconcileHtml();
+  if (state.mvMode === 'recon') return reconOrderHtml();
   const docs = filteredMoves();
   if (!docs.length) return '<div class="empty">— переміщень за фільтром немає —</div>';
   const rows = docs.map(d => {
@@ -518,7 +512,7 @@ function movesHtml() {
     '</div>';
   }).join('');
   const head = '<div class="mv-th"><span class="lbl">Дата</span><span class="lbl">Відправник</span><span class="lbl">Одержувач</span><span class="lbl">Покупець</span><span class="lbl">Коментар</span><span class="lbl r">К-сть</span></div>';
-  const tip = '<div class="mv-tip">Звірка план/факт: обери чіп <b>Замовлено</b> (або ≥2 категорії) вгорі. Покупець/замовлення звужують скоуп.</div>';
+  const tip = '<div class="mv-tip">Потрібна звірка план/факт по замовленню? Перемкни вгорі на <b>🧮 Звірка</b>.</div>';
   return tip + '<div class="mv-count">Знайдено переміщень: ' + fmt(docs.length) + '</div><div class="mv-wrap">' + head + rows + '</div>';
 }
 
@@ -598,6 +592,44 @@ function setupAC(id, key, getList, after) {
   });
   pop.addEventListener('mousedown', (e) => { const o = e.target.closest('.opt[data-i]'); if (!o) return; e.preventDefault(); pick(opts[Number(o.dataset.i)]); });
 }
+// Пікер замовлення для звірки: дропдаун унікальних замовлень (№ · покупець),
+// вибір зберігає order_ref у state.reconOrder (не підрядок — щоб не плутати
+// замовлення з однаковим номером різних років).
+function setupOrderPicker() {
+  const el = document.getElementById('fReconOrder');
+  if (!el) return;
+  const pop = document.createElement('div');
+  pop.className = 'ac-pop'; pop.style.display = 'none';
+  el.parentNode.appendChild(pop);
+  let opts = [], hi = -1;
+  const show = () => {
+    const q = _norm(el.value.trim());
+    let list = _reconOrders().map(o => Object.assign({}, o, { label: o.no + ' · ' + o.customer }));
+    if (q) list = list.filter(o => _norm(o.label).includes(q));
+    opts = list.slice(0, 80); hi = -1;
+    if (!opts.length) { pop.style.display = 'none'; return; }
+    pop.innerHTML = opts.map((o, i) => '<div class="opt" data-i="' + i + '">' + esc(o.label) + (o.date ? ' <span class="rec-u">' + fmtDatePretty(o.date) + '</span>' : '') + '</div>').join('');
+    pop.style.left = el.offsetLeft + 'px'; pop.style.top = (el.offsetTop + el.offsetHeight + 4) + 'px';
+    if (el.offsetWidth > 240) pop.style.minWidth = el.offsetWidth + 'px';
+    pop.style.display = 'block';
+  };
+  const paint = () => { [...pop.children].forEach((c, i) => c.classList.toggle('hl', i === hi)); const c = pop.children[hi]; if (c) c.scrollIntoView({ block: 'nearest' }); };
+  const pick = (o) => { el.value = o.label; el.classList.add('set'); pop.style.display = 'none'; state.reconOrder = o.ref; render(); };
+  el.addEventListener('input', () => {
+    if (!el.value.trim()) { state.reconOrder = ''; el.classList.remove('set'); render(); }
+    show();
+  });
+  el.addEventListener('focus', show);
+  el.addEventListener('blur', () => setTimeout(() => { pop.style.display = 'none'; }, 180));
+  el.addEventListener('keydown', (e) => {
+    if (pop.style.display === 'none') return;
+    if (e.key === 'ArrowDown') { hi = Math.min(hi + 1, opts.length - 1); paint(); e.preventDefault(); }
+    else if (e.key === 'ArrowUp') { hi = Math.max(hi - 1, 0); paint(); e.preventDefault(); }
+    else if (e.key === 'Enter') { if (hi >= 0 && opts[hi]) { pick(opts[hi]); e.preventDefault(); } }
+    else if (e.key === 'Escape') { pop.style.display = 'none'; }
+  });
+  pop.addEventListener('mousedown', (e) => { const o = e.target.closest('.opt[data-i]'); if (!o) return; e.preventDefault(); pick(opts[Number(o.dataset.i)]); });
+}
 function setPreset(p) {
   const r = presetRange(p);
   if (!r) return;
@@ -619,6 +651,19 @@ function setCat(cat) {
     const v = c.dataset.cat;
     c.classList.toggle('active', v === 'all' ? state.moveCats.size === 0 : state.moveCats.has(v));
   });
+  render();
+}
+// Перемикання режимів «Переміщення»: список рухів ↔ звірка по замовленню.
+function setMvMode(m) {
+  state.mvMode = m;
+  const f = document.getElementById('mvFilters');
+  if (f) f.classList.toggle('recon', m === 'recon');
+  document.querySelectorAll('.mvm').forEach(c => c.classList.toggle('active', c.dataset.mvm === m));
+  // Пошук у режимах різний за змістом (список: склад/покупець/№ · звірка: товар) —
+  // скидаємо, щоб термін одного режиму не фільтрував мовчки інший.
+  state.search = '';
+  const s = document.getElementById('searchIn');
+  if (s) { s.value = ''; s.placeholder = m === 'recon' ? '🔎 Пошук по товару…' : '🔎 Пошук: склад / покупець / №'; }
   render();
 }
 
@@ -653,6 +698,7 @@ setupAC('fSender', 'mvSender', () => _uniqMove('from_name'));
 setupAC('fReceiver', 'mvReceiver', () => _uniqMove('to_name'));
 setupAC('fCust', 'mvCustomer', () => _uniqMove('customer'), onCustomerChange);
 setupAC('fOrder', 'mvOrder', _orderCandidates);
+setupOrderPicker();
 
 let _searchTimer = null;
 document.getElementById('searchIn').addEventListener('input', e => {
@@ -671,17 +717,14 @@ function downloadStockXLSX() {
 }
 function downloadMovesXLSX() {
   if (typeof XLSX === 'undefined') { alert('Excel не завантажився.'); return; }
-  if (state.moveCats.has('ordered') || state.moveCats.size >= 2) {   // експорт звірки — колонки = обрані чіпи
-    const { cols, showOrd } = reconCols();
-    let rows = reconcileRows(showOrd).rows.slice();
-    const dims = cols.filter(c => !c.delta).map(c => c.key);
-    rows = rows.filter(r => dims.some(k => r[k]));
+  if (state.mvMode === 'recon') {   // експорт звірки по обраному замовленню
+    if (!state.reconOrder) { alert('Оберіть замовлення'); return; }
+    const { rows } = reconOrderRows(state.reconOrder);
     if (!rows.length) { alert('Немає даних'); return; }
-    rows.sort((a, b) => a.name.localeCompare(b.name, 'uk'));
-    const aoa = [['Номенклатура', 'Од'].concat(cols.map(c => c.delta ? 'Залишок на бригаді' : c.l))];
-    rows.forEach(r => aoa.push([r.name, r.unit || ''].concat(cols.map(c => r[c.key] || 0))));
-    const wcols = [{ wch: 46 }, { wch: 8 }].concat(cols.map(c => ({ wch: c.delta ? 15 : 11 })));
-    _saveXLSX(aoa, wcols, 'brigades_zvirka');
+    const o = _reconOrders().find(x => x.ref === state.reconOrder) || { no: '' };
+    const aoa = [['Номенклатура', 'Од', 'Замовлено', 'Отримано', 'Повернено', 'Списано', 'Залишок на бригаді']];
+    rows.forEach(r => aoa.push([r.name, r.unit || '', r.ordered, r.received, r.returned, r.writtenoff, r.delta]));
+    _saveXLSX(aoa, [{ wch: 46 }, { wch: 8 }, { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 16 }], 'brigades_zvirka_' + (o.no || ''));
     return;
   }
   const docs = filteredMoves();
