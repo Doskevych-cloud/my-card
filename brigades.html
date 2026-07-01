@@ -544,7 +544,8 @@ function setSection(sec) {
   state.search = '';
   const s = document.getElementById('searchIn');
   if (s) { s.value = ''; s.placeholder = sec === 'recon' ? '🔎 Пошук по товару…' : sec === 'list' ? '🔎 Пошук: склад / покупець / №' : '🔎 Пошук по бригаді або товару…'; }
-  if (isMoves) loadMoves(); else render();
+  if (isMoves) loadMoves();   // async; рендерить сам коли вантажить
+  render();                   // завжди рендеримо — інакше при кешованих рухах тіло лишається від попередньої секції
 }
 // При зміні покупця скидаємо вибране чуже замовлення (список замовлень звужується через _orderCandidates)
 function onCustomerChange() {
