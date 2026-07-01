@@ -89,6 +89,12 @@ a{color:inherit;text-decoration:none}
 .toolbar .flt input:focus,.toolbar .flt input.set{border-color:var(--accent)}
 /* Звірка (reconciliation) */
 .rec-hint{font-size:11px;color:var(--text3);font-style:italic;display:block;margin-bottom:10px}
+/* Шапка звірки — які замовлення в скоупі */
+.rec-oh{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:10px}
+.rec-oh-lbl{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);font-weight:700}
+.rec-oh-cust{font-size:13px;font-weight:600;color:var(--text)}
+.rec-oh-nums{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
+.rec-oh-num{font-size:11.5px;color:var(--accent);background:var(--accent-bg);border-radius:6px;padding:2px 8px;font-variant-numeric:tabular-nums}
 .rec-th,.rec-row{display:grid;grid-template-columns:minmax(0,1fr) 110px 110px 110px 120px;gap:14px;align-items:baseline;padding:9px 16px}
 .rec-th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);font-weight:700;background:var(--bg2);border-bottom:1px solid var(--border)}
 .rec-th .r,.rec-row .r{text-align:right;font-variant-numeric:tabular-nums}
@@ -424,8 +430,31 @@ function reconCols() {
   if (showDelta)        cols.push({ key: 'delta',      l: 'Залишок', delta: true });
   return { cols, showDelta, showOrd: s.has('ordered') };
 }
+// Замовлення в поточному скоупі — для шапки звірки (унікальні по order_ref).
+function scopeOrders() {
+  const seen = new Map();
+  for (const d of baseMoves()) {
+    if (d.order_ref && !seen.has(d.order_ref)) seen.set(d.order_ref, { no: d.order_no || '—', customer: d.customer || '', date: d.date });
+  }
+  return [...seen.values()].sort((a, b) => String(a.no).localeCompare(String(b.no), 'uk'));
+}
+// Шапка: які замовлення (та покупець) у скоупі. Лише коли скоуп звужено
+// (≤90 замовлень) — інакше сенсу нема (весь список), співпадає з лімітом «Замовлено».
+function reconcileOrdersHead() {
+  const ords = scopeOrders();
+  if (!ords.length || ords.length > 90) return '';
+  const custs = [...new Set(ords.map(o => o.customer).filter(Boolean))];
+  const custHtml = custs.length === 1 ? '<span class="rec-oh-cust">' + esc(custs[0]) + '</span>'
+    : custs.length > 1 ? '<span class="rec-oh-cust">' + custs.length + ' покупців</span>' : '';
+  const nums = ords.length <= 40
+    ? ords.map(o => '<span class="rec-oh-num" title="' + esc((o.customer || '') + (o.date ? ' · ' + fmtDatePretty(o.date) : '')) + '">' + esc(o.no) + '</span>').join('')
+    : '<span class="rec-oh-num">' + ords.length + ' замовлень</span>';
+  const lbl = 'Замовлення' + (ords.length > 1 ? ' (' + ords.length + ')' : '');
+  return '<div class="rec-oh"><span class="rec-oh-lbl">' + lbl + '</span>' + custHtml + '<span class="rec-oh-nums">' + nums + '</span></div>';
+}
 function reconcileHtml() {
   const { cols, showDelta, showOrd } = reconCols();
+  const oh = reconcileOrdersHead();
   const { rows: allRows, planState } = reconcileRows(showOrd);
   // лишаємо позиції, що мають значення хоч в одній ОБРАНІЙ колонці-вимірі
   const dims = cols.filter(c => !c.delta).map(c => c.key);
@@ -435,14 +464,14 @@ function reconcileHtml() {
   const note = (showOrd && planState === 'toomany') ? ' <span class="rec-u">(звузьте фільтр, щоб порахувати «Замовлено»)</span>'
     : (showOrd && planState === 'loading') ? ' <span class="rec-u">(рахую «Замовлено»…)</span>' : '';
   const hint = '<span class="rec-hint">' + (showDelta ? 'Залишок на бригаді = Отримано − Повернено − Списано' : 'Зведення по позиціях за обраними колонками') + note + '</span>';
-  if (!cols.length) return hint + '<div class="empty">— обери чіп(и) вгорі —</div>';
-  if (!rows.length) return hint + '<div class="empty">— немає даних —</div>';
+  if (!cols.length) return oh + hint + '<div class="empty">— обери чіп(и) вгорі —</div>';
+  if (!rows.length) return oh + hint + '<div class="empty">— немає даних —</div>';
   const grid = 'grid-template-columns:minmax(0,1fr) ' + cols.map(() => '104px').join(' ') + ';';
   const head = '<div class="rec-th" style="' + grid + '"><span>Номенклатура</span>' + cols.map(c => '<span class="r">' + c.l + '</span>').join('') + '</div>';
   const body = rows.map(r => '<div class="rec-row" style="' + grid + '"><span class="rec-nm">' + esc(r.name) + (r.unit ? ' <span class="rec-u">' + esc(r.unit) + '</span>' : '') + '</span>' +
     cols.map(c => '<span class="r' + (c.delta ? ' rec-d ' + (r.delta < 0 ? 'neg' : (Math.abs(r.delta) < 0.001 ? 'zero' : '')) : '') + '">' + _fmtQ(r[c.key]) + '</span>').join('') + '</div>'
   ).join('');
-  return hint + '<div class="mv-count">Позицій: ' + fmt(rows.length) + '</div><div class="mv-wrap"><div class="rec-tbl">' + head + body + '</div></div>';
+  return oh + hint + '<div class="mv-count">Позицій: ' + fmt(rows.length) + '</div><div class="mv-wrap"><div class="rec-tbl">' + head + body + '</div></div>';
 }
 // Замовлено (план) для набору замовлень у скоупі. Повертає мапу name→{ordered,unit} | 'loading' | 'toomany'.
 function getPlan(orderRefs) {
