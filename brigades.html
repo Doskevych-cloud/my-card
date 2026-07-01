@@ -95,8 +95,7 @@ a{color:inherit;text-decoration:none}
 .rec-oh-cust{font-size:13px;font-weight:600;color:var(--text)}
 .rec-oh-nums{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
 .rec-oh-num{font-size:11.5px;color:var(--accent);background:var(--accent-bg);border-radius:6px;padding:2px 8px;font-variant-numeric:tabular-nums}
-/* Режими «Переміщення»: Список / Звірка */
-.mvm-bar{display:inline-flex;gap:4px}
+/* Секції Список рухів / Звірка — які контроли тулбару показувати */
 #mvFilters.recon .mv-list-only{display:none}
 #mvFilters:not(.recon) .mv-recon-only{display:none}
 .rec-empty{border:1px dashed var(--border);border-radius:12px;padding:30px 20px;text-align:center;margin-top:4px}
@@ -184,7 +183,8 @@ a{color:inherit;text-decoration:none}
 
     <div class="page-tabs">
       <span class="ptab active" data-section="stock" onclick="setSection('stock')">📦 Склад</span>
-      <span class="ptab" data-section="moves" onclick="setSection('moves')">🔄 Переміщення</span>
+      <span class="ptab" data-section="list" onclick="setSection('list')">📋 Список рухів</span>
+      <span class="ptab" data-section="recon" onclick="setSection('recon')">🧮 Звірка</span>
     </div>
 
     <div class="toolbar">
@@ -196,11 +196,6 @@ a{color:inherit;text-decoration:none}
       </span>
       <!-- Переміщення -->
       <span class="mvf" id="mvFilters" style="display:none">
-        <span class="mvm-bar">
-          <span class="chip mvm active" data-mvm="list" onclick="setMvMode('list')">📋 Список рухів</span>
-          <span class="chip mvm" data-mvm="recon" onclick="setMvMode('recon')">🧮 Звірка</span>
-        </span>
-        <span class="sep mv-list-only"></span>
         <input type="text" id="mvDateRange" class="date-range-input mv-list-only" readonly placeholder="📅 Період">
         <span class="chip mvp mv-list-only" data-preset="today" onclick="setPreset('today')">Сьогодні</span>
         <span class="chip mvp mv-list-only" data-preset="week" onclick="setPreset('week')">Тиждень</span>
@@ -320,7 +315,7 @@ async function loadMoves() {
 function render() {
   if (!state.loaded) return;
   const body = document.getElementById('body');
-  if (state.section === 'moves') { body.innerHTML = movesHtml(); return; }
+  if (state.section === 'list' || state.section === 'recon') { body.innerHTML = movesHtml(); return; }
   renderStock(body);
 }
 
@@ -536,13 +531,20 @@ function collapseAll() { state.openKeys.clear(); render(); }
 // ─── Підрозділи + фільтри переміщень ───
 function setSection(sec) {
   state.section = sec;
+  const isMoves = sec === 'list' || sec === 'recon';
+  if (isMoves) state.mvMode = sec;   // 'list' | 'recon' керує movesHtml() і колонками
   // зберігаємо активний таб у hash → reload лишає на тому ж підрозділі
-  try { history.replaceState(null, '', sec === 'moves' ? '#moves' : location.pathname + location.search); } catch (e) {}
+  try { history.replaceState(null, '', isMoves ? '#' + sec : location.pathname + location.search); } catch (e) {}
   document.querySelectorAll('.ptab[data-section]').forEach(t => t.classList.toggle('active', t.dataset.section === sec));
   document.getElementById('stockTools').style.display = sec === 'stock' ? 'inline-flex' : 'none';
-  document.getElementById('mvFilters').style.display = sec === 'moves' ? 'inline-flex' : 'none';
-  document.getElementById('searchIn').placeholder = sec === 'moves' ? '🔎 Пошук: склад / покупець / №' : '🔎 Пошук по бригаді або товару…';
-  if (sec === 'moves') loadMoves(); else render();
+  const mvf = document.getElementById('mvFilters');
+  mvf.style.display = isMoves ? 'inline-flex' : 'none';
+  mvf.classList.toggle('recon', sec === 'recon');   // ховає/показує контроли списку vs звірки
+  // Пошук різний за змістом (список: склад/покупець/№ · звірка: товар) — скидаємо при зміні підрозділу.
+  state.search = '';
+  const s = document.getElementById('searchIn');
+  if (s) { s.value = ''; s.placeholder = sec === 'recon' ? '🔎 Пошук по товару…' : sec === 'list' ? '🔎 Пошук: склад / покупець / №' : '🔎 Пошук по бригаді або товару…'; }
+  if (isMoves) loadMoves(); else render();
 }
 // При зміні покупця скидаємо вибране чуже замовлення (список замовлень звужується через _orderCandidates)
 function onCustomerChange() {
@@ -652,20 +654,6 @@ function setCat(cat) {
   });
   render();
 }
-// Перемикання режимів «Переміщення»: список рухів ↔ звірка по замовленню.
-function setMvMode(m) {
-  state.mvMode = m;
-  const f = document.getElementById('mvFilters');
-  if (f) f.classList.toggle('recon', m === 'recon');
-  document.querySelectorAll('.mvm').forEach(c => c.classList.toggle('active', c.dataset.mvm === m));
-  // Пошук у режимах різний за змістом (список: склад/покупець/№ · звірка: товар) —
-  // скидаємо, щоб термін одного режиму не фільтрував мовчки інший.
-  state.search = '';
-  const s = document.getElementById('searchIn');
-  if (s) { s.value = ''; s.placeholder = m === 'recon' ? '🔎 Пошук по товару…' : '🔎 Пошук: склад / покупець / №'; }
-  render();
-}
-
 // Delegated click — #body persists across renders.
 document.getElementById('body').addEventListener('click', function(ev) {
   const docHead = ev.target.closest('.mv-doc-head');
@@ -744,7 +732,9 @@ Auth.require('brigades').then(async user => {
   AppHeader.mount({ active: 'brigades', user });
   await load();
   // відновити активний таб після reload (#moves у hash) — і підвантажити переміщення
-  if (location.hash.replace(/^#/, '') === 'moves') setSection('moves');
+  const h = location.hash.replace(/^#/, '');
+  if (h === 'list' || h === 'recon') setSection(h);
+  else if (h === 'moves') setSection('list');   // legacy hash
 });
 </script>
 </body>
