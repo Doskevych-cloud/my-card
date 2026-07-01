@@ -447,7 +447,6 @@ function reconOrderHtml() {
   const o = _reconOrders().find(x => x.ref === state.reconOrder) || { no: '—', customer: '', date: '' };
   const oh = '<div class="rec-oh"><span class="rec-oh-lbl">Замовлення</span>' +
     (o.customer ? '<span class="rec-oh-cust">' + esc(o.customer) + '</span>' : '') +
-    (o.date ? '<span class="rec-u">від ' + fmtDatePretty(o.date) + '</span>' : '') +
     '<span class="rec-oh-nums"><span class="rec-oh-num">' + esc(o.no) + '</span></span></div>';
   const { rows, plan, total } = reconOrderRows(state.reconOrder);
   const cols = [
