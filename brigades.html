@@ -101,6 +101,7 @@ a{color:inherit;text-decoration:none}
 .rec-empty{border:1px dashed var(--border);border-radius:12px;padding:30px 20px;text-align:center;margin-top:4px}
 .rec-empty-t{font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px}
 .rec-empty-s{font-size:12.5px;color:var(--text2);max-width:540px;margin:0 auto;line-height:1.6}
+.rec-sec{font-size:12.5px;font-weight:700;color:var(--text);margin:16px 2px 7px;display:flex;align-items:center;gap:6px}
 .rec-th,.rec-row{display:grid;grid-template-columns:minmax(0,1fr) 110px 110px 110px 120px;gap:14px;align-items:baseline;padding:9px 16px}
 .rec-th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);font-weight:700;background:var(--bg2);border-bottom:1px solid var(--border)}
 .rec-th .r,.rec-row .r{text-align:right;font-variant-numeric:tabular-nums}
@@ -396,20 +397,23 @@ function _orderCandidates() {
   return [...new Set(sc.map(d => d.order_no).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'uk'));
 }
 function _fmtQ(n) { n = Number(n) || 0; return n.toLocaleString('uk-UA', { maximumFractionDigits: 2 }); }
-// Звірка по ОДНОМУ замовленню (на одне замовлення буває кілька переміщень).
-// Отримано/Повернено/Списано — агрегація рухів саме цього замовлення; Замовлено —
-// план з бекенда (getPlan завжди з 1 ref → без «toomany»). Залишок = Отр − Пов − Спис.
-function reconOrderRows(orderRef) {
+// Яка бригада тримала товар у русі: received → одержувач, повернення/списання → відправник.
+function _brigOf(d) { return (d.cat === 'received' ? d.to_name : d.from_name) || '—'; }
+// Звірка по ОДНОМУ замовленню (кілька переміщень, іноді на різні бригади).
+// Отримано/Повернено/Списано — агрегація рухів; Замовлено — план (getPlan, лише для
+// зведення, він не по-бригадний). brigade заданий → лише рухи цієї бригади. Залишок = Отр − Пов − Спис.
+function reconOrderRows(orderRef, brigade) {
   const map = {};
   for (const d of (Array.isArray(state.allMoves) ? state.allMoves : [])) {
     if (d.order_ref !== orderRef) continue;
+    if (brigade && _brigOf(d) !== brigade) continue;
     for (const it of (d.items || [])) {
       const nm = it.name || '—';
       if (!map[nm]) map[nm] = { name: nm, unit: it.unit || '', ordered: 0, received: 0, returned: 0, writtenoff: 0 };
       map[nm][d.cat] += (Number(it.qty) || 0);
     }
   }
-  const plan = getPlan([orderRef]);
+  const plan = brigade ? null : getPlan([orderRef]);   // план — лише для зведення (не по-бригадний)
   if (plan && typeof plan === 'object') {
     for (const nm in plan) {
       if (!map[nm]) map[nm] = { name: nm, unit: '', ordered: 0, received: 0, returned: 0, writtenoff: 0 };
@@ -424,6 +428,14 @@ function reconOrderRows(orderRef) {
   rows.sort((a, b) => a.name.localeCompare(b.name, 'uk'));
   return { rows, plan, total };
 }
+// Бригади, задіяні в замовленні (за рухами цього order_ref).
+function _reconBrigades(orderRef) {
+  const s = new Set();
+  for (const d of (Array.isArray(state.allMoves) ? state.allMoves : [])) {
+    if (d.order_ref === orderRef) s.add(_brigOf(d));
+  }
+  return [...s].filter(Boolean).sort((a, b) => a.localeCompare(b, 'uk'));
+}
 // Унікальні замовлення (по order_ref) для пікера звірки — найновіші зверху.
 function _reconOrders() {
   const m = Array.isArray(state.allMoves) ? state.allMoves : [];
@@ -433,6 +445,16 @@ function _reconOrders() {
   }
   return [...seen.values()].sort((a, b) => String(b.date).localeCompare(String(a.date)));
 }
+const _REC_COLS_ALL = [{ key: 'ordered', l: 'Замовлено' }, { key: 'received', l: 'Отримано' }, { key: 'returned', l: 'Повернено' }, { key: 'writtenoff', l: 'Списано' }, { key: 'delta', l: 'Залишок', delta: true }];
+const _REC_COLS_BRIG = [{ key: 'received', l: 'Отримано' }, { key: 'returned', l: 'Повернено' }, { key: 'writtenoff', l: 'Списано' }, { key: 'delta', l: 'Залишок', delta: true }];
+function _recTable(rows, cols) {
+  const grid = 'grid-template-columns:minmax(0,1fr) ' + cols.map(() => '104px').join(' ') + ';';
+  const head = '<div class="rec-th" style="' + grid + '"><span>Номенклатура</span>' + cols.map(c => '<span class="r">' + c.l + '</span>').join('') + '</div>';
+  const body = rows.map(r => '<div class="rec-row" style="' + grid + '"><span class="rec-nm">' + esc(r.name) + (r.unit ? ' <span class="rec-u">' + esc(r.unit) + '</span>' : '') + '</span>' +
+    cols.map(c => '<span class="r' + (c.delta ? ' rec-d ' + (r.delta < 0 ? 'neg' : (Math.abs(r.delta) < 0.001 ? 'zero' : '')) : '') + '">' + _fmtQ(r[c.key]) + '</span>').join('') + '</div>'
+  ).join('');
+  return '<div class="mv-wrap"><div class="rec-tbl">' + head + body + '</div></div>';
+}
 function reconOrderHtml() {
   if (!state.reconOrder) {
     return '<div class="rec-empty"><div class="rec-empty-t">Оберіть замовлення</div>' +
@@ -440,27 +462,31 @@ function reconOrderHtml() {
       'Звірка покаже по всіх переміщеннях цього замовлення: скільки замовлено, отримано бригадою, повернено, списано — і що лишилось на бригаді.</div></div>';
   }
   const o = _reconOrders().find(x => x.ref === state.reconOrder) || { no: '—', customer: '', date: '' };
+  const brigades = _reconBrigades(state.reconOrder);
+  const brigTag = brigades.length === 1 ? '<span class="rec-u">· ' + esc(brigades[0]) + '</span>'
+    : brigades.length > 1 ? '<span class="rec-u">· ' + brigades.length + ' бригади</span>' : '';
   const oh = '<div class="rec-oh"><span class="rec-oh-lbl">Замовлення</span>' +
-    (o.customer ? '<span class="rec-oh-cust">' + esc(o.customer) + '</span>' : '') +
+    (o.customer ? '<span class="rec-oh-cust">' + esc(o.customer) + '</span>' : '') + brigTag +
     '<span class="rec-oh-nums"><span class="rec-oh-num">' + esc(o.no) + '</span></span></div>';
-  const { rows, plan, total } = reconOrderRows(state.reconOrder);
-  const cols = [
-    { key: 'ordered', l: 'Замовлено' }, { key: 'received', l: 'Отримано' },
-    { key: 'returned', l: 'Повернено' }, { key: 'writtenoff', l: 'Списано' },
-    { key: 'delta', l: 'Залишок', delta: true },
-  ];
-  const note = plan === 'loading' ? ' <span class="rec-u">(рахую «Замовлено»…)</span>' : '';
+  const summary = reconOrderRows(state.reconOrder);
+  const note = summary.plan === 'loading' ? ' <span class="rec-u">(рахую «Замовлено»…)</span>' : '';
   const hint = '<span class="rec-hint">Залишок на бригаді = Отримано − Повернено − Списано' + note + '</span>';
-  if (!rows.length) {
-    const msg = (total && state.search) ? '— за пошуком «' + esc(state.search) + '» нічого не знайдено —' : '— по цьому замовленню рухів немає —';
+  if (!summary.rows.length) {
+    const msg = (summary.total && state.search) ? '— за пошуком «' + esc(state.search) + '» нічого не знайдено —' : '— по цьому замовленню рухів немає —';
     return oh + hint + '<div class="empty">' + msg + '</div>';
   }
-  const grid = 'grid-template-columns:minmax(0,1fr) ' + cols.map(() => '104px').join(' ') + ';';
-  const head = '<div class="rec-th" style="' + grid + '"><span>Номенклатура</span>' + cols.map(c => '<span class="r">' + c.l + '</span>').join('') + '</div>';
-  const body = rows.map(r => '<div class="rec-row" style="' + grid + '"><span class="rec-nm">' + esc(r.name) + (r.unit ? ' <span class="rec-u">' + esc(r.unit) + '</span>' : '') + '</span>' +
-    cols.map(c => '<span class="r' + (c.delta ? ' rec-d ' + (r.delta < 0 ? 'neg' : (Math.abs(r.delta) < 0.001 ? 'zero' : '')) : '') + '">' + _fmtQ(r[c.key]) + '</span>').join('') + '</div>'
-  ).join('');
-  return oh + hint + '<div class="mv-count">Позицій: ' + fmt(rows.length) + '</div><div class="mv-wrap"><div class="rec-tbl">' + head + body + '</div></div>';
+  // Одна бригада — одна таблиця. Кілька — зведення + окрема секція під кожну бригаду.
+  if (brigades.length <= 1) {
+    return oh + hint + '<div class="mv-count">Позицій: ' + fmt(summary.rows.length) + '</div>' + _recTable(summary.rows, _REC_COLS_ALL);
+  }
+  let out = oh + hint;
+  out += '<div class="rec-sec">Разом по замовленню <span class="rec-u">· ' + fmt(summary.rows.length) + ' поз.</span></div>' + _recTable(summary.rows, _REC_COLS_ALL);
+  for (const b of brigades) {
+    const br = reconOrderRows(state.reconOrder, b);
+    if (!br.rows.length) continue;
+    out += '<div class="rec-sec">🧰 ' + esc(b) + ' <span class="rec-u">· ' + fmt(br.rows.length) + ' поз.</span></div>' + _recTable(br.rows, _REC_COLS_BRIG);
+  }
+  return out;
 }
 // Замовлено (план) для набору замовлень у скоупі. Повертає мапу name→{ordered,unit} | 'loading' | 'toomany'.
 function getPlan(orderRefs) {
