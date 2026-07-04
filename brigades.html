@@ -580,8 +580,9 @@ function setSection(sec) {
   state.section = sec;
   const isMoves = sec === 'list' || sec === 'recon';
   if (isMoves) state.mvMode = sec;   // 'list' | 'recon' керує movesHtml() і колонками
-  // зберігаємо активний таб у hash → reload лишає на тому ж підрозділі
+  // зберігаємо активний таб: hash (для deep-link) + localStorage (стійке відновлення при reload)
   try { history.replaceState(null, '', isMoves ? '#' + sec : location.pathname + location.search); } catch (e) {}
+  try { localStorage.setItem('brigTab', sec); } catch (e) {}
   document.querySelectorAll('.ptab[data-section]').forEach(t => t.classList.toggle('active', t.dataset.section === sec));
   document.getElementById('stockTools').style.display = sec === 'stock' ? 'inline-flex' : 'none';
   const mvf = document.getElementById('mvFilters');
@@ -787,10 +788,14 @@ Auth.require('brigades').then(async user => {
   window.__user = user;
   AppHeader.mount({ active: 'brigades', user });
   await load();
-  // відновити активний таб після reload (#moves у hash) — і підвантажити переміщення
-  const h = location.hash.replace(/^#/, '');
-  if (h === 'list' || h === 'recon') setSection(h);
-  else if (h === 'moves') setSection('list');   // legacy hash
+  // відновити активний таб після reload: явний hash має пріоритет, далі — запамʼятований у localStorage
+  let tab = location.hash.replace(/^#/, '');
+  if (tab === 'moves') tab = 'list';   // legacy hash
+  if (tab !== 'list' && tab !== 'recon' && tab !== 'stock') {
+    try { tab = localStorage.getItem('brigTab') || 'stock'; } catch (e) { tab = 'stock'; }
+    if (tab === 'moves') tab = 'list';   // legacy збережене
+  }
+  if (tab === 'list' || tab === 'recon') setSection(tab);   // 'stock' — і так дефолт
 });
 </script>
 </body>
