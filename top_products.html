@@ -134,6 +134,13 @@ a{color:inherit;text-decoration:none}
 
       <span class="sep"></span>
 
+      <span class="group" title="Джерело даних: оплачені замовлення (швидший сигнал попиту) або фактичні відвантаження">
+        <span class="chip active" data-src="orders" onclick="setSource('orders')">💳 Оплачені замовлення</span>
+        <span class="chip" data-src="shipped" onclick="setSource('shipped')">📦 Відвантажені</span>
+      </span>
+
+      <span class="sep"></span>
+
       <input type="text" id="searchIn" placeholder="🔎 Пошук товару (назва / код 1С)…">
     </div>
 
@@ -186,6 +193,7 @@ const state = {
   to: '',
   search: '',
   sort: 'last_sold',
+  source: 'orders', // 'orders' = оплачені замовлення | 'shipped' = відвантаження
 };
 
 function _localISO(d) {
@@ -211,6 +219,13 @@ function setPreset(p) {
 function setOrg(v) {
   state.org = v;
   document.querySelectorAll('.chip[data-org]').forEach(c => c.classList.toggle('active', c.dataset.org === v));
+  load();
+}
+
+function setSource(s) {
+  state.source = (s === 'shipped') ? 'shipped' : 'orders';
+  document.querySelectorAll('.chip[data-src]').forEach(c => c.classList.toggle('active', c.dataset.src === state.source));
+  _detailsCache.clear(); // деталі різні для замовлень / відвантажень
   load();
 }
 
@@ -244,7 +259,7 @@ async function load() {
   document.getElementById('summary').innerHTML = '';
   document.getElementById('resultMeta').textContent = '';
   try {
-    const q = `?action=top_sold_products&from=${state.from}&to=${state.to}` + (state.org ? `&org=${encodeURIComponent(state.org)}` : '');
+    const q = `?action=top_sold_products&from=${state.from}&to=${state.to}&source=${state.source}` + (state.org ? `&org=${encodeURIComponent(state.org)}` : '');
     const r = await fetch(API_URL + q).then(x => x.json());
     if (r.error) throw new Error(r.error);
     state.data = r;
@@ -257,6 +272,10 @@ async function load() {
 function render() {
   const d = state.data;
   if (!d) return;
+  const isOrders = (d.source || state.source) === 'orders';
+  const revLabel = isOrders ? 'Сума замовлень' : 'Виручка';
+  const docLabel = isOrders ? 'Замовлень' : 'Накладних';
+  const unitDoc  = isOrders ? 'зам.' : 'нак.';
   const items = (d.items || []).filter(it => {
     if (!state.search) return true;
     const n = (it.nom_name || '').toLowerCase();
@@ -290,7 +309,7 @@ function render() {
   document.getElementById('summary').innerHTML = `
     <div class="summary">
       <div class="kpi">
-        <span class="lbl">Виручка</span>
+        <span class="lbl">${revLabel}</span>
         <span class="v green">${fmt(t.revenue_usd, 0)} $</span>
         <span class="sub">за ${state.from} — ${state.to}</span>
       </div>
@@ -300,7 +319,7 @@ function render() {
         <span class="sub">${fmt(t.qty, 0)} одиниць</span>
       </div>
       <div class="kpi">
-        <span class="lbl">Накладних</span>
+        <span class="lbl">${docLabel}</span>
         <span class="v">${fmt(t.receipts, 0)}</span>
         <span class="sub">${state.org || 'Всі організації'}</span>
       </div>
@@ -309,7 +328,10 @@ function render() {
   document.getElementById('resultMeta').textContent = `показано ${items.length} з ${(d.items || []).length}`;
 
   if (!items.length) {
-    document.getElementById('body').innerHTML = '<div class="empty">Немає продажів за обраний період / фільтри</div>';
+    const emptyMsg = isOrders
+      ? 'Немає оплачених замовлень за обраний період / фільтри'
+      : 'Немає продажів за обраний період / фільтри';
+    document.getElementById('body').innerHTML = `<div class="empty">${emptyMsg}</div>`;
     return;
   }
 
@@ -341,7 +363,7 @@ function render() {
           ${stats ? `<span class="stats">${esc(stats)}</span>` : ''}
         </div>
         <div class="qty">${fmt(it.qty, 0)}<span class="unit">шт</span></div>
-        <div class="receipts">${fmt(it.receipts, 0)} нак.</div>
+        <div class="receipts">${fmt(it.receipts, 0)} ${unitDoc}</div>
         <div class="revenue${(it.revenue_usd || 0) === 0 ? ' zero' : ''}">${fmt(it.revenue_usd, 0)} $</div>
       </div>
       <div class="tp-details" id="det-${rowId}" style="display:none"></div>`;
@@ -376,7 +398,7 @@ async function toggleDetails(row) {
   }
   det.innerHTML = '<div style="padding:10px;color:var(--text3)">Завантаження…</div>';
   try {
-    let q = `?action=top_product_details&nom_key=${encodeURIComponent(ref)}&from=${state.from}&to=${state.to}`;
+    let q = `?action=top_product_details&nom_key=${encodeURIComponent(ref)}&from=${state.from}&to=${state.to}&source=${state.source}`;
     if (day) q += `&day=${encodeURIComponent(day)}`;
     if (state.org) q += `&org=${encodeURIComponent(state.org)}`;
     const r = await fetch(API_URL + q).then(x => x.json());
@@ -392,9 +414,33 @@ async function toggleDetails(row) {
 function renderDetails(d) {
   const rows = d.rows || [];
   const tc = d.top_clients || [];
+  const isOrders = d.source === 'orders';
   if (!rows.length) return '<div style="padding:10px;color:var(--text3)">Немає рядків</div>';
   const fmtD = iso => (iso || '').slice(0, 10).split('-').reverse().slice(0, 2).join('.');
-  const ordersTbl = `
+  const payBadge = r => {
+    const pct = Math.round((r.paid_pct || 0) * 100);
+    if (pct >= 100) return '<span style="color:var(--green);font-weight:700">✓ повна</span>';
+    return `<span style="color:var(--accent);font-weight:700">${pct}%</span>`;
+  };
+  const ordersTbl = isOrders ? `
+    <div class="h">Оплачені замовлення (${rows.length})</div>
+    <table>
+      <thead><tr>
+        <th>Дата</th><th>Замовлення</th><th>Клієнт</th>
+        <th class="num">К-сть</th><th class="num">Сума</th><th>Вал.</th><th class="num">USD</th><th class="num">Оплата</th>
+      </tr></thead>
+      <tbody>${rows.map(r => `
+        <tr>
+          <td>${fmtD(r.date)}</td>
+          <td>${r.order ? `№${esc(r.order)}` : '<span style="color:var(--text3)">—</span>'}</td>
+          <td class="client">${esc(r.client)}</td>
+          <td class="num">${fmt(r.qty, 0)}</td>
+          <td class="num">${fmt(r.amount, 2)}</td>
+          <td>${esc(r.cur)}</td>
+          <td class="num" style="color:var(--green)">${fmt(r.amount_usd, 0)} $</td>
+          <td class="num">${payBadge(r)}</td>
+        </tr>`).join('')}</tbody>
+    </table>` : `
     <div class="h">Відвантаження (${rows.length})</div>
     <table>
       <thead><tr>
