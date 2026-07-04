@@ -52,6 +52,8 @@ body { font-family:'Inter',-apple-system,sans-serif; background: var(--bg); colo
 .pend__act input { background: var(--card2); border:1px solid var(--border); color:var(--text);
   border-radius:8px; padding:7px 10px; font:inherit; font-size:13px; }
 .pend__disc { width:84px; } .pend__mgr { width:128px; }
+.pend__act select { background: var(--card2); border:1px solid var(--border); color:var(--text);
+  border-radius:8px; padding:7px 10px; font:inherit; font-size:13px; cursor:pointer; }
 
 .result { display:none; margin-top: 16px; padding: 14px 16px; border:1px solid var(--border); border-radius: 12px; background: var(--card2); }
 .result.show { display:block; }
@@ -98,10 +100,19 @@ tbody tr.off { opacity: .5; }
 
 <div class="page">
   <h1>Дилерські доступи</h1>
-  <p class="sub">Видача персональних посилань у кабінет react.ink/cabinet. Ціни = гуртовий прайс мінус індивідуальний % знижки.</p>
+  <p class="sub">Заявки дилерів і видача посилань за рівнем цін. Ціна = гуртовий прайс за рівнем посилання (Дилер 1 / 2 / 3 · Роздріб).</p>
 
   <div class="card">
-    <div class="card-head"><h2>Видати доступ</h2></div>
+    <div class="card-head"><h2>Рівні цін</h2><span class="count">4 спільні посилання</span></div>
+    <div class="card-body">
+      <p class="sub" style="margin:0 0 14px">Знижка % від гуртової ціни: додатне = дешевше за гурт, відʼємне = націнка (напр. <code>-15</code> для роздрібу — на 15% дорожче). Посилання спільне для всіх дилерів рівня; сам рівень у ньому зашито — дилер його не бачить.</p>
+      <div id="levelsWrap"><div class="empty">Завантаження…</div></div>
+      <div class="frm-foot"><button class="btn btn--primary" id="saveLevels">Зберегти %</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Видати доступ вручну</h2></div>
     <div class="card-body">
       <form id="frm" class="frm">
         <div class="fld full">
@@ -127,8 +138,8 @@ tbody tr.off { opacity: .5; }
           <input name="phone" placeholder="+380 67 577 73 40">
         </div>
         <div class="fld">
-          <label>Google-пошта дилера (для входу через Google)</label>
-          <input name="email" type="email" placeholder="dealer@gmail.com">
+          <label>E-mail дилера (для звʼязку)</label>
+          <input name="email" type="email" placeholder="dealer@company.ua">
         </div>
         <div class="fld">
           <label>Місто / населений пункт</label>
@@ -155,8 +166,8 @@ tbody tr.off { opacity: .5; }
           </select>
         </div>
         <div class="fld">
-          <label>Знижка, % (поки не діє — ціни базові)</label>
-          <input name="discount_pct" type="number" min="0" max="90" step="0.5" placeholder="0">
+          <label>Рівень цін <span class="req">*</span></label>
+          <select name="level" id="f_level"></select>
         </div>
         <div class="fld">
           <label>Менеджер</label>
@@ -216,6 +227,26 @@ function toast(msg, err) {
   t._t = setTimeout(() => t.classList.remove('show'), 2400);
 }
 function cabLink(token) { return 'https://react.ink/cabinet?token=' + token; }
+
+// ── Рівні цін ──
+let LEVELS = [];  // [{code,title,discount_pct,link_slug,link}]
+function levelByCode(code) { return LEVELS.find(l => l.code === code); }
+function discLabel(pct) {
+  const n = Number(pct) || 0;
+  if (n > 0) return '−' + n + '%';
+  if (n < 0) return '+' + (-n) + '% націнка';
+  return 'гурт';
+}
+function levelOptions(sel) {
+  return LEVELS.map(l =>
+    `<option value="${esc(l.code)}"${l.code === sel ? ' selected' : ''}>${esc(l.title)} · ${discLabel(l.discount_pct)}</option>`
+  ).join('');
+}
+// Посилання дилера: спільний лінк його рівня; без рівня — легасі token-лінк.
+function dealerLink(d) {
+  if (d.level) { const l = levelByCode(d.level); if (l) return l.link; }
+  return cabLink(d.token);
+}
 async function copy(text) {
   try { await navigator.clipboard.writeText(text); toast('Скопійовано'); }
   catch (_) { toast('Не вдалося скопіювати', true); }
@@ -296,14 +327,87 @@ function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replac
 
 Auth.require('dealers').then(user => {
   AppHeader.mount({ active: 'dealers', user });
-  loadList();
+  loadLevels().then(loadList);
 });
+
+// ── Рівні цін: завантаження, рендер, збереження %, перевипуск лінка ──
+async function loadLevels() {
+  try {
+    const r = await fetch(`${API}?action=_admin_levels_get`);
+    const out = await r.json();
+    if (!out.ok) throw new Error(out.error || 'fail');
+    LEVELS = out.levels || [];
+  } catch (err) {
+    $('levelsWrap').innerHTML = `<div class="empty">Не вдалося завантажити рівні: ${esc(err.message)}</div>`;
+    return;
+  }
+  renderLevels();
+  const sel = $('f_level');
+  if (sel) sel.innerHTML = levelOptions('d1');
+}
+
+function renderLevels() {
+  if (!LEVELS.length) { $('levelsWrap').innerHTML = '<div class="empty">Рівні не налаштовано</div>'; return; }
+  let html = `<table><thead><tr>
+    <th>Рівень</th><th class="r">Знижка від гурту, %</th><th>Посилання</th><th class="r"></th>
+    </tr></thead><tbody>`;
+  for (const l of LEVELS) {
+    html += `<tr>
+      <td><span class="company">${esc(l.title)}</span><span class="muted"> · ${esc(l.code)}</span></td>
+      <td class="r"><input class="lvl-disc" data-code="${esc(l.code)}" type="number" step="0.5" value="${Number(l.discount_pct) || 0}" style="width:96px;text-align:right"></td>
+      <td><code class="muted" style="word-break:break-all;font-size:12px">${esc(l.link)}</code></td>
+      <td class="r"><div class="row-actions">
+        <button class="btn btn--ghost btn--sm" data-lvl-copy="${esc(l.code)}">Копіювати</button>
+        <button class="btn btn--secondary btn--sm" data-lvl-rotate="${esc(l.code)}">Оновити лінк</button>
+      </div></td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  $('levelsWrap').innerHTML = html;
+  $('levelsWrap').querySelectorAll('[data-lvl-copy]').forEach(b => b.onclick = () => {
+    const l = levelByCode(b.dataset.lvlCopy); if (l) copy(l.link);
+  });
+  $('levelsWrap').querySelectorAll('[data-lvl-rotate]').forEach(b => b.onclick = () => rotateLevel(b.dataset.lvlRotate));
+}
+
+$('saveLevels').addEventListener('click', async () => {
+  const rows = Array.from($('levelsWrap').querySelectorAll('.lvl-disc'))
+    .map(inp => ({ code: inp.dataset.code, discount_pct: Number(inp.value) || 0 }));
+  if (!rows.length) return;
+  const btn = $('saveLevels'); btn.disabled = true; const lbl = btn.textContent; btn.textContent = 'Зберігаємо…';
+  try {
+    const r = await fetch(`${API}?action=_admin_levels_update`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ levels: rows }),
+    });
+    const out = await r.json();
+    if (!out.ok) throw new Error(out.error || 'fail');
+    LEVELS = out.levels || LEVELS;
+    renderLevels();
+    if ($('f_level')) $('f_level').innerHTML = levelOptions($('f_level').value || 'd1');
+    toast('Відсотки збережено');
+  } catch (err) { toast('Помилка: ' + err.message, true); }
+  finally { btn.disabled = false; btn.textContent = lbl; }
+});
+
+async function rotateLevel(code) {
+  if (!confirm(`Перевипустити посилання для рівня «${code}»? Старе посилання перестане працювати.`)) return;
+  try {
+    const r = await fetch(`${API}?action=_admin_level_rotate_slug`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }),
+    });
+    const out = await r.json();
+    if (!out.ok) throw new Error(out.error || 'fail');
+    const l = levelByCode(code); if (l) { l.link = out.link; l.link_slug = out.link_slug; }
+    renderLevels();
+    copy(out.link);
+    toast('Нове посилання створено й скопійовано');
+  } catch (err) { toast('Помилка: ' + err.message, true); }
+}
 
 $('frm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const fd = new FormData(e.target);
-  const payload = Object.fromEntries(fd.entries());
-  payload.discount_pct = Number(payload.discount_pct) || 0;
+  const payload = Object.fromEntries(fd.entries());  // level — зі select
   const isFiz = payload.org_type === 'Фізособа';
   if (!isFiz && !(payload.company || '').trim()) return toast('Вкажіть компанію', true);
   if (isFiz && !(payload.contact_person || '').trim()) return toast('Вкажіть контактну особу', true);
@@ -371,7 +475,7 @@ function renderPending(rows) {
         <div class="pend__meta">${metaLine(d)}</div>${d.note ? `<div class="pend__meta">${esc(d.note)}</div>` : ''}
       </div>
       <div class="pend__act">
-        <input class="pend__disc" type="number" min="0" max="90" step="0.5" placeholder="знижка %" data-disc="${esc(d.token)}">
+        <select class="pend__lvl" data-lvl="${esc(d.token)}">${levelOptions('d1')}</select>
         <input class="pend__mgr" placeholder="менеджер" data-mgr="${esc(d.token)}">
         <button class="btn btn--primary btn--sm" data-approve="${esc(d.token)}">Підтвердити</button>
         <button class="btn btn--ghost btn--sm" data-reject="${esc(d.token)}">Відхилити</button>
@@ -387,7 +491,7 @@ function renderDealers(rows) {
   $('count').textContent = rows.length ? `${rows.length}` : '';
   if (!rows.length) { $('listWrap').innerHTML = '<div class="empty">Поки немає виданих доступів</div>'; return; }
   let html = `<table><thead><tr>
-    <th>Компанія</th><th>Менеджер</th><th class="r">Знижка</th><th>Статус</th><th>Вхід</th><th class="r"></th>
+    <th>Компанія</th><th>Менеджер</th><th>Рівень</th><th>Статус</th><th>Вхід</th><th class="r"></th>
     </tr></thead><tbody>`;
   for (const d of rows) {
     const st = d.status || (Number(d.active) === 1 ? 'active' : 'revoked');
@@ -396,26 +500,26 @@ function renderDealers(rows) {
     html += `<tr class="${isActive ? '' : 'off'}">
       <td><span class="company">${esc(d.company || d.contact_person || '—')}</span>${d.city ? `<span class="muted"> · ${esc(d.city)}</span>` : ''}${d.email ? `<span class="muted"><br>${esc(d.email)}</span>` : ''}</td>
       <td>${esc(d.manager_name || '—')}${d.manager_contact ? `<span class="muted"><br>${esc(d.manager_contact)}</span>` : ''}</td>
-      <td class="r"><span class="disc">${d.discount_pct ? '−' + d.discount_pct + '%' : '0'}</span></td>
+      <td>${d.level ? `<span class="disc">${esc((levelByCode(d.level) || {}).title || d.level)}</span>` : '<span class="muted">—</span>'}</td>
       <td><span class="badge ${isActive ? 'on' : ''}">${label}</span></td>
       <td class="muted">${fmtDate(d.last_login_at)}</td>
       <td class="r"><div class="row-actions">
-        <button class="btn btn--ghost btn--sm" data-copy="${esc(d.token)}">Лінк</button>
+        <button class="btn btn--ghost btn--sm" data-copy="${esc(dealerLink(d))}">Лінк</button>
         <button class="btn ${isActive ? 'btn--danger' : 'btn--secondary'} btn--sm" data-token="${esc(d.token)}" data-active="${isActive ? 0 : 1}">${isActive ? 'Відкликати' : 'Відновити'}</button>
       </div></td>
     </tr>`;
   }
   html += '</tbody></table>';
   $('listWrap').innerHTML = html;
-  $('listWrap').querySelectorAll('[data-copy]').forEach(b => b.onclick = () => copy(cabLink(b.dataset.copy)));
+  $('listWrap').querySelectorAll('[data-copy]').forEach(b => b.onclick = () => copy(b.dataset.copy));
   $('listWrap').querySelectorAll('[data-token]').forEach(b => b.onclick = () => revoke(b.dataset.token, Number(b.dataset.active)));
 }
 
 async function approve(token) {
-  const disc = $('pendingWrap').querySelector(`[data-disc="${token}"]`);
+  const lvl = $('pendingWrap').querySelector(`[data-lvl="${token}"]`);
   const mgr = $('pendingWrap').querySelector(`[data-mgr="${token}"]`);
   const payload = { token };
-  if (disc && disc.value !== '') payload.discount_pct = Number(disc.value) || 0;
+  if (lvl && lvl.value) payload.level = lvl.value;
   if (mgr && mgr.value.trim()) payload.manager_name = mgr.value.trim();
   try {
     const r = await fetch(`${API}?action=_admin_dealer_approve`, {
