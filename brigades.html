@@ -405,8 +405,9 @@ function _fmtQ(n) { n = Number(n) || 0; return n.toLocaleString('uk-UA', { maxim
 // Яка бригада тримала товар у русі: received → одержувач, повернення/списання → відправник.
 function _brigOf(d) { return (d.cat === 'received' ? d.to_name : d.from_name) || '—'; }
 // Звірка по ОДНОМУ замовленню (кілька переміщень, іноді на різні бригади).
-// Отримано/Повернено/Списано — агрегація рухів; Замовлено — план (getPlan, лише для
-// зведення, він не по-бригадний). brigade заданий → лише рухи цієї бригади. Залишок = Отр − Пов − Спис.
+// Отримано/Повернено/Списано — агрегація рухів; Замовлено — план замовлення (getPlan),
+// зіставлений з позиціями по назві. brigade заданий → лише рухи цієї бригади (але
+// «Замовлено» теж проставляємо з плану). Залишок = Отр − Пов − Спис.
 function reconOrderRows(orderRef, brigade) {
   const map = {};
   for (const d of (Array.isArray(state.allMoves) ? state.allMoves : [])) {
@@ -418,10 +419,12 @@ function reconOrderRows(orderRef, brigade) {
       map[nm][d.cat] += (Number(it.qty) || 0);
     }
   }
-  const plan = brigade ? null : getPlan([orderRef]);   // план — лише для зведення (не по-бригадний)
+  const plan = getPlan([orderRef]);
   if (plan && typeof plan === 'object') {
     for (const nm in plan) {
-      if (!map[nm]) map[nm] = { name: nm, unit: '', ordered: 0, received: 0, returned: 0, writtenoff: 0 };
+      // Зведення (без brigade) — додаємо й позиції плану, яких не рухали. У секції
+      // бригади — лише проставляємо «Замовлено» на позиціях, які ця бригада торкалась.
+      if (!map[nm]) { if (brigade) continue; map[nm] = { name: nm, unit: '', ordered: 0, received: 0, returned: 0, writtenoff: 0 }; }
       map[nm].ordered = plan[nm].ordered;
       if (plan[nm].unit && !map[nm].unit) map[nm].unit = plan[nm].unit;
     }
@@ -451,7 +454,6 @@ function _reconOrders() {
   return [...seen.values()].sort((a, b) => String(b.date).localeCompare(String(a.date)));
 }
 const _REC_COLS_ALL = [{ key: 'ordered', l: 'Замовлено' }, { key: 'received', l: 'Отримано' }, { key: 'returned', l: 'Повернено' }, { key: 'writtenoff', l: 'Списано' }, { key: 'delta', l: 'Залишок', delta: true }];
-const _REC_COLS_BRIG = [{ key: 'received', l: 'Отримано' }, { key: 'returned', l: 'Повернено' }, { key: 'writtenoff', l: 'Списано' }, { key: 'delta', l: 'Залишок', delta: true }];
 function _recTable(rows, cols) {
   const grid = 'grid-template-columns:minmax(0,1fr) ' + cols.map(() => '104px').join(' ') + ';';
   const head = '<div class="rec-th" style="' + grid + '"><span>Номенклатура</span>' + cols.map(c => '<span class="r">' + c.l + '</span>').join('') + '</div>';
@@ -490,7 +492,7 @@ function reconOrderHtml() {
     for (const b of brigades) {
       const br = reconOrderRows(state.reconOrder, b);
       if (!br.rows.length) continue;
-      out += _recSection(b, '🧰 ' + esc(b), br.rows, _REC_COLS_BRIG);
+      out += _recSection(b, '🧰 ' + esc(b), br.rows, _REC_COLS_ALL);
     }
   }
   return out;
