@@ -79,12 +79,12 @@ a{color:inherit;text-decoration:none}
 
 .tree-tbl tr.order-row{cursor:pointer;color:var(--text2)}
 .tree-tbl tr.order-row:hover td{background:var(--bg3)}
-.tree-tbl tr.order-row td:first-child{padding-left:66px;font-size:11.5px}
+.tree-tbl tr.order-row td:first-child{padding-left:16px;font-size:11.5px}
 .tree-tbl tr.order-row .meta{color:var(--text3);font-size:10.5px;margin-left:8px}
 
 .tree-tbl tr.item-row{color:var(--text2)}
 .tree-tbl tr.item-row:hover td{background:var(--bg3)}
-.tree-tbl tr.item-row td:first-child{padding-left:94px;font-size:11px;color:var(--text2)}
+.tree-tbl tr.item-row td:first-child{padding-left:44px;font-size:11px;color:var(--text2)}
 .tree-tbl tr.item-row td{font-size:11px}
 
 .chev{display:inline-block;width:14px;color:var(--text3);transition:transform .15s;font-size:10px;transform:translateY(-1px)}
@@ -125,8 +125,8 @@ a{color:inherit;text-decoration:none}
   .tree-tbl thead th,.tree-tbl tbody td{padding:6px 5px;font-size:10.5px}
   .tree-tbl thead th:nth-child(n+2){width:74px}
   .tree-tbl tr.client-row td:first-child{padding-left:24px}
-  .tree-tbl tr.order-row td:first-child{padding-left:42px}
-  .tree-tbl tr.item-row td:first-child{padding-left:60px}
+  .tree-tbl tr.order-row td:first-child{padding-left:12px}
+  .tree-tbl tr.item-row td:first-child{padding-left:30px}
 }
 </style>
 </head>
@@ -359,56 +359,56 @@ function getClients() {
   return Object.values(merged);
 }
 
-function collectKeys() {
-  const keys = [];
-  const clients = getClients();
-  clients.forEach(c => {
-    const ck = `c:${esc(c.name)}`;
-    keys.push(ck);
-    c.orders.forEach(o => keys.push(`${ck}|o:${o.ref}`));
-  });
-  return keys;
+// Плоский список замовлень (звіт по замовленнях, не по клієнтах). До кожного
+// додаємо ім'я клієнта — окремого групуючого рядка клієнта більше немає.
+function getOrders() {
+  const orders = [];
+  getClients().forEach(c => (c.orders || []).forEach(o => orders.push({ ...o, clientName: c.name })));
+  // Замовлення одного клієнта поруч; новіші — зверху.
+  return orders.sort((a, b) =>
+    (a.clientName || '').localeCompare(b.clientName || '') ||
+    (b.date || '').localeCompare(a.date || '')
+  );
 }
 
-function _matchClient(c, q) {
+function collectKeys() {
+  return getOrders().map(o => `o:${o.ref}`);
+}
+
+function _matchOrder(o, q) {
   if (!q) return true;
-  if (c.name.toLowerCase().includes(q)) return true;
-  return c.orders.some(o =>
-    (o.number || '').toLowerCase().includes(q) ||
-    o.items.some(it => (it.name || '').toLowerCase().includes(q))
-  );
+  return (o.clientName || '').toLowerCase().includes(q)
+    || (o.number || '').toLowerCase().includes(q)
+    || (o.items || []).some(it => (it.name || '').toLowerCase().includes(q));
 }
 
 // ─── Render ───
 function render() {
-  const clients = getClients();
-  const visible = clients.filter(c => _matchClient(c, state.search));
+  const orders = getOrders();
+  const visible = orders.filter(o => _matchOrder(o, state.search));
 
   // Summary — дві ключові категорії, заради яких і є звіт-контроль:
   //  A) відвантажено, але не оплачено — товар віддали, гроші не отримали (борг клієнта);
   //  B) оплачено, але не відвантажено — гроші взяли, товар ще винні (передоплата).
-  // Категорії можуть перетинатись: замовлення з частковою оплатою І частковим
-  // відвантаженням потрапляє в обидві.
+  // Категорії можуть перетинатись (часткова оплата І часткове відвантаження).
   let okCur = !!state.fx;
   let aCount = 0, aDebt = 0, aUnitsShipped = 0;    // A: відвантажено, не оплачено
   let bCount = 0, bPrepaid = 0, bUnitsToShip = 0;  // B: оплачено, не відвантажено
-  visible.forEach(c => {
-    c.orders.forEach(o => {
-      const amount = +o.amount || 0, paid = +o.paid || 0;
-      const ordered = +o.ordered || 0, shipped = +o.shipped || 0;
-      const remPay = Math.max(0, amount - paid);
-      const remShip = Math.max(0, ordered - shipped);
-      if (shipped > 0 && remPay > 0.01) {          // є відвантаження + несплачений залишок
-        aCount++; aUnitsShipped += shipped;
-        const d = toUsd(remPay, o.currency);
-        if (d == null) okCur = false; else aDebt += d;
-      }
-      if (paid > 0.01 && remShip > 0) {            // є оплата + недовідвантаження
-        bCount++; bUnitsToShip += remShip;
-        const p = toUsd(paid, o.currency);
-        if (p == null) okCur = false; else bPrepaid += p;
-      }
-    });
+  visible.forEach(o => {
+    const amount = +o.amount || 0, paid = +o.paid || 0;
+    const ordered = +o.ordered || 0, shipped = +o.shipped || 0;
+    const remPay = Math.max(0, amount - paid);
+    const remShip = Math.max(0, ordered - shipped);
+    if (shipped > 0 && remPay > 0.01) {            // є відвантаження + несплачений залишок
+      aCount++; aUnitsShipped += shipped;
+      const d = toUsd(remPay, o.currency);
+      if (d == null) okCur = false; else aDebt += d;
+    }
+    if (paid > 0.01 && remShip > 0) {              // є оплата + недовідвантаження
+      bCount++; bUnitsToShip += remShip;
+      const p = toUsd(paid, o.currency);
+      if (p == null) okCur = false; else bPrepaid += p;
+    }
   });
   const $ = v => okCur ? '$' + fmt(v) : '—';
 
@@ -437,83 +437,45 @@ function render() {
     </div>`;
 
   if (!visible.length) {
-    document.getElementById('body').innerHTML = '<div class="empty">Немає відкритих замовлень станом на цю дату 🎉</div>';
+    document.getElementById('body').innerHTML = '<div class="empty">Немає замовлень для контролю станом на цю дату 🎉</div>';
     return;
   }
 
-  // Tree rows
+  // Рядки — по замовленнях (без групуючого рядка клієнта).
+  // Колір залишку: недоплата червона лише якщо вже відвантажено; недовідвантаження
+  // червоне лише якщо була оплата (інакше залишок очікуваний → звичайний колір).
+  const cur = c => `<span style="color:var(--text3);font-size:10px">${esc(c)}</span>`;
   const rows = [];
-  visible.forEach(c => {
-    const ck = `c:${esc(c.name)}`;
-    const isCOpen = state.openKeys.has(ck);
-
-    let cAmt = 0, cPaid = 0, cRem = 0, cOk = !!state.fx;
-    let cOrd = 0, cShip = 0;
-    // Червоним позначаємо лише "проблемний" залишок:
-    //  - недоплату — тільки якщо по замовленню вже щось відвантажено;
-    //  - недовідвантаження — тільки якщо по замовленню була оплата.
-    // Інакше залишок очікуваний → звичайний колір.
-    let cPayAlarm = false, cShipAlarm = false;
-    c.orders.forEach(o => {
-      const a = toUsd(o.amount, o.currency);
-      const p = toUsd(o.paid, o.currency);
-      if (a == null || p == null) cOk = false;
-      else { cAmt += a; cPaid += p; cRem += Math.max(0, a - p); }
-      cOrd += (+o.ordered || 0);
-      cShip += (+o.shipped || 0);
-      if ((+o.amount || 0) - (+o.paid || 0) > 0.001 && (+o.shipped || 0) > 0) cPayAlarm = true;
-      if ((+o.ordered || 0) - (+o.shipped || 0) > 0 && (+o.paid || 0) > 0.001) cShipAlarm = true;
-    });
-    const cRemShip = Math.max(0, cOrd - cShip);
-    const cRemCls = cRem <= 0.001 ? 'val-zero' : (cPayAlarm ? 'val-neg' : '');
-    const cShipCls = cRemShip <= 0 ? 'val-zero' : (cShipAlarm ? 'val-neg' : '');
-
+  visible.forEach(o => {
+    const ok = `o:${o.ref}`;
+    const isOpen = state.openKeys.has(ok);
+    const oRem = Math.max(0, (+o.amount || 0) - (+o.paid || 0));
+    const oRemShip = Math.max(0, (+o.ordered || 0) - (+o.shipped || 0));
+    const oRemCls = oRem <= 0.001 ? 'val-zero' : ((+o.shipped || 0) > 0 ? 'val-neg' : '');
+    const oShipCls = oRemShip <= 0 ? 'val-zero' : ((+o.paid || 0) > 0.001 ? 'val-neg' : '');
+    const hasItems = (o.items || []).length > 0;
     rows.push(`
-      <tr class="client-row" data-key="${esc(ck)}">
-        <td><span class="chev ${isCOpen?'open':''}">▶</span>${esc(c.name)} <span style="color:var(--text3);font-weight:400;font-size:11px">· ${c.orders.length} зам.</span></td>
-        <td>${cOk ? '$'+fmt(cAmt) : '—'}</td>
-        <td class="val-pos">${cOk ? '$'+fmt(cPaid) : '—'}</td>
-        <td class="${cRemCls}">${cOk ? '$'+fmt(cRem) : '—'}</td>
-        <td>${fmt(cOrd, 0)}</td>
-        <td>${fmt(cShip, 0)}</td>
-        <td class="${cShipCls}">${fmt(cRemShip, 0)}</td>
+      <tr class="order-row" data-key="${esc(ok)}">
+        <td><span class="chev ${isOpen?'open':''} ${hasItems?'':'hidden'}">▶</span>№${esc(o.number || '?')} · ${esc(o.clientName || '')} <span class="meta">· ${fmtDate(o.date)}</span></td>
+        <td>${fmt(o.amount)} ${cur(o.currency)}</td>
+        <td class="val-pos">${fmt(o.paid)} ${cur(o.currency)}</td>
+        <td class="${oRemCls}">${fmt(oRem)} ${cur(o.currency)}</td>
+        <td>${fmt(o.ordered, 0)}</td>
+        <td>${fmt(o.shipped, 0)}</td>
+        <td class="${oShipCls}">${fmt(oRemShip, 0)}</td>
       </tr>`);
-
-    if (!isCOpen) return;
-    c.orders.forEach(o => {
-      const ok = `${ck}|o:${o.ref}`;
-      const isOOpen = state.openKeys.has(ok);
-      const oRem = Math.max(0, (+o.amount || 0) - (+o.paid || 0));
-      const oRemShip = Math.max(0, (+o.ordered || 0) - (+o.shipped || 0));
-      // Недоплата → червоним лише якщо щось відвантажено; інакше звичайним.
-      const oRemCls = oRem <= 0.001 ? 'val-zero' : ((+o.shipped || 0) > 0 ? 'val-neg' : '');
-      // Недовідвантаження → червоним лише якщо була оплата; інакше звичайним.
-      const oShipCls = oRemShip <= 0 ? 'val-zero' : ((+o.paid || 0) > 0.001 ? 'val-neg' : '');
-      const hasItems = (o.items || []).length > 0;
+    if (!isOpen) return;
+    (o.items || []).forEach(it => {
+      const iRemShip = Math.max(0, (+it.ordered || 0) - (+it.shipped || 0));
+      const iShipCls = iRemShip <= 0 ? 'val-zero' : ((+o.paid || 0) > 0.001 ? 'val-neg' : '');
       rows.push(`
-        <tr class="order-row" data-key="${esc(ok)}">
-          <td><span class="chev ${isOOpen?'open':''} ${hasItems?'':'hidden'}">▶</span>№${esc(o.number || '?')} <span class="meta">· ${fmtDate(o.date)}</span></td>
-          <td>${fmt(o.amount)} <span style="color:var(--text3);font-size:10px">${esc(o.currency)}</span></td>
-          <td class="val-pos">${fmt(o.paid)} <span style="color:var(--text3);font-size:10px">${esc(o.currency)}</span></td>
-          <td class="${oRemCls}">${fmt(oRem)} <span style="color:var(--text3);font-size:10px">${esc(o.currency)}</span></td>
-          <td>${fmt(o.ordered, 0)}</td>
-          <td>${fmt(o.shipped, 0)}</td>
-          <td class="${oShipCls}">${fmt(oRemShip, 0)}</td>
+        <tr class="item-row">
+          <td>${esc(it.name)}</td>
+          <td colspan="3" style="color:var(--text3)">—</td>
+          <td>${fmt(it.ordered, 0)}</td>
+          <td>${fmt(it.shipped, 0)}</td>
+          <td class="${iShipCls}">${fmt(iRemShip, 0)}</td>
         </tr>`);
-      if (!isOOpen) return;
-      (o.items || []).forEach(it => {
-        const iRemShip = Math.max(0, (+it.ordered || 0) - (+it.shipped || 0));
-        // Недовідвантаження позиції → червоним лише якщо замовлення оплачувалось.
-        const iShipCls = iRemShip <= 0 ? 'val-zero' : ((+o.paid || 0) > 0.001 ? 'val-neg' : '');
-        rows.push(`
-          <tr class="item-row">
-            <td>${esc(it.name)}</td>
-            <td colspan="3" style="color:var(--text3)">—</td>
-            <td>${fmt(it.ordered, 0)}</td>
-            <td>${fmt(it.shipped, 0)}</td>
-            <td class="${iShipCls}">${fmt(iRemShip, 0)}</td>
-          </tr>`);
-      });
     });
   });
 
@@ -521,7 +483,7 @@ function render() {
     <div class="tree-wrap">
       <table class="tree-tbl">
         <thead><tr>
-          <th>Клієнт / Замовлення / Товар</th>
+          <th>Замовлення / Клієнт / Товар</th>
           <th>Сума документа</th>
           <th>Оплачено</th>
           <th>Залишилось</th>
