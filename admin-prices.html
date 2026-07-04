@@ -538,7 +538,7 @@ a{color:inherit;text-decoration:none}
     <div class="card">
       <div class="card-head"><h2>Рівні цін</h2><span class="count">4 спільні посилання</span></div>
       <div class="card-body">
-        <p class="dsub" style="margin:0 0 14px">Знижка % від гуртової ціни: додатне = дешевше за гурт, відʼємне = націнка (напр. <code>-15</code> для роздрібу — на 15% дорожче). Посилання спільне для всіх дилерів рівня; сам рівень у ньому зашито — дилер його не бачить.</p>
+        <p class="dsub" style="margin:0 0 14px">Коригування ціни від гуртової: <b>−% = знижка</b>, <b>+% = націнка</b> (напр. <code>-10</code> = на 10% дешевше, <code>+15</code> = на 15% дорожче для роздрібу). Посилання спільне для всіх дилерів рівня; сам рівень у ньому зашито — дилер його не бачить.</p>
         <div id="levelsWrap"><div class="empty">Завантаження…</div></div>
         <div class="frm-foot"><button class="btn btn--primary" id="saveLevels">Зберегти %</button></div>
       </div>
@@ -1987,9 +1987,11 @@ function cabLink(token) { return 'https://react.ink/cabinet?token=' + token; }
 
 let LEVELS = [];  // [{code,title,discount_pct,link_slug,link}]
 function levelByCode(code) { return LEVELS.find(l => l.code === code); }
+// pct = stored discount_pct (наскільки дешевше за гурт). Показуємо у знаку
+// коригування ціни: −% = знижка, +% = націнка.
 function discLabel(pct) {
   const n = Number(pct) || 0;
-  if (n > 0) return '−' + n + '%';
+  if (n > 0) return '−' + n + '% знижка';
   if (n < 0) return '+' + (-n) + '% націнка';
   return 'гурт';
 }
@@ -2100,12 +2102,14 @@ async function loadLevels() {
 function renderLevels() {
   if (!LEVELS.length) { $('levelsWrap').innerHTML = '<div class="empty">Рівні не налаштовано</div>'; return; }
   let html = `<table><thead><tr>
-    <th>Рівень</th><th class="r">Знижка від гурту, %</th><th>Посилання</th><th class="r"></th>
+    <th>Рівень</th><th class="r">± % від гурту<br><span class="muted" style="font-weight:400">− знижка / + націнка</span></th><th>Посилання</th><th class="r"></th>
     </tr></thead><tbody>`;
   for (const l of LEVELS) {
+    // У полі показуємо коригування ціни (знак інвертований до discount_pct):
+    // discount_pct=10 (10% дешевше) → показуємо −10; discount_pct=-15 → +15.
     html += `<tr>
       <td><span class="company">${esc(l.title)}</span><span class="muted"> · ${esc(l.code)}</span></td>
-      <td class="r"><input class="lvl-disc" data-code="${esc(l.code)}" type="number" step="0.5" value="${Number(l.discount_pct) || 0}" style="width:96px;text-align:right"></td>
+      <td class="r"><input class="lvl-disc" data-code="${esc(l.code)}" type="number" step="0.5" value="${(Number(l.discount_pct) || 0) * -1}" style="width:96px;text-align:right"></td>
       <td><code class="muted" style="word-break:break-all;font-size:12px">${esc(l.link)}</code></td>
       <td class="r"><div class="row-actions">
         <button class="btn btn--ghost btn--sm" data-lvl-copy="${esc(l.code)}">Копіювати</button>
@@ -2125,7 +2129,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const sl = $('saveLevels');
   if (sl) sl.addEventListener('click', async () => {
     const rows = Array.from($('levelsWrap').querySelectorAll('.lvl-disc'))
-      .map(inp => ({ code: inp.dataset.code, discount_pct: Number(inp.value) || 0 }));
+      // Поле — коригування ціни (−знижка/+націнка); у БД discount_pct = −поле.
+      .map(inp => ({ code: inp.dataset.code, discount_pct: -(Number(inp.value) || 0) }));
     if (!rows.length) return;
     const btn = $('saveLevels'); btn.disabled = true; const lbl = btn.textContent; btn.textContent = 'Зберігаємо…';
     try {
