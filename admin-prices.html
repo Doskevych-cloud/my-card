@@ -2014,7 +2014,7 @@ function levelOptions(sel) {
 function decodeLevelLink(v) {
   v = (v || '').trim();
   if (!v) return { state: 'empty' };
-  const m = v.match(/[?&]k=([A-Za-z0-9]+)/);
+  const m = v.match(/[?&]k=([A-Za-z0-9.]+)/);
   const tok = m ? m[1] : v;  // допускаємо, що вставили лише токен
   const l = LEVELS.find(x => x.link === v || x.link.endsWith('k=' + tok));
   return l ? { state: 'ok', title: l.title } : { state: 'no' };
