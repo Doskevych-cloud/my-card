@@ -39,6 +39,21 @@ a{color:inherit;text-decoration:none}
 .toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
 .toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
 
+/* Tag-input «Виключити» (як в інших звітах) */
+.ar-tags{position:relative;display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center;padding:4px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;min-width:180px;max-width:360px;min-height:30px}
+.ar-tags:focus-within{border-color:var(--accent)}
+.ar-tags input[type=text]{flex:1;min-width:90px;padding:3px 4px;border:none;background:transparent;font-size:12px;color:var(--text);outline:none}
+.ar-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 6px 2px 8px;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:600;border-radius:6px;white-space:nowrap;max-width:200px}
+.ar-tag .name{overflow:hidden;text-overflow:ellipsis}
+.ar-tag .x{cursor:pointer;font-size:14px;line-height:1;opacity:.7;padding:0 2px}
+.ar-tag .x:hover{opacity:1;color:var(--red)}
+.ar-suggest{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 22px rgba(0,0,0,.28);max-height:280px;overflow-y:auto;z-index:50;min-width:280px}
+.ar-suggest .opt{padding:7px 12px;font-size:12px;cursor:pointer;color:var(--text);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.ar-suggest .opt:last-child{border-bottom:none}
+.ar-suggest .opt:hover,.ar-suggest .opt.hl{background:var(--bg3);color:var(--accent)}
+.ar-suggest .opt .meta{color:var(--text3);font-size:10.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ar-suggest .empty{padding:10px 12px;font-size:12px;color:var(--text3)}
+
 /* OSP summary — P&L стиль: без плашок, без прогрес-барів, без акцентних кольорів на статичних даних */
 .osp-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}
 .osp-card{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:2px}
@@ -161,6 +176,14 @@ a{color:inherit;text-decoration:none}
 
       <span class="sep"></span>
 
+      <span class="lbl">Виключити</span>
+      <span class="ar-tags" id="ospExcludeTags">
+        <input type="text" id="ospExcludeIn" placeholder="Почни вводити…" autocomplete="off">
+        <div id="ospExcludeSuggest" class="ar-suggest" style="display:none"></div>
+      </span>
+
+      <span class="sep"></span>
+
       <button class="btn btn--secondary btn--sm" onclick="expandAll()">⊞ Розгорнути</button>
       <button class="btn btn--secondary btn--sm" onclick="collapseAll()">⊟ Згорнути</button>
 
@@ -223,6 +246,14 @@ function _todayISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+// Внутрішні холдингові орги як «клієнти» — інтра-холдинг, не реальні покупці.
+// Точні назви з counterparties.description (включно з trailing space у "Київ ").
+const DEFAULT_EXCLUDES = [
+  'Дистрибуція',
+  'ТОВ "ГЕНЕРАЦІЯ ЕНЕРДЖІ" Киев',
+  'ТОВ "ГЕНЕРАЦІЯ ЕНЕРДЖІ" Київ ',
+  'ТОВ "ГЕНЕРАЦІЯ ЕНЕРДЖІ" Одеса',
+];
 const state = {
   data: null,
   org: 'Реакт',
@@ -231,7 +262,19 @@ const state = {
   openKeys: new Set(),
   loading: false,
   fx: null,
+  excludeList: [],
 };
+try {
+  const ex = localStorage.getItem('osp_exclude');
+  if (ex !== null) {
+    const a = JSON.parse(ex);
+    if (Array.isArray(a)) state.excludeList = a;
+  } else {
+    // Перший візит — заливаємо дефолт (інтра-холдинг) у localStorage.
+    state.excludeList = DEFAULT_EXCLUDES.slice();
+    localStorage.setItem('osp_exclude', JSON.stringify(state.excludeList));
+  }
+} catch (_) {}
 
 function toUsd(amount, cur) {
   if (!isFinite(amount)) return null;
@@ -330,6 +373,15 @@ document.addEventListener('DOMContentLoaded', () => {
     state.search = e.target.value.toLowerCase().trim();
     render();
   });
+  // Tag-input «Виключити»
+  const exIn = document.getElementById('ospExcludeIn');
+  if (exIn) {
+    exIn.addEventListener('input',   () => ospTag.onInput());
+    exIn.addEventListener('focus',   () => ospTag.onInput());
+    exIn.addEventListener('blur',    () => setTimeout(() => ospTag.hide(), 200));
+    exIn.addEventListener('keydown', e => ospTag.onKey(e));
+  }
+  ospTag.renderTags();
 });
 
 function expandAll() {
@@ -382,10 +434,107 @@ function _matchOrder(o, q) {
     || (o.items || []).some(it => (it.name || '').toLowerCase().includes(q));
 }
 
+/* Tag-input «Виключити» з autocomplete (як в інших звітах). Ховаємо замовлення
+   виключених клієнтів; список зберігається в localStorage (osp_exclude). */
+const ospTag = {
+  list() { return state.excludeList || []; },
+  save() { try { localStorage.setItem('osp_exclude', JSON.stringify(this.list())); } catch (_) {} },
+  renderTags() {
+    const host = document.getElementById('ospExcludeTags');
+    if (!host) return;
+    Array.from(host.querySelectorAll('.ar-tag')).forEach(n => n.remove());
+    const inp = document.getElementById('ospExcludeIn');
+    this.list().forEach(name => {
+      const t = document.createElement('span');
+      t.className = 'ar-tag';
+      t.innerHTML = '<span class="name">' + esc(name) + '</span><span class="x" data-xname="' + esc(name) + '">×</span>';
+      host.insertBefore(t, inp);
+    });
+  },
+  add(name) {
+    if (!name) return;
+    const cur = this.list();
+    if (!cur.some(n => n.toLowerCase() === name.toLowerCase())) {
+      state.excludeList = cur.concat([name]);
+      this.save();
+    }
+    document.getElementById('ospExcludeIn').value = '';
+    this.hide();
+    this.renderTags();
+    render();
+  },
+  remove(name) {
+    state.excludeList = this.list().filter(n => n !== name);
+    this.save();
+    this.renderTags();
+    render();
+  },
+  hide() { const dd = document.getElementById('ospExcludeSuggest'); if (dd) dd.style.display = 'none'; },
+  allClients() {
+    const seen = new Map();
+    getClients().forEach(c => {
+      const name = c.name || ''; if (!name) return;
+      let usd = 0;
+      (c.orders || []).forEach(o => { const v = toUsd(+o.amount || 0, o.currency); if (v != null) usd += v; });
+      const key = name.toLowerCase();
+      const prev = seen.get(key) || { name, usd: 0 };
+      prev.usd += usd; seen.set(key, prev);
+    });
+    return [...seen.values()].sort((a, b) => b.usd - a.usd);
+  },
+  onInput() {
+    const inp = document.getElementById('ospExcludeIn');
+    const dd = document.getElementById('ospExcludeSuggest');
+    if (!inp || !dd) return;
+    const q = inp.value.trim().toLowerCase();
+    const all = this.allClients();
+    if (!all.length) { dd.style.display = 'none'; return; }
+    const taken = new Set(this.list().map(n => n.toLowerCase()));
+    const matched = all
+      .filter(o => !taken.has((o.name || '').toLowerCase()))
+      .filter(o => !q || (o.name || '').toLowerCase().includes(q))
+      .slice(0, 50);
+    if (!matched.length) { dd.innerHTML = '<div class="empty">Нічого не знайдено</div>'; dd.style.display = 'block'; return; }
+    dd.innerHTML = matched.map((o, i) =>
+      '<div class="opt' + (i === 0 ? ' hl' : '') + '" data-optname="' + esc(o.name) + '">' +
+        '<span>' + esc(o.name) + '</span>' +
+        '<span class="meta">' + (o.usd ? '$' + fmt(o.usd, 0) : '') + '</span>' +
+      '</div>').join('');
+    dd.style.display = 'block';
+  },
+  onKey(ev) {
+    const dd = document.getElementById('ospExcludeSuggest');
+    if (!dd || dd.style.display === 'none') {
+      if (ev.key === 'Backspace' && !ev.target.value && this.list().length) {
+        this.remove(this.list()[this.list().length - 1]);
+      }
+      return;
+    }
+    const opts = Array.from(dd.querySelectorAll('.opt'));
+    let idx = opts.findIndex(o => o.classList.contains('hl'));
+    if (ev.key === 'ArrowDown') { ev.preventDefault(); idx = Math.min(idx + 1, opts.length - 1); opts.forEach((o, i) => o.classList.toggle('hl', i === idx)); opts[idx]?.scrollIntoView({ block: 'nearest' }); }
+    else if (ev.key === 'ArrowUp') { ev.preventDefault(); idx = Math.max(idx - 1, 0); opts.forEach((o, i) => o.classList.toggle('hl', i === idx)); opts[idx]?.scrollIntoView({ block: 'nearest' }); }
+    else if (ev.key === 'Enter') { ev.preventDefault(); const sel = opts[idx] || opts[0]; if (sel) this.add(sel.dataset.optname); }
+    else if (ev.key === 'Escape') { this.hide(); }
+    else if (ev.key === 'Backspace' && !ev.target.value && this.list().length) {
+      this.remove(this.list()[this.list().length - 1]);
+    }
+  },
+};
+document.addEventListener('click', function(ev) {
+  const x = ev.target.closest('.ar-tag .x[data-xname]');
+  if (x) { ospTag.remove(x.dataset.xname); return; }
+  const opt = ev.target.closest('#ospExcludeSuggest .opt[data-optname]');
+  if (opt) { ospTag.add(opt.dataset.optname); return; }
+});
+
 // ─── Render ───
 function render() {
+  const exSet = new Set((state.excludeList || []).map(s => (s || '').toLowerCase()));
   const orders = getOrders();
-  const visible = orders.filter(o => _matchOrder(o, state.search));
+  const visible = orders.filter(o =>
+    !exSet.has((o.clientName || '').toLowerCase()) && _matchOrder(o, state.search)
+  );
 
   // Summary — дві ключові категорії, заради яких і є звіт-контроль:
   //  A) відвантажено, але не оплачено — товар віддали, гроші не отримали (борг клієнта);
