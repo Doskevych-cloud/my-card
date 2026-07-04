@@ -427,7 +427,6 @@
       { role: 'sales',         active: 'sales',         href: '/sales.html',        label: '📈 Продажі' },
       { role: 'counterparties',active: 'counterparties',href: '/counterparties.html', label: '👥 Контрагенти' },
       { role: '_admin',        active: 'finance',       href: '/finance.html',      label: '💰 Фінанси' },
-      { role: 'dealers',       active: 'dealers',       href: '/dealers.html',      label: '🤝 Дилери' },
       { role: 'reports',       active: 'reports',       href: '/reports.html',      label: '📑 Звіти' },
     ];
     const userOrgs = (user && user.orgs) || {};
