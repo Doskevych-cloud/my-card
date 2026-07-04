@@ -55,10 +55,9 @@ a{color:inherit;text-decoration:none}
 .osp-help .osp-tip{visibility:hidden;opacity:0;position:absolute;bottom:calc(100% + 8px);left:0;width:250px;padding:9px 11px;background:var(--bg2);border:1px solid var(--border);border-radius:9px;box-shadow:0 6px 22px rgba(0,0,0,.28);color:var(--text2);font-size:11px;font-weight:400;line-height:1.5;text-align:left;letter-spacing:0;text-transform:none;z-index:30;transition:opacity .15s,visibility .15s;pointer-events:none}
 .osp-help .osp-tip::after{content:'';position:absolute;top:100%;left:5px;border:5px solid transparent;border-top-color:var(--border)}
 .osp-help:hover .osp-tip{visibility:visible;opacity:1}
-/* Іконка «?» біля суми (праворуч): відступ від числа + підказка відкривається вліво, щоб не вилазила за край картки */
-.osp-help--right{margin-left:0;margin-right:6px}
-.osp-help--right .osp-tip{left:auto;right:0}
-.osp-help--right .osp-tip::after{left:auto;right:5px}
+/* Іконка «?» у заголовку картки: підказка розкривається вниз (щоб не перекривати тулбар над карткою) */
+.osp-help--down .osp-tip{top:calc(100% + 8px);bottom:auto}
+.osp-help--down .osp-tip::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:var(--border)}
 
 /* Tree table */
 .tree-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
@@ -385,47 +384,54 @@ function render() {
   const clients = getClients();
   const visible = clients.filter(c => _matchClient(c, state.search));
 
-  // Summary cards
-  let gAmount = 0, gPaid = 0, gRem = 0, gOrdered = 0, gShipped = 0, gRemShip = 0;
+  // Summary — дві ключові категорії, заради яких і є звіт-контроль:
+  //  A) відвантажено, але не оплачено — товар віддали, гроші не отримали (борг клієнта);
+  //  B) оплачено, але не відвантажено — гроші взяли, товар ще винні (передоплата).
+  // Категорії можуть перетинатись: замовлення з частковою оплатою І частковим
+  // відвантаженням потрапляє в обидві.
   let okCur = !!state.fx;
+  let aCount = 0, aDebt = 0, aUnitsShipped = 0;    // A: відвантажено, не оплачено
+  let bCount = 0, bPrepaid = 0, bUnitsToShip = 0;  // B: оплачено, не відвантажено
   visible.forEach(c => {
     c.orders.forEach(o => {
-      const a = toUsd(o.amount, o.currency);
-      const p = toUsd(o.paid, o.currency);
-      if (a == null || p == null) okCur = false;
-      else { gAmount += a; gPaid += p; gRem += Math.max(0, a - p); }
-      gOrdered += (+o.ordered || 0);
-      gShipped += (+o.shipped || 0);
-      gRemShip += Math.max(0, (+o.ordered || 0) - (+o.shipped || 0));
+      const amount = +o.amount || 0, paid = +o.paid || 0;
+      const ordered = +o.ordered || 0, shipped = +o.shipped || 0;
+      const remPay = Math.max(0, amount - paid);
+      const remShip = Math.max(0, ordered - shipped);
+      if (shipped > 0 && remPay > 0.01) {          // є відвантаження + несплачений залишок
+        aCount++; aUnitsShipped += shipped;
+        const d = toUsd(remPay, o.currency);
+        if (d == null) okCur = false; else aDebt += d;
+      }
+      if (paid > 0.01 && remShip > 0) {            // є оплата + недовідвантаження
+        bCount++; bUnitsToShip += remShip;
+        const p = toUsd(paid, o.currency);
+        if (p == null) okCur = false; else bPrepaid += p;
+      }
     });
   });
-
-  const payPct = gAmount > 0 ? Math.round(gPaid / gAmount * 100) : 0;
-  const shipPct = gOrdered > 0 ? Math.round(gShipped / gOrdered * 100) : 0;
   const $ = v => okCur ? '$' + fmt(v) : '—';
 
   document.getElementById('curSummary').innerHTML = `
     <div class="osp-summary">
       <div class="osp-card">
         <div class="osp-head">
-          <span class="osp-title">Оплата</span>
-          <span class="osp-pct">${okCur ? payPct + '%' : '—'}</span>
+          <span class="osp-title">Відвантажено, не оплачено<span class="osp-help osp-help--down">?<span class="osp-tip">Замовлення, де товар уже (повністю або частково) відвантажено, але лишився несплачений залишок. Сума — це борг клієнтів: те, що ми віддали, але грошей ще не отримали. Головний ризик, який контролює звіт — тут треба вимагати оплату.</span></span></span>
+          <span class="osp-pct" style="color:${aCount ? 'var(--red)' : 'var(--text3)'}">${$(aDebt)}</span>
         </div>
         <div class="osp-rows">
-          <div class="osp-row"><span class="osp-lbl">Сума замовлень</span><span class="osp-val">${$(gAmount)}</span></div>
-          <div class="osp-row"><span class="osp-lbl">Оплачено</span><span class="osp-val"><span class="osp-help osp-help--right">?<span class="osp-tip">Показуються лише НЕЗАКРИТІ замовлення станом на обрану дату — де є залишок оплати або відвантаження. Оплата й відвантаження рахуються накопичено до цієї дати. Повністю закриті (оплачені і відвантажені) замовлення зі списку зникають.<br><br>«Оплачено» тут — сумарна оплата по цих відкритих замовленнях, тому не збігається з «Оплачено за період» у «Продажах менеджерів» (там лише платежі даного періоду).</span></span>${$(gPaid)}</span></div>
-          <div class="osp-row"><span class="osp-lbl">Залишилось</span><span class="osp-val muted">${$(gRem)}</span></div>
+          <div class="osp-row"><span class="osp-lbl">Замовлень</span><span class="osp-val">${fmt(aCount, 0)}</span></div>
+          <div class="osp-row"><span class="osp-lbl">Уже відвантажено</span><span class="osp-val muted">${fmt(aUnitsShipped, 0)} од.</span></div>
         </div>
       </div>
       <div class="osp-card">
         <div class="osp-head">
-          <span class="osp-title">Відвантаження</span>
-          <span class="osp-pct">${shipPct}%</span>
+          <span class="osp-title">Оплачено, не відвантажено<span class="osp-help osp-help--down">?<span class="osp-tip">Замовлення, за якими надійшла оплата, але товар ще не відвантажено повністю. Сума — отримані по них кошти (передоплата): наш обов'язок відвантажити.</span></span></span>
+          <span class="osp-pct" style="color:${bCount ? 'var(--text)' : 'var(--text3)'}">${$(bPrepaid)}</span>
         </div>
         <div class="osp-rows">
-          <div class="osp-row"><span class="osp-lbl">Замовлено</span><span class="osp-val">${fmt(gOrdered, 0)} од.</span></div>
-          <div class="osp-row"><span class="osp-lbl">Відвантажено</span><span class="osp-val">${fmt(gShipped, 0)} од.</span></div>
-          <div class="osp-row"><span class="osp-lbl">Залишилось</span><span class="osp-val muted">${fmt(gRemShip, 0)} од.</span></div>
+          <div class="osp-row"><span class="osp-lbl">Замовлень</span><span class="osp-val">${fmt(bCount, 0)}</span></div>
+          <div class="osp-row"><span class="osp-lbl">Залишок відвантажити</span><span class="osp-val muted">${fmt(bUnitsToShip, 0)} од.</span></div>
         </div>
       </div>
     </div>`;
