@@ -96,6 +96,22 @@ a{color:inherit;text-decoration:none}
 @keyframes spin{to{transform:rotate(360deg)}}
 .error{padding:20px;text-align:center;color:var(--red);background:rgba(231,76,60,.12);border-radius:10px;font-size:12px;margin-top:16px}
 .empty{padding:60px 20px;text-align:center;color:var(--text3);font-size:13px}
+
+/* Help modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.modal-backdrop.open{display:flex}
+.modal{position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:14px;max-width:640px;width:100%;max-height:85vh;overflow-y:auto;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.modal h2{font-size:16px;font-weight:800;color:var(--text);margin-bottom:8px;padding-right:28px}
+.modal h3{font-size:13px;font-weight:700;color:var(--accent);margin:16px 0 5px;display:flex;align-items:center;gap:7px}
+.modal p{font-size:12.5px;color:var(--text2);line-height:1.6;margin:4px 0}
+.modal ul{margin:5px 0 5px 6px;list-style:none}
+.modal li{font-size:12.5px;color:var(--text2);line-height:1.55;margin:5px 0;padding-left:16px;position:relative}
+.modal li::before{content:'·';position:absolute;left:4px;color:var(--text3);font-weight:800}
+.modal b{color:var(--text);font-weight:700}
+.modal code{background:var(--bg2);padding:1px 6px;border-radius:5px;font-size:11.5px;color:var(--text);border:1px solid var(--border)}
+.modal .tag{display:inline-block;padding:1px 8px;border-radius:6px;background:var(--accent-bg);color:var(--accent);font-weight:700;font-size:10.5px;vertical-align:middle}
+.modal .close{position:absolute;top:16px;right:18px;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;border:none;background:none;padding:4px}
+.modal .close:hover{color:var(--text)}
 </style>
 </head>
 <body>
@@ -142,6 +158,8 @@ a{color:inherit;text-decoration:none}
       <span class="sep"></span>
 
       <input type="text" id="searchIn" placeholder="🔎 Пошук товару (назва / код 1С)…">
+
+      <span class="chip" onclick="openHelp()" title="Як працює цей звіт">❓ Як працює</span>
     </div>
 
     <div id="summary"></div>
@@ -156,6 +174,41 @@ a{color:inherit;text-decoration:none}
     </div>
 
     <div id="body"><div class="loading">Завантаження…</div></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="helpModal" onclick="if(event.target===this)closeHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт">
+    <button class="close" onclick="closeHelp()" aria-label="Закрити">✕</button>
+    <h2>📦 Як працює звіт «Останні продажі»</h2>
+    <p>Звіт показує, які товари продаються, згруповані по <b>товар × день</b>. Угорі є перемикач джерела даних.</p>
+
+    <h3>⚡ За першою подією <span class="tag">за замовчуванням</span></h3>
+    <p>Кожне замовлення потрапляє у звіт на дату <b>першої з подій</b>: <code>min(перша оплата, перше відвантаження)</code>. Дата самого замовлення <b>не враховується</b> — важлива лише перша реальна подія.</p>
+    <ul>
+      <li>💳 Оплачене, але ще не відвантажене → на <b>даті оплати</b> (найшвидший сигнал продажу).</li>
+      <li>🚚 Відвантажене без оплати (постоплата / кредит) → на <b>даті відвантаження</b>.</li>
+      <li>Якщо оплата була раніше за відвантаження → на даті оплати, і навпаки.</li>
+      <li>Замовлення без жодної події (лише розміщене) — <b>не показується</b>, бо продаж ще не підтверджено.</li>
+    </ul>
+    <p>Кількість і сума беруться із <b>замовлених позицій</b>. Це джерело дає раніший і повніший сигнал, ніж відвантаження.</p>
+
+    <h3>📦 Відвантаження</h3>
+    <p>Класична логіка: фактичні відвантаження (видаткові накладні) за датою відвантаження. Кількість і сума — з рядків накладних.</p>
+
+    <h3>Фільтри та підсумки</h3>
+    <ul>
+      <li><b>Період</b> фільтрує за датою події (або відвантаження), а не за датою замовлення.</li>
+      <li><b>Організація</b> (Реакт / Генерація) та <b>пошук</b> по назві/коду 1С.</li>
+      <li>Суми конвертуються в <b>USD</b> за курсом на дату події.</li>
+      <li>KPI: сума в USD · унікальних товарів · к-сть замовлень/накладних.</li>
+    </ul>
+
+    <h3>Деталі (клік по товару)</h3>
+    <ul>
+      <li>У режимі подій — список замовлень: тип події (💳 оплата / 🚚 відвантаження), дати оплати й відвантаження (у підказці), кількість, сума та <b>% оплати</b> замовлення: <span style="color:var(--green);font-weight:700">✓ повна</span> · <span style="color:var(--accent);font-weight:700">%</span> часткова · <span style="color:var(--text3)">—</span> без оплати.</li>
+      <li>У режимі відвантажень — список накладних з привʼязкою до замовлення.</li>
+    </ul>
   </div>
 </div>
 
@@ -228,6 +281,10 @@ function setSource(s) {
   _detailsCache.clear(); // деталі різні для замовлень / відвантажень
   load();
 }
+
+function openHelp()  { document.getElementById('helpModal').classList.add('open'); }
+function closeHelp() { document.getElementById('helpModal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHelp(); });
 
 function setSort(s) {
   state.sort = s;
