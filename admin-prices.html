@@ -541,7 +541,7 @@ a{color:inherit;text-decoration:none}
       <div class="card-body">
         <p class="dsub" style="margin:0 0 14px">Коригування ціни від гуртової: <b>−% = знижка</b>, <b>+% = націнка</b> (напр. <code>-10</code> = на 10% дешевше, <code>+15</code> = на 15% дорожче для роздрібу). Посилання спільне для всіх дилерів рівня; сам рівень у ньому зашито — дилер його не бачить.</p>
         <div id="levelsWrap"><div class="empty">Завантаження…</div></div>
-        <div class="frm-foot"><button class="btn btn--primary" id="saveLevels">Зберегти %</button><button class="btn btn--secondary" id="rotateLinks">Перевипустити всі посилання</button></div>
+        <div class="frm-foot"><button class="btn btn--primary" id="saveLevels">Зберегти %</button></div>
       </div>
     </div>
 
@@ -2142,9 +2142,6 @@ document.addEventListener('DOMContentLoaded', () => {
     finally { btn.disabled = false; btn.textContent = lbl; }
   });
 
-  const rl = $('rotateLinks');
-  if (rl) rl.addEventListener('click', rotateAllLinks);
-
   const frm = $('frm');
   if (frm) frm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -2174,23 +2171,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
-
-// Ротація спільного секрету → всі 4 посилання стають новими (старі перестають працювати).
-async function rotateAllLinks() {
-  if (!confirm('Перевипустити ВСІ 4 посилання рівнів? Усі старі посилання перестануть працювати — доведеться роздати нові.')) return;
-  const btn = $('rotateLinks'); btn.disabled = true; const lbl = btn.textContent; btn.textContent = 'Перевипускаю…';
-  try {
-    const r = await fetch(`${API}/?action=_admin_levels_rotate_secret`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}),
-    });
-    const out = await r.json();
-    if (!out.ok) throw new Error(out.error || 'fail');
-    LEVELS = out.levels || LEVELS;
-    renderLevels();
-    dlrToast('Усі посилання перевипущено');
-  } catch (err) { dlrToast('Помилка: ' + err.message, true); }
-  finally { btn.disabled = false; btn.textContent = lbl; }
-}
 
 async function loadList() {
   try {
