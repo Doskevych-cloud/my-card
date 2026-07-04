@@ -315,6 +315,13 @@ async function loadMoves() {
     const r = await fetch(API_URL + '?action=brigade_transfers_all').then(r => r.json());
     if (r.error) throw new Error(r.error);
     state.allMoves = r.transfers || [];
+    // відновлений із localStorage order_ref — підставляємо лейбл у пікер (або чистимо, якщо ордер зник)
+    if (state.reconOrder) {
+      const el = document.getElementById('fReconOrder');
+      const o = _reconOrders().find(x => x.ref === state.reconOrder);
+      if (o) { if (el && !el.value) { el.value = o.no + ' · ' + o.customer; el.classList.add('set'); } }
+      else { state.reconOrder = ''; try { localStorage.removeItem('brigReconOrder'); } catch (e) {} }
+    }
   } catch (e) { state.allMoves = 'error'; }
   render();
 }
@@ -664,9 +671,9 @@ function setupOrderPicker() {
     pop.style.display = 'block';
   };
   const paint = () => { [...pop.children].forEach((c, i) => c.classList.toggle('hl', i === hi)); const c = pop.children[hi]; if (c) c.scrollIntoView({ block: 'nearest' }); };
-  const pick = (o) => { el.value = o.label; el.classList.add('set'); pop.style.display = 'none'; state.reconOrder = o.ref; render(); };
+  const pick = (o) => { el.value = o.label; el.classList.add('set'); pop.style.display = 'none'; state.reconOrder = o.ref; try { localStorage.setItem('brigReconOrder', o.ref); } catch (e) {} render(); };
   el.addEventListener('input', () => {
-    if (!el.value.trim()) { state.reconOrder = ''; el.classList.remove('set'); render(); }
+    if (!el.value.trim()) { state.reconOrder = ''; el.classList.remove('set'); try { localStorage.removeItem('brigReconOrder'); } catch (e) {} render(); }
     show();
   });
   el.addEventListener('focus', show);
@@ -795,6 +802,7 @@ Auth.require('brigades').then(async user => {
     try { tab = localStorage.getItem('brigTab') || 'stock'; } catch (e) { tab = 'stock'; }
     if (tab === 'moves') tab = 'list';   // legacy збережене
   }
+  if (tab === 'recon') { try { state.reconOrder = localStorage.getItem('brigReconOrder') || ''; } catch (e) {} }
   if (tab === 'list' || tab === 'recon') setSection(tab);   // 'stock' — і так дефолт
 });
 </script>
