@@ -550,20 +550,20 @@ function render() {
   //  B) оплачено, але не відвантажено — гроші взяли, товар ще винні (передоплата).
   // Категорії можуть перетинатись (часткова оплата І часткове відвантаження).
   let okCur = !!state.fx;
-  let aCount = 0, aDebt = 0, aUnitsShipped = 0;    // A: відвантажено, не оплачено
-  let bCount = 0, bPrepaid = 0, bUnitsToShip = 0;  // B: оплачено, не відвантажено
+  let aCount = 0, aDebt = 0;    // A: відвантажено, не оплачено (кількість — лише для кольору)
+  let bCount = 0, bPrepaid = 0; // B: оплачено, не відвантажено
   visible.forEach(o => {
     const amount = +o.amount || 0, paid = +o.paid || 0;
     const ordered = +o.ordered || 0, shipped = +o.shipped || 0;
     const remPay = Math.max(0, amount - paid);
     const remShip = Math.max(0, ordered - shipped);
     if (shipped > 0 && remPay > 0.01) {            // є відвантаження + несплачений залишок
-      aCount++; aUnitsShipped += shipped;
+      aCount++;
       const d = toUsd(remPay, o.currency);
       if (d == null) okCur = false; else aDebt += d;
     }
     if (paid > 0.01 && remShip > 0) {              // є оплата + недовідвантаження
-      bCount++; bUnitsToShip += remShip;
+      bCount++;
       const p = toUsd(paid, o.currency);
       if (p == null) okCur = false; else bPrepaid += p;
     }
@@ -577,19 +577,11 @@ function render() {
           <span class="osp-title">Відвантажено, не оплачено<span class="osp-help osp-help--down">?<span class="osp-tip">Замовлення, де товар уже (повністю або частково) відвантажено, але лишився несплачений залишок. Сума — це борг клієнтів: те, що ми віддали, але грошей ще не отримали. Головний ризик, який контролює звіт — тут треба вимагати оплату.</span></span></span>
           <span class="osp-pct" style="color:${aCount ? 'var(--red)' : 'var(--text3)'}">${$(aDebt)}</span>
         </div>
-        <div class="osp-rows">
-          <div class="osp-row"><span class="osp-lbl">Замовлень</span><span class="osp-val">${fmt(aCount, 0)}</span></div>
-          <div class="osp-row"><span class="osp-lbl">Уже відвантажено</span><span class="osp-val muted">${fmt(aUnitsShipped, 0)} од.</span></div>
-        </div>
       </div>
       <div class="osp-card">
         <div class="osp-head">
           <span class="osp-title">Оплачено, не відвантажено<span class="osp-help osp-help--down">?<span class="osp-tip">Замовлення, за якими надійшла оплата, але товар ще не відвантажено повністю. Сума — отримані по них кошти (передоплата): наш обов'язок відвантажити.</span></span></span>
           <span class="osp-pct" style="color:${bCount ? 'var(--text)' : 'var(--text3)'}">${$(bPrepaid)}</span>
-        </div>
-        <div class="osp-rows">
-          <div class="osp-row"><span class="osp-lbl">Замовлень</span><span class="osp-val">${fmt(bCount, 0)}</span></div>
-          <div class="osp-row"><span class="osp-lbl">Залишок відвантажити</span><span class="osp-val muted">${fmt(bUnitsToShip, 0)} од.</span></div>
         </div>
       </div>
     </div>`;
