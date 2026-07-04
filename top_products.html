@@ -134,9 +134,9 @@ a{color:inherit;text-decoration:none}
 
       <span class="sep"></span>
 
-      <span class="group" title="Джерело даних: оплачені замовлення (швидший сигнал попиту) або фактичні відвантаження">
-        <span class="chip active" data-src="orders" onclick="setSource('orders')">💳 Оплачені замовлення</span>
-        <span class="chip" data-src="shipped" onclick="setSource('shipped')">📦 Відвантажені</span>
+      <span class="group" title="За першою подією: товар рахується на дату min(перша оплата, перше відвантаження) — найшвидший сигнал продажу. Або фактичні відвантаження.">
+        <span class="chip active" data-src="orders" onclick="setSource('orders')">⚡ За першою подією</span>
+        <span class="chip" data-src="shipped" onclick="setSource('shipped')">📦 Відвантаження</span>
       </span>
 
       <span class="sep"></span>
@@ -276,6 +276,7 @@ function render() {
   const revLabel = isOrders ? 'Сума замовлень' : 'Виручка';
   const docLabel = isOrders ? 'Замовлень' : 'Накладних';
   const unitDoc  = isOrders ? 'зам.' : 'нак.';
+  const dateHint = isOrders ? 'дата = перша подія (оплата/відвантаження)' : '';
   const items = (d.items || []).filter(it => {
     if (!state.search) return true;
     const n = (it.nom_name || '').toLowerCase();
@@ -325,11 +326,12 @@ function render() {
       </div>
     </div>`;
 
-  document.getElementById('resultMeta').textContent = `показано ${items.length} з ${(d.items || []).length}`;
+  document.getElementById('resultMeta').textContent =
+    `показано ${items.length} з ${(d.items || []).length}` + (dateHint ? ` · ${dateHint}` : '');
 
   if (!items.length) {
     const emptyMsg = isOrders
-      ? 'Немає оплачених замовлень за обраний період / фільтри'
+      ? 'Немає замовлень з подією (оплата/відвантаження) за обраний період / фільтри'
       : 'Немає продажів за обраний період / фільтри';
     document.getElementById('body').innerHTML = `<div class="empty">${emptyMsg}</div>`;
     return;
@@ -420,18 +422,26 @@ function renderDetails(d) {
   const payBadge = r => {
     const pct = Math.round((r.paid_pct || 0) * 100);
     if (pct >= 100) return '<span style="color:var(--green);font-weight:700">✓ повна</span>';
-    return `<span style="color:var(--accent);font-weight:700">${pct}%</span>`;
+    if (pct > 0)    return `<span style="color:var(--accent);font-weight:700">${pct}%</span>`;
+    return '<span style="color:var(--text3)">—</span>';
+  };
+  const evBadge = r => {
+    const t = `оплата: ${r.first_pay ? fmtD(r.first_pay) : '—'} · відвант.: ${r.first_ship ? fmtD(r.first_ship) : '—'}`;
+    return r.first_event === 'payment'
+      ? `<span title="${t}">💳 оплата</span>`
+      : `<span title="${t}">🚚 відвант.</span>`;
   };
   const ordersTbl = isOrders ? `
-    <div class="h">Оплачені замовлення (${rows.length})</div>
+    <div class="h">Замовлення за першою подією (${rows.length})</div>
     <table>
       <thead><tr>
-        <th>Дата</th><th>Замовлення</th><th>Клієнт</th>
+        <th>Дата</th><th>Подія</th><th>Замовлення</th><th>Клієнт</th>
         <th class="num">К-сть</th><th class="num">Сума</th><th>Вал.</th><th class="num">USD</th><th class="num">Оплата</th>
       </tr></thead>
       <tbody>${rows.map(r => `
         <tr>
           <td>${fmtD(r.date)}</td>
+          <td>${evBadge(r)}</td>
           <td>${r.order ? `№${esc(r.order)}` : '<span style="color:var(--text3)">—</span>'}</td>
           <td class="client">${esc(r.client)}</td>
           <td class="num">${fmt(r.qty, 0)}</td>
