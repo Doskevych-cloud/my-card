@@ -106,6 +106,8 @@ a{color:inherit;text-decoration:none}
 .rec-sec .chev{display:inline-block;color:var(--text3);font-size:11px;transition:transform .15s}
 .rec-block:not(.collapsed) .rec-sec .chev{transform:rotate(90deg)}
 .rec-block.collapsed .mv-wrap{display:none}
+.rec-dup{color:var(--text3);font-size:11px;cursor:help;font-weight:400}
+.rec-dup-cell{color:var(--text3)}
 .rec-th,.rec-row{display:grid;grid-template-columns:minmax(0,1fr) 110px 110px 110px 120px;gap:14px;align-items:baseline;padding:9px 16px}
 .rec-th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);font-weight:700;background:var(--bg2);border-bottom:1px solid var(--border)}
 .rec-th .r,.rec-row .r{text-align:right;font-variant-numeric:tabular-nums}
@@ -454,11 +456,14 @@ function _reconOrders() {
   return [...seen.values()].sort((a, b) => String(b.date).localeCompare(String(a.date)));
 }
 const _REC_COLS_ALL = [{ key: 'ordered', l: 'Замовлено' }, { key: 'received', l: 'Отримано' }, { key: 'returned', l: 'Повернено' }, { key: 'writtenoff', l: 'Списано' }, { key: 'delta', l: 'Залишок', delta: true }];
+// Для секцій бригад «Замовлено» — це план по ВСЬОМУ ордеру (дубль у кожній бригаді),
+// тож позначаємо іконкою ⧉ з тултіпом і приглушуємо значення.
+const _REC_COLS_BRIG = [{ key: 'ordered', l: 'Замовлено <span class="rec-dup" title="План по всьому замовленню — не поділ між бригадами (те саме число в кожній бригаді)">⧉</span>', dup: true }, { key: 'received', l: 'Отримано' }, { key: 'returned', l: 'Повернено' }, { key: 'writtenoff', l: 'Списано' }, { key: 'delta', l: 'Залишок', delta: true }];
 function _recTable(rows, cols) {
   const grid = 'grid-template-columns:minmax(0,1fr) ' + cols.map(() => '104px').join(' ') + ';';
   const head = '<div class="rec-th" style="' + grid + '"><span>Номенклатура</span>' + cols.map(c => '<span class="r">' + c.l + '</span>').join('') + '</div>';
   const body = rows.map(r => '<div class="rec-row" style="' + grid + '"><span class="rec-nm">' + esc(r.name) + (r.unit ? ' <span class="rec-u">' + esc(r.unit) + '</span>' : '') + '</span>' +
-    cols.map(c => '<span class="r' + (c.delta ? ' rec-d ' + (r.delta < 0 ? 'neg' : (Math.abs(r.delta) < 0.001 ? 'zero' : '')) : '') + '">' + _fmtQ(r[c.key]) + '</span>').join('') + '</div>'
+    cols.map(c => '<span class="r' + (c.delta ? ' rec-d ' + (r.delta < 0 ? 'neg' : (Math.abs(r.delta) < 0.001 ? 'zero' : '')) : '') + (c.dup ? ' rec-dup-cell' : '') + '">' + _fmtQ(r[c.key]) + '</span>').join('') + '</div>'
   ).join('');
   return '<div class="mv-wrap"><div class="rec-tbl">' + head + body + '</div></div>';
 }
@@ -492,7 +497,7 @@ function reconOrderHtml() {
     for (const b of brigades) {
       const br = reconOrderRows(state.reconOrder, b);
       if (!br.rows.length) continue;
-      out += _recSection(b, '🧰 ' + esc(b), br.rows, _REC_COLS_ALL);
+      out += _recSection(b, '🧰 ' + esc(b), br.rows, _REC_COLS_BRIG);
     }
   }
   return out;
