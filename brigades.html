@@ -101,7 +101,11 @@ a{color:inherit;text-decoration:none}
 .rec-empty{border:1px dashed var(--border);border-radius:12px;padding:30px 20px;text-align:center;margin-top:4px}
 .rec-empty-t{font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px}
 .rec-empty-s{font-size:12.5px;color:var(--text2);max-width:540px;margin:0 auto;line-height:1.6}
-.rec-sec{font-size:12.5px;font-weight:700;color:var(--text);margin:16px 2px 7px;display:flex;align-items:center;gap:6px}
+.rec-sec{font-size:12.5px;font-weight:700;color:var(--text);margin:16px 2px 7px;display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.rec-sec:hover{color:var(--accent)}
+.rec-sec .chev{display:inline-block;color:var(--text3);font-size:11px;transition:transform .15s}
+.rec-block:not(.collapsed) .rec-sec .chev{transform:rotate(90deg)}
+.rec-block.collapsed .mv-wrap{display:none}
 .rec-th,.rec-row{display:grid;grid-template-columns:minmax(0,1fr) 110px 110px 110px 120px;gap:14px;align-items:baseline;padding:9px 16px}
 .rec-th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);font-weight:700;background:var(--bg2);border-bottom:1px solid var(--border)}
 .rec-th .r,.rec-row .r{text-align:right;font-variant-numeric:tabular-nums}
@@ -245,6 +249,7 @@ const state = {
   moveCats: new Set(),  // мульти-вибір типів руху (Отримано/Повернено/Списано) — фільтр списку
   mvMode: 'list',       // 'list' (журнал рухів) | 'recon' (звірка по одному замовленню)
   reconOrder: '',       // order_ref обраного замовлення для звірки ('' = не обрано)
+  recCollapsed: new Set(),  // згорнуті секції звірки (ключ: 'summary' або назва бригади)
   openDocs: new Set(),
   loaded: false,
 };
@@ -463,8 +468,7 @@ function reconOrderHtml() {
   }
   const o = _reconOrders().find(x => x.ref === state.reconOrder) || { no: '—', customer: '', date: '' };
   const brigades = _reconBrigades(state.reconOrder);
-  const brigTag = brigades.length === 1 ? '<span class="rec-u">· ' + esc(brigades[0]) + '</span>'
-    : brigades.length > 1 ? '<span class="rec-u">· ' + brigades.length + ' бригади</span>' : '';
+  const brigTag = brigades.length > 1 ? '<span class="rec-u">· ' + brigades.length + ' бригади</span>' : '';
   const oh = '<div class="rec-oh"><span class="rec-oh-lbl">Замовлення</span>' +
     (o.customer ? '<span class="rec-oh-cust">' + esc(o.customer) + '</span>' : '') + brigTag +
     '<span class="rec-oh-nums"><span class="rec-oh-num">' + esc(o.no) + '</span></span></div>';
@@ -475,18 +479,28 @@ function reconOrderHtml() {
     const msg = (summary.total && state.search) ? '— за пошуком «' + esc(state.search) + '» нічого не знайдено —' : '— по цьому замовленню рухів немає —';
     return oh + hint + '<div class="empty">' + msg + '</div>';
   }
-  // Одна бригада — одна таблиця. Кілька — зведення + окрема секція під кожну бригаду.
-  if (brigades.length <= 1) {
-    return oh + hint + '<div class="mv-count">Позицій: ' + fmt(summary.rows.length) + '</div>' + _recTable(summary.rows, _REC_COLS_ALL);
-  }
   let out = oh + hint;
-  out += '<div class="rec-sec">Разом по замовленню <span class="rec-u">· ' + fmt(summary.rows.length) + ' поз.</span></div>' + _recTable(summary.rows, _REC_COLS_ALL);
-  for (const b of brigades) {
-    const br = reconOrderRows(state.reconOrder, b);
-    if (!br.rows.length) continue;
-    out += '<div class="rec-sec">🧰 ' + esc(b) + ' <span class="rec-u">· ' + fmt(br.rows.length) + ' поз.</span></div>' + _recTable(br.rows, _REC_COLS_BRIG);
+  if (brigades.length <= 1) {
+    // одна бригада — одна секція (з колонкою «Замовлено»)
+    const title = brigades.length === 1 ? '🧰 ' + esc(brigades[0]) : 'По замовленню';
+    out += _recSection('summary', title, summary.rows, _REC_COLS_ALL);
+  } else {
+    // кілька бригад — зведення + секція під кожну (згортні)
+    out += _recSection('summary', 'Разом по замовленню', summary.rows, _REC_COLS_ALL);
+    for (const b of brigades) {
+      const br = reconOrderRows(state.reconOrder, b);
+      if (!br.rows.length) continue;
+      out += _recSection(b, '🧰 ' + esc(b), br.rows, _REC_COLS_BRIG);
+    }
   }
   return out;
+}
+// Згортна секція звірки: клік на заголовок ховає/показує таблицю (стан у state.recCollapsed).
+function _recSection(key, titleHtml, rows, cols) {
+  const collapsed = state.recCollapsed.has(key);
+  return '<div class="rec-block' + (collapsed ? ' collapsed' : '') + '" data-sec="' + esc(key) + '">' +
+    '<div class="rec-sec"><span class="chev">▸</span>' + titleHtml + ' <span class="rec-u">· ' + fmt(rows.length) + ' поз.</span></div>' +
+    _recTable(rows, cols) + '</div>';
 }
 // Замовлено (план) для набору замовлень у скоупі. Повертає мапу name→{ordered,unit} | 'loading' | 'toomany'.
 function getPlan(orderRefs) {
@@ -683,6 +697,14 @@ function setCat(cat) {
 }
 // Delegated click — #body persists across renders.
 document.getElementById('body').addEventListener('click', function(ev) {
+  const recSec = ev.target.closest('.rec-block[data-sec] .rec-sec');
+  if (recSec) {
+    const block = recSec.closest('.rec-block[data-sec]');
+    const k = block.dataset.sec;
+    if (state.recCollapsed.has(k)) state.recCollapsed.delete(k); else state.recCollapsed.add(k);
+    render();
+    return;
+  }
   const docHead = ev.target.closest('.mv-doc-head');
   if (docHead) {
     const doc = docHead.closest('.mv-doc[data-doc]');
