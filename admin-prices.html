@@ -377,6 +377,7 @@ a{color:inherit;text-decoration:none}
 #mtab-dealers .pend__act input{ background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:7px 10px; font:inherit; font-size:13px }
 #mtab-dealers .pend__disc{ width:84px } #mtab-dealers .pend__mgr{ width:128px }
 #mtab-dealers .pend__act select{ background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:7px 10px; font:inherit; font-size:13px; cursor:pointer }
+#mtab-dealers tbody select.dlr-lvl{ background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:6px 8px; font:inherit; font-size:13px; cursor:pointer }
 #mtab-dealers .result{ display:none; margin-top:16px; padding:14px 16px; border:1px solid var(--border); border-radius:12px; background:var(--card2) }
 #mtab-dealers .result.show{ display:block }
 #mtab-dealers .result .lbl{ font-size:12px; color:var(--text3); margin-bottom:6px }
@@ -2001,11 +2002,6 @@ function levelOptions(sel) {
     `<option value="${esc(l.code)}"${l.code === sel ? ' selected' : ''}>${esc(l.title)} · ${discLabel(l.discount_pct)}</option>`
   ).join('');
 }
-// Посилання дилера: спільний лінк його рівня; без рівня — легасі token-лінк.
-function dealerLink(d) {
-  if (d.level) { const l = levelByCode(d.level); if (l) return l.link; }
-  return cabLink(d.token);
-}
 async function copy(text) {
   try { await navigator.clipboard.writeText(text); dlrToast('Скопійовано'); }
   catch (_) { dlrToast('Не вдалося скопіювати', true); }
@@ -2264,19 +2260,40 @@ function renderDealers(rows) {
     html += `<tr class="${isActive ? '' : 'off'}">
       <td><span class="company">${esc(d.company || d.contact_person || '—')}</span>${d.city ? `<span class="muted"> · ${esc(d.city)}</span>` : ''}${d.email ? `<span class="muted"><br>${esc(d.email)}</span>` : ''}</td>
       <td>${esc(d.manager_name || '—')}${d.manager_contact ? `<span class="muted"><br>${esc(d.manager_contact)}</span>` : ''}</td>
-      <td>${d.level ? `<span class="disc">${esc((levelByCode(d.level) || {}).title || d.level)}</span>` : '<span class="muted">—</span>'}</td>
+      <td><select class="dlr-lvl" data-token="${esc(d.token)}"><option value="">— рівень —</option>${levelOptions(d.level || '')}</select></td>
       <td><span class="badge ${isActive ? 'on' : ''}">${label}</span></td>
       <td class="muted">${dlrFmtDate(d.last_login_at)}</td>
       <td class="r"><div class="row-actions">
-        <button class="btn btn--ghost btn--sm" data-copy="${esc(dealerLink(d))}">Лінк</button>
+        <button class="btn btn--ghost btn--sm" data-copylink="${esc(d.token)}">Лінк</button>
         <button class="btn ${isActive ? 'btn--danger' : 'btn--secondary'} btn--sm" data-token="${esc(d.token)}" data-active="${isActive ? 0 : 1}">${isActive ? 'Відкликати' : 'Відновити'}</button>
       </div></td>
     </tr>`;
   }
   html += '</tbody></table>';
   $('listWrap').innerHTML = html;
-  $('listWrap').querySelectorAll('[data-copy]').forEach(b => b.onclick = () => copy(b.dataset.copy));
+  // Зміна рівня в рядку — зберігаємо (без зміни статусу).
+  $('listWrap').querySelectorAll('.dlr-lvl').forEach(s => s.onchange = () => setDealerLevel(s.dataset.token, s.value));
+  // «Лінк» — копіює спільне посилання рівня рядка (ніяких token-лінків).
+  $('listWrap').querySelectorAll('[data-copylink]').forEach(b => b.onclick = () => {
+    const sel = $('listWrap').querySelector(`.dlr-lvl[data-token="${b.dataset.copylink}"]`);
+    const code = sel && sel.value;
+    if (!code) return dlrToast('Спершу оберіть рівень для цього дилера', true);
+    const l = levelByCode(code);
+    if (l && l.link) copy(l.link); else dlrToast('Рівень не знайдено', true);
+  });
   $('listWrap').querySelectorAll('[data-token]').forEach(b => b.onclick = () => revoke(b.dataset.token, Number(b.dataset.active)));
+}
+
+async function setDealerLevel(token, level) {
+  if (!level) return;
+  try {
+    const r = await fetch(`${API}/?action=_admin_dealer_set_level`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, level }),
+    });
+    const out = await r.json();
+    if (!out.ok) throw new Error(out.error || 'fail');
+    dlrToast('Рівень збережено');
+  } catch (err) { dlrToast('Помилка: ' + err.message, true); }
 }
 
 async function approve(token) {
