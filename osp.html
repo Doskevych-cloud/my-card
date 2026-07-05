@@ -39,7 +39,10 @@ a{color:inherit;text-decoration:none}
 .toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
 .toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
 
-/* Tag-input «Виключити» (як в інших звітах) */
+.toolbar .spacer{flex:1 1 auto}
+.toolbar .brk{flex-basis:100%;height:0}
+.ar-tags--grow{flex:1 1 auto;max-width:none}
+/* Tag-input «Пошук»/«Виключити» (як в інших звітах) */
 .ar-tags{position:relative;display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center;padding:4px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;min-width:180px;max-width:360px;min-height:30px}
 .ar-tags:focus-within{border-color:var(--accent)}
 .ar-tags input[type=text]{flex:1;min-width:90px;padding:3px 4px;border:none;background:transparent;font-size:12px;color:var(--text);outline:none}
@@ -173,6 +176,7 @@ a{color:inherit;text-decoration:none}
       <a href="/sla.html" class="ptab" data-perm="sales_sla">⚡ SLA</a>
     </div>
     <div class="toolbar">
+      <!-- Рядок 1: зріз (дата · організація) + керування деревом -->
       <span class="lbl">Станом на</span>
       <input type="text" id="asofDate" class="date-range-input" readonly>
       <span class="group">
@@ -182,24 +186,31 @@ a{color:inherit;text-decoration:none}
 
       <span class="sep"></span>
 
-      <span class="chip" data-org="" onclick="setOrg('')">Всі</span>
-      <span class="chip active" data-org="Реакт" onclick="setOrg('Реакт')">Реакт</span>
-      <span class="chip" data-org="Генерація" onclick="setOrg('Генерація')">Генерація</span>
+      <span class="group">
+        <span class="chip" data-org="" onclick="setOrg('')">Всі</span>
+        <span class="chip active" data-org="Реакт" onclick="setOrg('Реакт')">Реакт</span>
+        <span class="chip" data-org="Генерація" onclick="setOrg('Генерація')">Генерація</span>
+      </span>
 
-      <span class="sep"></span>
+      <span class="spacer"></span>
+
+      <button class="btn btn--secondary btn--sm" onclick="expandAll()">⊞ Розгорнути</button>
+      <button class="btn btn--secondary btn--sm" onclick="collapseAll()">⊟ Згорнути</button>
+
+      <span class="brk"></span>
+
+      <!-- Рядок 2: фільтри (пошук · виключення) -->
+      <span class="lbl">Пошук</span>
+      <span class="ar-tags ar-tags--grow" id="ospIncludeTags">
+        <input type="text" id="ospIncludeIn" placeholder="🔎 Клієнт, № замовлення, товар…" autocomplete="off">
+        <div id="ospIncludeSuggest" class="ar-suggest" style="display:none"></div>
+      </span>
 
       <span class="lbl">Виключити</span>
       <span class="ar-tags" id="ospExcludeTags">
         <input type="text" id="ospExcludeIn" placeholder="Почни вводити…" autocomplete="off">
         <div id="ospExcludeSuggest" class="ar-suggest" style="display:none"></div>
       </span>
-
-      <span class="sep"></span>
-
-      <button class="btn btn--secondary btn--sm" onclick="expandAll()">⊞ Розгорнути</button>
-      <button class="btn btn--secondary btn--sm" onclick="collapseAll()">⊟ Згорнути</button>
-
-      <input type="text" id="searchIn" placeholder="🔎 Пошук клієнта, № замовлення, товару…">
     </div>
 
     <div id="curSummary"></div>
@@ -275,6 +286,7 @@ const state = {
   loading: false,
   fx: null,
   excludeList: [],
+  includeList: [],
   sortKey: null,   // null = дефолт (клієнт А-Я, новіші зверху)
   sortDir: -1,
 };
@@ -288,6 +300,8 @@ try {
     state.excludeList = DEFAULT_EXCLUDES.slice();
     localStorage.setItem('osp_exclude', JSON.stringify(state.excludeList));
   }
+  const inc = localStorage.getItem('osp_include');
+  if (inc) { const a = JSON.parse(inc); if (Array.isArray(a)) state.includeList = a; }
 } catch (_) {}
 
 function toUsd(amount, cur) {
@@ -383,19 +397,16 @@ document.addEventListener('DOMContentLoaded', () => {
       load();
     }
   });
-  document.getElementById('searchIn').addEventListener('input', e => {
-    state.search = e.target.value.toLowerCase().trim();
-    render();
+  // Tag-inputs «Пошук» + «Виключити»
+  ['include', 'exclude'].forEach(f => {
+    const inp = document.getElementById(OSP_TAG_CFG[f].inputId);
+    if (!inp) return;
+    inp.addEventListener('input',   () => ospTag.onInput(f));
+    inp.addEventListener('focus',   () => ospTag.onInput(f));
+    inp.addEventListener('blur',    () => setTimeout(() => ospTag.hide(f), 200));
+    inp.addEventListener('keydown', e => ospTag.onKey(f, e));
+    ospTag.renderTags(f);
   });
-  // Tag-input «Виключити»
-  const exIn = document.getElementById('ospExcludeIn');
-  if (exIn) {
-    exIn.addEventListener('input',   () => ospTag.onInput());
-    exIn.addEventListener('focus',   () => ospTag.onInput());
-    exIn.addEventListener('blur',    () => setTimeout(() => ospTag.hide(), 200));
-    exIn.addEventListener('keydown', e => ospTag.onKey(e));
-  }
-  ospTag.renderTags();
 });
 
 function expandAll() {
@@ -448,42 +459,50 @@ function _matchOrder(o, q) {
     || (o.items || []).some(it => (it.name || '').toLowerCase().includes(q));
 }
 
-/* Tag-input «Виключити» з autocomplete (як в інших звітах). Ховаємо замовлення
-   виключених клієнтів; список зберігається в localStorage (osp_exclude). */
+/* Tag-inputs «Пошук» (include) та «Виключити» (exclude) з autocomplete — один
+   віджет на два поля, як в ar_aging. Обидва списки живуть у localStorage.
+   У «Пошук» Enter без підказки додає ВІЛЬНИЙ текст-тег (№ замовлення, товар). */
+const OSP_TAG_CFG = {
+  include: { stateKey: 'includeList', tagsId: 'ospIncludeTags', inputId: 'ospIncludeIn', suggestId: 'ospIncludeSuggest', storageKey: 'osp_include', freeText: true },
+  exclude: { stateKey: 'excludeList', tagsId: 'ospExcludeTags', inputId: 'ospExcludeIn', suggestId: 'ospExcludeSuggest', storageKey: 'osp_exclude', freeText: false },
+};
 const ospTag = {
-  list() { return state.excludeList || []; },
-  save() { try { localStorage.setItem('osp_exclude', JSON.stringify(this.list())); } catch (_) {} },
-  renderTags() {
-    const host = document.getElementById('ospExcludeTags');
+  list(f) { return state[OSP_TAG_CFG[f].stateKey] || []; },
+  save(f) { try { localStorage.setItem(OSP_TAG_CFG[f].storageKey, JSON.stringify(this.list(f))); } catch (_) {} },
+  renderTags(f) {
+    const cfg = OSP_TAG_CFG[f];
+    const host = document.getElementById(cfg.tagsId);
     if (!host) return;
     Array.from(host.querySelectorAll('.ar-tag')).forEach(n => n.remove());
-    const inp = document.getElementById('ospExcludeIn');
-    this.list().forEach(name => {
+    const inp = document.getElementById(cfg.inputId);
+    this.list(f).forEach(name => {
       const t = document.createElement('span');
       t.className = 'ar-tag';
-      t.innerHTML = '<span class="name">' + esc(name) + '</span><span class="x" data-xname="' + esc(name) + '">×</span>';
+      t.innerHTML = '<span class="name">' + esc(name) + '</span><span class="x" data-xname="' + esc(name) + '" data-field="' + f + '">×</span>';
       host.insertBefore(t, inp);
     });
   },
-  add(name) {
+  add(f, name) {
     if (!name) return;
-    const cur = this.list();
+    const cur = this.list(f);
     if (!cur.some(n => n.toLowerCase() === name.toLowerCase())) {
-      state.excludeList = cur.concat([name]);
-      this.save();
+      state[OSP_TAG_CFG[f].stateKey] = cur.concat([name]);
+      this.save(f);
     }
-    document.getElementById('ospExcludeIn').value = '';
-    this.hide();
-    this.renderTags();
+    const inp = document.getElementById(OSP_TAG_CFG[f].inputId);
+    if (inp) inp.value = '';
+    if (f === 'include') state.search = '';
+    this.hide(f);
+    this.renderTags(f);
     render();
   },
-  remove(name) {
-    state.excludeList = this.list().filter(n => n !== name);
-    this.save();
-    this.renderTags();
+  remove(f, name) {
+    state[OSP_TAG_CFG[f].stateKey] = this.list(f).filter(n => n !== name);
+    this.save(f);
+    this.renderTags(f);
     render();
   },
-  hide() { const dd = document.getElementById('ospExcludeSuggest'); if (dd) dd.style.display = 'none'; },
+  hide(f) { const dd = document.getElementById(OSP_TAG_CFG[f].suggestId); if (dd) dd.style.display = 'none'; },
   allClients() {
     const seen = new Map();
     getClients().forEach(c => {
@@ -496,50 +515,59 @@ const ospTag = {
     });
     return [...seen.values()].sort((a, b) => b.usd - a.usd);
   },
-  onInput() {
-    const inp = document.getElementById('ospExcludeIn');
-    const dd = document.getElementById('ospExcludeSuggest');
+  onInput(f) {
+    const cfg = OSP_TAG_CFG[f];
+    const inp = document.getElementById(cfg.inputId);
+    const dd = document.getElementById(cfg.suggestId);
     if (!inp || !dd) return;
     const q = inp.value.trim().toLowerCase();
+    // «Пошук»: набраний текст фільтрує таблицю наживо, ще до вибору тега.
+    if (f === 'include') { state.search = q; render(); }
     const all = this.allClients();
     if (!all.length) { dd.style.display = 'none'; return; }
-    const taken = new Set(this.list().map(n => n.toLowerCase()));
+    const taken = new Set(this.list(f).map(n => n.toLowerCase()));
     const matched = all
       .filter(o => !taken.has((o.name || '').toLowerCase()))
       .filter(o => !q || (o.name || '').toLowerCase().includes(q))
       .slice(0, 50);
-    if (!matched.length) { dd.innerHTML = '<div class="empty">Нічого не знайдено</div>'; dd.style.display = 'block'; return; }
+    if (!matched.length) {
+      dd.innerHTML = cfg.freeText && q
+        ? '<div class="empty">Enter — шукати «' + esc(inp.value.trim()) + '» як текст</div>'
+        : '<div class="empty">Нічого не знайдено</div>';
+      dd.style.display = 'block'; return;
+    }
     dd.innerHTML = matched.map((o, i) =>
-      '<div class="opt' + (i === 0 ? ' hl' : '') + '" data-optname="' + esc(o.name) + '">' +
+      '<div class="opt' + (i === 0 ? ' hl' : '') + '" data-optname="' + esc(o.name) + '" data-field="' + f + '">' +
         '<span>' + esc(o.name) + '</span>' +
         '<span class="meta">' + (o.usd ? '$' + fmt(o.usd, 0) : '') + '</span>' +
       '</div>').join('');
     dd.style.display = 'block';
   },
-  onKey(ev) {
-    const dd = document.getElementById('ospExcludeSuggest');
-    if (!dd || dd.style.display === 'none') {
-      if (ev.key === 'Backspace' && !ev.target.value && this.list().length) {
-        this.remove(this.list()[this.list().length - 1]);
-      }
-      return;
-    }
-    const opts = Array.from(dd.querySelectorAll('.opt'));
+  onKey(f, ev) {
+    const cfg = OSP_TAG_CFG[f];
+    const dd = document.getElementById(cfg.suggestId);
+    const ddOpen = dd && dd.style.display !== 'none';
+    const opts = ddOpen ? Array.from(dd.querySelectorAll('.opt')) : [];
     let idx = opts.findIndex(o => o.classList.contains('hl'));
-    if (ev.key === 'ArrowDown') { ev.preventDefault(); idx = Math.min(idx + 1, opts.length - 1); opts.forEach((o, i) => o.classList.toggle('hl', i === idx)); opts[idx]?.scrollIntoView({ block: 'nearest' }); }
-    else if (ev.key === 'ArrowUp') { ev.preventDefault(); idx = Math.max(idx - 1, 0); opts.forEach((o, i) => o.classList.toggle('hl', i === idx)); opts[idx]?.scrollIntoView({ block: 'nearest' }); }
-    else if (ev.key === 'Enter') { ev.preventDefault(); const sel = opts[idx] || opts[0]; if (sel) this.add(sel.dataset.optname); }
-    else if (ev.key === 'Escape') { this.hide(); }
-    else if (ev.key === 'Backspace' && !ev.target.value && this.list().length) {
-      this.remove(this.list()[this.list().length - 1]);
+    if (ev.key === 'ArrowDown' && opts.length) { ev.preventDefault(); idx = Math.min(idx + 1, opts.length - 1); opts.forEach((o, i) => o.classList.toggle('hl', i === idx)); opts[idx]?.scrollIntoView({ block: 'nearest' }); }
+    else if (ev.key === 'ArrowUp' && opts.length) { ev.preventDefault(); idx = Math.max(idx - 1, 0); opts.forEach((o, i) => o.classList.toggle('hl', i === idx)); opts[idx]?.scrollIntoView({ block: 'nearest' }); }
+    else if (ev.key === 'Enter') {
+      ev.preventDefault();
+      const sel = opts[idx] || opts[0];
+      if (sel) this.add(f, sel.dataset.optname);
+      else if (cfg.freeText && ev.target.value.trim()) this.add(f, ev.target.value.trim());
+    }
+    else if (ev.key === 'Escape') { this.hide(f); }
+    else if (ev.key === 'Backspace' && !ev.target.value && this.list(f).length) {
+      this.remove(f, this.list(f)[this.list(f).length - 1]);
     }
   },
 };
 document.addEventListener('click', function(ev) {
   const x = ev.target.closest('.ar-tag .x[data-xname]');
-  if (x) { ospTag.remove(x.dataset.xname); return; }
-  const opt = ev.target.closest('#ospExcludeSuggest .opt[data-optname]');
-  if (opt) { ospTag.add(opt.dataset.optname); return; }
+  if (x) { ospTag.remove(x.dataset.field || 'exclude', x.dataset.xname); return; }
+  const opt = ev.target.closest('.ar-suggest .opt[data-optname]');
+  if (opt) { ospTag.add(opt.dataset.field || 'exclude', opt.dataset.optname); return; }
   const th = ev.target.closest('[data-sortkey]');
   if (th) { setSort(th.dataset.sortkey); return; }
 });
@@ -576,10 +604,18 @@ function _sortArrow(key) {
 // ─── Render ───
 function render() {
   const exSet = new Set((state.excludeList || []).map(s => (s || '').toLowerCase()));
+  // Теги «Пошук»: показуємо замовлення, що відповідає ХОЧ ОДНОМУ тегу
+  // (точний збіг клієнта або підрядок у клієнті/№/товарах). Набраний, але ще
+  // не доданий текст (state.search) фільтрує додатково, наживо.
+  const incTags = (state.includeList || []).map(s => (s || '').toLowerCase()).filter(Boolean);
   const orders = getOrders();
-  const visible = orders.filter(o =>
-    !exSet.has((o.clientName || '').toLowerCase()) && _matchOrder(o, state.search)
-  );
+  const visible = orders.filter(o => {
+    if (exSet.has((o.clientName || '').toLowerCase())) return false;
+    if (!_matchOrder(o, state.search)) return false;
+    if (!incTags.length) return true;
+    const cn = (o.clientName || '').toLowerCase();
+    return incTags.some(t => cn === t || _matchOrder(o, t));
+  });
   if (state.sortKey) {
     const k = state.sortKey, dir = state.sortDir;
     visible.sort((a, b) => {
