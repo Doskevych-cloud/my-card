@@ -101,6 +101,10 @@ a{color:inherit;text-decoration:none}
 .tree-tbl .ord-num{flex:none;width:124px;color:var(--text2);font-weight:600}
 .tree-tbl .ord-client{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tree-tbl thead th .ord-client,.tree-tbl thead th .ord-date,.tree-tbl thead th .ord-num{color:var(--text3)}
+/* Сортувальні заголовки */
+.tree-tbl thead .th-sort{cursor:pointer;user-select:none;transition:color .12s}
+.tree-tbl thead .th-sort:hover{color:var(--text)}
+.tree-tbl thead .th-sort .arr{font-size:8px;margin-left:3px;color:var(--accent)}
 .tree-tbl tr.order-row .meta{color:var(--text3);font-size:10.5px;margin-left:8px}
 
 .tree-tbl tr.item-row{color:var(--text2)}
@@ -272,6 +276,8 @@ const state = {
   loading: false,
   fx: null,
   excludeList: [],
+  sortKey: null,   // null = дефолт (клієнт А-Я, новіші зверху)
+  sortDir: -1,
 };
 try {
   const ex = localStorage.getItem('osp_exclude');
@@ -535,7 +541,38 @@ document.addEventListener('click', function(ev) {
   if (x) { ospTag.remove(x.dataset.xname); return; }
   const opt = ev.target.closest('#ospExcludeSuggest .opt[data-optname]');
   if (opt) { ospTag.add(opt.dataset.optname); return; }
+  const th = ev.target.closest('[data-sortkey]');
+  if (th) { setSort(th.dataset.sortkey); return; }
 });
+
+/* ─── Сортування по клацанню на заголовок ───
+   Перший клік: гроші/кількості — найбільше зверху (найбільший борг важливіший),
+   дата — новіші зверху, клієнт/№ — за зростанням. Повторний клік — реверс. */
+const SORT_DEFAULT_DIR = { date: -1, num: 1, client: 1, amount: -1, paid: -1, rempay: -1, ordered: -1, shipped: -1, remship: -1 };
+function setSort(key) {
+  if (state.sortKey === key) state.sortDir = -state.sortDir;
+  else { state.sortKey = key; state.sortDir = SORT_DEFAULT_DIR[key] || -1; }
+  render();
+}
+// Грошові значення порівнюємо в $ (звіт мультивалютний); без курсу — як є.
+function _sortVal(o, key) {
+  switch (key) {
+    case 'date':    return o.date || '';
+    case 'num':     { const m = (o.number || '').match(/(\d+)\s*$/); return m ? +m[1] : 0; }
+    case 'client':  return (o.clientName || '').toLowerCase();
+    case 'amount':  { const v = +o.amount || 0; const u = toUsd(v, o.currency); return u == null ? v : u; }
+    case 'paid':    { const v = +o.paid || 0; const u = toUsd(v, o.currency); return u == null ? v : u; }
+    case 'rempay':  { const v = Math.max(0, (+o.amount || 0) - (+o.paid || 0)); const u = toUsd(v, o.currency); return u == null ? v : u; }
+    case 'ordered': return +o.ordered || 0;
+    case 'shipped': return +o.shipped || 0;
+    case 'remship': return Math.max(0, (+o.ordered || 0) - (+o.shipped || 0));
+    default: return 0;
+  }
+}
+function _sortArrow(key) {
+  if (state.sortKey !== key) return '';
+  return `<span class="arr">${state.sortDir > 0 ? '▲' : '▼'}</span>`;
+}
 
 // ─── Render ───
 function render() {
@@ -544,6 +581,17 @@ function render() {
   const visible = orders.filter(o =>
     !exSet.has((o.clientName || '').toLowerCase()) && _matchOrder(o, state.search)
   );
+  if (state.sortKey) {
+    const k = state.sortKey, dir = state.sortDir;
+    visible.sort((a, b) => {
+      const va = _sortVal(a, k), vb = _sortVal(b, k);
+      const c = (typeof va === 'string') ? va.localeCompare(vb, 'uk') : (va - vb);
+      // стабільність: при рівності — за клієнтом, потім новіші зверху
+      return c !== 0 ? c * dir
+        : ((a.clientName || '').localeCompare(b.clientName || '', 'uk')
+           || (b.date || '').localeCompare(a.date || ''));
+    });
+  }
 
   // Summary — дві ключові категорії, заради яких і є звіт-контроль:
   //  A) відвантажено, але не оплачено — товар віддали, гроші не отримали (борг клієнта);
@@ -633,13 +681,13 @@ function render() {
     <div class="tree-wrap">
       <table class="tree-tbl">
         <thead><tr>
-          <th><span class="ord-cell"><span class="chev hidden">▶</span><span class="ord-date">Дата</span><span class="ord-num">Замовлення</span><span class="ord-client">Клієнт / Товар</span></span></th>
-          <th>Сума документа</th>
-          <th>Оплачено</th>
-          <th>Залишилось</th>
-          <th>Замовлено</th>
-          <th>Відвантажено</th>
-          <th>Залишилось відвант.</th>
+          <th><span class="ord-cell"><span class="chev hidden">▶</span><span class="ord-date th-sort" data-sortkey="date">Дата${_sortArrow('date')}</span><span class="ord-num th-sort" data-sortkey="num">Замовлення${_sortArrow('num')}</span><span class="ord-client th-sort" data-sortkey="client">Клієнт / Товар${_sortArrow('client')}</span></span></th>
+          <th class="th-sort" data-sortkey="amount">Сума документа${_sortArrow('amount')}</th>
+          <th class="th-sort" data-sortkey="paid">Оплачено${_sortArrow('paid')}</th>
+          <th class="th-sort" data-sortkey="rempay">Залишилось${_sortArrow('rempay')}</th>
+          <th class="th-sort" data-sortkey="ordered">Замовлено${_sortArrow('ordered')}</th>
+          <th class="th-sort" data-sortkey="shipped">Відвантажено${_sortArrow('shipped')}</th>
+          <th class="th-sort" data-sortkey="remship">Залишилось відвант.${_sortArrow('remship')}</th>
         </tr></thead>
         <tbody>${rows.join('')}</tbody>
       </table>
