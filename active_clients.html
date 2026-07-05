@@ -86,6 +86,23 @@ a{color:inherit;text-decoration:none}
 .search-box:focus{border-color:var(--accent)}
 .region-select{padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;font-family:inherit;cursor:pointer;min-width:160px}
 .region-select:focus{border-color:var(--accent)}
+.help-chip{padding:7px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text2);white-space:nowrap;user-select:none}
+.help-chip:hover{color:var(--text);border-color:var(--border2)}
+
+/* Help modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.modal-backdrop.open{display:flex}
+.modal{position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:14px;max-width:640px;width:100%;max-height:85vh;overflow-y:auto;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.modal h2{font-size:16px;font-weight:800;color:var(--text);margin-bottom:8px;padding-right:28px}
+.modal h3{font-size:13px;font-weight:700;color:var(--accent);margin:16px 0 5px;display:flex;align-items:center;gap:7px}
+.modal p{font-size:12.5px;color:var(--text2);line-height:1.6;margin:4px 0}
+.modal ul{margin:5px 0 5px 6px;list-style:none}
+.modal li{font-size:12.5px;color:var(--text2);line-height:1.55;margin:5px 0;padding-left:16px;position:relative}
+.modal li::before{content:'·';position:absolute;left:4px;color:var(--text3);font-weight:800}
+.modal b{color:var(--text);font-weight:700}
+.modal code{background:var(--bg2);padding:1px 6px;border-radius:5px;font-size:11.5px;color:var(--text);border:1px solid var(--border)}
+.modal .close{position:absolute;top:16px;right:18px;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;border:none;background:none;padding:4px}
+.modal .close:hover{color:var(--text)}
 
 @media(max-width:768px){
   .wrap{padding:12px}
@@ -113,6 +130,39 @@ a{color:inherit;text-decoration:none}
     </div>
 
     <div id="body"><div class="loading">Завантаження…</div></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="helpModal" onclick="if(event.target===this)closeHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт">
+    <button class="close" onclick="closeHelp()" aria-label="Закрити">✕</button>
+    <h2>👥 Як працює звіт «Клієнтська база»</h2>
+    <p>Звіт показує стан дилерської бази за <b>останні 3 місяці</b> (період зазначено вгорі). Всі розрахунки — за датами <b>оплат</b>.</p>
+
+    <h3>🏷 Статуси</h3>
+    <ul>
+      <li><b>Новий</b> — перша оплата клієнта в історії потрапила в поточний період.</li>
+      <li><b>Повторний</b> — мав оплати до початку періоду і оплатив знову в періоді.</li>
+      <li><b>Відтік</b> — оплачував у попередні 3 місяці до початку періоду, але в поточному періоді жодної оплати.</li>
+      <li><b>Неактивний</b> — дилер із Planfix без оплат понад 6 місяців.</li>
+      <li><b>Активні</b> = нові + повторні (≥1 оплата в періоді).</li>
+    </ul>
+
+    <h3>🔎 Фільтри</h3>
+    <ul>
+      <li>Пошук клієнта та вибір області <b>перераховують усі картки, воронку й суму оплат</b> — цифри вгорі завжди відповідають обраній вибірці.</li>
+      <li>Клік по KPI-картці фільтрує <b>таблицю</b> за статусом (повторний клік — скидає). На самі цифри в картках це не впливає.</li>
+    </ul>
+
+    <h3>💰 Колонки таблиці</h3>
+    <ul>
+      <li><b>Оплачено (USD)</b> та <b>Оплат</b> — сума й кількість оплат клієнта за поточний період; для відтоку та неактивних оплат у періоді немає, тому «—».</li>
+      <li><b>Днів без оплати</b> — від останньої оплати до сьогодні: <span style="color:var(--yellow);font-weight:700">≥45 днів</span> — жовтий, <span style="color:var(--red);font-weight:700">≥90 днів</span> — червоний.</li>
+      <li><b>Область</b> — з картки дилера в Planfix; «—» означає, що область не заповнена.</li>
+    </ul>
+
+    <h3>📊 Картка «Оплати за період»</h3>
+    <p>Сума оплат <b>активних</b> клієнтів (нових + повторних) за період у USD. При фільтрі за областю чи пошуку — сума лише по відібраних клієнтах.</p>
   </div>
 </div>
 
@@ -189,23 +239,33 @@ async function load() {
 }
 
 function render() {
-  const { summary, clients, period } = _data;
+  const { clients, period } = _data;
   const q = _search.toLowerCase();
 
-  const inactive = summary.inactive || 0;
+  const regions = [...new Set(clients.map(c => c.region).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'uk'));
+
+  // база за пошуком та областю — KPI, воронка й суми рахуються від неї
+  let base = clients;
+  if (q) base = base.filter(c => c.name.toLowerCase().includes(q));
+  if (_regionFilter) base = base.filter(c => c.region === _regionFilter);
+
+  const summary = { new: 0, returning: 0, lost: 0, inactive: 0, total_usd: 0 };
+  base.forEach(c => {
+    if (summary[c.status] != null) summary[c.status]++;
+    if (c.status === 'new' || c.status === 'returning') summary.total_usd += c.total_usd || 0;
+  });
+  summary.active = summary.new + summary.returning;
+
+  const inactive = summary.inactive;
   const total = summary.new + summary.returning + summary.lost + inactive;
   const pNew = total > 0 ? (summary.new / total * 100) : 0;
   const pRet = total > 0 ? (summary.returning / total * 100) : 0;
   const pLost = total > 0 ? (summary.lost / total * 100) : 0;
   const pInactive = total > 0 ? (inactive / total * 100) : 0;
 
-  const regions = [...new Set(clients.map(c => c.region).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'uk'));
-
-  let filtered = [...clients];
-  if (q) filtered = filtered.filter(c => c.name.toLowerCase().includes(q));
+  let filtered = [...base];
   if (_statusFilter === 'active') filtered = filtered.filter(c => c.status !== 'lost' && c.status !== 'inactive');
   else if (_statusFilter) filtered = filtered.filter(c => c.status === _statusFilter);
-  if (_regionFilter) filtered = filtered.filter(c => c.region === _regionFilter);
 
   if (SORT.field) {
     const dir = SORT.dir === 'asc' ? 1 : -1;
@@ -286,6 +346,7 @@ function render() {
         <option value="">Всі області</option>
         ${regions.map(r => `<option value="${esc(r)}"${_regionFilter === r ? ' selected' : ''}>${esc(r)}</option>`).join('')}
       </select>
+      <span class="help-chip" onclick="openHelp()" title="Як працює цей звіт">❓ Як працює</span>
     </div>
 
     <div class="sec-title">Клієнтська база <span class="sec-count">${filtered.length}</span></div>
@@ -315,8 +376,22 @@ function render() {
     </div>
   `;
 
+  // зберегти фокус і позицію курсора в пошуку — innerHTML знищує елемент
+  const ae = document.activeElement;
+  const keepSearch = !!(ae && ae.classList && ae.classList.contains('search-box'));
+  const caret = keepSearch ? ae.selectionStart : 0;
+
   document.getElementById('body').innerHTML = html;
+
+  if (keepSearch) {
+    const el = document.querySelector('.search-box');
+    if (el) { el.focus(); el.setSelectionRange(caret, caret); }
+  }
 }
+
+function openHelp()  { document.getElementById('helpModal').classList.add('open'); }
+function closeHelp() { document.getElementById('helpModal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHelp(); });
 </script>
 </body>
 </html>
