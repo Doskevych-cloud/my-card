@@ -350,6 +350,10 @@ a{color:inherit;text-decoration:none}
   .detail-box{max-width:100%;max-height:90vh}
 }
 
+/* ═══════════ Порівняння цін — prices.html вбудовано iframe'ом ═══════════ */
+#mtab-compare iframe{width:100%;height:calc(100vh - 185px);min-height:560px;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block}
+@media (max-width:860px){ #mtab-compare iframe{height:calc(100vh - 150px);border-radius:10px} }
+
 /* ═══════════ Дилери (dealer access) — merged з dealers.html, scoped під #mtab-dealers ═══════════ */
 #mtab-dealers{ --card2: var(--bg3); max-width:1100px }
 #mtab-dealers .dsub{ color:var(--text2); margin:0 0 20px; font-size:14px }
@@ -427,6 +431,7 @@ a{color:inherit;text-decoration:none}
     <span class="mtab active" data-tab="prices" onclick="switchMainTab('prices')">🔧 Прайс</span>
     <span class="mtab" data-tab="broadcast" onclick="switchMainTab('broadcast')">📢 Розсилка</span>
     <span class="mtab" data-tab="dealers" onclick="switchMainTab('dealers')">🤝 Дилери</span>
+    <span class="mtab" data-tab="compare" onclick="switchMainTab('compare')">📊 Порівняння цін</span>
   </div>
 
   <!-- ═══════════ TAB: Прайс ═══════════ -->
@@ -660,6 +665,11 @@ a{color:inherit;text-decoration:none}
       </div>
     </div>
   </div><!-- /#mtab-dealers -->
+
+  <!-- ═══════════ TAB: Порівняння цін ═══════════ -->
+  <div id="mtab-compare" class="main-pane">
+    <iframe id="compareFrame" title="Порівняння цін постачальників" loading="lazy"></iframe>
+  </div><!-- /#mtab-compare -->
 </div>
 
 <!-- Item modal -->
@@ -2360,8 +2370,16 @@ function initDealersOnce() {
   loadLevels().then(loadList);
 }
 
-// ─── Головні таби: Прайс / Розсилка / Дилери ───
-const MTAB_TITLES = { prices: 'Адмінка прайсу', broadcast: 'Розсилка', dealers: 'Дилери' };
+// ─── Порівняння цін: лінива ініціалізація iframe (при першому відкритті таба) ───
+let _cmpInit = false;
+function initCompareOnce() {
+  if (_cmpInit) return;
+  _cmpInit = true;
+  document.getElementById('compareFrame').src = 'prices.html?embed=1';
+}
+
+// ─── Головні таби: Прайс / Розсилка / Дилери / Порівняння цін ───
+const MTAB_TITLES = { prices: 'Адмінка прайсу', broadcast: 'Розсилка', dealers: 'Дилери', compare: 'Порівняння цін' };
 function switchMainTab(tab) {
   MAIN_TAB = tab;
   const isPrices = tab === 'prices';
@@ -2373,6 +2391,7 @@ function switchMainTab(tab) {
   document.getElementById('fxPill').style.display = (isPrices && fxLoaded) ? '' : 'none';
   if (tab === 'broadcast') initBroadcastOnce();
   if (tab === 'dealers') initDealersOnce();
+  if (tab === 'compare') initCompareOnce();
   // #broadcast / #dealers для deep-link; на дефолтному «Прайс» — чистий URL без хеша.
   try { history.replaceState(null, '', isPrices ? location.pathname + location.search : '#' + tab); } catch (_) {}
 }
@@ -2398,6 +2417,7 @@ Auth.require('prices').then(user => {
   // Додаткові таби доступні за відповідним дозволом (адмін — завжди).
   const canBroadcast = isAdmin || !!(user.roles && user.roles.sales_broadcast);
   const canDealers   = isAdmin || !!(user.roles && user.roles.dealers);
+  const canCompare   = isAdmin || !!(user.roles && user.roles.sales_prices); // той самий дозвіл, що й у prices.html
   if (!canBroadcast) {
     const bt = document.querySelector('.mtab[data-tab="broadcast"]');
     if (bt) bt.style.display = 'none';
@@ -2405,6 +2425,10 @@ Auth.require('prices').then(user => {
   if (!canDealers) {
     const dt = document.querySelector('.mtab[data-tab="dealers"]');
     if (dt) dt.style.display = 'none';
+  }
+  if (!canCompare) {
+    const ct = document.querySelector('.mtab[data-tab="compare"]');
+    if (ct) ct.style.display = 'none';
   }
 
   load().catch(e => {
@@ -2416,6 +2440,7 @@ Auth.require('prices').then(user => {
   let initTab = 'prices';
   if (location.hash === '#broadcast' && canBroadcast) initTab = 'broadcast';
   else if (location.hash === '#dealers' && canDealers) initTab = 'dealers';
+  else if (location.hash === '#compare' && canCompare) initTab = 'compare';
   switchMainTab(initTab);
 });
 </script>

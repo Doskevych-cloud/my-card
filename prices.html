@@ -6,6 +6,8 @@
 <title>Порівняння цін постачальників</title>
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
+  // embed=1 — сторінка вбудована табом в admin-prices.html: ховаємо шапку і саб-навігацію
+  try { if (new URLSearchParams(location.search).get('embed') === '1') document.documentElement.setAttribute('data-embed', '1'); } catch(e){}
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
@@ -14,6 +16,10 @@
 <link rel="stylesheet" href="theme.css">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
+
+/* ─── Embed mode (iframe у admin-prices.html) ─── */
+[data-embed] #appHeader,[data-embed] .page-tabs{display:none!important}
+[data-embed] .wrap{max-height:100vh}
 
 body{font-family:'Inter',-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);transition:background .25s,color .25s;-webkit-font-smoothing:antialiased}
 /* ─── Header ─── */
