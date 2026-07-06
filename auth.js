@@ -52,7 +52,7 @@
 
   const MODULE_LABEL = {
     dashboard: 'Дашборд',
-    sales_prices: 'Продажі — Порівняння цін',
+    sales_prices: 'Прайс — Порівняння цін',
     forecast: 'Прогноз кабелю',
     warehouses: 'Склад',
     brigades: 'Бригади (склади бригад)',

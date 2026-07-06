@@ -350,17 +350,6 @@ tr:hover td{background:var(--bg3) !important}
 
 <div id="appHeader"></div>
 
-<div class="page-tabs">
-  <span class="ptab active" data-perm="sales_prices">🏠 Порівняння цін</span>
-  <a href="/sales.html" class="ptab" data-perm="sales">📈 Продажі менеджерів</a>
-  <a href="/top_products.html" class="ptab" data-perm="sales_top_products">📦 Останні продажі</a>
-  <a href="/osp.html" class="ptab" data-perm="sales_osp">📋 Оплата та відвантаження</a>
-  <a href="/ar_aging.html" class="ptab" data-perm="sales_ar_aging">⏱ Заборгованість покупців</a>
-  <a href="/active_clients.html" class="ptab" data-org-required="Реакт" data-perm="sales_active_clients">👥 Клієнтська база</a>
-  <a href="/inventory.html" class="ptab" data-perm="sales_inventory">📊 Обіговість запасів</a>
-  <a href="/sla.html" class="ptab" data-perm="sales_sla">⚡ SLA</a>
-</div>
-
 <div class="custom-search" id="customSearch">
   <div class="cs-head">
     <span class="cs-title">🔎 Пошук товару серед усіх постачальників</span>
@@ -2935,7 +2924,7 @@ document.getElementById('dateLabel').textContent = new Date().toLocaleDateString
   // Google session + role gate (home module) — single source of truth for access
   const user = await Auth.require('sales_prices');
   window.__user = user;
-  AppHeader.mount({ active: 'sales', user });
+  AppHeader.mount({ active: 'prices-admin', user });
   Auth.filterSubNav(user);
   if (!(await loadFromHash())) initHistory();
   loadSchedule();
