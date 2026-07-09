@@ -53,6 +53,7 @@
   const MODULE_LABEL = {
     dashboard: 'Дашборд',
     sales_prices: 'Прайс — Порівняння цін',
+    sales_broadcast: 'Прайс — Розсилка',
     forecast: 'Прогноз кабелю',
     warehouses: 'Склад',
     brigades: 'Бригади (склади бригад)',
@@ -63,7 +64,6 @@
     sales_active_clients: 'Продажі — Клієнтська база',
     sales_inventory: 'Продажі — Обіговість запасів',
     sales_sla: 'Продажі — SLA',
-    sales_broadcast: 'Продажі — Розсилка',
     finance: 'Фінанси',
     finance_pnl: 'Фінанси — P&L',
     finance_gp: 'Фінанси — Валовий прибуток',
