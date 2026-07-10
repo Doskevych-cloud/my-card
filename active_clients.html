@@ -11,6 +11,9 @@
 <script src="header.js?v=brig20260622"></script>
 <link rel="stylesheet" href="theme.css">
 <style>
+/* theme.css не задає *-bg відтінки — рахуємо з базових кольорів (як в admin-prices.html);
+   без цього бейджі статусів і чіпи тижневої динаміки лишаються без фону */
+:root{--green-bg:color-mix(in srgb, var(--green) 12%, transparent);--red-bg:color-mix(in srgb, var(--red) 12%, transparent);--blue-bg:color-mix(in srgb, var(--blue) 12%, transparent)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
 a{color:inherit;text-decoration:none}
@@ -35,6 +38,14 @@ a{color:inherit;text-decoration:none}
 .kpi.clickable.selected{border-color:var(--accent);background:var(--accent-bg)}
 .kpi .delta-pos{color:var(--green)}
 .kpi .delta-neg{color:var(--red)}
+.kpi .wd-badge{font-size:12px;font-weight:700;margin-left:8px;vertical-align:2px;white-space:nowrap;cursor:default}
+.kpi .wd-badge .wd-lbl{font-size:10px;color:var(--text3);font-weight:500;margin-left:2px}
+.week-delta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:-8px 0 18px;font-size:12px}
+.week-delta .wd-t{color:var(--text3);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.4px}
+.week-delta .wd-none{color:var(--text3)}
+.week-delta .wd-chip{padding:3px 8px;border-radius:6px;font-weight:600;cursor:default}
+.week-delta .wd-chip-in{background:var(--green-bg);color:var(--green)}
+.week-delta .wd-chip-out{background:var(--red-bg);color:var(--red)}
 
 /* Funnel bar */
 .funnel{display:flex;height:8px;border-radius:4px;overflow:hidden;margin-bottom:18px;background:var(--bg3)}
@@ -145,6 +156,13 @@ a{color:inherit;text-decoration:none}
       <li><b>Відтік</b> — оплачував у попередні 3 місяці до початку періоду, але в поточному періоді жодної оплати.</li>
       <li><b>Неактивний</b> — дилер із Planfix без оплат понад 6 місяців.</li>
       <li><b>Активні</b> = нові + повторні (≥1 оплата в періоді).</li>
+    </ul>
+
+    <h3>📈 Динаміка за тиждень</h3>
+    <ul>
+      <li>Поруч із карткою «Активних клієнтів» показано <b><span style="color:var(--green)">+зайшли</span>/<span style="color:var(--red)">−випали</span> за 7 днів</b>: поточний склад активних порівнюється зі складом станом на тиждень тому (те саме 3-місячне вікно, зсунуте на 7 днів).</li>
+      <li>Під воронкою — <b>імена</b>: хто саме з'явився в активних і хто випав. Лічильник при ковзному вікні може тижнями не змінюватися, хоча склад бази рухається — цей блок і показує той рух.</li>
+      <li>Динаміка рахується по всій базі, тому при пошуку чи фільтрі за областю блок ховається.</li>
     </ul>
 
     <h3>🔎 Фільтри</h3>
@@ -277,6 +295,25 @@ function render() {
     });
   }
 
+  // Динаміка за тиждень — глобальна (без фільтрів), тому ховаємо її,
+  // коли KPI перераховані за пошуком чи областю, щоб цифри не суперечили.
+  const wd = _data.week_delta;
+  const showWd = wd && !q && !_regionFilter;
+  const wdIn = showWd ? wd.entered.length : 0;
+  const wdOut = showWd ? wd.left.length : 0;
+  const wdBadge = showWd ? `
+    <span class="wd-badge">
+      <span class="delta-pos" title="${esc(wd.entered.map(c => c.name).join(', ') || 'ніхто не зайшов')}">+${wdIn}</span>/<span class="delta-neg" title="${esc(wd.left.map(c => c.name).join(', ') || 'ніхто не випав')}">−${wdOut}</span>
+      <span class="wd-lbl">за 7 дн</span>
+    </span>` : '';
+  const wdStrip = !showWd ? '' : `
+    <div class="week-delta">
+      <span class="wd-t">Рух за тиждень:</span>
+      ${wdIn + wdOut === 0 ? '<span class="wd-none">без змін — склад активних той самий, що і 7 днів тому</span>' : `
+        ${wd.entered.map(c => `<span class="wd-chip wd-chip-in" title="зайшов у активні">＋ ${esc(c.name)}</span>`).join('')}
+        ${wd.left.map(c => `<span class="wd-chip wd-chip-out" title="випав з активних">－ ${esc(c.name)}</span>`).join('')}`}
+    </div>`;
+
   function daysClass(d) { return d >= 90 ? 'days-danger' : d >= 45 ? 'days-warn' : ''; }
   function statusBadge(s) {
     if (s === 'new') return '<span class="badge badge-new">новий</span>';
@@ -296,7 +333,7 @@ function render() {
       </div>
       <div class="kpi clickable${_statusFilter === 'active' ? ' selected' : ''}" onclick="filterStatus('active')">
         <span class="kl">Активних клієнтів</span>
-        <span class="kv">${summary.active}</span>
+        <span class="kv">${summary.active}${wdBadge}</span>
         <span class="ks">≥1 оплата за ${fmtDate(period.from)} — ${fmtDate(period.to)}</span>
       </div>
       <div class="kpi clickable${_statusFilter === 'new' ? ' selected' : ''}" onclick="filterStatus('new')">
@@ -338,6 +375,7 @@ function render() {
       <span class="fl-lost">Відтік ${summary.lost}</span>
       <span class="fl-inactive">Неактивні ${inactive}</span>
     </div>
+    ${wdStrip}
 
     <div class="filters-row">
       <input type="text" class="search-box" placeholder="Пошук клієнта…" value="${esc(_search)}" oninput="_search=this.value;render()">
