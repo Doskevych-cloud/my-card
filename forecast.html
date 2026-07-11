@@ -651,7 +651,7 @@ function spRow(r, opts = {}) {
   if (r.red > 0)   m.push(`<span class="it"><i class="sw r"></i>${fmt(r.red)}</span>`);
   return `<div class="sp-row ${cls}">
     <div class="sp-date"><div class="d">${fmtDateY(r.arrival)}</div><div class="rel">${rel}</div></div>
-    <div class="sp-who"><div class="name">${r.supplier}</div><div class="sub"><span>${r.number || '—'}</span><span>${r.org}</span></div></div>
+    <div class="sp-who"><div class="name">${escapeHtml(r.supplier)}</div><div class="sub"><span>${escapeHtml(r.number || '—')}</span><span>${escapeHtml(r.org)}</span></div></div>
     <div class="sp-m">${m.join('') || '<span class="it">—</span>'}</div>
     <div class="sp-sum">${fmt(r.sum)}&nbsp;${r.sym || ''}</div>
   </div>`;
@@ -835,7 +835,7 @@ function updateCalcFlow() {
     return `<div class="tier-card ${t.transit?'transit':''} ${t.base?'base':''}">
       <div class="tier-h">
         ${t.transit ? '<span class="dot-accent"></span>' : ''}
-        <span class="tname">${t.name}</span>
+        <span class="tname">${escapeHtml(t.name)}</span>
         <span class="tmk" title="націнка до собівартості у Києві">+${mk}%</span>
         ${t.base ? '<span class="tier-tag tag-base">базова</span>' : `<span class="tier-tag tag-pos">${disc.toFixed(1)}%</span>`}
       </div>
@@ -1040,7 +1040,7 @@ function renderWhTable(sortBy) {
     const status = w.total === 0 ? 't-neg' : w.free < w.reserved ? 't-warn' : 't-pos';
     const statusTxt = w.total === 0 ? 'out' : w.free < w.reserved ? 'low' : 'ok';
     return `<tr>
-      <td><div style="font-family:var(--mono);color:var(--mute);font-size:11px">${w.isTransit ? '🚛' : '🏢'}</div><div style="color:var(--fg)">${w.name}</div></td>
+      <td><div style="font-family:var(--mono);color:var(--mute);font-size:11px">${w.isTransit ? '🚛' : '🏢'}</div><div style="color:var(--fg)">${escapeHtml(w.name)}</div></td>
       <td class="num">${fmt(w.bF + w.bR)}</td>
       <td class="num">${fmt(w.rF + w.rR)}</td>
       <td class="num" style="color:var(--mute)">${fmt(w.reserved)}</td>
@@ -1102,7 +1102,7 @@ function modalTemplate(kind, f) {
 
   if (kind === 'free') {
     const totalFree = s.black.free + s.red.free;
-    const whRows = (f.stockByWh||[]).map(w => `<tr><td>${w.name}</td><td>${fmt(w.black.free)}</td><td>${fmt(w.red.free)}</td><td><strong>${fmt(w.black.free+w.red.free)}</strong></td></tr>`).join('');
+    const whRows = (f.stockByWh||[]).map(w => `<tr><td>${escapeHtml(w.name)}</td><td>${fmt(w.black.free)}</td><td>${fmt(w.red.free)}</td><td><strong>${fmt(w.black.free+w.red.free)}</strong></td></tr>`).join('');
     return `<div class="m-big">${fmt(totalFree)} м</div><div class="m-sub">Вільний залишок — доступний до продажу</div>
       <div class="m-split"><div class="m-col"><div class="m-col-label">Чорний</div><div class="m-col-val">${fmt(s.black.free)} м</div></div><div class="m-col"><div class="m-col-label">Червоний</div><div class="m-col-val">${fmt(s.red.free)} м</div></div></div>
       <div class="m-section-title">По складах</div><table class="m-tbl"><thead><tr><th>Склад</th><th>Чорний</th><th>Черв.</th><th>Разом</th></tr></thead><tbody>${whRows||'<tr><td colspan="4" style="text-align:center;color:var(--mute)">Немає</td></tr>'}</tbody></table>
@@ -1125,7 +1125,7 @@ function modalTemplate(kind, f) {
   if (kind === 'transit') {
     const whRows = (t.byWh||[]).map(w => {
       const fmtC = (fr,rs) => { if(fr&&rs) return `${fmt(fr)} + ${fmt(rs)} рез`; if(rs) return `${fmt(rs)} рез`; return fmt(fr); };
-      return `<tr><td>${w.name}</td><td>${fmtC(w.blackFree||0,w.blackReserve||0)}</td><td>${fmtC(w.redFree||0,w.redReserve||0)}</td><td><strong>${fmt((w.black||0)+(w.red||0))}</strong></td></tr>`;
+      return `<tr><td>${escapeHtml(w.name)}</td><td>${fmtC(w.blackFree||0,w.blackReserve||0)}</td><td>${fmtC(w.redFree||0,w.redReserve||0)}</td><td><strong>${fmt((w.black||0)+(w.red||0))}</strong></td></tr>`;
     }).join('');
     return `<div class="m-big">${fmt(t.total)} м</div><div class="m-sub">Кабель що рухається до складів</div>
       <div class="m-split"><div class="m-col"><div class="m-col-label">Чорний в дорозі</div><div class="m-col-val">${fmt(t.black)} м</div><div class="m-col-sub">вільне: ${fmt(tFreeB)} · резерв: ${fmt(t.blackReserve||0)}</div></div><div class="m-col"><div class="m-col-label">Червоний в дорозі</div><div class="m-col-val">${fmt(t.red)} м</div><div class="m-col-sub">вільне: ${fmt(tFreeR)} · резерв: ${fmt(t.redReserve||0)}</div></div></div>

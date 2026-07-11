@@ -361,7 +361,7 @@ function renderRanking(data) {
     html += `<div class="mgr-card" data-id="${id}" onclick="toggleMgr('${id}')">
       <div class="mc-rank">${i + 1}</div>
       <div class="mc-info">
-        <div class="mc-name">${mgr.name}</div>
+        <div class="mc-name">${escapeHtml(mgr.name)}</div>
         <div class="mc-stats">${mgr.count} подій · ${mgr.counterparties.length} контрагент${mgr.counterparties.length > 1 ? 'ів' : ''}</div>
       </div>
       <div class="mc-bar-bg"><div class="mc-bar ${rClass(mgr.avg_min)}" style="width:${barW}%"></div></div>
@@ -373,12 +373,12 @@ function renderRanking(data) {
       const cpId = id + '_cp_' + cp.name.replace(/\W/g, '_');
       html += `<div class="md-cp">
         <div class="md-cp-head" onclick="event.stopPropagation();toggleCp('${cpId}')">
-          <span class="md-cp-name">${cp.name}</span>
+          <span class="md-cp-name">${escapeHtml(cp.name)}</span>
           <span class="md-cp-avg" style="color:${rColor(cp.avg_min)}">${fmtR(cp.avg_min)} · ${cp.count} шт</span>
         </div>
         <div class="md-evts" id="${cpId}">`;
       for (const ev of cp.events) {
-        const ea = `'${ev.chat_id}','${encodeURIComponent(ev.request_at)}','${encodeURIComponent(ev.response_at)}'`;
+        const ea = `${Number(ev.chat_id) || 0},'${encodeURIComponent(ev.request_at)}','${encodeURIComponent(ev.response_at)}'`;
         html += `<div class="md-evt" onclick="event.stopPropagation();toggleEvtMsgs(this,${ea})">
           <span class="md-evt-time"><span class="md-caret">▸</span>${fmtFull(ev.request_at)} → ${fmtTime(ev.response_at)}</span>
           <span style="color:${rColor(ev.reaction_min)};font-weight:600">${fmtR(ev.reaction_min)}</span>
@@ -406,7 +406,7 @@ function toggleCp(id) {
 }
 
 function escapeHtml(s) {
-  return (s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 // Час повідомлення (UTC з БД) → локальний, як у шапці події
 function fmtMsgTime(s) {
@@ -447,7 +447,7 @@ function renderPending(data) {
   banner.style.display = '';
   document.getElementById('pendingTitle').textContent = `${data.pending.length} без відповіді`;
   document.getElementById('pendingList').innerHTML = data.pending.map(p =>
-    `<div class="pb-item"><b>${p.counterparty_name}</b> — ${Math.round(p.waiting_min)} хв</div>`
+    `<div class="pb-item"><b>${escapeHtml(p.counterparty_name)}</b> — ${Math.round(p.waiting_min)} хв</div>`
   ).join('');
 }
 
@@ -535,7 +535,7 @@ async function renderAdmin(user) {
       <table class="admin-tbl">
         <thead><tr><th>Telegram ID</th><th>ПІБ</th><th>У звіті</th></tr></thead>
         <tbody>${(mgrsRes.managers || []).map(m => `<tr>
-          <td class="mono">${m.telegram_user_id}</td><td>${m.name}</td>
+          <td class="mono">${escapeHtml(m.telegram_user_id)}</td><td>${escapeHtml(m.name)}</td>
           <td>${m.exclude_from_report ? 'ні' : 'так'}</td>
         </tr>`).join('')}</tbody>
       </table>
@@ -549,8 +549,8 @@ async function renderAdmin(user) {
       <table class="admin-tbl">
         <thead><tr><th>Chat ID</th><th>Контрагент</th><th>Менеджер</th><th>Орг</th><th>Act</th></tr></thead>
         <tbody>${(chatsRes.chats || []).map(c => `<tr>
-          <td class="mono">${c.chat_id}</td><td>${c.counterparty_name}</td>
-          <td>${c.manager_default || '—'}</td><td>${c.org}</td>
+          <td class="mono">${escapeHtml(c.chat_id)}</td><td>${escapeHtml(c.counterparty_name)}</td>
+          <td>${escapeHtml(c.manager_default || '—')}</td><td>${escapeHtml(c.org)}</td>
           <td>${c.active ? '+' : '—'}</td>
         </tr>`).join('')}</tbody>
       </table>
