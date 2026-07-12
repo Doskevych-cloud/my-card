@@ -162,8 +162,11 @@
       chart.data.datasets[0].data = cleaned;
       chart.update();
       if (subEl) {
-        const sum = cleaned.reduce((s, x) => s + x, 0);
-        const avg = sum / cleaned.length;
+        // Середнє рахуємо ЛИШЕ по місяцях з валідним значенням: місяць, де fetch
+        // упав/повернув null, малюється як 0 на графіку, але НЕ має занижувати «сер./міс»
+        // (інакше один таймаут API мовчки псує показник).
+        const valid = values.filter(v => v != null && isFinite(v)).map(Number);
+        const avg = valid.length ? valid.reduce((s, x) => s + x, 0) / valid.length : 0;
         if (unit === '%') subEl.textContent = `сер. ${avg.toFixed(1)}%`;
         else if (unit === '$') subEl.textContent = `сер./міс ${fmtMoney(avg, '$')}`;
         else subEl.textContent = `сер./міс ${fmtMoney(avg, '')}`;

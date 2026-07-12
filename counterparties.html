@@ -653,7 +653,7 @@ function renderTop(rows){
     lines.push(`
     <tr class="clickable supplier-head" data-ref="${r.ref_key}">
       <td class="num">${i}</td>
-      <td class="name" colspan="4">${r.description}${kindBadge(r.kind)}</td>
+      <td class="name" colspan="4">${esc(r.description)}${kindBadge(r.kind)}</td>
       <td class="amount ${bUsdCls}" title="Підсумковий USD-еквівалент (з ap_movements, 1С-style)">${bUsdStr}</td>
     </tr>`);
     const ordered = [primary, ...allCurs.filter(c => c !== primary)];
@@ -774,30 +774,30 @@ function renderDetailPage(d){
     return `
     <tr class="act-row ${isInc ? 'increase' : 'decrease'}">
       <td>${(m.doc_date || m.period || '').slice(0,10)}</td>
-      <td class="doc">${m.doc_title}</td>
-      <td class="cur">${m.currency}</td>
+      <td class="doc">${esc(m.doc_title)}</td>
+      <td class="cur">${esc(m.currency)}</td>
       <td class="inc amount">${isInc ? fmtCur(val, m.currency) : '—'}</td>
       <td class="dec amount">${isInc ? '—' : fmtCur(val, m.currency)}</td>
-      <td class="muted">${m.org_short || '—'}</td>
+      <td class="muted">${esc(m.org_short || '—')}</td>
     </tr>`;
   }).join('');
 
   const ordRows = (orders || []).map(r => `
     <tr>
       <td>${(r.doc_date || '').slice(0,10)}</td>
-      <td>${r.number || '—'}</td>
-      <td class="cur">${r.currency}</td>
+      <td>${esc(r.number || '—')}</td>
+      <td class="cur">${esc(r.currency)}</td>
       <td class="amount">${fmtCur(r.amount, r.currency)}</td>
       <td class="muted">${r.posted ? 'проведено' : 'чернетка'}</td>
-      <td class="muted">${r.org_short || r.org_name || '—'}</td>
+      <td class="muted">${esc(r.org_short || r.org_name || '—')}</td>
     </tr>`).join('');
 
   return `
   <button class="detail-back" onclick="goBack()">← Назад до списку покупців</button>
 
   <div class="detail-head">
-    <h2>${supplier.description}</h2>
-    <div class="meta">Акт звірки · ${period.from} → ${period.to} · ЕДРПОУ ${supplier.tax_id || '—'} · <span style="color:var(--text3)">+ми винні, −нам винні</span></div>
+    <h2>${esc(supplier.description)}</h2>
+    <div class="meta">Акт звірки · ${esc(period.from)} → ${esc(period.to)} · ЕДРПОУ ${esc(supplier.tax_id || '—')} · <span style="color:var(--text3)">+ми винні, −нам винні</span></div>
   </div>
 
   <div class="act-sum">
@@ -875,8 +875,8 @@ async function loadDetailPage(){
 function fmtCell(v){
   if (v === null || v === undefined || v === '') return '<span class="null">null</span>';
   if (typeof v === 'number') return new Intl.NumberFormat('uk-UA',{maximumFractionDigits:4}).format(v);
-  if (typeof v === 'string' && v.length > 48) return `<span title="${v.replace(/"/g,'&quot;')}">${v.slice(0,45)}…</span>`;
-  return String(v);
+  if (typeof v === 'string' && v.length > 48) return `<span title="${esc(v)}">${esc(v.slice(0,45))}…</span>`;
+  return esc(String(v));
 }
 function isNumericCol(col){
   return /_at$|count|amount|quantity|price|rate|deletion_mark|posted|is_service|line_number|scale/.test(col);

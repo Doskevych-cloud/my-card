@@ -34,9 +34,17 @@
   // the server-side auth wall without a full rewrite.
   if (!global.__authFetchPatched) {
     const _origFetch = global.fetch.bind(global);
+    // Токен чіпляємо ЛИШЕ за точним співпадінням hostname (не підрядком!). Раніше
+    // url.includes('api.react.ink') матчив і 'api.react.ink.attacker.com', і
+    // 'evil.com/?ref=api.react.ink' → Bearer-токен тік на чужі хости. Тепер парсимо
+    // URL і звіряємо hostname з allowlist; відносні URL резолвляться на свій origin
+    // (erp.react.ink — не в списку, статиці токен не потрібен).
+    const API_HOSTS = ['api.react.ink', 'price-api.doskevich.workers.dev', 'react-bot.doskevich.workers.dev'];
     global.fetch = function (input, init) {
       const url = typeof input === 'string' ? input : (input && input.url) || '';
-      if (url && (url.includes('api.react.ink') || url.includes('price-api.doskevich.workers.dev') || url.includes('react-bot.doskevich.workers.dev'))) {
+      let host = '';
+      try { host = new URL(url, (typeof location !== 'undefined' ? location.href : undefined)).hostname; } catch (_) {}
+      if (host && API_HOSTS.includes(host)) {
         init = init || {};
         const headers = new Headers(init.headers || (input && input.headers) || {});
         const token = localStorage.getItem(TOKEN_KEY) || '';

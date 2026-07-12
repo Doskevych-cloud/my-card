@@ -2111,7 +2111,7 @@ function renderTable(rows) {
   for (const rd of rows) {
     if (rd.cat !== currentCat) {
       currentCat = rd.cat;
-      tb.innerHTML += `<tr class="cat"><td colspan="72"><span class="cat-label">${currentCat}</span></td></tr>`;
+      tb.innerHTML += `<tr class="cat"><td colspan="72"><span class="cat-label">${escapeHtml(currentCat)}</span></td></tr>`;
     }
     n++;
     const e = n % 2 === 0 ? 'even' : '';
@@ -2126,73 +2126,73 @@ function renderTable(rows) {
 
     tb.innerHTML += `<tr>
       <td class="t-tovar ${e} bl">${n}</td>
-      <td class="t-tovar ${e} art">${r.name}</td>
+      <td class="t-tovar ${e} art">${escapeHtml(r.name)}</td>
       <td class="t-best ${e} bl">${bestWho}</td>
       <td class="t-best ${e} bold">${fmt(bestNV,bestC)}</td>
       <td class="d-best ${e}">${delta(bestNV,r.gNV)}</td>
       <td class="t-best ${e} bold">${fmt(bestV,bestC)}</td>
       <td class="d-best ${e}">${delta(bestV,r.gV)}</td>
       <td class="t-gen ${e} bl stock">${r.gStock != null ? r.gStock : ''}</td>
-      <td class="t-gen ${e} status">${r.gSt||''}</td>
+      <td class="t-gen ${e} status">${escapeHtml(r.gSt||'')}</td>
       <td class="t-gen ${e}">${fmt(r.gNV,r.gC)}</td>
       <td class="t-gen ${e}">${fmt(r.gV,r.gC)}</td>
-      <td class="t-hel ${e} bl status">${r.hSt||''}</td>
+      <td class="t-hel ${e} bl status">${escapeHtml(r.hSt||'')}</td>
       <td class="t-hel ${e}">${fmt(r.hNV,r.hC)}</td>
       <td class="d-hel ${e}">${delta(r.hNV,r.gNV)}</td>
       <td class="t-hel ${e}">${fmt(r.hV,r.hC)}</td>
       <td class="d-hel ${e}">${delta(r.hV,r.gV)}</td>
       <td class="t-hel ${e}">${fmt(r.hR,r.hC)}</td>
-      <td class="t-dol ${e} bl status">${r.dSt||''}</td>
+      <td class="t-dol ${e} bl status">${escapeHtml(r.dSt||'')}</td>
       <td class="t-dol ${e}">${fmt(r.dNV,r.dC)}</td>
       <td class="d-dol ${e}">${delta(r.dNV,r.gNV)}</td>
       <td class="t-dol ${e}">${fmt(r.dV,r.dC)}</td>
       <td class="d-dol ${e}">${delta(r.dV,r.gV)}</td>
-      <td class="t-se ${e} bl status">${r.sSt||''}</td>
+      <td class="t-se ${e} bl status">${escapeHtml(r.sSt||'')}</td>
       <td class="t-se ${e}">${fmt(r.sNV,r.sC)}</td>
       <td class="d-se ${e}">${delta(r.sNV,r.gNV)}</td>
       <td class="t-se ${e}">${fmt(r.sV,r.sC)}</td>
       <td class="d-se ${e}">${delta(r.sV,r.gV)}</td>
-      <td class="t-pe ${e} bl status">${r.pSt||''}</td>
+      <td class="t-pe ${e} bl status">${escapeHtml(r.pSt||'')}</td>
       <td class="t-pe ${e}">${fmt(r.pNV,r.pC)}</td>
       <td class="d-pe ${e}">${delta(r.pNV,r.gNV)}</td>
       <td class="t-pe ${e}">${fmt(r.pV,r.pC)}</td>
       <td class="d-pe ${e}">${delta(r.pV,r.gV)}</td>
-      <td class="t-sv ${e} bl status">${r.vSt||''}</td>
+      <td class="t-sv ${e} bl status">${escapeHtml(r.vSt||'')}</td>
       <td class="t-sv ${e}">${fmt(r.vNV,r.vC)}</td>
       <td class="d-sv ${e}">${delta(r.vNV,r.gNV)}</td>
       <td class="t-sv ${e}">${fmt(r.vV,r.vC)}</td>
       <td class="d-sv ${e}">${delta(r.vV,r.gV)}</td>
-      <td class="t-iso ${e} bl status">${r.lSt||''}</td>
+      <td class="t-iso ${e} bl status">${escapeHtml(r.lSt||'')}</td>
       <td class="t-iso ${e}">${fmt(r.lNV,r.lC)}</td>
       <td class="d-iso ${e}">${delta(r.lNV,r.gNV)}</td>
       <td class="t-iso ${e}">${fmt(r.lV,r.lC)}</td>
       <td class="d-iso ${e}">${delta(r.lV,r.gV)}</td>
-      <td class="t-sf ${e} bl status">${r.fSt||''}</td>
+      <td class="t-sf ${e} bl status">${escapeHtml(r.fSt||'')}</td>
       <td class="t-sf ${e}">${fmt(r.fNV,r.fC)}</td>
       <td class="d-sf ${e}">${delta(r.fNV,r.gNV)}</td>
       <td class="t-sf ${e}">${fmt(r.fV,r.fC)}</td>
       <td class="d-sf ${e}">${delta(r.fV,r.gV)}</td>
-      <td class="t-atm ${e} bl status">${r.aSt||''}</td>
+      <td class="t-atm ${e} bl status">${escapeHtml(r.aSt||'')}</td>
       <td class="t-atm ${e}">${fmt(r.aNV,r.aC)}</td>
       <td class="d-atm ${e}">${delta(r.aNV,r.gNV)}</td>
       <td class="t-atm ${e}">${fmt(r.aV,r.aC)}</td>
       <td class="d-atm ${e}">${delta(r.aV,r.gV)}</td>
-      <td class="t-sig ${e} bl status">${r.iSt||''}</td>
+      <td class="t-sig ${e} bl status">${escapeHtml(r.iSt||'')}</td>
       <td class="t-sig ${e}">${fmt(r.iNV,r.iC)}</td>
       <td class="d-sig ${e}">${delta(r.iNV,r.gNV)}</td>
       <td class="t-sig ${e}">${fmt(r.iV,r.iC)}</td>
       <td class="d-sig ${e}">${delta(r.iV,r.gV)}</td>
-      <td class="t-ssj ${e} bl status">${r.jSt||''}</td>
+      <td class="t-ssj ${e} bl status">${escapeHtml(r.jSt||'')}</td>
       <td class="t-ssj ${e}">${fmt(r.jNV,r.jC)}</td>
       <td class="d-ssj ${e}">${delta(r.jNV,r.gNV)}</td>
       <td class="t-ssj ${e}">${fmt(r.jV,r.jC)}</td>
       <td class="d-ssj ${e}">${delta(r.jV,r.gV)}</td>
-      <td class="t-sb ${e} bl status">${r.bSt||''}</td>
+      <td class="t-sb ${e} bl status">${escapeHtml(r.bSt||'')}</td>
       <td class="t-sb ${e}">${fmt(r.bNV,r.bC)}</td>
       <td class="d-sb ${e}">${delta(r.bNV,r.gNV)}</td>
       <td class="t-sb ${e}">${fmt(r.bV,r.bC)}</td>
       <td class="d-sb ${e}">${delta(r.bV,r.gV)}</td>
-      <td class="t-alt ${e} bl status">${r.kSt||''}</td>
+      <td class="t-alt ${e} bl status">${escapeHtml(r.kSt||'')}</td>
       <td class="t-alt ${e}">${fmt(r.kNV,r.kC)}</td>
       <td class="d-alt ${e}">${delta(r.kNV,r.gNV)}</td>
       <td class="t-alt ${e}">${fmt(r.kV,r.kC)}</td>

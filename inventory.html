@@ -496,7 +496,7 @@ function esc(s) { const d = document.createElement('div'); d.textContent = s; re
 Auth.require('sales_inventory').then(user => {
   Auth.filterSubNav(user);
   const userOrgs = user?.orgs || {};
-  const hasAnyOrg = Object.keys(userOrgs).length > 0;
+  const hasAnyOrg = Object.values(userOrgs).some(v => v); // рахуємо АКТИВНІ доступи, не просто наявність ключа (orgs={Реакт:false} не мав би тягнути обидві орг)
   if (hasAnyOrg) {
     const allowedOrgs = ['Реакт', 'Генерація'].filter(o => userOrgs[o]);
     const orgChips = document.querySelectorAll('#orgGroup .chip');
