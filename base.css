@@ -1,0 +1,15 @@
+/* ═══ base.css — спільні компоненти ERP (тулбар, чіпи, таби, стани) ═══
+   Винесено з інлайн-<style> сторінок (рефакторинг 12.07.2026).
+   Порядок підключення: theme.css → base.css → page-<style>.
+   Правило тут = байт-ідентичне на всіх сторінках-учасницях; сторінка з
+   власним варіантом селектора тримає його інлайн (він пізніший у каскаді
+   і повністю затіняє base-версію — property-superset перевірено скриптом). */
+
+a{color:inherit;text-decoration:none}
+.ptab:hover{background:var(--bg3);color:var(--text)}
+.ptab.active{background:var(--accent-bg);color:var(--accent)}
+.toolbar .group{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:9px}
+.toolbar .group .chip.active{background:var(--accent-bg);color:var(--accent)}
+.toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.page-head .sub{font-size:12px;color:var(--text3)}
