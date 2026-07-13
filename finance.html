@@ -190,6 +190,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .pnl-table tr.itm-det + tr.itm-det td{border-top:1px dotted var(--border2)}
 .pnl-table tr.itm + tr.itm-det td{border-top:none}
 .pnl-table tr.det-hidden{display:none}
+/* Третій рівень — вміст документа (позиції / працівники / статті платежу) */
+.pnl-table tr.itm-det[data-ref] td:first-child{cursor:pointer;user-select:none}
+.pnl-table tr.itm-det[data-ref] td:first-child:hover{background:var(--surface)}
+.pnl-table tr.itm-det .tri{width:8px;font-size:8px;margin-right:6px}
+.pnl-table tr.itm-det2 td{font-size:11.5px;padding-top:4px;padding-bottom:4px}
+.pnl-table tr.itm-det2 td:first-child{padding-left:106px;cursor:default}
+.pnl-table tr.itm-det2 td:first-child:hover{background:transparent}
+.pnl-table tr.itm-det2 td.col-total{color:var(--text3)}
 
 /* Value colors — neutral text; only zero/dash stays muted */
 .pnl-table .pos,
@@ -413,6 +421,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 }
 @media(max-width:600px){
   .pnl-table tr.itm-det td:first-child{padding-left:42px}
+  .pnl-table tr.itm-det2 td:first-child{padding-left:54px}
 }
 
 /* ── Help-модалка «Як працює» (шаблон top_products.html) ── */
@@ -775,6 +784,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <h3>Деталізація рядка (клік по статті)</h3>
     <ul>
       <li>Клік по рядку статті або підрозділу розкриває <b>документи</b>, з яких склалася сума: дата, зміст і тип з номером. Зміст залежить від документа: накладні — контрагент, банк — призначення платежу, каса — підзвітник і основание/коментар, нарахування ЗП — працівники (за спаданням суми, топ-3 + кількість решти).</li>
+      <li>Клік по документу розкриває <b>його вміст</b>: позиції накладної (кількість × ціна), усі працівники нарахування ЗП, статті платежу. Суми вмісту — у <b>валюті документа</b> без конвертації, тому їх підсумок може не збігатися з USD-цифрою документа в рядку вище.</li>
       <li>Деталізація читає той самий реєстр з тими самими фільтрами, тому <b>сума документів завжди дорівнює цифрі рядка</b>.</li>
       <li>Якщо документів понад 800 — хвіст згортається в один рядок «… ще N документів» із сумою.</li>
       <li>У друк / PDF / Excel деталізація не потрапляє — експортується канонічний звіт.</li>
@@ -2051,7 +2061,13 @@ async function pnlDrillToggle(tr, tbl) {
   const wasOpen = tr.getAttribute('data-collapsed') !== 'true';
   if (wasOpen) {
     tr.setAttribute('data-collapsed', 'true');
-    tbl.querySelectorAll('tr.itm-det[data-det-for="' + tr.dataset.detId + '"]').forEach(r => r.classList.add('det-hidden'));
+    // третій рівень видаляємо повністю (при повторному відкритті — з KV-кешу),
+    // документні рядки ховаємо і згортаємо
+    tbl.querySelectorAll('tr.itm-det2[data-det-for="' + tr.dataset.detId + '"]').forEach(r => r.remove());
+    tbl.querySelectorAll('tr.itm-det[data-det-for="' + tr.dataset.detId + '"]').forEach(r => {
+      r.classList.add('det-hidden');
+      if (r.dataset.ref) { r.setAttribute('data-collapsed', 'true'); delete r.dataset.docId; }
+    });
     return;
   }
   tr.setAttribute('data-collapsed', 'false');
@@ -2091,8 +2107,12 @@ async function pnlDrillToggle(tr, tbl) {
       const main = [doc.counterparty, doc.desc].filter(Boolean).join(' · ');
       const left = [doc.date ? fmtD(doc.date) : null, main || null].filter(Boolean).join(' · ');
       const meta = doc.docType + (doc.number ? ' №' + doc.number : '');
-      return detRow('<td title="' + esc(doc.note || '') + '"><span class="det-doc">' + esc(left) +
-        '</span><span class="det-meta"> · ' + esc(meta) + '</span></td>' + amtCell(doc.amount));
+      // Документ з ref — клікабельний: третій рівень (вміст документа)
+      const clickable = doc.ref && doc.refType;
+      const extra = clickable ? ' data-ref="' + esc(doc.ref) + '" data-reftype="' + esc(doc.refType) + '" data-collapsed="true"' : '';
+      const triHtml = clickable ? '<span class="tri" aria-hidden="true">▾</span>' : '';
+      return '<tr class="itm-det" data-det-for="' + id + '"' + inherit + extra + '><td title="' + esc(doc.note || '') + '">' + triHtml + '<span class="det-doc">' + esc(left) +
+        '</span><span class="det-meta"> · ' + esc(meta) + '</span></td>' + amtCell(doc.amount) + '</tr>';
     }).join('');
     if (d.rest && d.rest.count) {
       html += detRow('<td><span class="det-doc">… ще ' + d.rest.count + ' документів</span></td>' + amtCell(d.rest.amount));
@@ -2101,6 +2121,66 @@ async function pnlDrillToggle(tr, tbl) {
   // Якщо юзер встиг згорнути drill, поки грузилось — вставляємо прихованими
   if (tr.getAttribute('data-collapsed') === 'true') {
     html = html.replace(/class="itm-det"/g, 'class="itm-det det-hidden"');
+  }
+  loadRow.outerHTML = html;
+  // Третій рівень: клік по документу → його вміст
+  tbl.querySelectorAll('tr.itm-det[data-det-for="' + id + '"][data-ref]').forEach(row => {
+    const cell = row.querySelector('td');
+    if (cell) cell.addEventListener('click', () => pnlDocToggle(row, tbl));
+  });
+}
+
+// ── Третій рівень drill: вміст одного документа (pnl_row_detail&doc=) ──
+// Позиції накладних (номенклатура × ціна), працівники ЗП, статті платежу.
+// Суми — у ВАЛЮТІ ДОКУМЕНТА (без конвертації в USD).
+let _pnlDocSeq = 0;
+async function pnlDocToggle(tr, tbl) {
+  const wasOpen = tr.getAttribute('data-collapsed') !== 'true';
+  if (wasOpen) {
+    tr.setAttribute('data-collapsed', 'true');
+    if (tr.dataset.docId) tbl.querySelectorAll('tr.itm-det2[data-doc-for="' + tr.dataset.docId + '"]').forEach(r => r.classList.add('det-hidden'));
+    return;
+  }
+  tr.setAttribute('data-collapsed', 'false');
+  if (tr.dataset.docId) {
+    tbl.querySelectorAll('tr.itm-det2[data-doc-for="' + tr.dataset.docId + '"]').forEach(r => r.classList.remove('det-hidden'));
+    return;
+  }
+  const id = 'doc' + (++_pnlDocSeq);
+  tr.dataset.docId = id;
+  // успадковуємо секційні атрибути + data-det-for батьківського drill,
+  // щоб collapse секцій і закриття drill ховали/чистили і третій рівень
+  const inherit = ['data-sec', 'data-grp', 'data-cat', 'data-det-for']
+    .map(a => tr.hasAttribute(a) ? ' ' + a + '="' + tr.getAttribute(a) + '"' : '').join('');
+  const row2 = inner => '<tr class="itm-det itm-det2" data-doc-for="' + id + '"' + inherit + '>' + inner + '</tr>';
+  tr.insertAdjacentHTML('afterend', row2('<td colspan="2"><span class="det-doc">завантаження…</span></td>'));
+
+  const q = '?action=pnl_row_detail&doc=' + encodeURIComponent(tr.dataset.ref) + '&docType=' + encodeURIComponent(tr.dataset.reftype);
+  let d = null;
+  try { d = await fetch(API_URL + q).then(r => r.json()); }
+  catch (e) { d = { error: 'помилка завантаження' }; }
+
+  const loadRow = tbl.querySelector('tr.itm-det2[data-doc-for="' + id + '"]');
+  if (!loadRow || !loadRow.isConnected) return;
+  const cur = (d && d.currency) ? d.currency : '';
+  const num = v => fmt(v, Math.abs(v % 1) > 0.004 ? 2 : 0);
+  const sumCell = v => '<td class="col-total">' + esc(num(v) + (cur ? ' ' + cur : '')) + '</td>';
+  let html;
+  if (!d || d.error) {
+    html = row2('<td colspan="2"><span class="det-doc">' + esc((d && d.error) || 'помилка завантаження') + '</span></td>');
+  } else if (!d.rows || !d.rows.length) {
+    html = row2('<td colspan="2"><span class="det-doc">' + esc(d.note || 'вміст недоступний для цього типу документа') + '</span></td>');
+  } else {
+    html = d.rows.map(r => {
+      const qp = (r.qty != null && r.price != null) ? ' <span class="det-meta">· ' + esc(num(r.qty) + ' × ' + num(r.price)) + '</span>' : '';
+      return row2('<td><span class="det-doc">' + esc(r.name) + '</span>' + qp + '</td>' + sumCell(r.sum));
+    }).join('');
+    if (d.rest && d.rest.count) {
+      html += row2('<td><span class="det-doc">… ще ' + d.rest.count + ' позицій</span></td>' + sumCell(d.rest.sum));
+    }
+  }
+  if (tr.getAttribute('data-collapsed') === 'true') {
+    html = html.replace(/class="itm-det itm-det2"/g, 'class="itm-det itm-det2 det-hidden"');
   }
   loadRow.outerHTML = html;
 }
