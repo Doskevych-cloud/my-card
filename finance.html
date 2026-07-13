@@ -185,6 +185,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .pnl-table tr.itm-det td{color:var(--text3);font-weight:400;font-size:12px;padding-top:6px;padding-bottom:6px}
 .pnl-table tr.itm-det td:first-child{padding-left:84px}
 .pnl-table tr.itm-det .det-doc{color:var(--text2)}
+.pnl-table tr.itm-det .det-meta{color:var(--text3);font-size:11px}
 .pnl-table tr.itm-det td.col-total{color:var(--text2);font-weight:400}
 .pnl-table tr.itm-det + tr.itm-det td{border-top:1px dotted var(--border2)}
 .pnl-table tr.itm + tr.itm-det td{border-top:none}
@@ -773,7 +774,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     </ul>
     <h3>Деталізація рядка (клік по статті)</h3>
     <ul>
-      <li>Клік по рядку статті або підрозділу розкриває <b>документи</b>, з яких склалася сума: дата, тип документа, номер, контрагент.</li>
+      <li>Клік по рядку статті або підрозділу розкриває <b>документи</b>, з яких склалася сума: дата, зміст і тип з номером. Зміст залежить від документа: накладні — контрагент, банк — призначення платежу, каса — підзвітник і основание/коментар, нарахування ЗП — працівники (за спаданням суми, топ-3 + кількість решти).</li>
       <li>Деталізація читає той самий реєстр з тими самими фільтрами, тому <b>сума документів завжди дорівнює цифрі рядка</b>.</li>
       <li>Якщо документів понад 800 — хвіст згортається в один рядок «… ще N документів» із сумою.</li>
       <li>У друк / PDF / Excel деталізація не потрапляє — експортується канонічний звіт.</li>
@@ -2086,11 +2087,12 @@ async function pnlDrillToggle(tr, tbl) {
     html = detRow('<td colspan="2"><span class="det-doc">немає документів за період</span></td>');
   } else {
     html = d.docs.map(doc => {
-      const parts = [];
-      if (doc.date) parts.push(fmtD(doc.date));
-      parts.push(doc.docType + (doc.number ? ' №' + doc.number : ''));
-      if (doc.counterparty) parts.push(doc.counterparty);
-      return detRow('<td title="' + esc(doc.note || '') + '"><span class="det-doc">' + esc(parts.join(' · ')) + '</span></td>' + amtCell(doc.amount));
+      // Головне — ЗМІСТ (контрагент / призначення / працівники), тип+№ тьмяно в кінці
+      const main = [doc.counterparty, doc.desc].filter(Boolean).join(' · ');
+      const left = [doc.date ? fmtD(doc.date) : null, main || null].filter(Boolean).join(' · ');
+      const meta = doc.docType + (doc.number ? ' №' + doc.number : '');
+      return detRow('<td title="' + esc(doc.note || '') + '"><span class="det-doc">' + esc(left) +
+        '</span><span class="det-meta"> · ' + esc(meta) + '</span></td>' + amtCell(doc.amount));
     }).join('');
     if (d.rest && d.rest.count) {
       html += detRow('<td><span class="det-doc">… ще ' + d.rest.count + ' документів</span></td>' + amtCell(d.rest.amount));
