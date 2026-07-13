@@ -502,7 +502,8 @@ async function loadJobHealth() {
     }
     // порядок стабільний: спершу дзвінки, потім переписки, далі невідомі
     const order = ['calls_report', 'chat_review'];
-    jobs.sort((a, b) => (order.indexOf(a.job) + 99) - (order.indexOf(b.job) + 99) || a.job.localeCompare(b.job));
+    const oi = job => { const i = order.indexOf(job); return i === -1 ? order.length : i; };
+    jobs.sort((a, b) => oi(a.job) - oi(b.job) || a.job.localeCompare(b.job));
     tbody.innerHTML = jobs.map(j => {
       const last = j.last || {};
       const staleMs = last.run_at ? Date.now() - new Date(last.run_at).getTime() : Infinity;
