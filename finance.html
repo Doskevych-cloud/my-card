@@ -46,6 +46,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   .view.active{display:block !important}
   /* Expand all collapsed rows for print */
   .pnl-table tr.collapsed-hidden{display:table-row !important}
+  /* Drill-down деталі — не для друку, звіт канонічний */
+  .pnl-table tr.itm-det{display:none !important}
   .pnl-table tr[data-collapsed="true"]{data-collapsed:"false"}
   /* Simpler table for print */
   .pnl-wrap{border:1px solid #999;border-radius:0;overflow:visible}
@@ -176,6 +178,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .pnl-table tr.grp td:first-child:hover .tri{color:var(--text)}
 .pnl-table tr[data-collapsed="true"] .tri{transform:rotate(-90deg)}
 .pnl-table tr.collapsed-hidden{display:none}
+
+/* ── Drill-down: деталізація itm-рядка по документах (P&L) ── */
+.pnl-table tr.itm[data-drill] td:first-child{cursor:pointer;user-select:none}
+.pnl-table tr.itm[data-drill] td:first-child:hover{background:var(--surface)}
+.pnl-table tr.itm-det td{color:var(--text3);font-weight:400;font-size:12px;padding-top:6px;padding-bottom:6px}
+.pnl-table tr.itm-det td:first-child{padding-left:84px}
+.pnl-table tr.itm-det .det-doc{color:var(--text2)}
+.pnl-table tr.itm-det td.col-total{color:var(--text2);font-weight:400}
+.pnl-table tr.itm-det + tr.itm-det td{border-top:1px dotted var(--border2)}
+.pnl-table tr.itm + tr.itm-det td{border-top:none}
+.pnl-table tr.det-hidden{display:none}
 
 /* Value colors — neutral text; only zero/dash stays muted */
 .pnl-table .pos,
@@ -397,6 +410,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   .pnl-table.wh-compact tr.grd td:first-child,
   .pnl-table.wh-compact tr.sub td:first-child{padding-left:12px}
 }
+@media(max-width:600px){
+  .pnl-table tr.itm-det td:first-child{padding-left:42px}
+}
+
+/* ── Help-модалка «Як працює» (шаблон top_products.html) ── */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.modal-backdrop.open{display:flex}
+.modal{position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:14px;max-width:640px;width:100%;max-height:85vh;overflow-y:auto;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.modal h2{font-size:16px;font-weight:800;color:var(--text);margin-bottom:8px;padding-right:28px}
+.modal h3{font-size:13px;font-weight:700;color:var(--accent);margin:16px 0 5px;display:flex;align-items:center;gap:7px}
+.modal p{font-size:12.5px;color:var(--text2);line-height:1.6;margin:4px 0}
+.modal ul{margin:5px 0 5px 6px;list-style:none}
+.modal li{font-size:12.5px;color:var(--text2);line-height:1.55;margin:5px 0;padding-left:16px;position:relative}
+.modal li::before{content:'·';position:absolute;left:4px;color:var(--text3);font-weight:800}
+.modal b{color:var(--text);font-weight:700}
+.modal code{background:var(--bg2);padding:1px 6px;border-radius:5px;font-size:11.5px;color:var(--text);border:1px solid var(--border)}
+.modal .close{position:absolute;top:16px;right:18px;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;border:none;background:none;padding:4px}
+.modal .close:hover{color:var(--text)}
 </style>
 </head>
 <body>
@@ -455,6 +486,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
             <span class="ic">⊟</span> Згорнути
           </span>
         </span>
+        <span class="chip" onclick="openPnlHelp()" title="Як працює цей звіт">❓ Як працює</span>
       </div>
       <div class="mc-block">
         <div class="mc-head">
@@ -726,6 +758,35 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
 </div>
 
+<!-- ── Довідка «Як працює P&L» ── -->
+<div class="modal-backdrop" id="pnlHelpModal" onclick="if(event.target===this)closePnlHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт P&L">
+    <button class="close" onclick="closePnlHelp()" aria-label="Закрити">✕</button>
+    <h2>Як працює звіт P&L</h2>
+    <h3>Джерело даних</h3>
+    <p>Управлінський реєстр 1С <b>«Доходи і витрати»</b> (метод нарахування, accrual) — той самий, з якого будується бухгалтерський P&L в 1С. Всі суми вже в <b>USD</b> (управлінська валюта), курсова конвертація на сайті не виконується.</p>
+    <h3>Структура рядків</h3>
+    <ul>
+      <li><b>Виторг / Собівартість</b> — розбивка по підрозділах (напрямках) з виміру «Структурна одиниця» проводки.</li>
+      <li><b>Витрати і інші доходи</b> — рядок = рахунок управлінського плану рахунків. Секцію визначає код рахунку: 70 — виторг, 74 — інші доходи, 90 — собівартість, 92 — адміністративні, 93 — комерційні, 94/96/97 — інші, 98 і ПДВ/ЄСВ/ПДФО за описом — податки.</li>
+      <li><b>Період</b> — за датою проводки; <b>Організація</b>: «Всі» = Реакт + Генерація (Одеса). Ген.Київ у P&L навмисно не включено.</li>
+    </ul>
+    <h3>Деталізація рядка (клік по статті)</h3>
+    <ul>
+      <li>Клік по рядку статті або підрозділу розкриває <b>документи</b>, з яких склалася сума: дата, тип документа, номер, контрагент.</li>
+      <li>Деталізація читає той самий реєстр з тими самими фільтрами, тому <b>сума документів завжди дорівнює цифрі рядка</b>.</li>
+      <li>Якщо документів понад 800 — хвіст згортається в один рядок «… ще N документів» із сумою.</li>
+      <li>У друк / PDF / Excel деталізація не потрапляє — експортується канонічний звіт.</li>
+    </ul>
+    <h3>Чому цифра може здивувати</h3>
+    <ul>
+      <li>Кеш звіту — <b>1 година</b>. Нові проводки в 1С з'являться тут із затримкою до години; звіт і деталізація кешуються окремо, тож короткий розсинхрон між ними можливий у межах цієї години.</li>
+      <li>Це P&L за нарахуванням: оплата і рух грошей тут ні до чого — дивись Cash Flow.</li>
+      <li>Суми округлені до долара, тому видима сума деталей може відрізнятись від рядка на ±1&nbsp;$.</li>
+    </ul>
+  </div>
+</div>
+
 <script>
 const API_URL = 'https://price-api.doskevich.workers.dev';
 
@@ -947,6 +1008,7 @@ function downloadXLSX() {
       if (!cells.length) return;
       // Preserve hierarchy via leading spaces based on row class
       const cls = tr.className || '';
+      if (/\bitm-det\b/.test(cls)) return; // drill-down деталі — не для експорту
       let indent = '';
       if (/\bitm\b/.test(cls)) indent = '    ';
       else if (/\bgrp\b/.test(cls)) indent = '  ';
@@ -1015,7 +1077,7 @@ function downloadPDF() {
     const activeView = document.querySelector('.view.active');
     if (!activeView) throw new Error('view');
     const clone = activeView.cloneNode(true);
-    clone.querySelectorAll('.toolbar, .export-btn, .pnl-collapse-ctl').forEach(el => el.remove());
+    clone.querySelectorAll('.toolbar, .export-btn, .pnl-collapse-ctl, tr.itm-det').forEach(el => el.remove());
     clone.querySelectorAll('tr.collapsed-hidden').forEach(r => r.classList.remove('collapsed-hidden'));
     clone.querySelectorAll('tr[data-collapsed="true"]').forEach(r => r.setAttribute('data-collapsed', 'false'));
     clone.querySelectorAll('tr[data-bottom-summary]').forEach(r => { r.style.display = 'table-row'; });
@@ -1121,7 +1183,7 @@ function downloadPDF() {
   const clone = activeView.cloneNode(true);
 
   // Remove the toolbar from the clone (period picker, chips — not needed in PDF)
-  clone.querySelectorAll('.toolbar, .export-btn, .pnl-collapse-ctl').forEach(el => el.remove());
+  clone.querySelectorAll('.toolbar, .export-btn, .pnl-collapse-ctl, tr.itm-det').forEach(el => el.remove());
 
   // Expand all collapsed rows in the clone so they appear in PDF
   clone.querySelectorAll('tr.collapsed-hidden').forEach(r => r.classList.remove('collapsed-hidden'));
@@ -1895,11 +1957,18 @@ function renderPnlAccrual(data) {
       '<span class="cs">рентабельність <span class="' + pctClass(netMgnPct) + '">' + pctStr(netMgnPct) + '</span></span></div>' +
     '</div>';
 
+  // ── Drill-down helpers: клікабельний itm-рядок → документи (pnl_row_detail) ──
+  // data-drill="acc" (рахунок упр.обліку) або "dep" (підрозділ, kind=rev|cogs).
+  // Стартовий стан — згорнуто (data-collapsed=true → .tri повернутий).
+  const drillTri = '<span class="tri" aria-hidden="true">▾</span>';
+  const drillAcc = key => key ? ` data-drill="acc" data-drill-acc="${esc(key)}" data-collapsed="true"` : '';
+  const drillDep = (d, kind) => d.key ? ` data-drill="dep" data-drill-dep="${esc(d.key)}" data-drill-kind="${kind}" data-collapsed="true"` : '';
+
   // Helper to render a list of expense items under a section header
   const renderItems = (items, sectionName) => items
     .filter(e => e.section === sectionName)
     .sort((a, b) => b.total - a.total)
-    .map(e => `<tr class="itm"><td>${esc(e.category)}</td><td class="col-total">${fmtCell(e.total)}</td></tr>`)
+    .map(e => `<tr class="itm"${drillAcc(e.accountKey)}><td>${e.accountKey ? drillTri : ''}${esc(e.category)}</td><td class="col-total">${fmtCell(e.total)}</td></tr>`)
     .join('');
 
   // Percent cell helper (used for margin rows + bottom metrics)
@@ -1913,18 +1982,18 @@ function renderPnlAccrual(data) {
   rows += `<tr class="sec rev" data-sec="rev" data-is-sec="1"><td><span class="tri">▾</span>Виторг від продажів</td><td class="col-total">${fmtCell(revenue.total)}</td></tr>`;
   deps.forEach(d => {
     if (Math.abs(d.revenue.total || 0) < 0.5) return;
-    rows += `<tr class="itm" data-sec="rev"><td>${esc(cleanDepName(d.name))}</td><td class="col-total">${fmtCell(d.revenue.total)}</td></tr>`;
+    rows += `<tr class="itm" data-sec="rev"${drillDep(d,'rev')}><td>${d.key ? drillTri : ''}${esc(cleanDepName(d.name))}</td><td class="col-total">${fmtCell(d.revenue.total)}</td></tr>`;
   });
   // (інші непрямі доходи)
   if (income && income.length) {
     rows += `<tr class="grp" data-sec="rev" data-grp="_otherInc" data-is-grp="1"><td><span class="tri">▾</span>Інші непрямі доходи</td><td class="col-total">${fmtCell(otherIncome.total)}</td></tr>`;
-    rows += income.sort((a,b)=>b.total-a.total).map(i => `<tr class="itm" data-sec="rev" data-grp="_otherInc"><td>${esc(i.category)}</td><td class="col-total">${fmtCell(i.total)}</td></tr>`).join('');
+    rows += income.sort((a,b)=>b.total-a.total).map(i => `<tr class="itm" data-sec="rev" data-grp="_otherInc"${drillAcc(i.accountKey)}><td>${i.accountKey ? drillTri : ''}${esc(i.category)}</td><td class="col-total">${fmtCell(i.total)}</td></tr>`).join('');
   }
   // Собівартість + розбивка по підрозділах
   rows += `<tr class="sec cost" data-sec="cost" data-is-sec="1"><td><span class="tri">▾</span>Собівартість продажів</td><td class="col-total">${fmtCell(cogs.total)}</td></tr>`;
   deps.forEach(d => {
     if (Math.abs(d.cogs.total || 0) < 0.5) return;
-    rows += `<tr class="itm" data-sec="cost"><td>${esc(cleanDepName(d.name))}</td><td class="col-total">${fmtCell(d.cogs.total)}</td></tr>`;
+    rows += `<tr class="itm" data-sec="cost"${drillDep(d,'cogs')}><td>${d.key ? drillTri : ''}${esc(cleanDepName(d.name))}</td><td class="col-total">${fmtCell(d.cogs.total)}</td></tr>`;
   });
   // Всього витрати (OPEX + tax + other)
   const totalAllExp = opexTotal + taxTotal + otherExp;
@@ -1933,16 +2002,16 @@ function renderPnlAccrual(data) {
   rows += `<tr class="sec exp" data-cat="_allExp" data-sec="exp" data-is-sec="1"><td><span class="tri">▾</span>Непрямі (накладні) витрати</td><td class="col-total">${fmtCell(opexTotal)}</td></tr>`;
   // sub-group Адміністративні
   rows += `<tr class="grp" data-cat="_allExp" data-sec="exp" data-grp="_admin" data-is-grp="1"><td><span class="tri">▾</span>Адміністративні</td><td class="col-total">${fmtCell(sections.admin.total)}</td></tr>`;
-  rows += expenses.filter(e => e.section === 'admin').sort((a,b)=>b.total-a.total).map(e => `<tr class="itm" data-cat="_allExp" data-sec="exp" data-grp="_admin"><td>${esc(e.category)}</td><td class="col-total">${fmtCell(e.total)}</td></tr>`).join('');
+  rows += expenses.filter(e => e.section === 'admin').sort((a,b)=>b.total-a.total).map(e => `<tr class="itm" data-cat="_allExp" data-sec="exp" data-grp="_admin"${drillAcc(e.accountKey)}><td>${e.accountKey ? drillTri : ''}${esc(e.category)}</td><td class="col-total">${fmtCell(e.total)}</td></tr>`).join('');
   // sub-group Комерційні
   rows += `<tr class="grp" data-cat="_allExp" data-sec="exp" data-grp="_comm" data-is-grp="1"><td><span class="tri">▾</span>Комерційні / збут / транспорт</td><td class="col-total">${fmtCell(sections.commercial.total)}</td></tr>`;
-  rows += expenses.filter(e => e.section === 'commercial').sort((a,b)=>b.total-a.total).map(e => `<tr class="itm" data-cat="_allExp" data-sec="exp" data-grp="_comm"><td>${esc(e.category)}</td><td class="col-total">${fmtCell(e.total)}</td></tr>`).join('');
+  rows += expenses.filter(e => e.section === 'commercial').sort((a,b)=>b.total-a.total).map(e => `<tr class="itm" data-cat="_allExp" data-sec="exp" data-grp="_comm"${drillAcc(e.accountKey)}><td>${e.accountKey ? drillTri : ''}${esc(e.category)}</td><td class="col-total">${fmtCell(e.total)}</td></tr>`).join('');
   // Податки
   rows += `<tr class="sec tax" data-cat="_allExp" data-sec="tax" data-is-sec="1"><td><span class="tri">▾</span>Податки</td><td class="col-total">${fmtCell(taxTotal)}</td></tr>`;
-  rows += expenses.filter(e => e.section === 'tax').sort((a,b)=>b.total-a.total).map(e => `<tr class="itm" data-cat="_allExp" data-sec="tax"><td>${esc(e.category)}</td><td class="col-total">${fmtCell(e.total)}</td></tr>`).join('');
+  rows += expenses.filter(e => e.section === 'tax').sort((a,b)=>b.total-a.total).map(e => `<tr class="itm" data-cat="_allExp" data-sec="tax"${drillAcc(e.accountKey)}><td>${e.accountKey ? drillTri : ''}${esc(e.category)}</td><td class="col-total">${fmtCell(e.total)}</td></tr>`).join('');
   // Інші неоп.
   rows += `<tr class="sec other" data-cat="_allExp" data-sec="other" data-is-sec="1"><td><span class="tri">▾</span>Інші неопераційні витрати</td><td class="col-total">${fmtCell(otherExp)}</td></tr>`;
-  rows += expenses.filter(e => e.section === 'other_expense').sort((a,b)=>b.total-a.total).map(e => `<tr class="itm" data-cat="_allExp" data-sec="other"><td>${esc(e.category)}</td><td class="col-total">${fmtCell(e.total)}</td></tr>`).join('');
+  rows += expenses.filter(e => e.section === 'other_expense').sort((a,b)=>b.total-a.total).map(e => `<tr class="itm" data-cat="_allExp" data-sec="other"${drillAcc(e.accountKey)}><td>${e.accountKey ? drillTri : ''}${esc(e.category)}</td><td class="col-total">${fmtCell(e.total)}</td></tr>`).join('');
   // Прибутки
   rows += `<tr class="sp"><td></td><td></td></tr>`;
   rows += `<tr class="grd"><td>Операційний прибуток / збиток</td><td class="col-total">${fmtCell(opProfit)}</td></tr>`;
@@ -1956,10 +2025,86 @@ function renderPnlAccrual(data) {
   document.getElementById('pnlBody').innerHTML =
     '<div class="pnl-wrap"><table class="pnl-table"><thead><tr><th>P&L стаття</th><th class="col-total">Всього</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   pnlBindCollapse();
+  pnlBindDrill(document.querySelector('#pnlBody .pnl-table'));
   // Apply saved collapsed state (default true — collapsed)
   const collapsed = pnlState.collapsed !== false;
   pnlToggleAll(collapsed, document.querySelector('#pnlBody .pnl-table'));
 }
+
+// ═══════════════════════════════════════════════
+// Drill-down P&L: клік по itm-рядку → з яких документів склалася сума.
+// Бекенд action=pnl_row_detail читає ТОЙ САМИЙ реєстр ДоходыИРасходы з тими
+// самими фільтрами, тому сума деталей == клітинці звіту.
+// Стан: data-collapsed на батьку (▾/▸), .det-hidden на det-рядках — незалежний
+// від секційного collapse (.collapsed-hidden), обидва можуть діяти одночасно.
+// ═══════════════════════════════════════════════
+let _pnlDrillSeq = 0;
+function pnlBindDrill(tbl) {
+  if (!tbl) return;
+  tbl.querySelectorAll('tr.itm[data-drill]').forEach(tr => {
+    const cell = tr.querySelector('td');
+    if (cell) cell.addEventListener('click', () => pnlDrillToggle(tr, tbl));
+  });
+}
+async function pnlDrillToggle(tr, tbl) {
+  const wasOpen = tr.getAttribute('data-collapsed') !== 'true';
+  if (wasOpen) {
+    tr.setAttribute('data-collapsed', 'true');
+    tbl.querySelectorAll('tr.itm-det[data-det-for="' + tr.dataset.detId + '"]').forEach(r => r.classList.add('det-hidden'));
+    return;
+  }
+  tr.setAttribute('data-collapsed', 'false');
+  if (tr.dataset.detId) {
+    tbl.querySelectorAll('tr.itm-det[data-det-for="' + tr.dataset.detId + '"]').forEach(r => r.classList.remove('det-hidden'));
+    return;
+  }
+  const id = 'd' + (++_pnlDrillSeq);
+  tr.dataset.detId = id;
+  // det-рядки успадковують секційні атрибути батька, щоб collapse секцій їх ховав
+  const inherit = ['data-sec', 'data-grp', 'data-cat']
+    .map(a => tr.hasAttribute(a) ? ' ' + a + '="' + tr.getAttribute(a) + '"' : '').join('');
+  const detRow = inner => '<tr class="itm-det" data-det-for="' + id + '"' + inherit + '>' + inner + '</tr>';
+  tr.insertAdjacentHTML('afterend', detRow('<td colspan="2"><span class="det-doc">завантаження…</span></td>'));
+
+  let q = '?action=pnl_row_detail&from=' + pnlState.from + '&to=' + pnlState.to +
+          (pnlState.org ? '&org=' + encodeURIComponent(pnlState.org) : '');
+  if (tr.dataset.drill === 'acc') q += '&account=' + encodeURIComponent(tr.dataset.drillAcc);
+  else q += '&depKey=' + encodeURIComponent(tr.dataset.drillDep) + '&kind=' + encodeURIComponent(tr.dataset.drillKind);
+  let d = null;
+  try { d = await fetch(API_URL + q).then(r => r.json()); }
+  catch (e) { d = { error: 'помилка завантаження' }; }
+
+  // Якщо таблицю перерендерили (зміна періоду/org) — loading-рядка вже нема в DOM
+  const loadRow = tbl.querySelector('tr.itm-det[data-det-for="' + id + '"]');
+  if (!loadRow || !loadRow.isConnected) return;
+  const fmtD = s => s && s.length >= 10 ? s.slice(8, 10) + '.' + s.slice(5, 7) : '';
+  const amtCell = v => '<td class="col-total">' + (Math.abs(v) < 0.005 ? '<span class="zr">—</span>' : fmt(v, 0) + ' $') + '</td>';
+  let html;
+  if (!d || d.error) {
+    html = detRow('<td colspan="2"><span class="det-doc">' + esc((d && d.error) || 'помилка завантаження') + '</span></td>');
+  } else if (!d.docs || !d.docs.length) {
+    html = detRow('<td colspan="2"><span class="det-doc">немає документів за період</span></td>');
+  } else {
+    html = d.docs.map(doc => {
+      const parts = [];
+      if (doc.date) parts.push(fmtD(doc.date));
+      parts.push(doc.docType + (doc.number ? ' №' + doc.number : ''));
+      if (doc.counterparty) parts.push(doc.counterparty);
+      return detRow('<td title="' + esc(doc.note || '') + '"><span class="det-doc">' + esc(parts.join(' · ')) + '</span></td>' + amtCell(doc.amount));
+    }).join('');
+    if (d.rest && d.rest.count) {
+      html += detRow('<td><span class="det-doc">… ще ' + d.rest.count + ' документів</span></td>' + amtCell(d.rest.amount));
+    }
+  }
+  // Якщо юзер встиг згорнути drill, поки грузилось — вставляємо прихованими
+  if (tr.getAttribute('data-collapsed') === 'true') {
+    html = html.replace(/class="itm-det"/g, 'class="itm-det det-hidden"');
+  }
+  loadRow.outerHTML = html;
+}
+function openPnlHelp()  { document.getElementById('pnlHelpModal').classList.add('open'); }
+function closePnlHelp() { document.getElementById('pnlHelpModal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePnlHelp(); });
 
 function pnlDateChanged() {
   pnlState.preset = detectPreset(pnlState.from, pnlState.to) || '';
