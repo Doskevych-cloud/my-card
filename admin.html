@@ -229,6 +229,29 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
 
   <div class="card" style="margin-top:24px">
     <div class="card-head">
+      <h2>Щоденні аналізи</h2>
+      <div class="spacer"></div>
+      <span style="font-size:12px;color:var(--text3)" title="Локальні launchd-джоби на Mac: дзвінки 08:00, переписки 08:10">launchd на Mac · 08:00 / 08:10</span>
+    </div>
+    <table>
+      <thead><tr>
+        <th style="padding:8px 14px;font-size:11px;text-align:left;color:var(--text3)">Звіт</th>
+        <th style="padding:8px 14px;font-size:11px;text-align:left;color:var(--text3)">Останній запуск</th>
+        <th style="padding:8px 14px;font-size:11px;text-align:left;color:var(--text3)">Статус</th>
+        <th style="padding:8px 14px;font-size:11px;text-align:left;color:var(--text3)">Звіт за</th>
+        <th style="padding:8px 14px;font-size:11px;text-align:left;color:var(--text3)">Останній відправлений</th>
+        <th style="padding:8px 14px;font-size:11px;text-align:left;color:var(--text3)">Деталі</th>
+      </tr></thead>
+      <tbody id="jobHealthBody"><tr><td colspan="6" style="color:var(--text3)">Завантаження…</td></tr></tbody>
+    </table>
+    <details style="padding:8px 14px 12px">
+      <summary style="cursor:pointer;font-size:12px;color:var(--text3)">Історія запусків</summary>
+      <div id="jobHealthHistory" style="margin-top:8px;font-size:12px;color:var(--text2)"></div>
+    </details>
+  </div>
+
+  <div class="card" style="margin-top:24px">
+    <div class="card-head">
       <h2>Ручний sync</h2>
       <div class="spacer"></div>
     </div>
@@ -417,6 +440,7 @@ Auth.require('admin').then(user => {
   loadRoles();
   loadUsers();
   loadAutosyncStatus();
+  loadJobHealth();
   loadBotPrompt();
   loadBotSettings();
   loadBotFeedback();
@@ -454,6 +478,59 @@ async function loadAutosyncStatus() {
     span.textContent = `Останній синк: ${local} · ${fmtAgo(max)}`;
   } catch (_) {
     span.textContent = '—';
+  }
+}
+
+// ── Щоденні аналізи (heartbeat локальних джоб calls-report / chat-review) ──
+const JOB_LABELS = { calls_report: 'Дзвінки (РОП)', chat_review: 'Переписки (chat-review)' };
+const JOB_STATUS = { ok: 'відправлено', skip: 'пропуск', fail: 'помилка' };
+function jobEsc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function jobFmtDt(iso) {
+  if (!iso) return '—';
+  const local = new Date(iso).toLocaleString('uk-UA', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+  return `${local} · ${fmtAgo(iso)}`;
+}
+async function loadJobHealth() {
+  const tbody = document.getElementById('jobHealthBody');
+  if (!tbody) return;
+  try {
+    const r = await Auth.apiFetch('_admin_job_health');
+    const jobs = r.jobs || [];
+    if (!jobs.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text3)">Ще жодного heartbeat — джоби не пінгували</td></tr>';
+      return;
+    }
+    // порядок стабільний: спершу дзвінки, потім переписки, далі невідомі
+    const order = ['calls_report', 'chat_review'];
+    jobs.sort((a, b) => (order.indexOf(a.job) + 99) - (order.indexOf(b.job) + 99) || a.job.localeCompare(b.job));
+    tbody.innerHTML = jobs.map(j => {
+      const last = j.last || {};
+      const staleMs = last.run_at ? Date.now() - new Date(last.run_at).getTime() : Infinity;
+      const stale = staleMs > 26 * 3600 * 1000; // джоба мала б бігати щодня о 8-й
+      const bad = last.status === 'fail' || stale;
+      const stColor = bad ? 'var(--red)' : (last.status === 'ok' ? 'var(--green)' : 'var(--text2)');
+      const stText = stale ? 'не запускалась' : (JOB_STATUS[last.status] || last.status || '—');
+      return `<tr>
+        <td>${jobEsc(JOB_LABELS[j.job] || j.job)}</td>
+        <td style="white-space:nowrap">${jobFmtDt(last.run_at)}</td>
+        <td style="color:${stColor}">${jobEsc(stText)}</td>
+        <td>${jobEsc(last.report_date || '—')}</td>
+        <td style="white-space:nowrap">${j.last_ok ? `${jobEsc(j.last_ok.report_date || '')} (${jobFmtDt(j.last_ok.run_at)})` : '—'}</td>
+        <td style="font-size:12px;color:var(--text3)">${jobEsc(last.detail || '')}</td>
+      </tr>`;
+    }).join('');
+    const hist = document.getElementById('jobHealthHistory');
+    if (hist) hist.innerHTML = jobs.map(j =>
+      `<div style="margin-bottom:6px"><b>${jobEsc(JOB_LABELS[j.job] || j.job)}</b></div>` +
+      (j.history || []).map(h =>
+        `<div style="display:grid;grid-template-columns:150px 90px 90px 1fr;gap:8px;padding:2px 0">
+           <span>${jobFmtDt(h.run_at)}</span>
+           <span style="color:${h.status === 'fail' ? 'var(--red)' : 'var(--text2)'}">${jobEsc(JOB_STATUS[h.status] || h.status)}</span>
+           <span>${jobEsc(h.report_date || '—')}</span>
+           <span style="color:var(--text3)">${jobEsc(h.detail || '')}</span>
+         </div>`).join('') + '<div style="height:10px"></div>').join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red)">Помилка: ${jobEsc(e.message || e)}</td></tr>`;
   }
 }
 
