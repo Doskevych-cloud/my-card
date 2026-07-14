@@ -362,7 +362,9 @@ async function loadReport(){
     const orderNoms = new Set((d.rows || []).filter(r => r.ordered > 0 || r.received > 0).map(r => r.nom));
     for (const r of (d.rows || [])) {
       if (r.used > 0) { state.saved[r.nom] = r.used; state._vals[r.nom] = String(r.used); }
-      if (!orderNoms.has(r.nom)) {
+      // «Додано зі складу» = лише позиції зі збереженим «використано» поза замовленням.
+      // Рядки без ordered/received/used (напр. зачищені в 1С позиції з qty=0) — сміття, не показуємо.
+      if (!orderNoms.has(r.nom) && Number(r.used) > 0) {
         const st = (d.stock || []).find(s => s.nom === r.nom);
         state.extraRows.push({ nom: r.nom, name: r.name, stockQty: st ? st.qty : null, used: r.used });
       }
