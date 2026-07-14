@@ -267,7 +267,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>Використано</b> — зі <b>звіту бригадира</b> (вкладка «📝 Звіт бригади», заповнюється з телефона). У зведенні — сума по всіх бригадах = всього використано на об'єкт.</li>
       <li><b>Повернено</b> — повернення бригадою на склад компанії (1С). Передача на склад іншої бригади сюди <b>не</b> входить.</li>
       <li><b>Між бригадами</b> — колонка з'являється, якщо по замовленню були передачі бригада→бригада: у секції бригади «+» = отримала від іншої бригади, «−» = передала їй. На «Разом по замовленню» не впливає — товар лишився на бригадах.</li>
-      <li><b>Списано</b> — списано бухгалтерією під замовлення (видаткові з бригадного складу, 1С). <b>Червоне</b> — звіт бригади заповнено, але «Списано» з ним не збігається (бухгалтерія ще не списала або списала не те). Поки звіту немає — розбіжність не підсвічується.</li>
+      <li><b>Списано</b> — списано бухгалтерією під замовлення (видаткові з бригадного складу, 1С). <b>Червоне</b> — звіт бригади заповнено, але «Списано» з ним не збігається (бухгалтерія ще не списала або списала не те). Поки звіту немає — розбіжність не підсвічується. Звіт «є» = збережені позиції або <b>відправлена</b> бригадиром форма (навіть нульова).</li>
       <li><b>Залишок</b> = Отримано − Використано − Повернено (у секції бригади — ще ± Між бригадами) — що фактично лишилось на бригаді по цьому замовленню. Зелений нуль — усе використано/повернено; червоний мінус — використано більше, ніж отримано (перевір звіт або переміщення).</li>
     </ul>
 
@@ -301,7 +301,7 @@ const state = {
   brigSet: new Set(),   // refs бригадних складів (для напрямку)
   mvSender: '', mvReceiver: '', mvCustomer: '', mvOrder: '',  // фільтри-сутності документів (підрядок, lowercase; '' = вимкнено)
   planCache: {},        // key(набір order_ref) → мапа name→{ordered,unit} | 'loading' (для колонки «Замовлено» у звірці)
-  usageCache: {},       // order_ref → rows[{wh_name,name,qty}] | 'loading' (колонка «Використано» — звіти бригадирів)
+  usageCache: {},       // order_ref → {usage:[{wh_name,name,qty}], submits:[{wh_name,submitted_at}]} | 'loading' (звіти бригадирів + мітки «подано»)
   moveFrom: null, moveTo: null,
   moveCats: new Set(),  // мульти-вибір типів руху (Отримано/Повернено/Списано) — фільтр списку
   mvMode: 'list',       // 'list' (журнал рухів) | 'recon' (звірка по одному замовленню)
@@ -503,8 +503,12 @@ function reconOrderRows(orderRef, brigade) {
   // Використано по факту — звіти бригадирів (brigade_usage). У секції бригади —
   // лише її звіт; у зведенні — сума по всіх бригадах. Позиція, використана поза
   // замовленням (додана зі складу), теж створює рядок.
-  const usage = getUsage(orderRef);
-  let hasReport = false;   // чи є взагалі звіт (у скоупі brigade) — гейт підсвітки «Списано»
+  const uc = getUsage(orderRef);
+  const usage = (uc && typeof uc === 'object') ? uc.usage : uc;        // масив | 'loading' | 'error'
+  const submits = (uc && typeof uc === 'object') ? (uc.submits || []) : [];
+  // Звіт «є» = збережені позиції АБО подана бригадиром форма («Відправити» на
+  // brigade-report), навіть нульова — гейт підсвітки «Списано»
+  let hasReport = submits.some(s => !brigade || s.wh_name === brigade);
   if (Array.isArray(usage)) {
     for (const u of usage) {
       if (brigade && u.wh_name !== brigade) continue;
@@ -539,14 +543,14 @@ function reconOrderRows(orderRef, brigade) {
 }
 // Використано по факту для замовлення (звіти бригадирів). Кеш аналогічно getPlan.
 function getUsage(orderRef) {
-  if (!orderRef) return [];
+  if (!orderRef) return { usage: [], submits: [] };
   const c = state.usageCache[orderRef];
-  if (Array.isArray(c)) return c;
+  if (c && typeof c === 'object') return c;
   if (c === 'loading') return 'loading';
   state.usageCache[orderRef] = 'loading';
   fetch(API_URL + '?action=brigade_usage_by_order&order=' + encodeURIComponent(orderRef))
     .then(r => r.json())
-    .then(d => { state.usageCache[orderRef] = (d && Array.isArray(d.usage)) ? d.usage : 'error'; render(); })
+    .then(d => { state.usageCache[orderRef] = (d && Array.isArray(d.usage)) ? { usage: d.usage, submits: d.submits || [] } : 'error'; render(); })
     .catch(() => { state.usageCache[orderRef] = 'error'; render(); });
   return 'loading';
 }
@@ -557,8 +561,11 @@ function _reconBrigades(orderRef) {
   for (const d of (Array.isArray(state.allMoves) ? state.allMoves : [])) {
     if (d.order_ref === orderRef) _docBrigades(d).forEach(x => s.add(x));
   }
-  const u = getUsage(orderRef);
-  if (Array.isArray(u)) for (const x of u) s.add(x.wh_name);
+  const uc = getUsage(orderRef);
+  if (uc && typeof uc === 'object') {
+    (uc.usage || []).forEach(x => s.add(x.wh_name));
+    (uc.submits || []).forEach(x => s.add(x.wh_name));   // подана (навіть нульова) форма = бригада задіяна
+  }
   return [...s].filter(Boolean).sort((a, b) => a.localeCompare(b, 'uk'));
 }
 // Унікальні замовлення (по order_ref) для пікера звірки — найновіші зверху.

@@ -31,6 +31,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14
 .pick .t{font-weight:700;font-size:14.5px;overflow-wrap:anywhere}
 .pick .m{font-size:11.5px;color:var(--text3);margin-top:2px;display:flex;gap:10px;flex-wrap:wrap}
 .pick .m .done{color:var(--green)}
+.pick .m .draft{color:var(--text3)}
 
 /* Шапка форми */
 .rep-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
@@ -48,11 +49,19 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14
 .row .nm{font-size:13.5px;color:var(--text);overflow-wrap:anywhere;line-height:1.35}
 .row .mt{font-size:11.5px;color:var(--text3);margin-top:3px;font-variant-numeric:tabular-nums}
 .row .mt b{color:var(--text2);font-weight:600}
-.row input{flex:0 0 92px;width:92px;padding:10px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;font-family:var(--mono);text-align:right;outline:none;-moz-appearance:textfield}
+.row input{flex:0 0 82px;width:82px;padding:10px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;font-family:var(--mono);text-align:right;outline:none;-moz-appearance:textfield}
 .row input::-webkit-outer-spin-button,.row input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .row input:focus{border-color:var(--accent)}
 .row input.filled{border-color:var(--line-2);color:var(--text)}
+.row input.chg{border-color:var(--accent)}
 .row input.bad{border-color:var(--red)}
+.row .rowplus{flex:0 0 40px;width:40px;height:41px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-size:19px;line-height:1;cursor:pointer;font-family:inherit;padding:0}
+.row .rowplus:active{background:var(--bg3);border-color:var(--accent);color:var(--accent)}
+.row .mt .oh b{color:var(--text)}
+.row .mt .oh.neg,.row .mt .oh.neg b{color:var(--red)}
+.row .mt .dim{color:var(--text3)}
+.bulk{display:block;width:100%;margin:0 0 8px;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-align:center}
+.bulk:active{background:var(--bg3)}
 .sec-h{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:700;margin:14px 4px 6px;display:flex;align-items:baseline}
 .sec-h .r{margin-left:auto;font-weight:600;text-transform:none;letter-spacing:0}
 .add-btn{display:block;width:100%;margin-top:10px;padding:12px;background:var(--bg2);border:1px dashed var(--border);border-radius:12px;color:var(--text2);font-size:13.5px;font-weight:600;cursor:pointer;text-align:center;font-family:inherit}
@@ -63,7 +72,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14
 .savebar.on{display:flex;align-items:center;gap:12px}
 .savebar .st{flex:1;font-size:11.5px;color:var(--text3);line-height:1.35}
 .savebar .st b{color:var(--text);font-weight:700}
-.savebar button{flex:0 0 auto;padding:12px 22px;background:var(--accent-bg);border:1px solid var(--accent);border-radius:10px;color:var(--accent);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.savebar button{flex:0 0 auto;padding:12px 18px;background:var(--accent-bg);border:1px solid var(--accent);border-radius:10px;color:var(--accent);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.savebar button.ghost{background:var(--bg2);border-color:var(--border);color:var(--text2);font-weight:600}
 .savebar button:disabled{opacity:.45;cursor:default}
 
 /* Bottom-sheet «додати зі складу» */
@@ -80,6 +90,19 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14
 .sh-it .nm{flex:1;min-width:0;font-size:13px;overflow-wrap:anywhere}
 .sh-it .q{flex:0 0 auto;font-size:12.5px;color:var(--text2);font-variant-numeric:tabular-nums}
 .sh-empty{padding:22px;text-align:center;color:var(--text3);font-size:12.5px}
+
+/* Bottom-sheet позиції (＋ додати використане) */
+.rs-nm{font-size:13.5px;font-weight:700;overflow-wrap:anywhere;margin-bottom:4px;padding-right:30px}
+.rs-nums{font-size:12.5px;color:var(--text3);margin-bottom:14px;font-variant-numeric:tabular-nums}
+.rs-nums b{color:var(--text)}
+.rs-nums .neg,.rs-nums .neg b{color:var(--red)}
+.rs-addrow{display:flex;gap:8px}
+.rs-addrow input{flex:1;margin-bottom:0}
+.rs-add{flex:0 0 auto;padding:0 20px;background:var(--accent-bg);border:1px solid var(--accent);border-radius:10px;color:var(--accent);font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
+.rs-add:active{opacity:.8}
+.rs-q{display:block;width:100%;padding:12px;margin-top:8px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;text-align:center}
+.rs-q:active{background:var(--bg3)}
+.rs-q.ghost{color:var(--text3);border-style:dashed;font-weight:500}
 
 /* Стани */
 .loading{padding:60px 20px;text-align:center;color:var(--text2);font-size:13px}
@@ -106,6 +129,22 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14
 .modal b{color:var(--text);font-weight:700}
 .modal .close{position:absolute;top:14px;right:16px;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;border:none;background:none;padding:4px}
 .modal .close:hover{color:var(--text)}
+
+/* Десктоп: фокус на мобільній версії, але на широкому екрані — не розтягнутий
+   мобільний, а нормальна сторінка: ширший контейнер, картки у 2 колонки,
+   шити стають центрованими діалогами, є hover-стани. */
+@media (min-width: 760px){
+  .wrap{max-width:820px}
+  .picks{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .picks .pick{margin-bottom:0}
+  .row{padding:12px 14px}
+  .row input{flex-basis:110px;width:110px}
+  .pick:hover,.back:hover,.add-btn:hover,.bulk:hover,.rs-q:hover,.sh-it:hover{background:var(--bg3)}
+  .rowplus:hover{background:var(--bg3);border-color:var(--accent);color:var(--accent)}
+  .sheet{left:50%;right:auto;bottom:auto;top:50%;transform:translate(-50%,-50%);width:500px;max-width:92vw;max-height:80vh;border-bottom:1px solid var(--border);border-radius:14px;padding:16px 18px}
+  .savebar{padding-left:max(14px, calc(50vw - 396px));padding-right:max(14px, calc(50vw - 396px))}
+  .toast{bottom:96px}
+}
 </style>
 </head>
 <body>
@@ -124,7 +163,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14
 
 <div class="savebar" id="savebar">
   <div class="st" id="saveSt"></div>
-  <button id="saveBtn" onclick="saveReport()">Зберегти</button>
+  <button class="ghost" id="saveBtn" onclick="saveReport(false)">Зберегти</button>
+  <button id="sendBtn" onclick="saveReport(true)">Відправити</button>
 </div>
 
 <div class="sheet-bg" id="sheetBg" onclick="closeSheet()"></div>
@@ -134,6 +174,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14
   <div class="lst" id="sheetList"></div>
 </div>
 
+<div class="sheet-bg" id="rowBg" onclick="closeRowSheet()"></div>
+<div class="sheet" id="rowSheet"></div>
+
 <div class="toast" id="toast"></div>
 
 <div class="modal-backdrop" id="helpModal" onclick="if(event.target===this)closeHelp()">
@@ -141,18 +184,22 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14
     <button class="close" onclick="closeHelp()" aria-label="Закрити">✕</button>
     <h2>📝 Як працює звіт бригади</h2>
     <p>Тут бригадир вносить, <b>скільки фактично використав</b> по кожній позиції замовлення. Ці цифри йдуть у звірку на сторінці «Бригади» (колонка «Використано») — і за ними бухгалтерія списує матеріали під замовлення.</p>
-    <h3>Як заповнювати</h3>
+    <h3>Два способи заповнювати</h3>
     <ul>
-      <li>Обери <b>замовлення</b> — у списку всі замовлення, по яких твій склад отримував або повертав товар.</li>
-      <li>Навпроти кожної позиції введи, <b>скільки використано на об'єкті всього</b> (наростаючим підсумком, не «за сьогодні»).</li>
+      <li><b>По ходу монтажу</b> — тисни <b>＋</b> біля позиції та введи, <b>скільки пішло зараз</b> (за сьогодні). Воно саме додається до «всього» — нічого не треба рахувати в умі.</li>
+      <li><b>Все разом у кінці</b> — кнопка <b>«Використано все отримане»</b> над списком проставляє використано = отримано по всіх позиціях, далі підправ лише винятки та збережи.</li>
+      <li>Поле праворуч — <b>використано всього</b> по позиції (наростаючим підсумком). Його можна редагувати і напряму, якщо треба виправити цифру.</li>
       <li>Використав щось, чого нема в замовленні, — тисни <b>«＋ Додати зі складу»</b> і обери позицію зі свого залишку.</li>
-      <li>Щоб прибрати позицію зі звіту — постав <b>0</b> або зітри значення, потім «Зберегти».</li>
+      <li>Щоб прибрати позицію зі звіту — «Обнулити» в картці позиції (＋) або постав <b>0</b>, потім «Зберегти».</li>
+      <li><b>Зберегти</b> — проміжна чернетка, можна тиснути скільки завгодно. <b>Відправити</b> — подати звіт: у списку замовлень з'явиться позначка «✓ звіт подано» з датою. Виправив щось після подання — просто відправ ще раз.</li>
+      <li>Подати можна і <b>порожній/нульовий звіт</b> («нічого не використано») — це теж інформація для звірки.</li>
       <li>Значення можна виправляти будь-коли — зберігається останнє.</li>
     </ul>
     <h3>Звідки цифри поряд з полем</h3>
     <ul>
-      <li><b>Замовлено</b> — кількість із замовлення покупця (1С).</li>
-      <li><b>Отримано</b> — скільки твоя бригада отримала переміщеннями під це замовлення від складів компанії, зокрема з «Інструменти/…» (1С). Передачі від інших бригад сюди не входять.</li>
+      <li><b>Отримано</b> — скільки твоя бригада отримала переміщеннями під це замовлення від складів компанії (1С). Передачі від інших бригад сюди не входять.</li>
+      <li><b>На руках</b> = отримано − у звіті: що ще лишилось у бригади по цій позиції. Рахується наживо, поки вводиш. <b>Червоне</b> (мінус) — у звіті більше, ніж 1С видала: перевір цифру або дочекайся синхронізації переміщення.</li>
+      <li><b>Замовлено</b> — кількість із замовлення покупця (1С), довідково.</li>
       <li>Дані 1С синхронізуються кілька разів на день — свіже переміщення може з'явитися із затримкою до пів години.</li>
     </ul>
     <h3>Нюанси</h3>
@@ -179,6 +226,7 @@ const state = {
   extraRows: [],       // додані зі складу [{nom, name, stockQty}]
   saved: {},           // знімок збереженого {nom: qty} — для dirty-перевірки
   baseVersion: undefined, // optimistic-concurrency токен з brigade_report_get (undefined = бекенд його не віддав)
+  submittedAt: null,   // коли звіт востаннє подано кнопкою «Відправити» (null = ще не подавали)
   search: '',
   sheetSearch: '',
   saving: false,
@@ -197,7 +245,7 @@ function toast(msg, cls){
 }
 function openHelp(){ document.getElementById('helpModal').classList.add('open'); }
 function closeHelp(){ document.getElementById('helpModal').classList.remove('open'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeHelp(); closeSheet(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeHelp(); closeSheet(); closeRowSheet(); } });
 
 // ─── Значення полів (живуть у DOM, збираються по data-nom) ───
 function parseQty(v){
@@ -227,10 +275,15 @@ function refreshSaveBar(){
   const cur = currentValues();
   const n = Object.keys(cur).length;
   const dirty = isDirty();
+  // Зберегти = чернетка (активна лише коли є зміни, нулі/порожньо — теж валідно).
+  // Відправити = подати звіт (активна завжди — подати можна і нульовий звіт).
   document.getElementById('saveSt').innerHTML = dirty
-    ? '<b>Не збережено</b> · заповнено: ' + n
-    : 'Збережено · заповнено: ' + n;
+    ? '<b>Не збережено</b> · ' + n + ' поз.'
+    : (state.submittedAt
+        ? 'Подано ' + fmtDate(state.submittedAt) + ' · ' + n + ' поз.'
+        : 'Збережено, не подано · ' + n + ' поз.');
   document.getElementById('saveBtn').disabled = state.saving || !dirty;
+  document.getElementById('sendBtn').disabled = state.saving;
 }
 
 // ─── Навігація (hash: #wh=..&order=..) ───
@@ -300,6 +353,7 @@ async function loadReport(){
     if (d.error) throw new Error(d.error);
     state.report = d;
     state.baseVersion = ('base_version' in d) ? d.base_version : undefined;
+    state.submittedAt = d.submitted_at || null;
     if (d.warehouse && d.warehouse.name) state.whName = d.warehouse.name;
     // знімок збереженого + «зайві» рядки (used поза замовленням → показуємо як додані)
     state.saved = {};
@@ -334,11 +388,11 @@ function whsHtml(){
   const q = state.search.toLowerCase();
   const list = q ? all.filter(w => (w.name || '').toLowerCase().includes(q) || brigName(w.name).toLowerCase().includes(q)) : all;
   const search = all.length > 8 ? '<input type="text" id="mainSearch" class="search" placeholder="🔎 Пошук бригади…" autocomplete="off" oninput="onSearch(this.value)">' : '';
-  return search + '<div class="sec-h"><span>Обери бригаду</span></div>' + (list.length ? list.map(w =>
+  return search + '<div class="sec-h"><span>Обери бригаду</span></div>' + (list.length ? '<div class="picks">' + list.map(w =>
     '<button class="pick" onclick="pickWh(\'' + esc(String(w.ref_key)) + '\')">' +
       '<div class="t">' + esc(brigName(w.name)) + '</div>' +
       '<div class="m"><span>' + fmtQ(w.items) + ' поз. на складі</span></div>' +
-    '</button>').join('') : '<div class="empty">— нічого не знайдено —</div>');
+    '</button>').join('') + '</div>' : '<div class="empty">— нічого не знайдено —</div>');
 }
 function ordersHtml(){
   document.getElementById('sub').textContent = brigName(state.whName) || '';
@@ -350,21 +404,33 @@ function ordersHtml(){
   const search = '<input type="text" id="mainSearch" class="search" placeholder="🔎 Покупець або № замовлення…" autocomplete="off" oninput="onSearch(this.value)">';
   if (!state.orders.length) return backBtn + '<div class="empty">По твоєму складу ще немає замовлень із рухом товару.</div>';
   // Бригадир думає об'єктом/покупцем, не номером — покупець і є заголовком картки.
-  return backBtn + search + '<div class="sec-h"><span>Замовлення</span></div>' + (list.length ? list.map(o =>
+  return backBtn + search + '<div class="sec-h"><span>Замовлення</span></div>' + (list.length ? '<div class="picks">' + list.map(o =>
     '<button class="pick" onclick="pickOrder(\'' + esc(String(o.ref)) + '\')">' +
       '<div class="t">' + esc(o.customer || o.number || '—') + '</div>' +
-      '<div class="m"><span>' + (o.customer ? esc(o.number || '—') + ' · ' : '') + fmtDate(o.date) + '</span>' + (o.has_report ? '<span class="done">✓ звіт заповнено</span>' : '') + '</div>' +
-    '</button>').join('') : '<div class="empty">— нічого не знайдено —</div>');
+      '<div class="m"><span>' + (o.customer ? esc(o.number || '—') + ' · ' : '') + fmtDate(o.date) + '</span>' +
+      (o.submitted_at ? '<span class="done">✓ звіт подано ' + fmtDate(o.submitted_at) + '</span>' : (o.has_report ? '<span class="draft">чернетка</span>' : '')) + '</div>' +
+    '</button>').join('') + '</div>' : '<div class="empty">— нічого не знайдено —</div>');
 }
 function rowHtml(r, extra){
   const val = (state._vals && state._vals[r.nom] !== undefined) ? state._vals[r.nom] : '';
-  // «отримано 0» показуємо явно — бригадир бачить, що 1С ще не бачить видачі
+  const used = parseQty(val);
+  const recv = Number(r.received) || 0;
+  // «отримано 0» показуємо явно — бригадир бачить, що 1С ще не бачить видачі.
+  // «на руках» = отримано − у звіті: живе число, за яким бригадир звіряється
+  // з реальністю; оновлюється при кожному введенні (updateRowLive).
+  const oh = Math.round((recv - used) * 1000) / 1000;
   const meta = extra
     ? (r.stockQty != null ? 'на складі: <b>' + fmtQ(r.stockQty) + '</b>' : '')
-    : 'замовлено <b>' + fmtQ(r.ordered) + '</b> · отримано <b>' + fmtQ(r.received || 0) + '</b>' + (r.unit ? ' ' + esc(r.unit) : '');
+    : 'отримано <b>' + fmtQ(recv) + '</b>' + (r.unit ? ' ' + esc(r.unit) : '') +
+      ' · <span class="oh' + (oh < 0 ? ' neg' : '') + '" data-oh="' + esc(r.nom) + '" data-recv="' + recv + '">на руках <b>' + fmtQ(oh) + '</b></span>' +
+      ' · <span class="dim">замовлено ' + fmtQ(r.ordered) + '</span>';
+  const cls = [];
+  if (val !== '' && used > 0) cls.push('filled');
+  if (used !== (state.saved[r.nom] || 0)) cls.push('chg');
   return '<div class="row' + (extra ? ' extra' : '') + '">' +
     '<div class="inf"><div class="nm">' + esc(r.name) + '</div><div class="mt">' + meta + '</div></div>' +
-    '<input type="text" inputmode="decimal" data-nom="' + esc(r.nom) + '" value="' + esc(val) + '" placeholder="0"' + (val !== '' && parseQty(val) > 0 ? ' class="filled"' : '') + '>' +
+    '<button class="rowplus" data-plus="' + esc(r.nom) + '" aria-label="Додати використане">＋</button>' +
+    '<input type="text" inputmode="decimal" data-nom="' + esc(r.nom) + '" value="' + esc(val) + '" placeholder="0"' + (cls.length ? ' class="' + cls.join(' ') + '"' : '') + '>' +
   '</div>';
 }
 function formHtml(){
@@ -382,12 +448,15 @@ function formHtml(){
   const vis = q ? orderRows.filter(r => (r.name || '').toLowerCase().includes(q)) : orderRows;
   const visExtra = q ? state.extraRows.filter(r => (r.name || '').toLowerCase().includes(q)) : state.extraRows;
   let out = top + search;
-  out += '<div class="sec-h"><span>Позиції замовлення</span><span class="r">використано</span></div>';
+  out += '<div class="sec-h"><span>Позиції замовлення</span><span class="r">використано всього</span></div>';
+  // «все разом у кінці»: одна кнопка проставляє використано = отримано по всіх
+  // позиціях з видачею, далі бригадир править лише винятки
+  if (orderRows.some(r => (r.received || 0) > 0)) out += '<button class="bulk" onclick="fillAllReceived()">Використано все отримане</button>';
   out += vis.length
     ? '<div class="rows">' + vis.map(r => rowHtml(r, false)).join('') + '</div>'
     : '<div class="empty">' + (orderRows.length ? '— нічого не знайдено —' : '— у замовленні немає позицій —') + '</div>';
   if (visExtra.length) {
-    out += '<div class="sec-h"><span>Додано зі складу</span><span class="r">використано</span></div><div class="rows">' + visExtra.map(r => rowHtml(r, true)).join('') + '</div>';
+    out += '<div class="sec-h"><span>Додано зі складу</span><span class="r">використано всього</span></div><div class="rows">' + visExtra.map(r => rowHtml(r, true)).join('') + '</div>';
   }
   out += '<button class="add-btn" onclick="openSheet()">＋ Додати зі складу</button>';
   return out;
@@ -407,7 +476,14 @@ function snapshotVals(){
   document.querySelectorAll('#body input[data-nom]').forEach(inp => { state._vals[inp.dataset.nom] = inp.value; });
 }
 
-// input у рядках: тримаємо savebar актуальним + клас filled
+// input у рядках: тримаємо savebar актуальним + класи filled/chg + живе «на руках»
+function updateRowLive(nom){
+  const span = document.querySelector('#body .oh[data-oh="' + CSS.escape(nom) + '"]');
+  if (!span) return;
+  const oh = Math.round(((Number(span.dataset.recv) || 0) - parseQty((state._vals || {})[nom] || '')) * 1000) / 1000;
+  span.innerHTML = 'на руках <b>' + fmtQ(oh) + '</b>';
+  span.classList.toggle('neg', oh < 0);
+}
 document.getElementById('body').addEventListener('input', ev => {
   const inp = ev.target.closest('input[data-nom]');
   if (!inp) return;
@@ -415,8 +491,84 @@ document.getElementById('body').addEventListener('input', ev => {
   inp.classList.remove('bad');
   state._vals = state._vals || {};
   state._vals[inp.dataset.nom] = inp.value;
+  inp.classList.toggle('chg', parseQty(inp.value) !== (state.saved[inp.dataset.nom] || 0));
+  updateRowLive(inp.dataset.nom);
   refreshSaveBar();
 });
+// ＋ біля позиції — bottom-sheet «додати використане зараз»
+document.getElementById('body').addEventListener('click', ev => {
+  const btn = ev.target.closest('.rowplus[data-plus]');
+  if (btn) openRowSheet(btn.dataset.plus);
+});
+// «в кінці все разом»: використано = отримано по всіх позиціях з видачею
+function fillAllReceived(){
+  snapshotVals();
+  const d = state.report;
+  if (!d || typeof d !== 'object') return;
+  for (const r of (d.rows || [])) {
+    if ((r.ordered > 0 || r.received > 0) && (Number(r.received) || 0) > 0) state._vals[r.nom] = String(r.received);
+  }
+  render();
+  toast('Проставлено «використано = отримано». Перевір і збережи', 'ok');
+}
+
+// ─── Bottom-sheet позиції: «＋ додати використане зараз» ───
+// Головний сценарій по ходу монтажу: бригадир вводить, скільки пішло ЗАРАЗ,
+// а сума «всього» рахується сама — без арифметики в умі. Тут же швидкі дії:
+// «використано все отримане» (позиція закрита) та «обнулити» (прибрати зі звіту).
+let rsNom = null;
+function openRowSheet(nom){
+  snapshotVals();
+  rsNom = nom;
+  const d = state.report;
+  if (!d || typeof d !== 'object') return;
+  const row = (d.rows || []).find(r => r.nom === nom) || state.extraRows.find(r => r.nom === nom) || {};
+  const isOrderRow = (Number(row.ordered) || 0) > 0 || (Number(row.received) || 0) > 0;
+  const recv = Number(row.received) || 0;
+  const used = parseQty((state._vals || {})[nom] || '');
+  const oh = Math.round((recv - used) * 1000) / 1000;
+  const nums = isOrderRow
+    ? 'у звіті <b>' + fmtQ(used) + '</b> · отримано <b>' + fmtQ(recv) + '</b> · <span class="' + (oh < 0 ? 'neg' : '') + '">на руках <b>' + fmtQ(oh) + '</b></span>'
+    : 'у звіті <b>' + fmtQ(used) + '</b>' + (row.stockQty != null ? ' · на складі <b>' + fmtQ(row.stockQty) + '</b>' : '');
+  document.getElementById('rowSheet').innerHTML =
+    '<h3>Додати використане <span class="x" onclick="closeRowSheet()">✕</span></h3>' +
+    '<div class="rs-nm">' + esc(row.name || '—') + '</div>' +
+    '<div class="rs-nums">' + nums + '</div>' +
+    '<div class="rs-addrow">' +
+      '<input type="text" id="rsQty" class="search" inputmode="decimal" placeholder="скільки пішло зараз" autocomplete="off">' +
+      '<button class="rs-add" onclick="rowSheetAdd()">Додати</button>' +
+    '</div>' +
+    (isOrderRow && recv > 0 ? '<button class="rs-q" onclick="rowSheetAll()">Використано все отримане (' + fmtQ(recv) + ')</button>' : '') +
+    (used > 0 ? '<button class="rs-q ghost" onclick="rowSheetZero()">Обнулити — прибрати зі звіту</button>' : '');
+  document.getElementById('rowBg').classList.add('open');
+  document.getElementById('rowSheet').classList.add('open');
+  const inp = document.getElementById('rsQty');
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') rowSheetAdd(); });
+  setTimeout(() => inp.focus(), 50);
+}
+function closeRowSheet(){
+  rsNom = null;
+  document.getElementById('rowBg').classList.remove('open');
+  document.getElementById('rowSheet').classList.remove('open');
+}
+function _rsSet(v){
+  state._vals = state._vals || {};
+  state._vals[rsNom] = v;
+  closeRowSheet(); render();
+}
+function rowSheetAdd(){
+  const raw = String(document.getElementById('rsQty').value).trim();
+  const add = parseQty(raw);
+  if (raw === '' || add <= 0) { toast('Введи, скільки використано зараз', 'err'); return; }
+  const cur = parseQty((state._vals || {})[rsNom] || '');
+  _rsSet(String(Math.round((cur + add) * 1000) / 1000));
+}
+function rowSheetAll(){
+  const d = state.report;
+  const row = ((d && d.rows) || []).find(r => r.nom === rsNom) || {};
+  _rsSet(String(Number(row.received) || 0));
+}
+function rowSheetZero(){ _rsSet(''); }
 
 // ─── Bottom-sheet «додати зі складу» ───
 function openSheet(){
@@ -468,7 +620,7 @@ function badValueNoms(){
   }
   return bad;
 }
-async function saveReport(){
+async function saveReport(submit){
   if (state.saving) return;
   const bad = badValueNoms();
   if (bad.length) {
@@ -477,17 +629,19 @@ async function saveReport(){
     return;
   }
   // Знімок ДО запиту: значення, введені поки летить запит, не сміють
-  // позначитись як збережені.
+  // позначитись як збережені. Порожній payload (усе нулі/порожньо) — валідний:
+  // це «нічого не використано», його можна і зберегти, і подати.
   const sent = currentValues();
   const items = Object.entries(sent).map(([nom, qty]) => ({ nom, qty }));
   state.saving = true; refreshSaveBar();
   document.getElementById('saveBtn').disabled = true;
+  document.getElementById('sendBtn').disabled = true;
   try {
     const resp = await fetch(API_URL + '?action=brigade_report_save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       // undefined base_version (стара відповідь get без токена) JSON.stringify викидає сам
-      body: JSON.stringify({ wh: state.wh, order: state.order, items, base_version: state.baseVersion }),
+      body: JSON.stringify({ wh: state.wh, order: state.order, items, base_version: state.baseVersion, submit: !!submit }),
     });
     const r = await resp.json().catch(() => ({}));
     if (resp.status === 409) {
@@ -502,11 +656,15 @@ async function saveReport(){
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     if ('version' in r) state.baseVersion = r.version;
     state.saved = sent;
+    if (submit) state.submittedAt = r.submitted_at || new Date().toISOString();
+    // рамка «змінено» гасне без перерендера (фокус/скрол лишаються на місці)
+    document.querySelectorAll('#body input[data-nom]').forEach(i =>
+      i.classList.toggle('chg', parseQty(i.value) !== (state.saved[i.dataset.nom] || 0)));
     if (Array.isArray(state.orders)) {
       const o = state.orders.find(x => x.ref === state.order);
-      if (o) o.has_report = items.length > 0;
+      if (o) { o.has_report = items.length > 0; if (submit) o.submitted_at = state.submittedAt; }
     }
-    toast('Збережено ✓', 'ok');
+    toast(submit ? 'Звіт відправлено ✓' : 'Збережено ✓', 'ok');
   } catch (e) {
     toast('Не збереглося: ' + (e.message || 'помилка мережі'), 'err');
   }
