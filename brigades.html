@@ -225,6 +225,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <span class="chip mvcat active mv-list-only" data-cat="all" onclick="setCat('all')">Усі</span>
         <span class="chip mvcat mv-list-only" data-cat="received" onclick="setCat('received')">↓ Отримано</span>
         <span class="chip mvcat mv-list-only" data-cat="returned" onclick="setCat('returned')">↑ Повернено</span>
+        <span class="chip mvcat mv-list-only" data-cat="internal" onclick="setCat('internal')">⇄ Між бригадами</span>
         <span class="chip mvcat mv-list-only" data-cat="writtenoff" onclick="setCat('writtenoff')">✓ Списано</span>
         <span class="sep mv-list-only"></span>
         <span class="flt mv-list-only"><label>Відправник</label><input type="text" id="fSender" placeholder="Почни вводити…" autocomplete="off" data-1p-ignore data-lpignore="true"></span>
@@ -254,7 +255,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <h3>📋 Список рухів</h3>
     <ul>
       <li><b>Отримано</b> — переміщення зі складу компанії на склад бригади.</li>
-      <li><b>Повернено</b> — переміщення зі складу бригади назад.</li>
+      <li><b>Повернено</b> — переміщення зі складу бригади назад на склад компанії.</li>
+      <li><b>Між бригадами</b> — переміщення зі складу однієї бригади на склад іншої (передача, не повернення).</li>
       <li><b>Списано</b> — видаткова накладна зі складу бригади на клієнта (так бухгалтерія оформлює використане).</li>
     </ul>
 
@@ -263,9 +265,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>Замовлено</b> — позиції замовлення покупця (1С).</li>
       <li><b>Отримано</b> — отримано бригадою переміщеннями під це замовлення (1С, лише проведені).</li>
       <li><b>Використано</b> — зі <b>звіту бригадира</b> (вкладка «📝 Звіт бригади», заповнюється з телефона). У зведенні — сума по всіх бригадах = всього використано на об'єкт.</li>
-      <li><b>Повернено</b> — повернення бригадою на склад (1С).</li>
+      <li><b>Повернено</b> — повернення бригадою на склад компанії (1С). Передача на склад іншої бригади сюди <b>не</b> входить.</li>
+      <li><b>Між бригадами</b> — колонка з'являється, якщо по замовленню були передачі бригада→бригада: у секції бригади «+» = отримала від іншої бригади, «−» = передала їй. На «Разом по замовленню» не впливає — товар лишився на бригадах.</li>
       <li><b>Списано</b> — списано бухгалтерією під замовлення (видаткові з бригадного складу, 1С). <b>Червоне</b> — звіт бригади заповнено, але «Списано» з ним не збігається (бухгалтерія ще не списала або списала не те). Поки звіту немає — розбіжність не підсвічується.</li>
-      <li><b>Залишок</b> = Отримано − Використано − Повернено — що фактично лишилось на бригаді по цьому замовленню. Зелений нуль — усе використано/повернено; червоний мінус — використано більше, ніж отримано (перевір звіт або переміщення).</li>
+      <li><b>Залишок</b> = Отримано − Використано − Повернено (у секції бригади — ще ± Між бригадами) — що фактично лишилось на бригаді по цьому замовленню. Зелений нуль — усе використано/повернено; червоний мінус — використано більше, ніж отримано (перевір звіт або переміщення).</li>
     </ul>
 
     <h3>Чому цифра може здивувати</h3>
@@ -282,7 +285,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 <script>
 const API_URL = 'https://price-api.doskevich.workers.dev';
-const CAT_LABEL = { received: 'Отримано', returned: 'Повернено', writtenoff: 'Списано' };
+const CAT_LABEL = { received: 'Отримано', returned: 'Повернено', writtenoff: 'Списано', internal: 'Між бригадами' };
 
 // Звіт лише по Генерації (монтажні бригади) — орг-фільтра свідомо немає.
 const state = {
@@ -466,22 +469,35 @@ function _orderCandidates() {
   return [...new Set(sc.map(d => d.order_no).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'uk'));
 }
 function _fmtQ(n) { n = Number(n) || 0; return n.toLocaleString('uk-UA', { maximumFractionDigits: 2 }); }
-// Яка бригада тримала товар у русі: received → одержувач, повернення/списання → відправник.
-function _brigOf(d) { return (d.cat === 'received' ? d.to_name : d.from_name) || '—'; }
+// Які бригади торкнув рух: received → одержувач, повернення/списання → відправник,
+// internal (бригада→бригада) → обидві сторони.
+function _docBrigades(d) {
+  if (d.cat === 'internal') return [d.from_name, d.to_name].filter(Boolean);
+  return [(d.cat === 'received' ? d.to_name : d.from_name) || '—'];
+}
 // Звірка по ОДНОМУ замовленню (кілька переміщень, іноді на різні бригади).
 // Отримано/Повернено/Списано — агрегація рухів; Замовлено — план замовлення (getPlan),
 // зіставлений з позиціями по назві. brigade заданий → лише рухи цієї бригади (але
-// «Замовлено» теж проставляємо з плану). Залишок = Отр − Пов − Спис.
+// «Замовлено» теж проставляємо з плану).
+// Передачі бригада→бригада (cat='internal') — окремий рахунок: у зведенні нетто 0
+// (товар лишився на бригадах), у секції бригади ± за напрямком.
 function reconOrderRows(orderRef, brigade) {
   const map = {};
+  let hasInternal = false;   // чи є по замовленню передачі бригада→бригада (вмикає колонку «Між бригадами»)
   for (const d of (Array.isArray(state.allMoves) ? state.allMoves : [])) {
     if (d.order_ref !== orderRef) continue;
     if (!d.posted) continue;   // чернетки не рахуємо (у «Списку рухів» видно з позначкою «не проведено»)
-    if (brigade && _brigOf(d) !== brigade) continue;
+    if (brigade && !_docBrigades(d).includes(brigade)) continue;
     for (const it of (d.items || [])) {
       const nm = it.name || '—';
-      if (!map[nm]) map[nm] = { name: nm, unit: it.unit || '', ordered: 0, received: 0, returned: 0, writtenoff: 0, used: 0 };
-      map[nm][d.cat] += (Number(it.qty) || 0);
+      if (!map[nm]) map[nm] = { name: nm, unit: it.unit || '', ordered: 0, received: 0, returned: 0, writtenoff: 0, internal: 0, used: 0 };
+      const q = Number(it.qty) || 0;
+      if (d.cat === 'internal') {
+        hasInternal = true;
+        if (brigade) map[nm].internal += (d.to_name === brigade ? q : -q);
+      } else {
+        map[nm][d.cat] += q;
+      }
     }
   }
   // Використано по факту — звіти бригадирів (brigade_usage). У секції бригади —
@@ -494,7 +510,7 @@ function reconOrderRows(orderRef, brigade) {
       if (brigade && u.wh_name !== brigade) continue;
       hasReport = true;
       const nm = u.name || '—';
-      if (!map[nm]) map[nm] = { name: nm, unit: '', ordered: 0, received: 0, returned: 0, writtenoff: 0, used: 0 };
+      if (!map[nm]) map[nm] = { name: nm, unit: '', ordered: 0, received: 0, returned: 0, writtenoff: 0, internal: 0, used: 0 };
       map[nm].used += (Number(u.qty) || 0);
     }
   }
@@ -503,22 +519,23 @@ function reconOrderRows(orderRef, brigade) {
     for (const nm in plan) {
       // Зведення (без brigade) — додаємо й позиції плану, яких не рухали. У секції
       // бригади — лише проставляємо «Замовлено» на позиціях, які ця бригада торкалась.
-      if (!map[nm]) { if (brigade) continue; map[nm] = { name: nm, unit: '', ordered: 0, received: 0, returned: 0, writtenoff: 0, used: 0 }; }
+      if (!map[nm]) { if (brigade) continue; map[nm] = { name: nm, unit: '', ordered: 0, received: 0, returned: 0, writtenoff: 0, internal: 0, used: 0 }; }
       map[nm].ordered = plan[nm].ordered;
       if (plan[nm].unit && !map[nm].unit) map[nm].unit = plan[nm].unit;
     }
   }
-  // Залишок на бригаді = Отримано − Використано − Повернено (формула звірки з
-  // бухгалтерією: «Списано» — це оформлення використаного, воно не зменшує
-  // фізичний залишок бригади).
+  // Залишок на бригаді = Отримано ± Між бригадами − Використано − Повернено
+  // (формула звірки з бухгалтерією: «Списано» — це оформлення використаного,
+  // воно не зменшує фізичний залишок бригади). У зведенні internal = 0 за
+  // побудовою, тож формула та сама, що й була.
   // mism: звіт заповнено, а «Списано» бухгалтерією ≠ «Використано» (включно з
   // випадком used=0 у рядку — списали те, чого бригада не звітувала).
-  let rows = Object.values(map).map(r => { r.delta = r.received - r.used - r.returned; r.mism = hasReport && Math.abs(r.used - r.writtenoff) > 0.001; return r; });
+  let rows = Object.values(map).map(r => { r.delta = r.received + r.internal - r.used - r.returned; r.mism = hasReport && Math.abs(r.used - r.writtenoff) > 0.001; return r; });
   const total = rows.length;   // до пошуку — щоб відрізнити «немає рухів» від «пошук нічого не знайшов»
   const q = state.search;
   if (q) rows = rows.filter(r => r.name.toLowerCase().includes(q));
   rows.sort((a, b) => a.name.localeCompare(b.name, 'uk'));
-  return { rows, plan, usage, total };
+  return { rows, plan, usage, total, hasInternal };
 }
 // Використано по факту для замовлення (звіти бригадирів). Кеш аналогічно getPlan.
 function getUsage(orderRef) {
@@ -538,7 +555,7 @@ function retryUsage() { delete state.usageCache[state.reconOrder]; render(); }
 function _reconBrigades(orderRef) {
   const s = new Set();
   for (const d of (Array.isArray(state.allMoves) ? state.allMoves : [])) {
-    if (d.order_ref === orderRef) s.add(_brigOf(d));
+    if (d.order_ref === orderRef) _docBrigades(d).forEach(x => s.add(x));
   }
   const u = getUsage(orderRef);
   if (Array.isArray(u)) for (const x of u) s.add(x.wh_name);
@@ -557,13 +574,18 @@ const _REC_COLS_ALL = [{ key: 'ordered', l: 'Замовлено' }, { key: 'rece
 // Для секцій бригад «Замовлено» — це план по ВСЬОМУ ордеру (дубль у кожній бригаді),
 // тож позначаємо іконкою ⧉ з тултіпом і приглушуємо значення.
 const _REC_COLS_BRIG = [{ key: 'ordered', l: 'Замовлено <span class="rec-dup" title="План по всьому замовленню — не поділ між бригадами (те саме число в кожній бригаді)">⧉</span>', dup: true }, { key: 'received', l: 'Отримано' }, { key: 'used', l: 'Використано' }, { key: 'returned', l: 'Повернено' }, { key: 'writtenoff', l: 'Списано', mism: true }, { key: 'delta', l: 'Залишок', delta: true }];
+// «Між бригадами» — передачі бригада→бригада. Колонка вмикається лише коли такі
+// рухи є в замовленні, і лише в секціях бригад (+ отримала / − передала);
+// у зведенні по замовленню нетто 0 за побудовою — колонку не показуємо.
+const _REC_COL_INT = { key: 'internal', l: 'Між бригадами', int: true };
+const _colsWithInt = cols => cols.slice(0, 2).concat([_REC_COL_INT], cols.slice(2));
 function _recTable(rows, cols) {
   const grid = 'grid-template-columns:minmax(0,1fr) ' + cols.map(() => '96px').join(' ') + ';';
   const head = '<div class="rec-th" style="' + grid + '"><span>Номенклатура</span>' + cols.map(c => '<span class="r">' + c.l + '</span>').join('') + '</div>';
   const body = rows.map(r => '<div class="rec-row" style="' + grid + '"><span class="rec-nm">' + esc(r.name) + (r.unit ? ' <span class="rec-u">' + esc(r.unit) + '</span>' : '') + '</span>' +
     cols.map(c => '<span class="r' + (c.delta ? ' rec-d ' + (r.delta < 0 ? 'neg' : (Math.abs(r.delta) < 0.001 ? 'zero' : '')) : '') + (c.dup ? ' rec-dup-cell' : '') +
       // «Списано» червоне, коли звіт бригади заповнено і бухгалтерія розходиться з ним
-      (c.mism && r.mism ? ' rec-bad' : '') + '">' + _fmtQ(r[c.key]) + '</span>').join('') + '</div>'
+      (c.mism && r.mism ? ' rec-bad' : '') + '">' + (c.int && r[c.key] > 0 ? '+' : '') + _fmtQ(r[c.key]) + '</span>').join('') + '</div>'
   ).join('');
   return '<div class="mv-wrap"><div class="rec-tbl">' + head + body + '</div></div>';
 }
@@ -583,7 +605,8 @@ function reconOrderHtml() {
   const note = (summary.plan === 'loading' ? ' <span class="rec-u">(рахую «Замовлено»…)</span>' : '') +
                (summary.usage === 'loading' ? ' <span class="rec-u">(рахую «Використано»…)</span>' : '') +
                (summary.usage === 'error' ? ' <span class="rec-u">⚠ «Використано» не завантажилось — <span class="rec-retry" onclick="retryUsage()">повторити</span></span>' : '');
-  const hint = '<span class="rec-hint">Залишок на бригаді = Отримано − Використано − Повернено · «Використано» — зі звітів бригадирів (📝 Звіт бригади) · червоне «Списано» = розходиться зі звітом бригади' + note + '</span>';
+  const hint = '<span class="rec-hint">Залишок на бригаді = Отримано − Використано − Повернено · «Використано» — зі звітів бригадирів (📝 Звіт бригади) · червоне «Списано» = розходиться зі звітом бригади' +
+    (summary.hasInternal ? ' · «Між бригадами» — передача бригада→бригада: + отримала / − передала, «Разом по замовленню» не зачіпає' : '') + note + '</span>';
   if (!summary.rows.length) {
     const msg = (summary.total && state.search) ? '— за пошуком «' + esc(state.search) + '» нічого не знайдено —' : '— по цьому замовленню рухів немає —';
     return oh + hint + '<div class="empty">' + msg + '</div>';
@@ -596,10 +619,11 @@ function reconOrderHtml() {
   } else {
     // кілька бригад — зведення + секція під кожну (згортні)
     out += _recSection('summary', 'Разом по замовленню', summary.rows, _REC_COLS_ALL);
+    const colsBrig = summary.hasInternal ? _colsWithInt(_REC_COLS_BRIG) : _REC_COLS_BRIG;
     for (const b of brigades) {
       const br = reconOrderRows(state.reconOrder, b);
       if (!br.rows.length) continue;
-      out += _recSection(b, '🧰 ' + esc(b), br.rows, _REC_COLS_BRIG);
+      out += _recSection(b, '🧰 ' + esc(b), br.rows, colsBrig);
     }
   }
   return out;
@@ -884,20 +908,30 @@ function downloadMovesXLSX() {
       reconOrderRows(state.reconOrder, b).rows.forEach(r => { m[r.name] = r; });
       bmaps[b] = m;
     }
+    const hasInt = !!summary.hasInternal;   // колонка «Між бригадами» — лише коли такі передачі були
     const head = ['Номенклатура', 'Од', 'Замовлено покупцем №' + no];
-    for (const b of brigades) head.push('Отримано 1С · ' + b, 'Використано по факту · ' + b, 'Повернено · ' + b, 'Списано бухгалтерією · ' + b);
+    for (const b of brigades) {
+      head.push('Отримано 1С · ' + b);
+      if (hasInt) head.push('Між бригадами · ' + b);
+      head.push('Використано по факту · ' + b, 'Повернено · ' + b, 'Списано бухгалтерією · ' + b);
+    }
     head.push("Всього використано на об'єкт №" + no);
     for (const b of brigades) head.push('Залишок на балансі бригади · ' + b);
     const aoa = [head];
     summary.rows.forEach(r => {
       const row = [r.name, r.unit || '', r.ordered];
-      for (const b of brigades) { const x = bmaps[b][r.name]; row.push(x ? x.received : 0, x ? x.used : 0, x ? x.returned : 0, x ? x.writtenoff : 0); }
+      for (const b of brigades) {
+        const x = bmaps[b][r.name];
+        row.push(x ? x.received : 0);
+        if (hasInt) row.push(x ? x.internal : 0);
+        row.push(x ? x.used : 0, x ? x.returned : 0, x ? x.writtenoff : 0);
+      }
       row.push(r.used);
       for (const b of brigades) { const x = bmaps[b][r.name]; row.push(x ? x.delta : 0); }
       aoa.push(row);
     });
     const cols = [{ wch: 46 }, { wch: 8 }, { wch: 14 }];
-    brigades.forEach(() => cols.push({ wch: 15 }, { wch: 15 }, { wch: 13 }, { wch: 16 }));
+    brigades.forEach(() => { cols.push({ wch: 15 }); if (hasInt) cols.push({ wch: 15 }); cols.push({ wch: 15 }, { wch: 13 }, { wch: 16 }); });
     cols.push({ wch: 16 });
     brigades.forEach(() => cols.push({ wch: 16 }));
     _saveXLSX(aoa, cols, 'brigades_zvirka_' + no);
