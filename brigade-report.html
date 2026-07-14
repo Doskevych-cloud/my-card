@@ -40,6 +40,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14
 .rep-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .back{flex:0 0 auto;padding:9px 13px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-size:13px;cursor:pointer;user-select:none}
 .back:active{background:var(--bg3)}
+.pdf-btn{flex:0 0 auto;margin-left:auto;padding:9px 13px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-size:13px;cursor:pointer;user-select:none;white-space:nowrap}
+.pdf-btn:active{background:var(--bg3)}
 .rep-ord{min-width:0}
 .rep-ord .t{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rep-ord .s{font-size:11.5px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -206,6 +208,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14
       <li>Використав щось, чого нема в замовленні, — тисни <b>«＋ Додати зі складу»</b> і обери позицію зі свого залишку.</li>
       <li>Щоб прибрати позицію зі звіту — «Обнулити» в картці позиції (＋) або постав <b>0</b>, потім «Зберегти».</li>
       <li><b>Зберегти</b> — проміжна чернетка, можна тиснути скільки завгодно. <b>Відправити</b> — подати звіт: у списку замовлень з'явиться позначка «✓ звіт подано» з датою. Виправив щось після подання — просто відправ ще раз.</li>
+      <li><b>⬇ PDF</b> (угорі форми) — акт звіту для друку/збереження: позиції з «Використано» і «На руках» станом на екран. Якщо є незбережені зміни — акт позначається як чернетка.</li>
       <li>Подати можна і <b>порожній/нульовий звіт</b> («нічого не використано») — це теж інформація для звірки.</li>
       <li>Значення можна виправляти будь-коли — зберігається останнє.</li>
     </ul>
@@ -462,7 +465,8 @@ function formHtml(){
   document.getElementById('sub').textContent = brigName(state.whName) || '';
   const top = '<div class="rep-top"><span class="back" onclick="backToOrders()">‹ Замовлення</span>' +
     '<div class="rep-ord"><div class="t">' + esc(d.order.customer || d.order.number || '—') + '</div>' +
-    '<div class="s">' + (d.order.customer ? esc(d.order.number || '—') + ' · ' : '') + fmtDate(d.order.date) + '</div></div></div>';
+    '<div class="s">' + (d.order.customer ? esc(d.order.number || '—') + ' · ' : '') + fmtDate(d.order.date) + '</div></div>' +
+    '<span class="pdf-btn" onclick="downloadPDF()" title="Завантажити звіт у PDF">⬇ PDF</span></div>';
   const search = '<input type="text" id="mainSearch" class="search" placeholder="🔎 Пошук по товару…" autocomplete="off" oninput="onSearch(this.value)">';
   const q = state.search.toLowerCase();
   const orderRows = (d.rows || []).filter(r => r.ordered > 0 || r.received > 0);
@@ -695,6 +699,63 @@ async function saveReport(submit){
 window.addEventListener('beforeunload', e => {
   if (state.view === 'form' && isDirty()) { e.preventDefault(); e.returnValue = ''; }
 });
+
+// ─── PDF: акт звіту бригади (нове вікно у світлій темі → системний друк/Save as PDF) ───
+// Друкуємо ПОТОЧНІ значення форми (як на екрані); якщо є незбережені зміни —
+// у шапці акта попередження, щоб чернетку не видали за поданий звіт.
+function downloadPDF(){
+  const d = state.report;
+  if (state.view !== 'form' || !d || typeof d !== 'object') return;
+  const cur = currentValues();
+  const orderRows = (d.rows || []).filter(r => r.ordered > 0 || r.received > 0);
+  const dirty = isDirty();
+  const dt = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' });
+  const who = (window.__user && (window.__user.name || window.__user.email)) || '';
+  const title = 'Звіт бригади · ' + brigName(state.whName) + ' · ' + (d.order.number || '');
+  const rowPdf = (r, extra) => {
+    const used = cur[r.nom] || 0;
+    const recv = Number(r.received) || 0;
+    const oh = Math.round((recv - used) * 1000) / 1000;
+    return '<tr>' +
+      '<td>' + esc(r.name) + (extra ? ' <span class="ex">· зі складу</span>' : '') + '</td>' +
+      '<td class="c">' + esc(r.unit || '') + '</td>' +
+      (extra ? '<td class="r">—</td><td class="r">—</td>' : '<td class="r">' + fmtQ(r.ordered) + '</td><td class="r">' + fmtQ(recv) + '</td>') +
+      '<td class="r"><b>' + fmtQ(used) + '</b></td>' +
+      (extra ? '<td class="r">—</td>' : '<td class="r' + (oh < 0 ? ' neg' : '') + '">' + fmtQ(oh) + '</td>') +
+    '</tr>';
+  };
+  const body = orderRows.map(r => rowPdf(r, false)).join('') + state.extraRows.map(r => rowPdf(r, true)).join('');
+  const status = dirty
+    ? '<span class="warn">⚠ незбережені зміни — це чернетка з екрана</span>'
+    : (state.submittedAt ? 'Звіт подано ' + fmtDate(state.submittedAt) : 'Звіт не подано (чернетка)');
+  const win = window.open('', '_blank', 'width=900,height=700');
+  if (!win) { toast('Дозволь спливаючі вікна для PDF', 'err'); return; }
+  win.document.open();
+  win.document.write('<!DOCTYPE html><html lang="uk"><head><meta charset="UTF-8"><title>' + esc(title) + '</title></head><body>' +
+    '<div class="no-print" style="position:fixed;bottom:12px;right:12px;z-index:9">' +
+      '<button onclick="print()" style="padding:8px 16px;background:#d66000;color:#fff;border:0;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">Зберегти у PDF / Друкувати</button>' +
+      '<button onclick="close()" style="padding:8px 16px;margin-left:6px;background:#f0f0f0;color:#333;border:0;border-radius:6px;font-size:13px;cursor:pointer">Закрити</button></div>' +
+    '<h1>Звіт бригади — використано по факту</h1>' +
+    '<div class="sub"><b>' + esc(brigName(state.whName)) + '</b> · Замовлення <b>' + esc(d.order.number || '—') + '</b>' +
+      (d.order.customer ? ' · ' + esc(d.order.customer) : '') + ' · від ' + fmtDate(d.order.date) + '</div>' +
+    '<div class="sub">' + status + ' · сформовано ' + esc(dt) + (who ? ' · ' + esc(who) : '') + '</div>' +
+    '<table><thead><tr><th>Номенклатура</th><th class="c">Од</th><th class="r">Замовлено</th><th class="r">Отримано</th><th class="r">Використано</th><th class="r">На руках</th></tr></thead>' +
+    '<tbody>' + body + '</tbody></table>' +
+    '<style>' +
+      'body{margin:0;padding:10mm 8mm;background:#fff;color:#1c1c1e;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:12px}' +
+      'h1{font-size:16pt;font-weight:800;margin:0 0 2mm}' +
+      '.sub{font-size:10pt;color:#444;margin-bottom:2mm}' +
+      '.sub .warn{color:#c0392b;font-weight:700}' +
+      'table{border-collapse:collapse;width:100%;margin-top:4mm}' +
+      'th,td{padding:6px 10px;border-bottom:1px solid #ddd;text-align:left;vertical-align:top;line-height:1.35}' +
+      'th{background:#f0f0f0;font-size:8.5pt;text-transform:uppercase;letter-spacing:.3px;color:#333;border-bottom:1px solid #999}' +
+      '.r{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}.c{text-align:center}' +
+      '.neg{color:#c0392b;font-weight:700}.ex{color:#888;font-size:9pt}' +
+      '@media print{.no-print{display:none!important}}' +
+      '@page{size:A4 portrait;margin:10mm}' +
+    '</style></body></html>');
+  win.document.close();
+}
 
 // ─── Session gate ───
 Auth.require('brigades').then(async user => {
