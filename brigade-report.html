@@ -160,6 +160,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14
     <ul>
       <li>Звіт — по <b>своїй бригаді</b>: якщо на об'єкті працюють дві бригади, кожен бригадир заповнює свій звіт, у звірці вони складаються.</li>
       <li>Поки не натиснуто «Зберегти», зміни живуть лише на екрані — не закривай сторінку з незбереженими змінами.</li>
+      <li>Якщо звіт по цьому ж замовленню паралельно змінив хтось інший (напр. ПМ), «Зберегти» покаже <b>«Звіт змінився з іншого пристрою»</b> — це захист від затирання чужих правок. Онови дані та внеси свої значення ще раз.</li>
     </ul>
   </div>
 </div>
@@ -177,6 +178,7 @@ const state = {
   report: null,        // null | 'loading' | 'error' | {order, rows, stock}
   extraRows: [],       // додані зі складу [{nom, name, stockQty}]
   saved: {},           // знімок збереженого {nom: qty} — для dirty-перевірки
+  baseVersion: undefined, // optimistic-concurrency токен з brigade_report_get (undefined = бекенд його не віддав)
   search: '',
   sheetSearch: '',
   saving: false,
@@ -294,6 +296,7 @@ async function loadReport(){
     const d = await fetch(API_URL + '?action=brigade_report_get&wh=' + encodeURIComponent(state.wh) + '&order=' + encodeURIComponent(state.order)).then(r => r.json());
     if (d.error) throw new Error(d.error);
     state.report = d;
+    state.baseVersion = ('base_version' in d) ? d.base_version : undefined;
     if (d.warehouse && d.warehouse.name) state.whName = d.warehouse.name;
     // знімок збереженого + «зайві» рядки (used поза замовленням → показуємо як додані)
     state.saved = {};
@@ -471,12 +474,24 @@ async function saveReport(){
   state.saving = true; refreshSaveBar();
   document.getElementById('saveBtn').disabled = true;
   try {
-    const r = await fetch(API_URL + '?action=brigade_report_save', {
+    const resp = await fetch(API_URL + '?action=brigade_report_save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ wh: state.wh, order: state.order, items }),
-    }).then(r => r.json());
+      // undefined base_version (стара відповідь get без токена) JSON.stringify викидає сам
+      body: JSON.stringify({ wh: state.wh, order: state.order, items, base_version: state.baseVersion }),
+    });
+    const r = await resp.json().catch(() => ({}));
+    if (resp.status === 409) {
+      // Звіт паралельно змінив хтось інший — full-replace стер би його правки.
+      toast(r.error || 'Звіт змінився з іншого пристрою — онови сторінку', 'err');
+      state.saving = false; refreshSaveBar();
+      if (confirm('Звіт щойно змінили з іншого пристрою.\nЗавантажити актуальну версію? Введені зараз значення буде замінено збереженими.')) loadReport();
+      return;
+    }
     if (r.error) throw new Error(r.error);
+    // не-JSON відповідь (HTML-сторінка помилки CF) → r={} без error, ловимо по статусу
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    if ('version' in r) state.baseVersion = r.version;
     state.saved = sent;
     if (Array.isArray(state.orders)) {
       const o = state.orders.find(x => x.ref === state.order);
