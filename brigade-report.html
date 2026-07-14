@@ -403,9 +403,11 @@ function render(){
   const s = document.getElementById('mainSearch');
   if (s) { s.value = state.search; }
   // таб «🧮 Звірка» контекстний: з відкритої форми веде одразу на звірку
-  // ЦЬОГО замовлення (deep-link #recon&order=), інакше — на порожню звірку
+  // ЦЬОГО замовлення (deep-link #recon&order=&wh=; wh — щоб таб «Звіт бригади»
+  // на звірці вів назад у цю ж форму), інакше — на порожню звірку
   const reconTab = document.querySelector('.page-tabs a[href*="#recon"]');
-  if (reconTab) reconTab.href = '/brigades.html#recon' + (state.view === 'form' && state.order ? '&order=' + encodeURIComponent(state.order) : '');
+  if (reconTab) reconTab.href = '/brigades.html#recon' + (state.view === 'form' && state.order
+    ? '&order=' + encodeURIComponent(state.order) + '&wh=' + encodeURIComponent(state.wh) : '');
   refreshSaveBar();
 }
 function whsHtml(){

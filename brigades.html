@@ -557,6 +557,17 @@ function getUsage(orderRef) {
   return 'loading';
 }
 function retryUsage() { delete state.usageCache[state.reconOrder]; render(); }
+// Таб «📝 Звіт бригади» контекстний: якщо у звірку прийшли зі звіту бригади
+// (deep-link #recon&order&wh) — таб веде назад у ту саму форму (склад+замовлення),
+// інакше — на загальну сторінку звіту. Ручний вибір іншого замовлення в пікері
+// скидає контекст повернення.
+function updateReportTab() {
+  const t = document.querySelector('.page-tabs a[href*="brigade-report"]');
+  if (!t) return;
+  t.href = (state._reconDeep && state._reconFromWh && state.reconOrder)
+    ? '/brigade-report.html#wh=' + encodeURIComponent(state._reconFromWh) + '&order=' + encodeURIComponent(state.reconOrder)
+    : '/brigade-report.html';
+}
 // Бригади, задіяні в замовленні (за рухами цього order_ref + звітами бригадирів).
 function _reconBrigades(orderRef) {
   const s = new Set();
@@ -802,9 +813,9 @@ function setupOrderPicker() {
     pop.style.display = 'block';
   };
   const paint = () => { [...pop.children].forEach((c, i) => c.classList.toggle('hl', i === hi)); const c = pop.children[hi]; if (c) c.scrollIntoView({ block: 'nearest' }); };
-  const pick = (o) => { el.value = o.label; el.classList.add('set'); pop.style.display = 'none'; state.reconOrder = o.ref; try { localStorage.setItem('brigReconOrder', o.ref); } catch (e) {} render(); };
+  const pick = (o) => { el.value = o.label; el.classList.add('set'); pop.style.display = 'none'; state.reconOrder = o.ref; state._reconDeep = false; state._reconFromWh = ''; try { localStorage.setItem('brigReconOrder', o.ref); } catch (e) {} updateReportTab(); render(); };
   el.addEventListener('input', () => {
-    if (!el.value.trim()) { state.reconOrder = ''; el.classList.remove('set'); try { localStorage.removeItem('brigReconOrder'); } catch (e) {} render(); }
+    if (!el.value.trim()) { state.reconOrder = ''; state._reconDeep = false; state._reconFromWh = ''; el.classList.remove('set'); try { localStorage.removeItem('brigReconOrder'); } catch (e) {} updateReportTab(); render(); }
     show();
   });
   el.addEventListener('focus', show);
@@ -975,15 +986,19 @@ Auth.require('brigades').then(async user => {
     if (tab === 'moves') tab = 'list';   // legacy збережене
   }
   if (tab === 'recon') {
-    const deepOrder = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(hashParams.order || '') ? hashParams.order : '';
+    const isGuidH = v => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v || '');
+    const deepOrder = isGuidH(hashParams.order) ? hashParams.order : '';
     if (deepOrder) {
       // явний намір з лінка — не скидаємо, навіть якщо ордера нема серед рухів
       state.reconOrder = deepOrder; state._reconDeep = true;
+      // wh з лінка = звідки прийшли (форма звіту) — таб «Звіт бригади» поведе назад туди ж
+      if (isGuidH(hashParams.wh)) state._reconFromWh = hashParams.wh;
       try { localStorage.setItem('brigReconOrder', deepOrder); } catch (e) {}
     } else {
       try { state.reconOrder = localStorage.getItem('brigReconOrder') || ''; } catch (e) {}
     }
   }
+  updateReportTab();
   if (tab === 'list' || tab === 'recon') setSection(tab);   // 'stock' — і так дефолт
 });
 // Повернення через bfcache (Back з «📝 Звіт бригади») — скидаємо кеш «Використано»,
