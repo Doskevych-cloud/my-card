@@ -205,6 +205,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14
     <h3>Нюанси</h3>
     <ul>
       <li><b>Бригада</b> = склад з позначкою «під звіт» у 1С (показуємо без цього суфікса). Склади «Інструменти/…» — не бригади, їх тут немає.</li>
+      <li>Сторінка <b>запам'ятовує останню бригаду</b> і наступного разу відкривається одразу на її замовленнях. Змінити бригаду — кнопка «‹ Бригади» вгорі (список відсортовано за свіжістю руху).</li>
       <li>Звіт — по <b>своїй бригаді</b>: якщо на об'єкті працюють дві бригади, кожен бригадир заповнює свій звіт, у звірці вони складаються.</li>
       <li>Поки не натиснуто «Зберегти», зміни живуть лише на екрані — не закривай сторінку з незбереженими змінами.</li>
       <li>Якщо звіт по цьому ж замовленню паралельно змінив хтось інший (напр. ПМ), «Зберегти» покаже <b>«Звіт змінився з іншого пристрою»</b> — це захист від затирання чужих правок. Онови дані та внеси свої значення ще раз.</li>
@@ -308,6 +309,8 @@ function goWhList(){
 function pickWh(ref, name){
   state.wh = ref; state.whName = name || (state.whs.find(w => String(w.ref_key) === ref) || {}).name || '';
   state.view = 'orders'; state.order = ''; state.report = null; state.search = '';
+  // запам'ятовуємо бригаду: наступний вхід відкриється одразу на її замовленнях
+  try { localStorage.setItem('brigRepLastWh', ref); } catch (e) {}
   syncHash(); render(); loadOrders();
 }
 function backToOrders(){
@@ -386,14 +389,17 @@ function render(){
 function whsHtml(){
   document.getElementById('sub').textContent = 'використано по факту';
   if (!state.whs.length) return '<div class="empty">Немає прив\'язаних складів бригад.<br>Звернись до адміністратора, щоб додали склад до твого акаунта.</div>';
-  const all = [...state.whs].sort((a, b) => brigName(a.name).localeCompare(brigName(b.name), 'uk'));
+  // активні бригади (свіжий рух) зверху — адміну/ПМ швидше знайти потрібну
+  const all = [...state.whs].sort((a, b) =>
+    String(b.last_transfer || '').localeCompare(String(a.last_transfer || '')) ||
+    brigName(a.name).localeCompare(brigName(b.name), 'uk'));
   const q = state.search.toLowerCase();
   const list = q ? all.filter(w => (w.name || '').toLowerCase().includes(q) || brigName(w.name).toLowerCase().includes(q)) : all;
   const search = all.length > 8 ? '<input type="text" id="mainSearch" class="search" placeholder="🔎 Пошук бригади…" autocomplete="off" oninput="onSearch(this.value)">' : '';
   return search + '<div class="sec-h"><span>Обери бригаду</span></div>' + (list.length ? '<div class="picks">' + list.map(w =>
     '<button class="pick" onclick="pickWh(\'' + esc(String(w.ref_key)) + '\')">' +
       '<div class="t">' + esc(brigName(w.name)) + '</div>' +
-      '<div class="m"><span>' + fmtQ(w.items) + ' поз. на складі</span></div>' +
+      '<div class="m"><span>' + fmtQ(w.items) + ' поз. на складі</span>' + (w.last_transfer ? '<span>рух ' + fmtDate(w.last_transfer) + '</span>' : '') + '</div>' +
     '</button>').join('') + '</div>' : '<div class="empty">— нічого не знайдено —</div>');
 }
 function ordersHtml(){
@@ -687,9 +693,15 @@ Auth.require('brigades').then(async user => {
     pickWh(h.wh);
     if (h.order) pickOrder(h.order);
   } else if (state.whs.length === 1) {
+    // бригадир з одним складом — одразу замовлення
     pickWh(String(state.whs[0].ref_key));
   } else {
-    render();
+    // багато складів (адмін/ПМ): одразу замовлення останньої бригади,
+    // змінити — «‹ Бригади». Перший вхід без історії — список бригад.
+    let last = null;
+    try { last = localStorage.getItem('brigRepLastWh'); } catch (e) {}
+    if (last && state.whs.some(w => String(w.ref_key) === last)) pickWh(last);
+    else render();
   }
 });
 </script>
