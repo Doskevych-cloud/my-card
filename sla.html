@@ -363,8 +363,9 @@ function renderRanking(data) {
     </div>`;
 
     html += `<div class="mgr-detail" id="${id}">`;
-    for (const cp of mgr.counterparties) {
-      const cpId = id + '_cp_' + cp.name.replace(/\W/g, '_');
+    mgr.counterparties.forEach((cp, j) => {
+      // id за індексом: кирилиця в назві під \W давала однакові id для різних контрагентів
+      const cpId = id + '_cp_' + j;
       html += `<div class="md-cp">
         <div class="md-cp-head" onclick="event.stopPropagation();toggleCp('${cpId}')">
           <span class="md-cp-name">${escapeHtml(cp.name)}</span>
@@ -379,7 +380,7 @@ function renderRanking(data) {
         </div><div class="md-msgs"></div>`;
       }
       html += '</div></div>';
-    }
+    });
     html += '</div>';
   });
 
