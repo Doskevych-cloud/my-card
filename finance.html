@@ -294,7 +294,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .cb-tx-tbl td.doc{color:var(--text);max-width:380px;overflow:hidden;text-overflow:ellipsis}
 
 .cb-history-period{display:inline-flex;gap:3px}
-#cbHistoryPanel.empty{display:none}
+#cbHistoryPanel.empty,#whHistoryPanel.empty{display:none}
 /* mc-* стилі дублюються тут, бо monthly-chart.js ін'єктить їх лише при першому
    виклику MonthlyChart.mount (а на cb-вкладці mount не викликається). */
 .mc-block{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;margin-bottom:12px}
@@ -748,6 +748,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
             <span class="ic">↻</span> Оновити знімок
           </span>
         </span>
+        <span class="chip" onclick="openWhHelp()" title="Як працює цей звіт">❓ Як працює</span>
+      </div>
+      <div id="whHistoryPanel" class="mc-block">
+        <div class="mc-head">
+          <span class="mc-title">Вартість запасів, USD</span>
+          <span class="group cb-history-period">
+            <span class="chip" data-whh="30" onclick="whSetHistoryDays(this)">30д</span>
+            <span class="chip active" data-whh="90" onclick="whSetHistoryDays(this)">90д</span>
+            <span class="chip" data-whh="365" onclick="whSetHistoryDays(this)">365д</span>
+          </span>
+        </div>
+        <div class="mc-canvas-wrap"><canvas id="whHistoryCanvas" height="120"></canvas></div>
       </div>
       <div id="whSummary"></div>
       <div id="whBody"><div class="loading">Завантаження...</div></div>
@@ -846,6 +858,31 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li>Кеш звіту — до 1 години; свіжі платежі з 1С підтягуються синком кожні 30 хв у робочий час.</li>
       <li>Мінусовий банківський залишок — це або кредитний рахунок, або технічний перекос у 1С (незакритий переказ між рахунками).</li>
       <li>Суми округлені до цілих, тож підсумок може відрізнятися від суми карток на ±1.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ── Довідка «Як працює Склад (вартість)» ── -->
+<div class="modal-backdrop" id="whHelpModal" onclick="if(event.target===this)closeWhHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт Склад (вартість)">
+    <button class="close" onclick="closeWhHelp()" aria-label="Закрити">✕</button>
+    <h2>Як працює звіт «Склад (вартість)»</h2>
+    <h3>Джерело даних</h3>
+    <p>Знімок залишків складу з 1С (регістр «Товари на складах») на обрану дату — таблиця <b>stock_balances</b>. Знімки робляться щодня автосинком; кнопка «↻ Оновити знімок» перезабирає залишки на вибрану дату наживо з 1С.</p>
+    <h3>Як рахується вартість</h3>
+    <p>Вартість позиції = <b>кількість × середньозважена собівартість</b>. Собівартість береться з <b>покупних накладних</b> (проведених, не позначених на видалення) як зважене середнє по всіх закупівлях цієї номенклатури в межах організації; якщо організація сама її не купувала — фолбек на середню по всіх організаціях. Позиції, для яких собівартості немає, показані як <b>«н/д»</b> і в підсумок вартості не входять (їх кількість — у картці «Без собівартості»).</p>
+    <h3>Графік «Вартість запасів, USD»</h3>
+    <p>Динаміка сумарної вартості складу по днях за обране вікно (30/90/365 днів). Кожен день — окремий знімок залишків, оцінений <b>тією самою</b> поточною собівартістю, тому графік показує зміну <b>кількостей</b> на складі, а не коливання собівартості. <b>Останній стовпчик = картці «Вартість запасів»</b> на обрану дату. Дні без знімка підтягуються останнім відомим значенням.</p>
+    <h3>Фільтри</h3>
+    <ul>
+      <li><b>Організація</b> — «Генерація» = Одеса + Київ. Впливає і на таблицю, і на графік.</li>
+      <li><b>Товар</b> — звужує таблицю і картки до обраних позицій; на графік динаміки <b>не впливає</b> (він завжди показує повну вартість по організації).</li>
+    </ul>
+    <h3>Чому цифра може здивувати</h3>
+    <ul>
+      <li>Якщо на обрану дату знімка ще немає — таблиця запропонує «Зробити знімок зараз», а графік покаже історію до останнього наявного дня.</li>
+      <li>Історія знімків веде з квітня 2026 — глибше графік даних не має.</li>
+      <li>Собівартість — управлінська, у USD; курсова переоцінка на вартість складу тут не застосовується.</li>
     </ul>
   </div>
 </div>
@@ -2249,7 +2286,9 @@ function openPnlHelp()  { document.getElementById('pnlHelpModal').classList.add(
 function closePnlHelp() { document.getElementById('pnlHelpModal').classList.remove('open'); }
 function openCbHelp()   { document.getElementById('cbHelpModal').classList.add('open'); }
 function closeCbHelp()  { document.getElementById('cbHelpModal').classList.remove('open'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closePnlHelp(); closeCbHelp(); } });
+function openWhHelp()   { document.getElementById('whHelpModal').classList.add('open'); }
+function closeWhHelp()  { document.getElementById('whHelpModal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closePnlHelp(); closeCbHelp(); closeWhHelp(); } });
 
 function pnlDateChanged() {
   pnlState.preset = detectPreset(pnlState.from, pnlState.to) || '';
@@ -3266,7 +3305,7 @@ document.addEventListener('DOMContentLoaded', function() {
    WAREHOUSE VALUE TAB (Вартісна оцінка складу)
    Дані з D1: stock_balances + weighted-avg cost per (nom × org)
    ═══════════════════════════════════════════════════ */
-const whState = { on: '', org: '', _loaded: false, data: null, search: '', limit: 200, includeList: [], includeQuery: '', openWh: new Set() };
+const whState = { on: '', org: '', _loaded: false, data: null, search: '', limit: 200, includeList: [], includeQuery: '', openWh: new Set(), historyDays: 90, _historyChart: null };
 
 function whSetPreset(p) {
   const now = new Date(), y = now.getFullYear(), m = now.getMonth();
@@ -3408,6 +3447,7 @@ function whSetOrg(el) {
   el.classList.add('active');
   saveStateToUrl();
   whRender();
+  whLoadHistory();
 }
 
 async function whLoad() {
@@ -3423,6 +3463,85 @@ async function whLoad() {
   } catch (e) {
     document.getElementById('whBody').innerHTML = '<div class="error">' + esc(e.message) + '</div>';
   }
+  whLoadHistory();
+}
+
+function whSetHistoryDays(el) {
+  whState.historyDays = Number(el.dataset.whh) || 90;
+  el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  whLoadHistory();
+}
+
+async function whLoadHistory() {
+  const panel = document.getElementById('whHistoryPanel');
+  if (!panel || !whState.on) return;
+  try {
+    const q = '?action=warehouse_value_history&on=' + whState.on +
+              '&days=' + whState.historyDays +
+              (whState.org ? '&org=' + encodeURIComponent(whState.org) : '');
+    const data = await fetch(API_URL + q).then(r => r.json());
+    if (data.error) throw new Error(data.error);
+    whRenderHistory(data);
+  } catch (e) {
+    console.error('whLoadHistory failed:', e);
+    panel.classList.add('empty');
+  }
+}
+
+function whRenderHistory(data) {
+  const panel = document.getElementById('whHistoryPanel');
+  const cv = document.getElementById('whHistoryCanvas');
+  if (!panel || !cv || !window.Chart) return;
+  const vals = Array.isArray(data.value_usd) ? data.value_usd : [];
+  if (!vals.length || !vals.some(v => Math.abs(v) > 0.5)) { panel.classList.add('empty'); return; }
+  panel.classList.remove('empty');
+
+  const dates = data.dates || [];
+  const labels = dates.map(d => d.slice(5));  // MM-DD
+  const green = getComputedStyle(document.documentElement).getPropertyValue('--green').trim() || '#22c55e';
+  const fmtMoney = (v) => (window.MonthlyChart && MonthlyChart.fmtMoney) ? MonthlyChart.fmtMoney(v, '$') : (Math.round(Number(v)||0).toLocaleString() + ' $');
+
+  if (whState._historyChart) whState._historyChart.destroy();
+  whState._historyChart = new Chart(cv.getContext('2d'), {
+    type: 'bar',
+    data: { labels, datasets: [{
+      label: 'Вартість запасів, USD',
+      data: vals,
+      backgroundColor: green,
+      borderWidth: 0,
+      borderRadius: 4,
+    }]},
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 220 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          displayColors: false,
+          backgroundColor: 'rgba(0,0,0,.85)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          padding: 8,
+          callbacks: {
+            title: (items) => dates[items[0].dataIndex] || '',
+            label: (ctx) => fmtMoney(ctx.parsed.y),
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: 'rgba(128,128,128,.7)', font: { size: 10 }, maxTicksLimit: 12 },
+        },
+        y: {
+          grid: { color: 'rgba(128,128,128,.12)', drawBorder: false },
+          ticks: { color: 'rgba(128,128,128,.7)', font: { size: 10 }, callback: fmtMoney },
+        },
+      },
+    },
+  });
 }
 
 async function whSyncSnapshot() {
