@@ -29,7 +29,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14
 .pick{display:block;width:100%;text-align:left;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:13px 14px;margin-bottom:8px;cursor:pointer;color:var(--text);font:inherit}
 .pick:active{background:var(--bg3)}
 .pick .t{font-weight:700;font-size:14.5px;overflow-wrap:anywhere}
-.pick .s{font-size:12px;color:var(--text2);margin-top:2px;overflow-wrap:anywhere}
 .pick .m{font-size:11.5px;color:var(--text3);margin-top:2px;display:flex;gap:10px;flex-wrap:wrap}
 .pick .m .done{color:var(--green)}
 
@@ -54,8 +53,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14
 .row input:focus{border-color:var(--accent)}
 .row input.filled{border-color:var(--line-2);color:var(--text)}
 .row input.bad{border-color:var(--red)}
-.row.extra .nm::after{content:' · зі складу';font-size:10.5px;color:var(--text3)}
-.sec-h{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:700;margin:14px 4px 6px}
+.sec-h{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:700;margin:14px 4px 6px;display:flex;align-items:baseline}
+.sec-h .r{margin-left:auto;font-weight:600;text-transform:none;letter-spacing:0}
 .add-btn{display:block;width:100%;margin-top:10px;padding:12px;background:var(--bg2);border:1px dashed var(--border);border-radius:12px;color:var(--text2);font-size:13.5px;font-weight:600;cursor:pointer;text-align:center;font-family:inherit}
 .add-btn:active{background:var(--bg3)}
 
@@ -158,6 +157,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14
     </ul>
     <h3>Нюанси</h3>
     <ul>
+      <li><b>Бригада</b> = склад з позначкою «під звіт» у 1С (показуємо без цього суфікса). Склади «Інструменти/…» — не бригади, їх тут немає.</li>
       <li>Звіт — по <b>своїй бригаді</b>: якщо на об'єкті працюють дві бригади, кожен бригадир заповнює свій звіт, у звірці вони складаються.</li>
       <li>Поки не натиснуто «Зберегти», зміни живуть лише на екрані — не закривай сторінку з незбереженими змінами.</li>
       <li>Якщо звіт по цьому ж замовленню паралельно змінив хтось інший (напр. ПМ), «Зберегти» покаже <b>«Звіт змінився з іншого пристрою»</b> — це захист від затирання чужих правок. Онови дані та внеси свої значення ще раз.</li>
@@ -185,6 +185,9 @@ const state = {
 };
 
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// Бригада = склад «…під звіт» у 1С; для людини показуємо ім'я без техсуфікса
+// («Вадим Минаков/під звіт» → «Вадим Минаков»). Матчинг/запити — завжди по ref_key.
+function brigName(s){ const c = String(s ?? '').replace(/\s*\/?\s*під\s+звіт\s*$/i, '').trim(); return c || String(s ?? ''); }
 function fmtQ(n){ n = Number(n) || 0; return n.toLocaleString('uk-UA', { maximumFractionDigits: 2 }); }
 function fmtDate(iso){ return iso ? String(iso).slice(0, 10).split('-').reverse().join('.') : ''; }
 function toast(msg, cls){
@@ -225,8 +228,8 @@ function refreshSaveBar(){
   const n = Object.keys(cur).length;
   const dirty = isDirty();
   document.getElementById('saveSt').innerHTML = dirty
-    ? '<b>Незбережені зміни</b> · позицій зі значенням: ' + n
-    : 'Збережено · позицій зі значенням: ' + n;
+    ? '<b>Не збережено</b> · заповнено: ' + n
+    : 'Збережено · заповнено: ' + n;
   document.getElementById('saveBtn').disabled = state.saving || !dirty;
 }
 
@@ -327,32 +330,38 @@ function render(){
 function whsHtml(){
   document.getElementById('sub').textContent = 'використано по факту';
   if (!state.whs.length) return '<div class="empty">Немає прив\'язаних складів бригад.<br>Звернись до адміністратора, щоб додали склад до твого акаунта.</div>';
-  return '<div class="sec-h">Обери свою бригаду</div>' + state.whs.map(w =>
+  const all = [...state.whs].sort((a, b) => brigName(a.name).localeCompare(brigName(b.name), 'uk'));
+  const q = state.search.toLowerCase();
+  const list = q ? all.filter(w => (w.name || '').toLowerCase().includes(q) || brigName(w.name).toLowerCase().includes(q)) : all;
+  const search = all.length > 8 ? '<input type="text" id="mainSearch" class="search" placeholder="🔎 Пошук бригади…" autocomplete="off" oninput="onSearch(this.value)">' : '';
+  return search + '<div class="sec-h"><span>Обери бригаду</span></div>' + (list.length ? list.map(w =>
     '<button class="pick" onclick="pickWh(\'' + esc(String(w.ref_key)) + '\')">' +
-      '<div class="t">' + esc(w.name) + '</div>' +
+      '<div class="t">' + esc(brigName(w.name)) + '</div>' +
       '<div class="m"><span>' + fmtQ(w.items) + ' поз. на складі</span></div>' +
-    '</button>').join('');
+    '</button>').join('') : '<div class="empty">— нічого не знайдено —</div>');
 }
 function ordersHtml(){
-  document.getElementById('sub').textContent = state.whName || '';
+  document.getElementById('sub').textContent = brigName(state.whName) || '';
   const backBtn = state.whs.length > 1 ? '<div class="rep-top"><span class="back" onclick="goWhList()">‹ Бригади</span></div>' : '';
   if (state.orders === 'loading' || state.orders === null) return '<div class="loading">Завантаження замовлень…</div>';
   if (state.orders === 'error') return backBtn + '<div class="error">Не вдалося завантажити замовлення · <span style="cursor:pointer;text-decoration:underline" onclick="loadOrders()">повторити</span></div>';
   let list = state.orders;
   if (state.search) { const q = state.search.toLowerCase(); list = list.filter(o => (o.number || '').toLowerCase().includes(q) || (o.customer || '').toLowerCase().includes(q)); }
-  const search = '<input type="text" id="mainSearch" class="search" placeholder="🔎 № замовлення або покупець…" autocomplete="off" oninput="onSearch(this.value)">';
+  const search = '<input type="text" id="mainSearch" class="search" placeholder="🔎 Покупець або № замовлення…" autocomplete="off" oninput="onSearch(this.value)">';
   if (!state.orders.length) return backBtn + '<div class="empty">По твоєму складу ще немає замовлень із рухом товару.</div>';
-  return backBtn + search + '<div class="sec-h">Замовлення</div>' + (list.length ? list.map(o =>
+  // Бригадир думає об'єктом/покупцем, не номером — покупець і є заголовком картки.
+  return backBtn + search + '<div class="sec-h"><span>Замовлення</span></div>' + (list.length ? list.map(o =>
     '<button class="pick" onclick="pickOrder(\'' + esc(String(o.ref)) + '\')">' +
-      '<div class="t">' + esc(o.number || '—') + (o.customer ? ' · ' + esc(o.customer) : '') + '</div>' +
-      '<div class="m"><span>' + fmtDate(o.date) + '</span>' + (o.has_report ? '<span class="done">✓ звіт заповнено</span>' : '') + '</div>' +
+      '<div class="t">' + esc(o.customer || o.number || '—') + '</div>' +
+      '<div class="m"><span>' + (o.customer ? esc(o.number || '—') + ' · ' : '') + fmtDate(o.date) + '</span>' + (o.has_report ? '<span class="done">✓ звіт заповнено</span>' : '') + '</div>' +
     '</button>').join('') : '<div class="empty">— нічого не знайдено —</div>');
 }
 function rowHtml(r, extra){
   const val = (state._vals && state._vals[r.nom] !== undefined) ? state._vals[r.nom] : '';
+  // «отримано 0» показуємо явно — бригадир бачить, що 1С ще не бачить видачі
   const meta = extra
     ? (r.stockQty != null ? 'на складі: <b>' + fmtQ(r.stockQty) + '</b>' : '')
-    : 'замовлено <b>' + fmtQ(r.ordered) + '</b>' + (r.received ? ' · отримано <b>' + fmtQ(r.received) + '</b>' : '') + (r.unit ? ' ' + esc(r.unit) : '');
+    : 'замовлено <b>' + fmtQ(r.ordered) + '</b> · отримано <b>' + fmtQ(r.received || 0) + '</b>' + (r.unit ? ' ' + esc(r.unit) : '');
   return '<div class="row' + (extra ? ' extra' : '') + '">' +
     '<div class="inf"><div class="nm">' + esc(r.name) + '</div><div class="mt">' + meta + '</div></div>' +
     '<input type="text" inputmode="decimal" data-nom="' + esc(r.nom) + '" value="' + esc(val) + '" placeholder="0"' + (val !== '' && parseQty(val) > 0 ? ' class="filled"' : '') + '>' +
@@ -362,10 +371,10 @@ function formHtml(){
   if (state.report === 'loading' || state.report === null) return '<div class="loading">Завантаження звіту…</div>';
   if (state.report === 'error') return '<div class="rep-top"><span class="back" onclick="backToOrders()">‹ Замовлення</span></div><div class="error">Не вдалося завантажити звіт</div>';
   const d = state.report;
-  document.getElementById('sub').textContent = state.whName || '';
+  document.getElementById('sub').textContent = brigName(state.whName) || '';
   const top = '<div class="rep-top"><span class="back" onclick="backToOrders()">‹ Замовлення</span>' +
-    '<div class="rep-ord"><div class="t">' + esc(d.order.number || '—') + (d.order.customer ? ' · ' + esc(d.order.customer) : '') + '</div>' +
-    '<div class="s">' + fmtDate(d.order.date) + '</div></div></div>';
+    '<div class="rep-ord"><div class="t">' + esc(d.order.customer || d.order.number || '—') + '</div>' +
+    '<div class="s">' + (d.order.customer ? esc(d.order.number || '—') + ' · ' : '') + fmtDate(d.order.date) + '</div></div></div>';
   const search = '<input type="text" id="mainSearch" class="search" placeholder="🔎 Пошук по товару…" autocomplete="off" oninput="onSearch(this.value)">';
   const q = state.search.toLowerCase();
   const orderRows = (d.rows || []).filter(r => r.ordered > 0 || r.received > 0);
@@ -373,12 +382,12 @@ function formHtml(){
   const vis = q ? orderRows.filter(r => (r.name || '').toLowerCase().includes(q)) : orderRows;
   const visExtra = q ? state.extraRows.filter(r => (r.name || '').toLowerCase().includes(q)) : state.extraRows;
   let out = top + search;
-  out += '<div class="sec-h">Позиції замовлення · введи скільки використано</div>';
+  out += '<div class="sec-h"><span>Позиції замовлення</span><span class="r">використано</span></div>';
   out += vis.length
     ? '<div class="rows">' + vis.map(r => rowHtml(r, false)).join('') + '</div>'
     : '<div class="empty">' + (orderRows.length ? '— нічого не знайдено —' : '— у замовленні немає позицій —') + '</div>';
   if (visExtra.length) {
-    out += '<div class="sec-h">Додано зі складу</div><div class="rows">' + visExtra.map(r => rowHtml(r, true)).join('') + '</div>';
+    out += '<div class="sec-h"><span>Додано зі складу</span><span class="r">використано</span></div><div class="rows">' + visExtra.map(r => rowHtml(r, true)).join('') + '</div>';
   }
   out += '<button class="add-btn" onclick="openSheet()">＋ Додати зі складу</button>';
   return out;
