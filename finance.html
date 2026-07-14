@@ -750,6 +750,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
           <span class="chip" data-org="Генерація" onclick="cbSetOrg(this)">Генерація</span>
           <span class="chip" data-org="Без організації" onclick="cbSetOrg(this)">Без орг.</span>
         </span>
+        <div class="sep"></div>
+        <span class="chip" onclick="openCbHelp()" title="Як працює цей звіт">❓ Як працює</span>
       </div>
       <div id="cbSummary"></div>
       <div id="cbHistoryPanel" class="mc-block">
@@ -794,6 +796,35 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li>Кеш звіту — <b>1 година</b>. Нові проводки в 1С з'являться тут із затримкою до години; звіт і деталізація кешуються окремо, тож короткий розсинхрон між ними можливий у межах цієї години.</li>
       <li>Це P&L за нарахуванням: оплата і рух грошей тут ні до чого — дивись Cash Flow.</li>
       <li>Суми округлені до долара, тому видима сума деталей може відрізнятись від рядка на ±1&nbsp;$.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ── Довідка «Як працює Залишки коштів» ── -->
+<div class="modal-backdrop" id="cbHelpModal" onclick="if(event.target===this)closeCbHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт Залишки коштів">
+    <button class="close" onclick="closeCbHelp()" aria-label="Закрити">✕</button>
+    <h2>Як працює звіт «Залишки коштів»</h2>
+    <h3>Джерело даних</h3>
+    <p>Рухи грошей з 1С (регістр «Грошові кошти»), синхронізовані в нашу базу. Залишок рахунку = усі надходження мінус списання <b>до кінця обраної дати включно</b> — так само рахує 1С у звіті «Залишки коштів на дату».</p>
+    <h3>Валюти і курс</h3>
+    <p>Залишок кожного рахунку — у валюті рахунку. Для підсумків усе конвертується в USD за курсом на обрану дату (пріоритет: курс з документів 1С → ПриватБанк → НБУ). Якщо на історичну дату курсу нема — береться останній відомий до цієї дати.</p>
+    <h3>Картки зверху</h3>
+    <ul>
+      <li><b>Усього коштів</b> — усі рахунки й каси разом, включно з картками (Монобанк, Ангеліна) та криптою, які окремої картки не мають.</li>
+      <li><b>Безготівка ТОВ</b> — банківські рахунки юросіб (ТОВ Реакт, Генерація: А-Банк, Приват, ПУМБ, Укрексімбанк) разом із кредитними лініями.</li>
+      <li><b>Безготівка ФОП</b> — банківські рахунки ФОП (Труфкакі, Доскевич) і транзитні.</li>
+      <li><b>Безготівка LLC</b> — американський рахунок МЕГАЗАКАЗ.</li>
+      <li><b>Каси</b> — готівкові каси без карток і крипти.</li>
+    </ul>
+    <p>Тому «ТОВ» + «ФОП» + «LLC» + «Каси» ≠ «Усього» — різниця це саме картки та крипта (їх видно в списку нижче в секції «Картки та крипта»).</p>
+    <h3>Фільтр по організаціях</h3>
+    <p>Рахунок належить організації за власником рахунку в 1С. Каси, картки і крипта в 1С власника не мають — вони у «Без орг.». Тому «Реакт» + «Генерація» + «Без орг.» = «Всі», без подвійного обліку.</p>
+    <h3>Чому цифра може здивувати</h3>
+    <ul>
+      <li>Кеш звіту — до 1 години; свіжі платежі з 1С підтягуються синком кожні 30 хв у робочий час.</li>
+      <li>Мінусовий банківський залишок — це або кредитний рахунок, або технічний перекос у 1С (незакритий переказ між рахунками).</li>
+      <li>Суми округлені до цілих, тож підсумок може відрізнятися від суми карток на ±1.</li>
     </ul>
   </div>
 </div>
@@ -2186,7 +2217,9 @@ async function pnlDocToggle(tr, tbl) {
 }
 function openPnlHelp()  { document.getElementById('pnlHelpModal').classList.add('open'); }
 function closePnlHelp() { document.getElementById('pnlHelpModal').classList.remove('open'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closePnlHelp(); });
+function openCbHelp()   { document.getElementById('cbHelpModal').classList.add('open'); }
+function closeCbHelp()  { document.getElementById('cbHelpModal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closePnlHelp(); closeCbHelp(); } });
 
 function pnlDateChanged() {
   pnlState.preset = detectPreset(pnlState.from, pnlState.to) || '';
@@ -3830,8 +3863,42 @@ function cbRender() {
   const asOfPretty = data.on_date ? data.on_date.split('-').reverse().join('.') : '—';
 
   const accounts = data.accounts || [];
-  const bankAccs = accounts.filter(a => a.account_type === 'bank');
-  const cashAccs = accounts.filter(a => a.account_type !== 'bank');
+  // Спец-групування поверх account_type (ref_keys з 1С cash_accounts):
+  // «Безготівка ТОВ» — рахунки юросіб (ТОВ Реакт, Генерація) + кредитні лінії.
+  //   IBAN-двійники (…0024 і …8653 заведені в 1С двічі, ГЕ/ДС) — обидва тут.
+  // «Безготівка ФОП» — решта банківських (ФОП Труфкакі, Доскевич, транзитні).
+  // «Безготівка LLC» — американський р/р МЕГАЗАКАЗ (в 1С заведений касою).
+  // Картки/крипта — без окремої summary-картки, рахуються лише в «Усього».
+  const CB_TOV_REFS = new Set([
+    'db4c05b4-269a-11f1-8706-107c6149f3d7', // А-БАНК ТОВ РЕАКТ …7534
+    '0e24e0f7-348c-11ef-b77a-da00e3e3da2a', // А-БАНК ГЕ …0156
+    '630e7b46-b5a2-11f0-86f0-107c6149f3d7', // ПРИВАТ EUR ТОВ Генерація
+    'fe550550-6017-11ed-b736-c7234ea2deff', // ПРИВАТ ГЕ …0024
+    '72b02994-c44f-11f0-86f3-107c6149f3d7', // ПРИВАТ …0024 (ДС-двійник)
+    'cffb2143-276d-11f1-8706-107c6149f3d7', // Кредитний ПРИВАТ ФОП Доскевич …0111
+    'b1629129-c049-11ee-b765-c2726cbabb3c', // ПУМБ (UAH) ГЕ
+    '240470e4-6604-11f0-86e2-107c6149f3d7', // УКРЕКСІМБАНК ГЕ …8653
+    '83b7eabd-d739-11f0-86f7-107c6149f3d7', // УКРЕКСІМБАНК …8653 (ДС-двійник)
+    '0953aa2b-7cd1-11f0-86e6-107c6149f3d7', // ПРИВАТ ТОВ РЕАКТ …4219
+    '6a400604-bb02-11f0-86f1-107c6149f3d7', // Кредитний ПРИВАТ Генерація …8545
+  ]);
+  const CB_LLC_REFS = new Set([
+    '5c399c25-17d7-11f1-8703-107c6149f3d7', // МЕГАЗАКАЗ амер. р/с USD
+  ]);
+  const CB_MISC_REFS = new Set([
+    'e3c2e5ba-c2ce-11eb-b715-828151fb10a0', // Карточка Монобанк UAH
+    '8401b527-5e41-11ec-b723-e2352d322d72', // Карточка Монобанк Рома Одесса UAH
+    '633b1809-eea0-11ef-86c9-107c6149f3d7', // КРИПТА
+    'c0ad800c-33e2-11f1-8708-107c6149f3d7', // Карточка Ангелина UAH ГЕ
+  ]);
+  const cbGroupOf = a => CB_TOV_REFS.has(a.ref_key) ? 'tov'
+    : CB_LLC_REFS.has(a.ref_key) ? 'llc'
+    : CB_MISC_REFS.has(a.ref_key) ? 'misc'
+    : (a.account_type === 'bank' ? 'fop' : 'cash');
+  const tovAccs  = accounts.filter(a => cbGroupOf(a) === 'tov');
+  const fopAccs  = accounts.filter(a => cbGroupOf(a) === 'fop');
+  const llcAccs  = accounts.filter(a => cbGroupOf(a) === 'llc');
+  const cashAccs = accounts.filter(a => cbGroupOf(a) === 'cash');
 
   // Підсумок по групі: рахунок враховуємо ЛИШЕ у його main currency (та сама
   // логіка що й у body — щоб summary і group headers збігалися завжди).
@@ -3853,7 +3920,9 @@ function cbRender() {
     });
     return { usd: Math.round(usd * 100) / 100, byCur };
   };
-  const bankTotals = sumByMainCur(bankAccs);
+  const tovTotals  = sumByMainCur(tovAccs);
+  const fopTotals  = sumByMainCur(fopAccs);
+  const llcTotals  = sumByMainCur(llcAccs);
   const cashTotals = sumByMainCur(cashAccs);
 
   // Breakdown по валютах — окремими рядками нормального розміру (не subscript).
@@ -3873,9 +3942,20 @@ function cbRender() {
       '<span class="cs">станом на ' + esc(asOfPretty) + '</span>' +
     '</div>',
     '<div class="pnl-card">' +
-      '<span class="cl">Банківські рахунки</span>' +
-      '<span class="cv">' + fmt(bankTotals.usd, 0) + ' $</span>' +
-      curBreakdownHtml(bankTotals.byCur) +
+      '<span class="cl">Безготівка ТОВ</span>' +
+      '<span class="cv">' + fmt(tovTotals.usd, 0) + ' $</span>' +
+      curBreakdownHtml(tovTotals.byCur) +
+    '</div>',
+    '<div class="pnl-card">' +
+      '<span class="cl">Безготівка ФОП</span>' +
+      '<span class="cv">' + fmt(fopTotals.usd, 0) + ' $</span>' +
+      curBreakdownHtml(fopTotals.byCur) +
+    '</div>',
+    '<div class="pnl-card">' +
+      '<span class="cl">Безготівка LLC</span>' +
+      '<span class="cv">' + fmt(llcTotals.usd, 0) + ' $</span>' +
+      // USD-only група: breakdown дублював би цифру cv — ховаємо його.
+      curBreakdownHtml(Object.fromEntries(Object.entries(llcTotals.byCur).filter(([c]) => c !== 'USD'))) +
     '</div>',
     '<div class="pnl-card">' +
       '<span class="cl">Каси</span>' +
@@ -3991,9 +4071,8 @@ function cbRender() {
     const e = getMainCurEntry(a);
     if (!e) return;
     const cur = e[0];
-    if (!curGroups[cur]) curGroups[cur] = { banks: [], cash: [] };
-    if (a.account_type === 'bank') curGroups[cur].banks.push(a);
-    else curGroups[cur].cash.push(a);
+    if (!curGroups[cur]) curGroups[cur] = { tov: [], fop: [], llc: [], cash: [], misc: [] };
+    curGroups[cur][cbGroupOf(a)].push(a);
   });
 
   // Сума header'а групи / типу = сума ОКРУГЛЕНИХ main-баланс карток
@@ -4005,29 +4084,30 @@ function cbRender() {
 
   const curKeys = Object.keys(curGroups).sort((a, b) => CUR_ORDER.indexOf(a) - CUR_ORDER.indexOf(b));
 
+  const CB_SECTIONS = [
+    ['tov',  'Безготівка ТОВ'],
+    ['fop',  'Безготівка ФОП'],
+    ['llc',  'Безготівка LLC'],
+    ['cash', 'Каси'],
+    ['misc', 'Картки та крипта'],
+  ];
   let html = '';
   curKeys.forEach(cur => {
     const g = curGroups[cur];
-    const banks = sortDesc(g.banks);
-    const cash = sortDesc(g.cash);
-    const curTotal = sumMainRounded(banks) + sumMainRounded(cash);
+    const curTotal = CB_SECTIONS.reduce((s, sec) => s + sumMainRounded(g[sec[0]]), 0);
     html += '<div class="cb-org-block">' +
       '<div class="cb-org-head">' +
         '<span class="cb-org-name">' + cur + '</span>' +
         '<span class="cb-org-total">' + fmt(curTotal, 0) + ' ' + sym(cur) + '</span>' +
       '</div>';
-    if (banks.length) {
-      html += '<div class="cb-type-head">Банківські рахунки' +
-        '<span class="cb-type-meta">' + banks.length + ' рах. · ' + fmt(sumMainRounded(banks), 0) + ' ' + sym(cur) + '</span>' +
+    CB_SECTIONS.forEach(sec => {
+      const arr = sortDesc(g[sec[0]]);
+      if (!arr.length) return;
+      html += '<div class="cb-type-head">' + sec[1] +
+        '<span class="cb-type-meta">' + arr.length + ' рах. · ' + fmt(sumMainRounded(arr), 0) + ' ' + sym(cur) + '</span>' +
         '</div>' +
-        '<div class="cb-grid">' + banks.map(cardHtml).join('') + '</div>';
-    }
-    if (cash.length) {
-      html += '<div class="cb-type-head">Каси' +
-        '<span class="cb-type-meta">' + cash.length + ' рах. · ' + fmt(sumMainRounded(cash), 0) + ' ' + sym(cur) + '</span>' +
-        '</div>' +
-        '<div class="cb-grid">' + cash.map(cardHtml).join('') + '</div>';
-    }
+        '<div class="cb-grid">' + arr.map(cardHtml).join('') + '</div>';
+    });
     html += '</div>';
   });
 
