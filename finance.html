@@ -756,7 +756,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <div id="cbSummary"></div>
       <div id="cbHistoryPanel" class="mc-block">
         <div class="mc-head">
-          <span class="mc-title">Залишки коштів, USD</span>
+          <span class="mc-title">Усього коштів, USD</span>
           <span class="group cb-history-period">
             <span class="chip" data-cbh="30" onclick="cbSetHistoryDays(this)">30д</span>
             <span class="chip active" data-cbh="90" onclick="cbSetHistoryDays(this)">90д</span>
@@ -809,6 +809,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <p>Рухи грошей з 1С (регістр «Грошові кошти»), синхронізовані в нашу базу. Залишок рахунку = усі надходження мінус списання <b>до кінця обраної дати включно</b> — так само рахує 1С у звіті «Залишки коштів на дату».</p>
     <h3>Валюти і курс</h3>
     <p>Залишок кожного рахунку — у валюті рахунку. Для підсумків усе конвертується в USD за курсом на обрану дату (пріоритет: курс з документів 1С → ПриватБанк → НБУ). Якщо на історичну дату курсу нема — береться останній відомий до цієї дати.</p>
+    <p>Графік «Усього коштів, USD» — та сама цифра, що в першій картці, по днях: усі валюти конвертовані в USD за курсом кожного дня. Останній стовпчик = «Усього коштів» на обрану дату.</p>
     <h3>Картки зверху</h3>
     <ul>
       <li><b>Усього коштів</b> — усі рахунки й каси разом, включно з картками (Монобанк, Ангеліна) та криптою, які окремої картки не мають.</li>
@@ -3797,7 +3798,11 @@ function cbRenderHistory(data) {
   const panel = document.getElementById('cbHistoryPanel');
   const cv = document.getElementById('cbHistoryCanvas');
   if (!panel || !cv || !window.Chart) return;
-  const usd = (data.series && data.series.USD) || [];
+  // total_usd = «Усього коштів» по днях (USD-еквівалент усіх валют);
+  // фолбек на старий нативний USD-ряд, поки воркер не задеплоєний.
+  const usd = (Array.isArray(data.total_usd) && data.total_usd.length)
+    ? data.total_usd
+    : (data.series && data.series.USD) || [];
   if (!usd.length || !usd.some(v => Math.abs(v) > 0.5)) { panel.classList.add('empty'); return; }
   panel.classList.remove('empty');
 
