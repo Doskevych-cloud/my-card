@@ -215,7 +215,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14
     <h3>Звідки цифри поряд з полем</h3>
     <ul>
       <li><b>Отримано</b> — скільки твоя бригада отримала переміщеннями під це замовлення від складів компанії (1С). Передачі від інших бригад сюди не входять.</li>
-      <li><b>На руках</b> = отримано − у звіті: що ще лишилось у бригади по цій позиції. Рахується наживо, поки вводиш. <b>Червоне</b> (мінус) — у звіті більше, ніж 1С видала: перевір цифру або дочекайся синхронізації переміщення.</li>
+      <li><b>На складі</b> — фактичний залишок складу бригади по цій позиції зі знімка 1С (<b>усі замовлення разом</b>, не лише поточне). Від введеного «використано» не змінюється — сток зменшиться, коли бухгалтерія спише за звітом. <b>Червоне</b> — залишок у 1С від'ємний (аномалія обліку).</li>
       <li><b>Замовлено</b> — кількість із замовлення покупця (1С), довідково.</li>
       <li>Дані 1С синхронізуються кілька разів на день — свіже переміщення може з'явитися із затримкою до пів години.</li>
     </ul>
@@ -436,18 +436,24 @@ function ordersHtml(){
       (o.submitted_at ? '<span class="done">✓ звіт подано ' + fmtDate(o.submitted_at) + '</span>' : (o.has_report ? '<span class="draft">чернетка</span>' : '')) + '</div>' +
     '</button>').join('') + '</div>' : '<div class="empty">— нічого не знайдено —</div>');
 }
+// Фактичний залишок бригадного складу по позиції (знімок 1С stock_balances,
+// УСІ замовлення разом — не лише поточне). null = позиції нема у знімку (= 0).
+function _stockOf(nom){
+  const st = ((state.report && state.report.stock) || []).find(s => s.nom === nom);
+  return st ? (Number(st.qty) || 0) : 0;
+}
 function rowHtml(r, extra){
   const val = (state._vals && state._vals[r.nom] !== undefined) ? state._vals[r.nom] : '';
   const used = parseQty(val);
   const recv = Number(r.received) || 0;
+  const stock = extra ? (r.stockQty != null ? Number(r.stockQty) : _stockOf(r.nom)) : _stockOf(r.nom);
   // «отримано 0» показуємо явно — бригадир бачить, що 1С ще не бачить видачі.
-  // «на руках» = отримано − у звіті: живе число, за яким бригадир звіряється
-  // з реальністю; оновлюється при кожному введенні (updateRowLive).
-  const oh = Math.round((recv - used) * 1000) / 1000;
+  // «на складі» = ПОВНИЙ залишок складу бригади по позиції (не лише під це
+  // замовлення) — фізичне «що в мене на руках» зі знімка 1С.
   const meta = extra
-    ? (r.stockQty != null ? 'на складі: <b>' + fmtQ(r.stockQty) + '</b>' : '')
+    ? 'на складі <b>' + fmtQ(stock) + '</b>'
     : 'отримано <b>' + fmtQ(recv) + '</b>' + (r.unit ? ' ' + esc(r.unit) : '') +
-      ' · <span class="oh' + (oh < 0 ? ' neg' : '') + '" data-oh="' + esc(r.nom) + '" data-recv="' + recv + '">на руках <b>' + fmtQ(oh) + '</b></span>' +
+      ' · <span class="oh' + (stock < 0 ? ' neg' : '') + '">на складі <b>' + fmtQ(stock) + '</b></span>' +
       ' · <span class="dim">замовлено ' + fmtQ(r.ordered) + '</span>';
   const cls = [];
   if (val !== '' && used > 0) cls.push('filled');
@@ -502,14 +508,9 @@ function snapshotVals(){
   document.querySelectorAll('#body input[data-nom]').forEach(inp => { state._vals[inp.dataset.nom] = inp.value; });
 }
 
-// input у рядках: тримаємо savebar актуальним + класи filled/chg + живе «на руках»
-function updateRowLive(nom){
-  const span = document.querySelector('#body .oh[data-oh="' + CSS.escape(nom) + '"]');
-  if (!span) return;
-  const oh = Math.round(((Number(span.dataset.recv) || 0) - parseQty((state._vals || {})[nom] || '')) * 1000) / 1000;
-  span.innerHTML = 'на руках <b>' + fmtQ(oh) + '</b>';
-  span.classList.toggle('neg', oh < 0);
-}
+// input у рядках: тримаємо savebar актуальним + класи filled/chg
+// («на складі» — статичний знімок 1С, від введеного не змінюється:
+// сток зменшить бухгалтерія видатковою після звіту)
 document.getElementById('body').addEventListener('input', ev => {
   const inp = ev.target.closest('input[data-nom]');
   if (!inp) return;
@@ -518,7 +519,6 @@ document.getElementById('body').addEventListener('input', ev => {
   state._vals = state._vals || {};
   state._vals[inp.dataset.nom] = inp.value;
   inp.classList.toggle('chg', parseQty(inp.value) !== (state.saved[inp.dataset.nom] || 0));
-  updateRowLive(inp.dataset.nom);
   refreshSaveBar();
 });
 // ＋ біля позиції — bottom-sheet «додати використане зараз»
@@ -552,10 +552,10 @@ function openRowSheet(nom){
   const isOrderRow = (Number(row.ordered) || 0) > 0 || (Number(row.received) || 0) > 0;
   const recv = Number(row.received) || 0;
   const used = parseQty((state._vals || {})[nom] || '');
-  const oh = Math.round((recv - used) * 1000) / 1000;
+  const stock = row.stockQty != null ? Number(row.stockQty) : _stockOf(nom);
   const nums = isOrderRow
-    ? 'у звіті <b>' + fmtQ(used) + '</b> · отримано <b>' + fmtQ(recv) + '</b> · <span class="' + (oh < 0 ? 'neg' : '') + '">на руках <b>' + fmtQ(oh) + '</b></span>'
-    : 'у звіті <b>' + fmtQ(used) + '</b>' + (row.stockQty != null ? ' · на складі <b>' + fmtQ(row.stockQty) + '</b>' : '');
+    ? 'у звіті <b>' + fmtQ(used) + '</b> · отримано <b>' + fmtQ(recv) + '</b> · <span class="' + (stock < 0 ? 'neg' : '') + '">на складі <b>' + fmtQ(stock) + '</b></span>'
+    : 'у звіті <b>' + fmtQ(used) + '</b> · на складі <b>' + fmtQ(stock) + '</b>';
   document.getElementById('rowSheet').innerHTML =
     '<h3>Додати використане <span class="x" onclick="closeRowSheet()">✕</span></h3>' +
     '<div class="rs-nm">' + esc(row.name || '—') + '</div>' +
@@ -715,13 +715,13 @@ function downloadPDF(){
   const rowPdf = (r, extra) => {
     const used = cur[r.nom] || 0;
     const recv = Number(r.received) || 0;
-    const oh = Math.round((recv - used) * 1000) / 1000;
+    const stock = extra && r.stockQty != null ? Number(r.stockQty) : _stockOf(r.nom);
     return '<tr>' +
       '<td>' + esc(r.name) + (extra ? ' <span class="ex">· зі складу</span>' : '') + '</td>' +
       '<td class="c">' + esc(r.unit || '') + '</td>' +
       (extra ? '<td class="r">—</td><td class="r">—</td>' : '<td class="r">' + fmtQ(r.ordered) + '</td><td class="r">' + fmtQ(recv) + '</td>') +
       '<td class="r"><b>' + fmtQ(used) + '</b></td>' +
-      (extra ? '<td class="r">—</td>' : '<td class="r' + (oh < 0 ? ' neg' : '') + '">' + fmtQ(oh) + '</td>') +
+      '<td class="r' + (stock < 0 ? ' neg' : '') + '">' + fmtQ(stock) + '</td>' +
     '</tr>';
   };
   const body = orderRows.map(r => rowPdf(r, false)).join('') + state.extraRows.map(r => rowPdf(r, true)).join('');
@@ -739,7 +739,7 @@ function downloadPDF(){
     '<div class="sub"><b>' + esc(brigName(state.whName)) + '</b> · Замовлення <b>' + esc(d.order.number || '—') + '</b>' +
       (d.order.customer ? ' · ' + esc(d.order.customer) : '') + ' · від ' + fmtDate(d.order.date) + '</div>' +
     '<div class="sub">' + status + ' · сформовано ' + esc(dt) + (who ? ' · ' + esc(who) : '') + '</div>' +
-    '<table><thead><tr><th>Номенклатура</th><th class="c">Од</th><th class="r">Замовлено</th><th class="r">Отримано</th><th class="r">Використано</th><th class="r">На руках</th></tr></thead>' +
+    '<table><thead><tr><th>Номенклатура</th><th class="c">Од</th><th class="r">Замовлено</th><th class="r">Отримано</th><th class="r">Використано</th><th class="r">На складі</th></tr></thead>' +
     '<tbody>' + body + '</tbody></table>' +
     '<style>' +
       'body{margin:0;padding:10mm 8mm;background:#fff;color:#1c1c1e;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:12px}' +
