@@ -776,9 +776,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
             <span class="mc-sub" id="whHistSub"></span>
           </span>
           <span class="group cb-history-period">
-            <span class="chip" data-whh="30" onclick="whSetHistoryDays(this)">30д</span>
-            <span class="chip active" data-whh="90" onclick="whSetHistoryDays(this)">90д</span>
-            <span class="chip" data-whh="365" onclick="whSetHistoryDays(this)">365д</span>
+            <span class="chip" data-whh="92" onclick="whSetHistoryDays(this)">3м</span>
+            <span class="chip" data-whh="183" onclick="whSetHistoryDays(this)">6м</span>
+            <span class="chip active" data-whh="365" onclick="whSetHistoryDays(this)">12м</span>
           </span>
         </div>
         <div class="mc-canvas-wrap"><canvas id="whHistoryCanvas" height="120"></canvas></div>
@@ -901,7 +901,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <h3>Як рахується вартість</h3>
     <p>Вартість позиції = <b>кількість × середньозважена собівартість</b>. Собівартість береться з <b>покупних накладних</b> (проведених, не позначених на видалення) як зважене середнє по всіх закупівлях цієї номенклатури в межах організації; якщо організація сама її не купувала — фолбек на середню по всіх організаціях. Позиції, для яких собівартості немає, показані як <b>«н/д»</b> і в підсумок вартості не входять (їх кількість — у картці «Без собівартості»).</p>
     <h3>Графік «Вартість запасів, USD»</h3>
-    <p>Динаміка сумарної вартості складу по днях за обране вікно (30/90/365 днів). Кожен день — окремий знімок залишків, оцінений <b>тією самою</b> поточною собівартістю, тому лінія показує зміну <b>кількостей</b> на складі, а не коливання собівартості. <b>Крайня права точка = картці «Вартість запасів»</b> на обрану дату; «сер.» у шапці — середня вартість за вікно. Дні без знімка підтягуються останнім відомим значенням.</p>
+    <p>Динаміка сумарної вартості складу <b>по місяцях</b> за обране вікно (3/6/12 місяців). Кожна точка — вартість на <b>кінець місяця</b> (останній знімок місяця), оцінена <b>тією самою</b> поточною собівартістю, тому лінія показує зміну <b>кількостей</b> на складі, а не коливання собівартості. <b>Крайня права точка = картці «Вартість запасів»</b> на обрану дату; «сер.» у шапці — середня вартість по місяцях за вікно. Місяці без знімка підтягуються останнім відомим значенням.</p>
     <h3>Фільтри</h3>
     <ul>
       <li><b>Організація</b> — «Генерація» = Одеса + Київ. Впливає і на таблицю, і на графік.</li>
@@ -3393,7 +3393,7 @@ document.addEventListener('DOMContentLoaded', function() {
    WAREHOUSE VALUE TAB (Вартісна оцінка складу)
    Дані з D1: stock_balances + weighted-avg cost per (nom × org)
    ═══════════════════════════════════════════════════ */
-const whState = { on: '', org: '', _loaded: false, data: null, search: '', limit: 200, includeList: [], includeQuery: '', openWh: new Set(), historyDays: 90, _historyChart: null };
+const whState = { on: '', org: '', _loaded: false, data: null, search: '', limit: 200, includeList: [], includeQuery: '', openWh: new Set(), historyDays: 365, _historyChart: null };
 
 function whSetPreset(p) {
   const now = new Date(), y = now.getFullYear(), m = now.getMonth();
@@ -3555,7 +3555,7 @@ async function whLoad() {
 }
 
 function whSetHistoryDays(el) {
-  whState.historyDays = Number(el.dataset.whh) || 90;
+  whState.historyDays = Number(el.dataset.whh) || 365;
   el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
   whLoadHistory();
@@ -3577,16 +3577,32 @@ async function whLoadHistory() {
   }
 }
 
+const MON_UK = ['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
+const MON_UK_FULL = ['січень','лютий','березень','квітень','травень','червень','липень','серпень','вересень','жовтень','листопад','грудень'];
+
 function whRenderHistory(data) {
   const panel = document.getElementById('whHistoryPanel');
   const cv = document.getElementById('whHistoryCanvas');
   if (!panel || !cv || !window.Chart) return;
-  const vals = Array.isArray(data.value_usd) ? data.value_usd : [];
+
+  // Згортаємо денний ряд у місячні точки: значення на КІНЕЦЬ місяця
+  // (остання наявна дата місяця), бо вартість запасів — це рівень, не потік.
+  // Остання точка = обраній даті `on` → збігається з карткою «Вартість запасів».
+  const rawDates = data.dates || [];
+  const rawVals = Array.isArray(data.value_usd) ? data.value_usd : [];
+  const monthMap = new Map();  // 'YYYY-MM' -> { date, val } (перезапис лишає останній день місяця)
+  for (let i = 0; i < rawDates.length; i++) {
+    const v = rawVals[i];
+    if (v == null) continue;
+    monthMap.set(rawDates[i].slice(0, 7), { date: rawDates[i], val: Number(v) || 0 });
+  }
+  const months = Array.from(monthMap.keys());            // вже відсортовані (ряд відсортований)
+  const dates = months.map(m => monthMap.get(m).date);   // дата кінця місяця — для тултіпа
+  const vals = months.map(m => monthMap.get(m).val);
   if (!vals.length || !vals.some(v => Math.abs(v) > 0.5)) { panel.classList.add('empty'); return; }
   panel.classList.remove('empty');
 
-  const dates = data.dates || [];
-  const labels = dates.map(d => d.slice(5));  // MM-DD
+  const labels = months.map(m => { const [y, mo] = m.split('-'); return MON_UK[+mo - 1] + " '" + y.slice(2); });
   const green = getComputedStyle(document.documentElement).getPropertyValue('--green').trim() || '#22c55e';
   const fmtMoney = (v) => (window.MonthlyChart && MonthlyChart.fmtMoney) ? MonthlyChart.fmtMoney(v, '$') : (Math.round(Number(v)||0).toLocaleString() + ' $');
 
@@ -3604,7 +3620,8 @@ function whRenderHistory(data) {
       borderColor: green,
       borderWidth: 2,
       tension: 0.25,
-      pointRadius: 0,
+      pointRadius: 2.5,
+      pointBackgroundColor: green,
       pointHoverRadius: 4,
       fill: false,
     }]},
@@ -3621,7 +3638,7 @@ function whRenderHistory(data) {
           bodyColor: '#fff',
           padding: 8,
           callbacks: {
-            title: (items) => dates[items[0].dataIndex] || '',
+            title: (items) => { const m = months[items[0].dataIndex]; if (!m) return ''; const [y, mo] = m.split('-'); return MON_UK_FULL[+mo - 1] + ' ' + y; },
             label: (ctx) => fmtMoney(ctx.parsed.y),
           },
         },
