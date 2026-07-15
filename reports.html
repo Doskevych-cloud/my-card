@@ -99,6 +99,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .mgr-table td.conv{color:var(--accent);font-weight:700}
 .mgr-table .conv-bar{display:inline-block;width:60px;height:4px;background:var(--bg3);border-radius:2px;vertical-align:middle;margin-left:8px;overflow:hidden}
 .mgr-table .conv-bar i{display:block;height:100%;background:var(--accent);border-radius:2px}
+.mgr-table tr.sec-row td{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;background:var(--surface);padding-top:12px}
+.mgr-table tr.sec-row:hover td{background:var(--surface)}
+.mgr-table tr.sum-row td{font-weight:700;color:var(--text)}
 
 /* Tasks list (collapsible) */
 .tasks-wrap{border:1px solid var(--border);border-radius:12px;background:var(--surface2);overflow:hidden;margin-bottom:20px}
@@ -647,17 +650,32 @@ function renderChannelsReport(d) {
   return html;
 }
 
+// Бакет «без каналу»: назва + статуси, яких у списку не показуємо (їм ще не
+// додзвонились, тому канал не з'ясований) + мертві. Лишаємо тільки тих, хто в роботі.
+const NO_CHANNEL_LABEL = '— без каналу';
+const NO_CHANNEL_HIDE_STATUS = new Set(['Нове', "Спробу зв'язатись зроблено", 'Закрито та не реалізовано']);
+
 // Список угод одного каналу — той самий вигляд, що «Усі ліди» у воронці
 function channelLeadsHTML(ch) {
+  const isNoChannel = ch.name === NO_CHANNEL_LABEL;
+  const leads = isNoChannel
+    ? ch.leadsList.filter(l => !NO_CHANNEL_HIDE_STATUS.has(l.currentStatus))
+    : ch.leadsList;
+  const hint = isNoChannel
+    ? `Лише ті, кому вже додзвонились (без «Нове / Спробу зв'язатись / Закрито») · клік по # — відкрити в Planfix`
+    : `Клік по # — відкрити в Planfix`;
   let html = `
     <div id="channelLeads" class="section-h">
-      <h2>📋 Угоди каналу «${esc(ch.name)}» (${fmt(ch.leadsList.length)})</h2>
-      <span class="hint">Клік по # — відкрити в Planfix <a href="#" id="clearChannelFilter" style="color:var(--accent);text-decoration:none;margin-left:8px">× скинути</a></span>
+      <h2>📋 Угоди каналу «${esc(ch.name)}» (${fmt(leads.length)})</h2>
+      <span class="hint">${hint} <a href="#" id="clearChannelFilter" style="color:var(--accent);text-decoration:none;margin-left:8px">× скинути</a></span>
     </div>
     <div class="tasks-wrap"><table class="tasks-table"><thead><tr>
       <th>#</th><th>Назва</th><th>Створено</th><th>Поточний статус</th><th>Дата зміни</th><th>Бюджет $</th><th>Клас</th><th>Тип</th><th>Менеджер</th>
     </tr></thead><tbody>`;
-  ch.leadsList.forEach(l => {
+  if (!leads.length) {
+    html += `<tr><td colspan="9" class="muted" style="text-align:center;padding:14px">Немає угод у роботі — усім у цьому каналі ще не додзвонились.</td></tr>`;
+  }
+  leads.forEach(l => {
     const url = `https://solar.planfix.ua/task/${l.id}`;
     html += `<tr>
       <td class="num"><a class="tlink" href="${url}" target="_blank" rel="noopener">${esc(l.id)}</a></td>
@@ -841,21 +859,46 @@ function renderMarketingReport(d) {
   </div>`;
 
   if (d.channels && d.channels.length) {
-    const head = ['Канал', 'У KPI', isWon ? 'Угод' : 'Лідів', 'Виграно', 'Конверсія', 'Бюджет win $', `Прибуток (${marginPct}%) $`];
-    html += `<div class="section-h"><h2>📊 Канали</h2><span class="hint">✓ «У KPI» = канал-результат маркетингу, входить у ROMI/CPL · клік по каналу — його ліди нижче</span></div>`;
-    html += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr>`;
-    head.forEach(c => { html += `<th>${c}</th>`; });
-    html += `</tr></thead><tbody>`;
-    d.channels.forEach((c, i) => {
+    const head = ['Канал', isWon ? 'Угод' : 'Лідів', 'Виграно', 'Конверсія', 'Бюджет win $', `Прибуток (${marginPct}%) $`];
+    const NCOL = head.length;
+    const chRow = (c, i) => {
       const active = state.channelFilter === c.name ? ' active' : '';
       const cells = [
-        esc(c.name), c.isMarketing ? '✓' : '—',
-        fmt(c.leads), c.won ? fmt(c.won) : '—',
+        esc(c.name), fmt(c.leads), c.won ? fmt(c.won) : '—',
         isWon ? '—' : pct(c.conversionRate),
         fmtMoney(c.budget), fmtMoney(c.profit),
       ];
-      html += `<tr class="clickable${active}" data-ch-idx="${i}">${cells.map((v, ci) => `<td${ci === 0 ? '' : ' class="num"'}>${v}</td>`).join('')}</tr>`;
-    });
+      return `<tr class="clickable${active}" data-ch-idx="${i}">${cells.map((v, ci) => `<td${ci === 0 ? '' : ' class="num"'}>${v}</td>`).join('')}</tr>`;
+    };
+    const sumRow = (label, a) => {
+      const cells = [
+        esc(label), fmt(a.leads), a.won ? fmt(a.won) : '—',
+        isWon || !a.leads ? '—' : pct(a.won / a.leads),
+        fmtMoney(a.budget), fmtMoney(a.budget * (d.margin || 0.15)),
+      ];
+      return `<tr class="sum-row">${cells.map((v, ci) => `<td${ci === 0 ? '' : ' class="num"'}>${v}</td>`).join('')}</tr>`;
+    };
+    const mkt = d.channels.map((c, i) => [c, i]).filter(([c]) => c.isMarketing);
+    const rest = d.channels.map((c, i) => [c, i]).filter(([c]) => !c.isMarketing);
+    const restAgg = {
+      leads: ta.leads - t.leads,
+      won: ta.won - t.won,
+      budget: ta.budget - t.budget,
+    };
+    html += `<div class="section-h"><h2>📊 Канали</h2><span class="hint">Клік по каналу — його ліди нижче</span></div>`;
+    html += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr>`;
+    head.forEach(c => { html += `<th>${c}</th>`; });
+    html += `</tr></thead><tbody>`;
+    if (mkt.length) {
+      html += `<tr class="sec-row"><td colspan="${NCOL}">Маркетинг — в KPI (ROMI / CPL)</td></tr>`;
+      mkt.forEach(([c, i]) => { html += chRow(c, i); });
+      html += sumRow('Разом маркетинг', t);
+    }
+    if (rest.length) {
+      html += `<tr class="sec-row"><td colspan="${NCOL}">Поза маркетингом (база / сарафан / партнери)</td></tr>`;
+      rest.forEach(([c, i]) => { html += chRow(c, i); });
+      html += sumRow('Разом поза маркетингом', restAgg);
+    }
     html += `</tbody></table></div>`;
 
     // Drill-down: ліди обраного каналу (той самий вигляд, що на вкладці «Канали»)
