@@ -577,9 +577,9 @@ function renderChannelsReport(d) {
   let html = `
   <div class="info-banner">
     <span class="ib-tag">КАНАЛИ</span>
-    Когорта: <b>ліди створені у вибрані дні</b>, далі — куди дійшли по воронці за всю історію.
-    <b>Цільових</b> = дійшли до стадії «Визначено як цільовий». <b>Аванс отримано</b> = дійшли до фінальної стадії воронки.
-    Конверсія = Аванс / Всього; <b>Конверсія А</b> — те саме, але лише по лідах класу А.
+    Когорта: <b>ліди створені у вибрані дні</b>. <b>Цільових</b> = дійшли до стадії «Визначено як цільовий».
+    <b>Аванс отримано</b> = виграна угода (поле Planfix «Статус угоди» = «Успешно»).
+    Конверсія = Аванс / Всього; <b>Конверсія А</b> = виграні угоди класу А / Всього (та сама база).
   </div>
   <div class="kpi">
     <div class="kpi-card"><div class="lbl">Всього лідів</div><div class="val">${fmt(t.leads)}</div></div>
@@ -594,7 +594,7 @@ function renderChannelsReport(d) {
     c.targetA ? fmt(c.targetA) : '—',
     c.won ? fmt(c.won) : '—',
     pct(c.conversionRate),
-    c.leadsA ? pct(c.conversionRateA) : '—',
+    pct(c.conversionRateA),
     fmtMoney(c.revenue), c.avgCheck ? fmtMoney(c.avgCheck) : '—',
   ]);
   html += tableHTML({ title: '🌐 Канали реклами', hint: 'Сортовано за кількістю лідів', head, rows });
@@ -607,9 +607,9 @@ function renderManagersReport(d) {
   let html = `
   <div class="info-banner">
     <span class="ib-tag">МЕНЕДЖЕРИ</span>
-    Когорта: <b>ліди створені у вибрані дні</b> + хто з менеджерів за них відповідав, далі — куди дійшли по воронці.
-    <b>Цільових</b> = дійшли до стадії «Визначено як цільовий». <b>Аванс отримано</b> = дійшли до фінальної стадії воронки.
-    Конверсія = Аванс / Всього; <b>Конверсія А</b> — те саме, але лише по лідах класу А.
+    Когорта: <b>ліди створені у вибрані дні</b> + хто з менеджерів за них відповідав.
+    <b>Цільових</b> = дійшли до стадії «Визначено як цільовий». <b>Аванс отримано</b> = виграна угода (поле Planfix «Статус угоди» = «Успешно»).
+    Конверсія = Аванс / Всього; <b>Конверсія А</b> = виграні угоди класу А / Всього (та сама база).
   </div>
   <div class="kpi">
     <div class="kpi-card"><div class="lbl">Всього лідів</div><div class="val">${fmt(t.leads)}</div></div>
@@ -624,7 +624,7 @@ function renderManagersReport(d) {
     m.targetA ? fmt(m.targetA) : '—',
     m.won ? fmt(m.won) : '—',
     pct(m.conversionRate),
-    m.leadsA ? pct(m.conversionRateA) : '—',
+    pct(m.conversionRateA),
     fmtMoney(m.revenue), m.avgCheck ? fmtMoney(m.avgCheck) : '—',
   ]);
   html += tableHTML({ title: '👥 Менеджери', hint: 'Сортовано за кількістю лідів. Дивіться конверсію + виручку, не тільки кількість.', head, rows });
