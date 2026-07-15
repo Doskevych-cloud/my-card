@@ -944,7 +944,29 @@ function load(){
 
 Auth.require('counterparties').then(user => {
   AppHeader.mount({ active:'counterparties', user });
+
+  // ── Org-scope: ховаємо недоступні орг-чіпи, дефолт — доступна орг ──
+  // Чіпи тут короткими кодами (react/gen), а user.orgs — назвами (Реакт/Генерація).
+  const userOrgs = user.orgs || {};
+  const hasAnyOrg = Object.values(userOrgs).some(v => v);
+  const CHIP_ORG = { react: 'Реакт', gen: 'Генерація' };
+  const orgOk = (code) => !hasAnyOrg ? true
+    : (code === '' ? !!(userOrgs['Реакт'] && userOrgs['Генерація']) : !!userOrgs[CHIP_ORG[code]]);
+  const defaultOrgCode = () => {
+    const allowed = ['react', 'gen'].filter(c => userOrgs[CHIP_ORG[c]]);
+    return allowed.length === 1 ? allowed[0] : '';   // 1 орг → вона; 2 → "Всі"
+  };
+  if (hasAnyOrg) {
+    document.querySelectorAll('#orgGroup .chip').forEach(chip => {
+      if (!orgOk(chip.dataset.org)) chip.style.display = 'none';
+    });
+    state.org = defaultOrgCode();
+  }
+
   readUrl();
+  // readUrl міг підтягти з шареної лінки org, до якого юзер не має доступу → відкат.
+  if (hasAnyOrg && !orgOk(state.org)) state.org = defaultOrgCode();
+
   syncToolbar();
   wireToolbar();
   load();
