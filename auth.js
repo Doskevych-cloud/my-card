@@ -228,6 +228,7 @@
     { role: 'warehouses',    href: 'warehouses.html' },
     { role: 'brigades',      href: 'brigades.html' },
     { role: 'counterparties',href: 'counterparties.html' },
+    { role: 'finance',       href: 'finance.html' },
     { role: 'reports',       href: 'reports.html' },
   ];
   function homeHref(user) {
@@ -235,7 +236,15 @@
     if (!u) return 'login.html';
     const roles = u.roles || {};
     if (roles.admin) return 'index.html';
+    // Прохід 1: точний матч модульної ролі. Окремим проходом, бо суб-рольовий
+    // startsWith-матч нижче зʼїв би точніші ролі (sales_prices → prices.html,
+    // а не sales.html через startsWith('sales_')).
     for (const p of HOME_PAGES) if (roles[p.role]) return p.href;
+    // Прохід 2: суб-ролі модуля (finance_pnl, sales_osp, …) — те саме правило,
+    // що і hasSub у require().
+    for (const p of HOME_PAGES) {
+      if (Object.keys(roles).some(k => k.startsWith(p.role + '_') && roles[k])) return p.href;
+    }
     return 'login.html'; // жодної ролі — кидаємо на логін
   }
 
@@ -318,10 +327,6 @@
     while (tpl.firstChild) document.body.appendChild(tpl.firstChild);
   }
 
-  // ── DEV-MODE: Finance is admin-only while module is being stabilized.
-  // To open Finance for general users, change to: const FINANCE_ADMIN_ONLY = false;
-  const FINANCE_ADMIN_ONLY = true;
-
   // Full flow: checks session, fetches user, verifies role, or redirects/denies.
   // Returns the user on success.
   async function require(role) {
@@ -343,14 +348,6 @@
         showDenyScreen(`Адмін ще не відкрив вам доступ до цього модуля.`, role);
         return new Promise(() => {}); // halt caller
       }
-    }
-    // DEV gate: finance available only to admins until module is stable
-    if (FINANCE_ADMIN_ONLY && role === 'finance' && !isAdmin) {
-      showDenyScreen(
-        'Розділ «Фінанси» тимчасово доступний лише адміністраторам — модуль ще в активній розробці.',
-        'finance'
-      );
-      return new Promise(() => {});
     }
     return user;
   }

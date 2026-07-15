@@ -1923,7 +1923,7 @@ function gpToggleAll(collapse) {
 
 // Підтягнути позиції видаткових/прибуткових накладних з 1С за поточний період GP.
 // scan-based ендпойнти не в крон — треба триггерити вручну при потребі свіжих
-// собівартостей. Admin-only (finance вкладка вже захищена FINANCE_ADMIN_ONLY).
+// собівартостей. Admin-only (_admin_sync_* у DEBUG_ACTIONS); кнопку не-адмінам ховаємо в init.
 async function gpSyncItems() {
   const btn = document.getElementById('gpSyncBtn');
   if (!btn) return;
@@ -2010,6 +2010,10 @@ function pnlBindCollapse(tblArg) {
 }
 
 async function pnlLoad() {
+  // init викликає pnlLoad безумовно; якщо вкладку P&L приховано по правах
+  // (data-perm="finance_pnl"), не смикаємо бекенд — все одно буде 403.
+  var _pnlTab = document.querySelector('.ptab[data-view="pnl"]');
+  if (_pnlTab && _pnlTab.style.display === 'none') return;
   document.getElementById('pnlBody').innerHTML = '<div class="loading">Завантаження...</div>';
   document.getElementById('pnlSummary').innerHTML = '';
   try {
@@ -3559,7 +3563,7 @@ async function whSyncSnapshot() {
   const btn = document.getElementById('whSyncBtn');
   if (btn) { btn.style.pointerEvents = 'none'; btn.style.opacity = '.6'; btn.textContent = 'Оновлюю…'; }
   try {
-    // Admin-only endpoint. Користувач має бути admin-ом, бо warehouse_value_report у FINANCE_ADMIN_ONLY.
+    // Admin-only endpoint (_admin_sync_stock у DEBUG_ACTIONS); кнопку не-адмінам ховаємо в init.
     const q = '?action=_admin_sync_stock&date=' + encodeURIComponent(whState.on);
     const r = await fetch(API_URL + q).then(x => x.json());
     if (r.error) throw new Error(r.error);
@@ -4358,23 +4362,29 @@ Auth.require('finance').then(function(user) {
   window.__user = user;
   AppHeader.mount({ active: 'finance', user });
   Auth.filterSubNav(user);
-  var firstVisible = document.querySelector('.ptab[data-view]:not([style*="display: none"])');
-  if (firstVisible && firstVisible.dataset.view !== 'pnl') switchTab(firstVisible);
-  _initFinanceCharts();
 
   // Org-level access for both views
   // If no orgs assigned at all → show everything (no restriction)
+  // ВАЖЛИВО: org-дефолти мусять стояти ДО switchTab(firstVisible) нижче —
+  // switchTab одразу тягне дані вкладки, і без дефолтної org юзер з однією
+  // орг стрельнув би запитом з org='' → 403.
   const userOrgs = user.orgs || {};
   const hasAnyOrg = Object.values(userOrgs).some(function(v) { return v; });
 
+  // Всі 8 org-груп сторінки — видимість чіпів і дефолтна org мають бути
+  // консистентні на КОЖНІЙ вкладці: інакше юзер з однією орг на вкладці
+  // з дефолтом «Всі» (org='') ловить 403 від бекенд org-scope.
+  var ORG_GROUPS = ['pnlOrgGroup', 'gpOrgGroup', 'fiOrgGroup', 'cfOrgGroup', 'arOrgGroup', 'msOrgGroup', 'whOrgGroup', 'cbOrgGroup'];
   if (hasAnyOrg) {
     var allowedOrgs = ['Реакт', 'Генерація'].filter(function(o) { return userOrgs[o]; });
-    ['pnlOrgGroup', 'gpOrgGroup', 'arOrgGroup'].forEach(function(groupId) {
+    ORG_GROUPS.forEach(function(groupId) {
       document.querySelectorAll('#' + groupId + ' .chip[data-org]').forEach(function(chip) {
         var org = chip.dataset.org;
         if (org === '') {
+          // "Всі" — видно лише коли юзер має ≥2 орг
           if (allowedOrgs.length < 2) chip.style.display = 'none';
         } else {
+          // Конкретна орг (вкл. «Без орг.» на вкладці «Кошти») — лише при гранті
           if (!userOrgs[org]) chip.style.display = 'none';
         }
       });
@@ -4383,23 +4393,32 @@ Auth.require('finance').then(function(user) {
     var allowedOrgs = ['Реакт', 'Генерація'];
   }
 
-  // Auto-select org
+  // Auto-select org — на всіх вкладках
   const defaultOrg = (hasAnyOrg && allowedOrgs.length === 1) ? allowedOrgs[0] : '';
-  // P&L
-  pnlState.org = defaultOrg;
-  document.querySelectorAll('#pnlOrgGroup .chip[data-org]').forEach(function(c) {
-    c.classList.toggle('active', c.dataset.org === defaultOrg);
+  [pnlState, gpState, fiState, cfState, arState, msState, whState, cbState].forEach(function(st) {
+    st.org = defaultOrg;
   });
-  // GP
-  gpState.org = defaultOrg;
-  document.querySelectorAll('#gpOrgGroup .chip[data-org]').forEach(function(c) {
-    c.classList.toggle('active', c.dataset.org === defaultOrg);
+  ORG_GROUPS.forEach(function(groupId) {
+    document.querySelectorAll('#' + groupId + ' .chip[data-org]').forEach(function(c) {
+      c.classList.toggle('active', c.dataset.org === defaultOrg);
+    });
   });
-  // AR
-  arState.org = defaultOrg;
-  document.querySelectorAll('#arOrgGroup .chip[data-org]').forEach(function(c) {
-    c.classList.toggle('active', c.dataset.org === defaultOrg);
-  });
+
+  // Кнопки ручного синку (gp/wh) б'ють в _admin_sync_* — вони admin-only на
+  // бекенді, тож не-адмінам їх не показуємо взагалі.
+  if (!user.roles || !user.roles.admin) {
+    ['gpSyncBtn', 'whSyncBtn'].forEach(function(id) {
+      var b = document.getElementById(id);
+      if (b) b.style.display = 'none';
+    });
+  }
+
+  // Чарти монтуємо ДО switchTab: load вкладки робить _mc*.reload({org}) лише
+  // якщо чарт уже існує.
+  _initFinanceCharts();
+  // Перша видима по правах вкладка (data-perm) — вже ПІСЛЯ org-дефолтів
+  var firstVisible = document.querySelector('.ptab[data-view]:not([style*="display: none"])');
+  if (firstVisible && firstVisible.dataset.view !== 'pnl') switchTab(firstVisible);
 
   // Restore state from URL or default to 'year'
   const saved = readStateFromUrl();

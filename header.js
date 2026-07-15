@@ -426,12 +426,11 @@
       { role: 'brigades',      active: 'brigades',      href: '/brigades.html',     label: '👷 Бригади' },
       { role: 'sales',         active: 'sales',         href: '/sales.html',        label: '📈 Продажі' },
       { role: 'counterparties',active: 'counterparties',href: '/counterparties.html', label: '👥 Контрагенти' },
-      { role: '_admin',        active: 'finance',       href: '/finance.html',      label: '💰 Фінанси' },
+      { role: 'finance',       active: 'finance',       href: '/finance.html',      label: '💰 Фінанси' },
       { role: 'reports',       active: 'reports',       href: '/reports.html',      label: '📑 Звіти' },
     ];
     const userOrgs = (user && user.orgs) || {};
     const visibleItems = navItems.filter(it => {
-      if (it.role === '_admin') return isAdmin;
       if (!can(it.role)) return false;
       if (it.orgRequired && (!isAdmin || impersonating) && !userOrgs[it.orgRequired]) return false;
       return true;
