@@ -896,11 +896,12 @@ function renderMarketingReport(d) {
     <div class="kpi-card ${romiCls}"><div class="lbl">ROMI маркетингу</div><div class="val">${t.spend ? fmtPct1(t.romi) : '—'}</div><div class="sub">ДРР ${t.budget && t.spend ? fmtPct1(t.drr) : '—'} · ROMI всіх ${t.spend ? fmtPct1(ta.romi) : '—'}</div></div>
   </div>`;
 
-  // Цілі (місячні) — плитки, тільки в режимі когорти; пороги з бекенда (goals).
+  // Цілі (місячні) — плитки в ОБОХ режимах: факти завжди по створених у періоді
+  // лідах (goalsMonths), пороги з бекенда (goals).
   // Період з кількох місяців → плитки по останньому місяцю з лідами.
-  if (!isWon && d.goals && d.months && d.months.length) {
+  if (d.goals && d.goalsMonths && d.goalsMonths.length) {
     const g = d.goals;
-    const gm = [...d.months].reverse().find(m => m.allLeads > 0) || d.months[d.months.length - 1];
+    const gm = [...d.goalsMonths].reverse().find(m => m.allLeads > 0) || d.goalsMonths[d.goalsMonths.length - 1];
     const tile = (lbl, val, goalText, isOk, hasData = true) =>
       `<div class="kpi-card${hasData ? (isOk ? ' c-success' : ' c-fail') : ''}">
         <div class="lbl">${lbl}</div>
