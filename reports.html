@@ -577,19 +577,25 @@ function renderChannelsReport(d) {
   let html = `
   <div class="info-banner">
     <span class="ib-tag">КАНАЛИ</span>
-    Когорта: <b>угоди створені у вибрані дні</b>. Конверсія = успішних / всіх. Виручка = сума бюджетів за успішними.
+    Когорта: <b>ліди створені у вибрані дні</b>, далі — куди дійшли по воронці за всю історію.
+    <b>Цільових</b> = дійшли до стадії «Визначено як цільовий». <b>Аванс отримано</b> = дійшли до фінальної стадії воронки.
+    Конверсія = Аванс / Всього; <b>Конверсія А</b> — те саме, але лише по лідах класу А.
   </div>
   <div class="kpi">
-    <div class="kpi-card"><div class="lbl">Усього лідів</div><div class="val">${fmt(t.leads)}</div></div>
-    <div class="kpi-card c-success"><div class="lbl">Win</div><div class="val">${fmt(t.won)}</div><div class="sub">${pct(t.conversionRate)} конверсія</div></div>
+    <div class="kpi-card"><div class="lbl">Всього лідів</div><div class="val">${fmt(t.leads)}</div></div>
+    <div class="kpi-card"><div class="lbl">Цільових</div><div class="val">${fmt(t.target)}</div></div>
+    <div class="kpi-card c-success"><div class="lbl">Аванс отримано</div><div class="val">${fmt(t.won)}</div><div class="sub">${pct(t.conversionRate)} конверсія</div></div>
     <div class="kpi-card c-rate"><div class="lbl">Виручка</div><div class="val">${fmtMoney(t.revenue)} <span style="font-size:14px">$</span></div></div>
-    <div class="kpi-card"><div class="lbl">Серед. чек</div><div class="val">${fmtMoney(t.avgCheck)} <span style="font-size:14px">$</span></div></div>
   </div>`;
-  const head = ['Канал', 'Лідів', 'Win', 'Провал', 'У роботі', 'Конверсія', 'Виручка $', 'Серед. чек $'];
+  const head = ['Канал', 'Всього', 'Цільових', 'Цільових А', 'Аванс отримано', 'Конверсія', 'Конверсія А', 'Виручка $', 'Серед. чек $'];
   const rows = d.channels.map(c => [
-    esc(c.name), fmt(c.leads), c.won ? fmt(c.won) : '—',
-    c.lost ? fmt(c.lost) : '—', c.inProgress ? fmt(c.inProgress) : '—',
-    pct(c.conversionRate), fmtMoney(c.revenue), c.avgCheck ? fmtMoney(c.avgCheck) : '—',
+    esc(c.name), fmt(c.leads),
+    c.target ? fmt(c.target) : '—',
+    c.targetA ? fmt(c.targetA) : '—',
+    c.won ? fmt(c.won) : '—',
+    pct(c.conversionRate),
+    c.leadsA ? pct(c.conversionRateA) : '—',
+    fmtMoney(c.revenue), c.avgCheck ? fmtMoney(c.avgCheck) : '—',
   ]);
   html += tableHTML({ title: '🌐 Канали реклами', hint: 'Сортовано за кількістю лідів', head, rows });
   return html;
@@ -601,20 +607,25 @@ function renderManagersReport(d) {
   let html = `
   <div class="info-banner">
     <span class="ib-tag">МЕНЕДЖЕРИ</span>
-    Когорта: <b>угоди створені у вибрані дні</b> + хто з менеджерів за них відповідав. Цикл = середні дні від створення до Win.
+    Когорта: <b>ліди створені у вибрані дні</b> + хто з менеджерів за них відповідав, далі — куди дійшли по воронці.
+    <b>Цільових</b> = дійшли до стадії «Визначено як цільовий». <b>Аванс отримано</b> = дійшли до фінальної стадії воронки.
+    Конверсія = Аванс / Всього; <b>Конверсія А</b> — те саме, але лише по лідах класу А.
   </div>
   <div class="kpi">
-    <div class="kpi-card"><div class="lbl">Усього лідів</div><div class="val">${fmt(t.leads)}</div></div>
-    <div class="kpi-card c-success"><div class="lbl">Win</div><div class="val">${fmt(t.won)}</div><div class="sub">${pct(t.conversionRate)} конверсія</div></div>
+    <div class="kpi-card"><div class="lbl">Всього лідів</div><div class="val">${fmt(t.leads)}</div></div>
+    <div class="kpi-card"><div class="lbl">Цільових</div><div class="val">${fmt(t.target)}</div></div>
+    <div class="kpi-card c-success"><div class="lbl">Аванс отримано</div><div class="val">${fmt(t.won)}</div><div class="sub">${pct(t.conversionRate)} конверсія</div></div>
     <div class="kpi-card c-rate"><div class="lbl">Виручка</div><div class="val">${fmtMoney(t.revenue)} <span style="font-size:14px">$</span></div></div>
-    <div class="kpi-card"><div class="lbl">Серед. цикл</div><div class="val">${t.avgCycleDays != null ? t.avgCycleDays : '—'}<span style="font-size:14px"> дн</span></div></div>
   </div>`;
-  const head = ['Менеджер', 'Лідів', 'Win', 'Провал', 'У роботі', 'Конверсія', 'Виручка $', 'Серед. чек $', 'Серед. цикл, дн'];
+  const head = ['Менеджер', 'Всього', 'Цільових', 'Цільових А', 'Аванс отримано', 'Конверсія', 'Конверсія А', 'Виручка $', 'Серед. чек $'];
   const rows = d.managers.map(m => [
-    esc(m.name), fmt(m.leads), m.won ? fmt(m.won) : '—',
-    m.lost ? fmt(m.lost) : '—', m.inProgress ? fmt(m.inProgress) : '—',
-    pct(m.conversionRate), fmtMoney(m.revenue), m.avgCheck ? fmtMoney(m.avgCheck) : '—',
-    m.avgCycleDays != null ? m.avgCycleDays : '—',
+    esc(m.name), fmt(m.leads),
+    m.target ? fmt(m.target) : '—',
+    m.targetA ? fmt(m.targetA) : '—',
+    m.won ? fmt(m.won) : '—',
+    pct(m.conversionRate),
+    m.leadsA ? pct(m.conversionRateA) : '—',
+    fmtMoney(m.revenue), m.avgCheck ? fmtMoney(m.avgCheck) : '—',
   ]);
   html += tableHTML({ title: '👥 Менеджери', hint: 'Сортовано за кількістю лідів. Дивіться конверсію + виручку, не тільки кількість.', head, rows });
   return html;
