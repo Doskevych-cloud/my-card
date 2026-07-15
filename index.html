@@ -220,8 +220,8 @@ a.kpi:hover{border-color:var(--accent);transform:translateY(-1px)}
     </ul>
     <h3>📈 Продажі</h3>
     <ul>
-      <li>Оплачено — сума <code>paidUsd</code> по всіх менеджерах (курс з 1С-документів). Потенціал = оплачено + залишок до оплати за поточним курсом. Джерело <code>sales_report_d1</code>.</li>
-      <li>Локальний список виключених клієнтів зі сторінки продажів тут не застосовується — цифра може бути трохи більшою.</li>
+      <li>Оплачено — сума <code>paidUsd</code> по всіх менеджерах (курс з 1С-документів), джерело <code>sales_report_d1</code>. Локальний список виключених клієнтів зі сторінки продажів тут не застосовується — цифра може бути трохи більшою.</li>
+      <li>Активних клієнтів — унікальні клієнти з ≥1 оплатою за останні 3 місяці (<code>active_clients</code>, тільки Реакт, фільтри періоду/орг не діють).</li>
     </ul>
     <h3>👥 Контрагенти</h3>
     <ul>
@@ -496,44 +496,37 @@ async function loadFinance() {
   renderCards('finSummary', cards);
 }
 
-// ── ПРОДАЖІ: ті самі цифри, що summary-grand у sales.html ──────────
-// Оплачено = Σ paidUsd (курси 1С-документів), Потенціал = оплачено + remain за поточним курсом.
-// Локальний excludeList сторінки продажів тут не застосовується (він у sessionStorage сторінки).
-function toUsd(amount, cur, fx) {
-  if (!isFinite(amount)) return null;
-  if (cur === 'USD') return amount;
-  const r = fx && fx.rates;
-  if (!r) return null;
-  if (cur === 'UAH') return r.USD_UAH > 0 ? amount / r.USD_UAH : null;
-  if (cur === 'EUR') return (r.EUR_UAH > 0 && r.USD_UAH > 0) ? amount * r.EUR_UAH / r.USD_UAH : null;
-  return null;
-}
+// ── ПРОДАЖІ: оплачено (як summary-grand у sales.html) + активні клієнти ──
+// Оплачено = Σ paidUsd (курси 1С-документів). Локальний excludeList сторінки
+// продажів тут не застосовується (він у sessionStorage сторінки).
 async function loadSales() {
   if (document.getElementById('secSales').style.display === 'none') return;
   renderLoading('salesSummary', 2);
   try {
-    const [d, fx] = await Promise.all([
+    const [salesRes, clientsRes] = await Promise.allSettled([
       dashFetch(API_URL + `/?action=sales_report_d1&from=${state.from}&to=${state.to}` + orgQ()),
-      dashFetch(API_URL + '/?action=fx_rates').catch(() => null),
+      dashFetch(API_URL + '/?action=active_clients'),
     ]);
-    if (d.error) throw new Error(d.error);
-    const byOrg = d.byOrg || {};
-    let gPaid = 0, gRem = 0, ok = true;
+    if (salesRes.status !== 'fulfilled' || salesRes.value.error) throw new Error((salesRes.value && salesRes.value.error) || 'err');
+    const byOrg = salesRes.value.byOrg || {};
+    let gPaid = 0;
     Object.entries(byOrg).forEach(([org, od]) => {
       if (state.org && org !== state.org) return;
-      (od.managers || []).forEach(m => {
-        gPaid += Number(m.paidUsd) || 0;
-        (m.currencies || []).forEach(C => {
-          const r = toUsd(C.remain, C.currency, fx);
-          if (r == null) ok = false; else gRem += r;
-        });
-      });
+      (od.managers || []).forEach(m => { gPaid += Number(m.paidUsd) || 0; });
     });
-    const money = v => ok ? '$' + fmt(v, 0) : '—';
-    renderCards('salesSummary', [
-      { lbl: 'Оплачено за період', val: money(gPaid), cls: 'pos' },
-      { lbl: 'Потенціал (всього)', val: money(gPaid + gRem) },
-    ]);
+    const cards = [{ lbl: 'Оплачено за період', val: '$' + fmt(gPaid, 0), cls: 'pos' }];
+    if (clientsRes.status === 'fulfilled' && clientsRes.value && !clientsRes.value.error) {
+      const cs = clientsRes.value.summary || {};
+      const cp = clientsRes.value.period || {};
+      const fmtD = d => d ? d.slice(8,10) + '.' + d.slice(5,7) + '.' + d.slice(0,4) : '';
+      cards.push({
+        lbl: 'Активних клієнтів',
+        val: String(cs.active || 0),
+        sub: cp.from ? `≥1 оплата за ${fmtD(cp.from)} — ${fmtD(cp.to)}` : '≥1 оплата за 3 міс',
+        href: '/active_clients.html',
+      });
+    }
+    renderCards('salesSummary', cards);
   } catch (e) { renderError('salesSummary', e.message); }
 }
 
