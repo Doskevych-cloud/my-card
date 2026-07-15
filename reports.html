@@ -660,12 +660,12 @@ function renderAbcReport(d) {
   let html = `
   <div class="info-banner">
     <span class="ib-tag">ABC</span>
-    Розподіл когорти за «Класом клієнта» (A/B/C). Класична гіпотеза: 20% клієнтів класу A приносять 80% виручки.
-    ${d.untaggedShare > 0.5 ? `<span style="color:var(--red)"> ⚠ <b>${pct(d.untaggedShare)}</b> лідів без класу — звіт буде неточним поки клас не проставлено.</span>` : ''}
+    Розподіл <b>цільових</b> лідів за «Класом клієнта» (A/B/C). Некваліфікований лід класу не має, тому рахуємо лише тих, хто дійшов до стадії «Визначено як цільовий».
+    ${d.untaggedShare > 0.15 ? `<span style="color:var(--red)"> ⚠ <b>${pct(d.untaggedShare)}</b> цільових без класу — клікни картку «Без класу», щоб пройтись по списку і проставити.</span>` : ''}
   </div>
   <div class="kpi">
-    <div class="kpi-card"><div class="lbl">Усього лідів</div><div class="val">${fmt(d.totals.leads)}</div></div>
-    <div class="kpi-card c-fail"><div class="lbl">Без класу</div><div class="val">${fmt(d.untaggedCount)}</div><div class="sub">${pct(d.untaggedShare)} від усіх</div></div>
+    <div class="kpi-card"><div class="lbl">Цільових лідів</div><div class="val">${fmt(d.totals.leads)}</div>${d.totals.cohort ? `<div class="sub">із ${fmt(d.totals.cohort)} усіх лідів</div>` : ''}</div>
+    <div class="kpi-card c-fail" id="untaggedToggle" title="Клік — показати список угод без класу"><div class="lbl">Без класу ▾</div><div class="val">${fmt(d.untaggedCount)}</div><div class="sub">${pct(d.untaggedShare)} цільових</div></div>
   </div>`;
   const head = ['Клас', 'Лідів', 'Win', 'Провал', 'Конверсія', 'Виручка $', 'Серед. чек $'];
   const rows = d.classes.map(c => [
@@ -674,6 +674,28 @@ function renderAbcReport(d) {
     pct(c.conversionRate), fmtMoney(c.revenue), c.avgCheck ? fmtMoney(c.avgCheck) : '—',
   ]);
   html += tableHTML({ title: '🏷️ Розподіл по класу клієнта', head, rows });
+
+  // Drill-down: список цільових угод без класу (розкривається кліком по «Без класу»)
+  if (d.untaggedLeads && d.untaggedLeads.length) {
+    html += `<div id="untaggedList" style="display:none">
+      <div class="section-h"><h2>📋 Цільові без класу (${fmt(d.untaggedLeads.length)})</h2><span class="hint">Клік по # — відкрити в Planfix і проставити клас</span></div>
+      <div class="tasks-wrap"><table class="tasks-table"><thead><tr>
+        <th>#</th><th>Назва</th><th>Створено</th><th>Поточний статус</th><th>Канал</th><th>Менеджер</th><th>Бюджет $</th>
+      </tr></thead><tbody>`;
+    d.untaggedLeads.forEach(l => {
+      const url = `https://solar.planfix.ua/task/${l.id}`;
+      html += `<tr>
+        <td class="num"><a class="tlink" href="${url}" target="_blank" rel="noopener">${esc(l.id)}</a></td>
+        <td>${esc(l.name)}</td>
+        <td>${esc(l.createdDate)}</td>
+        <td>${esc(l.currentStatus)}</td>
+        <td>${esc(l.channel)}</td>
+        <td>${esc(l.manager)}</td>
+        <td class="num">${l.budget ? fmt(l.budget) : '—'}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div></div>`;
+  }
   return html;
 }
 
@@ -710,7 +732,20 @@ function render() {
   if (state.report === 'channels') { document.getElementById('infoBanner').style.display='none'; document.getElementById('content').innerHTML = renderChannelsReport(state.raw); return; }
   if (state.report === 'managers') { document.getElementById('infoBanner').style.display='none'; document.getElementById('content').innerHTML = renderManagersReport(state.raw); return; }
   if (state.report === 'dynamics') { document.getElementById('infoBanner').style.display='none'; document.getElementById('content').innerHTML = renderDynamicsReport(state.raw); return; }
-  if (state.report === 'abc')      { document.getElementById('infoBanner').style.display='none'; document.getElementById('content').innerHTML = renderAbcReport(state.raw); return; }
+  if (state.report === 'abc')      {
+    document.getElementById('infoBanner').style.display='none';
+    document.getElementById('content').innerHTML = renderAbcReport(state.raw);
+    const card = document.getElementById('untaggedToggle');
+    const list = document.getElementById('untaggedList');
+    if (card && list) {
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', () => {
+        list.style.display = list.style.display === 'none' ? '' : 'none';
+        if (list.style.display !== 'none') list.scrollIntoView({ behavior:'smooth', block:'nearest' });
+      });
+    }
+    return;
+  }
   if (state.report === 'cycle')    { document.getElementById('infoBanner').style.display='none'; document.getElementById('content').innerHTML = renderCycleReport(state.raw); return; }
 
   // Воронка (default)
