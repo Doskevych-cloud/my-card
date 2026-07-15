@@ -188,7 +188,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     </span>
     <span class="group" id="mmodeGroup" style="display:none">
       <span class="chip active" data-mmode="cohort" title="Ліди створені у вибрані дні + куди вони дійшли за всю історію">Створені в періоді</span>
-      <span class="chip" data-mmode="won" title="Угоди виграні у вибрані дні (по даті переходу в «Аванс отримано»), незалежно від дати створення">Виграні в періоді</span>
+      <span class="chip" data-mmode="won" title="Угоди, що у вибрані дні отримали аванс або були успішно реалізовані, незалежно від дати створення">Виграні в періоді</span>
     </span>
 
     <span class="sep"></span>
@@ -858,7 +858,7 @@ function renderMarketingReport(d) {
   const romiCls = t.romi > 0 ? 'c-success' : (t.spend && t.romi < 0 ? 'c-fail' : '');
   const fmtPct1 = v => (Math.round((v || 0) * 1000) / 10).toFixed(1) + '%';
   const baseExplain = isWon
-    ? `База: <b>угоди виграні у вибрані дні</b> — по даті першого переходу в «Аванс отримано» / «Успішно реалізовано», незалежно від того, коли лід створено.`
+    ? `База: <b>угоди виграні у вибрані дні</b> — у періоді стався перехід в «Аванс отримано» <b>або</b> «Успішно реалізовано», незалежно від дати створення ліда. Угода з авансом в одному місяці та реалізацією в іншому потрапляє в обидва періоди.`
     : `База: <b>ліди створені у вибрані дні</b> (когорта, як у «Каналах») + куди вони дійшли за всю історію.`;
   let html = `
   <div class="info-banner">
