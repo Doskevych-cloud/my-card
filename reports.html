@@ -450,7 +450,17 @@ function syncModeGroupsVisibility() {
 }
 
 // ─── Data ───
+// Швидке клацання по табах/чіпах = кілька fetch-ів у польоті: повільніший або
+// обірваний малював «Load failed» поверх свіжих даних. Тому: новий load()
+// скасовує попередній запит (AbortController), застарілі відповіді ігноруються
+// (_loadSeq), а скасування не показується як помилка.
+let _loadCtl = null;
+let _loadSeq = 0;
 async function load(force = false) {
+  const seq = ++_loadSeq;
+  if (_loadCtl) _loadCtl.abort();
+  _loadCtl = new AbortController();
+  const ctl = _loadCtl;
   state.loading = true;
   document.getElementById('content').innerHTML = `<div class="loading">Завантаження звіту…</div>`;
   try {
@@ -465,8 +475,9 @@ async function load(force = false) {
       params.set('mode', state.mmode);
     }
     if (force) params.set('_', Date.now());
-    const res = await fetch(API + '?' + params.toString());
+    const res = await fetch(API + '?' + params.toString(), { signal: ctl.signal });
     const data = await res.json();
+    if (seq !== _loadSeq) return; // вже стартував новіший запит — ця відповідь застаріла
     if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
     state.raw = data;
     state.loading = false;
@@ -484,8 +495,11 @@ async function load(force = false) {
     document.getElementById('freshness').innerHTML = label;
     render();
   } catch (e) {
+    if (e && e.name === 'AbortError') return;  // скасовано новішим запитом — не помилка
+    if (seq !== _loadSeq) return;              // помилка застарілого запиту — ігноруємо
     state.loading = false;
-    document.getElementById('content').innerHTML = `<div class="error-box">Помилка: ${esc(e.message || e)}</div>`;
+    document.getElementById('content').innerHTML =
+      `<div class="error-box">Помилка: ${esc(e.message || e)} <a href="#" onclick="load(true);return false" style="color:var(--accent);margin-left:8px">повторити</a></div>`;
   }
 }
 
