@@ -186,10 +186,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <span class="chip" data-mode="cumulative" title="Поточний стан pipeline (хто зараз у воронці)">Pipeline</span>
       <span class="chip" data-mode="cohort" title="Ліди створені у вибрані дні + куди дійшли">Когорта</span>
     </span>
-    <span class="group" id="mmodeGroup" style="display:none">
-      <span class="chip active" data-mmode="cohort" title="Ліди створені у вибрані дні + куди вони дійшли за всю історію">Створені в періоді</span>
-      <span class="chip" data-mmode="won" title="Угоди, чия перша win-подія (аванс або реалізація — що раніше) у вибрані дні, незалежно від дати створення">Виграні в періоді</span>
-    </span>
 
     <span class="sep"></span>
 
@@ -234,7 +230,7 @@ const state = {
   source: 'sheet',
   report: 'funnel',     // 'funnel' | 'channels' | 'managers' | 'dynamics' | 'abc' | 'cycle' | 'marketing'
   mode: 'period',       // тільки для report='funnel': 'period' | 'cumulative' | 'cohort'
-  mmode: 'cohort',      // тільки для report='marketing': 'cohort' (створені) | 'won' (виграні в періоді)
+  // report='marketing' завжди «виграні в періоді» (won) — перемикач прибрано.
   from: _firstOfMonthISO(),
   to: _lastOfMonthISO(),
   preset: 'month',
@@ -281,7 +277,6 @@ Auth.require('reports').then(user => {
   syncClientTypeChips();
   syncLeadClassChips();
   syncModeChips();
-  syncMmodeChips();
   attachEvents();
   load();
 });
@@ -297,7 +292,6 @@ function saveStateToUrl() {
   if (state.clientType) h.set('ct', state.clientType);
   if (state.leadClass) h.set('lc', state.leadClass);
   if (state.mode && state.mode !== 'period') h.set('mode', state.mode);
-  if (state.mmode && state.mmode !== 'cohort') h.set('mmode', state.mmode);
   if (state.report && state.report !== 'funnel') h.set('rep', state.report);
   history.replaceState(null, '', '#' + h.toString());
 }
@@ -311,7 +305,6 @@ function hydrateFromHash() {
   if (h.get('ct'))     state.clientType = h.get('ct');
   if (h.get('lc'))     state.leadClass = h.get('lc');
   if (h.get('mode'))   state.mode = h.get('mode');
-  if (h.get('mmode'))  state.mmode = h.get('mmode');
   if (h.get('rep'))    state.report = h.get('rep');
   if (!h.get('preset')) state.preset = detectPreset(state.from, state.to);
 }
@@ -397,15 +390,6 @@ function setMode(m) {
   state.mode = m || 'period';
   syncModeChips(); saveStateToUrl(); load();
 }
-function syncMmodeChips() {
-  document.querySelectorAll('.chip[data-mmode]').forEach(c => {
-    c.classList.toggle('active', (c.dataset.mmode || 'cohort') === (state.mmode || 'cohort'));
-  });
-}
-function setMmode(m) {
-  state.mmode = m || 'cohort';
-  syncMmodeChips(); saveStateToUrl(); load();
-}
 function attachEvents() {
   _picker = initDateRange({
     inputId: 'dateRange',
@@ -423,9 +407,6 @@ function attachEvents() {
   document.querySelectorAll('#modeGroup .chip').forEach(c => {
     c.addEventListener('click', () => setMode(c.dataset.mode));
   });
-  document.querySelectorAll('#mmodeGroup .chip').forEach(c => {
-    c.addEventListener('click', () => setMmode(c.dataset.mmode));
-  });
   document.getElementById('btnRefresh').addEventListener('click', () => load(true));
   document.querySelectorAll('#subTabs .stab').forEach(t => {
     t.addEventListener('click', () => {
@@ -441,12 +422,10 @@ function attachEvents() {
   );
   syncModeGroupsVisibility();
 }
-// «Режим» воронки — лише на воронці; режим когорти маркетингу — лише на маркетингу
+// «Режим» (period/pipeline/cohort) актуальний лише на воронці
 function syncModeGroupsVisibility() {
   const mg = document.getElementById('modeGroup');
   if (mg) mg.style.display = state.report === 'funnel' ? '' : 'none';
-  const mm = document.getElementById('mmodeGroup');
-  if (mm) mm.style.display = state.report === 'marketing' ? '' : 'none';
 }
 
 // ─── Data ───
@@ -471,8 +450,9 @@ async function load(force = false) {
     if (state.report === 'funnel' && state.mode && state.mode !== 'period') {
       params.set('mode', state.mode);
     }
-    if (state.report === 'marketing' && state.mmode && state.mmode !== 'cohort') {
-      params.set('mode', state.mmode);
+    // Маркетинг — завжди «виграні в періоді» (перемикач прибрано)
+    if (state.report === 'marketing') {
+      params.set('mode', 'won');
     }
     if (force) params.set('_', Date.now());
     const res = await fetch(API + '?' + params.toString(), { signal: ctl.signal });
@@ -989,19 +969,43 @@ function renderMarketingReport(d) {
 
 // Таблиця «Показники» — 6-місячний скоркард (стиль P&L): метрики рядками по
 // секціях, останні 6 повних місяців колонками + «Разом». Дані — d.metricsMonths
-// (когорта по місяцю створення, незалежно від режиму) + d.metricsTotal.
-// Рядки-цілі підсвічуються зелено/червоно по місяцях (пороги з d.goals).
+// + d.metricsTotal. У won-режимі розбивка по місяцю ВИГРАШУ (won-рядки), у
+// cohort — по місяцю створення (lead-gen рядки + підсвітка цілей).
 function marketingMetricsTableHTML(d) {
   const marginPct = Math.round((d.margin || 0.15) * 100);
   const fmtPct1 = v => (Math.round((v || 0) * 1000) / 10).toFixed(1) + '%';
+  const isWon = d.mode === 'won';
   const mm = d.metricsMonths || [];
   const tot = d.metricsTotal || null;
   const g = d.goals || {};
   if (!mm.length) return '';
   const money = (x, ok) => ok ? fmtMoney(x) : '—';
 
+  // Won-режим: усе по місяцю ВИГРАШУ (виграні угоди), lead-gen метрики недоречні.
+  const WON_ROWS = [
+    { sec: 'Виграні угоди' },
+    { label: 'Виграно — всі джерела', m: x => fmt(x.allWon) },
+    { label: 'Виграно — маркетинг',   m: x => fmt(x.mktWon) },
+    { label: 'Частка маркетингу серед виграних, %', m: x => x.allWon ? fmtPct1(x.wonMktShare) : '—' },
+    { label: 'Виграних класу А — всі джерела', m: x => fmt(x.allWonA) },
+    { label: 'Виграних класу А — маркетинг',   m: x => fmt(x.mktWonA) },
+    { label: 'Бюджет виграних — всі джерела, $', m: x => fmtMoney(x.allBudget) },
+    { label: 'Бюджет виграних — маркетинг, $',   m: x => fmtMoney(x.mktBudget) },
+    { label: 'Середній чек — маркетинг, $', m: x => money(x.avgCheck, x.mktWon) },
+    { sec: 'Витрати та юніт-економіка (маркетинг)' },
+    { label: 'Витрати на маркетинг, $',           m: x => fmtMoney(x.spend) },
+    { label: 'Витрати Google+Meta (кабінети), $', m: x => fmtMoney(x.adsSpend) },
+    { label: 'Вартість виграної (CAC), $',        m: x => money(x.cac, x.mktWon && x.spend) },
+    { sec: 'Ефективність' },
+    { label: `Прибуток (${marginPct}%), $`, m: x => fmtMoney(x.profit) },
+    { label: 'ROMI маркетингу',   m: x => x.spend ? fmtPct1(x.romi) : '—' },
+    { label: 'ROMI всіх каналів', m: x => x.spend ? fmtPct1(x.allRomi) : '—' },
+    { label: 'ДРР',               m: x => x.mktBudget && x.spend ? fmtPct1(x.drr) : '—' },
+  ];
+
+  // Cohort-режим (нині не використовується маркетингом, лишено для повноти):
   // m: значення по місяцю; goal(x): true/false/null (для підсвітки цілей)
-  const ROWS = [
+  const COHORT_ROWS = [
     { sec: 'Ліди' },
     { label: 'Лідів — всі джерела',  m: x => fmt(x.allLeads), goal: x => x.allLeads < g.maxLeadsTotal },
     { label: 'Лідів — маркетинг',    m: x => fmt(x.mktLeads) },
@@ -1035,9 +1039,13 @@ function marketingMetricsTableHTML(d) {
     { label: 'ROMI всіх каналів', m: x => x.spend ? fmtPct1(x.allRomi) : '—' },
     { label: 'ДРР',               m: x => x.mktBudget && x.spend ? fmtPct1(x.drr) : '—' },
   ];
+  const ROWS = isWon ? WON_ROWS : COHORT_ROWS;
 
   const NCOL = 2 + mm.length; // Показник + місяці + Разом
-  let h = `<div class="section-h"><h2>💸 Показники</h2><span class="hint">Останні 6 повних місяців · ліди по місяцю створення (когорта), витрати по місяцю нарахування · цілі підсвічені</span></div>`;
+  const hint = isWon
+    ? 'Останні 6 повних місяців · угоди по місяцю виграшу, витрати по місяцю нарахування'
+    : 'Останні 6 повних місяців · ліди по місяцю створення (когорта), витрати по місяцю нарахування · цілі підсвічені';
+  let h = `<div class="section-h"><h2>💸 Показники</h2><span class="hint">${hint}</span></div>`;
   h += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr><th>Показник</th>`;
   mm.forEach(m => { h += `<th>${esc(m.month)}</th>`; });
   h += `<th>Разом</th></tr></thead><tbody>`;
