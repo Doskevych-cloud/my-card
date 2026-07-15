@@ -896,26 +896,24 @@ function renderMarketingReport(d) {
     <div class="kpi-card ${romiCls}"><div class="lbl">ROMI маркетингу</div><div class="val">${t.spend ? fmtPct1(t.romi) : '—'}</div><div class="sub">ДРР ${t.budget && t.spend ? fmtPct1(t.drr) : '—'} · ROMI всіх ${t.spend ? fmtPct1(ta.romi) : '—'}</div></div>
   </div>`;
 
-  // Цілі (місячні) — тільки в режимі когорти: пороги приходять з бекенда (goals)
+  // Цілі (місячні) — плитки, тільки в режимі когорти; пороги з бекенда (goals).
+  // Період з кількох місяців → плитки по останньому місяцю з лідами.
   if (!isWon && d.goals && d.months && d.months.length) {
     const g = d.goals;
-    const cell = (val, isOk, hasData = true) =>
-      `<td class="num${hasData ? (isOk ? ' success' : ' fail') : ''}">${hasData ? val : '—'}</td>`;
-    const head = ['Місяць', `Лідів всього (< ${g.maxLeadsTotal})`, `Лідів класу А (≥ ${g.minLeadsA})`,
-      `CPL Google+Meta (< ${g.maxAdsCpl} $)`, `CPQL Google+Meta (< ${g.maxAdsCpql} $)`];
-    html += `<div class="section-h"><h2>🎯 Цілі (місячні)</h2><span class="hint">CPL/CPQL цілей — витрати кабінетів Google+Meta / ліди з каналів Google, Facebook, Instagram</span></div>`;
-    html += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr>`;
-    head.forEach(c => { html += `<th>${c}</th>`; });
-    html += `</tr></thead><tbody>`;
-    d.months.forEach(m => {
-      html += `<tr><td>${esc(m.month)}</td>`
-        + cell(fmt(m.allLeads), m.allLeads < g.maxLeadsTotal, true)
-        + cell(fmt(m.allA), m.allA >= g.minLeadsA, true)
-        + cell(fmtMoney(m.adsCpl) + ' $', m.adsCpl < g.maxAdsCpl, !!(m.adsLeads && m.adsSpend))
-        + cell(fmtMoney(m.adsCpql) + ' $', m.adsCpql < g.maxAdsCpql, !!(m.adsTarget && m.adsSpend))
-        + `</tr>`;
-    });
-    html += `</tbody></table></div>`;
+    const gm = [...d.months].reverse().find(m => m.allLeads > 0) || d.months[d.months.length - 1];
+    const tile = (lbl, val, goalText, isOk, hasData = true) =>
+      `<div class="kpi-card${hasData ? (isOk ? ' c-success' : ' c-fail') : ''}">
+        <div class="lbl">${lbl}</div>
+        <div class="val">${hasData ? val : '—'}</div>
+        <div class="sub">ціль ${goalText}</div>
+      </div>`;
+    html += `<div class="section-h"><h2>🎯 Цілі (місячні)</h2><span class="hint">${esc(gm.month)} · CPL/CPQL — кабінети Google+Meta / ліди з Google, Facebook, Instagram</span></div>`;
+    html += `<div class="kpi">`
+      + tile('Лідів всього (всі джерела)', fmt(gm.allLeads), `&lt; ${g.maxLeadsTotal}`, gm.allLeads < g.maxLeadsTotal)
+      + tile('Лідів класу А', fmt(gm.allA), `≥ ${g.minLeadsA}`, gm.allA >= g.minLeadsA)
+      + tile('CPL Google+Meta', `${fmtMoney(gm.adsCpl)} <span style="font-size:14px">$</span>`, `&lt; ${g.maxAdsCpl} $`, gm.adsCpl < g.maxAdsCpl, !!(gm.adsLeads && gm.adsSpend))
+      + tile('CPQL Google+Meta', `${fmtMoney(gm.adsCpql)} <span style="font-size:14px">$</span>`, `&lt; ${g.maxAdsCpql} $`, gm.adsCpql < g.maxAdsCpql, !!(gm.adsTarget && gm.adsSpend))
+      + `</div>`;
   }
 
   if (d.channels && d.channels.length) {
