@@ -870,6 +870,8 @@ function renderMarketingReport(d) {
     (нарахування, USD): «Маркетинг послуги» (ведення), рекламні кабінети Google / Facebook Meta / TikTok, «Маркетинг продукція»,
     «Витрати на вебсайти» — список у таблиці статей. <b>Прибуток</b> = ${marginPct}% від бюджету виграних угод (рентабельність продажів).
     <b>ROMI</b> = (Прибуток − Витрати) / Витрати. <b>ДРР</b> = Витрати / Бюджет виграних.
+    <b>CPL</b> = Витрати / Лідів; <b>Вартість цільового</b> = Витрати / лідів, що дійшли до «Визначено як цільовий»;
+    <b>Вартість виграної</b> = Витрати / Виграно; <b>Серед. чек</b> = Бюджет win / Виграно.
     <div style="margin-top:6px;color:var(--text3)">
       Нюанси: фільтри типу/класу клієнта звужують лише лідів — витрати завжди повні.
       ${isWon
@@ -884,7 +886,8 @@ function renderMarketingReport(d) {
       ? `<div class="kpi-card"><div class="lbl">Виграно (маркетинг)</div><div class="val">${fmt(t.won)}</div><div class="sub">із ${fmt(ta.won)} всього</div></div>`
       : `<div class="kpi-card"><div class="lbl">Лідів (маркетинг)</div><div class="val">${fmt(t.leads)}</div><div class="sub">із ${fmt(ta.leads)} всього</div></div>
     <div class="kpi-card"><div class="lbl">Виграно (маркетинг)</div><div class="val">${fmt(t.won)}</div><div class="sub">${pct(t.conversionRate)} конверсія</div></div>
-    <div class="kpi-card"><div class="lbl">Вартість ліда (CPL)</div><div class="val">${t.leads && t.spend ? fmtMoney(t.cpl) : '—'}${t.leads && t.spend ? ' <span style="font-size:14px">$</span>' : ''}</div></div>`}
+    <div class="kpi-card"><div class="lbl">Вартість ліда (CPL)</div><div class="val">${t.leads && t.spend ? fmtMoney(t.cpl) : '—'}${t.leads && t.spend ? ' <span style="font-size:14px">$</span>' : ''}</div></div>
+    <div class="kpi-card"><div class="lbl">Вартість цільового</div><div class="val">${t.target && t.spend ? fmtMoney(t.cpql) : '—'}${t.target && t.spend ? ' <span style="font-size:14px">$</span>' : ''}</div><div class="sub">${fmt(t.target)} цільових · ${pct(t.targetRate)} лідів</div></div>`}
     <div class="kpi-card"><div class="lbl">Вартість виграної</div><div class="val">${t.won && t.spend ? fmtMoney(t.cac) : '—'}${t.won && t.spend ? ' <span style="font-size:14px">$</span>' : ''}</div></div>
     <div class="kpi-card"><div class="lbl">Бюджет виграних (маркетинг)</div><div class="val">${fmtMoney(t.budget)} <span style="font-size:14px">$</span></div><div class="sub">${fmtMoney(ta.budget)} $ всі канали</div></div>
     <div class="kpi-card"><div class="lbl">Прибуток (${marginPct}%)</div><div class="val">${fmtMoney(t.profit)} <span style="font-size:14px">$</span></div></div>
@@ -892,29 +895,29 @@ function renderMarketingReport(d) {
   </div>`;
 
   if (d.channels && d.channels.length) {
-    const head = ['Канал', isWon ? 'Угод' : 'Лідів', 'Виграно', 'Конверсія', 'Бюджет win $', `Прибуток (${marginPct}%) $`];
+    const head = isWon
+      ? ['Канал', 'Угод', 'Бюджет win $', 'Серед. чек $', `Прибуток (${marginPct}%) $`]
+      : ['Канал', 'Лідів', 'Цільових', 'Виграно', 'Конверсія', 'Бюджет win $', 'Серед. чек $', `Прибуток (${marginPct}%) $`];
     const NCOL = head.length;
+    const rowCells = (a) => isWon
+      ? [fmt(a.won), fmtMoney(a.budget), a.won ? fmtMoney(a.budget / a.won) : '—', fmtMoney(a.budget * (d.margin || 0.15))]
+      : [fmt(a.leads), a.target ? fmt(a.target) : '—', a.won ? fmt(a.won) : '—',
+         a.leads ? pct(a.won / a.leads) : '—',
+         fmtMoney(a.budget), a.won ? fmtMoney(a.budget / a.won) : '—', fmtMoney(a.budget * (d.margin || 0.15))];
     const chRow = (c, i) => {
       const active = state.channelFilter === c.name ? ' active' : '';
-      const cells = [
-        esc(c.name), fmt(c.leads), c.won ? fmt(c.won) : '—',
-        isWon ? '—' : pct(c.conversionRate),
-        fmtMoney(c.budget), fmtMoney(c.profit),
-      ];
+      const cells = [esc(c.name), ...rowCells(c)];
       return `<tr class="clickable${active}" data-ch-idx="${i}">${cells.map((v, ci) => `<td${ci === 0 ? '' : ' class="num"'}>${v}</td>`).join('')}</tr>`;
     };
     const sumRow = (label, a) => {
-      const cells = [
-        esc(label), fmt(a.leads), a.won ? fmt(a.won) : '—',
-        isWon || !a.leads ? '—' : pct(a.won / a.leads),
-        fmtMoney(a.budget), fmtMoney(a.budget * (d.margin || 0.15)),
-      ];
+      const cells = [esc(label), ...rowCells(a)];
       return `<tr class="sum-row">${cells.map((v, ci) => `<td${ci === 0 ? '' : ' class="num"'}>${v}</td>`).join('')}</tr>`;
     };
     const mkt = d.channels.map((c, i) => [c, i]).filter(([c]) => c.isMarketing);
     const rest = d.channels.map((c, i) => [c, i]).filter(([c]) => !c.isMarketing);
     const restAgg = {
       leads: ta.leads - t.leads,
+      target: (ta.target || 0) - (t.target || 0),
       won: ta.won - t.won,
       budget: ta.budget - t.budget,
     };
@@ -942,14 +945,17 @@ function renderMarketingReport(d) {
   }
 
   if (d.months && d.months.length) {
-    const head = ['Місяць', isWon ? 'Виграно (маркетинг)' : 'Лідів (маркетинг)', ...(isWon ? [] : ['Виграно']), 'Бюджет win $', 'Витрати $',
-      ...(isWon ? [] : ['CPL $']), 'Вартість win $', `Прибуток (${marginPct}%) $`, 'ROMI', 'Бюджет всіх $'];
+    const head = ['Місяць', isWon ? 'Виграно (маркетинг)' : 'Лідів (маркетинг)', ...(isWon ? [] : ['Цільових', 'Виграно']), 'Бюджет win $', 'Витрати $',
+      ...(isWon ? [] : ['CPL $', 'Варт. цільового $']), 'Вартість win $', `Прибуток (${marginPct}%) $`, 'ROMI', 'Бюджет всіх $'];
     const rows = d.months.map(m => [
       esc(m.month),
       fmt(isWon ? m.won : m.leads),
-      ...(isWon ? [] : [m.won ? fmt(m.won) : '—']),
+      ...(isWon ? [] : [m.target ? fmt(m.target) : '—', m.won ? fmt(m.won) : '—']),
       fmtMoney(m.budget), fmtMoney(m.spend),
-      ...(isWon ? [] : [m.leads && m.spend ? fmtMoney(m.cpl) : '—']),
+      ...(isWon ? [] : [
+        m.leads && m.spend ? fmtMoney(m.cpl) : '—',
+        m.target && m.spend ? fmtMoney(m.cpql) : '—',
+      ]),
       m.won && m.spend ? fmtMoney(m.cac) : '—',
       fmtMoney(m.profit),
       m.spend ? fmtPct1(m.romi) : '—',
