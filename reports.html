@@ -897,17 +897,12 @@ function renderMarketingReport(d) {
     ${d.pnlAvailable === false ? '<div style="margin-top:6px;color:var(--red)">⚠ P&L не відповів — витрати недоступні, показані лише ліди.</div>' : ''}
   </div>
   <div class="kpi">
-    <div class="kpi-card"><div class="lbl">Витрати на маркетинг</div><div class="val">${fmtMoney(t.spend)} <span style="font-size:14px">$</span></div></div>
-    ${isWon
-      ? `<div class="kpi-card"><div class="lbl">Виграно (маркетинг)</div><div class="val">${fmt(t.won)}</div><div class="sub">із ${fmt(ta.won)} всього</div></div>`
-      : `<div class="kpi-card"><div class="lbl">Лідів (маркетинг)</div><div class="val">${fmt(t.leads)}</div><div class="sub">із ${fmt(ta.leads)} всього</div></div>
-    <div class="kpi-card"><div class="lbl">Виграно (маркетинг)</div><div class="val">${fmt(t.won)}</div><div class="sub">${pct(t.conversionRate)} конверсія</div></div>
-    <div class="kpi-card"><div class="lbl">Вартість ліда (CPL)</div><div class="val">${t.leads && t.spend ? fmtMoney(t.cpl) : '—'}${t.leads && t.spend ? ' <span style="font-size:14px">$</span>' : ''}</div></div>
-    <div class="kpi-card"><div class="lbl">Вартість цільового</div><div class="val">${t.target && t.spend ? fmtMoney(t.cpql) : '—'}${t.target && t.spend ? ' <span style="font-size:14px">$</span>' : ''}</div><div class="sub">${fmt(t.target)} цільових · ${pct(t.targetRate)} лідів</div></div>`}
-    <div class="kpi-card"><div class="lbl">Вартість виграної</div><div class="val">${t.won && t.spend ? fmtMoney(t.cac) : '—'}${t.won && t.spend ? ' <span style="font-size:14px">$</span>' : ''}</div></div>
-    <div class="kpi-card"><div class="lbl">Бюджет виграних (маркетинг)</div><div class="val">${fmtMoney(t.budget)} <span style="font-size:14px">$</span></div><div class="sub">${fmtMoney(ta.budget)} $ всі канали</div></div>
-    <div class="kpi-card"><div class="lbl">Прибуток (${marginPct}%)</div><div class="val">${fmtMoney(t.profit)} <span style="font-size:14px">$</span></div></div>
     <div class="kpi-card ${romiCls}"><div class="lbl">ROMI маркетингу</div><div class="val">${t.spend ? fmtPct1(t.romi) : '—'}</div><div class="sub">ДРР ${t.budget && t.spend ? fmtPct1(t.drr) : '—'} · ROMI всіх ${t.spend ? fmtPct1(ta.romi) : '—'}</div></div>
+    ${isWon
+      ? `<div class="kpi-card"><div class="lbl">Виграно (маркетинг)</div><div class="val">${fmt(t.won)}</div><div class="sub">із ${fmt(ta.won)} всього</div></div>
+    <div class="kpi-card"><div class="lbl">Бюджет виграних (маркетинг)</div><div class="val">${fmtMoney(t.budget)} <span style="font-size:14px">$</span></div><div class="sub">${fmtMoney(ta.budget)} $ всі канали</div></div>`
+      : `<div class="kpi-card"><div class="lbl">Лідів (всі джерела)</div><div class="val">${fmt(ta.leads)}</div><div class="sub">з них маркетинг ${fmt(t.leads)}</div></div>
+    <div class="kpi-card"><div class="lbl">Виграно (маркетинг)</div><div class="val">${fmt(t.won)}</div><div class="sub">${pct(t.conversionRate)} конверсія · із ${fmt(ta.won)} всього</div></div>`}
   </div>`;
 
   // Цілі (місячні) — плитки в ОБОХ режимах: факти завжди по створених у періоді
@@ -930,6 +925,9 @@ function renderMarketingReport(d) {
       + tile('CPQL Google+Meta', `${fmtMoney(gm.adsCpql)} <span style="font-size:14px">$</span>`, `&lt; ${g.maxAdsCpql} $`, gm.adsCpql < g.maxAdsCpql, !!(gm.adsTarget && gm.adsSpend))
       + `</div>`;
   }
+
+  // Деталізація метрик — таблиця «Показники» у стилі P&L
+  html += marketingMetricsTableHTML(d);
 
   if (d.channels && d.channels.length) {
     const head = isWon
@@ -981,26 +979,6 @@ function renderMarketingReport(d) {
     }
   }
 
-  if (d.months && d.months.length) {
-    const head = ['Місяць', isWon ? 'Виграно (маркетинг)' : 'Лідів (маркетинг)', ...(isWon ? [] : ['Цільових', 'Виграно']), 'Бюджет win $', 'Витрати $',
-      ...(isWon ? [] : ['CPL $', 'Варт. цільового $']), 'Вартість win $', `Прибуток (${marginPct}%) $`, 'ROMI', 'Бюджет всіх $'];
-    const rows = d.months.map(m => [
-      esc(m.month),
-      fmt(isWon ? m.won : m.leads),
-      ...(isWon ? [] : [m.target ? fmt(m.target) : '—', m.won ? fmt(m.won) : '—']),
-      fmtMoney(m.budget), fmtMoney(m.spend),
-      ...(isWon ? [] : [
-        m.leads && m.spend ? fmtMoney(m.cpl) : '—',
-        m.target && m.spend ? fmtMoney(m.cpql) : '—',
-      ]),
-      m.won && m.spend ? fmtMoney(m.cac) : '—',
-      fmtMoney(m.profit),
-      m.spend ? fmtPct1(m.romi) : '—',
-      fmtMoney(m.allBudget),
-    ]);
-    html += tableHTML({ title: '💸 По місяцях (маркетингові канали)', hint: isWon ? 'Угоди — по місяцю виграшу, витрати — по місяцю нарахування' : 'Ліди — по місяцю створення, витрати — по місяцю нарахування', head, rows });
-  }
-
   if (d.articles && d.articles.length) {
     const head = ['Стаття P&L', 'Сума $'];
     const rows = d.articles.map(a => [esc(a.name), fmtMoney(a.total)]);
@@ -1008,6 +986,63 @@ function renderMarketingReport(d) {
   }
   return html;
 }
+
+// Таблиця «Показники» (стиль P&L): метрики рядками з групами, місяці колонками
+// + «Разом» за період. Вставляється між hero-плитками/цілями і «Каналами».
+function marketingMetricsTableHTML(d) {
+  const t = d.totals || {};
+  const ta = d.totalsAll || {};
+  const isWon = d.mode === 'won';
+  const marginPct = Math.round((d.margin || 0.15) * 100);
+  const fmtPct1 = v => (Math.round((v || 0) * 1000) / 10).toFixed(1) + '%';
+  const mm = d.months || [];
+  if (!mm.length) return '';
+  const multi = mm.length > 1;
+
+  // coh: рядок має сенс лише в режимі когорти (ліди/цільові/CPL/CPQL)
+  const ROWS = [
+    { sec: 'Ліди', coh: true },
+    { coh: true, label: 'Лідів — всі джерела',            m: x => fmt(x.allLeads),   T: () => fmt(ta.leads) },
+    { coh: true, label: 'Лідів — маркетинг',              m: x => fmt(x.leads),      T: () => fmt(t.leads) },
+    { coh: true, label: 'Цільових — всі джерела',         m: x => fmt(x.allTarget),  T: () => fmt(ta.target) },
+    { coh: true, label: 'Цільових — маркетинг',           m: x => fmt(x.target),     T: () => fmt(t.target) },
+    { coh: true, label: 'Цільових класу А — всі джерела', m: x => fmt(x.allTargetA), T: () => fmt(ta.targetA) },
+    { sec: 'Продажі' },
+    { label: 'Виграно — всі джерела',            m: x => fmt(x.allWon),        T: () => fmt(ta.won) },
+    { label: 'Виграно — маркетинг',              m: x => fmt(x.won),           T: () => fmt(t.won) },
+    { label: 'Бюджет виграних — всі джерела, $', m: x => fmtMoney(x.allBudget), T: () => fmtMoney(ta.budget) },
+    { label: 'Бюджет виграних — маркетинг, $',   m: x => fmtMoney(x.budget),   T: () => fmtMoney(t.budget) },
+    { label: 'Середній чек — маркетинг, $',      m: x => x.won ? fmtMoney(x.avgCheck) : '—', T: () => t.won ? fmtMoney(t.avgCheck) : '—' },
+    { sec: 'Витрати та юніт-економіка (маркетинг)' },
+    { label: 'Витрати на маркетинг, $',            m: x => fmtMoney(x.spend), T: () => fmtMoney(t.spend) },
+    { coh: true, label: 'Вартість ліда (CPL), $',  m: x => x.leads && x.spend ? fmtMoney(x.cpl) : '—',    T: () => t.leads && t.spend ? fmtMoney(t.cpl) : '—' },
+    { coh: true, label: 'Вартість цільового, $',   m: x => x.target && x.spend ? fmtMoney(x.cpql) : '—',  T: () => t.target && t.spend ? fmtMoney(t.cpql) : '—' },
+    { coh: true, label: 'Вартість цільового класу А, $', m: x => x.targetA && x.spend ? fmtMoney(x.cpqlA) : '—', T: () => t.targetA && t.spend ? fmtMoney(t.cpqlA) : '—' },
+    { label: 'Вартість виграної, $',               m: x => x.won && x.spend ? fmtMoney(x.cac) : '—',      T: () => t.won && t.spend ? fmtMoney(t.cac) : '—' },
+    { sec: 'Ефективність' },
+    { label: `Прибуток (${marginPct}%), $`, m: x => fmtMoney(x.profit), T: () => fmtMoney(t.profit) },
+    { label: 'ROMI маркетингу',   m: x => x.spend ? fmtPct1(x.romi) : '—',    T: () => t.spend ? fmtPct1(t.romi) : '—' },
+    { label: 'ROMI всіх каналів', m: x => x.spend ? fmtPct1(x.allRomi) : '—', T: () => t.spend ? fmtPct1(ta.romi) : '—' },
+    { label: 'ДРР',               m: x => x.budget && x.spend ? fmtPct1(x.drr) : '—', T: () => t.budget && t.spend ? fmtPct1(t.drr) : '—' },
+  ].filter(r => !r.coh || !isWon);
+
+  const NCOL = 1 + mm.length + (multi ? 1 : 0);
+  let h = `<div class="section-h"><h2>💸 Показники</h2><span class="hint">${isWon ? 'Угоди — по місяцю виграшу' : 'Ліди — по місяцю створення'}, витрати — по місяцю нарахування</span></div>`;
+  h += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr><th>Показник</th>`;
+  mm.forEach(m => { h += `<th>${esc(m.month)}</th>`; });
+  if (multi) h += `<th>Разом</th>`;
+  h += `</tr></thead><tbody>`;
+  for (const r of ROWS) {
+    if (r.sec) { h += `<tr class="sec-row"><td colspan="${NCOL}">${esc(r.sec)}</td></tr>`; continue; }
+    h += `<tr><td>${esc(r.label)}</td>`;
+    mm.forEach(m => { h += `<td class="num">${r.m(m)}</td>`; });
+    if (multi) h += `<td class="num"><b>${r.T()}</b></td>`;
+    h += `</tr>`;
+  }
+  h += `</tbody></table></div>`;
+  return h;
+}
+
 
 // Drilldown каналів: клік по рядку каналу → секція його угод нижче (toggle)
 function attachChannelDrilldown(d) {
