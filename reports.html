@@ -158,6 +158,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <button class="stab" data-rep="dynamics" data-perm="reports_dynamics">📈 Динаміка</button>
       <button class="stab" data-rep="abc" data-perm="reports_abc">🏷️ ABC</button>
       <button class="stab" data-rep="cycle" data-perm="reports_cycle">⏱️ Цикл</button>
+      <button class="stab" data-rep="marketing" data-perm="reports_marketing">💸 Маркетинг</button>
     </div>
   </div>
 
@@ -222,7 +223,7 @@ function _lastOfMonthISO(){const d=new Date();return _localISO(new Date(d.getFul
 const state = {
   raw: null,            // sheet-aggregated payload
   source: 'sheet',
-  report: 'funnel',     // 'funnel' | 'channels' | 'managers' | 'dynamics' | 'abc' | 'cycle'
+  report: 'funnel',     // 'funnel' | 'channels' | 'managers' | 'dynamics' | 'abc' | 'cycle' | 'marketing'
   mode: 'period',       // тільки для report='funnel': 'period' | 'cumulative' | 'cohort'
   from: _firstOfMonthISO(),
   to: _lastOfMonthISO(),
@@ -241,6 +242,7 @@ const REPORT_ACTION = {
   dynamics: 'sheet_dynamics',
   abc: 'sheet_abc',
   cycle: 'sheet_cycle',
+  marketing: 'sheet_marketing',
 };
 let leadsSort = { col: 'changeDate', dir: 'desc' };
 
@@ -724,6 +726,60 @@ function renderCycleReport(d) {
   return html;
 }
 
+// 7. Маркетинг — фінансова ефективність
+function renderMarketingReport(d) {
+  const t = d.totals || {};
+  const marginPct = Math.round((d.margin || 0.15) * 100);
+  const romiCls = t.romi > 0 ? 'c-success' : (t.spend && t.romi < 0 ? 'c-fail' : '');
+  const fmtPct1 = v => (Math.round((v || 0) * 1000) / 10).toFixed(1) + '%';
+  let html = `
+  <div class="info-banner">
+    <span class="ib-tag">МАРКЕТИНГ</span>
+    Когорта: <b>ліди створені у вибрані дні</b> (як у «Каналах»). <b>Витрати на маркетинг</b> — статті P&L за той самий період
+    (нарахування, USD): «Маркетинг послуги» (ведення), рекламні кабінети Google / Facebook Meta / TikTok,
+    «Маркетинг продукція», «Витрати на вебсайти» — повний список нижче в таблиці статей.
+    <b>Прибуток</b> = ${marginPct}% від бюджету виграних угод (рентабельність продажів).
+    <b>ROMI</b> = (Прибуток − Витрати) / Витрати. <b>ДРР</b> = Витрати / Бюджет виграних.
+    <div style="margin-top:6px;color:var(--text3)">
+      Нюанси: фільтри типу/класу клієнта звужують лише лідів — витрати завжди повні, тож CPL/ROMI з фільтрами завищено-песимістичні.
+      Бюджет виграних рахується по даті створення ліда (когорта), а витрати — по даті нарахування: для свіжого періоду ROMI занижений,
+      бо ліди ще не встигли закритись.
+    </div>
+    ${d.pnlAvailable === false ? '<div style="margin-top:6px;color:var(--red)">⚠ P&L не відповів — витрати недоступні, показані лише ліди.</div>' : ''}
+  </div>
+  <div class="kpi">
+    <div class="kpi-card"><div class="lbl">Витрати на маркетинг</div><div class="val">${fmtMoney(t.spend)} <span style="font-size:14px">$</span></div></div>
+    <div class="kpi-card"><div class="lbl">Лідів</div><div class="val">${fmt(t.leads)}</div><div class="sub">${fmt(t.target)} цільових</div></div>
+    <div class="kpi-card"><div class="lbl">Успішних</div><div class="val">${fmt(t.won)}</div><div class="sub">${pct(t.conversionRate)} конверсія</div></div>
+    <div class="kpi-card"><div class="lbl">Вартість ліда (CPL)</div><div class="val">${fmtMoney(t.cpl)} <span style="font-size:14px">$</span></div></div>
+    <div class="kpi-card"><div class="lbl">Вартість успішного</div><div class="val">${fmtMoney(t.cac)} <span style="font-size:14px">$</span></div></div>
+    <div class="kpi-card"><div class="lbl">Бюджет виграних</div><div class="val">${fmtMoney(t.budget)} <span style="font-size:14px">$</span></div></div>
+    <div class="kpi-card"><div class="lbl">Прибуток (${marginPct}%)</div><div class="val">${fmtMoney(t.profit)} <span style="font-size:14px">$</span></div></div>
+    <div class="kpi-card ${romiCls}"><div class="lbl">ROMI</div><div class="val">${t.spend ? fmtPct1(t.romi) : '—'}</div><div class="sub">ДРР ${t.budget ? fmtPct1(t.drr) : '—'}</div></div>
+  </div>`;
+
+  if (d.months && d.months.length) {
+    const head = ['Місяць', 'Лідів', 'Успішних', 'Бюджет $', 'Витрати $', 'CPL $', 'Вартість win $', `Прибуток (${marginPct}%) $`, 'ROMI', 'ДРР'];
+    const rows = d.months.map(m => [
+      esc(m.month), fmt(m.leads), m.won ? fmt(m.won) : '—',
+      fmtMoney(m.budget), fmtMoney(m.spend),
+      m.leads && m.spend ? fmtMoney(m.cpl) : '—',
+      m.won && m.spend ? fmtMoney(m.cac) : '—',
+      fmtMoney(m.profit),
+      m.spend ? fmtPct1(m.romi) : '—',
+      m.budget && m.spend ? fmtPct1(m.drr) : '—',
+    ]);
+    html += tableHTML({ title: '💸 По місяцях', hint: 'Ліди — по місяцю створення, витрати — по місяцю нарахування', head, rows });
+  }
+
+  if (d.articles && d.articles.length) {
+    const head = ['Стаття P&L', 'Сума $'];
+    const rows = d.articles.map(a => [esc(a.name), fmtMoney(a.total)]);
+    html += tableHTML({ title: '📋 З чого складаються витрати', hint: 'Статті accrual P&L за період', head, rows });
+  }
+  return html;
+}
+
 function render() {
   updateInfoBanner();
   if (!state.raw) return;
@@ -747,6 +803,7 @@ function render() {
     return;
   }
   if (state.report === 'cycle')    { document.getElementById('infoBanner').style.display='none'; document.getElementById('content').innerHTML = renderCycleReport(state.raw); return; }
+  if (state.report === 'marketing'){ document.getElementById('infoBanner').style.display='none'; document.getElementById('content').innerHTML = renderMarketingReport(state.raw); return; }
 
   // Воронка (default)
   const a = state.raw;
