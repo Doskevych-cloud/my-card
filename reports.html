@@ -886,7 +886,7 @@ function renderMarketingReport(d) {
     <b>ROMI</b> = (Прибуток − Витрати) / Витрати. <b>ДРР</b> = Витрати / Бюджет виграних.
     <b>CPL</b> = Витрати / Лідів; <b>Вартість цільового</b> = Витрати / лідів, що дійшли до «Визначено як цільовий»;
     <b>Вартість виграної</b> = Витрати / Виграно; <b>Серед. чек</b> = Бюджет win / Виграно.
-    Блок <b>«Цілі»</b> — місячні нормативи: лідів всього &lt; 500, лідів класу А ≥ 20, CPL і CPQL Google+Meta &lt; 20 $ / &lt; 40 $
+    Блок <b>«Цілі»</b> — місячні нормативи: лідів всього &lt; 500, лідів класу А <b>з маркетингу</b> ≥ 20, CPL і CPQL Google+Meta &lt; 20 $ / &lt; 40 $
     (тут витрати — ТІЛЬКИ кабінети Google і Meta, поділені на лідів/цільових з каналів Google / Facebook / Instagram).
     <div style="margin-top:6px;color:var(--text3)">
       Нюанси: фільтри типу/класу клієнта звужують лише лідів — витрати завжди повні.
@@ -920,7 +920,7 @@ function renderMarketingReport(d) {
     html += `<div class="section-h"><h2>🎯 Цілі (місячні)</h2><span class="hint">${esc(gm.month)} · CPL/CPQL — кабінети Google+Meta / ліди з Google, Facebook, Instagram</span></div>`;
     html += `<div class="kpi">`
       + tile('Лідів всього (всі джерела)', fmt(gm.allLeads), `&lt; ${g.maxLeadsTotal}`, gm.allLeads < g.maxLeadsTotal)
-      + tile('Лідів класу А', fmt(gm.allA), `≥ ${g.minLeadsA}`, gm.allA >= g.minLeadsA)
+      + tile('Лідів класу А (маркетинг)', fmt(gm.mktA), `≥ ${g.minLeadsA}`, gm.mktA >= g.minLeadsA)
       + tile('CPL Google+Meta', `${fmtMoney(gm.adsCpl)} <span style="font-size:14px">$</span>`, `&lt; ${g.maxAdsCpl} $`, gm.adsCpl < g.maxAdsCpl, !!(gm.adsLeads && gm.adsSpend))
       + tile('CPQL Google+Meta', `${fmtMoney(gm.adsCpql)} <span style="font-size:14px">$</span>`, `&lt; ${g.maxAdsCpql} $`, gm.adsCpql < g.maxAdsCpql, !!(gm.adsTarget && gm.adsSpend))
       + `</div>`;
