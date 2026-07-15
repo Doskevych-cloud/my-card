@@ -52,6 +52,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans
 .pnl-card .cur-row{font-size:13px;color:var(--text2);font-weight:600;font-variant-numeric:tabular-nums;line-height:1.5;display:flex;justify-content:space-between;gap:8px}
 .pnl-card .cur-row .cc{color:var(--text3);font-size:10px;font-weight:700;letter-spacing:.3px}
 .pnl-card.ldg .cv{color:var(--text3);font-size:13px;font-style:italic;font-weight:400}
+a.pnl-card{color:inherit;text-decoration:none;cursor:pointer;transition:border-color .15s}
+a.pnl-card:hover{border-color:var(--accent)}
 
 /* KPI-РЯДОК (старий hero) — кандидати на розбір */
 .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
@@ -429,16 +431,18 @@ function applyStateToLinks() {
 }
 
 // ── Render helpers ─────────────────────────────────────────────────
-// card = { lbl, val, cls, sub, rows: [{cc, val}] }
+// card = { lbl, val, cls, sub, rows: [{cc, val}], href }
 function renderCards(elId, cards) {
-  document.getElementById(elId).innerHTML = cards.map(c =>
-    '<div class="pnl-card">' +
+  document.getElementById(elId).innerHTML = cards.map(c => {
+    const tag = c.href ? 'a' : 'div';
+    const attrs = c.href ? ' href="' + c.href + '"' : '';
+    return '<' + tag + ' class="pnl-card"' + attrs + '>' +
       '<span class="cl">' + c.lbl + '</span>' +
       '<span class="cv' + (c.cls ? ' ' + c.cls : '') + '">' + c.val + '</span>' +
       (c.sub ? '<span class="cs">' + c.sub + '</span>' : '') +
       (c.rows || []).map(r => '<span class="cur-row"><span class="cc">' + r.cc + '</span><span>' + r.val + '</span></span>').join('') +
-    '</div>'
-  ).join('');
+    '</' + tag + '>';
+  }).join('');
 }
 function renderLoading(elId, n) {
   document.getElementById(elId).innerHTML = Array.from({ length: n }, () =>
@@ -563,10 +567,14 @@ async function loadCp() {
 // ── СКЛАД: агрегат warehouses_stock (сторінка фільтрує org клієнтськи) ─
 async function loadWh() {
   if (document.getElementById('secWh').style.display === 'none') return;
-  renderLoading('whSummary', 4);
+  renderLoading('whSummary', 5);
   try {
-    const d = await dashFetch(API_URL + '/?action=warehouses_stock');
-    if (d.error) throw new Error(d.error);
+    const [stockRes, valRes] = await Promise.allSettled([
+      dashFetch(API_URL + '/?action=warehouses_stock'),
+      dashFetch(API_URL + '/?action=warehouse_value_report' + orgQ()),
+    ]);
+    if (stockRes.status !== 'fulfilled' || stockRes.value.error) throw new Error((stockRes.value && stockRes.value.error) || 'err');
+    const d = stockRes.value;
     const whs = (d.warehouses || []).filter(w => !state.org || w.org === state.org);
     const sku = new Set();
     let tot = 0, res = 0, free = 0;
@@ -575,12 +583,26 @@ async function loadWh() {
       tot += it.total || 0; res += it.reserve || 0; free += it.free || 0;
     }));
     document.getElementById('whMeta').textContent = whs.length + ' складів · ' + (state.org || 'всі організації');
-    renderCards('whSummary', [
+    const cards = [];
+    // Вартість запасів — та сама цифра, що finance#tab=wh (warehouse_value_report);
+    // картка веде на той самий зріз (дата снапшоту з відповіді).
+    if (valRes.status === 'fulfilled' && valRes.value && !valRes.value.error) {
+      const v = valRes.value;
+      const asOf = v.as_of_date || '';
+      cards.push({
+        lbl: 'Вартість запасів',
+        val: fmt(Number(v.total_value_usd) || 0, 0) + ' $',
+        sub: asOf ? 'на ' + asOf : '',
+        href: '/finance.html#tab=wh' + (asOf ? '&on=' + asOf : ''),
+      });
+    }
+    cards.push(
       { lbl: 'Позицій (SKU)', val: fmt(sku.size, 0) },
       { lbl: 'Всього', val: fmt(tot, 0) + ' <span class="u">од</span>' },
       { lbl: 'У резерві', val: fmt(res, 0) + ' <span class="u">од</span>' },
-      { lbl: 'Вільно', val: fmt(free, 0) + ' <span class="u">од</span>', cls: 'pos' },
-    ]);
+      { lbl: 'Вільно', val: fmt(free, 0) + ' <span class="u">од</span>', cls: 'pos' }
+    );
+    renderCards('whSummary', cards);
   } catch (e) { renderError('whSummary', e.message); }
 }
 
