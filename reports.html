@@ -798,9 +798,9 @@ function renderCycleReport(d) {
   return html;
 }
 
-// 7. Маркетинг — фінансова ефективність (paid-канали як основна метрика)
+// 7. Маркетинг — фінансова ефективність (канали-результати маркетингу як основна метрика)
 function renderMarketingReport(d) {
-  const t = d.totals || {};        // ПЛАТНІ канали
+  const t = d.totals || {};        // канали-результати маркетингу
   const ta = d.totalsAll || {};    // всі канали — довідково
   const isWon = d.mode === 'won';
   const marginPct = Math.round((d.margin || 0.15) * 100);
@@ -813,8 +813,9 @@ function renderMarketingReport(d) {
   <div class="info-banner">
     <span class="ib-tag">МАРКЕТИНГ</span>
     ${baseExplain}
-    <b>KPI рахуються тільки по платних каналах</b> (Google / Facebook / TikTok) — Repeat, Sarafan, Organic виграють без рекламних грошей
-    і завищують ROMI; вони показані окремо в розбивці по групах. <b>Витрати на маркетинг</b> — статті P&L за той самий період
+    <b>KPI рахуються тільки по каналах-результатах маркетингу</b>: Google / Meta (Facebook) / TikTok / Organic / Direct.
+    Sarafan, Repeat, Upsale, партнери виграють без рекламних грошей і завищують ROMI — вони є в таблиці каналів, але поза KPI.
+    <b>Витрати на маркетинг</b> — статті P&L за той самий період
     (нарахування, USD): «Маркетинг послуги» (ведення), рекламні кабінети Google / Facebook Meta / TikTok, «Маркетинг продукція»,
     «Витрати на вебсайти» — список у таблиці статей. <b>Прибуток</b> = ${marginPct}% від бюджету виграних угод (рентабельність продажів).
     <b>ROMI</b> = (Прибуток − Витрати) / Витрати. <b>ДРР</b> = Витрати / Бюджет виграних.
@@ -829,28 +830,29 @@ function renderMarketingReport(d) {
   <div class="kpi">
     <div class="kpi-card"><div class="lbl">Витрати на маркетинг</div><div class="val">${fmtMoney(t.spend)} <span style="font-size:14px">$</span></div></div>
     ${isWon
-      ? `<div class="kpi-card"><div class="lbl">Виграно (платні)</div><div class="val">${fmt(t.won)}</div><div class="sub">із ${fmt(ta.won)} всього</div></div>`
-      : `<div class="kpi-card"><div class="lbl">Лідів (платні)</div><div class="val">${fmt(t.leads)}</div><div class="sub">із ${fmt(ta.leads)} всього</div></div>
-    <div class="kpi-card"><div class="lbl">Виграно (платні)</div><div class="val">${fmt(t.won)}</div><div class="sub">${pct(t.conversionRate)} конверсія</div></div>
+      ? `<div class="kpi-card"><div class="lbl">Виграно (маркетинг)</div><div class="val">${fmt(t.won)}</div><div class="sub">із ${fmt(ta.won)} всього</div></div>`
+      : `<div class="kpi-card"><div class="lbl">Лідів (маркетинг)</div><div class="val">${fmt(t.leads)}</div><div class="sub">із ${fmt(ta.leads)} всього</div></div>
+    <div class="kpi-card"><div class="lbl">Виграно (маркетинг)</div><div class="val">${fmt(t.won)}</div><div class="sub">${pct(t.conversionRate)} конверсія</div></div>
     <div class="kpi-card"><div class="lbl">Вартість ліда (CPL)</div><div class="val">${t.leads && t.spend ? fmtMoney(t.cpl) : '—'}${t.leads && t.spend ? ' <span style="font-size:14px">$</span>' : ''}</div></div>`}
     <div class="kpi-card"><div class="lbl">Вартість виграної</div><div class="val">${t.won && t.spend ? fmtMoney(t.cac) : '—'}${t.won && t.spend ? ' <span style="font-size:14px">$</span>' : ''}</div></div>
-    <div class="kpi-card"><div class="lbl">Бюджет виграних (платні)</div><div class="val">${fmtMoney(t.budget)} <span style="font-size:14px">$</span></div><div class="sub">${fmtMoney(ta.budget)} $ всі канали</div></div>
+    <div class="kpi-card"><div class="lbl">Бюджет виграних (маркетинг)</div><div class="val">${fmtMoney(t.budget)} <span style="font-size:14px">$</span></div><div class="sub">${fmtMoney(ta.budget)} $ всі канали</div></div>
     <div class="kpi-card"><div class="lbl">Прибуток (${marginPct}%)</div><div class="val">${fmtMoney(t.profit)} <span style="font-size:14px">$</span></div></div>
-    <div class="kpi-card ${romiCls}"><div class="lbl">ROMI платних</div><div class="val">${t.spend ? fmtPct1(t.romi) : '—'}</div><div class="sub">ДРР ${t.budget && t.spend ? fmtPct1(t.drr) : '—'} · ROMI всіх ${t.spend ? fmtPct1(ta.romi) : '—'}</div></div>
+    <div class="kpi-card ${romiCls}"><div class="lbl">ROMI маркетингу</div><div class="val">${t.spend ? fmtPct1(t.romi) : '—'}</div><div class="sub">ДРР ${t.budget && t.spend ? fmtPct1(t.drr) : '—'} · ROMI всіх ${t.spend ? fmtPct1(ta.romi) : '—'}</div></div>
   </div>`;
 
-  if (d.groups && d.groups.length) {
-    const head = ['Група каналів', isWon ? 'Угод' : 'Лідів', 'Виграно', 'Конверсія', 'Бюджет win $', `Прибуток (${marginPct}%) $`];
-    const rows = d.groups.map(g => [
-      esc(g.label), fmt(g.leads), g.won ? fmt(g.won) : '—',
-      isWon ? '—' : pct(g.conversionRate),
-      fmtMoney(g.budget), fmtMoney(g.profit),
+  if (d.channels && d.channels.length) {
+    const head = ['Канал', 'У KPI', isWon ? 'Угод' : 'Лідів', 'Виграно', 'Конверсія', 'Бюджет win $', `Прибуток (${marginPct}%) $`];
+    const rows = d.channels.map(c => [
+      esc(c.name), c.isMarketing ? '✓' : '—',
+      fmt(c.leads), c.won ? fmt(c.won) : '—',
+      isWon ? '—' : pct(c.conversionRate),
+      fmtMoney(c.budget), fmtMoney(c.profit),
     ]);
-    html += tableHTML({ title: '📊 По групах каналів', hint: 'Витрати на маркетинг стосуються лише групи «Платні»', head, rows });
+    html += tableHTML({ title: '📊 Канали', hint: '✓ у колонці «У KPI» = канал-результат маркетингу, входить у ROMI/CPL', head, rows });
   }
 
   if (d.months && d.months.length) {
-    const head = ['Місяць', isWon ? 'Виграно (платні)' : 'Лідів (платні)', ...(isWon ? [] : ['Виграно']), 'Бюджет win $', 'Витрати $',
+    const head = ['Місяць', isWon ? 'Виграно (маркетинг)' : 'Лідів (маркетинг)', ...(isWon ? [] : ['Виграно']), 'Бюджет win $', 'Витрати $',
       ...(isWon ? [] : ['CPL $']), 'Вартість win $', `Прибуток (${marginPct}%) $`, 'ROMI', 'Бюджет всіх $'];
     const rows = d.months.map(m => [
       esc(m.month),
@@ -863,7 +865,7 @@ function renderMarketingReport(d) {
       m.spend ? fmtPct1(m.romi) : '—',
       fmtMoney(m.allBudget),
     ]);
-    html += tableHTML({ title: '💸 По місяцях (платні канали)', hint: isWon ? 'Угоди — по місяцю виграшу, витрати — по місяцю нарахування' : 'Ліди — по місяцю створення, витрати — по місяцю нарахування', head, rows });
+    html += tableHTML({ title: '💸 По місяцях (маркетингові канали)', hint: isWon ? 'Угоди — по місяцю виграшу, витрати — по місяцю нарахування' : 'Ліди — по місяцю створення, витрати — по місяцю нарахування', head, rows });
   }
 
   if (d.articles && d.articles.length) {
