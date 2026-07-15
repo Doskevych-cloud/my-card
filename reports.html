@@ -872,6 +872,8 @@ function renderMarketingReport(d) {
     <b>ROMI</b> = (Прибуток − Витрати) / Витрати. <b>ДРР</b> = Витрати / Бюджет виграних.
     <b>CPL</b> = Витрати / Лідів; <b>Вартість цільового</b> = Витрати / лідів, що дійшли до «Визначено як цільовий»;
     <b>Вартість виграної</b> = Витрати / Виграно; <b>Серед. чек</b> = Бюджет win / Виграно.
+    Блок <b>«Цілі»</b> — місячні нормативи: лідів всього &lt; 500, лідів класу А ≥ 20, CPL і CPQL Google+Meta &lt; 20 $ / &lt; 40 $
+    (тут витрати — ТІЛЬКИ кабінети Google і Meta, поділені на лідів/цільових з каналів Google / Facebook / Instagram).
     <div style="margin-top:6px;color:var(--text3)">
       Нюанси: фільтри типу/класу клієнта звужують лише лідів — витрати завжди повні.
       ${isWon
@@ -893,6 +895,28 @@ function renderMarketingReport(d) {
     <div class="kpi-card"><div class="lbl">Прибуток (${marginPct}%)</div><div class="val">${fmtMoney(t.profit)} <span style="font-size:14px">$</span></div></div>
     <div class="kpi-card ${romiCls}"><div class="lbl">ROMI маркетингу</div><div class="val">${t.spend ? fmtPct1(t.romi) : '—'}</div><div class="sub">ДРР ${t.budget && t.spend ? fmtPct1(t.drr) : '—'} · ROMI всіх ${t.spend ? fmtPct1(ta.romi) : '—'}</div></div>
   </div>`;
+
+  // Цілі (місячні) — тільки в режимі когорти: пороги приходять з бекенда (goals)
+  if (!isWon && d.goals && d.months && d.months.length) {
+    const g = d.goals;
+    const cell = (val, isOk, hasData = true) =>
+      `<td class="num${hasData ? (isOk ? ' success' : ' fail') : ''}">${hasData ? val : '—'}</td>`;
+    const head = ['Місяць', `Лідів всього (< ${g.maxLeadsTotal})`, `Лідів класу А (≥ ${g.minLeadsA})`,
+      `CPL Google+Meta (< ${g.maxAdsCpl} $)`, `CPQL Google+Meta (< ${g.maxAdsCpql} $)`];
+    html += `<div class="section-h"><h2>🎯 Цілі (місячні)</h2><span class="hint">CPL/CPQL цілей — витрати кабінетів Google+Meta / ліди з каналів Google, Facebook, Instagram</span></div>`;
+    html += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr>`;
+    head.forEach(c => { html += `<th>${c}</th>`; });
+    html += `</tr></thead><tbody>`;
+    d.months.forEach(m => {
+      html += `<tr><td>${esc(m.month)}</td>`
+        + cell(fmt(m.allLeads), m.allLeads < g.maxLeadsTotal, true)
+        + cell(fmt(m.allA), m.allA >= g.minLeadsA, true)
+        + cell(fmtMoney(m.adsCpl) + ' $', m.adsCpl < g.maxAdsCpl, !!(m.adsLeads && m.adsSpend))
+        + cell(fmtMoney(m.adsCpql) + ' $', m.adsCpql < g.maxAdsCpql, !!(m.adsTarget && m.adsSpend))
+        + `</tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
 
   if (d.channels && d.channels.length) {
     const head = isWon
