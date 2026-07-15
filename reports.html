@@ -91,6 +91,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .mgr-table td{color:var(--text2);font-weight:500;border-bottom:1px solid var(--border)}
 .mgr-table tr:last-child td{border-bottom:none}
 .mgr-table tr:hover td{background:var(--bg3)}
+.mgr-table tr.clickable{cursor:pointer}
+.mgr-table tr.clickable.active td{background:rgba(154,180,255,.12)}
 .mgr-table td.success{color:var(--green);font-weight:700}
 .mgr-table td.fail{color:var(--red);font-weight:700}
 .mgr-table td.progress{color:var(--blue);font-weight:700}
@@ -181,6 +183,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <span class="chip" data-mode="cumulative" title="Поточний стан pipeline (хто зараз у воронці)">Pipeline</span>
       <span class="chip" data-mode="cohort" title="Ліди створені у вибрані дні + куди дійшли">Когорта</span>
     </span>
+    <span class="group" id="mmodeGroup" style="display:none">
+      <span class="chip active" data-mmode="cohort" title="Ліди створені у вибрані дні + куди вони дійшли за всю історію">Створені в періоді</span>
+      <span class="chip" data-mmode="won" title="Угоди виграні у вибрані дні (по даті переходу в «Аванс отримано»), незалежно від дати створення">Виграні в періоді</span>
+    </span>
 
     <span class="sep"></span>
 
@@ -225,6 +231,7 @@ const state = {
   source: 'sheet',
   report: 'funnel',     // 'funnel' | 'channels' | 'managers' | 'dynamics' | 'abc' | 'cycle' | 'marketing'
   mode: 'period',       // тільки для report='funnel': 'period' | 'cumulative' | 'cohort'
+  mmode: 'cohort',      // тільки для report='marketing': 'cohort' (створені) | 'won' (виграні в періоді)
   from: _firstOfMonthISO(),
   to: _lastOfMonthISO(),
   preset: 'month',
@@ -233,6 +240,7 @@ const state = {
   leadClass: '',        // '' | 'A' | 'B' | 'C'
   loading: false,
   stageFilter: null,    // null | 0..7 — drilldown по funnel: показувати лідів які доходили до цієї стадії або далі
+  channelFilter: null,  // null | '<назва каналу>' — drilldown по каналах: показувати угоди цього каналу
 };
 
 const REPORT_ACTION = {
@@ -270,6 +278,7 @@ Auth.require('reports').then(user => {
   syncClientTypeChips();
   syncLeadClassChips();
   syncModeChips();
+  syncMmodeChips();
   attachEvents();
   load();
 });
@@ -285,6 +294,7 @@ function saveStateToUrl() {
   if (state.clientType) h.set('ct', state.clientType);
   if (state.leadClass) h.set('lc', state.leadClass);
   if (state.mode && state.mode !== 'period') h.set('mode', state.mode);
+  if (state.mmode && state.mmode !== 'cohort') h.set('mmode', state.mmode);
   if (state.report && state.report !== 'funnel') h.set('rep', state.report);
   history.replaceState(null, '', '#' + h.toString());
 }
@@ -298,6 +308,7 @@ function hydrateFromHash() {
   if (h.get('ct'))     state.clientType = h.get('ct');
   if (h.get('lc'))     state.leadClass = h.get('lc');
   if (h.get('mode'))   state.mode = h.get('mode');
+  if (h.get('mmode'))  state.mmode = h.get('mmode');
   if (h.get('rep'))    state.report = h.get('rep');
   if (!h.get('preset')) state.preset = detectPreset(state.from, state.to);
 }
@@ -383,6 +394,15 @@ function setMode(m) {
   state.mode = m || 'period';
   syncModeChips(); saveStateToUrl(); load();
 }
+function syncMmodeChips() {
+  document.querySelectorAll('.chip[data-mmode]').forEach(c => {
+    c.classList.toggle('active', (c.dataset.mmode || 'cohort') === (state.mmode || 'cohort'));
+  });
+}
+function setMmode(m) {
+  state.mmode = m || 'cohort';
+  syncMmodeChips(); saveStateToUrl(); load();
+}
 function attachEvents() {
   _picker = initDateRange({
     inputId: 'dateRange',
@@ -400,14 +420,15 @@ function attachEvents() {
   document.querySelectorAll('#modeGroup .chip').forEach(c => {
     c.addEventListener('click', () => setMode(c.dataset.mode));
   });
+  document.querySelectorAll('#mmodeGroup .chip').forEach(c => {
+    c.addEventListener('click', () => setMmode(c.dataset.mmode));
+  });
   document.getElementById('btnRefresh').addEventListener('click', () => load(true));
   document.querySelectorAll('#subTabs .stab').forEach(t => {
     t.addEventListener('click', () => {
       state.report = t.dataset.rep || 'funnel';
       document.querySelectorAll('#subTabs .stab').forEach(x => x.classList.toggle('active', x === t));
-      // Group "Режим" актуальний лише для воронки
-      const modeGroup = document.getElementById('modeGroup');
-      if (modeGroup) modeGroup.style.display = state.report === 'funnel' ? '' : 'none';
+      syncModeGroupsVisibility();
       saveStateToUrl(); load();
     });
   });
@@ -415,8 +436,14 @@ function attachEvents() {
   document.querySelectorAll('#subTabs .stab').forEach(t =>
     t.classList.toggle('active', t.dataset.rep === state.report)
   );
+  syncModeGroupsVisibility();
+}
+// «Режим» воронки — лише на воронці; режим когорти маркетингу — лише на маркетингу
+function syncModeGroupsVisibility() {
   const mg = document.getElementById('modeGroup');
   if (mg) mg.style.display = state.report === 'funnel' ? '' : 'none';
+  const mm = document.getElementById('mmodeGroup');
+  if (mm) mm.style.display = state.report === 'marketing' ? '' : 'none';
 }
 
 // ─── Data ───
@@ -430,6 +457,9 @@ async function load(force = false) {
     if (state.leadClass) params.set('leadClass', state.leadClass);
     if (state.report === 'funnel' && state.mode && state.mode !== 'period') {
       params.set('mode', state.mode);
+    }
+    if (state.report === 'marketing' && state.mmode && state.mmode !== 'cohort') {
+      params.set('mode', state.mmode);
     }
     if (force) params.set('_', Date.now());
     const res = await fetch(API + '?' + params.toString());
@@ -590,16 +620,58 @@ function renderChannelsReport(d) {
     <div class="kpi-card c-rate"><div class="lbl">Виручка</div><div class="val">${fmtMoney(t.revenue)} <span style="font-size:14px">$</span></div></div>
   </div>`;
   const head = ['Канал', 'Всього', 'Цільових', 'Цільових А', 'Аванс отримано', 'Конверсія', 'Конверсія А', 'Виручка $', 'Серед. чек $'];
-  const rows = d.channels.map(c => [
-    esc(c.name), fmt(c.leads),
-    c.target ? fmt(c.target) : '—',
-    c.targetA ? fmt(c.targetA) : '—',
-    c.won ? fmt(c.won) : '—',
-    pct(c.conversionRate),
-    pct(c.conversionRateA),
-    fmtMoney(c.revenue), c.avgCheck ? fmtMoney(c.avgCheck) : '—',
-  ]);
-  html += tableHTML({ title: '🌐 Канали реклами', hint: 'Сортовано за кількістю лідів', head, rows });
+  html += `<div class="section-h"><h2>🌐 Канали реклами</h2><span class="hint">Сортовано за кількістю лідів · клік по каналу — його угоди нижче</span></div>`;
+  html += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr>`;
+  head.forEach(c => { html += `<th>${c}</th>`; });
+  html += `</tr></thead><tbody>`;
+  d.channels.forEach((c, i) => {
+    const active = state.channelFilter === c.name ? ' active' : '';
+    const cells = [
+      esc(c.name), fmt(c.leads),
+      c.target ? fmt(c.target) : '—',
+      c.targetA ? fmt(c.targetA) : '—',
+      c.won ? fmt(c.won) : '—',
+      pct(c.conversionRate),
+      pct(c.conversionRateA),
+      fmtMoney(c.revenue), c.avgCheck ? fmtMoney(c.avgCheck) : '—',
+    ];
+    html += `<tr class="clickable${active}" data-ch-idx="${i}">${cells.map((v, ci) => `<td${ci === 0 ? '' : ' class="num"'}>${v}</td>`).join('')}</tr>`;
+  });
+  html += `</tbody></table></div>`;
+
+  // Drill-down: угоди обраного каналу (по принципу як у воронці)
+  if (state.channelFilter) {
+    const ch = d.channels.find(c => c.name === state.channelFilter);
+    if (ch && ch.leadsList && ch.leadsList.length) html += channelLeadsHTML(ch);
+  }
+  return html;
+}
+
+// Список угод одного каналу — той самий вигляд, що «Усі ліди» у воронці
+function channelLeadsHTML(ch) {
+  let html = `
+    <div id="channelLeads" class="section-h">
+      <h2>📋 Угоди каналу «${esc(ch.name)}» (${fmt(ch.leadsList.length)})</h2>
+      <span class="hint">Клік по # — відкрити в Planfix <a href="#" id="clearChannelFilter" style="color:var(--accent);text-decoration:none;margin-left:8px">× скинути</a></span>
+    </div>
+    <div class="tasks-wrap"><table class="tasks-table"><thead><tr>
+      <th>#</th><th>Назва</th><th>Створено</th><th>Поточний статус</th><th>Дата зміни</th><th>Бюджет $</th><th>Клас</th><th>Тип</th><th>Менеджер</th>
+    </tr></thead><tbody>`;
+  ch.leadsList.forEach(l => {
+    const url = `https://solar.planfix.ua/task/${l.id}`;
+    html += `<tr>
+      <td class="num"><a class="tlink" href="${url}" target="_blank" rel="noopener">${esc(l.id)}</a></td>
+      <td>${esc(l.name)}</td>
+      <td>${esc(l.createdDate)}</td>
+      <td>${esc(l.currentStatus)}</td>
+      <td>${esc(l.changeDate)}</td>
+      <td class="num">${l.budget ? fmt(l.budget) : '—'}</td>
+      <td>${esc(l.clientClass)}</td>
+      <td>${esc(l.clientType)}</td>
+      <td>${esc(l.manager)}</td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
   return html;
 }
 
@@ -726,50 +798,72 @@ function renderCycleReport(d) {
   return html;
 }
 
-// 7. Маркетинг — фінансова ефективність
+// 7. Маркетинг — фінансова ефективність (paid-канали як основна метрика)
 function renderMarketingReport(d) {
-  const t = d.totals || {};
+  const t = d.totals || {};        // ПЛАТНІ канали
+  const ta = d.totalsAll || {};    // всі канали — довідково
+  const isWon = d.mode === 'won';
   const marginPct = Math.round((d.margin || 0.15) * 100);
   const romiCls = t.romi > 0 ? 'c-success' : (t.spend && t.romi < 0 ? 'c-fail' : '');
   const fmtPct1 = v => (Math.round((v || 0) * 1000) / 10).toFixed(1) + '%';
+  const baseExplain = isWon
+    ? `База: <b>угоди виграні у вибрані дні</b> — по даті першого переходу в «Аванс отримано» / «Успішно реалізовано», незалежно від того, коли лід створено.`
+    : `База: <b>ліди створені у вибрані дні</b> (когорта, як у «Каналах») + куди вони дійшли за всю історію.`;
   let html = `
   <div class="info-banner">
     <span class="ib-tag">МАРКЕТИНГ</span>
-    Когорта: <b>ліди створені у вибрані дні</b> (як у «Каналах»). <b>Витрати на маркетинг</b> — статті P&L за той самий період
-    (нарахування, USD): «Маркетинг послуги» (ведення), рекламні кабінети Google / Facebook Meta / TikTok,
-    «Маркетинг продукція», «Витрати на вебсайти» — повний список нижче в таблиці статей.
-    <b>Прибуток</b> = ${marginPct}% від бюджету виграних угод (рентабельність продажів).
+    ${baseExplain}
+    <b>KPI рахуються тільки по платних каналах</b> (Google / Facebook / TikTok) — Repeat, Sarafan, Organic виграють без рекламних грошей
+    і завищують ROMI; вони показані окремо в розбивці по групах. <b>Витрати на маркетинг</b> — статті P&L за той самий період
+    (нарахування, USD): «Маркетинг послуги» (ведення), рекламні кабінети Google / Facebook Meta / TikTok, «Маркетинг продукція»,
+    «Витрати на вебсайти» — список у таблиці статей. <b>Прибуток</b> = ${marginPct}% від бюджету виграних угод (рентабельність продажів).
     <b>ROMI</b> = (Прибуток − Витрати) / Витрати. <b>ДРР</b> = Витрати / Бюджет виграних.
     <div style="margin-top:6px;color:var(--text3)">
-      Нюанси: фільтри типу/класу клієнта звужують лише лідів — витрати завжди повні, тож CPL/ROMI з фільтрами завищено-песимістичні.
-      Бюджет виграних рахується по даті створення ліда (когорта), а витрати — по даті нарахування: для свіжого періоду ROMI занижений,
-      бо ліди ще не встигли закритись.
+      Нюанси: фільтри типу/класу клієнта звужують лише лідів — витрати завжди повні.
+      ${isWon
+        ? 'Виграні в періоді угоди часто створені раніше — їхню рекламу оплачено в минулих місяцях, тож ROMI тут порівнює «врожай» періоду з витратами періоду.'
+        : 'Бюджет виграних рахується по даті створення ліда (когорта): свіжа когорта ще не дозріла (цикл угоди — тижні), ROMI занижений. Дивись когорти 2–3-місячної давності.'}
     </div>
     ${d.pnlAvailable === false ? '<div style="margin-top:6px;color:var(--red)">⚠ P&L не відповів — витрати недоступні, показані лише ліди.</div>' : ''}
   </div>
   <div class="kpi">
     <div class="kpi-card"><div class="lbl">Витрати на маркетинг</div><div class="val">${fmtMoney(t.spend)} <span style="font-size:14px">$</span></div></div>
-    <div class="kpi-card"><div class="lbl">Лідів</div><div class="val">${fmt(t.leads)}</div><div class="sub">${fmt(t.target)} цільових</div></div>
-    <div class="kpi-card"><div class="lbl">Успішних</div><div class="val">${fmt(t.won)}</div><div class="sub">${pct(t.conversionRate)} конверсія</div></div>
-    <div class="kpi-card"><div class="lbl">Вартість ліда (CPL)</div><div class="val">${fmtMoney(t.cpl)} <span style="font-size:14px">$</span></div></div>
-    <div class="kpi-card"><div class="lbl">Вартість успішного</div><div class="val">${fmtMoney(t.cac)} <span style="font-size:14px">$</span></div></div>
-    <div class="kpi-card"><div class="lbl">Бюджет виграних</div><div class="val">${fmtMoney(t.budget)} <span style="font-size:14px">$</span></div></div>
+    ${isWon
+      ? `<div class="kpi-card"><div class="lbl">Виграно (платні)</div><div class="val">${fmt(t.won)}</div><div class="sub">із ${fmt(ta.won)} всього</div></div>`
+      : `<div class="kpi-card"><div class="lbl">Лідів (платні)</div><div class="val">${fmt(t.leads)}</div><div class="sub">із ${fmt(ta.leads)} всього</div></div>
+    <div class="kpi-card"><div class="lbl">Виграно (платні)</div><div class="val">${fmt(t.won)}</div><div class="sub">${pct(t.conversionRate)} конверсія</div></div>
+    <div class="kpi-card"><div class="lbl">Вартість ліда (CPL)</div><div class="val">${t.leads && t.spend ? fmtMoney(t.cpl) : '—'}${t.leads && t.spend ? ' <span style="font-size:14px">$</span>' : ''}</div></div>`}
+    <div class="kpi-card"><div class="lbl">Вартість виграної</div><div class="val">${t.won && t.spend ? fmtMoney(t.cac) : '—'}${t.won && t.spend ? ' <span style="font-size:14px">$</span>' : ''}</div></div>
+    <div class="kpi-card"><div class="lbl">Бюджет виграних (платні)</div><div class="val">${fmtMoney(t.budget)} <span style="font-size:14px">$</span></div><div class="sub">${fmtMoney(ta.budget)} $ всі канали</div></div>
     <div class="kpi-card"><div class="lbl">Прибуток (${marginPct}%)</div><div class="val">${fmtMoney(t.profit)} <span style="font-size:14px">$</span></div></div>
-    <div class="kpi-card ${romiCls}"><div class="lbl">ROMI</div><div class="val">${t.spend ? fmtPct1(t.romi) : '—'}</div><div class="sub">ДРР ${t.budget ? fmtPct1(t.drr) : '—'}</div></div>
+    <div class="kpi-card ${romiCls}"><div class="lbl">ROMI платних</div><div class="val">${t.spend ? fmtPct1(t.romi) : '—'}</div><div class="sub">ДРР ${t.budget && t.spend ? fmtPct1(t.drr) : '—'} · ROMI всіх ${t.spend ? fmtPct1(ta.romi) : '—'}</div></div>
   </div>`;
 
+  if (d.groups && d.groups.length) {
+    const head = ['Група каналів', isWon ? 'Угод' : 'Лідів', 'Виграно', 'Конверсія', 'Бюджет win $', `Прибуток (${marginPct}%) $`];
+    const rows = d.groups.map(g => [
+      esc(g.label), fmt(g.leads), g.won ? fmt(g.won) : '—',
+      isWon ? '—' : pct(g.conversionRate),
+      fmtMoney(g.budget), fmtMoney(g.profit),
+    ]);
+    html += tableHTML({ title: '📊 По групах каналів', hint: 'Витрати на маркетинг стосуються лише групи «Платні»', head, rows });
+  }
+
   if (d.months && d.months.length) {
-    const head = ['Місяць', 'Лідів', 'Успішних', 'Бюджет $', 'Витрати $', 'CPL $', 'Вартість win $', `Прибуток (${marginPct}%) $`, 'ROMI', 'ДРР'];
+    const head = ['Місяць', isWon ? 'Виграно (платні)' : 'Лідів (платні)', ...(isWon ? [] : ['Виграно']), 'Бюджет win $', 'Витрати $',
+      ...(isWon ? [] : ['CPL $']), 'Вартість win $', `Прибуток (${marginPct}%) $`, 'ROMI', 'Бюджет всіх $'];
     const rows = d.months.map(m => [
-      esc(m.month), fmt(m.leads), m.won ? fmt(m.won) : '—',
+      esc(m.month),
+      fmt(isWon ? m.won : m.leads),
+      ...(isWon ? [] : [m.won ? fmt(m.won) : '—']),
       fmtMoney(m.budget), fmtMoney(m.spend),
-      m.leads && m.spend ? fmtMoney(m.cpl) : '—',
+      ...(isWon ? [] : [m.leads && m.spend ? fmtMoney(m.cpl) : '—']),
       m.won && m.spend ? fmtMoney(m.cac) : '—',
       fmtMoney(m.profit),
       m.spend ? fmtPct1(m.romi) : '—',
-      m.budget && m.spend ? fmtPct1(m.drr) : '—',
+      fmtMoney(m.allBudget),
     ]);
-    html += tableHTML({ title: '💸 По місяцях', hint: 'Ліди — по місяцю створення, витрати — по місяцю нарахування', head, rows });
+    html += tableHTML({ title: '💸 По місяцях (платні канали)', hint: isWon ? 'Угоди — по місяцю виграшу, витрати — по місяцю нарахування' : 'Ліди — по місяцю створення, витрати — по місяцю нарахування', head, rows });
   }
 
   if (d.articles && d.articles.length) {
@@ -780,12 +874,35 @@ function renderMarketingReport(d) {
   return html;
 }
 
+// Drilldown каналів: клік по рядку каналу → секція його угод нижче (toggle)
+function attachChannelDrilldown(d) {
+  document.querySelectorAll('.mgr-table tr.clickable[data-ch-idx]').forEach(row => {
+    row.addEventListener('click', () => {
+      const c = d.channels[Number(row.dataset.chIdx)];
+      if (!c) return;
+      state.channelFilter = state.channelFilter === c.name ? null : c.name;
+      render();
+      if (state.channelFilter) {
+        const el = document.getElementById('channelLeads');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
+  });
+  const clr = document.getElementById('clearChannelFilter');
+  if (clr) clr.addEventListener('click', e => { e.preventDefault(); state.channelFilter = null; render(); });
+}
+
 function render() {
   updateInfoBanner();
   if (!state.raw) return;
 
   // Routing для нових звітів
-  if (state.report === 'channels') { document.getElementById('infoBanner').style.display='none'; document.getElementById('content').innerHTML = renderChannelsReport(state.raw); return; }
+  if (state.report === 'channels') {
+    document.getElementById('infoBanner').style.display='none';
+    document.getElementById('content').innerHTML = renderChannelsReport(state.raw);
+    attachChannelDrilldown(state.raw);
+    return;
+  }
   if (state.report === 'managers') { document.getElementById('infoBanner').style.display='none'; document.getElementById('content').innerHTML = renderManagersReport(state.raw); return; }
   if (state.report === 'dynamics') { document.getElementById('infoBanner').style.display='none'; document.getElementById('content').innerHTML = renderDynamicsReport(state.raw); return; }
   if (state.report === 'abc')      {
