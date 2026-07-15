@@ -330,7 +330,12 @@
 
   // Full flow: checks session, fetches user, verifies role, or redirects/denies.
   // Returns the user on success.
-  async function require(role) {
+  // opts.redirectHome — для стартової сторінки (дашборд): якщо юзер не має
+  // доступу до модуля, НЕ показуємо deny, а мовчки кидаємо в перший
+  // доступний йому розділ (homeHref). Deny лишаємо тільки коли редіректити
+  // нікуди (жодної ролі → homeHref==login.html, або home == поточна сторінка).
+  async function require(role, opts) {
+    opts = opts || {};
     if (!getToken()) { loginRedirect(); return new Promise(() => {}); }
     let user;
     try { user = await fetchMe(); }
@@ -346,6 +351,17 @@
     if (!isAdmin && !roles[role]) {
       var hasSub = Object.keys(roles).some(function(k) { return k.startsWith(role + '_') && roles[k]; });
       if (!hasSub) {
+        if (opts.redirectHome) {
+          const home = homeHref(user);
+          const curFile = (location.pathname.split('/').pop() || 'index.html');
+          // homeHref повертає лише сторінку, до якої юзер РЕАЛЬНО має доступ,
+          // тож зациклитись на поточній вона не може. Редіректимо тільки якщо
+          // це справжній інший розділ (не login.html — тоді deny з кнопкою «Вийти»).
+          if (home && home !== 'login.html' && home !== curFile) {
+            location.replace(home);
+            return new Promise(() => {}); // halt caller
+          }
+        }
         showDenyScreen(`Адмін ще не відкрив вам доступ до цього модуля.`, role);
         return new Promise(() => {}); // halt caller
       }
