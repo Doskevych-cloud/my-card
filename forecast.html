@@ -78,7 +78,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 .banner code{font-family:var(--mono);background:var(--raised);border:1px solid var(--line);padding:1px 6px;border-radius:4px;color:var(--fg-2);font-size:11.5px}
 
 /* KPI strip */
-.kpis{grid-column:span 12;display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden}
+.kpis{grid-column:span 12;display:grid;grid-template-columns:repeat(6,1fr);gap:0;border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden}
 .kpi{padding:14px 16px;border-right:1px solid var(--line);position:relative;min-width:0;cursor:pointer;transition:background .1s}
 .kpi:last-child{border-right:0}
 .kpi:hover{background:var(--panel-2)}
@@ -346,6 +346,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
     <div class="banner" id="deficitBanner" style="display:none"></div>
 
     <div class="kpis" id="kpiStrip">
+      <div class="kpi"><div class="lbl">Рахунок · А-Банк</div><div class="val">—</div><div class="delta">завантаження…</div></div>
       <div class="kpi"><div class="lbl">Вільно на складах</div><div class="val">—</div><div class="delta">завантаження…</div></div>
       <div class="kpi"><div class="lbl">У резерві</div><div class="val">—</div><div class="delta">завантаження…</div></div>
       <div class="kpi"><div class="lbl">В дорозі</div><div class="val">—</div><div class="delta">завантаження…</div></div>
@@ -479,6 +480,7 @@ const TIERS = [
 const UA_MONTHS = ['січ','лют','бер','квіт','трав','чер','лип','серп','вер','жовт','лист','груд'];
 
 let forecastData = null;
+let abankBalance = null; // залишок Реакту в А-Банку ({updated_at, balances:{UAH,EUR,USD}})
 let skuFilter = 'all'; // 'all' | 'black' | 'red' — фільтр SKU для KPI, банера і графіків
 let copperAvgData = null;
 let calcMonth = null;
@@ -760,7 +762,19 @@ function renderKpis(f) {
     ? `чорн: ${fmt(s.black.free)} · черв: ${fmt(s.red.free)}`
     : `${SKU_UA[skuFilter]} 6мм²`;
 
+  // Рахунок Реакту в А-Банку — дані з окремого fetch (loadAbankBalance), не з f;
+  // тримаємо в глобалі, бо renderKpis перемальовує весь стріп при зміні SKU-фільтра
+  const ab = abankBalance;
+  const abUah = ab && ab.balances ? (ab.balances.UAH || 0) : null;
+  const abFx = ab && ab.balances
+    ? ['USD','EUR'].filter(c => (ab.balances[c] || 0) > 0).map(c => `${c === 'USD' ? '$' : '€'} ${fmt(ab.balances[c])}`).join(' · ')
+    : '';
+  const abTime = ab && ab.updated_at
+    ? 'станом на ' + new Date(ab.updated_at).toLocaleTimeString('uk-UA', { hour:'2-digit', minute:'2-digit' })
+    : 'завантаження…';
+
   const cells = [
+    { lbl:'Рахунок · А-Банк', val:abUah == null ? '—' : fmt(abUah), u:'грн', delta:abFx || abTime, noArrow:true },
     { lbl:'Вільно на складах', val:fmt(sel.free), u:'м', delta:freeDelta, cls:'up', spark:freeSpk, click:'free' },
     { lbl:'У резерві', val:fmt(sel.reserve), u:'м', delta:`${reserveCount} активних замовлень`, cls:'up', click:'reserve' },
     { lbl:'В дорозі', val:fmt(sel.transit), u:'м', delta:sel.transitFree ? `вільне: ${fmt(sel.transitFree)}` : `${transitParties} партій`, cls:'up', click:'transit' },
@@ -769,10 +783,10 @@ function renderKpis(f) {
   ];
 
   const html = cells.map(c => `
-    <div class="kpi ${c.alarm?'alarm':''}" onclick="openKpi('${c.click}')">
+    <div class="kpi ${c.alarm?'alarm':''}"${c.click ? ` onclick="openKpi('${c.click}')"` : ' style="cursor:default"'}>
       <div class="lbl">${c.lbl}</div>
       <div class="val">${c.val} <span class="u">${c.u}</span></div>
-      <div class="delta"><span class="${c.cls}">${c.cls==='up'?'▲':'▼'}</span> ${c.delta}</div>
+      <div class="delta">${c.noArrow ? '' : `<span class="${c.cls}">${c.cls==='up'?'▲':'▼'}</span> `}${c.delta}</div>
       ${c.spark && c.spark.length > 2 ? `<div class="spark">${sparkSvg(c.spark)}</div>` : ''}
     </div>`).join('');
 
@@ -1162,7 +1176,7 @@ function openHelp() {
 function helpTemplate() {
   return `
     <div class="m-section-title">Джерела даних</div>
-    <div class="m-formula">Залишки, резерви і кабель в дорозі — 1С UNF, регістр <code>Запасы</code> (наживо). Відвантаження — Видаткові накладні за 60 днів. Мідь — westmetall (місячні середні), курс — НБУ+1%. Відповіді кешуються на 1 годину: <b>«Оновлено» в шапці — час формування даних</b>, не відкриття сторінки.</div>
+    <div class="m-formula">Залишки, резерви і кабель в дорозі — 1С UNF, регістр <code>Запасы</code> (наживо). Відвантаження — Видаткові накладні за 60 днів. Мідь — westmetall (місячні середні), курс — НБУ+1%. Відповіді кешуються на 1 годину: <b>«Оновлено» в шапці — час формування даних</b>, не відкриття сторінки. «Рахунок · А-Банк» — залишок на рахунках ТОВ «Реакт» з A-Bank Open API (кеш ~15 хв, «станом на» — час відповіді банку); в гривневій плитці — UAH, валютні рахунки показуються в підписі лише коли на них щось є.</div>
     <div class="m-section-title">WMA — прогнозний темп</div>
     <div class="m-formula">Середні відвантаження за 14/30/60 днів з вагами <code>0.6 / 0.3 / 0.1</code>. Дні з запасом &lt; 10 000 м виключаються (дефіцитні дні занижували б попит); вікно з &lt; 3 валідних днів втрачає вагу. Результат — середнє <b>на календарний день</b>.</div>
     <div class="m-section-title">Прогноз залишків і дата дефіциту</div>
@@ -1268,8 +1282,19 @@ async function loadForecast() {
     renderShipments(f);
     renderWarehouses(f);
   } catch (e) {
-    document.getElementById('kpiStrip').innerHTML = `<div class="kpi" style="grid-column:span 5"><div class="error">${e.message}</div></div>`;
+    document.getElementById('kpiStrip').innerHTML = `<div class="kpi" style="grid-column:span 6"><div class="error">${e.message}</div></div>`;
   }
+}
+
+// Залишок Реакту в А-Банку — окремий швидкий fetch; при помилці плитка лишається «—»
+async function loadAbankBalance() {
+  try {
+    const r = await fetch(API + '?action=abank_balance').then(r => r.json());
+    if (r && r.balances) {
+      abankBalance = r;
+      if (forecastData) renderKpis(forecastData);
+    }
+  } catch (_) {}
 }
 
 async function loadSupplyPlan() {
@@ -1349,6 +1374,7 @@ async function loadMarket() {
 
 document.getElementById('updatedAt').textContent = fmtNow();
 loadForecast();
+loadAbankBalance();
 loadSupplyPlan();
 loadCablePrice();
 loadFxCross();
