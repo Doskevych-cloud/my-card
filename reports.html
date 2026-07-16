@@ -897,11 +897,12 @@ function renderMarketingReport(d) {
         <div class="val">${hasData ? val : '—'}</div>
         <div class="sub">ціль ${goalText}</div>
       </div>`;
+    const dollar = '<span style="font-size:14px">$</span>';
     html += `<div class="kpi" style="margin-top:14px">`
       + tile('Лідів всього (всі джерела)', fmt(gm.allLeads), `&lt; ${g.maxLeadsTotal}`, gm.allLeads < g.maxLeadsTotal)
       + tile('Лідів класу А (маркетинг)', fmt(gm.mktA), `≥ ${g.minLeadsA}`, gm.mktA >= g.minLeadsA)
-      + tile('CPL Google+Meta', `${fmtMoney(gm.adsCpl)} <span style="font-size:14px">$</span>`, `&lt; ${g.maxAdsCpl} $`, gm.adsCpl < g.maxAdsCpl, !!(gm.adsLeads && gm.adsSpend))
-      + tile('CPQL Google+Meta', `${fmtMoney(gm.adsCpql)} <span style="font-size:14px">$</span>`, `&lt; ${g.maxAdsCpql} $`, gm.adsCpql < g.maxAdsCpql, !!(gm.adsTarget && gm.adsSpend))
+      + tile('CPL Google+Meta (середнє)', `${fmtMoney(gm.avgCpl)} ${dollar}`, `&lt; ${g.maxAdsCpl} $`, gm.avgCpl < g.maxAdsCpl, gm.avgCplN > 0)
+      + tile('CPQL Google+Meta (середнє)', `${fmtMoney(gm.avgCpql)} ${dollar}`, `&lt; ${g.maxAdsCpql} $`, gm.avgCpql < g.maxAdsCpql, gm.avgCpqlN > 0)
       + `</div>`;
   }
 
@@ -989,8 +990,10 @@ function marketingMetricsTableHTML(d) {
     { label: `Лідів класу А — маркетинг (ціль ≥ ${g.minLeadsA})`, m: x => fmt(x.mktA), goal: x => x.mktA >= g.minLeadsA },
     { label: 'Цільових — маркетинг',       m: x => fmt(x.mktTarget) },
     { label: 'Конверсія лід → цільовий (мкт), %', m: x => x.mktLeads ? fmtPct1(x.convTarget) : '—' },
-    { label: 'Лідів з кабінетів Google+Meta',    m: x => fmt(x.adsLeads) },
-    { label: 'Цільових з кабінетів Google+Meta', m: x => fmt(x.adsTarget) },
+    { label: 'Лідів Google', m: x => fmt(x.gLeads) },
+    { label: 'Цільових Google', m: x => fmt(x.gTarget) },
+    { label: 'Лідів Meta (FB+IG)', m: x => fmt(x.mLeads) },
+    { label: 'Цільових Meta (FB+IG)', m: x => fmt(x.mTarget) },
     { sec: 'Виграні угоди (за місяцем виграшу)' },
     { label: 'Виграно — всі джерела', m: x => fmt(x.allWon) },
     { label: 'Виграно — маркетинг',   m: x => fmt(x.mktWon) },
@@ -1000,11 +1003,15 @@ function marketingMetricsTableHTML(d) {
     { label: 'Бюджет виграних — маркетинг, $',   m: x => fmtMoney(x.mktBudget) },
     { label: 'Середній чек — маркетинг, $', m: x => money(x.avgCheck, x.mktWon) },
     { sec: 'Витрати (за місяцем нарахування)' },
-    { label: 'Витрати на маркетинг — всього, $',   m: x => fmtMoney(x.spend) },
-    { label: 'у т.ч. кабінети Google+Meta, $',     m: x => fmtMoney(x.adsSpend) },
-    { label: 'у т.ч. ведення, сайти та інше, $',   m: x => fmtMoney((x.spend || 0) - (x.adsSpend || 0)) },
-    { label: `CPL Google+Meta, $ (ціль < ${g.maxAdsCpl})`,  m: x => money(x.adsCpl,  x.adsLeads && x.adsSpend),  goal: x => (x.adsLeads && x.adsSpend) ? x.adsCpl  < g.maxAdsCpl  : null },
-    { label: `CPQL Google+Meta, $ (ціль < ${g.maxAdsCpql})`, m: x => money(x.adsCpql, x.adsTarget && x.adsSpend), goal: x => (x.adsTarget && x.adsSpend) ? x.adsCpql < g.maxAdsCpql : null },
+    { label: 'Витрати на маркетинг — всього, $', m: x => fmtMoney(x.spend) },
+    { label: 'у т.ч. кабінет Google, $',         m: x => fmtMoney(x.gSpend) },
+    { label: 'у т.ч. кабінет Meta, $',           m: x => fmtMoney(x.mSpend) },
+    { label: 'у т.ч. ведення, сайти та інше, $', m: x => fmtMoney((x.spend || 0) - (x.adsSpend || 0)) },
+    { sec: 'Юніт-економіка платформ (Google / Meta окремо)' },
+    { label: `CPL Google, $ (ціль < ${g.maxAdsCpl})`,   m: x => money(x.gCpl,  x.gLeads && x.gSpend),  goal: x => (x.gLeads && x.gSpend) ? x.gCpl  < g.maxAdsCpl  : null },
+    { label: `CPL Meta, $ (ціль < ${g.maxAdsCpl})`,     m: x => money(x.mCpl,  x.mLeads && x.mSpend),  goal: x => (x.mLeads && x.mSpend) ? x.mCpl  < g.maxAdsCpl  : null },
+    { label: `CPQL Google, $ (ціль < ${g.maxAdsCpql})`, m: x => money(x.gCpql, x.gTarget && x.gSpend), goal: x => (x.gTarget && x.gSpend) ? x.gCpql < g.maxAdsCpql : null },
+    { label: `CPQL Meta, $ (ціль < ${g.maxAdsCpql})`,   m: x => money(x.mCpql, x.mTarget && x.mSpend), goal: x => (x.mTarget && x.mSpend) ? x.mCpql < g.maxAdsCpql : null },
     { label: 'Вартість виграної (CAC), $', m: x => money(x.cac, x.mktWon && x.spend) },
     { sec: 'Ефективність' },
     { label: `Прибуток — ${marginPct}% від бюджету виграних (мкт), $`, m: x => fmtMoney(x.profit) },
