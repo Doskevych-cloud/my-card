@@ -88,6 +88,7 @@
     reports_dynamics: 'Звіти — Динаміка',
     reports_abc: 'Звіти — ABC',
     reports_cycle: 'Звіти — Цикл',
+    reports_stagetime: 'Звіти — Етапи',
     reports_marketing: 'Звіти — Маркетинг',
     counterparties: 'Контрагенти',
     suppliers: 'Постачальники',

@@ -110,8 +110,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .tasks-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;background:var(--surface);position:sticky;top:0}
 .tasks-table tr:hover td{background:var(--bg3)}
 .tasks-table .num{text-align:right;font-variant-numeric:tabular-nums;color:var(--text3)}
-.tasks-table a.tlink{color:var(--accent)}
-.tasks-table a.tlink:hover{text-decoration:underline}
+.tasks-table a.tlink,.mgr-table a.tlink{color:var(--accent)}
+.tasks-table a.tlink:hover,.mgr-table a.tlink:hover{text-decoration:underline}
 .tasks-table th.sortable{cursor:pointer;user-select:none}
 .tasks-table th.sortable:hover{color:var(--text)}
 .tasks-table th.sorted{color:var(--accent)}
@@ -146,6 +146,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   .funnel-row .col-pct,.funnel-head .col-pct,
   .funnel-row .col-conv,.funnel-head .col-conv{display:none}
 }
+/* Help-модалка (довідка звіту) — шаблон top_products.html */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.modal-backdrop.open{display:flex}
+.modal{position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:14px;max-width:640px;width:100%;max-height:85vh;overflow-y:auto;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.modal h2{font-size:16px;font-weight:800;color:var(--text);margin-bottom:8px;padding-right:28px}
+.modal h3{font-size:13px;font-weight:700;color:var(--accent);margin:16px 0 5px}
+.modal p{font-size:12.5px;color:var(--text2);line-height:1.6;margin:4px 0}
+.modal ul{margin:5px 0 5px 6px;list-style:none}
+.modal li{font-size:12.5px;color:var(--text2);line-height:1.55;margin:5px 0;padding-left:16px;position:relative}
+.modal li::before{content:'·';position:absolute;left:4px;color:var(--text3);font-weight:800}
+.modal b{color:var(--text);font-weight:700}
+.modal .close{position:absolute;top:16px;right:18px;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;border:none;background:none;padding:4px}
+.modal .close:hover{color:var(--text)}
 </style>
 </head>
 <body>
@@ -163,6 +176,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <button class="stab" data-rep="dynamics" data-perm="reports_dynamics">📈 Динаміка</button>
       <button class="stab" data-rep="abc" data-perm="reports_abc">🏷️ ABC</button>
       <button class="stab" data-rep="cycle" data-perm="reports_cycle">⏱️ Цикл</button>
+      <button class="stab" data-rep="stagetime" data-perm="reports_stagetime">⏳ Етапи</button>
       <button class="stab" data-rep="marketing" data-perm="reports_marketing">💸 Маркетинг</button>
     </div>
   </div>
@@ -216,6 +230,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
 </div>
 
+<div class="modal-backdrop" id="helpModal" onclick="if(event.target===this)closeHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт">
+    <button class="close" onclick="closeHelp()" aria-label="Закрити">✕</button>
+    <h2>⏳ Як працює звіт «Етапи»</h2>
+    <h3>Джерело даних</h3>
+    <p>CRM-події Planfix (кожен рядок = перехід угоди у новий статус з датою і часом). Пишуться в нашу базу live, кеш 5 хв.</p>
+    <h3>Що рахуємо</h3>
+    <ul>
+      <li><b>Когорта</b> — угоди, <b>створені</b> у вибраний період (+ фільтри «тип клієнта» і «клас»). Час на етапах — за всю історію угоди, навіть якщо переходи були поза періодом.</li>
+      <li><b>Час на етапі</b> — від входу в етап до наступного переходу будь-куди. Якщо угода поверталась на етап кілька разів — час сумується.</li>
+      <li><b>«Отложенная», «Закрито та не реалізовано», «Успішно реалізовано»</b> — не етапи воронки: вони лише зупиняють годинник попереднього етапу.</li>
+      <li><b>Незавершений етап</b> (угода зараз на ньому) у середні НЕ входить — він ще росте. Його видно у блоці «Зависли на етапі зараз» і в колонці «Зараз».</li>
+      <li><b>Регламент (SLA)</b> — норматив днів на етап. Перевищення — червоним: і в середніх, і по конкретних угодах, включно з тими, що висять зараз.</li>
+    </ul>
+    <h3>Нюанси, що можуть здивувати</h3>
+    <ul>
+      <li>Для свіжих періодів середні <b>занижені</b>: повільні угоди ще не пройшли етап і не потрапили в статистику. Найчесніші цифри — за минулі місяці.</li>
+      <li>«Нове» для угод без явної події створення рахується від дати створення задачі.</li>
+      <li>Угоди без жодного переходу мають «Разом = 0» і висять у «Нове».</li>
+    </ul>
+  </div>
+</div>
+
 <script>
 const API = 'https://price-api.doskevich.workers.dev/';
 
@@ -249,6 +286,7 @@ const REPORT_ACTION = {
   dynamics: 'sheet_dynamics',
   abc: 'sheet_abc',
   cycle: 'sheet_cycle',
+  stagetime: 'sheet_stage_time',
   marketing: 'sheet_marketing',
 };
 let leadsSort = { col: 'changeDate', dir: 'desc' };
@@ -843,6 +881,108 @@ function renderCycleReport(d) {
   return html;
 }
 
+// 8. Час на етапах воронки (stage time + SLA-регламенти)
+function d1n(x) { return x == null ? '—' : Number(x).toLocaleString('uk-UA', { maximumFractionDigits: 1 }); }
+function renderStageTimeReport(d) {
+  const t = d.totals || {};
+  if (!t.deals) {
+    return `<div class="info-banner"><span class="ib-tag">ЕТАПИ</span> У вибраному періоді немає створених угод.</div>`;
+  }
+  const slaOn = !!d.slaDefined;
+  const red = s => `<span style="color:var(--red);font-weight:700">${s}</span>`;
+
+  let html = `
+  <div class="info-banner">
+    <span class="ib-tag">ЕТАПИ</span>
+    Скільки днів угоди проводять на кожному етапі воронки. Когорта: створені у вибрані дні, час — за всю історію угоди.
+    ${slaOn ? 'Червоним — порушення регламенту.' : '<b>Регламенти ще не задані</b> — коли задамо, порушення світитимуться червоним.'}
+    <span class="chip" style="margin-left:10px" onclick="openHelp()" title="Як працює цей звіт">❓ Як працює</span>
+  </div>
+  <div class="kpi">
+    <div class="kpi-card"><div class="lbl">Угод у когорті</div><div class="val">${fmt(t.deals)}</div></div>
+    <div class="kpi-card"><div class="lbl">Активних у воронці</div><div class="val">${fmt(t.active)}</div></div>
+    <div class="kpi-card"><div class="lbl">Серед. час у воронці</div><div class="val">${d1n(t.avgTotal)}<span style="font-size:14px"> дн</span></div></div>
+    <div class="kpi-card"><div class="lbl">Найповільніший етап</div><div class="val" style="font-size:16px">${t.slowestStage ? esc(t.slowestStage.num + '. ' + t.slowestStage.stage) : '—'}</div><div class="sub">${t.slowestStage ? d1n(t.slowestStage.avg) + ' дн у середньому' : ''}</div></div>
+    ${slaOn ? `<div class="kpi-card${t.violations ? ' c-fail' : ''}"><div class="lbl">Порушень регламенту</div><div class="val">${fmt(t.violations)}</div></div>` : ''}
+  </div>`;
+
+  // ── Таблиця по етапах ──
+  const stRows = d.stages.map(s => {
+    const over = slaOn && s.sla != null;
+    const avgC = over && s.avg != null && s.avg > s.sla ? red(d1n(s.avg)) : d1n(s.avg);
+    const medC = over && s.median != null && s.median > s.sla ? red(d1n(s.median)) : d1n(s.median);
+    return [
+      `${s.num}. ${esc(s.stage)}`,
+      s.count ? fmt(s.count) : '—',
+      avgC, medC, d1n(s.p90), d1n(s.max),
+      s.sla != null ? d1n(s.sla) : '—',
+      slaOn ? (s.violations ? red(fmt(s.violations)) : '0') : '—',
+    ];
+  });
+  html += tableHTML({
+    title: '⏳ Час на етапах',
+    hint: 'закриті інтервали: угода вже пішла з етапу; повторні заходи сумуються',
+    head: ['Етап', 'Угод', 'Серед., дн', 'Медіана', 'P90', 'Max', 'Регламент, дн', 'Порушень'],
+    rows: stRows,
+  });
+
+  // ── Зависли зараз ──
+  const stuck = d.deals.filter(x => x.curIdx != null && x.curDays != null)
+    .sort((a, b) => b.curDays - a.curDays).slice(0, 30);
+  if (stuck.length) {
+    const rows = stuck.map(x => {
+      const sla = d.stages[x.curIdx] ? d.stages[x.curIdx].sla : null;
+      const viol = sla != null && x.curDays > sla;
+      const url = `https://solar.planfix.ua/task/${x.id}`;
+      return [
+        `<a class="tlink" href="${url}" target="_blank" rel="noopener">${esc(x.id)}</a> ${esc(x.name.slice(0, 60))}`,
+        `${x.curIdx + 1}. ${esc(SHEET_STAGES[x.curIdx])}`,
+        viol ? red(d1n(x.curDays)) : d1n(x.curDays),
+        esc(x.klass), esc(x.manager),
+      ];
+    });
+    html += tableHTML({
+      title: '🕳 Зависли на етапі зараз',
+      hint: 'активні угоди, днів на поточному етапі · топ-30',
+      head: ['Угода', 'Поточний етап', 'Днів на етапі', 'Клас', 'Менеджер'],
+      rows,
+    });
+  }
+
+  // ── Деталі по угодах (матриця) ──
+  let mh = `<div class="section-h"><h2>📋 Деталі по угодах (${fmt(d.deals.length)})</h2><span class="hint">днів на кожному етапі · сортування за сумарним часом</span></div>`;
+  mh += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr><th>Угода</th>`;
+  d.stages.forEach(s => { mh += `<th title="${esc(s.stage)}">${s.num}</th>`; });
+  mh += `<th>Разом</th><th>Зараз</th></tr></thead><tbody>`;
+  for (const x of d.deals) {
+    const url = `https://solar.planfix.ua/task/${x.id}`;
+    mh += `<tr><td><a class="tlink" href="${url}" target="_blank" rel="noopener">${esc(x.id)}</a> <span style="color:var(--text3)">${esc(x.name.slice(0, 48))}</span></td>`;
+    for (let i = 0; i < d.stages.length; i++) {
+      const v = x.stageDays[i];
+      const sla = d.stages[i].sla;
+      const cell = v == null ? '' : (sla != null && v > sla ? red(d1n(v)) : d1n(v));
+      mh += `<td>${cell || '<span style="color:var(--text3)">·</span>'}</td>`;
+    }
+    let cur = '';
+    if (x.curIdx != null) {
+      const sla = d.stages[x.curIdx] ? d.stages[x.curIdx].sla : null;
+      const viol = sla != null && x.curDays != null && x.curDays > sla;
+      cur = `${x.curIdx + 1} · ${viol ? red(d1n(x.curDays)) : d1n(x.curDays)} дн`;
+    } else {
+      cur = `<span style="color:var(--text3)">${esc(x.curStatus || x.dealStatus || '—')}</span>`;
+    }
+    mh += `<td>${d1n(x.total)}</td><td>${cur}</td></tr>`;
+  }
+  mh += `</tbody></table></div>`;
+  html += mh;
+  return html;
+}
+// Назви етапів для рендера (дзеркало SHEET_FUNNEL_STAGES бекенда)
+const SHEET_STAGES = ['Нове', "Спробу зв'язатись зроблено", 'Визначено як цільовий', 'Виявлено потребу', 'ТЗ сформовано', 'КП презентовано', 'Згоду отримано', 'Аванс отримано'];
+function openHelp()  { document.getElementById('helpModal').classList.add('open'); }
+function closeHelp() { document.getElementById('helpModal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHelp(); });
+
 // 7. Маркетинг — фінансова ефективність (канали-результати маркетингу як основна метрика)
 function renderMarketingReport(d) {
   const t = d.totals || {};        // канали-результати маркетингу
@@ -1086,6 +1226,7 @@ function render() {
     return;
   }
   if (state.report === 'cycle')    { document.getElementById('infoBanner').style.display='none'; document.getElementById('content').innerHTML = renderCycleReport(state.raw); return; }
+  if (state.report === 'stagetime'){ document.getElementById('infoBanner').style.display='none'; document.getElementById('content').innerHTML = renderStageTimeReport(state.raw); return; }
   if (state.report === 'marketing'){
     document.getElementById('infoBanner').style.display='none';
     document.getElementById('content').innerHTML = renderMarketingReport(state.raw);
