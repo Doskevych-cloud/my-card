@@ -1791,6 +1791,11 @@ function updateCount() {
   document.getElementById('sendBtn').disabled = !n || !hasText;
 }
 
+// Воркер має бюджет ~50 fetch-субреквестів на інвокацію (1 Telegram-fetch на чат),
+// тому великі списки шлемо чанками: кожен чанк = окремий виклик, наступні чанки
+// дописуються в той самий broadcast_log через broadcast_id з першої відповіді.
+const BC_CHUNK = 40;
+
 async function sendBroadcast() {
   const text = document.getElementById('msgText').value.trim();
   const chatIds = allChats.filter(c => c.selected).map(c => c.chat_id);
@@ -1802,19 +1807,30 @@ async function sendBroadcast() {
   btn.textContent = 'Відправляю…';
   res.className = 'bc-result';
 
+  let sent = 0, failed = 0;
   try {
-    const data = await bcFetch('broadcast_send', { body: { chat_ids: chatIds, text } });
-    if (data.error) throw new Error(data.error);
+    let broadcastId = null;
+    for (let i = 0; i < chatIds.length; i += BC_CHUNK) {
+      if (chatIds.length > BC_CHUNK) btn.textContent = `Відправляю… ${i}/${chatIds.length}`;
+      const data = await bcFetch('broadcast_send', { body: {
+        chat_ids: chatIds.slice(i, i + BC_CHUNK), text,
+        broadcast_id: broadcastId, total_chats: chatIds.length,
+      } });
+      if (data.error) throw new Error(data.error);
+      broadcastId = data.broadcast_id || broadcastId;
+      sent += data.sent || 0;
+      failed += data.failed || 0;
+    }
     res.className = 'bc-result ok';
-    res.textContent = `Відправлено: ${data.sent}` + (data.failed ? `, помилок: ${data.failed}` : '');
-    if (data.broadcast_id) lastBroadcastId = data.broadcast_id;
+    res.textContent = `Відправлено: ${sent}` + (failed ? `, помилок: ${failed}` : '');
+    if (broadcastId) lastBroadcastId = broadcastId;
     const selectedIds = new Set(chatIds);
     await loadChats();
     allChats.forEach(c => { if (selectedIds.has(c.chat_id)) c.selected = true; });
     renderChats();
   } catch (e) {
     res.className = 'bc-result err';
-    res.textContent = 'Помилка: ' + e.message;
+    res.textContent = 'Помилка: ' + e.message + (sent ? ` (встигло відправитись: ${sent})` : '');
   }
   btn.textContent = 'Відправити';
   updateCount();
