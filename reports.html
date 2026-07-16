@@ -897,8 +897,7 @@ function renderMarketingReport(d) {
         <div class="val">${hasData ? val : '—'}</div>
         <div class="sub">ціль ${goalText}</div>
       </div>`;
-    html += `<div class="section-h"><h2>🎯 Цілі (місячні)</h2><span class="hint">${esc(gm.month)} · CPL/CPQL — кабінети Google+Meta / ліди з Google, Facebook, Instagram</span></div>`;
-    html += `<div class="kpi">`
+    html += `<div class="kpi" style="margin-top:14px">`
       + tile('Лідів всього (всі джерела)', fmt(gm.allLeads), `&lt; ${g.maxLeadsTotal}`, gm.allLeads < g.maxLeadsTotal)
       + tile('Лідів класу А (маркетинг)', fmt(gm.mktA), `≥ ${g.minLeadsA}`, gm.mktA >= g.minLeadsA)
       + tile('CPL Google+Meta', `${fmtMoney(gm.adsCpl)} <span style="font-size:14px">$</span>`, `&lt; ${g.maxAdsCpl} $`, gm.adsCpl < g.maxAdsCpl, !!(gm.adsLeads && gm.adsSpend))
