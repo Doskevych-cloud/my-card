@@ -877,7 +877,7 @@ function renderMarketingReport(d) {
     ${d.pnlAvailable === false ? '<div style="margin-top:6px;color:var(--red)">⚠ P&L не відповів — витрати недоступні, показані лише ліди.</div>' : ''}
   </div>
   <div class="kpi">
-    <div class="kpi-card ${romiCls}"><div class="lbl">ROMI маркетингу</div><div class="val">${t.spend ? fmtPct1(t.romi) : '—'}</div><div class="sub">ДРР ${t.budget && t.spend ? fmtPct1(t.drr) : '—'} · ROMI всіх ${t.spend ? fmtPct1(ta.romi) : '—'}</div></div>
+    <div class="kpi-card ${romiCls}"><div class="lbl">ROMI маркетингу</div><div class="val">${t.spend ? fmtPct1(t.romi) : '—'}</div><div class="sub">ДРР ${t.budget && t.spend ? fmtPct1(t.drr) : '—'}</div></div>
     ${isWon
       ? `<div class="kpi-card"><div class="lbl">Виграно (маркетинг)</div><div class="val">${fmt(t.won)}</div><div class="sub">із ${fmt(ta.won)} всього</div></div>
     <div class="kpi-card"><div class="lbl">Бюджет виграних (маркетинг)</div><div class="val">${fmtMoney(t.budget)} <span style="font-size:14px">$</span></div><div class="sub">${fmtMoney(ta.budget)} $ всі канали</div></div>`
@@ -967,84 +967,54 @@ function renderMarketingReport(d) {
   return html;
 }
 
-// Таблиця «Показники» — 6-місячний скоркард (стиль P&L): метрики рядками по
-// секціях, останні 6 повних місяців колонками + «Разом». Дані — d.metricsMonths
-// + d.metricsTotal. У won-режимі розбивка по місяцю ВИГРАШУ (won-рядки), у
-// cohort — по місяцю створення (lead-gen рядки + підсвітка цілей).
+// Таблиця «Показники» — 6-місячний скоркард (стиль P&L): і плитки зверху, і
+// їхні складові — рядками в динаміці. Логіка воронки згори вниз:
+// Ліди (по місяцю СТВОРЕННЯ, тут же цілі генерації) → Виграні угоди (по місяцю
+// ВИГРАШУ, складові hero-плиток) → Витрати (по місяцю нарахування, розгорнуті:
+// кабінети/ведення + CPL/CPQL цілей) → Ефективність (склад ROMI: прибуток,
+// витрати вище, ROMI, ДРР). Рядки-цілі підсвічені по порогах d.goals.
 function marketingMetricsTableHTML(d) {
   const marginPct = Math.round((d.margin || 0.15) * 100);
   const fmtPct1 = v => (Math.round((v || 0) * 1000) / 10).toFixed(1) + '%';
-  const isWon = d.mode === 'won';
   const mm = d.metricsMonths || [];
   const tot = d.metricsTotal || null;
   const g = d.goals || {};
   if (!mm.length) return '';
   const money = (x, ok) => ok ? fmtMoney(x) : '—';
 
-  // Won-режим: усе по місяцю ВИГРАШУ (виграні угоди), lead-gen метрики недоречні.
-  const WON_ROWS = [
-    { sec: 'Виграні угоди' },
+  const ROWS = [
+    { sec: 'Ліди — генерація (за місяцем створення)' },
+    { label: `Лідів — всі джерела (ціль < ${g.maxLeadsTotal})`, m: x => fmt(x.allLeads), goal: x => x.allLeads < g.maxLeadsTotal },
+    { label: 'Лідів — маркетинг',          m: x => fmt(x.mktLeads) },
+    { label: 'Частка маркетингу в лідах, %', m: x => x.allLeads ? fmtPct1(x.mktShare) : '—' },
+    { label: `Лідів класу А — маркетинг (ціль ≥ ${g.minLeadsA})`, m: x => fmt(x.mktA), goal: x => x.mktA >= g.minLeadsA },
+    { label: 'Цільових — маркетинг',       m: x => fmt(x.mktTarget) },
+    { label: 'Конверсія лід → цільовий (мкт), %', m: x => x.mktLeads ? fmtPct1(x.convTarget) : '—' },
+    { label: 'Лідів з кабінетів Google+Meta',    m: x => fmt(x.adsLeads) },
+    { label: 'Цільових з кабінетів Google+Meta', m: x => fmt(x.adsTarget) },
+    { sec: 'Виграні угоди (за місяцем виграшу)' },
     { label: 'Виграно — всі джерела', m: x => fmt(x.allWon) },
     { label: 'Виграно — маркетинг',   m: x => fmt(x.mktWon) },
     { label: 'Частка маркетингу серед виграних, %', m: x => x.allWon ? fmtPct1(x.wonMktShare) : '—' },
-    { label: 'Виграних класу А — всі джерела', m: x => fmt(x.allWonA) },
-    { label: 'Виграних класу А — маркетинг',   m: x => fmt(x.mktWonA) },
+    { label: 'Виграних класу А — маркетинг', m: x => fmt(x.mktWonA) },
     { label: 'Бюджет виграних — всі джерела, $', m: x => fmtMoney(x.allBudget) },
     { label: 'Бюджет виграних — маркетинг, $',   m: x => fmtMoney(x.mktBudget) },
     { label: 'Середній чек — маркетинг, $', m: x => money(x.avgCheck, x.mktWon) },
-    { sec: 'Витрати та юніт-економіка (маркетинг)' },
-    { label: 'Витрати на маркетинг, $',           m: x => fmtMoney(x.spend) },
-    { label: 'Витрати Google+Meta (кабінети), $', m: x => fmtMoney(x.adsSpend) },
-    { label: 'Вартість виграної (CAC), $',        m: x => money(x.cac, x.mktWon && x.spend) },
+    { sec: 'Витрати (за місяцем нарахування)' },
+    { label: 'Витрати на маркетинг — всього, $',   m: x => fmtMoney(x.spend) },
+    { label: 'у т.ч. кабінети Google+Meta, $',     m: x => fmtMoney(x.adsSpend) },
+    { label: 'у т.ч. ведення, сайти та інше, $',   m: x => fmtMoney((x.spend || 0) - (x.adsSpend || 0)) },
+    { label: `CPL Google+Meta, $ (ціль < ${g.maxAdsCpl})`,  m: x => money(x.adsCpl,  x.adsLeads && x.adsSpend),  goal: x => (x.adsLeads && x.adsSpend) ? x.adsCpl  < g.maxAdsCpl  : null },
+    { label: `CPQL Google+Meta, $ (ціль < ${g.maxAdsCpql})`, m: x => money(x.adsCpql, x.adsTarget && x.adsSpend), goal: x => (x.adsTarget && x.adsSpend) ? x.adsCpql < g.maxAdsCpql : null },
+    { label: 'Вартість виграної (CAC), $', m: x => money(x.cac, x.mktWon && x.spend) },
     { sec: 'Ефективність' },
-    { label: `Прибуток (${marginPct}%), $`, m: x => fmtMoney(x.profit) },
-    { label: 'ROMI маркетингу',   m: x => x.spend ? fmtPct1(x.romi) : '—' },
-    { label: 'ROMI всіх каналів', m: x => x.spend ? fmtPct1(x.allRomi) : '—' },
-    { label: 'ДРР',               m: x => x.mktBudget && x.spend ? fmtPct1(x.drr) : '—' },
+    { label: `Прибуток — ${marginPct}% від бюджету виграних (мкт), $`, m: x => fmtMoney(x.profit) },
+    { label: 'ROMI маркетингу, %', m: x => x.spend ? fmtPct1(x.romi) : '—' },
+    { label: 'ДРР — витрати / бюджет виграних, %', m: x => x.mktBudget && x.spend ? fmtPct1(x.drr) : '—' },
   ];
-
-  // Cohort-режим (нині не використовується маркетингом, лишено для повноти):
-  // m: значення по місяцю; goal(x): true/false/null (для підсвітки цілей)
-  const COHORT_ROWS = [
-    { sec: 'Ліди' },
-    { label: 'Лідів — всі джерела',  m: x => fmt(x.allLeads), goal: x => x.allLeads < g.maxLeadsTotal },
-    { label: 'Лідів — маркетинг',    m: x => fmt(x.mktLeads) },
-    { label: 'Частка маркетингу, %', m: x => x.allLeads ? fmtPct1(x.mktShare) : '—' },
-    { label: 'Лідів класу А — всі джерела', m: x => fmt(x.allA) },
-    { label: 'Лідів класу А — маркетинг',   m: x => fmt(x.mktA), goal: x => x.mktA >= g.minLeadsA },
-    { sec: 'Кваліфікація' },
-    { label: 'Цільових — всі джерела', m: x => fmt(x.allTarget) },
-    { label: 'Цільових — маркетинг',   m: x => fmt(x.mktTarget) },
-    { label: 'Цільових класу А — всі джерела', m: x => fmt(x.allTargetA) },
-    { label: 'Конверсія лід→цільовий (мкт), %', m: x => x.mktLeads ? fmtPct1(x.convTarget) : '—' },
-    { sec: 'Продажі' },
-    { label: 'Виграно — всі джерела', m: x => fmt(x.allWon) },
-    { label: 'Виграно — маркетинг',   m: x => fmt(x.mktWon) },
-    { label: 'Конверсія лід→виграно (мкт), %', m: x => x.mktLeads ? fmtPct1(x.convWon) : '—' },
-    { label: 'Бюджет виграних — всі джерела, $', m: x => fmtMoney(x.allBudget) },
-    { label: 'Бюджет виграних — маркетинг, $',   m: x => fmtMoney(x.mktBudget) },
-    { label: 'Середній чек — маркетинг, $', m: x => money(x.avgCheck, x.mktWon) },
-    { sec: 'Витрати та юніт-економіка (маркетинг)' },
-    { label: 'Витрати на маркетинг, $',      m: x => fmtMoney(x.spend) },
-    { label: 'Витрати Google+Meta (кабінети), $', m: x => fmtMoney(x.adsSpend) },
-    { label: 'Вартість ліда (CPL), $',       m: x => money(x.cpl,  x.mktLeads && x.spend) },
-    { label: 'Вартість цільового, $',        m: x => money(x.cpql, x.mktTarget && x.spend) },
-    { label: 'Вартість цільового класу А, $',m: x => money(x.cpqlA, x.mktTargetA && x.spend) },
-    { label: 'Вартість виграної, $',         m: x => money(x.cac,  x.mktWon && x.spend) },
-    { label: 'CPL Google+Meta, $',  m: x => money(x.adsCpl,  x.adsLeads && x.adsSpend),  goal: x => (x.adsLeads && x.adsSpend) ? x.adsCpl  < g.maxAdsCpl  : null },
-    { label: 'CPQL Google+Meta, $', m: x => money(x.adsCpql, x.adsTarget && x.adsSpend), goal: x => (x.adsTarget && x.adsSpend) ? x.adsCpql < g.maxAdsCpql : null },
-    { sec: 'Ефективність' },
-    { label: `Прибуток (${marginPct}%), $`, m: x => fmtMoney(x.profit) },
-    { label: 'ROMI маркетингу',   m: x => x.spend ? fmtPct1(x.romi) : '—' },
-    { label: 'ROMI всіх каналів', m: x => x.spend ? fmtPct1(x.allRomi) : '—' },
-    { label: 'ДРР',               m: x => x.mktBudget && x.spend ? fmtPct1(x.drr) : '—' },
-  ];
-  const ROWS = isWon ? WON_ROWS : COHORT_ROWS;
 
   const NCOL = 2 + mm.length; // Показник + місяці + Разом
-  const hint = isWon
-    ? 'Останні 6 повних місяців · угоди по місяцю виграшу, витрати по місяцю нарахування'
-    : 'Останні 6 повних місяців · ліди по місяцю створення (когорта), витрати по місяцю нарахування · цілі підсвічені';
+  const hint = 'Останні 6 повних місяців · ліди — по місяцю створення, виграні — по місяцю виграшу, витрати — по місяцю нарахування · цілі підсвічені';
   let h = `<div class="section-h"><h2>💸 Показники</h2><span class="hint">${hint}</span></div>`;
   h += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr><th>Показник</th>`;
   mm.forEach(m => { h += `<th>${esc(m.month)}</th>`; });
