@@ -227,6 +227,28 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 .sp-empty{color:var(--mute);font-size:12.5px;padding:6px 0}
 @media(max-width:720px){.sp-row{grid-template-columns:1fr;gap:5px;padding:12px 0}.sp-date{display:flex;align-items:baseline;gap:8px}.sp-date .rel{margin-top:0}.sp-m{justify-content:flex-start}.sp-sum{text-align:left}}
 
+/* Payment calendar (KBE) */
+.paycal{grid-column:span 12}
+.pc-mon{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:10.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;padding:14px 0 4px;margin-top:6px;border-bottom:1px solid var(--line)}
+.pc-mon:first-child{margin-top:0}
+.pc-mon .tot{color:var(--fg-2);text-transform:none;letter-spacing:0}
+.pc-mon .tot.hint{color:var(--mute)}
+.pc-row{display:grid;grid-template-columns:150px 1fr auto;gap:16px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.pc-row:last-child{border-bottom:0}
+.pc-when{font-family:var(--mono);font-size:12.5px;color:var(--fg);white-space:nowrap}
+.pc-when .now{color:var(--neg);font-size:10.5px;margin-left:6px}
+.pc-when input{font-family:var(--mono);font-size:12px;color:var(--fg);background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:3px 6px}
+.pc-when input:hover,.pc-when input:focus{border-color:var(--accent);outline:none}
+.pc-what .k{font-size:12.5px;color:var(--fg-2)}
+.pc-what .sub{font-family:var(--mono);font-size:11px;color:var(--mute);margin-top:3px}
+.pc-amt{font-family:var(--mono);font-size:13px;color:var(--fg);text-align:right;white-space:nowrap}
+.pc-amt.due{color:var(--neg)}
+.pc-amt.paid{color:var(--mute)}
+.pc-toggle{font-family:var(--mono);font-size:11.5px;color:var(--mute);padding:12px 0 1px;cursor:pointer;user-select:none;transition:color .1s}
+.pc-toggle:hover{color:var(--accent)}
+.pc-empty{color:var(--mute);font-size:12.5px;padding:6px 0}
+@media(max-width:720px){.pc-row{grid-template-columns:1fr auto;gap:4px 12px}.pc-when{grid-column:1/-1}}
+
 /* Warehouses table */
 table.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
 .tbl th,.tbl td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
@@ -399,6 +421,14 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
       <div class="card-h">
         <div class="title">Поставки кабелю — план надходжень</div>
         <div class="meta" id="supplyMeta">—</div>
+      </div>
+      <div class="card-b"><div class="loading">Завантаження…</div></div>
+    </div>
+
+    <div class="card paycal" id="payCalCard">
+      <div class="card-h">
+        <div class="title">Календар платежів KBE</div>
+        <div class="meta" id="payCalMeta">—</div>
       </div>
       <div class="card-b"><div class="loading">Завантаження…</div></div>
     </div>
@@ -1197,7 +1227,7 @@ function helpTemplate() {
     <div class="m-section-title">До замовлення</div>
     <div class="m-formula"><code>max(0, WMA × ${LT_TOTAL} дн − Вільно − В дорозі вільне)</code> — окремо по кожному кольору; «Всі SKU» = сума. ${LT_TOTAL} дн = ${LEAD_TIME} дн поставка + 27 дн запас.</div>
     <div class="m-section-title">Що може здивувати</div>
-    <div class="m-formula">Фільтр SKU у шапці перемикає KPI, банер і обидва графіки; «Кабель по складах» і план поставок завжди показують обидва кольори. Прострочені замовлення постачальнику — це незакриті в 1С документи «В роботі», вони сховані під тоглом і на прогноз не впливають. Резерви на складах «В дорозі» входять у «У резерві», але не у «Вільно». <b>Платіжний статус</b> (оплачено / лишилось) — лише по <b>KBE</b> (зовнішній постачальник, реальні платежі): «лишилось» = баланс замовлення в регістрі <code>РасчетыСПоставщиками</code> у валюті договору, дата оплати — остання банківська платіжка. По внутрішніх міжфіліальних замовленнях статусу нема — там оплата йде взаємозаліком без платіжки.</div>`;
+    <div class="m-formula">Фільтр SKU у шапці перемикає KPI, банер і обидва графіки; «Кабель по складах» і план поставок завжди показують обидва кольори. Прострочені замовлення постачальнику — це незакриті в 1С документи «В роботі», вони сховані під тоглом і на прогноз не впливають. Резерви на складах «В дорозі» входять у «У резерві», але не у «Вільно». <b>Платіжний статус</b> (оплачено / лишилось) — лише по <b>KBE</b> (зовнішній постачальник, реальні платежі): «лишилось» = баланс замовлення в регістрі <code>РасчетыСПоставщиками</code> у валюті договору, дата оплати — остання банківська платіжка. По внутрішніх міжфіліальних замовленнях статусу нема — там оплата йде взаємозаліком без платіжки. <b>Календар платежів KBE</b>: схема 10% аванс → виготовлення → 90% доплата. Фактичні оплати — з регістру (реальні дати банківських платіжок), неоплачений залишок розкладається на 10/90. Дату доплати 90% (=<b>дата виготовлення кабеля</b>) вводиш вручну в полі рядка — вона зберігається у нас (в 1С це поле порожнє), і платіж стає на цю дату в календарі. Аванс 10% без оплати — «зараз» червоним. Підсумки по місяцях.</div>`;
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
@@ -1322,6 +1352,100 @@ async function loadSupplyPlan() {
   }
 }
 
+// ─── Календар платежів KBE ───
+function pcMonthLabel(m) { // 'YYYY-MM' → 'серпень 2026'
+  const [y, mm] = m.split('-');
+  return new Date(Number(y), Number(mm) - 1, 1).toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' });
+}
+function pcKind(e) { return e.kind === 'advance' ? 'Аванс 10%' : e.kind === 'balance' ? 'Доплата 90%' : 'Оплата'; }
+function pcTotals(list) {
+  const t = {}; list.forEach(e => { t[e.sym] = (t[e.sym] || 0) + e.amount; });
+  return Object.entries(t).map(([s, v]) => fmt(v) + ' ' + s).join(' · ');
+}
+function pcRow(e) {
+  const dueNow = e.status === 'due';
+  let when;
+  if (e.kind === 'balance') { // дата виготовлення = дата доплати 90%, редагована
+    when = `<input type="date" data-order="${e.ref}" value="${e.productionDate || ''}">`;
+  } else {
+    when = `${e.date ? fmtDateY(e.date) : '—'}${dueNow ? '<span class="now">зараз</span>' : ''}`;
+  }
+  const sub = escapeHtml(e.number) + (e.kind === 'balance' && e.arrival ? ' · прихід ' + fmtDateY(e.arrival) : '');
+  const amtCls = dueNow ? ' due' : e.status === 'paid' ? ' paid' : '';
+  return `<div class="pc-row">
+    <div class="pc-when">${when}</div>
+    <div class="pc-what"><div class="k">${pcKind(e)}</div><div class="sub">${sub}</div></div>
+    <div class="pc-amt${amtCls}">${fmt(e.amount)}&nbsp;${e.sym || ''}</div>
+  </div>`;
+}
+async function savePd(order, val) {
+  try {
+    const r = await fetch(API + '?action=set_cable_prod_date', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order, production_date: val || '' })
+    }).then(r => r.json());
+    if (r.error) throw new Error(r.error);
+    await loadPaymentCalendar();
+  } catch (e) { alert('Не вдалось зберегти дату: ' + e.message); }
+}
+function renderPaymentCalendar(d) {
+  const body = document.getElementById('payCalCard').querySelector('.card-b');
+  const meta = document.getElementById('payCalMeta');
+  const events = (d && d.events) || [];
+  const pending = events.filter(e => e.status !== 'paid');
+  const paid = events.filter(e => e.status === 'paid');
+  if (!pending.length && !paid.length) {
+    meta.textContent = '—';
+    body.innerHTML = '<div class="pc-empty">Немає відкритих замовлень KBE</div>';
+    return;
+  }
+  meta.textContent = pending.length ? `попереду ${pending.length} · ${pcTotals(pending)}` : 'усе оплачено';
+
+  const unsched = pending.filter(e => !e.date);
+  const scheduled = pending.filter(e => e.date).sort((a, b) => a.date.localeCompare(b.date));
+  let html = '';
+  if (unsched.length) {
+    html += `<div class="pc-mon"><span>Без дати виготовлення</span><span class="tot hint">вкажіть дату доплати 90%</span></div>`;
+    html += unsched.map(pcRow).join('');
+  }
+  let cur = null, bucket = [];
+  const flush = () => {
+    if (!bucket.length) return;
+    html += `<div class="pc-mon"><span>${pcMonthLabel(cur)}</span><span class="tot">${pcTotals(bucket)}</span></div>`;
+    html += bucket.map(pcRow).join(''); bucket = [];
+  };
+  scheduled.forEach(e => { const m = e.date.slice(0, 7); if (m !== cur) { flush(); cur = m; } bucket.push(e); });
+  flush();
+  if (paid.length) {
+    paid.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const lbl = n => `Оплачено (${paid.length}) ${n}`;
+    html += `<div class="pc-toggle" id="pcPaidToggle">${lbl('▾')}</div>`;
+    html += `<div id="pcPaidList" style="display:none">${paid.map(pcRow).join('')}</div>`;
+  }
+  body.innerHTML = html;
+  body.querySelectorAll('input[type=date][data-order]').forEach(inp => {
+    inp.onchange = () => savePd(inp.dataset.order, inp.value);
+  });
+  const tg = document.getElementById('pcPaidToggle');
+  if (tg) tg.onclick = () => {
+    const l = document.getElementById('pcPaidList');
+    const s = l.style.display === 'none';
+    l.style.display = s ? '' : 'none';
+    tg.textContent = `Оплачено (${paid.length}) ${s ? '▴' : '▾'}`;
+  };
+}
+async function loadPaymentCalendar() {
+  const body = document.getElementById('payCalCard').querySelector('.card-b');
+  try {
+    const d = await fetch(API + '?action=cable_payment_calendar').then(r => r.json());
+    if (d.error) throw new Error(d.error);
+    renderPaymentCalendar(d);
+  } catch (e) {
+    document.getElementById('payCalMeta').textContent = '—';
+    body.innerHTML = `<div class="error">${e.message}</div>`;
+  }
+}
+
 async function loadCablePrice() {
   try {
     const r = await fetch(API + '?action=copper_avg').then(r => r.json());
@@ -1389,6 +1513,7 @@ document.getElementById('updatedAt').textContent = fmtNow();
 loadForecast();
 loadAbankBalance();
 loadSupplyPlan();
+loadPaymentCalendar();
 loadCablePrice();
 loadFxCross();
 loadMarket();
