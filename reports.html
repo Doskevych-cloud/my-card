@@ -112,9 +112,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .tasks-table .num{text-align:right;font-variant-numeric:tabular-nums;color:var(--text3)}
 .tasks-table a.tlink,.mgr-table a.tlink{color:var(--accent)}
 .tasks-table a.tlink:hover,.mgr-table a.tlink:hover{text-decoration:underline}
-/* Вертикальні заголовки колонок-етапів у матриці «Деталі по угодах» */
-.mgr-table th.st-v{vertical-align:bottom;padding:10px 6px;text-align:center}
-.mgr-table th.st-v span{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;display:inline-block;text-transform:none;letter-spacing:.2px}
 .tasks-table th.sortable{cursor:pointer;user-select:none}
 .tasks-table th.sortable:hover{color:var(--text)}
 .tasks-table th.sorted{color:var(--accent)}
@@ -912,7 +909,7 @@ function renderStageTimeReport(d) {
   // ── Деталі по угодах (матриця) ──
   let mh = `<div class="section-h"><h2>📋 Деталі по угодах (${fmt(d.deals.length)})</h2><span class="hint">днів на кожному етапі · сортування за сумарним часом</span></div>`;
   mh += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr><th>Угода</th>`;
-  d.stages.forEach(s => { mh += `<th class="st-v"><span>${esc(s.stage)}</span></th>`; });
+  d.stages.forEach((s, i) => { mh += `<th title="${esc(s.stage)}">${SHEET_STAGES_SHORT[i]}</th>`; });
   mh += `<th>Разом</th><th>Зараз</th></tr></thead><tbody>`;
   for (const x of d.deals) {
     const url = `https://solar.planfix.ua/task/${x.id}`;
@@ -939,6 +936,7 @@ function renderStageTimeReport(d) {
 }
 // Назви етапів для рендера (дзеркало SHEET_FUNNEL_STAGES бекенда)
 const SHEET_STAGES = ['Нове', "Спробу зв'язатись зроблено", 'Визначено як цільовий', 'Виявлено потребу', 'ТЗ сформовано', 'КП презентовано', 'Згоду отримано', 'Аванс отримано'];
+const SHEET_STAGES_SHORT = ['Н', 'СЗ', 'ВЦ', 'ВП', 'ТЗ', 'КП', 'ЗО', 'АО'];
 function openHelp()  { document.getElementById('helpModal').classList.add('open'); }
 function closeHelp() { document.getElementById('helpModal').classList.remove('open'); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHelp(); });
