@@ -203,7 +203,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 /* Supply plan (надходження від постачальників) */
 .supply{grid-column:span 12}
 .sp-list{display:flex;flex-direction:column}
-.sp-row{display:grid;grid-template-columns:104px 1fr auto 110px;gap:16px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}
+.sp-row{display:grid;grid-template-columns:104px 1fr auto 128px;gap:16px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}
 .sp-row:first-child{padding-top:2px}
 .sp-row:last-child{border-bottom:0}
 .sp-date .d{font-family:var(--mono);font-size:14px;color:var(--fg);font-weight:500;white-space:nowrap}
@@ -219,6 +219,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 .sp-m .sw.b{background:var(--bar-fill)}
 .sp-m .sw.r{background:var(--neg)}
 .sp-sum{font-family:var(--mono);font-size:13px;color:var(--fg);text-align:right;white-space:nowrap}
+.sp-sum .sp-pay{font-size:10.5px;color:var(--mute);margin-top:3px;white-space:normal}
+.sp-sum .sp-pay.owed{color:var(--neg)}
 .sp-row.muted{opacity:.6}
 .sp-more{font-family:var(--mono);font-size:11.5px;color:var(--mute);padding:11px 0 1px;cursor:pointer;user-select:none;transition:color .1s}
 .sp-more:hover{color:var(--accent)}
@@ -690,11 +692,22 @@ function spRow(r, opts = {}) {
   const m = [];
   if (r.black > 0) m.push(`<span class="it"><i class="sw b"></i>${fmt(r.black)}</span>`);
   if (r.red > 0)   m.push(`<span class="it"><i class="sw r"></i>${fmt(r.red)}</span>`);
+  // Платіжний статус — лише по KBE (r.pay). Борг → червоним «лишилось X»,
+  // повністю оплачено → приглушено «оплачено · дата».
+  let pay = '';
+  if (r.pay) {
+    if (r.pay.owed > 0) {
+      const paidPart = r.pay.paid > 0 ? ` (сплачено ${fmt(r.pay.paid)}&nbsp;${r.sym})` : '';
+      pay = `<div class="sp-pay owed">лишилось ${fmt(r.pay.owed)}&nbsp;${r.sym}${paidPart}</div>`;
+    } else {
+      pay = `<div class="sp-pay">оплачено${r.pay.lastPay ? ' · ' + fmtDateY(r.pay.lastPay) : ''}</div>`;
+    }
+  }
   return `<div class="sp-row ${cls}">
     <div class="sp-date"><div class="d">${fmtDateY(r.arrival)}</div><div class="rel">${rel}</div></div>
     <div class="sp-who"><div class="name">${escapeHtml(r.supplier)}</div><div class="sub"><span>${escapeHtml(r.number || '—')}</span><span>${escapeHtml(r.org)}</span></div></div>
     <div class="sp-m">${m.join('') || '<span class="it">—</span>'}</div>
-    <div class="sp-sum">${fmt(r.sum)}&nbsp;${r.sym || ''}</div>
+    <div class="sp-sum"><div class="s">${fmt(r.sum)}&nbsp;${r.sym || ''}</div>${pay}</div>
   </div>`;
 }
 
@@ -1184,7 +1197,7 @@ function helpTemplate() {
     <div class="m-section-title">До замовлення</div>
     <div class="m-formula"><code>max(0, WMA × ${LT_TOTAL} дн − Вільно − В дорозі вільне)</code> — окремо по кожному кольору; «Всі SKU» = сума. ${LT_TOTAL} дн = ${LEAD_TIME} дн поставка + 27 дн запас.</div>
     <div class="m-section-title">Що може здивувати</div>
-    <div class="m-formula">Фільтр SKU у шапці перемикає KPI, банер і обидва графіки; «Кабель по складах» і план поставок завжди показують обидва кольори. Прострочені замовлення постачальнику — це незакриті в 1С документи «В роботі», вони сховані під тоглом і на прогноз не впливають. Резерви на складах «В дорозі» входять у «У резерві», але не у «Вільно».</div>`;
+    <div class="m-formula">Фільтр SKU у шапці перемикає KPI, банер і обидва графіки; «Кабель по складах» і план поставок завжди показують обидва кольори. Прострочені замовлення постачальнику — це незакриті в 1С документи «В роботі», вони сховані під тоглом і на прогноз не впливають. Резерви на складах «В дорозі» входять у «У резерві», але не у «Вільно». <b>Платіжний статус</b> (оплачено / лишилось) — лише по <b>KBE</b> (зовнішній постачальник, реальні платежі): «лишилось» = баланс замовлення в регістрі <code>РасчетыСПоставщиками</code> у валюті договору, дата оплати — остання банківська платіжка. По внутрішніх міжфіліальних замовленнях статусу нема — там оплата йде взаємозаліком без платіжки.</div>`;
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
