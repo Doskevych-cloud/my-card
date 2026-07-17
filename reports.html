@@ -113,7 +113,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .tasks-table a.tlink,.mgr-table a.tlink{color:var(--accent)}
 .tasks-table a.tlink:hover,.mgr-table a.tlink:hover{text-decoration:underline}
 /* Селект-фільтр у заголовку колонки матриці «Етапи» */
-.st-fsel{background:none;border:none;color:inherit;font:inherit;text-transform:inherit;letter-spacing:inherit;cursor:pointer;appearance:none;-webkit-appearance:none;padding:0}
+.st-fsel{background:none;border:none;color:inherit;font:inherit;text-transform:inherit;letter-spacing:inherit;cursor:pointer;appearance:none;-webkit-appearance:none;padding:0;text-align:right;text-align-last:right;direction:rtl}
+.st-fsel option{direction:ltr;text-align:left;text-transform:none}
 .st-fsel:focus{outline:none;color:var(--accent)}
 .tasks-table th.sortable{cursor:pointer;user-select:none}
 .tasks-table th.sortable:hover{color:var(--text)}
@@ -247,7 +248,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>«Отложенная», «Закрито та не реалізовано», «Успішно реалізовано»</b> — не етапи воронки: вони лише зупиняють годинник попереднього етапу.</li>
       <li><b>Незавершений етап</b> (угода зараз на ньому) у середні НЕ входить — він ще росте. Його видно в колонці «Зараз».</li>
       <li><b>Середнє по менеджерах</b> — середні дні на етапі по угодах менеджера (тільки закриті інтервали); «Разом» — середній сумарний час у воронці по угодах, що мали хоч один перехід.</li>
-      <li><b>Регламент (SLA)</b> — норматив днів на етап. Перевищення — червоним по конкретних угодах, включно з тими, що висять зараз.</li>
+      <li><b>Регламент (SLA)</b> — норматив днів на етап. Перевищення — червоним по конкретних угодах, включно з тими, що висять зараз. Задається кнопкою «⚙ Регламенти» (тільки адмін), діє для всіх користувачів.</li>
     </ul>
     <h3>Нюанси, що можуть здивувати</h3>
     <ul>
@@ -255,6 +256,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li>«Нове» для угод без явної події створення рахується від дати створення задачі.</li>
       <li>Угоди без жодного переходу мають «Разом = 0» і висять у «Нове».</li>
     </ul>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="slaModal" onclick="if(event.target===this)closeSla()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Регламенти етапів">
+    <button class="close" onclick="closeSla()" aria-label="Закрити">✕</button>
+    <h2>⚙ Регламенти етапів</h2>
+    <p>Норматив днів на кожен етап воронки. Порожнє поле — без нормативу. Перевищення підсвічуються червоним у таблицях звіту в усіх користувачів.</p>
+    <div id="slaFields" style="margin-top:10px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn--secondary btn--sm" onclick="closeSla()">Скасувати</button>
+      <button class="btn btn--sm" id="slaSaveBtn" onclick="saveSla()">Зберегти</button>
+    </div>
   </div>
 </div>
 
@@ -305,7 +319,9 @@ const ORG_TEMPLATES = {
 };
 
 // ─── Boot ───
+let curUser = null;
 Auth.require('reports').then(user => {
+  curUser = user;
   AppHeader.mount({ active: 'reports', user });
   Auth.filterSubNav(user);
   hydrateFromHash();
@@ -902,6 +918,7 @@ function renderStageTimeReport(d) {
     Скільки днів угоди проводять на кожному етапі воронки. Когорта: створені у вибрані дні, час — за всю історію угоди.
     ${slaOn ? 'Червоним — порушення регламенту.' : '<b>Регламенти ще не задані</b> — коли задамо, порушення світитимуться червоним.'}
     <span class="chip" style="margin-left:10px" onclick="openHelp()" title="Як працює цей звіт">❓ Як працює</span>
+    ${curUser && curUser.roles && curUser.roles.admin ? '<span class="chip" style="margin-left:6px" onclick="openSla()" title="Нормативи днів на етап">⚙ Регламенти</span>' : ''}
   </div>
   <div class="kpi">
     <div class="kpi-card"><div class="lbl">Угод у когорті</div><div class="val">${fmt(t.deals)}</div></div>
@@ -1004,7 +1021,44 @@ function stSortBy(col) {
 }
 function openHelp()  { document.getElementById('helpModal').classList.add('open'); }
 function closeHelp() { document.getElementById('helpModal').classList.remove('open'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHelp(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeHelp(); closeSla(); } });
+
+// ── Регламенти (SLA) — модалка задання нормативів, admin-only ──
+function openSla() {
+  const d = state.raw; if (!d || !d.stages) return;
+  document.getElementById('slaFields').innerHTML = d.stages.map((s, i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0">
+      <span style="font-size:12.5px;color:var(--text2)">${s.num}. ${esc(s.stage)}</span>
+      <input type="number" min="0" max="365" step="0.5" id="slaIn${i}" value="${s.sla != null ? s.sla : ''}"
+        style="width:90px;padding:6px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;text-align:right">
+    </div>`).join('');
+  document.getElementById('slaModal').classList.add('open');
+}
+function closeSla() { const m = document.getElementById('slaModal'); if (m) m.classList.remove('open'); }
+async function saveSla() {
+  const d = state.raw; if (!d || !d.stages) return;
+  const sla = {};
+  d.stages.forEach((s, i) => {
+    const v = document.getElementById('slaIn' + i).value;
+    if (v !== '') sla[i] = Number(v);
+  });
+  const btn = document.getElementById('slaSaveBtn');
+  btn.disabled = true; btn.textContent = 'Зберігаю…';
+  try {
+    const res = await fetch(API + '?action=stage_sla_set', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + Auth.getToken() },
+      body: JSON.stringify({ sla }),
+    });
+    const j = await res.json();
+    if (!res.ok) throw new Error(j.error || 'HTTP ' + res.status);
+    closeSla();
+    load(true);
+  } catch (e) {
+    alert('Помилка збереження: ' + (e.message || e));
+  }
+  btn.disabled = false; btn.textContent = 'Зберегти';
+}
 
 // 7. Маркетинг — фінансова ефективність (канали-результати маркетингу як основна метрика)
 function renderMarketingReport(d) {
