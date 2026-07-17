@@ -937,11 +937,19 @@ function renderStageTimeReport(d) {
   html += gh;
 
   // ── Деталі по угодах (матриця) ──
-  let mh = `<div class="section-h"><h2>📋 Деталі по угодах (${fmt(d.deals.length)})</h2><span class="hint">днів на кожному етапі · сортування за сумарним часом</span></div>`;
+  const arrow = c => stageSort.col === c ? (stageSort.dir === 'asc' ? ' ▲' : ' ▼') : '';
+  const sorted = d.deals.slice().sort((a, b) => {
+    const va = stageSort.col === 'total' ? a.total : a.stageDays[stageSort.col];
+    const vb = stageSort.col === 'total' ? b.total : b.stageDays[stageSort.col];
+    const na = va == null, nb = vb == null;
+    if (na && nb) return 0; if (na) return 1; if (nb) return -1; // порожні — завжди вниз
+    return stageSort.dir === 'asc' ? va - vb : vb - va;
+  });
+  let mh = `<div class="section-h"><h2>📋 Деталі по угодах (${fmt(d.deals.length)})</h2><span class="hint">днів на кожному етапі · клік по етапу — сортування</span></div>`;
   mh += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr><th>Угода</th><th>Клас</th><th>Менеджер</th>`;
-  d.stages.forEach((s, i) => { mh += `<th title="${esc(s.stage)}">${SHEET_STAGES_SHORT[i]}</th>`; });
-  mh += `<th>Разом</th><th>Зараз</th></tr></thead><tbody>`;
-  for (const x of d.deals) {
+  d.stages.forEach((s, i) => { mh += `<th title="${esc(s.stage)}" style="cursor:pointer" onclick="stSortBy(${i})">${SHEET_STAGES_SHORT[i]}${arrow(i)}</th>`; });
+  mh += `<th style="cursor:pointer" onclick="stSortBy('total')">Разом${arrow('total')}</th><th>Зараз</th></tr></thead><tbody>`;
+  for (const x of sorted) {
     const url = `https://solar.planfix.ua/task/${x.id}`;
     mh += `<tr><td><a class="tlink" href="${url}" target="_blank" rel="noopener">${esc(x.id)}</a> <span style="color:var(--text3)">${esc(x.name.slice(0, 48))}</span></td><td>${esc(x.klass)}</td><td style="white-space:nowrap">${esc(x.manager)}</td>`;
     for (let i = 0; i < d.stages.length; i++) {
@@ -967,6 +975,13 @@ function renderStageTimeReport(d) {
 // Назви етапів для рендера (дзеркало SHEET_FUNNEL_STAGES бекенда)
 const SHEET_STAGES = ['Нове', "Спробу зв'язатись зроблено", 'Визначено як цільовий', 'Виявлено потребу', 'ТЗ сформовано', 'КП презентовано', 'Згоду отримано', 'Аванс отримано'];
 const SHEET_STAGES_SHORT = ['Н', 'СЗ', 'ВЦ', 'ВП', 'ТЗ', 'КП', 'ЗО', 'АО'];
+// Сортування матриці «Деталі по угодах»: col = індекс етапу або 'total'
+let stageSort = { col: 'total', dir: 'desc' };
+function stSortBy(col) {
+  if (stageSort.col === col) stageSort.dir = stageSort.dir === 'asc' ? 'desc' : 'asc';
+  else stageSort = { col, dir: 'asc' };
+  render();
+}
 function openHelp()  { document.getElementById('helpModal').classList.add('open'); }
 function closeHelp() { document.getElementById('helpModal').classList.remove('open'); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHelp(); });
