@@ -241,7 +241,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>Когорта</b> — угоди, <b>створені</b> у вибраний період (+ фільтри «тип клієнта» і «клас»). Час на етапах — за всю історію угоди, навіть якщо переходи були поза періодом.</li>
       <li><b>Час на етапі</b> — від входу в етап до наступного переходу будь-куди. Якщо угода поверталась на етап кілька разів — час сумується.</li>
       <li><b>«Отложенная», «Закрито та не реалізовано», «Успішно реалізовано»</b> — не етапи воронки: вони лише зупиняють годинник попереднього етапу.</li>
-      <li><b>Незавершений етап</b> (угода зараз на ньому) у середні KPI НЕ входить — він ще росте. Його видно в колонці «Зараз».</li>
+      <li><b>Незавершений етап</b> (угода зараз на ньому) у середні НЕ входить — він ще росте. Його видно в колонці «Зараз».</li>
+      <li><b>Середнє по менеджерах</b> — середні дні на етапі по угодах менеджера (тільки закриті інтервали); «Разом» — середній сумарний час у воронці по угодах, що мали хоч один перехід.</li>
       <li><b>Регламент (SLA)</b> — норматив днів на етап. Перевищення — червоним по конкретних угодах, включно з тими, що висять зараз.</li>
     </ul>
     <h3>Нюанси, що можуть здивувати</h3>
@@ -905,6 +906,34 @@ function renderStageTimeReport(d) {
     <div class="kpi-card"><div class="lbl">Найповільніший етап</div><div class="val" style="font-size:16px">${t.slowestStage ? esc(t.slowestStage.num + '. ' + t.slowestStage.stage) : '—'}</div><div class="sub">${t.slowestStage ? d1n(t.slowestStage.avg) + ' дн у середньому' : ''}</div></div>
     ${slaOn ? `<div class="kpi-card${t.violations ? ' c-fail' : ''}"><div class="lbl">Порушень регламенту</div><div class="val">${fmt(t.violations)}</div></div>` : ''}
   </div>`;
+
+  // ── Середнє по менеджерах ──
+  const mgr = {};
+  for (const x of d.deals) {
+    const m = x.manager || '—';
+    if (!mgr[m]) mgr[m] = { deals: 0, stages: d.stages.map(() => []), totals: [] };
+    mgr[m].deals++;
+    for (const [i, v] of Object.entries(x.stageDays)) mgr[m].stages[i].push(v);
+    if (x.total > 0) mgr[m].totals.push(x.total);
+  }
+  const avg1 = arr => arr.length ? Math.round(arr.reduce((s, v) => s + v, 0) / arr.length * 10) / 10 : null;
+  let gh = `<div class="section-h"><h2>👥 Середнє по менеджерах</h2><span class="hint">середні дні на етапі по угодах когорти</span></div>`;
+  gh += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr><th>Менеджер</th><th>Угод</th>`;
+  d.stages.forEach((s, i) => { gh += `<th title="${esc(s.stage)}">${SHEET_STAGES_SHORT[i]}</th>`; });
+  gh += `<th>Разом</th></tr></thead><tbody>`;
+  for (const [name, g] of Object.entries(mgr).sort((a, b) => b[1].deals - a[1].deals)) {
+    gh += `<tr><td>${esc(name)}</td><td>${fmt(g.deals)}</td>`;
+    for (let i = 0; i < d.stages.length; i++) {
+      const v = avg1(g.stages[i]);
+      const sla = d.stages[i].sla;
+      const cell = v == null ? '<span style="color:var(--text3)">·</span>'
+        : (sla != null && v > sla ? red(d1n(v)) : d1n(v));
+      gh += `<td>${cell}</td>`;
+    }
+    gh += `<td>${d1n(avg1(g.totals))}</td></tr>`;
+  }
+  gh += `</tbody></table></div>`;
+  html += gh;
 
   // ── Деталі по угодах (матриця) ──
   let mh = `<div class="section-h"><h2>📋 Деталі по угодах (${fmt(d.deals.length)})</h2><span class="hint">днів на кожному етапі · сортування за сумарним часом</span></div>`;
