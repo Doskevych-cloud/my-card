@@ -937,12 +937,12 @@ function renderStageTimeReport(d) {
 
   // ── Деталі по угодах (матриця) ──
   let mh = `<div class="section-h"><h2>📋 Деталі по угодах (${fmt(d.deals.length)})</h2><span class="hint">днів на кожному етапі · сортування за сумарним часом</span></div>`;
-  mh += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr><th>Угода</th><th>Клас</th>`;
+  mh += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr><th>Угода</th><th>Клас</th><th>Менеджер</th>`;
   d.stages.forEach((s, i) => { mh += `<th title="${esc(s.stage)}">${SHEET_STAGES_SHORT[i]}</th>`; });
   mh += `<th>Разом</th><th>Зараз</th></tr></thead><tbody>`;
   for (const x of d.deals) {
     const url = `https://solar.planfix.ua/task/${x.id}`;
-    mh += `<tr><td><a class="tlink" href="${url}" target="_blank" rel="noopener">${esc(x.id)}</a> <span style="color:var(--text3)">${esc(x.name.slice(0, 48))}</span></td><td>${esc(x.klass)}</td>`;
+    mh += `<tr><td><a class="tlink" href="${url}" target="_blank" rel="noopener">${esc(x.id)}</a> <span style="color:var(--text3)">${esc(x.name.slice(0, 48))}</span></td><td>${esc(x.klass)}</td><td style="white-space:nowrap">${esc(x.manager)}</td>`;
     for (let i = 0; i < d.stages.length; i++) {
       const v = x.stageDays[i];
       const sla = d.stages[i].sla;
