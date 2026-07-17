@@ -938,14 +938,15 @@ function renderStageTimeReport(d) {
 
   // ── Деталі по угодах (матриця) ──
   const arrow = c => stageSort.col === c ? (stageSort.dir === 'asc' ? ' ▲' : ' ▼') : '';
-  const sorted = d.deals.slice().sort((a, b) => {
+  const pool = stOnlyActive ? d.deals.filter(x => x.curStatus !== 'Закрито та не реалізовано') : d.deals;
+  const sorted = pool.slice().sort((a, b) => {
     const va = stageSort.col === 'total' ? a.total : a.stageDays[stageSort.col];
     const vb = stageSort.col === 'total' ? b.total : b.stageDays[stageSort.col];
     const na = va == null, nb = vb == null;
     if (na && nb) return 0; if (na) return 1; if (nb) return -1; // порожні — завжди вниз
     return stageSort.dir === 'asc' ? va - vb : vb - va;
   });
-  let mh = `<div class="section-h"><h2>📋 Деталі по угодах (${fmt(d.deals.length)})</h2><span class="hint">днів на кожному етапі · клік по етапу — сортування</span></div>`;
+  let mh = `<div class="section-h"><h2>📋 Деталі по угодах (${fmt(sorted.length)})</h2><span class="hint">днів на кожному етапі · клік по етапу — сортування · <label style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;vertical-align:middle"><input type="checkbox" ${stOnlyActive ? 'checked' : ''} onchange="stToggleActive(this.checked)"> тільки активні</label></span></div>`;
   mh += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr><th>Угода</th><th>Клас</th><th>Менеджер</th>`;
   d.stages.forEach((s, i) => { mh += `<th title="${esc(s.stage)}" style="cursor:pointer" onclick="stSortBy(${i})">${SHEET_STAGES_SHORT[i]}${arrow(i)}</th>`; });
   mh += `<th style="cursor:pointer" onclick="stSortBy('total')">Разом${arrow('total')}</th><th>Зараз</th></tr></thead><tbody>`;
@@ -977,6 +978,9 @@ const SHEET_STAGES = ['Нове', "Спробу зв'язатись зробле
 const SHEET_STAGES_SHORT = ['Н', 'СЗ', 'ВЦ', 'ВП', 'ТЗ', 'КП', 'ЗО', 'АО'];
 // Сортування матриці «Деталі по угодах»: col = індекс етапу або 'total'
 let stageSort = { col: 'total', dir: 'desc' };
+// Фільтр «тільки активні» = без «Закрито та не реалізовано»
+let stOnlyActive = false;
+function stToggleActive(v) { stOnlyActive = !!v; render(); }
 function stSortBy(col) {
   if (stageSort.col === col) stageSort.dir = stageSort.dir === 'asc' ? 'desc' : 'asc';
   else stageSort = { col, dir: 'asc' };
