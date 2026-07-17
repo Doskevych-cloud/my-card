@@ -1237,7 +1237,7 @@ function helpTemplate() {
     <div class="m-section-title">До замовлення</div>
     <div class="m-formula"><code>max(0, WMA × ${LT_TOTAL} дн − Вільно − В дорозі вільне)</code> — окремо по кожному кольору; «Всі SKU» = сума. ${LT_TOTAL} дн = ${LEAD_TIME} дн поставка + 27 дн запас.</div>
     <div class="m-section-title">Що може здивувати</div>
-    <div class="m-formula">Фільтр SKU у шапці перемикає KPI, банер і обидва графіки; «Кабель по складах» і план поставок завжди показують обидва кольори. Прострочені замовлення постачальнику — це незакриті в 1С документи «В роботі», вони сховані під тоглом і на прогноз не впливають. Резерви на складах «В дорозі» входять у «У резерві», але не у «Вільно». <b>Платіжний статус</b> (оплачено / лишилось) — лише по <b>KBE</b> (зовнішній постачальник, реальні платежі): «лишилось» = баланс замовлення в регістрі <code>РасчетыСПоставщиками</code> у валюті договору, дата оплати — остання банківська платіжка. По внутрішніх міжфіліальних замовленнях статусу нема — там оплата йде взаємозаліком без платіжки. <b>Календар платежів KBE</b>: таблиця по кожному замовленню — товар/метраж, сума, оплачено, лишилось (з регістру 1С, реальні платіжки) + редаговані дати: аванс 10%, доплата 90% (=дата виготовлення кабеля) і мито (дата + сума, ₴ — платиться державі, в 1С його нема, тому вручну). З цих дат нижче складається календар оплат по місяцях із підсумками. Сплачені аванс/доплата показуються факт-датою з ✓ і не редагуються. Дата в минулому без оплати — червоне «due»; мито з минулою датою вважається сплаченим (в історії).</div>`;
+    <div class="m-formula">Фільтр SKU у шапці перемикає KPI, банер і обидва графіки; «Кабель по складах» і план поставок завжди показують обидва кольори. Прострочені замовлення постачальнику — це незакриті в 1С документи «В роботі», вони сховані під тоглом і на прогноз не впливають. Резерви на складах «В дорозі» входять у «У резерві», але не у «Вільно». <b>Платіжний статус</b> (оплачено / лишилось) — лише по <b>KBE</b> (зовнішній постачальник, реальні платежі): «лишилось» = баланс замовлення в регістрі <code>РасчетыСПоставщиками</code> у валюті договору, дата оплати — остання банківська платіжка. По внутрішніх міжфіліальних замовленнях статусу нема — там оплата йде взаємозаліком без платіжки. <b>Календар платежів KBE</b>: таблиця по кожному замовленню — товар/метраж, сума, оплачено, лишилось. <b>Все в гривні</b> по курсу НБУ+1% (EUR sell, показаний у шапці блоку; оригінал у € — під сумою). «Оплачено/лишилось» — з D1 (ap_movements по Заказ_Key, оновлюється autosync'ом кожні 30 хв). Редаговані дати: аванс 10%, доплата 90% (=дата виготовлення кабеля) і ПДВ. <b>ПДВ («мито») рахується сам</b>: 20% × (сума угоди + доставка 4500 €); дата ПДВ за замовчуванням = дата приходу, можна перевизначити в полі. З цих дат нижче складається календар оплат по місяцях із підсумками. Сплачені аванс/доплата — факт-дата з ✓, не редагуються; ПДВ з ручною датою в минулому вважається сплаченим.</div>`;
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
@@ -1369,7 +1369,7 @@ function pcMonthLabel(m) { // 'YYYY-MM' → 'серпень 2026'
   const [y, mm] = m.split('-');
   return new Date(Number(y), Number(mm) - 1, 1).toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' });
 }
-const PC_KIND = { advance: 'Аванс 10%', balance: 'Доплата 90%', customs: 'Мито', paid: 'Оплата' };
+const PC_KIND = { advance: 'Аванс 10%', balance: 'Доплата 90%', customs: 'ПДВ 20%', paid: 'Оплата' };
 function pcTotals(list) {
   const t = {}; list.forEach(e => { t[e.sym] = (t[e.sym] || 0) + e.amount; });
   return Object.entries(t).map(([s, v]) => fmt(v) + ' ' + s).join(' · ');
@@ -1399,19 +1399,21 @@ function pcOrderRow(o) {
     ? `<span class="mut">${fmtDateY(o.advPaidDate)} ✓</span>`
     : pcDateInp(o, 'advance_date', o.advanceDate);
   // доплата 90%: борг є → інпут дати виготовлення; нема → факт-дата останньої оплати
-  const balCell = o.owed > 0
+  const balCell = o.owedUah > 0
     ? pcDateInp(o, 'production_date', o.productionDate)
     : `<span class="mut">${o.lastPay ? fmtDateY(o.lastPay) + ' ✓' : '—'}</span>`;
+  // ПДВ-дата: інпут показує ефективну дату (ручна або авто = дата приходу);
+  // зміна зберігає ручну. Сума ПДВ рахується на беку (20% × (сума + доставка)).
   return `<tr>
     <td>${escapeHtml(o.number)}<div class="sub">прихід ${fmtDateY(o.arrival)}</div></td>
     <td>${goods || '—'}</td>
-    <td>${fmt(o.total)}&nbsp;${o.sym}</td>
-    <td class="mut">${fmt(o.paid)}&nbsp;${o.sym}</td>
-    <td class="${o.owed > 0 ? 'neg' : 'mut'}">${fmt(o.owed)}&nbsp;${o.sym}</td>
+    <td>${fmt(o.totalUah)}&nbsp;₴<div class="sub">${fmt(o.totalEur)} ${o.sym}</div></td>
+    <td class="mut">${fmt(o.paidUah)}&nbsp;₴</td>
+    <td class="${o.owedUah > 0 ? 'neg' : 'mut'}">${fmt(o.owedUah)}&nbsp;₴</td>
     <td>${advCell}</td>
     <td>${balCell}</td>
-    <td>${pcDateInp(o, 'customs_date', o.customsDate)}</td>
-    <td><input type="number" class="amt" min="0" step="1000" placeholder="₴" data-order="${o.ref}" data-field="customs_amount" value="${o.customsAmount != null ? o.customsAmount : ''}"></td>
+    <td>${pcDateInp(o, 'customs_date', o.customsDate || o.vatDate)}</td>
+    <td class="mut">${fmt(o.vatUah)}&nbsp;₴</td>
   </tr>`;
 }
 async function saveSched(order, field, value) {
@@ -1437,12 +1439,13 @@ function renderPaymentCalendar(d) {
   }
   const pending = events.filter(e => e.status !== 'paid');
   const paid = events.filter(e => e.status === 'paid');
-  meta.textContent = pending.length ? `попереду ${pending.length} · ${pcTotals(pending)}` : 'усе оплачено';
+  const rateTxt = d.eurRate ? ` · курс ${fmt(d.eurRate, 2)} ₴/€` : '';
+  meta.textContent = (pending.length ? `попереду ${pending.length} · ${pcTotals(pending)}` : 'усе оплачено') + rateTxt;
 
   let html = `<div class="pc-scroll"><table class="pc-tbl">
     <thead><tr>
       <th>Замовлення</th><th>Товар · м</th><th>Сума</th><th>Оплачено</th><th>Лишилось</th>
-      <th>Аванс 10%</th><th>Доплата 90%</th><th>Мито · дата</th><th>Мито · сума</th>
+      <th>Аванс 10%</th><th>Доплата 90%</th><th>ПДВ · дата</th><th>ПДВ · сума</th>
     </tr></thead>
     <tbody>${orders.map(pcOrderRow).join('')}</tbody>
   </table></div>`;
