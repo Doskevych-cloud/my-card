@@ -249,7 +249,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>Час на етапі</b> — від входу в етап до наступного переходу будь-куди. Якщо угода поверталась на етап кілька разів — час сумується.</li>
       <li><b>«Аванс отримано» — це вже виграш</b>, не етап: час на ньому не рахується, він лише закриває годинник «Згоду отримано». Тому у звіті 7 етапів.</li>
       <li><b>«Отложенная», «Закрито та не реалізовано», «Успішно реалізовано»</b> — не етапи воронки: вони лише зупиняють годинник попереднього етапу.</li>
-      <li><b>Незавершений етап</b> (угода зараз на ньому) у середні НЕ входить — він ще росте. Його видно в колонці «Зараз».</li>
+      <li><b>Незавершений етап</b> (угода зараз на ньому) у матриці деталей показується <em>курсивом</em> у клітинці етапу і в колонці «Зараз», та входить у «Разом» рядка. У середні по етапах і менеджерах він НЕ входить — бо ще росте.</li>
       <li><b>Середнє по менеджерах</b> — середні дні на етапі по угодах менеджера (тільки закриті інтервали); «Разом» — середній сумарний час у воронці по угодах, що мали хоч один перехід.</li>
       <li><b>Регламент (SLA)</b> — норматив днів на етап. Перевищення — червоним по конкретних угодах, включно з тими, що висять зараз. Задається кнопкою «⚙ Регламенти» (тільки адмін), діє для всіх користувачів.</li>
     </ul>
@@ -965,9 +965,18 @@ function renderStageTimeReport(d) {
   if (stOnlyActive) pool = pool.filter(x => x.curStatus !== 'Закрито та не реалізовано');
   if (stMgrFilter) pool = pool.filter(x => x.manager === stMgrFilter);
   if (stClassFilter) pool = pool.filter(x => x.klass === stClassFilter);
+  // Ефективний час на етапі = закриті візити + відкритий (якщо угода зараз там).
+  // Відкритий рендериться курсивом і враховується в сортуванні та «Разом».
+  const effStage = (x, i) => {
+    const open = x.curIdx === i && x.curDays != null ? x.curDays : 0;
+    const closed = x.stageDays[i];
+    if (closed == null && !open) return null;
+    return Math.round(((closed || 0) + open) * 10) / 10;
+  };
+  const effTotal = x => Math.round((x.total + (x.curDays || 0)) * 10) / 10;
   const sorted = pool.slice().sort((a, b) => {
-    const va = stageSort.col === 'total' ? a.total : a.stageDays[stageSort.col];
-    const vb = stageSort.col === 'total' ? b.total : b.stageDays[stageSort.col];
+    const va = stageSort.col === 'total' ? effTotal(a) : effStage(a, stageSort.col);
+    const vb = stageSort.col === 'total' ? effTotal(b) : effStage(b, stageSort.col);
     const na = va == null, nb = vb == null;
     if (na && nb) return 0; if (na) return 1; if (nb) return -1; // порожні — завжди вниз
     return stageSort.dir === 'asc' ? va - vb : vb - va;
@@ -985,9 +994,11 @@ function renderStageTimeReport(d) {
     const url = `https://solar.planfix.ua/task/${x.id}`;
     mh += `<tr><td><a class="tlink" href="${url}" target="_blank" rel="noopener">${esc(x.id)}</a> <span style="color:var(--text3)">${esc(x.name.slice(0, 48))}</span></td><td>${esc(x.klass)}</td><td style="white-space:nowrap">${esc(x.manager)}</td>`;
     for (let i = 0; i < d.stages.length; i++) {
-      const v = x.stageDays[i];
+      const v = effStage(x, i);
+      const running = x.curIdx === i && x.curDays != null;
       const sla = d.stages[i].sla;
-      const cell = v == null ? '' : (sla != null && v > sla ? red(d1n(v)) : d1n(v));
+      let cell = v == null ? '' : (sla != null && v > sla ? red(d1n(v)) : d1n(v));
+      if (cell && running) cell = `<em title="етап ще триває">${cell}</em>`;
       mh += `<td>${cell || '<span style="color:var(--text3)">·</span>'}</td>`;
     }
     let cur = '';
@@ -998,7 +1009,7 @@ function renderStageTimeReport(d) {
     } else {
       cur = `<span style="color:var(--text3)">${esc(x.curStatus || x.dealStatus || '—')}</span>`;
     }
-    mh += `<td>${d1n(x.total)}</td><td>${cur}</td></tr>`;
+    mh += `<td>${x.curDays != null ? `<em title="включає відкритий етап">${d1n(effTotal(x))}</em>` : d1n(x.total)}</td><td>${cur}</td></tr>`;
   }
   mh += `</tbody></table></div>`;
   html += mh;
