@@ -112,6 +112,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .tasks-table .num{text-align:right;font-variant-numeric:tabular-nums;color:var(--text3)}
 .tasks-table a.tlink,.mgr-table a.tlink{color:var(--accent)}
 .tasks-table a.tlink:hover,.mgr-table a.tlink:hover{text-decoration:underline}
+/* Вертикальні заголовки колонок-етапів у матриці «Деталі по угодах» */
+.mgr-table th.st-v{vertical-align:bottom;padding:10px 6px;text-align:center}
+.mgr-table th.st-v span{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;display:inline-block;text-transform:none;letter-spacing:.2px}
 .tasks-table th.sortable{cursor:pointer;user-select:none}
 .tasks-table th.sortable:hover{color:var(--text)}
 .tasks-table th.sorted{color:var(--accent)}
@@ -241,8 +244,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>Когорта</b> — угоди, <b>створені</b> у вибраний період (+ фільтри «тип клієнта» і «клас»). Час на етапах — за всю історію угоди, навіть якщо переходи були поза періодом.</li>
       <li><b>Час на етапі</b> — від входу в етап до наступного переходу будь-куди. Якщо угода поверталась на етап кілька разів — час сумується.</li>
       <li><b>«Отложенная», «Закрито та не реалізовано», «Успішно реалізовано»</b> — не етапи воронки: вони лише зупиняють годинник попереднього етапу.</li>
-      <li><b>Незавершений етап</b> (угода зараз на ньому) у середні НЕ входить — він ще росте. Його видно у блоці «Зависли на етапі зараз» і в колонці «Зараз».</li>
-      <li><b>Регламент (SLA)</b> — норматив днів на етап. Перевищення — червоним: і в середніх, і по конкретних угодах, включно з тими, що висять зараз.</li>
+      <li><b>Незавершений етап</b> (угода зараз на ньому) у середні KPI НЕ входить — він ще росте. Його видно в колонці «Зараз».</li>
+      <li><b>Регламент (SLA)</b> — норматив днів на етап. Перевищення — червоним по конкретних угодах, включно з тими, що висять зараз.</li>
     </ul>
     <h3>Нюанси, що можуть здивувати</h3>
     <ul>
@@ -906,53 +909,10 @@ function renderStageTimeReport(d) {
     ${slaOn ? `<div class="kpi-card${t.violations ? ' c-fail' : ''}"><div class="lbl">Порушень регламенту</div><div class="val">${fmt(t.violations)}</div></div>` : ''}
   </div>`;
 
-  // ── Таблиця по етапах ──
-  const stRows = d.stages.map(s => {
-    const over = slaOn && s.sla != null;
-    const avgC = over && s.avg != null && s.avg > s.sla ? red(d1n(s.avg)) : d1n(s.avg);
-    const medC = over && s.median != null && s.median > s.sla ? red(d1n(s.median)) : d1n(s.median);
-    return [
-      `${s.num}. ${esc(s.stage)}`,
-      s.count ? fmt(s.count) : '—',
-      avgC, medC, d1n(s.p90), d1n(s.max),
-      s.sla != null ? d1n(s.sla) : '—',
-      slaOn ? (s.violations ? red(fmt(s.violations)) : '0') : '—',
-    ];
-  });
-  html += tableHTML({
-    title: '⏳ Час на етапах',
-    hint: 'закриті інтервали: угода вже пішла з етапу; повторні заходи сумуються',
-    head: ['Етап', 'Угод', 'Серед., дн', 'Медіана', 'P90', 'Max', 'Регламент, дн', 'Порушень'],
-    rows: stRows,
-  });
-
-  // ── Зависли зараз ──
-  const stuck = d.deals.filter(x => x.curIdx != null && x.curDays != null)
-    .sort((a, b) => b.curDays - a.curDays).slice(0, 30);
-  if (stuck.length) {
-    const rows = stuck.map(x => {
-      const sla = d.stages[x.curIdx] ? d.stages[x.curIdx].sla : null;
-      const viol = sla != null && x.curDays > sla;
-      const url = `https://solar.planfix.ua/task/${x.id}`;
-      return [
-        `<a class="tlink" href="${url}" target="_blank" rel="noopener">${esc(x.id)}</a> ${esc(x.name.slice(0, 60))}`,
-        `${x.curIdx + 1}. ${esc(SHEET_STAGES[x.curIdx])}`,
-        viol ? red(d1n(x.curDays)) : d1n(x.curDays),
-        esc(x.klass), esc(x.manager),
-      ];
-    });
-    html += tableHTML({
-      title: '🕳 Зависли на етапі зараз',
-      hint: 'активні угоди, днів на поточному етапі · топ-30',
-      head: ['Угода', 'Поточний етап', 'Днів на етапі', 'Клас', 'Менеджер'],
-      rows,
-    });
-  }
-
   // ── Деталі по угодах (матриця) ──
   let mh = `<div class="section-h"><h2>📋 Деталі по угодах (${fmt(d.deals.length)})</h2><span class="hint">днів на кожному етапі · сортування за сумарним часом</span></div>`;
   mh += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr><th>Угода</th>`;
-  d.stages.forEach(s => { mh += `<th title="${esc(s.stage)}">${s.num}</th>`; });
+  d.stages.forEach(s => { mh += `<th class="st-v"><span>${esc(s.stage)}</span></th>`; });
   mh += `<th>Разом</th><th>Зараз</th></tr></thead><tbody>`;
   for (const x of d.deals) {
     const url = `https://solar.planfix.ua/task/${x.id}`;
@@ -967,7 +927,7 @@ function renderStageTimeReport(d) {
     if (x.curIdx != null) {
       const sla = d.stages[x.curIdx] ? d.stages[x.curIdx].sla : null;
       const viol = sla != null && x.curDays != null && x.curDays > sla;
-      cur = `${x.curIdx + 1} · ${viol ? red(d1n(x.curDays)) : d1n(x.curDays)} дн`;
+      cur = `${esc(SHEET_STAGES[x.curIdx])} · ${viol ? red(d1n(x.curDays)) : d1n(x.curDays)} дн`;
     } else {
       cur = `<span style="color:var(--text3)">${esc(x.curStatus || x.dealStatus || '—')}</span>`;
     }
