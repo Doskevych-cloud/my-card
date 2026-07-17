@@ -72,6 +72,7 @@
     sales_active_clients: 'Продажі — Клієнтська база',
     sales_inventory: 'Продажі — Обіговість запасів',
     sales_sla: 'Продажі — SLA',
+    sales_sla_exclude: 'Продажі — SLA виключення замірів (КВП)',
     finance: 'Фінанси',
     finance_pnl: 'Фінанси — P&L',
     finance_gp: 'Фінанси — Валовий прибуток',
