@@ -112,6 +112,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .tasks-table .num{text-align:right;font-variant-numeric:tabular-nums;color:var(--text3)}
 .tasks-table a.tlink,.mgr-table a.tlink{color:var(--accent)}
 .tasks-table a.tlink:hover,.mgr-table a.tlink:hover{text-decoration:underline}
+/* Селект-фільтр у заголовку колонки матриці «Етапи» */
+.st-fsel{background:none;border:none;color:inherit;font:inherit;text-transform:inherit;letter-spacing:inherit;cursor:pointer;appearance:none;-webkit-appearance:none;padding:0}
+.st-fsel:focus{outline:none;color:var(--accent)}
 .tasks-table th.sortable{cursor:pointer;user-select:none}
 .tasks-table th.sortable:hover{color:var(--text)}
 .tasks-table th.sorted{color:var(--accent)}
@@ -938,7 +941,10 @@ function renderStageTimeReport(d) {
 
   // ── Деталі по угодах (матриця) ──
   const arrow = c => stageSort.col === c ? (stageSort.dir === 'asc' ? ' ▲' : ' ▼') : '';
-  const pool = stOnlyActive ? d.deals.filter(x => x.curStatus !== 'Закрито та не реалізовано') : d.deals;
+  let pool = d.deals;
+  if (stOnlyActive) pool = pool.filter(x => x.curStatus !== 'Закрито та не реалізовано');
+  if (stMgrFilter) pool = pool.filter(x => x.manager === stMgrFilter);
+  if (stClassFilter) pool = pool.filter(x => x.klass === stClassFilter);
   const sorted = pool.slice().sort((a, b) => {
     const va = stageSort.col === 'total' ? a.total : a.stageDays[stageSort.col];
     const vb = stageSort.col === 'total' ? b.total : b.stageDays[stageSort.col];
@@ -947,7 +953,13 @@ function renderStageTimeReport(d) {
     return stageSort.dir === 'asc' ? va - vb : vb - va;
   });
   let mh = `<div class="section-h"><h2>📋 Деталі по угодах (${fmt(sorted.length)})</h2><span class="hint">днів на кожному етапі · клік по етапу — сортування · <label style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;vertical-align:middle"><input type="checkbox" ${stOnlyActive ? 'checked' : ''} onchange="stToggleActive(this.checked)"> тільки активні</label></span></div>`;
-  mh += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr><th>Угода</th><th>Клас</th><th>Менеджер</th>`;
+  const selOpts = (list, cur, label) => `<option value="">${label}</option>` +
+    list.map(v => `<option value="${esc(v)}" ${cur === v ? 'selected' : ''}>${esc(v)}</option>`).join('');
+  const clsList = [...new Set(d.deals.map(x => x.klass))].sort();
+  const mgrList = [...new Set(d.deals.map(x => x.manager))].sort();
+  mh += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr><th>Угода</th>` +
+    `<th><select class="st-fsel" onchange="stSetClass(this.value)" title="Фільтр по класу">${selOpts(clsList, stClassFilter, 'Клас')}</select></th>` +
+    `<th><select class="st-fsel" onchange="stSetMgr(this.value)" title="Фільтр по менеджеру">${selOpts(mgrList, stMgrFilter, 'Менеджер')}</select></th>`;
   d.stages.forEach((s, i) => { mh += `<th title="${esc(s.stage)}" style="cursor:pointer" onclick="stSortBy(${i})">${SHEET_STAGES_SHORT[i]}${arrow(i)}</th>`; });
   mh += `<th style="cursor:pointer" onclick="stSortBy('total')">Разом${arrow('total')}</th><th>Зараз</th></tr></thead><tbody>`;
   for (const x of sorted) {
@@ -981,6 +993,10 @@ let stageSort = { col: 'total', dir: 'desc' };
 // Фільтр «тільки активні» = без «Закрито та не реалізовано»
 let stOnlyActive = false;
 function stToggleActive(v) { stOnlyActive = !!v; render(); }
+// Фільтри матриці по класу/менеджеру (селекти в заголовках колонок)
+let stMgrFilter = '', stClassFilter = '';
+function stSetMgr(v) { stMgrFilter = v; render(); }
+function stSetClass(v) { stClassFilter = v; render(); }
 function stSortBy(col) {
   if (stageSort.col === col) stageSort.dir = stageSort.dir === 'asc' ? 'desc' : 'asc';
   else stageSort = { col, dir: 'asc' };
