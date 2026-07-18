@@ -242,14 +242,17 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 .pc-tbl .lbl{color:var(--mute)}
 .pc-tbl .neg{color:var(--neg)}
 .pc-tbl .mut{color:var(--mute)}
-.pc-sec{font-family:var(--mono);font-size:10.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;padding:16px 0 2px;margin-top:8px}
+.pc-sec{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:10.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;padding:16px 0 2px;margin-top:8px}
+.pc-sec .hint{text-transform:none;letter-spacing:0}
 .pc-acct{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--fg-2);padding:12px 0 2px;margin-top:4px;border-top:1px solid var(--line)}
 .pc-acct .neg{color:var(--neg)}
 .pc-acct .pos{color:var(--pos)}
 .pc-mon{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:10.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;padding:14px 0 4px;margin-top:6px;border-bottom:1px solid var(--line)}
 .pc-mon .tot{color:var(--fg-2);text-transform:none;letter-spacing:0}
 .pc-mon .tot.hint{color:var(--mute)}
-.pc-row{display:grid;grid-template-columns:110px 1fr auto;gap:16px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.pc-row{display:grid;grid-template-columns:110px 1fr auto 150px;gap:16px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.pc-saldo{font-family:var(--mono);font-size:12.5px;color:var(--mute);text-align:right;white-space:nowrap}
+.pc-saldo.neg{color:var(--neg)}
 .pc-row:last-child{border-bottom:0}
 .pc-when{font-family:var(--mono);font-size:12.5px;color:var(--fg);white-space:nowrap}
 .pc-when.due{color:var(--neg)}
@@ -1240,7 +1243,7 @@ function helpTemplate() {
     <div class="m-section-title">До замовлення</div>
     <div class="m-formula"><code>max(0, WMA × ${LT_TOTAL} дн − Вільно − В дорозі вільне)</code> — окремо по кожному кольору; «Всі SKU» = сума. ${LT_TOTAL} дн = ${LEAD_TIME} дн поставка + 27 дн запас.</div>
     <div class="m-section-title">Що може здивувати</div>
-    <div class="m-formula">Фільтр SKU у шапці перемикає KPI, банер і обидва графіки; «Кабель по складах» і план поставок завжди показують обидва кольори. Прострочені замовлення постачальнику — це незакриті в 1С документи «В роботі», вони сховані під тоглом і на прогноз не впливають. Резерви на складах «В дорозі» входять у «У резерві», але не у «Вільно». <b>Платіжний статус</b> (оплачено / лишилось) — лише по <b>KBE</b> (зовнішній постачальник, реальні платежі): «лишилось» = баланс замовлення в регістрі <code>РасчетыСПоставщиками</code> у валюті договору, дата оплати — остання банківська платіжка. По внутрішніх міжфіліальних замовленнях статусу нема — там оплата йде взаємозаліком без платіжки. <b>Календар платежів KBE</b>: таблиця по кожному замовленню — товар/метраж, сума, оплачено, лишилось. <b>Все в гривні</b> по курсу НБУ+1% (EUR sell, показаний у шапці блоку; оригінал у € — під сумою). «Оплачено/лишилось» — з D1 (ap_movements по Заказ_Key, оновлюється autosync'ом кожні 30 хв). Редаговані дати: аванс 10%, доплата 90% (=дата виготовлення кабеля) і план ПДВ. <b>ПДВ («мито»)</b>: факт сплати визначається по документах «Додаткові витрати» з контрагентом Держмитслужба, привʼязаних до приходної замовлення — є док → ПДВ по замовленню закритий і <b>не виводиться взагалі</b> («—» в обох колонках, в календар не потрапляє); нема → план 20% × (сума угоди + доставка 4500 €), дата за замовчуванням = дата приходу (можна перевизначити). <b>«Лишилось» включає несплачений ПДВ</b>; «Оплачено» — тільки товар. З цих дат нижче складається календар оплат по місяцях із підсумками. <b>Показується лише несплачене</b>: повністю закриті замовлення (товар + ПДВ) і історія оплат не виводяться взагалі. Сплачені аванс/доплата в незакритих рядках — факт-дата з ✓, не редагуються. Рядок «Рахунок А-Банк» під таблицею — залишки Реакту (валютні зведені в ₴ по тих самих курсах) проти суми всіх майбутніх платежів: червоним «не вистачає» = скільки треба докинути на рахунок.</div>`;
+    <div class="m-formula">Фільтр SKU у шапці перемикає KPI, банер і обидва графіки; «Кабель по складах» і план поставок завжди показують обидва кольори. Прострочені замовлення постачальнику — це незакриті в 1С документи «В роботі», вони сховані під тоглом і на прогноз не впливають. Резерви на складах «В дорозі» входять у «У резерві», але не у «Вільно». <b>Платіжний статус</b> (оплачено / лишилось) — лише по <b>KBE</b> (зовнішній постачальник, реальні платежі): «лишилось» = баланс замовлення в регістрі <code>РасчетыСПоставщиками</code> у валюті договору, дата оплати — остання банківська платіжка. По внутрішніх міжфіліальних замовленнях статусу нема — там оплата йде взаємозаліком без платіжки. <b>Календар платежів KBE</b>: таблиця по кожному замовленню — товар/метраж, сума, оплачено, лишилось. <b>Все в гривні</b> по курсу НБУ+1% (EUR sell, показаний у шапці блоку; оригінал у € — під сумою). «Оплачено/лишилось» — з D1 (ap_movements по Заказ_Key, оновлюється autosync'ом кожні 30 хв). Редаговані дати: аванс 10%, доплата 90% (=дата виготовлення кабеля) і план ПДВ. <b>ПДВ («мито»)</b>: факт сплати визначається по документах «Додаткові витрати» з контрагентом Держмитслужба, привʼязаних до приходної замовлення — є док → ПДВ по замовленню закритий і <b>не виводиться взагалі</b> («—» в обох колонках, в календар не потрапляє); нема → план 20% × (сума угоди + доставка 4500 €), дата за замовчуванням = дата приходу (можна перевизначити). <b>«Лишилось» включає несплачений ПДВ</b>; «Оплачено» — тільки товар. З цих дат нижче складається календар оплат по місяцях із підсумками. <b>Показується лише несплачене</b>: повністю закриті замовлення (товар + ПДВ) і історія оплат не виводяться взагалі. Сплачені аванс/доплата в незакритих рядках — факт-дата з ✓, не редагуються. Календар — відомість по бух-принципу Дт/Кт: початковий залишок = «Рахунок А-Банк» (залишки Реакту, валютні зведені в ₴ по тих самих курсах), кожен платіж списується, і колонка праворуч показує сальдо рахунку після оплати — мінус червоним = недостача (скільки треба докинути станом на цей платіж), плюс = надлишок. «Кінцеве сальдо» в рядку рахунку = залишок після всіх платежів, включно з тими, що ще без дати.</div>`;
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
@@ -1382,10 +1385,13 @@ function pcRow(e) {
   const when = e.date ? fmtDateY(e.date) : '—';
   const sub = escapeHtml(e.number) + (e.kind === 'balance' && e.arrival ? ' · прихід ' + fmtDateY(e.arrival) : '');
   const amtCls = due ? ' due' : e.status === 'paid' ? ' paid' : '';
+  // сальдо рахунку після цієї оплати (бух-принцип: наростаючий Кт); мінус = недостача
+  const saldo = e._saldo == null ? '' : `${fmt(e._saldo)}&nbsp;₴`;
   return `<div class="pc-row">
     <div class="pc-when${due ? ' due' : ''}">${when}</div>
     <div class="pc-what"><div class="k">${PC_KIND[e.kind] || 'Оплата'}</div><div class="sub">${sub}</div></div>
     <div class="pc-amt${amtCls}">${fmt(e.amount)}&nbsp;${e.sym || ''}</div>
+    <div class="pc-saldo${e._saldo != null && e._saldo < 0 ? ' neg' : ''}">${saldo}</div>
   </div>`;
 }
 // Комірки таблиці: дата-інпут / сума-інпут (мито) / статичний текст для фактів
@@ -1459,24 +1465,26 @@ function renderPaymentCalendar(d) {
     <tbody>${orders.map(pcOrderRow).join('')}</tbody>
   </table></div>`;
 
-  // Рахунок А-Банк vs майбутні платежі: скільки не вистачає на рахунку
+  // Відомість по бух-принципу: початковий залишок А-Банку, кожен платіж = Кт,
+  // колонка сальдо після кожної оплати; мінус = недостача. Незаплановані — в
+  // кінці відомості, сальдо продовжується, тож останній рядок = кінцеве сальдо.
+  const unsched = pending.filter(e => !e.date);
+  const scheduled = pending.filter(e => e.date).sort((a, b) => a.date.localeCompare(b.date));
+  let bal = d.account ? d.account.totalUah : null;
+  for (const e of [...scheduled, ...unsched]) {
+    if (bal != null) { bal -= e.amount; e._saldo = bal; }
+  }
   if (d.account) {
     const a = d.account;
     const fx = [a.eur > 0 ? `€ ${fmt(a.eur)}` : '', a.usd > 0 ? `$ ${fmt(a.usd)}` : ''].filter(Boolean).join(' · ');
-    const diff = d.shortfallUah > 0
-      ? `<span class="neg">не вистачає ${fmt(d.shortfallUah)} ₴</span>`
-      : `<span class="pos">вистачає, запас ${fmt(a.totalUah - d.needUah)} ₴</span>`;
-    html += `<div class="pc-acct"><span>Рахунок А-Банк: <b>${fmt(a.totalUah)} ₴</b>${fx ? ` <span class="mut">(${fx})</span>` : ''}</span><span>платежі попереду: ${fmt(d.needUah)} ₴ · ${diff}</span></div>`;
+    const end = a.totalUah - d.needUah;
+    const endTxt = end < 0
+      ? `<span class="neg">кінцеве сальдо: ${fmt(end)} ₴</span>`
+      : `<span class="pos">кінцеве сальдо: +${fmt(end)} ₴</span>`;
+    html += `<div class="pc-acct"><span>Рахунок А-Банк: <b>${fmt(a.totalUah)} ₴</b>${fx ? ` <span class="mut">(${fx})</span>` : ''}</span><span>платежі попереду: ${fmt(d.needUah)} ₴ · ${endTxt}</span></div>`;
   }
 
-  // Календар: незаплановані → підказка; далі місяці з підсумками
-  const unsched = pending.filter(e => !e.date);
-  const scheduled = pending.filter(e => e.date).sort((a, b) => a.date.localeCompare(b.date));
-  if (scheduled.length || unsched.length) html += `<div class="pc-sec">Календар оплат</div>`;
-  if (unsched.length) {
-    html += `<div class="pc-mon"><span>Без дати</span><span class="tot hint">вкажи дати в таблиці вище</span></div>`;
-    html += unsched.map(pcRow).join('');
-  }
+  if (scheduled.length || unsched.length) html += `<div class="pc-sec"><span>Календар оплат</span>${d.account ? '<span class="hint">сальдо рахунку після оплати</span>' : ''}</div>`;
   let cur = null, bucket = [];
   const flush = () => {
     if (!bucket.length) return;
@@ -1485,6 +1493,10 @@ function renderPaymentCalendar(d) {
   };
   scheduled.forEach(e => { const m = e.date.slice(0, 7); if (m !== cur) { flush(); cur = m; } bucket.push(e); });
   flush();
+  if (unsched.length) {
+    html += `<div class="pc-mon"><span>Без дати</span><span class="tot hint">вкажи дати в таблиці вище</span></div>`;
+    html += unsched.map(pcRow).join('');
+  }
   body.innerHTML = html;
   body.querySelectorAll('input[data-order][data-field]').forEach(inp => {
     inp.onchange = () => saveSched(inp.dataset.order, inp.dataset.field, inp.value);
