@@ -95,6 +95,13 @@ tbody tr:hover { background: rgba(154,180,255,.04); }
 .tab.active { color:var(--accent); border-bottom-color:var(--accent); }
 .tab-panel { display:none; }
 .tab-panel.active { display:block; }
+/* Суб-таби розділу «Бот» (клас НЕ .tab — switchTab() тогглить усі .tab глобально) */
+.bsub-bar { display:flex; gap:0; margin:-6px 0 16px; border-bottom:1px solid var(--border); }
+.bsub { background:transparent; border:none; color:var(--text3); font:inherit; font-size:13px; font-weight:500; padding:8px 14px; cursor:pointer; border-bottom:2px solid transparent; transition:color .15s,border-color .15s; }
+.bsub:hover { color:var(--text); }
+.bsub.active { color:var(--accent); border-bottom-color:var(--accent); }
+.bsub-panel { display:none; }
+.bsub-panel.active { display:block; }
 
 .role-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px; }
 .role-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; }
@@ -305,7 +312,15 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
 
   <div id="tab-bot" class="tab-panel">
 
-  <div class="card">
+  <div class="bsub-bar">
+    <button class="bsub active" data-bsub="conv">Переписки</button>
+    <button class="bsub" data-bsub="settings">Налаштування</button>
+    <button class="bsub" data-bsub="np">Нова Пошта</button>
+    <button class="bsub" data-bsub="feedback">Відгуки</button>
+    <button class="bsub" data-bsub="prompt">Промпт</button>
+  </div>
+
+  <div class="card bsub-panel active" id="bsub-conv">
     <div class="card-head">
       <h2>Переписки</h2>
       <div class="spacer"></div>
@@ -324,7 +339,7 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
     </div>
   </div>
 
-  <div class="card" style="margin-top:24px">
+  <div class="card bsub-panel" id="bsub-settings">
     <div class="card-head">
       <h2>Налаштування</h2>
     </div>
@@ -333,7 +348,7 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
   </div>
 </div>
 
-<div class="card" style="margin-top:24px">
+<div class="card bsub-panel" id="bsub-np">
   <div class="card-head">
     <h2>Нова Пошта (ТТН)</h2>
     <div class="spacer"></div>
@@ -344,7 +359,7 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
   </div>
 </div>
 
-<div class="card" style="margin-top:24px">
+<div class="card bsub-panel" id="bsub-feedback">
   <div class="card-head">
     <h2>Відгуки</h2>
     <div class="spacer"></div>
@@ -355,7 +370,7 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
   </div>
 </div>
 
-<div class="card" style="margin-top:24px">
+<div class="card bsub-panel" id="bsub-prompt">
   <div class="card-head">
     <h2>Системний промпт</h2>
     <div class="spacer"></div>
@@ -387,7 +402,24 @@ document.querySelector('.tab-bar').addEventListener('click', e => {
   const t = e.target.closest('.tab');
   if (t) switchTab(t.dataset.tab);
 });
-(function() { const h = location.hash.slice(1); if (['users','roles','sync','bot'].includes(h)) switchTab(h); })();
+// Суб-таби розділу «Бот». Deep-link: #bot-np, #bot-prompt тощо.
+const BOT_SUBS = ['conv', 'settings', 'np', 'feedback', 'prompt'];
+function switchBotSub(name) {
+  if (!BOT_SUBS.includes(name)) name = 'conv';
+  document.querySelectorAll('.bsub').forEach(b => b.classList.toggle('active', b.dataset.bsub === name));
+  document.querySelectorAll('.bsub-panel').forEach(p => p.classList.toggle('active', p.id === 'bsub-' + name));
+  history.replaceState(null, '', '#bot-' + name);
+}
+document.querySelector('.bsub-bar').addEventListener('click', e => {
+  const b = e.target.closest('.bsub');
+  if (b) switchBotSub(b.dataset.bsub);
+});
+(function() {
+  const h = location.hash.slice(1);
+  const mBot = h.match(/^bot(?:-([a-z]+))?$/);
+  if (['users','roles','sync'].includes(h)) switchTab(h);
+  else if (mBot) { switchTab('bot'); if (mBot[1]) switchBotSub(mBot[1]); }
+})();
 
 let currentUser = null;
 let users = [];
