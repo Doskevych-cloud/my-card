@@ -1,0 +1,9 @@
+# Cloudflare Pages headers.
+# JS/CSS ревалідуються щозапит (ETag → 304): інакше max-age=14400 (4 год) тримає
+# стейл auth.js/header.js у браузерах — нові ролі/лінки «не з'являються» у людей
+# (кейс 18.07.2026: admin_bot Веремієнку видали, а ⚙ Адмін не було до протухання
+# кешу). HTML Pages і так віддає з max-age=0.
+/*.js
+  Cache-Control: no-cache
+/*.css
+  Cache-Control: no-cache
