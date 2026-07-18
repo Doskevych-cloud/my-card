@@ -399,6 +399,7 @@
     cachedUser,
     MODULE_LABEL,
     filterSubNav,
+    showDenyScreen,
     // Impersonation
     isImpersonating, impersonatedBy,
     startImpersonate, stopImpersonate,

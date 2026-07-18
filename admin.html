@@ -438,7 +438,7 @@ const PERM_TREE = [
   { key: 'sales_prices', label: 'Порівняння цін (таб у Прайсі)' },
   { key: 'sales_broadcast', label: 'Розсилка (таб у Прайсі)' },
   { key: 'dealers', label: 'Дилери' },
-  { group: 'Адмін', gate: 'admin', note: '«Доступ до модуля» = повний адмін (усі права). Суб-роль нижче відкриває ЛИШЕ вкладку «Бот» на цій сторінці.', children: [
+  { group: 'Адмін', gate: 'admin', note: '«Доступ до модуля» = повний адмін (усі права). Суб-роль нижче відкриває ЛИШЕ вкладку «Бот»; бот стосується організації Реакт — юзеру потрібен орг-грант «Реакт».', children: [
     { key: 'admin_bot', label: 'Бот (налаштування, Нова Пошта, відгуки, промпт, розмови)' },
   ]},
 ];
@@ -460,7 +460,13 @@ Auth.require('admin').then(user => {
   AppHeader.mount({ active: 'admin', user });
   // Суб-роль admin_bot (без повного admin) бачить ЛИШЕ вкладку «Бот»:
   // адмінські таби ховаємо, їхні лоадери не кличемо (бек все одно поверне 403).
+  // Бот працює з дилерами Реакту → без орг-гранту «Реакт» доступу нема
+  // (дзеркалить бек-чеки в price-api та react-bot).
   const isFullAdmin = !!(user.roles || {}).admin;
+  if (!isFullAdmin && !((user.orgs || {})['Реакт'])) {
+    Auth.showDenyScreen('Адміністрування бота стосується організації «Реакт» — адмін має відкрити вам цю організацію.', 'admin_bot');
+    return;
+  }
   if (!isFullAdmin) {
     document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab !== 'bot') t.style.display = 'none'; });
     switchTab('bot');
