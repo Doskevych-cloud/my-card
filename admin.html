@@ -335,6 +335,17 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
 
 <div class="card" style="margin-top:24px">
   <div class="card-head">
+    <h2>Нова Пошта (ТТН)</h2>
+    <div class="spacer"></div>
+    <span id="npCfgStatus" style="font-size:12px;color:var(--text3)"></span>
+  </div>
+  <div style="padding:12px 16px" id="npCfgWrap">
+    <div style="color:var(--text3);font-size:13px">Завантаження...</div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:24px">
+  <div class="card-head">
     <h2>Відгуки</h2>
     <div class="spacer"></div>
     <span id="feedbackStats" style="font-size:12px;color:var(--text3)"></span>
@@ -451,6 +462,7 @@ Auth.require('admin').then(user => {
   loadJobHealth();
   loadBotPrompt();
   loadBotSettings();
+  loadNpConfig();
   loadBotFeedback();
   loadConversations();
 });
@@ -1213,6 +1225,91 @@ async function saveBotSettings() {
     status.style.color = d.ok ? 'var(--green)' : 'var(--red)';
     setTimeout(() => { status.textContent = ''; }, 3000);
   } catch (e) { status.textContent = e.message; status.style.color = 'var(--red)'; }
+}
+
+// ─── Нова Пошта (ТТН): конфіг відправника + API-ключ ─────────────
+// Дані у price-api D1 np_config. Ключ API — write-only: бек віддає лише маску,
+// порожнє поле або маска при збереженні НЕ перезаписують ключ.
+const NP_API = 'https://price-api.doskevich.workers.dev/';
+const NP_CFG_FIELDS = [
+  ['np_api_key',           'API-ключ Нової Пошти (write-only)'],
+  ['np_sender_name',       'Відправник (назва)'],
+  ['np_sender_edrpou',     'ЄДРПОУ відправника'],
+  ['np_sender_contact_phone','Телефон контактної особи'],
+  ['np_city_sender_name',  'Місто відправника'],
+  ['np_addr_branch_name',  'Відділення (коробки)'],
+  ['np_addr_pallet_name',  'Адреса-склад (палета)'],
+  ['np_desc_default',      'Опис вантажу (дефолт)'],
+  ['np_desc_cable',        'Опис вантажу (кабель)'],
+  ['np_sender_ref',        'Ref відправника (GUID)'],
+  ['np_sender_contact_ref','Ref контакту (GUID)'],
+  ['np_city_sender_ref',   'Ref міста (GUID)'],
+  ['np_addr_branch_ref',   'Ref відділення (GUID)'],
+  ['np_addr_pallet_ref',   'Ref складу-палети (GUID)'],
+];
+async function loadNpConfig() {
+  const wrap = document.getElementById('npCfgWrap');
+  try {
+    const token = localStorage.getItem('session_token');
+    const r = await fetch(`${NP_API}?action=_admin_np_config_get`, { headers: { Authorization: `Bearer ${token}` } });
+    const d = await r.json();
+    if (d.error) { wrap.innerHTML = `<div style="color:var(--red)">${escapeHtml(d.error)}</div>`; return; }
+    const cfg = d.config || {};
+    const inputStyle = 'padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;width:100%';
+    let html = '<div style="display:grid;grid-template-columns:1fr 320px;gap:10px 16px;align-items:center">';
+    for (const [key, label] of NP_CFG_FIELDS) {
+      const val = cfg[key] || '';
+      html += `<label style="font-size:13px;color:var(--text2)">${escapeHtml(label)}</label>`;
+      if (key === 'np_api_key') {
+        html += `<input data-npcfg="${key}" placeholder="${escapeHtml(val || 'не задано')}" value="" autocomplete="off" style="${inputStyle}">`;
+      } else {
+        html += `<input data-npcfg="${key}" value="${escapeHtml(val)}" style="${inputStyle}">`;
+      }
+    }
+    html += '</div>';
+    html += '<div style="margin-top:12px;display:flex;gap:10px;align-items:center">';
+    html += '<button class="btn btn--primary" onclick="saveNpConfig()">Зберегти</button>';
+    html += '<button class="btn btn--ghost" onclick="npVerifyKey()">Перевірити ключ</button>';
+    html += '<span id="npCfgSaveStatus" style="font-size:12px;color:var(--text3)"></span>';
+    html += '</div>';
+    html += '<div id="npVerifyOut" style="margin-top:8px;font-size:12px;color:var(--text3);white-space:pre-line"></div>';
+    wrap.innerHTML = html;
+  } catch (e) { wrap.innerHTML = `<div style="color:var(--red)">Помилка: ${escapeHtml(e.message)}</div>`; }
+}
+async function saveNpConfig() {
+  const status = document.getElementById('npCfgSaveStatus');
+  const cfg = {};
+  document.querySelectorAll('[data-npcfg]').forEach(el => {
+    // порожній ключ API не шлемо взагалі — бек і так ігнорує, але не світимо намір
+    if (el.dataset.npcfg === 'np_api_key' && !el.value.trim()) return;
+    cfg[el.dataset.npcfg] = el.value;
+  });
+  try {
+    const token = localStorage.getItem('session_token');
+    const r = await fetch(`${NP_API}?action=_admin_np_config_set`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ config: cfg }),
+    });
+    const d = await r.json();
+    status.textContent = d.ok ? `Збережено ✓ (${d.written})` : (d.error || 'Помилка');
+    status.style.color = d.ok ? 'var(--green)' : 'var(--red)';
+    setTimeout(() => { status.textContent = ''; loadNpConfig(); }, 1500);
+  } catch (e) { status.textContent = e.message; status.style.color = 'var(--red)'; }
+}
+async function npVerifyKey() {
+  const out = document.getElementById('npVerifyOut');
+  out.textContent = 'Перевіряю ключ у кабінеті НП…';
+  try {
+    const token = localStorage.getItem('session_token');
+    const r = await fetch(`${NP_API}?action=_admin_np_setup`, { headers: { Authorization: `Bearer ${token}` } });
+    const d = await r.json();
+    if (!d.ok) { out.textContent = 'Помилка: ' + (d.error || 'ключ не працює'); out.style.color = 'var(--red)'; return; }
+    out.style.color = 'var(--text3)';
+    out.textContent = d.senders.map(s =>
+      `Ключ бачить: ${s.name} (ЄДРПОУ ${s.edrpou})\nКонтактів: ${s.contacts.length}, збережених адрес: ${s.addresses.length}`
+    ).join('\n');
+  } catch (e) { out.textContent = 'Помилка: ' + e.message; out.style.color = 'var(--red)'; }
 }
 
 let defaultBotPrompt = '';
