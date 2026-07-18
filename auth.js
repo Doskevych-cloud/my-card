@@ -233,6 +233,8 @@
     { role: 'counterparties',href: 'counterparties.html' },
     { role: 'finance',       href: 'finance.html' },
     { role: 'reports',       href: 'reports.html' },
+    // Адміністрування бота без повного admin — веде одразу на вкладку «Бот».
+    { role: 'admin_bot',     href: 'admin.html#bot' },
   ];
   function homeHref(user) {
     const u = user || cachedUser();

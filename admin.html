@@ -438,7 +438,9 @@ const PERM_TREE = [
   { key: 'sales_prices', label: 'Порівняння цін (таб у Прайсі)' },
   { key: 'sales_broadcast', label: 'Розсилка (таб у Прайсі)' },
   { key: 'dealers', label: 'Дилери' },
-  { key: 'admin', label: 'Адмін' },
+  { group: 'Адмін', gate: 'admin', note: '«Доступ до модуля» = повний адмін (усі права). Суб-роль нижче відкриває ЛИШЕ вкладку «Бот» на цій сторінці.', children: [
+    { key: 'admin_bot', label: 'Бот (налаштування, Нова Пошта, відгуки, промпт, розмови)' },
+  ]},
 ];
 function allPermKeys() {
   const keys = [];
@@ -456,10 +458,18 @@ const BOT_API = 'https://react-bot.doskevich.workers.dev/';
 Auth.require('admin').then(user => {
   currentUser = user;
   AppHeader.mount({ active: 'admin', user });
-  loadRoles();
-  loadUsers();
-  loadAutosyncStatus();
-  loadJobHealth();
+  // Суб-роль admin_bot (без повного admin) бачить ЛИШЕ вкладку «Бот»:
+  // адмінські таби ховаємо, їхні лоадери не кличемо (бек все одно поверне 403).
+  const isFullAdmin = !!(user.roles || {}).admin;
+  if (!isFullAdmin) {
+    document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab !== 'bot') t.style.display = 'none'; });
+    switchTab('bot');
+  } else {
+    loadRoles();
+    loadUsers();
+    loadAutosyncStatus();
+    loadJobHealth();
+  }
   loadBotPrompt();
   loadBotSettings();
   loadNpConfig();
