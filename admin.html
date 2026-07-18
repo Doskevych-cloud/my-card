@@ -1195,6 +1195,35 @@ async function deleteFeedback(id) {
 }
 
 // ─── Bot settings ────────────────────────────────────────────────
+// Налаштування бота — ГРУПАМИ по підсистемах. ВАЖЛИВО: це все читає КОД
+// (kill-switches, тригери, вікна, шаблони окремих класифікаторів), а не
+// системний промпт Степана — тому воно тут, а не в промпті (architecture,
+// not prompt). Невідомі/нові ключі падають у «Інше» — нічого не губиться.
+const BOT_SETTINGS_GROUPS = [
+  { title: 'Загальне', keys: ['bot_enabled', 'trigger_markers', 'bot_context_window_min', 'manager_window_min'] },
+  { title: 'Робочий час', keys: ['business_hours_start', 'business_hours_end', 'holidays'] },
+  { title: 'Нагадування менеджеру («партнер чекає»)', keys: ['nudge_sweep_enabled', 'nudge_after_min', 'nudge_stale_after_min', 'nudge_require_question_mark', 'nudge_skip_words', 'nudge_text', 'nudge_check_prompt'] },
+  { title: 'Заходи коштів (А-Банк)', keys: ['abank_notify_enabled', 'abank_notify_chat_id', 'abank_notify_template'] },
+  { title: 'Нова Пошта (ТТН)', keys: ['np_confirm_words'] },
+  { title: 'Відгуки менеджерів', keys: ['feedback_like_markers', 'feedback_dislike_markers', 'feedback_acks', 'classify_reply_prompt'] },
+  { title: 'SLA', keys: ['sla_expire_after_bd'] },
+];
+function botSettingRow(s) {
+  const inputStyle = 'padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;width:100%';
+  const isToggle = s.value === '1' || s.value === '0';
+  // Довгі значення (списки слів, шаблони, промпти класифікаторів) — textarea.
+  const isLong = String(s.value || '').length > 60;
+  if (isToggle && String(s.value).length === 1 && /_(enabled|mark)$|^bot_enabled$/.test(s.key)) {
+    return `<label style="font-size:13px;color:var(--text2)">${escapeHtml(s.label || s.key)}</label>` +
+      `<select data-setting="${escapeHtml(s.key)}" style="${inputStyle}"><option value="1"${s.value==='1'?' selected':''}>Увімкнено</option><option value="0"${s.value==='0'?' selected':''}>Вимкнено</option></select>`;
+  }
+  if (isLong) {
+    return `<div style="grid-column:1/-1"><label style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px">${escapeHtml(s.label || s.key)}</label>` +
+      `<textarea data-setting="${escapeHtml(s.key)}" style="${inputStyle};min-height:60px;resize:vertical;font-family:monospace;font-size:12px">${escapeHtml(s.value)}</textarea></div>`;
+  }
+  return `<label style="font-size:13px;color:var(--text2)">${escapeHtml(s.label || s.key)}</label>` +
+    `<input data-setting="${escapeHtml(s.key)}" value="${escapeHtml(s.value)}" style="${inputStyle}">`;
+}
 async function loadBotSettings() {
   const wrap = document.getElementById('botSettingsWrap');
   try {
@@ -1202,25 +1231,25 @@ async function loadBotSettings() {
     const r = await fetch(`${BOT_API}?action=bot_settings_get`, { headers: { Authorization: `Bearer ${token}` } });
     const d = await r.json();
     if (d.error) { wrap.innerHTML = `<div style="color:var(--red)">${escapeHtml(d.error)}</div>`; return; }
-    const rows = d.settings || [];
-    let html = '<div style="display:grid;grid-template-columns:1fr 200px;gap:10px 16px;align-items:center">';
-    for (const s of rows) {
-      const isToggle = s.key === 'bot_enabled';
-      const inputStyle = 'padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;width:100%';
-      const isLong = s.key === 'trigger_markers' || s.key === 'holidays' || s.key === 'feedback_dislike_markers' || s.key === 'feedback_like_markers' || s.key === 'classify_reply_prompt' || s.key === 'abank_notify_template';
-      if (isToggle) {
-        html += `<label style="font-size:13px;color:var(--text2)">${escapeHtml(s.label || s.key)}</label>`;
-        html += `<select data-setting="${escapeHtml(s.key)}" style="${inputStyle}"><option value="1"${s.value==='1'?' selected':''}>Увімкнено</option><option value="0"${s.value==='0'?' selected':''}>Вимкнено</option></select>`;
-      } else if (isLong) {
-        html += `<div style="grid-column:1/-1"><label style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px">${escapeHtml(s.label || s.key)}</label>`;
-        html += `<textarea data-setting="${escapeHtml(s.key)}" style="${inputStyle};min-height:60px;resize:vertical;font-family:monospace;font-size:12px">${escapeHtml(s.value)}</textarea></div>`;
-      } else {
-        html += `<label style="font-size:13px;color:var(--text2)">${escapeHtml(s.label || s.key)}</label>`;
-        html += `<input data-setting="${escapeHtml(s.key)}" value="${escapeHtml(s.value)}" style="${inputStyle}">`;
-      }
+    const byKey = {};
+    for (const s of (d.settings || [])) byKey[s.key] = s;
+    const used = new Set();
+    let html = '';
+    const renderGroup = (title, items) => {
+      if (!items.length) return;
+      html += `<div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin:${html ? '18px' : '0'} 0 8px">${escapeHtml(title)}</div>`;
+      html += '<div style="display:grid;grid-template-columns:1fr 200px;gap:10px 16px;align-items:center">';
+      for (const s of items) html += botSettingRow(s);
+      html += '</div>';
+    };
+    for (const g of BOT_SETTINGS_GROUPS) {
+      const items = g.keys.map(k => byKey[k]).filter(Boolean);
+      items.forEach(s => used.add(s.key));
+      renderGroup(g.title, items);
     }
-    html += '</div>';
-    html += '<div style="margin-top:12px;display:flex;gap:10px;align-items:center">';
+    // ключі поза групами (нові настройки) — завжди видимі
+    renderGroup('Інше', (d.settings || []).filter(s => !used.has(s.key)));
+    html += '<div style="margin-top:14px;display:flex;gap:10px;align-items:center">';
     html += '<button class="btn btn--primary" onclick="saveBotSettings()">Зберегти</button>';
     html += '<span id="settingsSaveStatus" style="font-size:12px;color:var(--text3)"></span>';
     html += '</div>';
