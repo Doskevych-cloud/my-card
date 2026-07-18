@@ -464,7 +464,11 @@ Auth.require('admin').then(user => {
   // (дзеркалить бек-чеки в price-api та react-bot).
   const isFullAdmin = !!(user.roles || {}).admin;
   if (!isFullAdmin && !((user.orgs || {})['Реакт'])) {
-    Auth.showDenyScreen('Адміністрування бота стосується організації «Реакт» — адмін має відкрити вам цю організацію.', 'admin_bot');
+    // Фолбек на випадок стейл-кешу auth.js без експорту showDenyScreen —
+    // інакше TypeError тихо вбиває .then і сторінка зависає скелетом.
+    const denyMsg = 'Адміністрування бота стосується організації «Реакт» — адмін має відкрити вам цю організацію.';
+    if (typeof Auth.showDenyScreen === 'function') Auth.showDenyScreen(denyMsg, 'admin_bot');
+    else document.body.innerHTML = `<div style="max-width:520px;margin:20vh auto;text-align:center;font-family:Inter,-apple-system,sans-serif;color:var(--text,#eaecef);font-size:14px;line-height:1.6">${denyMsg}<br><br><a href="/" style="color:#9ab4ff">На головну</a></div>`;
     return;
   }
   if (!isFullAdmin) {
