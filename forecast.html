@@ -1237,7 +1237,7 @@ function helpTemplate() {
     <div class="m-section-title">До замовлення</div>
     <div class="m-formula"><code>max(0, WMA × ${LT_TOTAL} дн − Вільно − В дорозі вільне)</code> — окремо по кожному кольору; «Всі SKU» = сума. ${LT_TOTAL} дн = ${LEAD_TIME} дн поставка + 27 дн запас.</div>
     <div class="m-section-title">Що може здивувати</div>
-    <div class="m-formula">Фільтр SKU у шапці перемикає KPI, банер і обидва графіки; «Кабель по складах» і план поставок завжди показують обидва кольори. Прострочені замовлення постачальнику — це незакриті в 1С документи «В роботі», вони сховані під тоглом і на прогноз не впливають. Резерви на складах «В дорозі» входять у «У резерві», але не у «Вільно». <b>Платіжний статус</b> (оплачено / лишилось) — лише по <b>KBE</b> (зовнішній постачальник, реальні платежі): «лишилось» = баланс замовлення в регістрі <code>РасчетыСПоставщиками</code> у валюті договору, дата оплати — остання банківська платіжка. По внутрішніх міжфіліальних замовленнях статусу нема — там оплата йде взаємозаліком без платіжки. <b>Календар платежів KBE</b>: таблиця по кожному замовленню — товар/метраж, сума, оплачено, лишилось. <b>Все в гривні</b> по курсу НБУ+1% (EUR sell, показаний у шапці блоку; оригінал у € — під сумою). «Оплачено/лишилось» — з D1 (ap_movements по Заказ_Key, оновлюється autosync'ом кожні 30 хв). Редаговані дати: аванс 10%, доплата 90% (=дата виготовлення кабеля) і план ПДВ. <b>ПДВ («мито»)</b>: факт сплати визначається по документах «Додаткові витрати» з контрагентом Держмитслужба, привʼязаних до приходної замовлення — є док → ПДВ по замовленню закритий і <b>не виводиться взагалі</b> («—» в обох колонках, в календар не потрапляє); нема → план 20% × (сума угоди + доставка 4500 €), дата за замовчуванням = дата приходу (можна перевизначити). <b>«Лишилось» включає несплачений ПДВ</b>; «Оплачено» — тільки товар. З цих дат нижче складається календар оплат по місяцях із підсумками. Сплачені аванс/доплата — факт-дата з ✓, не редагуються.</div>`;
+    <div class="m-formula">Фільтр SKU у шапці перемикає KPI, банер і обидва графіки; «Кабель по складах» і план поставок завжди показують обидва кольори. Прострочені замовлення постачальнику — це незакриті в 1С документи «В роботі», вони сховані під тоглом і на прогноз не впливають. Резерви на складах «В дорозі» входять у «У резерві», але не у «Вільно». <b>Платіжний статус</b> (оплачено / лишилось) — лише по <b>KBE</b> (зовнішній постачальник, реальні платежі): «лишилось» = баланс замовлення в регістрі <code>РасчетыСПоставщиками</code> у валюті договору, дата оплати — остання банківська платіжка. По внутрішніх міжфіліальних замовленнях статусу нема — там оплата йде взаємозаліком без платіжки. <b>Календар платежів KBE</b>: таблиця по кожному замовленню — товар/метраж, сума, оплачено, лишилось. <b>Все в гривні</b> по курсу НБУ+1% (EUR sell, показаний у шапці блоку; оригінал у € — під сумою). «Оплачено/лишилось» — з D1 (ap_movements по Заказ_Key, оновлюється autosync'ом кожні 30 хв). Редаговані дати: аванс 10%, доплата 90% (=дата виготовлення кабеля) і план ПДВ. <b>ПДВ («мито»)</b>: факт сплати визначається по документах «Додаткові витрати» з контрагентом Держмитслужба, привʼязаних до приходної замовлення — є док → ПДВ по замовленню закритий і <b>не виводиться взагалі</b> («—» в обох колонках, в календар не потрапляє); нема → план 20% × (сума угоди + доставка 4500 €), дата за замовчуванням = дата приходу (можна перевизначити). <b>«Лишилось» включає несплачений ПДВ</b>; «Оплачено» — тільки товар. З цих дат нижче складається календар оплат по місяцях із підсумками. <b>Показується лише несплачене</b>: повністю закриті замовлення (товар + ПДВ) і історія оплат не виводяться взагалі. Сплачені аванс/доплата в незакритих рядках — факт-дата з ✓, не редагуються.</div>`;
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
@@ -1437,15 +1437,15 @@ function renderPaymentCalendar(d) {
   const meta = document.getElementById('payCalMeta');
   const orders = (d && d.orders) || [];
   const events = (d && d.events) || [];
+  // Бек віддає ЛИШЕ несплачене: закриті замовлення й факт-оплати сюди не приходять.
   if (!orders.length) {
-    meta.textContent = '—';
-    body.innerHTML = '<div class="pc-empty">Немає відкритих замовлень KBE</div>';
+    meta.textContent = 'усе оплачено';
+    body.innerHTML = '<div class="pc-empty">Несплачених замовлень KBE немає</div>';
     return;
   }
-  const pending = events.filter(e => e.status !== 'paid');
-  const paid = events.filter(e => e.status === 'paid');
+  const pending = events;
   const rateTxt = d.eurRate ? ` · курс ${fmt(d.eurRate, 2)} ₴/€` : '';
-  meta.textContent = (pending.length ? `попереду ${pending.length} · ${pcTotals(pending)}` : 'усе оплачено') + rateTxt;
+  meta.textContent = `попереду ${pending.length} · ${pcTotals(pending)}` + rateTxt;
 
   let html = `<div class="pc-scroll"><table class="pc-tbl">
     <thead><tr>
@@ -1458,7 +1458,7 @@ function renderPaymentCalendar(d) {
   // Календар: незаплановані → підказка; далі місяці з підсумками
   const unsched = pending.filter(e => !e.date);
   const scheduled = pending.filter(e => e.date).sort((a, b) => a.date.localeCompare(b.date));
-  if (scheduled.length || unsched.length || paid.length) html += `<div class="pc-sec">Календар оплат</div>`;
+  if (scheduled.length || unsched.length) html += `<div class="pc-sec">Календар оплат</div>`;
   if (unsched.length) {
     html += `<div class="pc-mon"><span>Без дати</span><span class="tot hint">вкажи дати в таблиці вище</span></div>`;
     html += unsched.map(pcRow).join('');
@@ -1471,23 +1471,10 @@ function renderPaymentCalendar(d) {
   };
   scheduled.forEach(e => { const m = e.date.slice(0, 7); if (m !== cur) { flush(); cur = m; } bucket.push(e); });
   flush();
-  if (paid.length) {
-    paid.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    const lbl = n => `Оплачено (${paid.length}) ${n}`;
-    html += `<div class="pc-toggle" id="pcPaidToggle">${lbl('▾')}</div>`;
-    html += `<div id="pcPaidList" style="display:none">${paid.map(pcRow).join('')}</div>`;
-  }
   body.innerHTML = html;
   body.querySelectorAll('input[data-order][data-field]').forEach(inp => {
     inp.onchange = () => saveSched(inp.dataset.order, inp.dataset.field, inp.value);
   });
-  const tg = document.getElementById('pcPaidToggle');
-  if (tg) tg.onclick = () => {
-    const l = document.getElementById('pcPaidList');
-    const s = l.style.display === 'none';
-    l.style.display = s ? '' : 'none';
-    tg.textContent = `Оплачено (${paid.length}) ${s ? '▴' : '▾'}`;
-  };
 }
 async function loadPaymentCalendar() {
   const body = document.getElementById('payCalCard').querySelector('.card-b');
