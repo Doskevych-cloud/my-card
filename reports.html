@@ -112,6 +112,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .tasks-table .num{text-align:right;font-variant-numeric:tabular-nums;color:var(--text3)}
 .tasks-table a.tlink,.mgr-table a.tlink{color:var(--accent)}
 .tasks-table a.tlink:hover,.mgr-table a.tlink:hover{text-decoration:underline}
+/* Липка шапка матриці «Деталі по угодах»: вертикальний скрол всередині
+   контейнера, щоб при прокрутці було видно, де яка колонка */
+.st-sticky{max-height:72vh;overflow:auto}
+.st-sticky .mgr-table thead th{position:sticky;top:0;z-index:2}
 /* Фільтр-дропдаун у заголовку колонки матриці «Етапи» */
 .mgr-table th.st-fth{cursor:pointer;user-select:none;white-space:nowrap}
 .st-menu{position:fixed;z-index:1001;background:var(--surface2);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.35);padding:4px;max-height:320px;overflow-y:auto;min-width:150px}
@@ -906,7 +910,14 @@ function renderCycleReport(d) {
 }
 
 // 8. Час на етапах воронки (stage time + SLA-регламенти)
-function d1n(x) { return x == null ? '—' : Number(x).toLocaleString('uk-UA', { maximumFractionDigits: 1 }); }
+// Дні з 1 знаком; хвилинні інтервали (0 < x < 0.1 дн) — «<0,1», щоб не
+// виглядало як «не зафіксовано»
+function d1n(x) {
+  if (x == null) return '—';
+  const n = Number(x);
+  if (n > 0 && n < 0.05) return '<0,1';
+  return n.toLocaleString('uk-UA', { maximumFractionDigits: 1 });
+}
 function renderStageTimeReport(d) {
   const t = d.totals || {};
   if (!t.deals) {
@@ -971,9 +982,9 @@ function renderStageTimeReport(d) {
     const open = x.curIdx === i && x.curDays != null ? x.curDays : 0;
     const closed = x.stageDays[i];
     if (closed == null && !open) return null;
-    return Math.round(((closed || 0) + open) * 10) / 10;
+    return Math.round(((closed || 0) + open) * 1000) / 1000;
   };
-  const effTotal = x => Math.round((x.total + (x.curDays || 0)) * 10) / 10;
+  const effTotal = x => Math.round((x.total + (x.curDays || 0)) * 1000) / 1000;
   const sorted = pool.slice().sort((a, b) => {
     const va = stageSort.col === 'total' ? effTotal(a) : effStage(a, stageSort.col);
     const vb = stageSort.col === 'total' ? effTotal(b) : effStage(b, stageSort.col);
@@ -985,7 +996,7 @@ function renderStageTimeReport(d) {
   const fth = (label, cur) => cur
     ? `<span style="color:var(--accent)">${esc(cur.length > 18 ? cur.slice(0, 17) + '…' : cur)}</span> ▾`
     : `${label} ▾`;
-  mh += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr><th>Угода</th>` +
+  mh += `<div class="mgr-wrap st-sticky"><table class="mgr-table"><thead><tr><th>Угода</th>` +
     `<th class="st-fth" onclick="stOpenMenu(event,'cls')" title="Фільтр по класу">${fth('Клас', stClassFilter)}</th>` +
     `<th class="st-fth" onclick="stOpenMenu(event,'mgr')" title="Фільтр по менеджеру">${fth('Менеджер', stMgrFilter)}</th>`;
   d.stages.forEach((s, i) => { mh += `<th title="${esc(s.stage)}" style="cursor:pointer" onclick="stSortBy(${i})">${SHEET_STAGES_SHORT[i]}${arrow(i)}</th>`; });
