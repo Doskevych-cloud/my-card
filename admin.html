@@ -207,6 +207,24 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
   <div id="tab-sync" class="tab-panel">
   <div class="card">
     <div class="card-head">
+      <h2>Доступ до 1С (OData)</h2>
+      <div class="spacer"></div>
+      <span id="odataPassStatus" style="font-size:12px;color:var(--text3);white-space:nowrap">—</span>
+    </div>
+    <div style="padding:12px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <input type="password" id="odataPassInput" placeholder="Новий пароль користувача odataGS" autocomplete="new-password"
+             style="padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;flex:1;min-width:220px">
+      <button class="btn btn--primary" id="odataPassBtn" onclick="saveOdataPassword()">Зберегти</button>
+      <span id="odataPassResult" style="font-size:12px;color:var(--text3)"></span>
+    </div>
+    <div style="padding:0 16px 12px;font-size:12px;color:var(--text3)">
+      Пароль перевіряється на 1С перед збереженням і зберігається write-only — назад не показується.
+      Після успішного збереження автоматично запускається синк за 7 днів.
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:24px">
+    <div class="card-head">
       <h2>Autosync</h2>
       <div class="spacer"></div>
     </div>
@@ -511,6 +529,7 @@ Auth.require('admin').then(user => {
     loadUsers();
     loadAutosyncStatus();
     loadJobHealth();
+    loadOdataPassStatus();
   }
   loadBotPrompt();
   loadBotSettings();
@@ -974,6 +993,51 @@ function autosyncStepText(s) {
   return { label, info, err: false, muted };
 }
 
+// ─── Пароль OData 1С (write-only, вкладка «Синхронізація») ───
+async function loadOdataPassStatus() {
+  const el = document.getElementById('odataPassStatus');
+  try {
+    const d = await Auth.apiFetch('_admin_odata_password_status');
+    const upd = d.updated_at ? ` · оновлено ${d.updated_at.slice(0, 16).replace('T', ' ')} UTC` : '';
+    el.innerHTML = d.works
+      ? `<span style="color:var(--ok)">✓ 1С приймає пароль</span>${upd}`
+      : `<span style="color:var(--bad)">✗ 1С не приймає пароль (${d.probe_status})</span>${upd}`;
+  } catch (e) { el.textContent = '—'; }
+}
+async function saveOdataPassword() {
+  const input = document.getElementById('odataPassInput');
+  const btn = document.getElementById('odataPassBtn');
+  const out = document.getElementById('odataPassResult');
+  const pass = input.value.trim();
+  if (!pass) { toast('Введи пароль', 'err'); return; }
+  btn.disabled = true;
+  out.style.color = 'var(--text3)';
+  out.textContent = 'Перевіряю на 1С…';
+  try {
+    const token = localStorage.getItem('session_token');
+    const r = await fetch('https://price-api.doskevich.workers.dev/?action=_admin_set_odata_password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ password: pass }),
+    });
+    const d = await r.json();
+    if (!r.ok || d.error) throw new Error(d.error || ('HTTP ' + r.status));
+    input.value = '';
+    out.style.color = 'var(--ok)';
+    out.textContent = '✓ Пароль прийнято і збережено. Запускаю синк…';
+    toast('Пароль оновлено', 'ok');
+    loadOdataPassStatus();
+    // одразу закриваємо діру в даних — той самий ручний autosync
+    runAutosync().finally(() => { out.textContent = '✓ Пароль збережено'; });
+  } catch (e) {
+    out.style.color = 'var(--bad)';
+    out.textContent = '✗ ' + e.message;
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 async function runAutosync() {
   const btn = document.getElementById('btnAutosync');
   const out = document.getElementById('autosyncResult');
@@ -1236,6 +1300,7 @@ const BOT_SETTINGS_GROUPS = [
   { title: 'Робочий час', keys: ['business_hours_start', 'business_hours_end', 'holidays'] },
   { title: 'Нагадування менеджеру («партнер чекає»)', keys: ['nudge_sweep_enabled', 'nudge_after_min', 'nudge_stale_after_min', 'nudge_require_question_mark', 'nudge_skip_words', 'nudge_text', 'nudge_check_prompt'] },
   { title: 'Заходи коштів (А-Банк)', keys: ['abank_notify_enabled', 'abank_notify_chat_id', 'abank_notify_template'] },
+  { title: 'Алерти синку 1С', keys: ['sync_alert_enabled', 'sync_alert_chat_id'] },
   { title: 'Нова Пошта (ТТН)', keys: ['np_confirm_words'] },
   { title: 'Відгуки менеджерів', keys: ['feedback_like_markers', 'feedback_dislike_markers', 'feedback_acks', 'classify_reply_prompt'] },
   { title: 'SLA', keys: ['sla_expire_after_bd'] },
