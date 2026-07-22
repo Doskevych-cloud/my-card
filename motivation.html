@@ -117,6 +117,7 @@
     <ul>
       <li><b>Валовий прибуток</b> відділу продажів React (виручка − собівартість) за місяць. Продажі <b>ТОВ «Генерація Енерджі»</b> (внутрішні, сестринській компанії) з прибутку <b>виключаються</b> — умова 5.</li>
       <li>+ <b>Інші доходи (комиссия и пр.)</b> — окремий рядок з P&L React (не з таблиці Excel, додано в системі).</li>
+      <li>− <b>ПДВ</b> — рядок «ПДВ» секції «Податки» з P&L React. У React він є не щомісяця (у деяких місяцях 0).</li>
       <li>= <b>База</b>. Бонус = База × <b>3%</b> × KPI₁ × KPI₂ × KPI₃.</li>
       <li><b>Ставка</b> 45 000 грн переводиться в USD за живим курсом системи (НБУ +1%).</li>
       <li><b>Загалом</b> = Ставка (USD) + Бонус.</li>
@@ -207,6 +208,10 @@ function render(r){
     ? `<div class="row"><span class="lab"><span class="op">+</span>Інші доходи (комісія та ін.)<br><small>${esc(c.commissionLabel||'Інші доходи (комиссия и пр.)')} · P&L React</small></span><span class="val">${fmtUSD(c.commission)}</span></div>`
     : '';
 
+  const vatRow = p.subtract_vat
+    ? `<div class="row"><span class="lab"><span class="op">−</span>ПДВ (податок)<br><small>${esc(c.vatLabel||'ПДВ')} · Податки, P&L React</small></span><span class="val ${c.vat?'neg':''}">${c.vat ? '−'+fmtUSD(c.vat).replace('−','') : '<span style="color:var(--text3)">—</span>'}</span></div>`
+    : '';
+
   const html = `
     <div class="mot-total">
       <div class="who">${esc(r.employee.name)}<small>Мотивація за ${fmtDMY(r.from)} — ${fmtDMY(r.to)}</small></div>
@@ -216,6 +221,7 @@ function render(r){
       <div class="row"><span class="lab">Валовий прибуток відділу продажів (React)<br><small>виручка ${fmtUSD(c.gpRevenue)} − собівартість ${fmtUSD(c.gpCogs)}</small></span><span class="val ${c.gpProfit<0?'neg':''}">${fmtUSD(c.gpProfit)}</span></div>
       ${excl}
       ${commissionRow}
+      ${vatRow}
       <div class="row mid"><span class="lab">База для бонусу</span><span class="val ${c.baseGp<0?'neg':''}">${fmtUSD(c.baseGp)}</span></div>
       <div class="row"><span class="lab"><span class="op">×</span>Бонус: ${fmtNum(pct,pct%1?1:0)}%${kpiAll1?'':' × KPI ('+kpiStr+')'}</span><span class="val ${c.bonus<0?'neg':''}">${fmtUSD(c.bonus)}</span></div>
       <div class="row"><span class="lab"><span class="op">+</span>Ставка<br><small>${fmtNum(p.rate_uah,0)} грн ÷ ${fmtNum(c.usdUah,2)} (НБУ+1%)</small></span><span class="val">${fmtUSD(c.rateUsd)}</span></div>

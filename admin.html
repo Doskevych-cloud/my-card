@@ -603,8 +603,9 @@ function motCard(r) {
     + fld('KPI мертвий склад', f('k3', r.kpi3, 'type="number" step="0.05"'))
     + fld('Виключити клієнта (текст у назві)', f('excl', r.exclude_client_like, ''))
     + '</div>'
-    + '<div style="display:flex;align-items:center;gap:14px;margin-top:12px">'
-    + '<label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px"><input type="checkbox" id="mot_comm_' + r.employee_ref_key + '"' + (r.add_commission ? ' checked' : '') + '> додавати «Інші доходи (комиссия и пр.)» з P&amp;L</label>'
+    + '<div style="display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap">'
+    + '<label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px"><input type="checkbox" id="mot_comm_' + r.employee_ref_key + '"' + (r.add_commission ? ' checked' : '') + '> додавати «Інші доходи (комиссия и пр.)»</label>'
+    + '<label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px"><input type="checkbox" id="mot_vat_' + r.employee_ref_key + '"' + (r.subtract_vat ? ' checked' : '') + '> віднімати ПДВ (рядок «ПДВ» з P&amp;L React)</label>'
     + '<div style="flex:1"></div>'
     + '<button class="btn btn--ghost" onclick="motDelete(\'' + r.employee_ref_key + '\')" style="color:var(--red)">Видалити</button>'
     + '<button class="btn btn--primary" onclick="motSave(\'' + r.employee_ref_key + '\')">Зберегти</button>'
@@ -624,6 +625,7 @@ async function motSave(ref) {
     kpi1: Number(g('k1').value), kpi2: Number(g('k2').value), kpi3: Number(g('k3').value),
     exclude_client_like: g('excl').value.trim(),
     add_commission: document.getElementById('mot_comm_' + ref).checked,
+    subtract_vat: document.getElementById('mot_vat_' + ref).checked,
     active: document.getElementById('mot_active_' + ref).checked,
   };
   try {
@@ -641,7 +643,7 @@ async function motAdd() {
     await Auth.apiFetch('_admin_motivation_set', { method: 'POST', body: {
       employee_ref_key: ref, display_name: name,
       rate_uah: 45000, gp_base_pct: 0.03, kpi1: 1, kpi2: 1, kpi3: 1,
-      exclude_client_like: 'ГЕНЕРАЦІЯ ЕНЕРДЖІ', add_commission: true, active: true,
+      exclude_client_like: 'ГЕНЕРАЦІЯ ЕНЕРДЖІ', add_commission: true, subtract_vat: true, active: true,
     } });
     toast('Додано', 'ok');
     await loadMotivation();
