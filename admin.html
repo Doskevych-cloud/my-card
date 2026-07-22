@@ -117,6 +117,7 @@ tbody tr:hover { background: rgba(154,180,255,.04); }
 .role-card-foot { display:flex; align-items:center; gap:8px; }
 .role-card-foot .meta { margin-left:auto; font-size:11px; color:var(--text3); }
 td .role-select { background:var(--card2); border:1px solid var(--border); color:var(--text); padding:5px 8px; border-radius:6px; font:inherit; font-size:12px; cursor:pointer; min-width:140px; }
+#tab-motivation .input { background:var(--card2); border:1px solid var(--border); color:var(--text); padding:7px 10px; border-radius:8px; font:inherit; font-size:13px; width:100%; box-sizing:border-box; }
 
 .conv-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s}
 .conv-item:hover{background:var(--card2)}
@@ -153,6 +154,7 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
     <button class="tab active" data-tab="users">Користувачі</button>
     <button class="tab" data-tab="roles">Ролі</button>
     <button class="tab" data-tab="sync">Синхронізація</button>
+    <button class="tab" data-tab="motivation">Мотивації</button>
     <button class="tab" data-tab="bot">Бот</button>
   </div>
 
@@ -328,6 +330,20 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
   </div>
   </div>
 
+  <div id="tab-motivation" class="tab-panel">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <h2 style="margin:0;font-size:16px">Мотивація співробітників</h2>
+      <div style="flex:1"></div>
+      <select id="motAddSelect" class="input" style="max-width:280px"></select>
+      <button class="btn btn--ghost" onclick="motAdd()">+ Додати</button>
+    </div>
+    <p style="font-size:12px;color:var(--text3);margin:-6px 0 16px">
+      Параметри розрахунку зарплати (звіт «Продажі → Мотивації»). <b>Email</b> — логін співробітника, щоб він бачив лише свій рядок.
+      <b>Виключити клієнта</b> — текст у назві контрагента, чиї продажі не входять у прибуток (внутрішні продажі сестринській компанії).
+    </p>
+    <div id="motContainer"><div class="loading">Завантаження…</div></div>
+  </div>
+
   <div id="tab-bot" class="tab-panel">
 
   <div class="bsub-bar">
@@ -435,7 +451,7 @@ document.querySelector('.bsub-bar').addEventListener('click', e => {
 (function() {
   const h = location.hash.slice(1);
   const mBot = h.match(/^bot(?:-([a-z]+))?$/);
-  if (['users','roles','sync'].includes(h)) switchTab(h);
+  if (['users','roles','sync','motivation'].includes(h)) switchTab(h);
   else if (mBot) { switchTab('bot'); if (mBot[1]) switchBotSub(mBot[1]); }
 })();
 
@@ -460,6 +476,7 @@ const PERM_TREE = [
     { key: 'sales_inventory', label: 'Обіговість запасів' },
     { key: 'sales_sla', label: 'SLA' },
     { key: 'sales_sla_exclude', label: 'SLA — виключення замірів (КВП)' },
+    { key: 'sales_motivation', label: 'Мотивації (зарплата)' },
   ]},
   { group: 'Фінанси', gate: 'finance', children: [
     { key: 'finance_pnl', label: 'P&L' },
@@ -530,6 +547,7 @@ Auth.require('admin').then(user => {
     loadAutosyncStatus();
     loadJobHealth();
     loadOdataPassStatus();
+    loadMotivation();
   }
   loadBotPrompt();
   loadBotSettings();
@@ -537,6 +555,106 @@ Auth.require('admin').then(user => {
   loadBotFeedback();
   loadConversations();
 });
+
+// ── Мотивація співробітників ──
+let _motRows = [], _motEmployees = [];
+async function loadMotivation() {
+  try {
+    const [g, e] = await Promise.all([
+      Auth.apiFetch('_admin_motivation_get'),
+      Auth.apiFetch('_admin_motivation_employees'),
+    ]);
+    _motRows = g.rows || [];
+    _motEmployees = e.employees || [];
+    motRender();
+  } catch (err) {
+    document.getElementById('motContainer').innerHTML = '<div class="error" style="color:var(--red)">' + esc(err.message) + '</div>';
+  }
+}
+function motRender() {
+  // Пікер «додати» — тільки ще не налаштовані співробітники
+  const configured = new Set(_motRows.map(r => r.employee_ref_key));
+  const sel = document.getElementById('motAddSelect');
+  const avail = _motEmployees.filter(e => !configured.has(e.ref_key));
+  sel.innerHTML = avail.length
+    ? avail.map(e => '<option value="' + esc(e.ref_key) + '">' + esc(e.name) + '</option>').join('')
+    : '<option value="">— усі співробітники додані —</option>';
+
+  const cont = document.getElementById('motContainer');
+  if (!_motRows.length) { cont.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:8px">Ще нікого не налаштовано. Оберіть співробітника зверху й натисніть «Додати».</div>'; return; }
+  cont.innerHTML = _motRows.map(r => motCard(r)).join('');
+}
+function motCard(r) {
+  const pct = ((r.gp_base_pct || 0) * 100);
+  const f = (id, v, attrs) => '<input class="input" id="mot_' + id + '_' + r.employee_ref_key + '" value="' + esc(v == null ? '' : v) + '" ' + (attrs || '') + '>';
+  return '<div class="card" style="margin-bottom:14px;padding:16px">'
+    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
+    + '<b style="font-size:14px">' + esc(r.display_name || r.employee_ref_key) + '</b>'
+    + '<span style="font-size:11px;color:var(--text3)">' + esc(r.employee_ref_key) + '</span>'
+    + '<label style="margin-left:auto;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px"><input type="checkbox" id="mot_active_' + r.employee_ref_key + '"' + (r.active ? ' checked' : '') + '> активний</label>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">'
+    + fld('Ім’я (для UI)', f('name', r.display_name, ''))
+    + fld('Email (логін співробітника)', f('email', r.email, 'placeholder="vyacheslav@…"'))
+    + fld('Ставка, грн', f('rate', r.rate_uah, 'type="number" step="100"'))
+    + fld('Базовий %', f('pct', pct, 'type="number" step="0.1"'))
+    + fld('KPI оборотність', f('k1', r.kpi1, 'type="number" step="0.05"'))
+    + fld('KPI дебіторка', f('k2', r.kpi2, 'type="number" step="0.05"'))
+    + fld('KPI мертвий склад', f('k3', r.kpi3, 'type="number" step="0.05"'))
+    + fld('Виключити клієнта (текст у назві)', f('excl', r.exclude_client_like, ''))
+    + '</div>'
+    + '<div style="display:flex;align-items:center;gap:14px;margin-top:12px">'
+    + '<label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px"><input type="checkbox" id="mot_comm_' + r.employee_ref_key + '"' + (r.add_commission ? ' checked' : '') + '> додавати «Інші доходи (комиссия и пр.)» з P&amp;L</label>'
+    + '<div style="flex:1"></div>'
+    + '<button class="btn btn--ghost" onclick="motDelete(\'' + r.employee_ref_key + '\')" style="color:var(--red)">Видалити</button>'
+    + '<button class="btn btn--primary" onclick="motSave(\'' + r.employee_ref_key + '\')">Зберегти</button>'
+    + '</div></div>';
+}
+function fld(label, inner) {
+  return '<label style="display:block"><span style="display:block;font-size:11px;color:var(--text3);margin-bottom:3px">' + label + '</span>' + inner + '</label>';
+}
+async function motSave(ref) {
+  const g = id => document.getElementById('mot_' + id + '_' + ref);
+  const body = {
+    employee_ref_key: ref,
+    display_name: g('name').value.trim(),
+    email: g('email').value.trim(),
+    rate_uah: Number(g('rate').value) || 0,
+    gp_base_pct: (Number(g('pct').value) || 0) / 100,
+    kpi1: Number(g('k1').value), kpi2: Number(g('k2').value), kpi3: Number(g('k3').value),
+    exclude_client_like: g('excl').value.trim(),
+    add_commission: document.getElementById('mot_comm_' + ref).checked,
+    active: document.getElementById('mot_active_' + ref).checked,
+  };
+  try {
+    await Auth.apiFetch('_admin_motivation_set', { method: 'POST', body });
+    toast('Збережено', 'ok');
+    await loadMotivation();
+  } catch (e) { toast('Помилка: ' + e.message, 'err'); }
+}
+async function motAdd() {
+  const sel = document.getElementById('motAddSelect');
+  const ref = sel.value;
+  if (!ref) return;
+  const name = sel.options[sel.selectedIndex].textContent;
+  try {
+    await Auth.apiFetch('_admin_motivation_set', { method: 'POST', body: {
+      employee_ref_key: ref, display_name: name,
+      rate_uah: 45000, gp_base_pct: 0.03, kpi1: 1, kpi2: 1, kpi3: 1,
+      exclude_client_like: 'ГЕНЕРАЦІЯ ЕНЕРДЖІ', add_commission: true, active: true,
+    } });
+    toast('Додано', 'ok');
+    await loadMotivation();
+  } catch (e) { toast('Помилка: ' + e.message, 'err'); }
+}
+async function motDelete(ref) {
+  if (!confirm('Видалити налаштування мотивації цього співробітника?')) return;
+  try {
+    await Auth.apiFetch('_admin_motivation_set', { method: 'POST', body: { employee_ref_key: ref, delete: true } });
+    toast('Видалено', 'ok');
+    await loadMotivation();
+  } catch (e) { toast('Помилка: ' + e.message, 'err'); }
+}
 
 // Найсвіжіший last_synced_at з sync_state — показуємо поряд із кнопкою autosync.
 // Оновлюємо при load page і після ручного запуску.

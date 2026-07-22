@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Мотивація</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+<script>
+  try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); } catch(e){}
+</script>
+<script src="auth.js?v=mobhdr20260430"></script>
+<script src="header.js?v=brig20260622"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/uk.js"></script>
+<script src="date-range.js?v=20260522"></script>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="base.css?v=20260712">
+<style>
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 16px 40px; }
+  .toolbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:14px 0 20px; }
+  .toolbar .lbl { font-size:12px; color:var(--text3); text-transform:uppercase; letter-spacing:.5px; }
+  .toolbar .group { display:inline-flex; gap:4px; }
+  .toolbar .sep { width:1px; height:20px; background:var(--border); margin:0 4px; }
+  .chip { padding:6px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface);
+          font-size:13px; color:var(--text2); cursor:pointer; user-select:none; white-space:nowrap; }
+  .chip:hover { border-color:var(--accent); }
+  .chip.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .date-range-input { padding:6px 12px; border-radius:8px; border:1px solid var(--border);
+                      background:var(--surface); color:var(--text); font-size:13px; width:210px; cursor:pointer; }
+  select.emp-select { padding:6px 10px; border-radius:8px; border:1px solid var(--border);
+                      background:var(--surface); color:var(--text); font-size:13px; }
+
+  /* Підсумкова картка «Загалом» */
+  .mot-total { display:flex; align-items:baseline; justify-content:space-between; gap:16px;
+               padding:22px 24px; border:1px solid var(--border); border-radius:14px; background:var(--surface);
+               margin-bottom:22px; flex-wrap:wrap; }
+  .mot-total .who { font-size:15px; font-weight:700; color:var(--text); }
+  .mot-total .who small { display:block; font-size:12px; font-weight:500; color:var(--text3); margin-top:3px; }
+  .mot-total .sum { font-size:34px; font-weight:800; color:var(--green); line-height:1; }
+  .mot-total .sum small { font-size:15px; font-weight:600; color:var(--text3); margin-left:4px; }
+
+  /* «Чек» — покрокова побудова суми */
+  .receipt { border:1px solid var(--border); border-radius:14px; overflow:hidden; background:var(--surface); }
+  .receipt .row { display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+                  padding:13px 20px; border-top:1px solid var(--border); }
+  .receipt .row:first-child { border-top:none; }
+  .receipt .row .lab { font-size:14px; color:var(--text); }
+  .receipt .row .lab .op { display:inline-block; width:16px; color:var(--text3); font-weight:700; }
+  .receipt .row .lab small { color:var(--text3); font-size:12px; }
+  .receipt .row .val { font-size:14px; font-variant-numeric:tabular-nums; color:var(--text); font-weight:600; white-space:nowrap; }
+  .receipt .row.sub { padding:8px 20px 8px 44px; background:var(--bg); }
+  .receipt .row.sub .lab, .receipt .row.sub .val { font-size:12.5px; color:var(--text3); font-weight:500; }
+  .receipt .row.mid { background:var(--surface2); }
+  .receipt .row.mid .lab, .receipt .row.mid .val { font-weight:800; }
+  .receipt .row.grand { background:var(--surface2); }
+  .receipt .row.grand .lab { font-weight:800; font-size:15px; }
+  .receipt .row.grand .val { font-weight:800; font-size:17px; color:var(--green); }
+  .val.neg { color:var(--red); }
+  .hint { margin:14px 2px 0; font-size:12px; color:var(--text3); line-height:1.5; }
+  .loading, .error { padding:40px; text-align:center; color:var(--text3); }
+  .error { color:var(--red); }
+
+  /* Довідка */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+  .modal-backdrop.open{display:flex}
+  .modal{position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:14px;max-width:640px;width:100%;max-height:85vh;overflow-y:auto;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+  .modal h2{font-size:16px;font-weight:800;color:var(--text);margin-bottom:8px;padding-right:28px}
+  .modal h3{font-size:13px;font-weight:700;color:var(--accent);margin:16px 0 5px}
+  .modal p, .modal li{font-size:13px;color:var(--text2);line-height:1.55}
+  .modal ul{margin:4px 0 0 2px;list-style:none}
+  .modal li{position:relative;padding-left:16px;margin:4px 0}
+  .modal li::before{content:'–';position:absolute;left:0;color:var(--text3)}
+  .modal code{background:var(--surface);padding:1px 6px;border-radius:5px;font-size:12px;color:var(--text)}
+  .modal .close{position:absolute;top:16px;right:18px;cursor:pointer;color:var(--text3);font-size:18px;border:none;background:none;padding:4px}
+</style>
+</head>
+<body>
+<div id="appHeader"></div>
+<div id="app">
+  <div class="wrap">
+    <div class="page-tabs">
+      <a href="/sales.html" class="ptab" data-perm="sales">📈 Продажі менеджерів</a>
+      <a href="/top_products.html" class="ptab" data-perm="sales_top_products">📦 Останні продажі</a>
+      <a href="/osp.html" class="ptab" data-perm="sales_osp">📋 Оплата та відвантаження</a>
+      <a href="/ar_aging.html" class="ptab" data-org-required="Реакт" data-perm="sales_ar_aging">⏱ Заборгованість покупців</a>
+      <a href="/active_clients.html" class="ptab" data-org-required="Реакт" data-perm="sales_active_clients">👥 Клієнтська база</a>
+      <a href="/inventory.html" class="ptab" data-perm="sales_inventory">📊 Обіговість запасів</a>
+      <a href="/sla.html" class="ptab" data-perm="sales_sla">⚡ SLA</a>
+      <a href="/motivation.html" class="ptab active" data-perm="sales_motivation">💵 Мотивації</a>
+    </div>
+
+    <div class="toolbar">
+      <span class="lbl">Період</span>
+      <input type="text" id="dateRange" class="date-range-input" readonly>
+      <span class="group" id="presetGroup">
+        <span class="chip" data-preset="month" onclick="setPreset('month')">Цей місяць</span>
+        <span class="chip" data-preset="prevmonth" onclick="setPreset('prevmonth')">Минулий</span>
+      </span>
+      <span class="sep" id="empSep" style="display:none"></span>
+      <select id="empSelect" class="emp-select" style="display:none" onchange="onEmpChange(this.value)"></select>
+      <span style="flex:1"></span>
+      <span class="chip" onclick="load()" title="Оновити">↻</span>
+      <span class="chip" onclick="openHelp()" title="Як працює цей звіт">❓ Як працює</span>
+    </div>
+
+    <div id="body"><div class="loading">Завантаження…</div></div>
+    <div class="hint" id="hint"></div>
+  </div>
+</div>
+
+<!-- Довідка -->
+<div class="modal-backdrop" id="helpModal" onclick="if(event.target===this)closeHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт Мотивація">
+    <button class="close" onclick="closeHelp()" aria-label="Закрити">✕</button>
+    <h2>💵 Як працює звіт «Мотивація»</h2>
+    <h3>Формула</h3>
+    <ul>
+      <li><b>Валовий прибуток</b> відділу продажів React (виручка − собівартість) за місяць. Продажі <b>ТОВ «Генерація Енерджі»</b> (внутрішні, сестринській компанії) з прибутку <b>виключаються</b> — умова 5.</li>
+      <li>+ <b>Інші доходи (комиссия и пр.)</b> — окремий рядок з P&L React (не з таблиці Excel, додано в системі).</li>
+      <li>= <b>База</b>. Бонус = База × <b>3%</b> × KPI₁ × KPI₂ × KPI₃.</li>
+      <li><b>Ставка</b> 45 000 грн переводиться в USD за живим курсом системи (НБУ +1%).</li>
+      <li><b>Загалом</b> = Ставка (USD) + Бонус.</li>
+    </ul>
+    <h3>Умови мотивації (КВП React)</h3>
+    <ul>
+      <li>Ставка 45 000 грн + 3% від валового прибутку відділу продажів.</li>
+      <li>Ставка — за виконання всіх регламентів керівника відділу продажів.</li>
+      <li>Мотивація дійсна до кінця 2026 року.</li>
+      <li>Продажі Генерації не враховуються при визначенні валового прибутку.</li>
+      <li>План 1 500 000 USD/міс.</li>
+      <li>KPI (оборотність запасів, дебіторка, мертвий склад) поки = 1; вимірюються, щоб надалі затвердити.</li>
+    </ul>
+    <h3>Джерела й нюанси</h3>
+    <ul>
+      <li>Валовий прибуток — регістр 1С «Продажі» (org=Реакт); комісія — регістр «Доходи і витрати» (org=Реакт). Усі суми в USD.</li>
+      <li>Кеш — <b>1 година</b>; дані з 1С підтягуються синком кожні 30 хв у робочий час. Тому в межах місяця цифра «росте» по мірі відвантажень.</li>
+      <li>Курс — поточний живий (НБУ +1%), тому ставка в USD трохи змінюється щодня.</li>
+      <li>Параметри (ставка, %, KPI, виключення) редагуються адміністратором в адмінці.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://price-api.doskevich.workers.dev';
+const state = { from: '', to: '', preset: 'month', employee: '', data: null };
+let _picker = null;
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function _localISO(d){ const z=new Date(d.getTime()-d.getTimezoneOffset()*60000); return z.toISOString().slice(0,10); }
+function fmtUSD(v){
+  const n = Math.round((v||0)*100)/100;
+  const s = Math.abs(n).toLocaleString('uk-UA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (n<0?'−':'') + s + ' $';
+}
+function fmtNum(v, d){ return (v||0).toLocaleString('uk-UA', { minimumFractionDigits: d||0, maximumFractionDigits: d||0 }); }
+function fmtDMY(iso){ const p=(iso||'').split('-'); return p.length===3 ? p[2]+'.'+p[1]+'.'+p[0] : iso; }
+
+function setPreset(p){
+  const now=new Date(), y=now.getFullYear(), m=now.getMonth();
+  let from, to;
+  if (p==='prevmonth'){ from=new Date(y,m-1,1); to=new Date(y,m,0); }
+  else { p='month'; from=new Date(y,m,1); to=now; }
+  state.preset=p; state.from=_localISO(from); state.to=_localISO(to);
+  if (_picker) _picker.setDates(state.from, state.to);
+  document.querySelectorAll('#presetGroup .chip').forEach(c=>c.classList.toggle('active', c.dataset.preset===p));
+  load();
+}
+function onEmpChange(ref){ state.employee=ref; load(); }
+
+async function load(){
+  document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
+  document.getElementById('hint').textContent = '';
+  try {
+    let q = `?action=motivation_report&from=${state.from}&to=${state.to}`;
+    if (state.employee) q += `&employee=${encodeURIComponent(state.employee)}`;
+    const r = await fetch(API_URL + q).then(x=>x.json());
+    if (r.error) throw new Error(r.error);
+    state.data = r;
+    render(r);
+  } catch (e) {
+    document.getElementById('body').innerHTML = `<div class="error">${esc(e.message)}</div>`;
+  }
+}
+
+function render(r){
+  const c = r.calc, p = r.params;
+  // Admin employee picker
+  if (r.isAdmin && Array.isArray(r.employees) && r.employees.length){
+    const sel = document.getElementById('empSelect');
+    const cur = r.employee?.ref_key || (r.employees[0] && r.employees[0].ref_key);
+    sel.innerHTML = r.employees.map(e => `<option value="${esc(e.ref_key)}"${e.ref_key===cur?' selected':''}>${esc(e.name)}</option>`).join('');
+    sel.style.display = ''; document.getElementById('empSep').style.display = '';
+    state.employee = cur;
+  }
+
+  const pct = (p.gp_base_pct*100);
+  const kpiStr = [p.kpi1,p.kpi2,p.kpi3].map(k=>(+k).toString()).join(' × ');
+  const kpiAll1 = (p.kpi1===1 && p.kpi2===1 && p.kpi3===1);
+
+  let excl = '';
+  if (c.exclNames && c.exclNames.length){
+    excl = `<div class="row sub"><span class="lab">виключено (внутрішні продажі): ${esc(c.exclNames.join(', '))}</span>`
+         + `<span class="val neg">−${fmtUSD(c.exclProfit).replace('−','')}</span></div>`;
+  }
+
+  const commissionRow = p.add_commission
+    ? `<div class="row"><span class="lab"><span class="op">+</span>Інші доходи (комісія та ін.)<br><small>${esc(c.commissionLabel||'Інші доходи (комиссия и пр.)')} · P&L React</small></span><span class="val">${fmtUSD(c.commission)}</span></div>`
+    : '';
+
+  const html = `
+    <div class="mot-total">
+      <div class="who">${esc(r.employee.name)}<small>Мотивація за ${fmtDMY(r.from)} — ${fmtDMY(r.to)}</small></div>
+      <div><span class="sum">${fmtUSD(c.total)}</span></div>
+    </div>
+    <div class="receipt">
+      <div class="row"><span class="lab">Валовий прибуток відділу продажів (React)<br><small>виручка ${fmtUSD(c.gpRevenue)} − собівартість ${fmtUSD(c.gpCogs)}</small></span><span class="val ${c.gpProfit<0?'neg':''}">${fmtUSD(c.gpProfit)}</span></div>
+      ${excl}
+      ${commissionRow}
+      <div class="row mid"><span class="lab">База для бонусу</span><span class="val ${c.baseGp<0?'neg':''}">${fmtUSD(c.baseGp)}</span></div>
+      <div class="row"><span class="lab"><span class="op">×</span>Бонус: ${fmtNum(pct,pct%1?1:0)}%${kpiAll1?'':' × KPI ('+kpiStr+')'}</span><span class="val ${c.bonus<0?'neg':''}">${fmtUSD(c.bonus)}</span></div>
+      <div class="row"><span class="lab"><span class="op">+</span>Ставка<br><small>${fmtNum(p.rate_uah,0)} грн ÷ ${fmtNum(c.usdUah,2)} (НБУ+1%)</small></span><span class="val">${fmtUSD(c.rateUsd)}</span></div>
+      <div class="row grand"><span class="lab">Загалом до виплати</span><span class="val">${fmtUSD(c.total)}</span></div>
+    </div>`;
+  document.getElementById('body').innerHTML = html;
+
+  const parts = [];
+  parts.push(`KPI-коефіцієнти: оборотність запасів ${p.kpi1}, дебіторка ${p.kpi2}, мертвий склад ${p.kpi3}.`);
+  if (kpiAll1) parts.push('Поки всі KPI = 1 (не впливають на бонус).');
+  parts.push('Продажі ТОВ «Генерація Енерджі» з прибутку виключені (умова 5). Кеш до 1 год.');
+  document.getElementById('hint').textContent = parts.join(' ');
+}
+
+function openHelp(){ document.getElementById('helpModal').classList.add('open'); }
+function closeHelp(){ document.getElementById('helpModal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key==='Escape') closeHelp(); });
+
+Auth.require('sales_motivation').then(user => {
+  AppHeader.mount({ active: 'sales', user });
+  Auth.filterSubNav(user);
+  const now=new Date();
+  state.from=_localISO(new Date(now.getFullYear(), now.getMonth(), 1));
+  state.to=_localISO(now);
+  _picker = initDateRange({
+    inputId: 'dateRange', from: state.from, to: state.to,
+    onChange: function(f,t){ state.from=f; state.to=t;
+      document.querySelectorAll('#presetGroup .chip').forEach(c=>c.classList.remove('active'));
+      load(); }
+  });
+  document.querySelector('#presetGroup .chip[data-preset="month"]').classList.add('active');
+  load();
+});
+</script>
+</body>
+</html>
