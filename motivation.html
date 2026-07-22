@@ -84,6 +84,23 @@
   .fc-foot { margin:8px 2px 0; font-size:11.5px; color:var(--text3); }
   .fc-tag { display:inline-block; font-size:10px; font-weight:700; color:var(--accent); border:1px solid var(--border); border-radius:5px; padding:0 5px; vertical-align:middle; text-transform:uppercase; letter-spacing:.4px; }
 
+  /* KPI-панель зі степерами */
+  .kpi-bar { display:flex; flex-wrap:wrap; align-items:center; gap:16px; margin:0 0 12px; padding:10px 14px; background:var(--surface2); border:1px solid var(--border); border-radius:12px; }
+  .kpi-item { display:flex; flex-direction:column; gap:4px; }
+  .kpi-lab { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:.4px; }
+  .kpi-ctl { display:inline-flex; align-items:center; gap:8px; }
+  .kpi-ctl button { width:26px; height:26px; border-radius:7px; border:1px solid var(--border); background:var(--bg2); color:var(--text); font-size:17px; cursor:pointer; line-height:1; display:inline-flex; align-items:center; justify-content:center; }
+  .kpi-ctl button:hover { border-color:var(--accent); color:var(--accent); }
+  .kpi-val { min-width:30px; text-align:center; font-variant-numeric:tabular-nums; font-weight:700; font-size:14px; }
+  .kpi-eff { margin-left:auto; font-size:13px; color:var(--text2); display:inline-flex; align-items:center; gap:8px; }
+  .kpi-eff b { color:var(--text); }
+  .kpi-changed { color:var(--accent); font-size:11px; font-weight:700; }
+  .kpi-save, .kpi-reset { padding:5px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg2); color:var(--text2); font-size:12px; cursor:pointer; }
+  .kpi-save { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .mot-table tr.fact-head td { background:var(--surface2); color:var(--text3); font-size:10px; text-transform:uppercase; letter-spacing:.4px; font-weight:700; border-top:2px solid var(--border); padding-top:9px; padding-bottom:5px; }
+  .mot-table tr.fact td { color:var(--text2); }
+  .mot-table tr.fact td.lab { color:var(--text); }
+
   .hint { margin:14px 2px 0; font-size:12px; color:var(--text3); line-height:1.5; }
   .loading, .error { padding:40px; text-align:center; color:var(--text3); }
   .error { color:var(--red); }
@@ -124,6 +141,8 @@
     .mot-table{font-size:11.5px}
     .mot-table th,.mot-table td{padding:8px 10px}
     .mot-table th.lab,.mot-table td.lab{min-width:150px}
+    .kpi-bar{gap:10px;padding:9px 10px}
+    .kpi-eff{margin-left:0;flex-basis:100%;flex-wrap:wrap}
   }
 </style>
 </head>
@@ -196,6 +215,17 @@
       <li>План 1 500 000 USD/міс.</li>
       <li>KPI (оборотність запасів, дебіторка, мертвий склад) поки = 1; вимірюються, щоб надалі затвердити.</li>
     </ul>
+    <h3>KPI-коефіцієнти (± кнопки)</h3>
+    <ul>
+      <li>Три коефіцієнти множать бонус: Бонус = База × 3% × KPI₁ × KPI₂ × KPI₃. Кнопки <b>+/−</b> міняють кожен на <b>0.1</b> (від 1 вгору/вниз) — «Ефективний бонус %» і вся ЗП перераховуються одразу.</li>
+      <li>Це <b>що-якщо</b>: зміни лише на екрані. Адмін може натиснути <b>Зберегти</b>, щоб коефіцієнти стали постійними (для всіх). «Скинути» повертає збережені.</li>
+    </ul>
+    <h3>Нараховано / Оплачено (факт з 1С)</h3>
+    <ul>
+      <li>Внизу таблиці — <b>фактичні</b> дані з 1С: скільки зарплати цьому співробітнику <b>нараховано</b> (документи «Нарахування зарплати») і <b>оплачено</b> (платіжні відомості), по місяцях.</li>
+      <li>ЗП у 1С ведеться переважно в <b>гривні</b>; для порівняння з моделлю все зведено в USD за живим курсом. Нарахування місяця зазвичай виплачується наступного — тому помісячно «нараховано» й «оплачено» зсунуті, а кумулятивно близькі.</li>
+      <li>«Загалом (модель)» — наш розрахунок; «Нараховано/Оплачено» — факт. Розбіжність нормальна: у 1С бонуси вводяться руками й можуть відрізнятись від формули.</li>
+    </ul>
     <h3>Разом / Місяці / Квартали</h3>
     <ul>
       <li>Перемикач у тулбарі: <b>Разом</b> — підсумок за весь період; <b>Місяці</b> / <b>Квартали</b> — окрема колонка на кожен місяць/квартал, щоб бачити, як мотивація змінюється.</li>
@@ -214,7 +244,7 @@
 
 <script>
 const API_URL = 'https://price-api.doskevich.workers.dev';
-const state = { from: '', to: '', preset: 'month', view: '', employee: '', data: null };
+const state = { from: '', to: '', preset: 'month', view: '', employee: '', data: null, kpi: null, headlineData: null };
 let _picker = null;
 const MN = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
 function mLabel(mk){ const p=mk.split('-'); return MN[+p[1]-1]+"'"+p[0].slice(2); }
@@ -278,16 +308,24 @@ async function loadHeadline(){
   try {
     const r = await fetch(API_URL + q).then(x=>x.json());
     if (r.error) throw new Error(r.error);
-    const fc = r.calc.forecastMonth;
-    const sub = fc
-      ? `прогнозна ЗП за ${monthFull(from)} · рентабельність = середня за 3 міс (${fmtPct(r.calc.avgMargin3)})`
-      : `ЗП за ${monthFull(from)} · оновлюється по мірі продажів`;
-    document.getElementById('headline').innerHTML = `
-      <div class="mot-total">
-        <div class="who">${esc(r.employee.name)}<small>${sub}</small></div>
-        <div><span class="sum">${fmtUSD(r.calc.total)}</span></div>
-      </div>`;
+    r._from = from;
+    state.headlineData = r;
+    renderHeadline();
   } catch (e) { /* тихо — хедлайн не критичний */ }
+}
+function renderHeadline(){
+  const r = state.headlineData;
+  if (!r) return;
+  const c = applyKpi(r.calc, r.params);
+  const fc = c.forecastMonth;
+  const sub = fc
+    ? `прогнозна ЗП за ${monthFull(r._from)} · рентабельність = середня за 3 міс (${fmtPct(c.avgMargin3)})`
+    : `ЗП за ${monthFull(r._from)} · оновлюється по мірі продажів`;
+  document.getElementById('headline').innerHTML = `
+    <div class="mot-total">
+      <div class="who">${esc(r.employee.name)}<small>${sub}</small></div>
+      <div><span class="sum">${fmtUSD(c.total)}</span></div>
+    </div>`;
 }
 
 // Колонки періоду для табличних view (місяць/квартал), як у P&L
@@ -302,44 +340,56 @@ function motPeriodCols(months, view){
   return (months||[]).map(m=>({label:mLabel(m), months:[m]}));
 }
 
-// «Разом» — вертикальний чек (агрегати за весь період)
-function motReceiptHTML(r, pct, kpiStr, kpiAll1){
-  const c=r.calc, p=r.params;
-  const excl = (c.exclNames && c.exclNames.length)
-    ? `<div class="row sub"><span class="lab">виключено (внутрішні продажі): ${esc(c.exclNames.join(', '))}</span><span class="val neg">−${fmtUSD(c.exclProfit).replace('−','')}</span></div>`
-    : '';
-  const commissionRow = p.add_commission
-    ? `<div class="row"><span class="lab"><span class="op">+</span>Інше<br><small>${esc(c.commissionLabel||'Інші доходи (комиссия и пр.)')} · P&L React</small></span><span class="val">${fmtUSD(c.commission)}</span></div>`
-    : '';
-  const vatRow = p.subtract_vat
-    ? `<div class="row"><span class="lab"><span class="op">−</span>ПДВ (податок)<br><small>${esc(c.vatLabel||'ПДВ')} · Податки, P&L React</small></span><span class="val ${c.vat?'neg':''}">${c.vat ? '−'+fmtUSD(c.vat).replace('−','') : '<span style="color:var(--text3)">—</span>'}</span></div>`
-    : '';
-  const rateNote = `${fmtNum(p.rate_uah,0)} грн${c.monthsCount>1?' × '+c.monthsCount+' міс':''} ÷ ${fmtNum(c.usdUah,2)} (НБУ+1%)`;
-  const fcSingle = c.forecastMonth && c.monthsCount===1;  // весь чек = прогнозний поточний місяць
-  const marginSub = fcSingle ? `прогноз · середня рентабельність за 3 міс` : `валовий прибуток / дохід`;
-  const gpSub = fcSingle ? `прогноз: дохід × ${fmtPct(c.margin)}` : `дохід − собівартість ${fmtUSD(c.gpCogs)}`;
-  const fcNote = (c.forecastMonth && c.monthsCount>1)
-    ? `<div class="row sub"><span class="lab">поточний місяць (${mLabel(c.forecastMonth)}) — прогноз за середньою рентабельністю 3 міс (${fmtPct(c.avgMargin3)})</span><span class="val"></span></div>`
-    : '';
-  return `<div class="receipt">
-      <div class="row"><span class="lab">Валовий дохід (React)<br><small>виручка відділу продажів, без Генерації</small></span><span class="val">${fmtUSD(c.gpRevenue)}</span></div>
-      <div class="row"><span class="lab">Рентабельність<br><small>${marginSub}</small></span><span class="val">${fmtPct(c.margin)}</span></div>
-      <div class="row"><span class="lab">Валовий прибуток${fcSingle?' <span class="fc-tag">прогноз</span>':''}<br><small>${gpSub}</small></span><span class="val ${c.gpProfit<0?'neg':''}">${fmtUSD(c.gpProfit)}</span></div>
-      ${excl}
-      ${fcNote}
-      ${commissionRow}
-      ${vatRow}
-      <div class="row mid"><span class="lab">База для бонусу</span><span class="val ${c.baseGp<0?'neg':''}">${fmtUSD(c.baseGp)}</span></div>
-      <div class="row"><span class="lab"><span class="op">×</span>Бонус: ${fmtNum(pct,pct%1?1:0)}%${kpiAll1?'':' × KPI ('+kpiStr+')'}</span><span class="val ${c.bonus<0?'neg':''}">${fmtUSD(c.bonus)}</span></div>
-      <div class="row"><span class="lab"><span class="op">+</span>Ставка<br><small>${rateNote}</small></span><span class="val">${fmtUSD(c.rateUsd)}</span></div>
-      <div class="row grand"><span class="lab">Загалом до виплати</span><span class="val">${fmtUSD(c.total)}</span></div>
-    </div>`;
+// KPI-коефіцієнти: поточні (з override або збережених), перерахунок бонусу під них
+function currentKpi(defaults){
+  if (state.kpi) return state.kpi;
+  const p = defaults || (state.data && state.data.params) || {};
+  return { k1: p.kpi1, k2: p.kpi2, k3: p.kpi3 };
+}
+// Перерахунок calc під ефективний KPI (база/дохід/ПДВ не залежать від KPI; змінюються бонус і total)
+function applyKpi(c, p){
+  const k = currentKpi(p);
+  const mult = (k.k1||0)*(k.k2||0)*(k.k3||0);
+  const pct = p.gp_base_pct || 0;
+  const byMonth = {};
+  for (const m in c.byMonth){ const b=c.byMonth[m]; const bonus=+(((b.base||0)*pct*mult)).toFixed(2); byMonth[m]={...b, bonus, total:+(((b.rate||0)+bonus)).toFixed(2)}; }
+  const bonus=+(((c.baseGp||0)*pct*mult)).toFixed(2);
+  const total=+(((c.rateUsd||0)+bonus)).toFixed(2);
+  return {...c, kpiMult:mult, bonus, total, byMonth, _kpi:k};
+}
+// Панель KPI зі степерами (± 0.1)
+function kpiBarHTML(){
+  const k=currentKpi(); const p=(state.data&&state.data.params)||{};
+  const eff=(p.gp_base_pct*100)*((k.k1||0)*(k.k2||0)*(k.k3||0));
+  const st=(i,val,lab)=>`<div class="kpi-item"><span class="kpi-lab">${lab}</span><div class="kpi-ctl"><button type="button" onclick="kpiStep(${i},-1)">−</button><span class="kpi-val">${(+val).toFixed(1)}</span><button type="button" onclick="kpiStep(${i},1)">+</button></div></div>`;
+  const changed = state.kpi ? `<span class="kpi-changed">змінено</span>` : '';
+  const saveBtn = (state.kpi && state.data && state.data.isAdmin) ? `<button type="button" class="kpi-save" onclick="kpiSave()">Зберегти</button>` : '';
+  const resetBtn = state.kpi ? `<button type="button" class="kpi-reset" onclick="kpiReset()">Скинути</button>` : '';
+  return `<div class="kpi-bar">${st(1,k.k1,'KPI оборотність')}${st(2,k.k2,'KPI дебіторка')}${st(3,k.k3,'KPI мертвий склад')}<div class="kpi-eff">Ефективний бонус <b>${eff.toFixed(2)}%</b> ${changed}${saveBtn}${resetBtn}</div></div>`;
+}
+function kpiStep(i,dir){ const k={...currentKpi()}; const key='k'+i; k[key]=Math.max(0,+(((k[key]||0)+dir*0.1)).toFixed(1)); state.kpi=k; if(state.data) render(state.data); renderHeadline(); }
+function kpiReset(){ state.kpi=null; if(state.data) render(state.data); renderHeadline(); }
+async function kpiSave(){
+  if(!(state.data&&state.data.isAdmin)) return;
+  const emp=(state.data.employee||{}).ref_key; const k=currentKpi();
+  try{
+    const g=await fetch(API_URL+'?action=_admin_motivation_get').then(x=>x.json());
+    const row=(g.rows||[]).find(x=>x.employee_ref_key===emp);
+    if(!row) throw new Error('нема рядка конфігу');
+    const body={employee_ref_key:emp, display_name:row.display_name, email:row.email, rate_uah:row.rate_uah, gp_base_pct:row.gp_base_pct, kpi1:k.k1, kpi2:k.k2, kpi3:k.k3, exclude_client_like:row.exclude_client_like, add_commission:!!row.add_commission, subtract_vat:!!row.subtract_vat, active:row.active!==0};
+    const res=await fetch(API_URL+'?action=_admin_motivation_set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(x=>x.json());
+    if(res.error) throw new Error(res.error);
+    state.kpi=null; load(); loadHeadline();
+  }catch(e){ alert('Не збережено: '+e.message); }
 }
 
-// «Місяці» / «Квартали» — таблиця: рядки-показники × колонки-періоди + Всього
-function motTableHTML(r, pct, kpiStr, kpiAll1){
-  const c=r.calc, p=r.params;
-  const cols = motPeriodCols(r.months, state.view);
+// Єдина таблиця для всіх view: Разом = одна колонка «Сума», Місяці/Квартали = колонки періодів + Всього
+function motTableHTML(r, c, p){
+  const pct = p.gp_base_pct*100;
+  const k = c._kpi || {k1:p.kpi1,k2:p.kpi2,k3:p.kpi3};
+  const kpiAll1 = (k.k1===1 && k.k2===1 && k.k3===1);
+  const kmult = (k.k1||0)*(k.k2||0)*(k.k3||0);
+  const cols = state.view ? motPeriodCols(r.months, state.view) : [];
   const bm = c.byMonth || {};
   const sumBM = (col,key)=> +(col.months.reduce((s,m)=>s+((bm[m]||{})[key]||0),0)).toFixed(2);
   const cell = v => `<td>${Math.abs(v)<0.005?'<span class="z">—</span>':fmtUSD(v)}</td>`;
@@ -347,10 +397,10 @@ function motTableHTML(r, pct, kpiStr, kpiAll1){
   const tcell = (v,cls)=> `<td class="col-total ${cls||''}">${Math.abs(v)<0.005?'<span class="z">—</span>':fmtUSD(v)}</td>`;
   const pcell = v => `<td>${v?fmtPct(v):'<span class="z">—</span>'}</td>`;
   const fcInCol = col => c.forecastMonth && col.months.includes(c.forecastMonth);
+  const totFc = !state.view && c.forecastMonth && c.monthsCount===1;
   const th = cols.map(col=>`<th>${esc(col.label)}${fcInCol(col)?' <span class="fc-star">*</span>':''}</th>`).join('');
   const rowN = (key)=> cols.map(col=>cell(sumBM(col,key))).join('');
   const rowNeg = (key)=> cols.map(col=>negCell(sumBM(col,key))).join('');
-  // рентабельність колонки = прибуток / дохід цієї колонки
   const rowMargin = cols.map(col=>{ const rv=sumBM(col,'gpRevenue'); return pcell(rv? (sumBM(col,'gpProfit')/rv)*100 : 0); }).join('');
   let rows='';
   rows += `<tr><td class="lab">Валовий дохід (React)</td>${rowN('gpRevenue')}${tcell(c.gpRevenue)}</tr>`;
@@ -359,17 +409,25 @@ function motTableHTML(r, pct, kpiStr, kpiAll1){
   if (p.add_commission) rows += `<tr><td class="lab"><span class="op">+</span>Інше</td>${rowN('commission')}${tcell(c.commission)}</tr>`;
   if (p.subtract_vat) rows += `<tr><td class="lab"><span class="op">−</span>ПДВ</td>${rowNeg('vat')}<td class="col-total">${c.vat?'<span class="neg">−'+fmtUSD(c.vat).replace('−','')+'</span>':'<span class="z">—</span>'}</td></tr>`;
   rows += `<tr class="base"><td class="lab">База для бонусу</td>${rowN('base')}${tcell(c.baseGp)}</tr>`;
-  rows += `<tr><td class="lab"><span class="op">×</span>Бонус ${fmtNum(pct,pct%1?1:0)}%${kpiAll1?'':' · KPI'}</td>${rowN('bonus')}${tcell(c.bonus)}</tr>`;
+  rows += `<tr><td class="lab"><span class="op">×</span>Бонус ${fmtNum(pct,pct%1?1:0)}%${kpiAll1?'':' × '+kmult.toFixed(2)+' (KPI)'}</td>${rowN('bonus')}${tcell(c.bonus)}</tr>`;
   rows += `<tr><td class="lab"><span class="op">+</span>Ставка</td>${cols.map(col=>`<td>${fmtUSD(col.months.length*c.rateMonthly)}</td>`).join('')}${tcell(c.rateUsd)}</tr>`;
-  rows += `<tr class="grand"><td class="lab">Загалом до виплати</td>${cols.map(col=>`<td class="gv">${fmtUSD(sumBM(col,'total'))}</td>`).join('')}<td class="col-total gv">${fmtUSD(c.total)}</td></tr>`;
-  const foot = c.forecastMonth && cols.some(fcInCol)
-    ? `<div class="fc-foot">* ${mLabel(c.forecastMonth)} — прогноз: рентабельність = середня за 3 попередні міс (${fmtPct(c.avgMargin3)}), поки місяць не закрито.</div>`
-    : '';
-  return `<div class="mot-wrap"><table class="mot-table"><thead><tr><th class="lab">Показник</th>${th}<th class="col-total">Всього</th></tr></thead><tbody>${rows}</tbody></table></div>${foot}`;
+  rows += `<tr class="grand"><td class="lab">Загалом (модель)</td>${cols.map(col=>`<td class="gv">${fmtUSD(sumBM(col,'total'))}</td>`).join('')}<td class="col-total gv">${fmtUSD(c.total)}</td></tr>`;
+  if (c.accruedTotal != null){
+    rows += `<tr class="fact-head"><td class="lab">Факт із 1С</td>${cols.map(()=>'<td></td>').join('')}<td class="col-total"></td></tr>`;
+    rows += `<tr class="fact"><td class="lab">Нараховано (1С)</td>${rowN('accrued')}${tcell(c.accruedTotal)}</tr>`;
+    rows += `<tr class="fact"><td class="lab">Оплачено (1С)</td>${rowN('paid')}${tcell(c.paidTotal)}</tr>`;
+  }
+  const notes=[];
+  if (c.forecastMonth && (cols.some(fcInCol) || totFc)) notes.push(`* ${mLabel(c.forecastMonth)} — прогноз: рентабельність = середня за 3 попередні міс (${fmtPct(c.avgMargin3)}), поки місяць не закрито.`);
+  if (c.accruedTotal != null) notes.push('«Нараховано / Оплачено» — факт з 1С (зарплатні документи), сконвертовано в USD за живим курсом.');
+  const foot = notes.length ? `<div class="fc-foot">${notes.map(esc).join('<br>')}</div>` : '';
+  const totLbl = state.view ? 'Всього' : 'Сума';
+  const totHead = `<th class="col-total">${totLbl}${totFc?' <span class="fc-star">*</span>':''}</th>`;
+  return `<div class="mot-wrap"><table class="mot-table"><thead><tr><th class="lab">Показник</th>${th}${totHead}</tr></thead><tbody>${rows}</tbody></table></div>${foot}`;
 }
 
 function render(r){
-  const c = r.calc, p = r.params;
+  const p = r.params;
   // Admin employee picker
   if (r.isAdmin && Array.isArray(r.employees) && r.employees.length){
     const sel = document.getElementById('empSelect');
@@ -378,19 +436,13 @@ function render(r){
     sel.style.display = ''; document.getElementById('empSep').style.display = '';
     state.employee = cur;
   }
-
-  const pct = (p.gp_base_pct*100);
-  const kpiStr = [p.kpi1,p.kpi2,p.kpi3].map(k=>(+k).toString()).join(' × ');
-  const kpiAll1 = (p.kpi1===1 && p.kpi2===1 && p.kpi3===1);
-
+  const c = applyKpi(r.calc, p);
   const cap = `<div class="period-cap">Розбивка за ${fmtDMY(r.from)} — ${fmtDMY(r.to)}${c.monthsCount>1?' · '+c.monthsCount+' міс':''} · Разом <b>${fmtUSD(c.total)}</b></div>`;
-  const content = state.view ? motTableHTML(r, pct, kpiStr, kpiAll1) : motReceiptHTML(r, pct, kpiStr, kpiAll1);
-  document.getElementById('body').innerHTML = cap + content;
+  document.getElementById('body').innerHTML = kpiBarHTML() + cap + motTableHTML(r, c, p);
 
   const parts = [];
-  parts.push(`KPI-коефіцієнти: оборотність запасів ${p.kpi1}, дебіторка ${p.kpi2}, мертвий склад ${p.kpi3}.`);
-  if (kpiAll1) parts.push('Поки всі KPI = 1 (не впливають на бонус).');
-  parts.push('Продажі ТОВ «Генерація Енерджі» з прибутку виключені (умова 5). Кеш до 1 год.');
+  parts.push('KPI-коефіцієнти множать бонус (±0.1 кнопками). Продажі ТОВ «Генерація Енерджі» з прибутку виключені.');
+  parts.push('«Нараховано/Оплачено» — факт з 1С у USD. Кеш до 1 год.');
   document.getElementById('hint').textContent = parts.join(' ');
 }
 
