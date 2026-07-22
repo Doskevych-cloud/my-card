@@ -89,6 +89,7 @@
   .kpi-ctl button { width:24px; height:24px; border-radius:6px; border:1px solid var(--border); background:var(--bg2); color:var(--text); font-size:16px; cursor:pointer; line-height:1; display:inline-flex; align-items:center; justify-content:center; }
   .kpi-ctl button:hover { border-color:var(--accent); color:var(--accent); }
   .kpi-val { min-width:30px; text-align:center; font-variant-numeric:tabular-nums; font-weight:700; font-size:14px; }
+  .kpi-ro { font-variant-numeric:tabular-nums; color:var(--text3); font-weight:600; }
   .mot-table td.kpi-cell { text-align:center; }
   .mot-table tr.kpi-row td.lab { color:var(--text2); font-weight:500; padding-left:22px; }
   .mot-table tr.kpi-ctrl-row td { background:var(--surface2); }
@@ -212,10 +213,11 @@
       <li>План 1 500 000 USD/міс.</li>
       <li>KPI (оборотність запасів, дебіторка, мертвий склад) поки = 1; вимірюються, щоб надалі затвердити.</li>
     </ul>
-    <h3>KPI-коефіцієнти (± кнопки)</h3>
+    <h3>KPI-коефіцієнти (± кнопки, ПО МІСЯЦЯХ)</h3>
     <ul>
-      <li>Три коефіцієнти множать бонус: Бонус = База × 3% × KPI₁ × KPI₂ × KPI₃. Кнопки <b>+/−</b> міняють кожен на <b>0.1</b> (від 1 вгору/вниз) — «Ефективний бонус %» і вся ЗП перераховуються одразу.</li>
-      <li>Це <b>що-якщо</b>: зміни лише на екрані. Адмін може натиснути <b>Зберегти</b>, щоб коефіцієнти стали постійними (для всіх). «Скинути» повертає збережені.</li>
+      <li>Три коефіцієнти множать бонус місяця: Бонус = База × 3% × KPI₁ × KPI₂ × KPI₃. У <b>кожного місяця свої</b> коефіцієнти.</li>
+      <li>Редагуються у вкладці <b>Місяці</b> (кнопки <b>+/−</b> крок 0.1 у колонці кожного місяця) або у вкладці <b>Разом</b> для поточного місяця. У <b>Кварталах</b> і підсумку «Всього» показано середнє (тільки для читання).</li>
+      <li>Зміни спершу лише на екрані. Адмін тисне <b>Зберегти</b> — коефіцієнти цих місяців стають постійними. «Скинути» повертає збережені.</li>
     </ul>
     <h3>Нараховано / Оплачено (факт з 1С)</h3>
     <ul>
@@ -241,7 +243,7 @@
 
 <script>
 const API_URL = 'https://price-api.doskevich.workers.dev';
-const state = { from: '', to: '', preset: 'month', view: '', employee: '', data: null, kpi: null, headlineData: null };
+const state = { from: '', to: '', preset: 'month', view: '', employee: '', data: null, kpiMonthly: {}, headlineData: null };
 let _picker = null;
 const MN = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
 function mLabel(mk){ const p=mk.split('-'); return MN[+p[1]-1]+"'"+p[0].slice(2); }
@@ -337,45 +339,55 @@ function motPeriodCols(months, view){
   return (months||[]).map(m=>({label:mLabel(m), months:[m]}));
 }
 
-// KPI-коефіцієнти: поточні (з override або збережених), перерахунок бонусу під них
-function currentKpi(defaults){
-  if (state.kpi) return state.kpi;
-  const p = defaults || (state.data && state.data.params) || {};
-  return { k1: p.kpi1, k2: p.kpi2, k3: p.kpi3 };
+// KPI по місяцях: override з state.kpiMonthly[m], інакше збережений у даних (b.kpi), інакше 1
+function monthKpi(m, b){
+  const ov = state.kpiMonthly[m];
+  if (ov) return ov;
+  const k = (b && b.kpi) || {};
+  return { k1: k.k1==null?1:k.k1, k2: k.k2==null?1:k.k2, k3: k.k3==null?1:k.k3 };
 }
-// Перерахунок calc під ефективний KPI (база/дохід/ПДВ не залежать від KPI; змінюються бонус і total)
+function kpiChanged(){ return Object.keys(state.kpiMonthly).length > 0; }
+// Перерахунок бонусу/total під помісячні KPI (база/дохід/ПДВ від KPI не залежать)
 function applyKpi(c, p){
-  const k = currentKpi(p);
-  const mult = (k.k1||0)*(k.k2||0)*(k.k3||0);
   const pct = p.gp_base_pct || 0;
-  const byMonth = {};
-  for (const m in c.byMonth){ const b=c.byMonth[m]; const bonus=+(((b.base||0)*pct*mult)).toFixed(2); byMonth[m]={...b, bonus, total:+(((b.rate||0)+bonus)).toFixed(2)}; }
-  const bonus=+(((c.baseGp||0)*pct*mult)).toFixed(2);
-  const total=+(((c.rateUsd||0)+bonus)).toFixed(2);
-  return {...c, kpiMult:mult, bonus, total, byMonth, _kpi:k};
+  const byMonth = {}; let agg = 0;
+  for (const m in c.byMonth){
+    const b = c.byMonth[m];
+    const k = monthKpi(m, b);
+    const mult = (k.k1||0)*(k.k2||0)*(k.k3||0);
+    const bonus = +(((b.base||0)*pct*mult)).toFixed(2);
+    byMonth[m] = {...b, bonus, total:+(((b.rate||0)+bonus)).toFixed(2)};
+    agg += bonus;
+  }
+  const bonus = +agg.toFixed(2);
+  const total = +(((c.rateUsd||0)+bonus)).toFixed(2);
+  return {...c, bonus, total, byMonth};
 }
-function kpiStep(i,dir){ const k={...currentKpi()}; const key='k'+i; k[key]=Math.max(0,+(((k[key]||0)+dir*0.1)).toFixed(1)); state.kpi=k; if(state.data) render(state.data); renderHeadline(); }
-function kpiReset(){ state.kpi=null; if(state.data) render(state.data); renderHeadline(); }
+function kpiStepMonth(m, i, dir){
+  const src = (state.data && state.data.calc.byMonth[m]) || {};
+  const cur = { ...monthKpi(m, src) };
+  const key = 'k'+i;
+  cur[key] = Math.max(0, +(((cur[key]||0)+dir*0.1)).toFixed(1));
+  state.kpiMonthly[m] = cur;
+  if (state.data) render(state.data);
+  renderHeadline();
+}
+function kpiReset(){ state.kpiMonthly = {}; if(state.data) render(state.data); renderHeadline(); }
 async function kpiSave(){
   if(!(state.data&&state.data.isAdmin)) return;
-  const emp=(state.data.employee||{}).ref_key; const k=currentKpi();
+  const emp=(state.data.employee||{}).ref_key;
+  const months={};
+  for (const m in state.kpiMonthly){ const k=state.kpiMonthly[m]; months[m]={kpi1:k.k1,kpi2:k.k2,kpi3:k.k3}; }
   try{
-    const g=await fetch(API_URL+'?action=_admin_motivation_get').then(x=>x.json());
-    const row=(g.rows||[]).find(x=>x.employee_ref_key===emp);
-    if(!row) throw new Error('нема рядка конфігу');
-    const body={employee_ref_key:emp, display_name:row.display_name, email:row.email, rate_uah:row.rate_uah, gp_base_pct:row.gp_base_pct, kpi1:k.k1, kpi2:k.k2, kpi3:k.k3, exclude_client_like:row.exclude_client_like, add_commission:!!row.add_commission, subtract_vat:!!row.subtract_vat, active:row.active!==0};
-    const res=await fetch(API_URL+'?action=_admin_motivation_set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(x=>x.json());
+    const res=await fetch(API_URL+'?action=_admin_motivation_kpi_set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({employee_ref_key:emp,months})}).then(x=>x.json());
     if(res.error) throw new Error(res.error);
-    state.kpi=null; load(); loadHeadline();
+    state.kpiMonthly={}; load(); loadHeadline();
   }catch(e){ alert('Не збережено: '+e.message); }
 }
 
 // Єдина таблиця для всіх view: Разом = одна колонка «Сума», Місяці/Квартали = колонки періодів + Всього
 function motTableHTML(r, c, p){
   const pct = p.gp_base_pct*100;
-  const k = c._kpi || {k1:p.kpi1,k2:p.kpi2,k3:p.kpi3};
-  const kpiAll1 = (k.k1===1 && k.k2===1 && k.k3===1);
-  const kmult = (k.k1||0)*(k.k2||0)*(k.k3||0);
   const cols = state.view ? motPeriodCols(r.months, state.view) : [];
   const bm = c.byMonth || {};
   const sumBM = (col,key)=> +(col.months.reduce((s,m)=>s+((bm[m]||{})[key]||0),0)).toFixed(2);
@@ -398,12 +410,17 @@ function motTableHTML(r, c, p){
   rows += `<tr class="base"><td class="lab">База для бонусу</td>${rowN('base')}${tcell(c.baseGp)}</tr>`;
   const valCols = cols.length + 1;
   rows += `<tr><td class="lab"><span class="op">×</span>Базовий бонус</td><td colspan="${valCols}" class="kpi-cell">${fmtNum(pct,pct%1?1:0)}%</td></tr>`;
-  const kpiRow = (i,lab)=>`<tr class="kpi-row"><td class="lab"><span class="op">×</span>${lab}</td><td colspan="${valCols}" class="kpi-cell"><span class="kpi-ctl"><button type="button" onclick="kpiStep(${i},-1)">−</button><span class="kpi-val">${(+(k['k'+i]||0)).toFixed(1)}</span><button type="button" onclick="kpiStep(${i},1)">+</button></span></td></tr>`;
+  // KPI-комірка колонки: 1 місяць → степер (редаговано); квартал/агрегат → read-only середнє
+  const stepCell = (m, i, cls) => `<td class="kpi-cell ${cls||''}"><span class="kpi-ctl"><button type="button" onclick="kpiStepMonth('${m}',${i},-1)">−</button><span class="kpi-val">${(+(monthKpi(m, bm[m])['k'+i]||0)).toFixed(1)}</span><button type="button" onclick="kpiStepMonth('${m}',${i},1)">+</button></span></td>`;
+  const roCell = (ms, i, cls) => { const vals=ms.map(m=>monthKpi(m, bm[m])['k'+i]||0); const avg=vals.length?vals.reduce((s,v)=>s+v,0)/vals.length:0; const uni=vals.every(v=>Math.abs(v-(vals[0]||0))<1e-9); return `<td class="kpi-cell ${cls||''}"><span class="kpi-ro">${uni?avg.toFixed(1):'~'+avg.toFixed(1)}</span></td>`; };
+  const kpiColCell = (col, i) => col.months.length===1 ? stepCell(col.months[0], i) : roCell(col.months, i);
+  const kpiTotalCell = (i) => (!state.view && (r.months||[]).length===1) ? stepCell(r.months[0], i, 'col-total') : roCell(r.months||[], i, 'col-total');
+  const kpiRow = (i,lab) => `<tr class="kpi-row"><td class="lab"><span class="op">×</span>${lab}</td>${cols.map(col=>kpiColCell(col,i)).join('')}${kpiTotalCell(i)}</tr>`;
   rows += kpiRow(1,'KPI оборотність запасів');
   rows += kpiRow(2,'KPI дебіторська заблокованість');
   rows += kpiRow(3,'KPI мертвий склад');
-  if (state.kpi) rows += `<tr class="kpi-ctrl-row"><td class="lab">KPI змінено (не збережено)</td><td colspan="${valCols}" class="kpi-cell">${(state.data&&state.data.isAdmin)?'<button type="button" class="kpi-save" onclick="kpiSave()">Зберегти</button> ':''}<button type="button" class="kpi-reset" onclick="kpiReset()">Скинути</button></td></tr>`;
-  rows += `<tr class="bonus-row"><td class="lab"><span class="op">=</span>Бонус${kpiAll1?'':' (ефект. '+(pct*kmult).toFixed(2)+'%)'}</td>${rowN('bonus')}${tcell(c.bonus)}</tr>`;
+  if (kpiChanged()) rows += `<tr class="kpi-ctrl-row"><td class="lab">KPI змінено (${Object.keys(state.kpiMonthly).length} міс)</td><td colspan="${valCols}" class="kpi-cell">${(state.data&&state.data.isAdmin)?'<button type="button" class="kpi-save" onclick="kpiSave()">Зберегти</button> ':''}<button type="button" class="kpi-reset" onclick="kpiReset()">Скинути</button></td></tr>`;
+  rows += `<tr class="bonus-row"><td class="lab"><span class="op">=</span>Бонус</td>${rowN('bonus')}${tcell(c.bonus)}</tr>`;
   rows += `<tr><td class="lab"><span class="op">+</span>Ставка</td>${cols.map(col=>`<td>${fmtUSD(col.months.length*c.rateMonthly)}</td>`).join('')}${tcell(c.rateUsd)}</tr>`;
   rows += `<tr class="grand"><td class="lab">Загалом (модель)</td>${cols.map(col=>`<td class="gv">${fmtUSD(sumBM(col,'total'))}</td>`).join('')}<td class="col-total gv">${fmtUSD(c.total)}</td></tr>`;
   if (c.accruedTotal != null){
