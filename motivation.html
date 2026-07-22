@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="base.css?v=20260712">
 <style>
   /* Хедер/таби/тулбар — канонічні, як у решти звітів (top_products) */
-  .wrap { max-width: 900px; margin: 0 auto; padding: 14px 16px 40px; }
+  .wrap { margin: 0 auto; padding: 14px 16px; }
   .page-tabs { display:flex; flex-wrap:wrap; gap:4px; padding:4px; background:var(--surface2); border:1px solid var(--border); border-radius:10px; margin-bottom:14px; }
   .ptab { display:inline-flex; align-items:center; gap:5px; padding:8px 16px; border-radius:7px; font-size:13px; font-weight:600; color:var(--text2); text-decoration:none; transition:background .15s,color .15s; white-space:nowrap; }
   .ptab:hover { background:var(--bg3); color:var(--text); }
@@ -75,6 +75,28 @@
   .modal li::before{content:'–';position:absolute;left:0;color:var(--text3)}
   .modal code{background:var(--surface);padding:1px 6px;border-radius:5px;font-size:12px;color:var(--text)}
   .modal .close{position:absolute;top:16px;right:18px;cursor:pointer;color:var(--text3);font-size:18px;border:none;background:none;padding:4px}
+
+  /* Мобільний — стандартний блок звітів (osp/inventory) + адаптація чека */
+  @media (max-width:720px){
+    .wrap{padding:12px}
+    .page-tabs{display:flex;flex-wrap:wrap;gap:3px;padding:3px;max-width:100%}
+    .ptab{padding:6px 10px;font-size:11.5px;flex:0 0 auto}
+    .toolbar{padding:8px;gap:6px;border-radius:10px}
+    .toolbar .lbl{display:none}
+    .toolbar .chip{padding:6px 10px;font-size:11px}
+    .toolbar .group{padding:3px;gap:2px}
+    .toolbar .group .chip{padding:5px 8px;font-size:11px}
+    .toolbar .sep{display:none}
+    .toolbar .date-range-input{min-width:150px;font-size:12px;padding:6px 8px}
+    select.emp-select{max-width:160px;font-size:11px;padding:6px 9px}
+    .mot-total{padding:16px 16px;gap:8px}
+    .mot-total .sum{font-size:27px}
+    .receipt .row{padding:11px 14px;gap:10px}
+    .receipt .row.sub{padding-left:30px}
+    .receipt .row .lab{font-size:12.5px}
+    .receipt .row .val{font-size:12.5px}
+    .receipt .row.grand .val{font-size:15px}
+  }
 </style>
 </head>
 <body>
