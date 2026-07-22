@@ -554,6 +554,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
           <span class="chip" data-org="Генерація" onclick="gpSetOrg(this)">Генерація</span>
         </span>
         <div class="sep"></div>
+        <span class="group" id="gpViewGroup" title="Відображення: сума за період або динаміка валового прибутку по місяцях/кварталах">
+          <span class="chip active" data-pview="" onclick="setGpView(this)">Разом</span>
+          <span class="chip" data-pview="m" onclick="setGpView(this)">Місяці</span>
+          <span class="chip" data-pview="q" onclick="setGpView(this)">Квартали</span>
+        </span>
+        <div class="sep"></div>
         <span class="lbl">Покупець</span>
         <span class="gp-tags" id="gpBuyerTags">
           <input type="text" id="gpBuyerIn" placeholder="Почни вводити…" autocomplete="off"
@@ -590,6 +596,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
             <span class="ic">↻</span> Оновити позиції
           </span>
         </span>
+        <span class="chip" onclick="openGpHelp()" title="Як працює цей звіт">❓ Як працює</span>
       </div>
       <div class="mc-block">
         <div class="mc-head">
@@ -857,6 +864,40 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li>Кеш звіту — <b>1 година</b>. Нові проводки в 1С з'являться тут із затримкою до години; звіт і деталізація кешуються окремо, тож короткий розсинхрон між ними можливий у межах цієї години.</li>
       <li>Це P&L за нарахуванням: оплата і рух грошей тут ні до чого — дивись Cash Flow.</li>
       <li>Суми округлені до долара, тому видима сума деталей може відрізнятись від рядка на ±1&nbsp;$.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ── Довідка «Як працює Валовий прибуток» ── -->
+<div class="modal-backdrop" id="gpHelpModal" onclick="if(event.target===this)closeGpHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт Валовий прибуток">
+    <button class="close" onclick="closeGpHelp()" aria-label="Закрити">✕</button>
+    <h2>Як працює звіт «Валовий прибуток»</h2>
+    <h3>Джерело даних</h3>
+    <p>Регістр накопичення 1С <b>«Продажі»</b>: виручка (Сумма) і собівартість (Себестоимость) кожного руху вже в <b>USD</b> (управлінська валюта), курсова конвертація на сайті не виконується. Період — за датою руху в реєстрі.</p>
+    <h3>Структура рядків</h3>
+    <ul>
+      <li>Ієрархія: <b>Покупець → Договір → Замовлення → Номенклатура → Документи</b> (документи показуються, якщо їх по позиції більше одного).</li>
+      <li>Документи — видаткові накладні, а також <b>«Закриття місяця» / «Коригування собівартості»</b> — правки собівартості заднім числом. Такі рядки прив'язуються до покупця за номенклатурою; якщо прив'язати нема до чого — потрапляють у «Коригування».</li>
+      <li><b>Валовий прибуток</b> = Виручка − Собівартість; <b>Валова маржа</b> = ВП / Виручка × 100%.</li>
+      <li><b>Організація</b>: «Всі» = Реакт + Генерація (Одеса).</li>
+    </ul>
+    <h3>Динаміка: Разом / Місяці / Квартали</h3>
+    <ul>
+      <li>Перемикач у тулбарі керує колонками таблиці: <b>Разом</b> — тільки підсумки за весь період; <b>Місяці</b> / <b>Квартали</b> — окрема колонка на кожен календарний місяць або квартал, у ній — <b>валовий прибуток</b> за цей відрізок.</li>
+      <li>Права група колонок (Кількість / Виручка / Собівартість / ВП / Маржа) — завжди підсумок за весь період.</li>
+      <li>Якщо період уміщається в один місяць — колонки динаміки не показуються.</li>
+    </ul>
+    <h3>Фільтри</h3>
+    <ul>
+      <li><b>Покупець / Номенклатура / Виключити</b> — застосовуються миттєво без запиту до 1С; картки зверху і рядок «Разом» перераховуються по відфільтрованому.</li>
+      <li>Фільтр по номенклатурі перезбирає й суми батьківських рівнів (замовлення/договір/покупець) тільки з відібраних позицій.</li>
+    </ul>
+    <h3>Чому цифра може здивувати</h3>
+    <ul>
+      <li>Кеш звіту — <b>1 година</b>. Нові документи в 1С з'являться тут із затримкою до години.</li>
+      <li>Собівартість може змінюватися заднім числом документами закриття місяця — цифри за минулі місяці не «замерзають».</li>
+      <li>Це звіт за відвантаженням: оплати тут ні до чого — дивись Cash Flow і «Розрах. з покупцями».</li>
     </ul>
   </div>
 </div>
@@ -2376,7 +2417,9 @@ function openCbHelp()   { document.getElementById('cbHelpModal').classList.add('
 function closeCbHelp()  { document.getElementById('cbHelpModal').classList.remove('open'); }
 function openWhHelp()   { document.getElementById('whHelpModal').classList.add('open'); }
 function closeWhHelp()  { document.getElementById('whHelpModal').classList.remove('open'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closePnlHelp(); closeCbHelp(); closeWhHelp(); } });
+function openGpHelp()   { document.getElementById('gpHelpModal').classList.add('open'); }
+function closeGpHelp()  { document.getElementById('gpHelpModal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closePnlHelp(); closeCbHelp(); closeWhHelp(); closeGpHelp(); } });
 
 function pnlDateChanged() {
   pnlState.preset = detectPreset(pnlState.from, pnlState.to) || '';
@@ -2686,7 +2729,7 @@ _cfPicker = initDateRange({ inputId: 'cfDateRange', from: cfState.from, to: cfSt
    GROSS PROFIT TAB
    ═══════════════════════════════════════════════════ */
 let _gpPicker = null;
-const gpState = { from: '', to: '', org: '', preset: '', buyerInclude: [], nomInclude: [], excludeList: [], _loaded: false, _rawData: null };
+const gpState = { from: '', to: '', org: '', preset: '', view: '', buyerInclude: [], nomInclude: [], excludeList: [], _loaded: false, _rawData: null };
 
 // Restore persisted tag filters (per-browser, не в URL).
 // Формат — JSON-масив повних назв; для excludeList також підтримуємо старий
@@ -2729,6 +2772,16 @@ function gpSetPreset(p) {
   saveStateToUrl();
   gpLoad();
 }
+// Відображення періоду: '' = одна сума «Всього», 'm' = колонки по місяцях, 'q' = по кварталах.
+// Дані вже містять bm по кожному вузлу — ре-рендер з останньої відповіді, без запиту до бекенду.
+function setGpView(el) {
+  gpState.view = el.dataset.pview || '';
+  el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  saveStateToUrl();
+  if (gpState._rawData) renderGp(gpState._rawData); else gpLoad();
+}
+
 function gpSetOrg(el) {
   gpState.org = el.dataset.org;
   el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
@@ -2903,6 +2956,17 @@ function renderGp(data) {
   const buyerQ   = (gpState.buyerQuery || '').toLowerCase();
   const nomQ     = (gpState.nomQuery   || '').toLowerCase();
 
+  // bm вузла = { 'YYYY-MM': [кількість, виручка, собівартість] } — з бекенду.
+  // При клієнтській фільтрації по номенклатурі bm перезбирається з дочірніх.
+  const mergeBm = list => {
+    const o = {};
+    (list || []).forEach(x => {
+      const bm = x.bm || {};
+      for (const m in bm) { const d = o[m] || (o[m] = [0, 0, 0]); d[0] += bm[m][0]; d[1] += bm[m][1]; d[2] += bm[m][2]; }
+    });
+    return o;
+  };
+
   // Apply client-side filters
   let filtered = clients;
   // 1. Виключені клієнти — точний матч
@@ -2932,21 +2996,21 @@ function renderGp(data) {
           const revenue = products.reduce((s, p) => s + p.revenue, 0);
           const cogs = products.reduce((s, p) => s + p.cogs, 0);
           const profit = +(revenue - cogs).toFixed(2);
-          return { ...ord, products, qty, revenue, cogs, profit, margin: revenue ? +((profit / revenue) * 100).toFixed(2) : 0 };
+          return { ...ord, products, qty, revenue, cogs, profit, margin: revenue ? +((profit / revenue) * 100).toFixed(2) : 0, bm: mergeBm(products) };
         }).filter(Boolean);
         if (!orders.length) return null;
         const qty = orders.reduce((s, o) => s + o.qty, 0);
         const revenue = orders.reduce((s, o) => s + o.revenue, 0);
         const cogs = orders.reduce((s, o) => s + o.cogs, 0);
         const profit = +(revenue - cogs).toFixed(2);
-        return { ...ct, orders, qty, revenue, cogs, profit, margin: revenue ? +((profit / revenue) * 100).toFixed(2) : 0 };
+        return { ...ct, orders, qty, revenue, cogs, profit, margin: revenue ? +((profit / revenue) * 100).toFixed(2) : 0, bm: mergeBm(orders) };
       }).filter(Boolean);
       if (!contracts.length) return null;
       const qty = contracts.reduce((s, c) => s + c.qty, 0);
       const revenue = contracts.reduce((s, c) => s + c.revenue, 0);
       const cogs = contracts.reduce((s, c) => s + c.cogs, 0);
       const profit = +(revenue - cogs).toFixed(2);
-      return { ...cl, contracts, qty, revenue, cogs, profit, margin: revenue ? +((profit / revenue) * 100).toFixed(2) : 0 };
+      return { ...cl, contracts, qty, revenue, cogs, profit, margin: revenue ? +((profit / revenue) * 100).toFixed(2) : 0, bm: mergeBm(contracts) };
     }).filter(Boolean);
   }
 
@@ -2955,6 +3019,7 @@ function renderGp(data) {
   filtered.forEach(cl => { ft.qty += cl.qty; ft.revenue += cl.revenue; ft.cogs += cl.cogs; });
   ft.profit = +(ft.revenue - ft.cogs).toFixed(2);
   ft.margin = ft.revenue ? +((ft.profit / ft.revenue) * 100).toFixed(2) : 0;
+  ft.bm = mergeBm(filtered);
 
   // Summary cards
   document.getElementById('gpSummary').innerHTML = '<div class="pnl-summary">' +
@@ -2974,19 +3039,19 @@ function renderGp(data) {
 
   filtered.forEach(cl => {
     const clId = 'r' + (rowId++);
-    flatRows.push({ id: clId, parent: null, level: 0, name: cl.name, qty: cl.qty, revenue: cl.revenue, cogs: cl.cogs, profit: cl.profit, margin: cl.margin, hasChildren: cl.contracts.length > 0 });
+    flatRows.push({ id: clId, parent: null, level: 0, name: cl.name, qty: cl.qty, revenue: cl.revenue, cogs: cl.cogs, profit: cl.profit, margin: cl.margin, bm: cl.bm, hasChildren: cl.contracts.length > 0 });
     cl.contracts.forEach(ct => {
       const ctId = 'r' + (rowId++);
-      flatRows.push({ id: ctId, parent: clId, level: 1, name: ct.name, qty: ct.qty, revenue: ct.revenue, cogs: ct.cogs, profit: ct.profit, margin: ct.margin, hasChildren: ct.orders.length > 0 });
+      flatRows.push({ id: ctId, parent: clId, level: 1, name: ct.name, qty: ct.qty, revenue: ct.revenue, cogs: ct.cogs, profit: ct.profit, margin: ct.margin, bm: ct.bm, hasChildren: ct.orders.length > 0 });
       ct.orders.forEach(ord => {
         const ordId = 'r' + (rowId++);
-        flatRows.push({ id: ordId, parent: ctId, level: 2, name: ord.name, qty: ord.qty, revenue: ord.revenue, cogs: ord.cogs, profit: ord.profit, margin: ord.margin, hasChildren: ord.products.length > 0 });
+        flatRows.push({ id: ordId, parent: ctId, level: 2, name: ord.name, qty: ord.qty, revenue: ord.revenue, cogs: ord.cogs, profit: ord.profit, margin: ord.margin, bm: ord.bm, hasChildren: ord.products.length > 0 });
         ord.products.forEach(pr => {
           const prId = 'r' + (rowId++);
-          flatRows.push({ id: prId, parent: ordId, level: 3, name: pr.name, qty: pr.qty, revenue: pr.revenue, cogs: pr.cogs, profit: pr.profit, margin: pr.margin, hasChildren: pr.docs.length > 1 });
+          flatRows.push({ id: prId, parent: ordId, level: 3, name: pr.name, qty: pr.qty, revenue: pr.revenue, cogs: pr.cogs, profit: pr.profit, margin: pr.margin, bm: pr.bm, hasChildren: pr.docs.length > 1 });
           if (pr.docs.length > 1) {
             pr.docs.forEach(doc => {
-              flatRows.push({ id: 'r' + (rowId++), parent: prId, level: 4, name: doc.name, qty: doc.qty, revenue: doc.revenue, cogs: doc.cogs, profit: doc.profit, margin: doc.margin, hasChildren: false });
+              flatRows.push({ id: 'r' + (rowId++), parent: prId, level: 4, name: doc.name, qty: doc.qty, revenue: doc.revenue, cogs: doc.cogs, profit: doc.profit, margin: doc.margin, bm: doc.bm, hasChildren: false });
             });
           }
         });
@@ -3003,9 +3068,30 @@ function renderGp(data) {
     return '<span class="' + (v > 0 ? 'pos' : v < 0 ? 'neg' : 'zr') + '">' + v.toFixed(2) + '%</span>';
   }
 
+  // ── Динаміка: колонки періоду (як у P&L). view 'm' — колонка на місяць, 'q' — на квартал.
+  // Колонка показує валовий прибуток (виручка − собівартість) вузла за свій період.
+  // Для періоду в один місяць колонки не малюємо — дублювали б підсумки.
+  const mlist = data.months || [];
+  let periodCols = [];
+  if (gpState.view === 'm' && mlist.length > 1) {
+    periodCols = mlist.map(m => ({ label: mLabel(m), months: [m] }));
+  } else if (gpState.view === 'q' && mlist.length > 1) {
+    const qIdx = {};
+    mlist.forEach(m => {
+      const qi = Math.floor((+m.slice(5, 7) - 1) / 3);
+      const k = m.slice(0, 4) + 'Q' + qi; // ключ з роком — період через межу року не злипається
+      if (!qIdx[k]) { qIdx[k] = { label: ['I','II','III','IV'][qi] + " кв'" + m.slice(2, 4), months: [] }; periodCols.push(qIdx[k]); }
+      qIdx[k].months.push(m);
+    });
+  }
+  const colProfit = (bm, c) => c.months.reduce((s, m) => { const e = (bm || {})[m]; return s + (e ? e[1] - e[2] : 0); }, 0);
+  const periodCells = bm => periodCols.map(c => '<td>' + fmtV(colProfit(bm, c)) + '</td>').join('');
+  const mThs = periodCols.map(c => '<th title="Валовий прибуток, $">' + c.label + '</th>').join('');
+
   // Будуємо у P&L стилі — .pnl-wrap + .pnl-table + .cat/.sec[data-cat]/.grp/.itm/.itm[data-grp] + .tri з data-collapsed
-  let html = '<div class="pnl-wrap"><table class="pnl-table"><thead><tr>' +
+  let html = '<div class="pnl-wrap"><table class="pnl-table' + (periodCols.length ? ' pnl-multi' : '') + '"><thead><tr>' +
     '<th>Покупець / Договір / Замовлення / Номенклатура</th>' +
+    mThs +
     '<th class="col-total">Кількість</th>' +
     '<th class="col-total">Виручка, $</th>' +
     '<th class="col-total">Собівартість, $</th>' +
@@ -3015,6 +3101,7 @@ function renderGp(data) {
 
   // Разом — поверх, у стилі P&L grand-row (.grd)
   html += '<tr class="grd"><td>Разом</td>' +
+    periodCells(ft.bm) +
     '<td class="col-total">' + fmt(ft.qty, 0) + '</td>' +
     '<td class="col-total">' + fmtV(ft.revenue) + '</td>' +
     '<td class="col-total">' + fmtV(ft.cogs) + '</td>' +
@@ -3037,6 +3124,7 @@ function renderGp(data) {
     const onclickAttr = r.hasChildren ? ' onclick="gpToggle(\'' + r.id + '\')"' : '';
     html += '<tr class="' + m.cls + '"' + m.dataAttr + ' data-id="' + r.id + '" data-parent="' + (r.parent || '') + '"' + dataCollapsed + hidden + '>' +
       '<td' + onclickAttr + '>' + tri + esc(r.name) + '</td>' +
+      periodCells(r.bm) +
       '<td class="col-total">' + fmt(r.qty, 0) + '</td>' +
       '<td class="col-total">' + fmtV(r.revenue) + '</td>' +
       '<td class="col-total">' + fmtV(r.cogs) + '</td>' +
@@ -4530,6 +4618,10 @@ Auth.require('finance').then(function(user) {
     gpState.to = saved.to;
     gpState.preset = saved.preset || detectPreset(saved.from, saved.to) || '';
     gpState.collapsed = saved.exp !== '1';
+    gpState.view = (saved.view === 'm' || saved.view === 'q') ? saved.view : '';
+    document.querySelectorAll('#gpViewGroup .chip').forEach(function(c) {
+      c.classList.toggle('active', (c.dataset.pview || '') === gpState.view);
+    });
     gpState.org = pnlState.org;
     if (_gpPicker) _gpPicker.setDates(gpState.from, gpState.to);
     document.querySelectorAll('#gpOrgGroup .chip[data-org]').forEach(function(c) {
