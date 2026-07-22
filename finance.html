@@ -117,6 +117,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .pnl-table.pnl-multi th.col-total{border-left:1px solid var(--border)}
 /* Довгі лейбли документів drill-down не розтягують sticky-колонку — еліпсис */
 .pnl-table.pnl-multi tr.itm-det td:first-child{max-width:0;overflow:hidden;text-overflow:ellipsis}
+/* ── GP динаміка: кожна метрика = група колонок [періоди | Всього], двохрівнева шапка ── */
+.pnl-table.gp-multi .gp-grp-start{border-left:1px solid var(--border)}
+.pnl-table.gp-multi thead th.gp-metric-h{text-align:center;letter-spacing:.4px}
+.pnl-table.gp-multi thead tr:nth-child(2) th{top:31px}
 
 /* ═══ Row hierarchy — unified top-spine, lighter nested, mutedest items ═══ */
 /* Top spine: all main rows visible in fully-collapsed view share one style */
@@ -884,9 +888,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     </ul>
     <h3>Динаміка: Разом / Місяці / Квартали</h3>
     <ul>
-      <li>Перемикач у тулбарі керує колонками таблиці: <b>Разом</b> — тільки підсумки за весь період; <b>Місяці</b> / <b>Квартали</b> — окрема колонка на кожен календарний місяць або квартал, у ній — <b>валовий прибуток</b> за цей відрізок.</li>
-      <li>Права група колонок (Кількість / Виручка / Собівартість / ВП / Маржа) — завжди підсумок за весь період.</li>
-      <li>Якщо період уміщається в один місяць — колонки динаміки не показуються.</li>
+      <li>Перемикач у тулбарі керує колонками таблиці. <b>Разом</b> — 5 підсумкових колонок за весь період (Кількість / Виручка / Собівартість / ВП / Маржа).</li>
+      <li><b>Місяці</b> / <b>Квартали</b> — <b>кожна</b> з цих 5 метрик розгортається у власну групу колонок: окремий стовпець на кожен місяць/квартал + «Всього» цієї метрики. Тобто спочатку Кількість по всіх місяцях, потім Виручка по всіх місяцях, і так далі — щоб періоди всередині однієї метрики стояли поруч і їх було зручно порівнювати.</li>
+      <li>Значення в колонці періоду рахуються з рухів саме цього місяця/кварталу; маржа — з виручки й собівартості того ж відрізка.</li>
+      <li>Колонок стає багато — таблиця гортається вбік, а колонка з назвою покупця зафіксована зліва.</li>
+      <li>Якщо період уміщається в один місяць — динаміка не показується (колонки дублювали б підсумок).</li>
     </ul>
     <h3>Фільтри</h3>
     <ul>
@@ -1199,13 +1205,14 @@ function downloadXLSX() {
       if (/\bitm\b/.test(cls)) indent = '    ';
       else if (/\bgrp\b/.test(cls)) indent = '  ';
       else if (/\bpct\b/.test(cls) && !/is-sec|is-pct-head/.test(tr.outerHTML)) indent = '  ';
-      const row = cells.map((td, ci) => {
-        const v = cellValue(td);
-        if (ci === 0) {
-          const txt = cellText(td);
-          return indent + txt;
-        }
-        return v;
+      // Розгортаємо colspan (двохрівнева шапка GP-динаміки) — значення в першу
+      // клітинку групи, решту заповнюємо порожнім, щоб колонки лишались вирівняні.
+      const row = [];
+      cells.forEach(td => {
+        const span = td.colSpan || 1;
+        const val = row.length === 0 ? indent + cellText(td) : cellValue(td);
+        row.push(val);
+        for (let k = 1; k < span; k++) row.push(null);
       });
       aoa.push(row);
     });
@@ -3067,10 +3074,15 @@ function renderGp(data) {
     if (!v && v !== 0) return '<span class="zr">—</span>';
     return '<span class="' + (v > 0 ? 'pos' : v < 0 ? 'neg' : 'zr') + '">' + v.toFixed(2) + '%</span>';
   }
+  function fmtQ(v) {
+    if (Math.abs(v) < 0.5) return '<span class="zr">—</span>';
+    return fmt(v, 0);
+  }
 
   // ── Динаміка: колонки періоду (як у P&L). view 'm' — колонка на місяць, 'q' — на квартал.
-  // Колонка показує валовий прибуток (виручка − собівартість) вузла за свій період.
-  // Для періоду в один місяць колонки не малюємо — дублювали б підсумки.
+  // На відміну від P&L (одна метрика), GP має 5 метрик, тож у режимі динаміки КОЖНА метрика
+  // розгортається у власну групу колонок [період1 … періодN | Всього], щоб періоди всередині
+  // метрики стояли поруч і їх можна було порівнювати. Для періоду в один місяць колонок нема.
   const mlist = data.months || [];
   let periodCols = [];
   if (gpState.view === 'm' && mlist.length > 1) {
@@ -3084,29 +3096,67 @@ function renderGp(data) {
       qIdx[k].months.push(m);
     });
   }
-  const colProfit = (bm, c) => c.months.reduce((s, m) => { const e = (bm || {})[m]; return s + (e ? e[1] - e[2] : 0); }, 0);
-  const periodCells = bm => periodCols.map(c => '<td>' + fmtV(colProfit(bm, c)) + '</td>').join('');
-  const mThs = periodCols.map(c => '<th title="Валовий прибуток, $">' + c.label + '</th>').join('');
+  const P = periodCols.length;
+
+  // Сума сирих [кількість, виручка, собівартість] по місяцях колонки → далі похідні метрики.
+  const colAgg = (bm, c) => {
+    let q = 0, r = 0, co = 0;
+    c.months.forEach(m => { const e = (bm || {})[m]; if (e) { q += e[0]; r += e[1]; co += e[2]; } });
+    return [q, r, co];
+  };
+  // Опис метрик: як показати значення періоду (з agg-трійки) і підсумок за весь період (з вузла).
+  const METRICS = [
+    { label: 'Кількість',          col: a => fmtQ(a[0]),                                       tot: r => fmt(r.qty, 0) },
+    { label: 'Виручка, $',         col: a => fmtV(a[1]),                                       tot: r => fmtV(r.revenue) },
+    { label: 'Собівартість, $',    col: a => fmtV(a[2]),                                       tot: r => fmtV(r.cogs) },
+    { label: 'Валовий прибуток, $',col: a => fmtV(a[1] - a[2]),                                tot: r => fmtV(r.profit) },
+    { label: 'Валова маржа',       col: a => fmtM(a[1] ? +(((a[1] - a[2]) / a[1]) * 100).toFixed(2) : null), tot: r => fmtM(r.margin) },
+  ];
+
+  // Клітинки значень рядка. Разом (P=0) — 5 одиночних колонок; динаміка — 5 груп по (P+1).
+  const valCells = (node) => {
+    if (!P) {
+      return '<td class="col-total">' + fmt(node.qty, 0) + '</td>' +
+        '<td class="col-total">' + fmtV(node.revenue) + '</td>' +
+        '<td class="col-total">' + fmtV(node.cogs) + '</td>' +
+        '<td class="col-total">' + fmtV(node.profit) + '</td>' +
+        '<td class="col-total">' + fmtM(node.margin) + '</td>';
+    }
+    const aggs = periodCols.map(c => colAgg(node.bm, c));
+    return METRICS.map(mt =>
+      aggs.map((a, i) => '<td' + (i === 0 ? ' class="gp-grp-start"' : '') + '>' + mt.col(a) + '</td>').join('') +
+      '<td class="col-total">' + mt.tot(node) + '</td>'
+    ).join('');
+  };
+
+  // Шапка. Разом — один рівень; динаміка — два рівні: метрики зверху, періоди під ними.
+  let thead;
+  if (!P) {
+    thead = '<tr>' +
+      '<th>Покупець / Договір / Замовлення / Номенклатура</th>' +
+      '<th class="col-total">Кількість</th>' +
+      '<th class="col-total">Виручка, $</th>' +
+      '<th class="col-total">Собівартість, $</th>' +
+      '<th class="col-total">Валовий прибуток, $</th>' +
+      '<th class="col-total">Валова маржа</th>' +
+      '</tr>';
+  } else {
+    const row1 = '<th class="gp-name-col">Покупець / Договір / Замовлення / Номенклатура</th>' +
+      METRICS.map(mt => '<th colspan="' + (P + 1) + '" class="gp-grp-start gp-metric-h">' + mt.label + '</th>').join('');
+    const row2 = '<th class="gp-name-col"></th>' +
+      METRICS.map(mt =>
+        periodCols.map((c, i) => '<th' + (i === 0 ? ' class="gp-grp-start"' : '') + '>' + c.label + '</th>').join('') +
+        '<th class="col-total">Всього</th>'
+      ).join('');
+    thead = '<tr>' + row1 + '</tr><tr>' + row2 + '</tr>';
+  }
 
   // Будуємо у P&L стилі — .pnl-wrap + .pnl-table + .cat/.sec[data-cat]/.grp/.itm/.itm[data-grp] + .tri з data-collapsed
-  let html = '<div class="pnl-wrap"><table class="pnl-table' + (periodCols.length ? ' pnl-multi' : '') + '"><thead><tr>' +
-    '<th>Покупець / Договір / Замовлення / Номенклатура</th>' +
-    mThs +
-    '<th class="col-total">Кількість</th>' +
-    '<th class="col-total">Виручка, $</th>' +
-    '<th class="col-total">Собівартість, $</th>' +
-    '<th class="col-total">Валовий прибуток, $</th>' +
-    '<th class="col-total">Валова маржа</th>' +
-    '</tr></thead><tbody>';
+  let html = '<div class="pnl-wrap"><table class="pnl-table' + (P ? ' pnl-multi gp-multi' : '') + '"><thead>' +
+    thead + '</thead><tbody>';
 
   // Разом — поверх, у стилі P&L grand-row (.grd)
-  html += '<tr class="grd"><td>Разом</td>' +
-    periodCells(ft.bm) +
-    '<td class="col-total">' + fmt(ft.qty, 0) + '</td>' +
-    '<td class="col-total">' + fmtV(ft.revenue) + '</td>' +
-    '<td class="col-total">' + fmtV(ft.cogs) + '</td>' +
-    '<td class="col-total">' + fmtV(ft.profit) + '</td>' +
-    '<td class="col-total">' + fmtM(ft.margin) + '</td></tr>';
+  html += '<tr class="grd"><td>Разом</td>' + valCells(ft) + '</tr>';
 
   // Map GP level → P&L row class: 0→cat, 1→sec[data-cat], 2→grp, 3→itm, 4→itm[data-grp]
   const lvlMap = [
@@ -3124,12 +3174,7 @@ function renderGp(data) {
     const onclickAttr = r.hasChildren ? ' onclick="gpToggle(\'' + r.id + '\')"' : '';
     html += '<tr class="' + m.cls + '"' + m.dataAttr + ' data-id="' + r.id + '" data-parent="' + (r.parent || '') + '"' + dataCollapsed + hidden + '>' +
       '<td' + onclickAttr + '>' + tri + esc(r.name) + '</td>' +
-      periodCells(r.bm) +
-      '<td class="col-total">' + fmt(r.qty, 0) + '</td>' +
-      '<td class="col-total">' + fmtV(r.revenue) + '</td>' +
-      '<td class="col-total">' + fmtV(r.cogs) + '</td>' +
-      '<td class="col-total">' + fmtV(r.profit) + '</td>' +
-      '<td class="col-total">' + fmtM(r.margin) + '</td></tr>';
+      valCells(r) + '</tr>';
   });
 
   html += '</tbody></table></div>';
