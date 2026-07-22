@@ -84,18 +84,16 @@
   .fc-foot { margin:8px 2px 0; font-size:11.5px; color:var(--text3); }
   .fc-tag { display:inline-block; font-size:10px; font-weight:700; color:var(--accent); border:1px solid var(--border); border-radius:5px; padding:0 5px; vertical-align:middle; text-transform:uppercase; letter-spacing:.4px; }
 
-  /* KPI-панель зі степерами */
-  .kpi-bar { display:flex; flex-wrap:wrap; align-items:center; gap:16px; margin:0 0 12px; padding:10px 14px; background:var(--surface2); border:1px solid var(--border); border-radius:12px; }
-  .kpi-item { display:flex; flex-direction:column; gap:4px; }
-  .kpi-lab { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:.4px; }
+  /* KPI-коефіцієнти — рядки таблиці зі степерами */
   .kpi-ctl { display:inline-flex; align-items:center; gap:8px; }
-  .kpi-ctl button { width:26px; height:26px; border-radius:7px; border:1px solid var(--border); background:var(--bg2); color:var(--text); font-size:17px; cursor:pointer; line-height:1; display:inline-flex; align-items:center; justify-content:center; }
+  .kpi-ctl button { width:24px; height:24px; border-radius:6px; border:1px solid var(--border); background:var(--bg2); color:var(--text); font-size:16px; cursor:pointer; line-height:1; display:inline-flex; align-items:center; justify-content:center; }
   .kpi-ctl button:hover { border-color:var(--accent); color:var(--accent); }
   .kpi-val { min-width:30px; text-align:center; font-variant-numeric:tabular-nums; font-weight:700; font-size:14px; }
-  .kpi-eff { margin-left:auto; font-size:13px; color:var(--text2); display:inline-flex; align-items:center; gap:8px; }
-  .kpi-eff b { color:var(--text); }
-  .kpi-changed { color:var(--accent); font-size:11px; font-weight:700; }
-  .kpi-save, .kpi-reset { padding:5px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg2); color:var(--text2); font-size:12px; cursor:pointer; }
+  .mot-table td.kpi-cell { text-align:center; }
+  .mot-table tr.kpi-row td.lab { color:var(--text2); font-weight:500; padding-left:22px; }
+  .mot-table tr.kpi-ctrl-row td { background:var(--surface2); }
+  .mot-table tr.bonus-row td { border-top:1px solid var(--border); }
+  .kpi-save, .kpi-reset { padding:4px 12px; border-radius:7px; border:1px solid var(--border); background:var(--bg2); color:var(--text2); font-size:12px; cursor:pointer; }
   .kpi-save { background:var(--accent); border-color:var(--accent); color:#fff; }
   .mot-table tr.fact-head td { background:var(--surface2); color:var(--text3); font-size:10px; text-transform:uppercase; letter-spacing:.4px; font-weight:700; border-top:2px solid var(--border); padding-top:9px; padding-bottom:5px; }
   .mot-table tr.fact td { color:var(--text2); }
@@ -141,8 +139,7 @@
     .mot-table{font-size:11.5px}
     .mot-table th,.mot-table td{padding:8px 10px}
     .mot-table th.lab,.mot-table td.lab{min-width:150px}
-    .kpi-bar{gap:10px;padding:9px 10px}
-    .kpi-eff{margin-left:0;flex-basis:100%;flex-wrap:wrap}
+    .kpi-ctl button{width:22px;height:22px;font-size:15px}
   }
 </style>
 </head>
@@ -357,16 +354,6 @@ function applyKpi(c, p){
   const total=+(((c.rateUsd||0)+bonus)).toFixed(2);
   return {...c, kpiMult:mult, bonus, total, byMonth, _kpi:k};
 }
-// Панель KPI зі степерами (± 0.1)
-function kpiBarHTML(){
-  const k=currentKpi(); const p=(state.data&&state.data.params)||{};
-  const eff=(p.gp_base_pct*100)*((k.k1||0)*(k.k2||0)*(k.k3||0));
-  const st=(i,val,lab)=>`<div class="kpi-item"><span class="kpi-lab">${lab}</span><div class="kpi-ctl"><button type="button" onclick="kpiStep(${i},-1)">−</button><span class="kpi-val">${(+val).toFixed(1)}</span><button type="button" onclick="kpiStep(${i},1)">+</button></div></div>`;
-  const changed = state.kpi ? `<span class="kpi-changed">змінено</span>` : '';
-  const saveBtn = (state.kpi && state.data && state.data.isAdmin) ? `<button type="button" class="kpi-save" onclick="kpiSave()">Зберегти</button>` : '';
-  const resetBtn = state.kpi ? `<button type="button" class="kpi-reset" onclick="kpiReset()">Скинути</button>` : '';
-  return `<div class="kpi-bar">${st(1,k.k1,'KPI оборотність')}${st(2,k.k2,'KPI дебіторка')}${st(3,k.k3,'KPI мертвий склад')}<div class="kpi-eff">Ефективний бонус <b>${eff.toFixed(2)}%</b> ${changed}${saveBtn}${resetBtn}</div></div>`;
-}
 function kpiStep(i,dir){ const k={...currentKpi()}; const key='k'+i; k[key]=Math.max(0,+(((k[key]||0)+dir*0.1)).toFixed(1)); state.kpi=k; if(state.data) render(state.data); renderHeadline(); }
 function kpiReset(){ state.kpi=null; if(state.data) render(state.data); renderHeadline(); }
 async function kpiSave(){
@@ -409,7 +396,14 @@ function motTableHTML(r, c, p){
   if (p.add_commission) rows += `<tr><td class="lab"><span class="op">+</span>Інше</td>${rowN('commission')}${tcell(c.commission)}</tr>`;
   if (p.subtract_vat) rows += `<tr><td class="lab"><span class="op">−</span>ПДВ</td>${rowNeg('vat')}<td class="col-total">${c.vat?'<span class="neg">−'+fmtUSD(c.vat).replace('−','')+'</span>':'<span class="z">—</span>'}</td></tr>`;
   rows += `<tr class="base"><td class="lab">База для бонусу</td>${rowN('base')}${tcell(c.baseGp)}</tr>`;
-  rows += `<tr><td class="lab"><span class="op">×</span>Бонус ${fmtNum(pct,pct%1?1:0)}%${kpiAll1?'':' × '+kmult.toFixed(2)+' (KPI)'}</td>${rowN('bonus')}${tcell(c.bonus)}</tr>`;
+  const valCols = cols.length + 1;
+  rows += `<tr><td class="lab"><span class="op">×</span>Базовий бонус</td><td colspan="${valCols}" class="kpi-cell">${fmtNum(pct,pct%1?1:0)}%</td></tr>`;
+  const kpiRow = (i,lab)=>`<tr class="kpi-row"><td class="lab"><span class="op">×</span>${lab}</td><td colspan="${valCols}" class="kpi-cell"><span class="kpi-ctl"><button type="button" onclick="kpiStep(${i},-1)">−</button><span class="kpi-val">${(+(k['k'+i]||0)).toFixed(1)}</span><button type="button" onclick="kpiStep(${i},1)">+</button></span></td></tr>`;
+  rows += kpiRow(1,'KPI оборотність запасів');
+  rows += kpiRow(2,'KPI дебіторська заблокованість');
+  rows += kpiRow(3,'KPI мертвий склад');
+  if (state.kpi) rows += `<tr class="kpi-ctrl-row"><td class="lab">KPI змінено (не збережено)</td><td colspan="${valCols}" class="kpi-cell">${(state.data&&state.data.isAdmin)?'<button type="button" class="kpi-save" onclick="kpiSave()">Зберегти</button> ':''}<button type="button" class="kpi-reset" onclick="kpiReset()">Скинути</button></td></tr>`;
+  rows += `<tr class="bonus-row"><td class="lab"><span class="op">=</span>Бонус${kpiAll1?'':' (ефект. '+(pct*kmult).toFixed(2)+'%)'}</td>${rowN('bonus')}${tcell(c.bonus)}</tr>`;
   rows += `<tr><td class="lab"><span class="op">+</span>Ставка</td>${cols.map(col=>`<td>${fmtUSD(col.months.length*c.rateMonthly)}</td>`).join('')}${tcell(c.rateUsd)}</tr>`;
   rows += `<tr class="grand"><td class="lab">Загалом (модель)</td>${cols.map(col=>`<td class="gv">${fmtUSD(sumBM(col,'total'))}</td>`).join('')}<td class="col-total gv">${fmtUSD(c.total)}</td></tr>`;
   if (c.accruedTotal != null){
@@ -438,7 +432,7 @@ function render(r){
   }
   const c = applyKpi(r.calc, p);
   const cap = `<div class="period-cap">Розбивка за ${fmtDMY(r.from)} — ${fmtDMY(r.to)}${c.monthsCount>1?' · '+c.monthsCount+' міс':''} · Разом <b>${fmtUSD(c.total)}</b></div>`;
-  document.getElementById('body').innerHTML = kpiBarHTML() + cap + motTableHTML(r, c, p);
+  document.getElementById('body').innerHTML = cap + motTableHTML(r, c, p);
 
   const parts = [];
   parts.push('KPI-коефіцієнти множать бонус (±0.1 кнопками). Продажі ТОВ «Генерація Енерджі» з прибутку виключені.');
