@@ -595,7 +595,6 @@ function motCard(r) {
     + '</div>'
     + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">'
     + fld('Ім’я (для UI)', f('name', r.display_name, ''))
-    + fld('Email (логін співробітника)', f('email', r.email, 'placeholder="vyacheslav@…"'))
     + fld('Ставка, грн', f('rate', r.rate_uah, 'type="number" step="100"'))
     + fld('Базовий %', f('pct', pct, 'type="number" step="0.1"'))
     + fld('KPI оборотність', f('k1', r.kpi1, 'type="number" step="0.05"'))
@@ -619,7 +618,6 @@ async function motSave(ref) {
   const body = {
     employee_ref_key: ref,
     display_name: g('name').value.trim(),
-    email: g('email').value.trim(),
     rate_uah: Number(g('rate').value) || 0,
     gp_base_pct: (Number(g('pct').value) || 0) / 100,
     kpi1: Number(g('k1').value), kpi2: Number(g('k2').value), kpi3: Number(g('k3').value),
