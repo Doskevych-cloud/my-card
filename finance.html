@@ -172,6 +172,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .pnl-table tr.sub[data-cat] td:first-child{padding-left:28px}
 .pnl-table tr.grd td{font-weight:800;font-size:14px;border-top:2px solid var(--border2);color:var(--text)}
 .pnl-table tr.grd td:first-child{padding-left:14px}
+/* Податок на прибуток — рядок між «до оподаткування» і «чистим»: на рівні
+   підсумків (без глибокого відступу статей), але звичайною вагою */
+.pnl-table tr.itm[data-tax-inc] td{color:var(--text);font-size:13px}
+.pnl-table tr.itm[data-tax-inc] td:first-child{padding-left:14px}
 .pnl-table tr.pct td{color:var(--text3);font-size:11px;font-style:italic;padding-top:3px;padding-bottom:3px;border:none}
 .pnl-table tr.pct td:first-child{padding-left:14px}
 .pnl-table tr.sp td{border:none;padding:3px 0;background:var(--bg)}
@@ -842,11 +846,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <h2>Як працює звіт P&L</h2>
     <h3>Джерело даних</h3>
     <p>Управлінський реєстр 1С <b>«Доходи і витрати»</b> (метод нарахування, accrual) — той самий, з якого будується бухгалтерський P&L в 1С. Всі суми вже в <b>USD</b> (управлінська валюта), курсова конвертація на сайті не виконується.</p>
+    <p>Виняток — <b>податок на прибуток</b>: у 1С він не проходить через рахунки витрат, тому в реєстрі «Доходи і витрати» його нема взагалі (рахунок фінрезультату так і зветься: «Прибутки та збитки <i>за винятком податку на прибуток</i>»). Його нарахування береться окремо, з реєстру бух-проводок — обороти по дебету рахунку <b>44.02</b>, сценарій «Фактичний».</p>
     <h3>Структура рядків</h3>
     <ul>
       <li><b>Виторг / Собівартість</b> — розбивка по підрозділах (напрямках) з виміру «Структурна одиниця» проводки.</li>
       <li><b>Витрати і інші доходи</b> — рядок = рахунок управлінського плану рахунків. Секцію визначає код рахунку: 70 — виторг, 74 — інші доходи, 90 — собівартість, 92 — адміністративні, 93 — комерційні, 94/96/97 — інші, 98 і ПДВ/ЄСВ/ПДФО за описом — податки.</li>
       <li><b>Період</b> — за датою проводки; <b>Організація</b>: «Всі» = Реакт + Генерація (Одеса). Ген.Київ у P&L навмисно не включено.</li>
+      <li><b>Низ звіту</b>: «Прибуток до оподаткування» → «Податок на прибуток» (нарахування з 44.02) → «Чистий прибуток». Чиста рентабельність рахується від прибутку <b>після</b> податку.</li>
+    </ul>
+    <h3>Податок на прибуток — на що зважати</h3>
+    <ul>
+      <li>Нараховують його <b>квартально</b>, документом «Нарахування податків», тому в місячній розбивці він з'являється сплеском у місяці нарахування (березень, червень…), а не рівномірно.</li>
+      <li><b>Нуль у рядку — це не помилка звіту</b>, а відсутність нарахування в 1С за період. За 2025 рік, наприклад, нарахувань не було жодного.</li>
+      <li>Рахунок <b>98</b> «Податок на прибуток» у витрати P&L <b>не входить</b>: попри назву, через нього проводять не нарахування, а <b>сплату</b> податку (Дт98 Кт банк/каса). Тримати його у витратах означало б порахувати податок двічі — нарахування на 44.02 плюс платіж. Рух грошей дивись у Cash Flow.</li>
+      <li>Податок на прибуток не входить в операційний прибуток і в EBITDA — це правильно за визначенням цих показників.</li>
     </ul>
     <h3>Динаміка: Разом / Місяці / Квартали</h3>
     <ul>
@@ -2129,7 +2142,14 @@ let _pnlPeriodCols = 0;    // кількість колонок динаміки
 function renderPnlAccrual(data) {
   const { revenue, cogs, expenses, income, otherIncome, totalExpenses, sections, months } = data;
   const grossTotal  = (revenue.total || 0) - (cogs.total || 0);
-  const netTotal    = (revenue.total || 0) + (otherIncome.total || 0) - (cogs.total || 0) - (totalExpenses.total || 0);
+  // Податок на прибуток у 1С не проходить через рахунки витрат (нарахування —
+  // проводка Дт 44.02), тому бекенд віддає його окремим полем incomeTax, а не
+  // всередині totalExpenses. Звідси: EBT = прибуток до оподаткування,
+  // чистий прибуток = EBT − податок.
+  const incomeTax   = data.incomeTax || { byMonth: {}, total: 0 };
+  const taxIncTotal = incomeTax.total || 0;
+  const ebtTotal    = (revenue.total || 0) + (otherIncome.total || 0) - (cogs.total || 0) - (totalExpenses.total || 0);
+  const netTotal    = ebtTotal - taxIncTotal;
   const opexTotal   = (sections.admin.total || 0) + (sections.commercial.total || 0);
   const taxTotal    = sections.tax.total || 0;
   const otherExp    = sections.other_expense.total || 0;
@@ -2170,12 +2190,14 @@ function renderPnlAccrual(data) {
   const taxBM   = sumBM(expenses.filter(e => e.section === 'tax'));
   const othBM   = sumBM(expenses.filter(e => e.section === 'other_expense'));
   const opexBM  = sumBM([{ byMonth: adminBM }, { byMonth: commBM }]);
-  const opBM = {}, netBM = {};
+  const opBM = {}, ebtBM = {}, netBM = {};
+  const taxIncBM = incomeTax.byMonth || {};
   mlist.forEach(m => {
     const rv = (revenue.byMonth || {})[m] || 0, cg = (cogs.byMonth || {})[m] || 0;
     const oi = (otherIncome.byMonth || {})[m] || 0, te = (totalExpenses.byMonth || {})[m] || 0;
     opBM[m] = rv - cg - (opexBM[m] || 0);
-    netBM[m] = rv + oi - cg - te;
+    ebtBM[m] = rv + oi - cg - te;
+    netBM[m] = ebtBM[m] - (taxIncBM[m] || 0);
   });
 
   // Margins (%):
@@ -2255,6 +2277,11 @@ function renderPnlAccrual(data) {
   // Прибутки
   rows += '<tr class="sp">' + '<td></td>'.repeat(periodCols.length + 2) + '</tr>';
   rows += `<tr class="grd"><td>Операційний прибуток / збиток</td>${cells(opBM, opProfit)}</tr>`;
+  // Прибуток до оподаткування → податок на прибуток → чистий. Рядок податку
+  // показуємо навіть на нулі: нуль тут — сам по собі сигнал (за 2025 у 1С
+  // нарахувань не було взагалі), приховати його означало б це замовчати.
+  rows += `<tr class="grd"><td>Прибуток до оподаткування</td>${cells(ebtBM, ebtTotal)}</tr>`;
+  rows += `<tr class="itm" data-tax-inc="1"><td>Податок на прибуток</td>${cells(taxIncBM, taxIncTotal)}</tr>`;
   rows += `<tr class="grd"><td>Чистий прибуток / збиток</td>${cells(netBM, netTotal)}</tr>`;
   // Стандартні маржі: gross = GP/Revenue, operating = OpProfit/Revenue, net = Net/(Revenue+OtherInc)
   rows += `<tr class="pct"><td>Валова маржа</td>${pctCells(grossMgnOf)}</tr>`;
@@ -4534,7 +4561,8 @@ async function _mcFetchPnlNet(from, to, filters) {
   const rev = ((r.revenue && r.revenue.total) || 0) + ((r.otherIncome && r.otherIncome.total) || 0);
   const cogs = (r.cogs && r.cogs.total) || 0;
   const exp = (r.totalExpenses && r.totalExpenses.total) || 0;
-  return rev - cogs - exp;
+  const tax = (r.incomeTax && r.incomeTax.total) || 0; // податок на прибуток (44.02) — поза totalExpenses
+  return rev - cogs - exp - tax;
 }
 async function _mcFetchGpMargin(from, to, filters) {
   const orgQ = (filters && filters.org) ? '&org=' + encodeURIComponent(filters.org) : '';

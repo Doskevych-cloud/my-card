@@ -550,7 +550,8 @@ async function loadCeoAlerts() {
   if (pnlR && !pnlR.error) {
     const rev = (pnlR.revenue?.total || 0) + (pnlR.otherIncome?.total || 0);
     const cogs = pnlR.cogs?.total || 0; const exp = pnlR.totalExpenses?.total || 0;
-    const net = rev - cogs - exp;
+    const tax = pnlR.incomeTax?.total || 0; // податок на прибуток (44.02) — окремо від totalExpenses
+    const net = rev - cogs - exp - tax;
     const margin = rev > 0 ? net / rev : 0;
     if (margin < 0.05 && rev > 0) {
       alerts.push({ pri: 'h', title: `Маржа за період ${fmtPct(margin)} — низька`, body: `Чиста маржа нижче 5%. COGS ${fmtMoneyShort(cogs)} · OPEX ${fmtMoneyShort(exp)}.`, act: { lbl: 'P&L →', href: '/finance.html' } });

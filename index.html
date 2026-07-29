@@ -466,9 +466,10 @@ async function loadFinance() {
     const cogs = (d.cogs && d.cogs.total) || 0;
     const oth = (d.otherIncome && d.otherIncome.total) || 0;
     const texp = (d.totalExpenses && d.totalExpenses.total) || 0;
+    const tax = (d.incomeTax && d.incomeTax.total) || 0; // податок на прибуток (44.02) — окремо від totalExpenses
     const totalRev = rev + oth;
     const gross = rev - cogs;
-    const net = rev + oth - cogs - texp;
+    const net = rev + oth - cogs - texp - tax;
     const grossMgn = rev ? (gross / rev * 100) : 0;
     const netMgn = totalRev ? (net / totalRev * 100) : 0;
     cards.push(
@@ -800,7 +801,8 @@ async function loadKpis() {
     if (!p) return null;
     const rev = (p.revenue?.total || 0) + (p.otherIncome?.total || 0);
     const cogs = (p.cogs?.total || 0); const exp = (p.totalExpenses?.total || 0);
-    return rev - cogs - exp;
+    const tax = (p.incomeTax?.total || 0); // податок на прибуток (44.02) — окремо від totalExpenses
+    return rev - cogs - exp - tax;
   }
   let netVal = null;
   if (pnlR.status === 'fulfilled' && pnlR.value && !pnlR.value.error) {
