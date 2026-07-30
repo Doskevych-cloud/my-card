@@ -63,7 +63,12 @@
       border:1px solid var(--border, rgba(255,255,255,.08));
       border-radius:10px;
       background: var(--bg2, rgba(255,255,255,.02));
+      /* Пунктів багато: на середніх ширинах вікна nav скролиться всередині,
+         а не обрізає хвіст топбара (тема/Адмін/аватар мають лишатись видимі) */
+      min-width:0; overflow-x:auto;
+      scrollbar-width:none; -ms-overflow-style:none;
     }
+    .app-topbar .nav::-webkit-scrollbar{ display:none }
     .app-topbar .nav a{
       display:inline-flex; align-items:center; gap:5px;
       font-size:12px; font-weight:500;
