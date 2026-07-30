@@ -342,7 +342,7 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
       <button class="btn btn--ghost" onclick="motAdd()">+ Додати</button>
     </div>
     <p style="font-size:12px;color:var(--text3);margin:-6px 0 16px">
-      Параметри розрахунку зарплати (звіт «Продажі → Мотивації»). Дві моделі: <b>React (GP)</b> — % від валового прибутку відділу React;
+      Параметри розрахунку зарплати (розділ «Основний персонал → Мотивація»). Дві моделі: <b>React (GP)</b> — % від валового прибутку відділу React;
       <b>Генерація (план)</b> — бонус за виконання квартального плану по прибутку Генерації (плани кварталів і ручні місячні суми вводяться прямо у звіті).
       Хто бачить звіт — роль «Мотивації (зарплата)» + організація (вкладка «Ролі»): орг «Реакт» → модель React, орг «Генерація» → модель Генерація.
     </p>
@@ -481,7 +481,9 @@ const PERM_TREE = [
     { key: 'sales_inventory', label: 'Обіговість запасів' },
     { key: 'sales_sla', label: 'SLA' },
     { key: 'sales_sla_exclude', label: 'SLA — виключення замірів (КВП)' },
-    { key: 'sales_motivation', label: 'Мотивації (зарплата)' },
+  ]},
+  { group: 'Основний персонал', children: [
+    { key: 'sales_motivation', label: 'Мотивація (зарплата)' },
   ]},
   { group: 'Фінанси', gate: 'finance', children: [
     { key: 'finance_pnl', label: 'P&L' },

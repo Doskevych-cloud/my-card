@@ -428,6 +428,7 @@
       { role: 'forecast',      active: 'forecast',      href: '/forecast.html',     label: '📊 Закупівлі', orgRequired: 'Реакт' },
       { role: 'warehouses',    active: 'warehouses',    href: '/warehouses.html',   label: '📦 Склад' },
       { role: 'brigades',      active: 'brigades',      href: '/brigades.html',     label: '👷 Бригади' },
+      { role: 'sales_motivation', active: 'staff',      href: '/motivation.html',   label: '👤 Основний персонал' },
       { role: 'sales',         active: 'sales',         href: '/sales.html',        label: '📈 Продажі' },
       { role: 'counterparties',active: 'counterparties',href: '/counterparties.html', label: '👥 Контрагенти' },
       { role: 'finance',       active: 'finance',       href: '/finance.html',      label: '💰 Фінанси' },
