@@ -335,12 +335,16 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
       <h2 style="margin:0;font-size:16px">Мотивація співробітників</h2>
       <div style="flex:1"></div>
       <select id="motAddSelect" class="input" style="max-width:280px"></select>
+      <select id="motAddModel" class="input" style="max-width:220px">
+        <option value="react_gp">Модель: React (GP)</option>
+        <option value="gen_plan">Модель: Генерація (план)</option>
+      </select>
       <button class="btn btn--ghost" onclick="motAdd()">+ Додати</button>
     </div>
     <p style="font-size:12px;color:var(--text3);margin:-6px 0 16px">
-      Параметри розрахунку зарплати (звіт «Продажі → Мотивації»).
-      <b>Виключити клієнта</b> — текст у назві контрагента, чиї продажі не входять у прибуток (внутрішні продажі сестринській компанії).
-      Хто бачить звіт — визначає роль «Мотивації (зарплата)» + організація «Реакт» (вкладка «Ролі»); хто має доступ, бачить усіх зі списку.
+      Параметри розрахунку зарплати (звіт «Продажі → Мотивації»). Дві моделі: <b>React (GP)</b> — % від валового прибутку відділу React;
+      <b>Генерація (план)</b> — бонус за виконання квартального плану по прибутку Генерації (плани кварталів і ручні місячні суми вводяться прямо у звіті).
+      Хто бачить звіт — роль «Мотивації (зарплата)» + організація (вкладка «Ролі»): орг «Реакт» → модель React, орг «Генерація» → модель Генерація.
     </p>
     <div id="motContainer"><div class="loading">Завантаження…</div></div>
   </div>
@@ -586,12 +590,13 @@ function motRender() {
   cont.innerHTML = _motRows.map(r => motCard(r)).join('');
 }
 function motCard(r) {
+  if ((r.model || 'react_gp') === 'gen_plan') return motCardGen(r);
   const pct = ((r.gp_base_pct || 0) * 100);
   const f = (id, v, attrs) => '<input class="input" id="mot_' + id + '_' + r.employee_ref_key + '" value="' + esc(v == null ? '' : v) + '" ' + (attrs || '') + '>';
   return '<div class="card" style="margin-bottom:14px;padding:16px">'
     + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
     + '<b style="font-size:14px">' + esc(r.display_name || r.employee_ref_key) + '</b>'
-    + '<span style="font-size:11px;color:var(--text3)">' + esc(r.employee_ref_key) + '</span>'
+    + '<span style="font-size:11px;color:var(--text3)">React (GP) · ' + esc(r.employee_ref_key) + '</span>'
     + '<label style="margin-left:auto;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px"><input type="checkbox" id="mot_active_' + r.employee_ref_key + '"' + (r.active ? ' checked' : '') + '> активний</label>'
     + '</div>'
     + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">'
@@ -609,6 +614,35 @@ function motCard(r) {
     + '<div style="flex:1"></div>'
     + '<button class="btn btn--ghost" onclick="motDelete(\'' + r.employee_ref_key + '\')" style="color:var(--red)">Видалити</button>'
     + '<button class="btn btn--primary" onclick="motSave(\'' + r.employee_ref_key + '\')">Зберегти</button>'
+    + '</div></div>';
+}
+// Картка моделі «Генерація (квартальний план)». Шкала — текстом «поріг%:бонус%» через кому.
+// Плани кварталів і ручні місячні суми тут НЕ редагуються — вони вводяться прямо у звіті.
+function motCardGen(r) {
+  const f = (id, v, attrs) => '<input class="input" id="mot_' + id + '_' + r.employee_ref_key + '" value="' + esc(v == null ? '' : v) + '" ' + (attrs || '') + '>';
+  let scaleTxt = '100:15, 70:11, 50:8, 0:5';
+  try {
+    const sc = JSON.parse(r.bonus_scale || '');
+    if (Array.isArray(sc) && sc.length) scaleTxt = sc.map(p => Math.round(p[0]*100) + ':' + (p[1]*100).toFixed(p[1]*100 % 1 ? 1 : 0)).join(', ');
+  } catch (_) {}
+  return '<div class="card" style="margin-bottom:14px;padding:16px">'
+    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
+    + '<b style="font-size:14px">' + esc(r.display_name || r.employee_ref_key) + '</b>'
+    + '<span style="font-size:11px;color:var(--text3)">Генерація (план) · ' + esc(r.employee_ref_key) + '</span>'
+    + '<label style="margin-left:auto;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px"><input type="checkbox" id="mot_active_' + r.employee_ref_key + '"' + (r.active ? ' checked' : '') + '> активний</label>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">'
+    + fld('Ім’я (для UI)', f('name', r.display_name, ''))
+    + fld('Ставка, грн', f('rate', r.rate_uah, 'type="number" step="1000"'))
+    + fld('Аванс бонусу, %/міс', f('mbp', (r.monthly_bonus_pct != null ? r.monthly_bonus_pct : 0.05) * 100, 'type="number" step="0.5"'))
+    + fld('Шкала (виконання%:бонус%)', f('scale', scaleTxt, 'placeholder="100:15, 70:11, 50:8, 0:5"'))
+    + fld('Діє з (РРРР-ММ)', f('vfrom', r.valid_from, 'placeholder="2026-02"'))
+    + '</div>'
+    + '<div style="display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap">'
+    + '<span style="font-size:12px;color:var(--text3)">Плани кварталів і місячні суми (аванс, ПДВ/дохід за документами, заблоковані ПН) — у самому звіті, клік по клітинці.</span>'
+    + '<div style="flex:1"></div>'
+    + '<button class="btn btn--ghost" onclick="motDelete(\'' + r.employee_ref_key + '\')" style="color:var(--red)">Видалити</button>'
+    + '<button class="btn btn--primary" onclick="motSaveGen(\'' + r.employee_ref_key + '\')">Зберегти</button>'
     + '</div></div>';
 }
 function fld(label, inner) {
@@ -633,17 +667,44 @@ async function motSave(ref) {
     await loadMotivation();
   } catch (e) { toast('Помилка: ' + e.message, 'err'); }
 }
+// Зберегти картку моделі «Генерація (план)»
+async function motSaveGen(ref) {
+  const g = id => document.getElementById('mot_' + id + '_' + ref);
+  // Шкала «100:15, 70:11, 50:8, 0:5» → [[1,0.15],[0.7,0.11],[0.5,0.08],[0,0.05]]
+  const scale = g('scale').value.split(',')
+    .map(s => s.split(':').map(x => parseFloat(x.trim().replace(',', '.'))))
+    .filter(p => p.length === 2 && isFinite(p[0]) && isFinite(p[1]))
+    .map(p => [p[0] / 100, p[1] / 100]);
+  const body = {
+    employee_ref_key: ref, model: 'gen_plan',
+    display_name: g('name').value.trim(),
+    rate_uah: Number(g('rate').value) || 0,
+    monthly_bonus_pct: (Number(g('mbp').value) || 0) / 100,
+    bonus_scale: scale,
+    valid_from: g('vfrom').value.trim(),
+    active: document.getElementById('mot_active_' + ref).checked,
+  };
+  try {
+    await Auth.apiFetch('_admin_motivation_set', { method: 'POST', body });
+    toast('Збережено', 'ok');
+    await loadMotivation();
+  } catch (e) { toast('Помилка: ' + e.message, 'err'); }
+}
 async function motAdd() {
   const sel = document.getElementById('motAddSelect');
   const ref = sel.value;
   if (!ref) return;
   const name = sel.options[sel.selectedIndex].textContent;
+  const model = document.getElementById('motAddModel').value;
+  const body = model === 'gen_plan'
+    ? { employee_ref_key: ref, display_name: name, model: 'gen_plan',
+        rate_uah: 65000, monthly_bonus_pct: 0.05,
+        bonus_scale: [[1, 0.15], [0.7, 0.11], [0.5, 0.08], [0, 0.05]], active: true }
+    : { employee_ref_key: ref, display_name: name, model: 'react_gp',
+        rate_uah: 45000, gp_base_pct: 0.03, kpi1: 1, kpi2: 1, kpi3: 1,
+        exclude_client_like: 'ГЕНЕРАЦІЯ ЕНЕРДЖІ', add_commission: true, subtract_vat: true, active: true };
   try {
-    await Auth.apiFetch('_admin_motivation_set', { method: 'POST', body: {
-      employee_ref_key: ref, display_name: name,
-      rate_uah: 45000, gp_base_pct: 0.03, kpi1: 1, kpi2: 1, kpi3: 1,
-      exclude_client_like: 'ГЕНЕРАЦІЯ ЕНЕРДЖІ', add_commission: true, subtract_vat: true, active: true,
-    } });
+    await Auth.apiFetch('_admin_motivation_set', { method: 'POST', body });
     toast('Додано', 'ok');
     await loadMotivation();
   } catch (e) { toast('Помилка: ' + e.message, 'err'); }
