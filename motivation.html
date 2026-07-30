@@ -495,8 +495,16 @@ function genCommit(val){
   const v = parseFloat(String(val).replace(',','.').replace(/\s/g,''));
   const num = isFinite(v) ? +v.toFixed(2) : 0;
   const p = key.split('|'); // 'q|2026Q2' або 'm|2026-05|vatDocs'
-  if (p[0] === 'q') state.genPlans[p[1]] = num;
-  else (state.genAdj[p[1]] = state.genAdj[p[1]] || {})[p[2]] = num;
+  // Значення не змінилось — не позначаємо як override (інакше зайве «Зберегти»)
+  const rc = genRecalc(state.data);
+  if (p[0] === 'q'){
+    const q = rc.quarters.find(x => x.quarter === p[1]);
+    if (!q || (q.plan || 0) !== num) state.genPlans[p[1]] = num;
+  } else {
+    let cur = 0;
+    rc.quarters.forEach(q => { if (q.byMonth[p[1]]) cur = q.byMonth[p[1]][p[2]] || 0; });
+    if (cur !== num) (state.genAdj[p[1]] = state.genAdj[p[1]] || {})[p[2]] = num;
+  }
   render(state.data);
 }
 function genCancel(){ state.genEdit = null; render(state.data); }
