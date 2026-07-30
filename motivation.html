@@ -590,6 +590,7 @@ function genTableHTML(r){
     rows += `<tr><td class="lab"><span class="op">+</span>ПДВ за документами</td>${qs.map(q=>ncell(qSum(q,'vatDocs'))).join('')}${tcell(sumQ('vatDocs'))}</tr>`;
     rows += `<tr><td class="lab"><span class="op">+</span>Дохід за документами</td>${qs.map(q=>ncell(qSum(q,'incomeDocs'))).join('')}${tcell(sumQ('incomeDocs'))}</tr>`;
     rows += `<tr><td class="lab"><span class="op">+</span>Заблоковані ПН ТОВ Реакт</td>${qs.map(q=>ncell(qSum(q,'blockedPn'))).join('')}${tcell(sumQ('blockedPn'))}</tr>`;
+    rows += `<tr><td class="lab"><span class="op">=</span>Коригування разом</td>${qs.map(q=>ncell(qSum(q,'adjTotal'))).join('')}${tcell(sumQ('adjTotal'))}</tr>`;
     rows += `<tr class="q-mid"><td class="lab"><span class="op">=</span>Скоригований P&L (факт)</td>${qs.map(q=>ncell(q.factQ)).join('')}${tcell(agg.fact)}</tr>`;
     if (agg.accruedTotal != null){
       rows += `<tr class="fact-head"><td class="lab">Факт із 1С</td>${qs.map(()=>'<td></td>').join('')}<td class="col-total"></td></tr>`;
