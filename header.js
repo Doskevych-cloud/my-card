@@ -554,9 +554,11 @@
       if (e.key === 'Escape' && drawer && drawer.classList.contains('open')) closeDrawer();
     });
 
-    // Активний пункт — у видиму зону nav (nav скролиться на вузьких вікнах)
+    // Активний пункт — у видиму зону nav (nav скролиться на вузьких вікнах).
+    // Відкладено: одразу після innerHTML лейаут ще не стабільний і scrollIntoView
+    // не скролить (rAF не годиться — не фаєриться у фонових вкладках).
     const actLink = host.querySelector('.app-topbar .nav a.active');
-    if (actLink && actLink.scrollIntoView) { try { actLink.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (_) {} }
+    if (actLink && actLink.scrollIntoView) setTimeout(() => { try { actLink.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (_) {} }, 50);
   }
 
   async function stopImpersonate() {
