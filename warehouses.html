@@ -126,28 +126,73 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 @media (max-width:720px){
   .wrap{padding:12px}
   .page-head h1{font-size:17px}
+
+  /* ── Тулбар ──
+     Пошук піднято першим елементом: на телефоні позицію шукають, а не
+     гортають тисячу рядків. Решта контролів — під ним, компактно. */
   .toolbar{padding:8px;gap:6px;border-radius:10px}
+  .toolbar .lbl,.toolbar .sep{display:none}
+  .wh-tags{order:-1;flex:1 1 100%;min-width:0}
   .toolbar input[type=text]{flex:1 1 100%;min-width:0;font-size:12px;padding:6px 8px}
-  .toolbar .date-range-input{font-size:12px;padding:6px 8px;min-width:100px}
-  .toolbar .lbl{display:none}
+  .toolbar .date-range-input{flex:1 1 auto;font-size:12px;padding:6px 8px;min-width:0}
   .toolbar .chip{padding:6px 10px;font-size:11px}
   .toolbar .check{padding:6px 8px;font-size:10.5px}
   .toolbar .group{padding:3px;gap:2px}
   .toolbar .group .chip{padding:5px 8px;font-size:11px}
-  .toolbar .sep{display:none}
-  .tree-wrap{border-radius:10px;-webkit-overflow-scrolling:touch}
-  .tree-tbl{font-size:11px}
-  .tree-tbl thead th,.tree-tbl tbody td{padding:6px 6px;font-size:11px}
-  .tree-tbl thead th:nth-child(2),
-  .tree-tbl thead th:nth-child(3),
-  .tree-tbl thead th:nth-child(4){width:78px}
+  .wh-suggest{min-width:0;max-height:240px}
+
+  /* Заголовок складу: назва + бейдж у рядок, підсумок окремим рядком */
+  .wh-section-title{padding:8px 10px;font-size:11.5px;flex-wrap:wrap;gap:6px}
+  .wh-section-title .tot{flex:1 1 100%;margin-left:0}
+
+  /* ── Список товарів: таблиця → стек ──
+     4 колонки на 375px тиснули назву до 115px, і рядок роздувався до ~130px
+     висоти на 6-7 переносів. На мобілці рядок = назва на всю ширину +
+     компактний рядок цифр із підписами.
+     Підписи беруться по nth-child — порядок колонок задає <thead>:
+     1 товар · 2 всього · 3 резерв · 4 вільно. Міняєш колонки — онови тут. */
+  .tree-wrap{border-radius:10px}
+  .tree-tbl{display:block;table-layout:auto;font-size:12px}
+  .tree-tbl thead{display:none}
+  .tree-tbl tbody{display:block}
+  .tree-tbl tbody tr{display:block;padding:8px 10px;border-bottom:1px solid var(--border)}
+  .tree-tbl tbody tr:last-child{border-bottom:none}
+  .tree-tbl tbody td{display:block;padding:0;border:none;background:transparent}
+  .tree-tbl tbody td:first-child{overflow:visible;text-overflow:clip;line-height:1.35}
+  /* цифри — один рядок під назвою, підпис перед числом */
+  .tree-tbl tbody td:not(:first-child){display:inline-block;text-align:left;
+    margin:5px 14px 0 0;font-size:12px}
+  .tree-tbl tbody td:not(:first-child)::before{
+    font-weight:400;font-size:10px;color:var(--text3);margin-right:4px}
+  .tree-tbl tbody td:nth-child(2)::before{content:'Всього'}
+  .tree-tbl tbody td:nth-child(3)::before{content:'Резерв'}
+  .tree-tbl tbody td:nth-child(4)::before{content:'Вільно'}
+  /* Порожні клітинки-заповнювачі вкладених рядків приховуємо разом з підписом.
+     Правило мусить іти ПІСЛЯ :not(:first-child) — специфічність однакова. */
+  .tree-tbl tbody td:empty{display:none}
+  /* вкладені рівні: відступ і фон — на рядку, клітинки скидаємо
+     (базові .tree-tbl tr.reserve-row td мають вищу специфічність за tbody td) */
+  .tree-tbl tr.reserve-row,.tree-tbl tr.client-row{background:var(--bg3);padding-left:22px;font-size:11.5px}
+  .tree-tbl tr.order-row{background:var(--bg3);padding-left:34px;font-size:11px}
+  .tree-tbl tr.reserve-row td,.tree-tbl tr.reserve-row td:first-child,
+  .tree-tbl tr.client-row td,.tree-tbl tr.client-row td:first-child,
+  .tree-tbl tr.order-row td,.tree-tbl tr.order-row td:first-child{
+    padding:0;border:none;background:transparent;font-size:inherit}
+  .tree-tbl tr.reserve-row td:not(:first-child),
+  .tree-tbl tr.client-row td:not(:first-child),
+  .tree-tbl tr.order-row td:not(:first-child){margin:4px 14px 0 0}
+  .tree-tbl tr.reserve-row td:empty,
+  .tree-tbl tr.client-row td:empty,
+  .tree-tbl tr.order-row td:empty{display:none}
+  /* шеврон збоку, назва переносить рядки під себе */
+  .tree-tbl tr.item-row td:first-child,
+  .tree-tbl tr.client-row td:first-child{display:flex;flex-wrap:wrap;gap:0 6px;align-items:flex-start}
+  .tree-tbl tr.item-row .item-name,.tree-tbl tr.client-row .client{display:block;flex:1;min-width:0}
+  .tree-tbl tr.item-row .chev,.tree-tbl tr.client-row .chev{flex:0 0 auto;transform:translateY(2px)}
+  .tree-tbl tr.item-row.open .chev,.tree-tbl tr.client-row.open .chev{transform:rotate(90deg) translateY(2px)}
+  .tree-tbl tr.client-row .meta{flex:1 1 100%;margin-left:20px}
+  .tree-tbl tr.reserve-row .meta,.tree-tbl tr.order-row .meta{margin-left:6px}
   .tree-tbl tr.wh-row td{padding:8px 6px;font-size:11.5px}
-  .tree-tbl tr.reserve-row td{padding-left:24px;font-size:10.5px}
-  .tree-tbl tr.reserve-row td:first-child{padding-left:24px}
-  .tree-tbl tr.reserve-row.wh-break td{padding-left:34px;font-size:10px}
-  .tree-tbl tr.client-row td,.tree-tbl tr.client-row td:first-child{padding-left:24px;font-size:10.5px}
-  .tree-tbl tr.order-row td,.tree-tbl tr.order-row td:first-child{padding-left:38px;font-size:10px}
-  .wh-section-title{padding:8px 10px;font-size:11.5px}
 }
 </style>
 </head>

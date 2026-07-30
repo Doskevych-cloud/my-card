@@ -41,6 +41,23 @@
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+
+/* ── iOS: без авто-зуму при тапі в поле вводу ──
+   Safari на iPhone/iPad наближає сторінку, коли у сфокусованого поля
+   computed font-size < 16px (а в тулбарах у нас 11–13px). Лікується лише
+   розміром шрифту: maximum-scale/user-scalable у meta viewport не чіпаємо,
+   бо це вимикає пінч-зум і ламає доступність.
+   ПОЛІТИКА поверх сторінкових стилів — звідси !important: сторінкові
+   `.toolbar input{font-size:12px}` і навіть інлайнові style="font-size:13px"
+   інакше виграють каскад.
+   Умови через кому = АБО: вузький екран (перевіряється в превʼю) або
+   будь-який тач-пристрій (iPad у портреті ширший за 720px).
+   Живе тут, а не в base.css, бо base.css підключають не всі сторінки
+   (admin/dealers/broadcast/login — без нього), а theme.css — усі. */
+@media (max-width:720px), (pointer:coarse){
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),
+  select,textarea{font-size:16px!important}
+}
 body{
   font-family:var(--sans);
   background:var(--bg);color:var(--fg);
