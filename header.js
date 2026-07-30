@@ -553,6 +553,10 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && drawer && drawer.classList.contains('open')) closeDrawer();
     });
+
+    // Активний пункт — у видиму зону nav (nav скролиться на вузьких вікнах)
+    const actLink = host.querySelector('.app-topbar .nav a.active');
+    if (actLink && actLink.scrollIntoView) { try { actLink.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (_) {} }
   }
 
   async function stopImpersonate() {
