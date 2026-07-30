@@ -361,7 +361,7 @@
     }
   }
   function toggleTheme() {
-    const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+    const cur = document.documentElement.getAttribute('data-theme') || 'light';
     applyTheme(cur === 'dark' ? 'light' : 'dark');
   }
 
@@ -494,7 +494,7 @@
     `;
 
     // Initialize theme icon (data-theme already set by inline head script).
-    const curTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const curTheme = document.documentElement.getAttribute('data-theme') || 'light';
     applyTheme(curTheme);
 
     // User dropdown behaviour (desktop only — element hidden on mobile via CSS)

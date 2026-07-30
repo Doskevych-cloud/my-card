@@ -267,7 +267,7 @@
     const modLabel = MODULE_LABEL[module] || module;
     const imp = isImpersonating();
     const impAdmin = imp ? impersonatedBy() : '';
-    document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
+    document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
 
     // Шапка програми має бути видна ЗАВЖДИ — навіть на deny-екрані юзер
     // має бачити nav із доступними йому розділами та може піти куди має право.

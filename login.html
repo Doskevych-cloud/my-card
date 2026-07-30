@@ -85,10 +85,10 @@ function applyTheme(theme){
   localStorage.setItem('theme', theme);
 }
 function toggleTheme(){
-  const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  const cur = document.documentElement.getAttribute('data-theme') || 'light';
   applyTheme(cur === 'dark' ? 'light' : 'dark');
 }
-applyTheme(localStorage.getItem('theme') || 'dark');
+applyTheme(localStorage.getItem('theme') || 'light');
 
 function returnTo() {
   const p = new URLSearchParams(location.search).get('return') || '';
