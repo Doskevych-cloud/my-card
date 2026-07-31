@@ -255,7 +255,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>«Отложенная», «Закрито та не реалізовано», «Успішно реалізовано»</b> — не етапи воронки: вони лише зупиняють годинник попереднього етапу.</li>
       <li><b>Незавершений етап</b> (угода зараз на ньому) у матриці деталей показується <em>курсивом</em> у клітинці етапу і в колонці «Зараз», та входить у «Разом» рядка. У середні по етапах і менеджерах він НЕ входить — бо ще росте.</li>
       <li><b>Середнє по менеджерах</b> — середні дні на етапі по угодах менеджера (тільки закриті інтервали); «Разом» — середній сумарний час у воронці по угодах, що мали хоч один перехід.</li>
-      <li><b>Регламент (SLA)</b> — норматив днів на етап. Перевищення — червоним по конкретних угодах, включно з тими, що висять зараз. Задається кнопкою «⚙ Регламенти» (тільки адмін), діє для всіх користувачів.</li>
+      <li><b>Регламент (SLA)</b> — терміни руху ліда <b>класу А</b>, окремо для приватних і комерційних клієнтів (дефолт: цільовий 5/7, потреба 2/2, ТЗ 7/7, КП 7/14, згода 7/7 дн; «Спробу зв'язатись» — без нормативу). На класи B/C нормативи не діють. Перевищення — червоним по конкретних угодах, включно з тими, що висять на етапі зараз; KPI «Порушень (клас А)» і колонка «Поруш. А» по менеджерах рахують етапо-порушення (одна угода може дати кілька — по одному на етап). Змінити — «⚙ Регламенти» (тільки адмін).</li>
     </ul>
     <h3>Нюанси, що можуть здивувати</h3>
     <ul>
@@ -269,8 +269,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div class="modal-backdrop" id="slaModal" onclick="if(event.target===this)closeSla()">
   <div class="modal" role="dialog" aria-modal="true" aria-label="Регламенти етапів">
     <button class="close" onclick="closeSla()" aria-label="Закрити">✕</button>
-    <h2>⚙ Регламенти етапів</h2>
-    <p>Норматив днів на кожен етап воронки. Порожнє поле — без нормативу. Перевищення підсвічуються червоним у таблицях звіту в усіх користувачів.</p>
+    <h2>⚙ Регламенти етапів — клас А</h2>
+    <p>Терміни руху ліда класу А, днів на етап — окремо для приватних і комерційних клієнтів. Порожнє поле — без нормативу. Перевищення підсвічуються червоним у таблицях звіту в усіх користувачів; на інші класи нормативи не діють.</p>
     <div id="slaFields" style="margin-top:10px"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
       <button class="btn btn--secondary btn--sm" onclick="closeSla()">Скасувати</button>
@@ -923,49 +923,65 @@ function renderStageTimeReport(d) {
   if (!t.deals) {
     return `<div class="info-banner"><span class="ib-tag">ЕТАПИ</span> У вибраному періоді немає створених угод.</div>`;
   }
-  const slaOn = !!d.slaDefined;
   const red = s => `<span style="color:var(--red);font-weight:700">${s}</span>`;
+  // Норматив угоди на етапі i: діє лише для класу А, свій набір приватні/комерційні
+  const slaM = d.slaMatrix || { private: {}, business: {} };
+  const dealSla = (x, i) => x.slaKey ? ((slaM[x.slaKey] || {})[i] ?? null) : null;
+  // Ефективний час угоди на етапі = закриті візити + відкритий (якщо висить зараз)
+  const effStage = (x, i) => {
+    const open = x.curIdx === i && x.curDays != null ? x.curDays : 0;
+    const closed = x.stageDays[i];
+    if (closed == null && !open) return null;
+    return Math.round(((closed || 0) + open) * 1000) / 1000;
+  };
+  const stTitle = s => `${s.stage} · норматив кл. А: ${s.slaA && s.slaA.private != null ? s.slaA.private : '—'} прив. / ${s.slaA && s.slaA.business != null ? s.slaA.business : '—'} комерц. дн`;
 
   let html = `
   <div class="info-banner">
     <span class="ib-tag">ЕТАПИ</span>
     Скільки днів угоди проводять на кожному етапі воронки. Когорта: створені у вибрані дні, час — за всю історію угоди.
-    ${slaOn ? 'Червоним — порушення регламенту.' : '<b>Регламенти ще не задані</b> — коли задамо, порушення світитимуться червоним.'}
+    Регламенти діють для клієнтів класу А (приватні й комерційні окремо) — порушення червоним.
     <span class="chip" style="margin-left:10px" onclick="openHelp()" title="Як працює цей звіт">❓ Як працює</span>
-    ${curUser && curUser.roles && curUser.roles.admin ? '<span class="chip" style="margin-left:6px" onclick="openSla()" title="Нормативи днів на етап">⚙ Регламенти</span>' : ''}
+    ${curUser && curUser.roles && curUser.roles.admin ? '<span class="chip" style="margin-left:6px" onclick="openSla()" title="Нормативи днів на етап для класу А">⚙ Регламенти</span>' : ''}
   </div>
   <div class="kpi">
     <div class="kpi-card"><div class="lbl">Угод у когорті</div><div class="val">${fmt(t.deals)}</div></div>
     <div class="kpi-card"><div class="lbl">Активних у воронці</div><div class="val">${fmt(t.active)}</div></div>
     <div class="kpi-card"><div class="lbl">Серед. час у воронці</div><div class="val">${d1n(t.avgTotal)}<span style="font-size:14px"> дн</span></div></div>
     <div class="kpi-card"><div class="lbl">Найповільніший етап</div><div class="val" style="font-size:16px">${t.slowestStage ? esc(t.slowestStage.num + '. ' + t.slowestStage.stage) : '—'}</div><div class="sub">${t.slowestStage ? d1n(t.slowestStage.avg) + ' дн у середньому' : ''}</div></div>
-    ${slaOn ? `<div class="kpi-card${t.violations ? ' c-fail' : ''}"><div class="lbl">Порушень регламенту</div><div class="val">${fmt(t.violations)}</div></div>` : ''}
+    <div class="kpi-card${t.violations ? ' c-fail' : ''}"><div class="lbl">Порушень (клас А)</div><div class="val">${fmt(t.violations)}</div></div>
   </div>`;
 
   // ── Середнє по менеджерах ──
+  // Середні — по всіх угодах менеджера (всі класи), тому їх з нормативом
+  // класу А не порівнюємо; порушення — окремою колонкою по А-угодах.
   const mgr = {};
   for (const x of d.deals) {
     const m = x.manager || '—';
-    if (!mgr[m]) mgr[m] = { deals: 0, stages: {}, totals: [] };
+    if (!mgr[m]) mgr[m] = { deals: 0, stages: {}, totals: [], viol: 0 };
     mgr[m].deals++;
     // stageDays ключується канонічним індексом етапу (1..6)
     for (const [i, v] of Object.entries(x.stageDays)) (mgr[m].stages[i] = mgr[m].stages[i] || []).push(v);
     if (x.total > 0) mgr[m].totals.push(x.total);
+    for (const s of d.stages) {
+      const sla = dealSla(x, s.idx);
+      if (sla == null) continue;
+      const eff = effStage(x, s.idx);
+      if (eff != null && eff > sla) mgr[m].viol++;
+    }
   }
   const avg1 = arr => arr.length ? Math.round(arr.reduce((s, v) => s + v, 0) / arr.length * 10) / 10 : null;
-  let gh = `<div class="section-h"><h2>👥 Середнє по менеджерах</h2><span class="hint">середні дні на етапі по угодах когорти</span></div>`;
+  let gh = `<div class="section-h"><h2>👥 Середнє по менеджерах</h2><span class="hint">середні дні на етапі по угодах когорти · «Поруш. А» — етапо-порушення нормативів класу А</span></div>`;
   gh += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr><th>Менеджер</th><th>Угод</th>`;
-  d.stages.forEach(s => { gh += `<th title="${esc(s.stage)}">${SHEET_STAGES_SHORT[s.idx]}</th>`; });
-  gh += `<th>Разом</th></tr></thead><tbody>`;
+  d.stages.forEach(s => { gh += `<th title="${esc(stTitle(s))}">${SHEET_STAGES_SHORT[s.idx]}</th>`; });
+  gh += `<th>Разом</th><th title="Скільки разів угоди класу А цього менеджера перевищили норматив етапу">Поруш. А</th></tr></thead><tbody>`;
   for (const [name, g] of Object.entries(mgr).sort((a, b) => b[1].deals - a[1].deals)) {
     gh += `<tr><td>${esc(name)}</td><td>${fmt(g.deals)}</td>`;
     for (const s of d.stages) {
       const v = avg1(g.stages[s.idx] || []);
-      const cell = v == null ? '<span style="color:var(--text3)">·</span>'
-        : (s.sla != null && v > s.sla ? red(d1n(v)) : d1n(v));
-      gh += `<td>${cell}</td>`;
+      gh += `<td>${v == null ? '<span style="color:var(--text3)">·</span>' : d1n(v)}</td>`;
     }
-    gh += `<td>${d1n(avg1(g.totals))}</td></tr>`;
+    gh += `<td>${d1n(avg1(g.totals))}</td><td>${g.viol ? red(fmt(g.viol)) : '<span style="color:var(--text3)">·</span>'}</td></tr>`;
   }
   gh += `</tbody></table></div>`;
   html += gh;
@@ -976,14 +992,7 @@ function renderStageTimeReport(d) {
   if (stOnlyActive) pool = pool.filter(x => x.curStatus !== 'Закрито та не реалізовано');
   if (stMgrFilter) pool = pool.filter(x => x.manager === stMgrFilter);
   if (stClassFilter) pool = pool.filter(x => x.klass === stClassFilter);
-  // Ефективний час на етапі = закриті візити + відкритий (якщо угода зараз там).
-  // Відкритий рендериться курсивом і враховується в сортуванні та «Разом».
-  const effStage = (x, i) => {
-    const open = x.curIdx === i && x.curDays != null ? x.curDays : 0;
-    const closed = x.stageDays[i];
-    if (closed == null && !open) return null;
-    return Math.round(((closed || 0) + open) * 1000) / 1000;
-  };
+  // Відкритий етап рендериться курсивом і враховується в сортуванні та «Разом».
   const effTotal = x => Math.round((x.total + (x.curDays || 0)) * 1000) / 1000;
   const sorted = pool.slice().sort((a, b) => {
     const va = stageSort.col === 'total' ? effTotal(a) : effStage(a, stageSort.col);
@@ -999,7 +1008,7 @@ function renderStageTimeReport(d) {
   mh += `<div class="mgr-wrap st-sticky"><table class="mgr-table"><thead><tr><th>Угода</th>` +
     `<th class="st-fth" onclick="stOpenMenu(event,'cls')" title="Фільтр по класу">${fth('Клас', stClassFilter)}</th>` +
     `<th class="st-fth" onclick="stOpenMenu(event,'mgr')" title="Фільтр по менеджеру">${fth('Менеджер', stMgrFilter)}</th>`;
-  d.stages.forEach(s => { mh += `<th title="${esc(s.stage)}" style="cursor:pointer" onclick="stSortBy(${s.idx})">${SHEET_STAGES_SHORT[s.idx]}${arrow(s.idx)}</th>`; });
+  d.stages.forEach(s => { mh += `<th title="${esc(stTitle(s))}" style="cursor:pointer" onclick="stSortBy(${s.idx})">${SHEET_STAGES_SHORT[s.idx]}${arrow(s.idx)}</th>`; });
   mh += `<th style="cursor:pointer" onclick="stSortBy('total')">Разом${arrow('total')}</th><th>Зараз</th></tr></thead><tbody>`;
   for (const x of sorted) {
     const url = `https://solar.planfix.ua/task/${x.id}`;
@@ -1008,14 +1017,14 @@ function renderStageTimeReport(d) {
       const i = s.idx;
       const v = effStage(x, i);
       const running = x.curIdx === i && x.curDays != null;
-      let cell = v == null ? '' : (s.sla != null && v > s.sla ? red(d1n(v)) : d1n(v));
+      const sla = dealSla(x, i);
+      let cell = v == null ? '' : (sla != null && v > sla ? red(d1n(v)) : d1n(v));
       if (cell && running) cell = `<em title="етап ще триває">${cell}</em>`;
       mh += `<td>${cell || '<span style="color:var(--text3)">·</span>'}</td>`;
     }
     let cur = '';
     if (x.curIdx != null) {
-      const st = d.stages.find(s => s.idx === x.curIdx);
-      const sla = st ? st.sla : null;
+      const sla = dealSla(x, x.curIdx);
       const viol = sla != null && x.curDays != null && x.curDays > sla;
       cur = `${esc(SHEET_STAGES[x.curIdx])} · ${viol ? red(d1n(x.curDays)) : d1n(x.curDays)} дн`;
     } else {
@@ -1090,24 +1099,32 @@ function openHelp()  { document.getElementById('helpModal').classList.add('open'
 function closeHelp() { document.getElementById('helpModal').classList.remove('open'); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeHelp(); closeSla(); } });
 
-// ── Регламенти (SLA) — модалка задання нормативів, admin-only ──
+// ── Регламенти (SLA) — модалка нормативів класу А, admin-only ──
 function openSla() {
   const d = state.raw; if (!d || !d.stages) return;
-  document.getElementById('slaFields').innerHTML = d.stages.map(s => `
+  const m = d.slaMatrix || { private: {}, business: {} };
+  const inp = (id, val) => `<input type="number" min="0" max="365" step="0.5" id="${id}" value="${val != null ? val : ''}"
+    style="width:86px;padding:6px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;text-align:right">`;
+  document.getElementById('slaFields').innerHTML =
+    `<div style="display:flex;justify-content:flex-end;gap:8px;font-size:11.5px;color:var(--text3);margin-bottom:2px">
+      <span style="width:86px;text-align:center">приватні</span><span style="width:86px;text-align:center">комерційні</span>
+    </div>` +
+    d.stages.map(s => `
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0">
       <span style="font-size:12.5px;color:var(--text2)">${s.num}. ${esc(s.stage)}</span>
-      <input type="number" min="0" max="365" step="0.5" id="slaIn${s.idx}" value="${s.sla != null ? s.sla : ''}"
-        style="width:90px;padding:6px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;text-align:right">
+      <div style="display:flex;gap:8px">${inp('slaInP' + s.idx, (m.private || {})[s.idx])}${inp('slaInB' + s.idx, (m.business || {})[s.idx])}</div>
     </div>`).join('');
   document.getElementById('slaModal').classList.add('open');
 }
 function closeSla() { const m = document.getElementById('slaModal'); if (m) m.classList.remove('open'); }
 async function saveSla() {
   const d = state.raw; if (!d || !d.stages) return;
-  const sla = {};
+  const sla = { private: {}, business: {} };
   d.stages.forEach(s => {
-    const v = document.getElementById('slaIn' + s.idx).value;
-    if (v !== '') sla[s.idx] = Number(v);
+    const p = document.getElementById('slaInP' + s.idx).value;
+    const b = document.getElementById('slaInB' + s.idx).value;
+    if (p !== '') sla.private[s.idx] = Number(p);
+    if (b !== '') sla.business[s.idx] = Number(b);
   });
   const btn = document.getElementById('slaSaveBtn');
   btn.disabled = true; btn.textContent = 'Зберігаю…';
