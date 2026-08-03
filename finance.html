@@ -527,6 +527,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
             <span class="ic">⊟</span> Згорнути
           </span>
         </span>
+        <span class="chip" id="pnlFreshBtn" onclick="pnlRefresh()" title="Скинути кеш і перечитати дані з 1С прямо зараз">↻ Оновити з 1С</span>
         <span class="chip" onclick="openPnlHelp()" title="Як працює цей звіт">❓ Як працює</span>
       </div>
       <div class="mc-block">
@@ -879,6 +880,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <h3>Чому цифра може здивувати</h3>
     <ul>
       <li>Кеш звіту — <b>1 година</b>. Нові проводки в 1С з'являться тут із затримкою до години; звіт і деталізація кешуються окремо, тож короткий розсинхрон між ними можливий у межах цієї години.</li>
+      <li>Кнопка <b>«↻ Оновити з 1С»</b> у тулбарі скидає кеш звіту разом із кешем деталізацій за поточний період і перечитує реєстр наживо — після неї цифри збігаються з 1С на момент натискання. Корисно, коли бухгалтерія перезакриває місяці і дані змінюються щогодини.</li>
       <li>Це P&L за нарахуванням: оплата і рух грошей тут ні до чого — дивись Cash Flow.</li>
       <li>Суми округлені до долара, тому видима сума деталей може відрізнятись від рядка на ±1&nbsp;$.</li>
     </ul>
@@ -2106,7 +2108,7 @@ function pnlBindCollapse(tblArg) {
   });
 }
 
-async function pnlLoad() {
+async function pnlLoad(fresh) {
   // init викликає pnlLoad безумовно; якщо вкладку P&L приховано по правах
   // (data-perm="finance_pnl"), не смикаємо бекенд — все одно буде 403.
   var _pnlTab = document.querySelector('.ptab[data-view="pnl"]');
@@ -2115,7 +2117,8 @@ async function pnlLoad() {
   document.getElementById('pnlSummary').innerHTML = '';
   try {
     // Accrual P&L: single query to AccumulationRegister_ДоходыИРасходы (бухгалтерський P&L 1С)
-    const q = '?action=pnl_accrual_report&from=' + pnlState.from + '&to=' + pnlState.to + (pnlState.org ? '&org=' + encodeURIComponent(pnlState.org) : '');
+    // fresh=1 (кнопка «Оновити з 1С») — бекенд зносить кеш і читає реєстр наживо
+    const q = '?action=pnl_accrual_report&from=' + pnlState.from + '&to=' + pnlState.to + (pnlState.org ? '&org=' + encodeURIComponent(pnlState.org) : '') + (fresh ? '&fresh=1' : '');
     const data = await fetch(API_URL + q).then(r => r.json());
     if (data.error) throw new Error(data.error);
     _pnlLastData = data; // для миттєвого ре-рендеру при зміні відображення (setPnlView)
@@ -2447,6 +2450,20 @@ async function pnlDocToggle(tr, tbl) {
 }
 function openPnlHelp()  { document.getElementById('pnlHelpModal').classList.add('open'); }
 function closePnlHelp() { document.getElementById('pnlHelpModal').classList.remove('open'); }
+
+// «Оновити з 1С» — скинути серверний кеш P&L (і деталізацій) та перечитати наживо.
+// Потрібно під час перезакриття місяців бухгалтерією: без цього годинний кеш
+// дає розбіжність зі звітами 1С.
+async function pnlRefresh() {
+  const b = document.getElementById('pnlFreshBtn');
+  if (!b || b.dataset.busy) return;
+  b.dataset.busy = '1';
+  const t = b.innerHTML;
+  b.innerHTML = '↻ Оновлюю…';
+  b.style.opacity = '.55';
+  try { await pnlLoad(true); }
+  finally { delete b.dataset.busy; b.innerHTML = t; b.style.opacity = ''; }
+}
 function openCbHelp()   { document.getElementById('cbHelpModal').classList.add('open'); }
 function closeCbHelp()  { document.getElementById('cbHelpModal').classList.remove('open'); }
 function openWhHelp()   { document.getElementById('whHelpModal').classList.add('open'); }
