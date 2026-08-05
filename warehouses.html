@@ -110,12 +110,43 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .tree-tbl .type-ico{margin-right:6px;opacity:.8}
 
 /* Per-wh view — section dividers */
+.wh-group-title{margin:24px 0 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3)}
+.wh-group-title:first-child{margin-top:4px}
 .wh-section{margin-top:18px}
 .wh-section:first-child{margin-top:0}
-.wh-section-title{padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:10px 10px 0 0;border-bottom:none}
+.wh-group-title + .wh-section{margin-top:0}
+.wh-section-title{padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:10px 10px 0 0;border-bottom:none;cursor:pointer;user-select:none}
+.wh-section-title:hover{color:var(--accent)}
+.wh-section-title .chev{flex:0 0 auto;font-size:9px;color:var(--text3);transform:rotate(90deg);transition:transform .15s}
 .wh-section-title .ico{font-size:16px}
+/* Бейдж організації — нейтральний: акцентні кольори лишаємо цифрам.
+   (Було var(--purple-bg)/var(--purple-text) — таких токенів у theme.css нема,
+   тому бейдж «Генерація» рендерився взагалі без плашки.) */
+.wh-section-title .org-badge{font-size:10px;font-weight:700;letter-spacing:.4px;padding:2px 8px;
+  border-radius:4px;background:var(--bg2);border:1px solid var(--border);color:var(--text2)}
+.wh-section-title .foreign{color:var(--text3);font-weight:500;font-size:10.5px}
 .wh-section-title .tot{margin-left:auto;color:var(--text3);font-weight:500;font-size:11px;font-variant-numeric:tabular-nums}
 .wh-section .tree-wrap{border-radius:0 0 10px 10px;border-top:1px solid var(--border)}
+/* Згорнутий склад: лишається лише заголовок із підсумком */
+.wh-section.collapsed{margin-top:6px}
+.wh-section.collapsed .wh-section-title{border-radius:10px;border-bottom:1px solid var(--border)}
+.wh-section.collapsed .wh-section-title .chev{transform:rotate(0)}
+.wh-section.collapsed .tree-wrap{display:none}
+
+/* Довідка «Як працює» */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.modal-backdrop.open{display:flex}
+.modal{position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:14px;max-width:640px;width:100%;max-height:85vh;overflow-y:auto;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.modal h2{font-size:16px;font-weight:800;color:var(--text);margin-bottom:8px;padding-right:28px}
+.modal h3{font-size:13px;font-weight:700;color:var(--accent);margin:16px 0 5px;display:flex;align-items:center;gap:7px}
+.modal p{font-size:12.5px;color:var(--text2);line-height:1.6;margin:4px 0}
+.modal ul{margin:5px 0 5px 6px;list-style:none}
+.modal li{font-size:12.5px;color:var(--text2);line-height:1.55;margin:5px 0;padding-left:16px;position:relative}
+.modal li::before{content:'·';position:absolute;left:4px;color:var(--text3);font-weight:800}
+.modal b{color:var(--text);font-weight:700}
+.modal code{background:var(--bg2);padding:1px 6px;border-radius:5px;font-size:11.5px;color:var(--text);border:1px solid var(--border)}
+.modal .close{position:absolute;top:16px;right:18px;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;border:none;background:none;padding:4px}
+.modal .close:hover{color:var(--text)}
 
 /* Loading / empty */
 .loading{padding:60px 20px;text-align:center;color:var(--text2);font-size:13px}
@@ -234,6 +265,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <button class="btn btn--secondary btn--sm" onclick="expandAll()">⊞ Розгорнути</button>
       <button class="btn btn--secondary btn--sm" onclick="collapseAll()">⊟ Згорнути</button>
       <button class="btn btn--secondary btn--sm" onclick="downloadXLSX()" title="Вигрузити відфільтроване в Excel">⬇ Excel</button>
+      <button class="btn btn--secondary btn--sm" onclick="openHelp()" title="Як працює цей звіт">❓ Як працює</button>
 
       <span class="wh-tags" id="whIncludeTags">
         <input type="text" id="searchIn" placeholder="🔎 Пошук по товару чи клієнту…" autocomplete="off">
@@ -242,6 +274,46 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     </div>
 
     <div id="body"><div class="loading">Завантаження…</div></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="helpModal" onclick="if(event.target===this)closeHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт">
+    <button class="close" onclick="closeHelp()" aria-label="Закрити">✕</button>
+    <h2>📦 Як працює звіт «Склад · залишки»</h2>
+    <p>Залишки беруться <b>наживо з 1С</b> (регістр «Запаси») на кінець обраної дати. Це не окрема база — що в 1С, те і тут.</p>
+
+    <h3>Організації не змішуються</h3>
+    <p>Один фізичний склад може тримати товар і Реакта, і Генерації. Ми <b>ніколи їх не сумуємо</b>: такий склад показується двома окремими блоками з бейджем організації. Тому в списку трапляється однакова назва двічі — це нормально.</p>
+    <p><b>Фільтр організації фільтрує по власнику ТОВАРУ, а не по назві складу.</b> Тому під фільтром «Генерація» може бути блок «Київ, Реакт» — це товар Генерації, що фізично лежить на складі Реакта. У таких випадках поруч із бейджем стоїть підпис <b>«на складі …»</b>. Ховати такі залишки не можна — це реальний товар, який просто лежить не у себе.</p>
+
+    <h3>Всього · Резерв · Вільно</h3>
+    <ul>
+      <li><b>Всього</b> — фізична кількість на складі.</li>
+      <li><b>Резерв</b> — те, що вже стоїть під замовленнями покупців. Клік по товару розкриває, під кого саме (покупець → замовлення).</li>
+      <li><b>Вільно</b> = Всього − Резерв. Мінус означає, що зарезервували більше, ніж лежить.</li>
+    </ul>
+
+    <h3>Порядок складів</h3>
+    <p>У вигляді «За складами» блоки йдуть групами: <b>фізичні</b> → <b>в дорозі</b> → <b>монтажні бригади</b> → <b>інструменти</b> → <b>офіс і майно</b> → <b>інше</b>. Назви складів тягнуться з 1С, тому перейменування і нові склади підхоплюються самі; новий склад, який ще не розкласифікували, з'явиться у групі «Інше» в кінці.</p>
+
+    <h3>Розгорнути / Згорнути</h3>
+    <p><b>Згорнути</b> складає все до рівня складів — лишаються самі заголовки з підсумком (позицій · одиниць · резерв). Клік по заголовку розкриває конкретний склад. <b>Розгорнути</b> відкриває всі склади разом із деревом резерву.</p>
+
+    <h3>Фільтри</h3>
+    <ul>
+      <li><b>Разом</b> — один зведений список товарів по всіх складах; <b>За складами</b> — розбивка по складах.</li>
+      <li><b>Виводити відсутні</b> — показує позиції з нульовим залишком (є картка в 1С, товару нема).</li>
+      <li><b>Пошук</b> шукає і по товару, і по клієнту/номеру замовлення в резервах. Закріплені теги товарів діють, лише поки поле пошуку порожнє.</li>
+      <li><b>Excel</b> вигружає рівно те, що зараз на екрані з урахуванням фільтрів.</li>
+    </ul>
+
+    <h3>Що може здивувати</h3>
+    <ul>
+      <li>Дані кешуються на <b>1 годину</b> — щойно проведений в 1С документ може приїхати з затримкою.</li>
+      <li>Склад без жодної позиції <b>не показується</b> взагалі — порожній блок не малюємо.</li>
+      <li>Склади «В дорозі NN» — товар, що ще їде; він уже в залишках і може бути зарезервований.</li>
+    </ul>
   </div>
 </div>
 
@@ -288,12 +360,15 @@ const state = {
   asOf: _todayISO(),     // YYYY-MM-DD — always start with today
   showEmpty: false,
   openKeys: new Set(),   // expanded item keys
+  closedWh: new Set(),   // згорнуті склади (у вигляді «За складами»), ключ = w.id
   loading: false,
   includeList: [],
 };
 // Restore include filter
 try { const s = localStorage.getItem('wh_stock_include'); if (s) { const a = JSON.parse(s); if (Array.isArray(a)) state.includeList = a; } } catch (_) {}
 const IN_TRANSIT_MARKER = 'В дорозі';
+// Іконка блоку складів — структурно-навігаційна (не прикраса даних).
+const WH_GROUP_ICO = { phys: '🏢', transit: '🚛', brigade: '🔧', tools: '🧰', office: '🏠', other: '📦' };
 
 function fmt(n, dec = 0) {
   if (n === null || n === undefined || isNaN(n)) return '—';
@@ -500,13 +575,23 @@ document.getElementById('showEmpty').addEventListener('change', e => {
 });
 
 function expandAll() {
+  if (!state.data) return;
   state.openKeys.clear();
+  state.closedWh.clear();
   const keys = currentItemKeys();
   keys.forEach(k => state.openKeys.add(k));
   render();
 }
+// «Згорнути» = згорнути ДО СКЛАДІВ: у вигляді «За складами» лишаються самі
+// заголовки складів із підсумком, у «Разом» складів нема — просто закриваємо
+// дерева резерву.
 function collapseAll() {
+  if (!state.data) return;
   state.openKeys.clear();
+  state.closedWh.clear();
+  if (state.view === 'perwh') {
+    getFilteredWarehouses().forEach(({ w }) => state.closedWh.add(w.id));
+  }
   render();
 }
 
@@ -700,22 +785,36 @@ function renderPerWh() {
     document.getElementById('body').innerHTML = '<div class="empty">Складів не знайдено</div>';
     return;
   }
+  // Порядок блоків задає бекенд (фізичні → в дорозі → бригади → інструменти →
+  // офіс → інше); тут лише малюємо заголовок групи при її зміні.
+  const groupMeta = {};
+  ((state.data.groups) || []).forEach(g => { groupMeta[g.key] = g; });
+  let lastGroup = null;
   const sections = all.map(({ w, items }) => {
     if (!items.length) return '';
-    const isTransit = w.name.startsWith(IN_TRANSIT_MARKER);
+    const isTransit = w.group === 'transit' || w.name.startsWith(IN_TRANSIT_MARKER);
+    const collapsed = state.closedWh.has(w.id);
     const totalTot = items.reduce((a, it) => a + it.total, 0);
     const totalRes = items.reduce((a, it) => a + it.reserve, 0);
-    const rows = items.map(it => {
+    const rows = collapsed ? '' : items.map(it => {
       const reserves = (w.reservesByItem && w.reservesByItem[it.name]) || [];
       const key = 'w:' + w.id + '|' + it.name;
       return renderItemRow(key, it.name, it, reserves, null);
     }).join('');
-    return `
-      <div class="wh-section">
+    let head = '';
+    if (w.group && w.group !== lastGroup) {
+      lastGroup = w.group;
+      const lbl = (groupMeta[w.group] && groupMeta[w.group].label) || '';
+      if (lbl) head = `<div class="wh-group-title">${esc(lbl)}</div>`;
+    }
+    return `${head}
+      <div class="wh-section${collapsed ? ' collapsed' : ''}" data-wh="${esc(w.id)}">
         <div class="wh-section-title">
-          <span class="ico">${isTransit ? '🚛' : '🏢'}</span>
+          <span class="chev">▶</span>
+          <span class="ico">${isTransit ? '🚛' : WH_GROUP_ICO[w.group] || '🏢'}</span>
           <span>${esc(w.name)}</span>
-          <span class="badge ${w.org}" style="font-size:10px;font-weight:700;letter-spacing:.4px;padding:2px 8px;border-radius:4px;background:${w.org==='Генерація'?'var(--purple-bg)':'var(--accent-bg)'};color:${w.org==='Генерація'?'var(--purple-text)':'var(--accent)'}">${w.org}</span>
+          <span class="org-badge">${esc(w.org)}</span>
+          ${w.homeOrg && w.homeOrg !== w.org ? `<span class="foreign" title="Товар ${esc(w.org)} лежить на складі ${esc(w.homeOrg)}">на складі ${esc(w.homeOrg)}</span>` : ''}
           <span class="tot">${items.length} поз · ${fmt(totalTot)} од · резерв ${fmt(totalRes)}</span>
         </div>
         <div class="tree-wrap">
@@ -824,12 +923,24 @@ function renderReserveTree(itemKey, reserves) {
   }).join('');
 }
 
+function openHelp()  { document.getElementById('helpModal').classList.add('open'); }
+function closeHelp() { document.getElementById('helpModal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHelp(); });
+
 function bindItemRows() {
   document.querySelectorAll('tr.item-row:not(.disabled), tr.client-row').forEach(tr => {
     tr.addEventListener('click', () => {
       const k = tr.dataset.key;
       if (state.openKeys.has(k)) state.openKeys.delete(k);
       else state.openKeys.add(k);
+      render();
+    });
+  });
+  document.querySelectorAll('.wh-section > .wh-section-title').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.parentElement.dataset.wh;
+      if (state.closedWh.has(id)) state.closedWh.delete(id);
+      else state.closedWh.add(id);
       render();
     });
   });
