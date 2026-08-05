@@ -96,6 +96,40 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .error{text-align:center;padding:40px;color:var(--red);background:var(--red-bg);border-radius:12px;margin:20px 0}
 .empty-msg{padding:40px;text-align:center;color:var(--text3);font-size:13px;background:var(--surface2);border:1px dashed var(--border);border-radius:12px}
 
+/* PDF-шапка з фільтрами — видна тільки під час print */
+.pdf-only{display:none}
+
+@media print{
+  #appHeader,.page-tabs,.toolbar{display:none !important}
+  .pdf-only{display:block !important;margin:0 0 12px 0;padding:0 0 10px 0;border-bottom:2px solid #1c1c1e}
+
+  /* Світла тема для друку — гарантовано */
+  html[data-theme="dark"]{--bg:#fff;--bg2:#fff;--bg3:#fff;--surface:#fff;--surface2:#fff;--text:#1c1c1e;--text2:#48484a;--text3:#6b7280;--border:#e5e5ea;--border2:#d1d1d6;--accent-bg:#fff;--pos:#2d9d5f;--neg:#c9433a;--green:#2d9d5f;--red:#c9433a;--accent:#4a6edc}
+  body{background:#fff !important;color:#1c1c1e !important}
+  .wrap{padding:0 !important}
+
+  /* Компактні картки */
+  .kpi-row,.status-row{gap:6px;margin-bottom:10px}
+  .kpi,.st-card{padding:8px 10px;border-radius:8px}
+  .kpi .kv{font-size:16px}
+  .st-card .sv{font-size:14px}
+  .st-card.dim{opacity:1}
+
+  /* Таблиця: без скролу і sticky, вміщаємо в A4 landscape */
+  .inv-wrap{overflow:visible;border:none;border-radius:0}
+  .inv-table{min-width:0;width:100%;font-size:9px}
+  .inv-table th,.inv-table td{position:static !important;padding:4px 6px}
+  .inv-table th{background:#fff}
+  .inv-table th:first-child,.inv-table td:first-child{min-width:170px}
+  .inv-table td.name-cell{white-space:normal;max-width:260px}
+
+  table{break-inside:auto}
+  tr{break-inside:avoid}
+  thead{display:table-header-group}
+
+  @page{size:A4 landscape;margin:8mm}
+}
+
 @media(max-width:720px){
   .wrap{padding:12px}
   .page-tabs{display:flex;flex-wrap:wrap;gap:3px;padding:3px;max-width:100%}
@@ -165,6 +199,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <span class="chip" data-abc="B" onclick="setAbc(this)">B</span>
         <span class="chip" data-abc="C" onclick="setAbc(this)">C</span>
       </span>
+      <div class="sep"></div>
+      <span class="chip" id="exportPdfBtn" title="Експорт у PDF з поточними фільтрами" onclick="downloadPDF()"><span style="margin-right:5px">⤓</span> PDF</span>
     </div>
 
     <div id="kpis"></div>
@@ -485,6 +521,53 @@ function rowHtml(it) {
 }
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+/* ── PDF Export через window.print() ──────────────────────────────────
+ * Як у counterparties.html: print-шапка з фільтрами, примусова світла
+ * тема, window.print() → системний діалог «Зберегти як PDF».
+ */
+function downloadPDF() {
+  if (!DATA) { alert('Дані ще не завантажились'); return; }
+  const org    = state.org || 'Всі організації';
+  const group  = state.group || 'Всі групи';
+  const q      = (document.getElementById('searchIn')?.value || '').trim();
+  const abc    = state.abcFilter || 'Всі';
+  const status = state.statusFilter ? STATUS_LABELS[state.statusFilter] : 'Всі';
+  const dt = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' });
+
+  let head = document.getElementById('__pdfHead');
+  if (!head) {
+    head = document.createElement('div');
+    head.id = '__pdfHead';
+    head.className = 'pdf-only';
+    document.body.insertBefore(head, document.body.firstChild);
+  }
+  head.innerHTML = `
+    <div style="font-size:18px;font-weight:700;margin-bottom:6px">Обіговість запасів</div>
+    <div style="font-size:11px;color:#48484a;display:flex;flex-wrap:wrap;gap:14px">
+      <span><b style="color:#1c1c1e">Організація:</b> ${esc(org)}</span>
+      <span><b style="color:#1c1c1e">Група:</b> ${esc(group)}</span>
+      ${q ? `<span><b style="color:#1c1c1e">Товар:</b> ${esc(q)}</span>` : ''}
+      <span><b style="color:#1c1c1e">ABC:</b> ${esc(abc)}</span>
+      <span><b style="color:#1c1c1e">Статус:</b> ${esc(status)}</span>
+      <span><b style="color:#1c1c1e">Залишки на:</b> ${esc(DATA.as_of_date || '—')}</span>
+      <span><b style="color:#1c1c1e">Сформовано:</b> ${esc(dt)}</span>
+    </div>`;
+
+  // Тимчасово примусова світла тема + назва файлу для «Зберегти як PDF»
+  const prevTheme = document.documentElement.getAttribute('data-theme');
+  const prevTitle = document.title;
+  document.documentElement.setAttribute('data-theme', 'light');
+  document.title = `Обіговість запасів - ${org} - ${DATA.as_of_date || ''}`;
+
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => {
+      if (prevTheme) document.documentElement.setAttribute('data-theme', prevTheme);
+      document.title = prevTitle;
+    }, 200);
+  }, 100);
+}
 
 Auth.require('sales_inventory').then(user => {
   Auth.filterSubNav(user);
