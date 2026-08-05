@@ -212,7 +212,7 @@
     <ul>
       <li><b>Валовий прибуток</b> відділу продажів React (виручка − собівартість) за місяць. Продажі <b>ТОВ «Генерація Енерджі»</b> (внутрішні, сестринській компанії) з прибутку <b>виключаються</b> — умова 5.</li>
       <li>Зверху для контексту: <b>Валовий дохід</b> (виручка відділу, без Генерації), <b>Рентабельність</b> (прибуток/дохід), <b>Валовий прибуток</b>.</li>
-      <li><b>Прогноз поточного місяця.</b> Поки місяць не закрито, його рентабельність ще неповна й скаче, тому валовий прибуток рахуємо як <b>дохід × середню рентабельність за 3 попередні місяці</b> (зважену). Так «прогнозна ЗП» зверху стабільна. Коли місяць закриється — цифра стане фактичною. Минулі місяці завжди за фактом.</li>
+      <li><b>Поточний місяць — факт.</b> Незакритий місяць рахується за фактичними даними, як і минулі: рентабельність і прибуток — реальні накопичені з початку місяця, оновлюються по мірі продажів. Прогнозних усереднень немає.</li>
       <li>+ <b>Інше</b> — рядок «Інші доходи (комиссия и пр.)» з P&L React (комісія тощо; не з таблиці Excel, додано в системі).</li>
       <li>− <b>ПДВ</b> — рядок «ПДВ» секції «Податки» з P&L React. У React він є не щомісяця (у деяких місяцях 0).</li>
       <li>= <b>База</b>. Бонус = База × <b>3%</b> × KPI₁ × KPI₂ × KPI₃.</li>
@@ -369,10 +369,7 @@ function renderHeadline(){
     return;
   }
   const c = applyKpi(r.calc, r.params);
-  const fc = c.forecastMonth;
-  const sub = fc
-    ? `прогнозна ЗП за ${monthFull(r._from)} · рентабельність = середня за 3 міс (${fmtPct(c.avgMargin3)})`
-    : `ЗП за ${monthFull(r._from)} · оновлюється по мірі продажів`;
+  const sub = `ЗП за ${monthFull(r._from)} · оновлюється по мірі продажів`;
   document.getElementById('headline').innerHTML = `
     <div class="mot-total">
       <div class="who">${esc(r.employee.name)}<small>${sub}</small></div>
@@ -636,9 +633,7 @@ function motTableHTML(r, c, p){
   const negCell = v => `<td>${Math.abs(v)<0.005?'<span class="z">—</span>':'<span class="neg">−'+fmtUSD(v).replace('−','')+'</span>'}</td>`;
   const tcell = (v,cls)=> `<td class="col-total ${cls||''}">${Math.abs(v)<0.005?'<span class="z">—</span>':fmtUSD(v)}</td>`;
   const pcell = v => `<td>${v?fmtPct(v):'<span class="z">—</span>'}</td>`;
-  const fcInCol = col => c.forecastMonth && col.months.includes(c.forecastMonth);
-  const totFc = !state.view && c.forecastMonth && c.monthsCount===1;
-  const th = cols.map(col=>`<th>${esc(col.label)}${fcInCol(col)?' <span class="fc-star">*</span>':''}</th>`).join('');
+  const th = cols.map(col=>`<th>${esc(col.label)}</th>`).join('');
   const rowN = (key)=> cols.map(col=>cell(sumBM(col,key))).join('');
   const rowNeg = (key)=> cols.map(col=>negCell(sumBM(col,key))).join('');
   const rowMargin = cols.map(col=>{ const rv=sumBM(col,'gpRevenue'); return pcell(rv? (sumBM(col,'gpProfit')/rv)*100 : 0); }).join('');
@@ -679,11 +674,10 @@ function motTableHTML(r, c, p){
     rows += `<tr class="fact"><td class="lab">Оплачено (1С)</td>${rowN('paid')}${tcell(c.paidTotal)}</tr>`;
   }
   const notes=[];
-  if (c.forecastMonth && (cols.some(fcInCol) || totFc)) notes.push(`* ${mLabel(c.forecastMonth)} — прогноз: рентабельність = середня за 3 попередні міс (${fmtPct(c.avgMargin3)}), поки місяць не закрито.`);
   if (c.accruedTotal != null) notes.push('«Нараховано / Оплачено» — факт з 1С (зарплатні документи), сконвертовано в USD за живим курсом.');
   const foot = notes.length ? `<div class="fc-foot">${notes.map(esc).join('<br>')}</div>` : '';
   const totLbl = state.view ? 'Всього' : 'Сума';
-  const totHead = `<th class="col-total">${totLbl}${totFc?' <span class="fc-star">*</span>':''}</th>`;
+  const totHead = `<th class="col-total">${totLbl}</th>`;
   return `<div class="mot-wrap"><table class="mot-table"><thead><tr><th class="lab">Показник</th>${th}${totHead}</tr></thead><tbody>${rows}</tbody></table></div>${foot}`;
 }
 
