@@ -218,6 +218,9 @@ const fmt  = (v, d=0) => v == null ? '—' : Number(v).toLocaleString('uk-UA', {
 const fmtU = v => v == null ? '—' : '$' + fmt(v, 0);
 const STATUS_LABELS = { fast: 'Швидкий', normal: 'Нормальний', slow: 'Повільний', dead: 'Мертвий' };
 const STATUS_DESC   = { fast: 'DSI < 60 дн', normal: 'DSI 60–180 дн', slow: 'DSI > 180 дн', dead: 'Без продажів 12 міс' };
+const SORT_LABELS   = { name:'Товар', abc:'ABC', qty:'Залишок', stock_val:'Вартість $', sold_90d:'Продано 90д',
+                        sold_365d:'Продано рік', itr:'ITR', dsi:'DSI', gmroi:'GMROI', dos:'Покриття дн',
+                        excess_val:'Надлишок $', last_sale:'Остання продаж', status:'Статус' };
 
 function setOrg(el) {
   document.querySelectorAll('#orgGroup .chip').forEach(c => c.classList.remove('active'));
@@ -331,6 +334,21 @@ function scopedItems() {
   return items;
 }
 
+// Рядки таблиці = scope, звужений карткою статусу, + поточне сортування.
+// Спільне джерело для рендеру на екрані і для PDF — щоб не розʼїхались.
+function currentTableItems(scoped) {
+  let items = (scoped || scopedItems()).slice();
+  if (state.statusFilter) items = items.filter(i => i.status === state.statusFilter);
+  items.sort((a, b) => {
+    let va = a[state.sortCol], vb = b[state.sortCol];
+    if (va == null) va = state.sortAsc ? Infinity : -Infinity;
+    if (vb == null) vb = state.sortAsc ? Infinity : -Infinity;
+    if (typeof va === 'string') return state.sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    return state.sortAsc ? va - vb : vb - va;
+  });
+  return items;
+}
+
 // Recompute summary KPIs over an arbitrary item subset (mirrors worker §8).
 function computeSummary(items) {
   let totSku = 0, totStockVal = 0, totCogs = 0, totGm = 0, totExcess = 0;
@@ -436,18 +454,7 @@ function render() {
   stHtml += '</div>';
   document.getElementById('statusCards').innerHTML = stHtml;
 
-  // Table rows = scope narrowed by the status card (status is table-only)
-  let items = scoped.slice();
-  if (state.statusFilter) items = items.filter(i => i.status === state.statusFilter);
-
-  // Sort
-  items.sort((a, b) => {
-    let va = a[state.sortCol], vb = b[state.sortCol];
-    if (va == null) va = state.sortAsc ? Infinity : -Infinity;
-    if (vb == null) vb = state.sortAsc ? Infinity : -Infinity;
-    if (typeof va === 'string') return state.sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
-    return state.sortAsc ? va - vb : vb - va;
-  });
+  const items = currentTableItems(scoped);
 
   if (!items.length) {
     document.getElementById('body').innerHTML = '<div class="empty-msg">Немає даних для обраних фільтрів</div>';
@@ -522,9 +529,14 @@ function rowHtml(it) {
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-/* ── PDF Export через window.print() ──────────────────────────────────
- * Як у counterparties.html: print-шапка з фільтрами, примусова світла
- * тема, window.print() → системний діалог «Зберегти як PDF».
+/* ── PDF Export ───────────────────────────────────────────────────────
+ * Окремий самодостатній документ у новому вікні (патерн finance.html), а не
+ * print-CSS поверх живої сторінки. Причина: екранна верстка в друці дає 9px
+ * кегль, а картки/заголовки тримаються на фонах, які Chrome за замовчуванням
+ * НЕ друкує («Фонова графіка» вимкнена) — виходить нечитабельно.
+ * Тут: свій кегль у pt, фіксовані ширини колонок під A4 landscape, розділювачі
+ * на бордерах (друкуються завжди), артикул окремою колонкою.
+ * Фолбек, якщо попап заблоковано, — @media print цієї ж сторінки.
  */
 function downloadPDF() {
   if (!DATA) { alert('Дані ще не завантажились'); return; }
@@ -533,8 +545,179 @@ function downloadPDF() {
   const q      = (document.getElementById('searchIn')?.value || '').trim();
   const abc    = state.abcFilter || 'Всі';
   const status = state.statusFilter ? STATUS_LABELS[state.statusFilter] : 'Всі';
-  const dt = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' });
+  const dt     = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' });
+  const items  = currentTableItems();
+  const s      = computeSummary(scopedItems());
+  const title  = `Обіговість запасів — ${org} — ${DATA.as_of_date || ''}`;
 
+  const win = window.open('', '_blank', 'width=1280,height=860');
+  if (!win) { legacyPrintFallback(org, group, q, abc, status, dt); return; }
+
+  const fmtDate = d => {
+    if (!d) return '—';
+    const x = new Date(d);
+    return String(x.getDate()).padStart(2,'0') + '.' + String(x.getMonth()+1).padStart(2,'0') + '.' + String(x.getFullYear()).slice(-2);
+  };
+
+  const kpi = [
+    ['Вартість запасу',  fmtU(s.stock_value_usd), fmt(s.total_sku) + ' SKU', ''],
+    ['Оборотність (ITR)', s.itr != null ? fmt(s.itr, 2) + 'x' : '—', 'разів на рік', ''],
+    ['Дні запасу (DSI)',  s.dsi != null ? fmt(s.dsi) : '—', 'днів', ''],
+    ['GMROI',             s.gmroi != null ? fmt(s.gmroi, 2) : '—', '$/$ інвестиції', ''],
+    ['Мертвий сток',      fmtU(s.dead?.value_usd), (s.dead?.sku || 0) + ' SKU', 'neg'],
+    [`Надлишок (> ${DATA.target_coverage_days}д)`, fmtU(s.excess_value_usd), 'понад норму покриття', 'neg'],
+  ];
+  const byStatus = { fast:{sku:0,val:0}, normal:{sku:0,val:0}, slow:{sku:0,val:0}, dead:{sku:0,val:0} };
+  for (const it of scopedItems()) { const b = byStatus[it.status]; if (b) { b.sku++; b.val += it.stock_val || 0; } }
+
+  const cardHtml = (label, val, sub, mod) =>
+    `<div class="card"><div class="cl">${esc(label)}</div><div class="cv ${mod}">${esc(val)}</div><div class="cs">${esc(sub)}</div></div>`;
+
+  const rows = items.map((it, i) => {
+    const abcCls = it.abc === 'A' ? 'a' : it.abc === 'B' ? 'b' : 'c';
+    const stMod  = it.status === 'fast' ? 'pos' : it.status === 'dead' ? 'neg' : '';
+    const z = v => (v === 0 || v == null) ? ' class="z"' : '';
+    return `<tr>
+      <td class="n">${i + 1}</td>
+      <td class="t">${esc(it.name)}</td>
+      <td class="art">${esc(it.article || '')}</td>
+      <td class="abc ${abcCls}">${esc(it.abc || '—')}</td>
+      <td${z(it.qty)}>${fmt(it.qty)}</td>
+      <td${z(it.stock_val)}>${fmtU(it.stock_val)}</td>
+      <td${z(it.sold_90d)}>${fmt(it.sold_90d)}</td>
+      <td${z(it.sold_365d)}>${fmt(it.sold_365d)}</td>
+      <td${z(it.itr)}>${it.itr != null ? fmt(it.itr, 2) + 'x' : '—'}</td>
+      <td${z(it.dsi)}>${it.dsi != null ? fmt(it.dsi) : '—'}</td>
+      <td${z(it.gmroi)}>${it.gmroi != null ? fmt(it.gmroi, 2) : '—'}</td>
+      <td${z(it.dos)}>${it.dos != null ? fmt(it.dos) : '—'}</td>
+      <td class="${it.excess_val > 0 ? 'neg' : 'z'}">${fmtU(it.excess_val)}</td>
+      <td>${fmtDate(it.last_sale)}</td>
+      <td class="${stMod}">${esc(STATUS_LABELS[it.status] || it.status || '')}</td>
+    </tr>`;
+  }).join('');
+
+  const doc = `<!DOCTYPE html>
+<html lang="uk"><head><meta charset="UTF-8"><title>${esc(title)}</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#fff;color:#1c1c1e;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+  .bar{position:fixed;top:0;left:0;right:0;padding:10px 16px;background:#f2f2f7;border-bottom:1px solid #d1d1d6;display:flex;gap:8px;align-items:center;z-index:99}
+  .bar button{padding:8px 16px;border:0;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+  .bar .go{background:#4a6edc;color:#fff}
+  .bar .cl2{background:#e5e5ea;color:#1c1c1e}
+  .bar .hint{font-size:12px;color:#6b7280;margin-left:6px}
+  .doc{padding:70px 16px 24px}
+
+  h1{margin:0 0 4pt;font-size:16pt;font-weight:800;letter-spacing:-.2pt}
+  .meta{font-size:8.5pt;color:#48484a;line-height:1.6}
+  .meta b{color:#1c1c1e}
+  .head{padding-bottom:6pt;border-bottom:1.5pt solid #1c1c1e;margin-bottom:8pt}
+
+  .cards{display:grid;grid-template-columns:repeat(6,1fr);gap:5pt;margin-bottom:6pt}
+  .cards.st{grid-template-columns:repeat(4,1fr)}
+  .card{border:0.75pt solid #c7c7cc;border-radius:3pt;padding:5pt 7pt}
+  .card .cl{font-size:6.5pt;color:#6b7280;text-transform:uppercase;letter-spacing:.3pt;font-weight:700}
+  .card .cv{font-size:13pt;font-weight:800;margin-top:1pt;font-variant-numeric:tabular-nums}
+  .card .cs{font-size:7pt;color:#6b7280;margin-top:1pt}
+
+  table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8pt;font-variant-numeric:tabular-nums;margin-top:4pt}
+  thead{display:table-header-group}
+  /* Перенос у заголовках — тільки по явних <br>; слова не рвемо посеред літер */
+  th{font-size:6.4pt;text-transform:uppercase;letter-spacing:.1pt;font-weight:700;color:#1c1c1e;
+     text-align:right;padding:4pt 2.5pt;border-bottom:1pt solid #1c1c1e;vertical-align:bottom;
+     white-space:normal;overflow-wrap:normal;word-break:keep-all;hyphens:none;line-height:1.25}
+  td{padding:3.2pt 3pt;text-align:right;border-bottom:0.5pt solid #e5e5ea;vertical-align:top;line-height:1.25}
+  tr{break-inside:avoid;page-break-inside:avoid}
+  th.l,td.l,td.t,td.art{text-align:left}
+  td.n,th.n{text-align:right;color:#8e8e93;font-size:7pt}
+  td.t{word-break:break-word;hyphens:auto}
+  td.art{color:#6b7280;font-size:7pt;word-break:break-all}
+  td.abc{text-align:center;font-weight:700}
+  th.c,td.c{text-align:center}
+  td.abc.a{color:#2d9d5f}
+  td.abc.c{color:#8e8e93;font-weight:500}
+  td.z{color:#aeaeb2}
+  .neg{color:#c9433a}
+  .pos{color:#2d9d5f}
+  td.neg,td.pos{font-weight:600}
+
+  /* Ширини під A4 landscape (~281 мм робочого поля). Сума = 100%.
+     Мінімум для колонки = найдовше слово заголовка (8 літер ≈ 6%). */
+  col.c-n{width:2.4%} col.c-t{width:24.9%} col.c-a{width:8%} col.c-abc{width:3.2%}
+  col.c-qty{width:5.9%} col.c-val{width:6.1%} col.c-sold{width:6%}
+  col.c-itr{width:3.8%} col.c-dsi{width:3.8%} col.c-gm{width:4.8%} col.c-dos{width:6.1%}
+  col.c-exc{width:6.2%} col.c-dt{width:6.2%} col.c-st{width:6.6%}
+
+  .foot{margin-top:8pt;font-size:7.5pt;color:#6b7280}
+
+  @media print{
+    .bar{display:none}
+    .doc{padding:0}
+    @page{size:A4 landscape;margin:9mm 8mm}
+  }
+</style></head>
+<body>
+<div class="bar">
+  <button class="go" id="btnPrint">Зберегти у PDF / Друкувати</button>
+  <button class="cl2" id="btnClose">Закрити</button>
+  <span class="hint">У діалозі друку: орієнтація — альбомна, поля — за замовчуванням</span>
+</div>
+<div class="doc">
+  <div class="head">
+    <h1>Обіговість запасів</h1>
+    <div class="meta">
+      <b>Організація:</b> ${esc(org)} &nbsp;·&nbsp;
+      <b>Група:</b> ${esc(group)} &nbsp;·&nbsp;
+      ${q ? `<b>Товар:</b> ${esc(q)} &nbsp;·&nbsp;` : ''}
+      <b>ABC:</b> ${esc(abc)} &nbsp;·&nbsp;
+      <b>Статус:</b> ${esc(status)} &nbsp;·&nbsp;
+      <b>Залишки на:</b> ${esc(DATA.as_of_date || '—')} &nbsp;·&nbsp;
+      <b>Позицій:</b> ${fmt(items.length)} &nbsp;·&nbsp;
+      <b>Норма покриття:</b> ${esc(String(DATA.target_coverage_days))} дн &nbsp;·&nbsp;
+      Сформовано ${esc(dt)}
+    </div>
+  </div>
+
+  <div class="cards">${kpi.map(k => cardHtml(k[0], k[1], k[2], k[3])).join('')}</div>
+  <div class="cards st">
+    ${['fast','normal','slow','dead'].map(k => cardHtml(
+        STATUS_LABELS[k], fmtU(byStatus[k].val),
+        byStatus[k].sku + ' SKU · ' + STATUS_DESC[k],
+        k === 'fast' ? 'pos' : k === 'dead' ? 'neg' : '')).join('')}
+  </div>
+
+  <table>
+    <colgroup>
+      <col class="c-n"><col class="c-t"><col class="c-a"><col class="c-abc">
+      <col class="c-qty"><col class="c-val"><col class="c-sold"><col class="c-sold">
+      <col class="c-itr"><col class="c-dsi"><col class="c-gm"><col class="c-dos">
+      <col class="c-exc"><col class="c-dt"><col class="c-st">
+    </colgroup>
+    <thead><tr>
+      <th class="n">№</th><th class="l">Товар</th><th class="l">Артикул</th><th class="c">ABC</th>
+      <th>Залишок</th><th>Вартість<br>$</th><th>Продано<br>90&nbsp;днів</th><th>Продано<br>рік</th>
+      <th>ITR</th><th>DSI</th><th>GMROI</th><th>Покриття<br>днів</th>
+      <th>Надлишок<br>$</th><th>Остання<br>продаж</th><th>Статус</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+
+  <div class="foot">Сортування: ${esc(SORT_LABELS[state.sortCol] || state.sortCol)} ${state.sortAsc ? '↑' : '↓'} &nbsp;·&nbsp; Усі суми в USD</div>
+</div>
+<script>
+  document.getElementById('btnPrint').addEventListener('click', function(){ window.print(); });
+  document.getElementById('btnClose').addEventListener('click', function(){ window.close(); });
+<\/script>
+</body></html>`;
+
+  win.document.open();
+  win.document.write(doc);
+  win.document.close();
+  try { win.focus(); } catch (_) {}
+}
+
+// Фолбек, коли попап заблоковано: друк самої сторінки через @media print.
+function legacyPrintFallback(org, group, q, abc, status, dt) {
   let head = document.getElementById('__pdfHead');
   if (!head) {
     head = document.createElement('div');
@@ -553,13 +736,10 @@ function downloadPDF() {
       <span><b style="color:#1c1c1e">Залишки на:</b> ${esc(DATA.as_of_date || '—')}</span>
       <span><b style="color:#1c1c1e">Сформовано:</b> ${esc(dt)}</span>
     </div>`;
-
-  // Тимчасово примусова світла тема + назва файлу для «Зберегти як PDF»
   const prevTheme = document.documentElement.getAttribute('data-theme');
   const prevTitle = document.title;
   document.documentElement.setAttribute('data-theme', 'light');
   document.title = `Обіговість запасів - ${org} - ${DATA.as_of_date || ''}`;
-
   setTimeout(() => {
     window.print();
     setTimeout(() => {
