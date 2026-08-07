@@ -154,6 +154,7 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
     <button class="tab active" data-tab="users">Користувачі</button>
     <button class="tab" data-tab="roles">Ролі</button>
     <button class="tab" data-tab="sync">Синхронізація</button>
+    <button class="tab" data-tab="calls">Дзвінки</button>
     <button class="tab" data-tab="motivation">Мотивації</button>
     <button class="tab" data-tab="bot">Бот</button>
   </div>
@@ -284,23 +285,6 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
 
   <div class="card" style="margin-top:24px">
     <div class="card-head">
-      <h2>Звіт по дзвінках — Telegram</h2>
-      <div class="spacer"></div>
-      <span style="font-size:12px;color:var(--text3)">бот Степан · щодня після РОП-аналізу</span>
-    </div>
-    <div style="padding:14px">
-      <div style="font-size:12px;color:var(--text3);line-height:1.6;margin-bottom:14px">
-        Промпт формує блок «Головне» — 3-5 висновків дня за вердиктами по всіх дзвінках.
-        Скрипт <code>daily_report.py</code> читає ці налаштування перед відправкою, тож правка діє з наступного ранку.
-        До промпта автоматично додається список дзвінків із посиланнями на транскрипції
-        (<code>?action=call_transcript</code>) — посилання відкривається без логіну в ERP.
-      </div>
-      <div id="callsReportWrap" style="font-size:13px;color:var(--text3)">Завантаження…</div>
-    </div>
-  </div>
-
-  <div class="card" style="margin-top:24px">
-    <div class="card-head">
       <h2>Ручний sync</h2>
       <div class="spacer"></div>
     </div>
@@ -345,6 +329,27 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
     </div>
     <div id="manSyncResult" style="margin-top:12px;font-size:12px;color:var(--text2);display:none"></div>
   </div>
+  </div>
+
+  <div id="tab-calls" class="tab-panel">
+    <div class="card">
+      <div class="card-head">
+        <h2>Короткий звіт у Telegram</h2>
+        <div class="spacer"></div>
+        <span style="font-size:12px;color:var(--text3)">бот Степан · щодня о 08:00 після РОП-аналізу</span>
+      </div>
+      <div style="padding:14px">
+        <div style="font-size:12px;color:var(--text3);line-height:1.6;margin-bottom:16px">
+          Промпт формує блок «Головне» — 3-5 висновків дня за вердиктами по всіх дзвінках відділу.
+          Скрипт <code>daily_report.py</code> на Mac читає ці налаштування перед кожною відправкою,
+          тож правка діє з наступного ранку. До промпта автоматично додається список дзвінків дня
+          з посиланням на транскрипцію кожного — посилання відкривається без логіну в ERP,
+          тому висновок про конкретний дзвінок можна перевірити прямо з телефона.
+          Статус останнього запуску — вкладка «Синхронізація», блок «Щоденні аналізи».
+        </div>
+        <div id="callsReportWrap" style="font-size:13px;color:var(--text3)">Завантаження…</div>
+      </div>
+    </div>
   </div>
 
   <div id="tab-motivation" class="tab-panel">
@@ -473,7 +478,7 @@ document.querySelector('.bsub-bar').addEventListener('click', e => {
 (function() {
   const h = location.hash.slice(1);
   const mBot = h.match(/^bot(?:-([a-z]+))?$/);
-  if (['users','roles','sync','motivation'].includes(h)) switchTab(h);
+  if (['users','roles','sync','calls','motivation'].includes(h)) switchTab(h);
   else if (mBot) { switchTab('bot'); if (mBot[1]) switchBotSub(mBot[1]); }
 })();
 
