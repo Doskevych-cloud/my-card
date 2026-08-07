@@ -1297,7 +1297,7 @@ function helpTemplate() {
     <div class="m-section-title">План поставок · що вважається відкритим</div>
     <div class="m-formula">Відкрите замовлення = таке, де по регістру <code>ЗаказыПоставщикам</code> <b>ще не все отримано</b> (замовлено − погашено приходами &gt; 0). Стан документа в 1С для цього непридатний: «В роботі» там не знімають після поставки, тож раніше картка показувала вже привезені партії як прострочені. «Очікується N м» — саме недоотриманий залишок, а не повний обсяг замовлення.</div>
     <div class="m-section-title">Таймлайн замовлень кабелю (KBE)</div>
-    <div class="m-formula">Гант по зовнішніх замовленнях у <b>KBE Elektrotechnik GmbH</b>. <b>Показуються ЛИШЕ незакриті замовлення</b> — те, що вже прийнято по документах, з таймлайну прибрано: блок відповідає на питання «що ще їде», а не «що привозили торік». Порожній блок = все замовлене отримано. Смуга тягнеться від дати замовлення до <b>сьогодні</b> (скільки вже чекаємо), далі пунктир до планової дати; якщо план уже минув — хвіст до сьогодні червоний. Вертикальна риска — <b>планова дата з 1С</b>. Насічка всередині смуги — межа партій: одне замовлення може приїхати кількома приходами (напр. 576 км = 288 + 288). Синя риска — сьогодні. Наведення на рядок дає повну картку: метраж по кольорах, дати вже прийнятих партій, скільки ще не отримано, сума. Джерело — регістр <code>ЗаказыПоставщикам</code>: рядки від <code>ЗаказПоставщику</code> = скільки замовили, рядки від <code>ПриходнаяНакладная</code> = скільки і коли погасили. <b>Виміряний цикл поставки</b> (мін–макс і медіана в підписі блоку) рахується по всій історії закритих замовлень і лишається видимим завжди — це вхідна цифра для наступного замовлення. <b>Внутрішні міжфіліальні</b> замовлення (Реакт↔Генерація) сюди не входять — це перекидання на 87–500 м, у масштабі 288-кілометрових партій вони нечитабельні. Планова дата в кількох замовленнях 2025 року <b>раніша за дату самого замовлення</b> (її не оновили після перевиставлення) — такі відкидаємо як недостовірні, риски й «затримки» для них нема. Червоніє замовлення, у якого планова дата вже минула, а товар ще не прийнято (для закритих, якщо колись їх повернути в блок, поріг мʼякший — спізнення понад ${TL_LATE_DAYS} дн, бо на 35-денному імпортному циклі кілька днів це шум). <b>Порожній таймлайн ≠ «В дорозі 0»</b> у KPI: KPI рахує товар, який уже прийняли <b>на транзитний склад</b> («В дорозі 08») — замовлення при цьому закрите, кабель просто фізично їде. Таймлайн натомість показує, чи лишилось щось <b>не прийняте по документах</b>.</div>
+    <div class="m-formula">Гант по зовнішніх замовленнях у <b>KBE Elektrotechnik GmbH</b>. <b>Показується лише те, що ще не доїхало до робочого складу</b> — блок відповідає на питання «що ще їде», а не «що привозили торік». Два стани: <b>не прийняте по документах</b> (смуга до сьогодні, далі пунктир до планової дати з 1С) і <b>прийняте, але фізично в дорозі</b> — прихід ліг на склад <code>В дорозі NN</code>, тобто документально замовлення закрите, а кабель їде (суцільна смуга до дати відвантаження, далі пунктир-«дорога» до кінця місяця зі складу: «В дорозі 08» → 31 серпня). Прострочене — червоним: у першому випадку минув план 1С, у другому — очікуваний місяць приходу. Вертикальна риска — планова дата з 1С, синя — сьогодні. Насічка в смузі — межа партій: одне замовлення може приїхати кількома приходами. Праворуч — <b>метри, що ще їдуть</b> (не повний обсяг замовлення: частина могла вже лягти на робочий склад), і скільки днів минуло від замовлення. Наведення дає повну картку: метраж по кольорах, дати партій, склад, очікуваний прихід, сума. Джерело — регістр <code>ЗаказыПоставщикам</code> (замовлено vs погашено приходами) + склад із шапки приходної та живі залишки 1С по транзитних складах: якщо частину партії вже перемістили далі, «в дорозі» лишається тільки залишок. <b>Виміряний цикл поставки</b> (мін–макс і медіана в підписі блоку) рахується лише по партіях, що реально доїхали — те, що ще лежить на «В дорозі», і 0-денні паперові приходи в статистику не входять. <b>Внутрішні міжфіліальні</b> замовлення (Реакт↔Генерація) сюди не входять — це перекидання на 87–500 м, у масштабі 288-кілометрових партій вони нечитабельні. Планова дата в кількох замовленнях 2025 року <b>раніша за дату самого замовлення</b> (її не оновили після перевиставлення) — такі відкидаємо як недостовірні, риски й «затримки» для них нема. Метраж у стані «фізично в дорозі» <b>сходиться з KPI «В дорозі»</b> в шапці — це одні й ті самі залишки на складах <code>В дорозі NN</code>, просто тут вони розкладені по замовленнях із датами.</div>
     <div class="m-section-title">Що може здивувати</div>
     <div class="m-formula">Фільтр SKU у шапці перемикає KPI, банер і обидва графіки; «Кабель по складах», план поставок і таймлайн завжди показують обидва кольори. Резерви на складах «В дорозі» входять у «У резерві», але не у «Вільно». <b>Платіжний статус</b> (оплачено / лишилось) — лише по <b>KBE</b> (зовнішній постачальник, реальні платежі): «лишилось» = баланс замовлення в регістрі <code>РасчетыСПоставщиками</code> у валюті договору, дата оплати — остання банківська платіжка. По внутрішніх міжфіліальних замовленнях статусу нема — там оплата йде взаємозаліком без платіжки. <b>Календар платежів KBE</b>: таблиця по кожному замовленню — товар/метраж, сума, оплачено, лишилось. <b>Все в гривні</b> по курсу НБУ+1% (EUR sell, показаний у шапці блоку; оригінал у € — під сумою). «Оплачено/лишилось» — з D1 (ap_movements по Заказ_Key, оновлюється autosync'ом кожні 30 хв). Редаговані дати: аванс 10%, доплата 90% (=дата виготовлення кабеля) і план ПДВ. <b>ПДВ («мито»)</b>: факт сплати визначається по документах «Додаткові витрати» з контрагентом Держмитслужба, привʼязаних до приходної замовлення — є док → ПДВ по замовленню закритий і <b>не виводиться взагалі</b> («—» в обох колонках, в календар не потрапляє); нема → план 20% × (сума угоди + доставка 4500 €), дата за замовчуванням = дата приходу (можна перевизначити). <b>«Лишилось» включає несплачений ПДВ</b>; «Оплачено» — тільки товар. З цих дат нижче складається календар оплат (межі місяців — розділювальною лінією). <b>Показується лише несплачене</b>: повністю закриті замовлення (товар + ПДВ) і історія оплат не виводяться взагалі. Сплачені аванс/доплата в незакритих рядках — факт-дата з ✓, не редагуються. Календар — відомість по бух-принципу Дт/Кт: початковий залишок = «Рахунок А-Банк» (залишки Реакту, валютні зведені в ₴ по тих самих курсах), кожен платіж списується, і колонка праворуч показує сальдо рахунку після оплати — мінус червоним = недостача (скільки треба докинути станом на цей платіж), плюс = надлишок. «Кінцеве сальдо» в рядку рахунку = залишок після всіх платежів, включно з тими, що ще без дати.</div>`;
 }
@@ -1442,24 +1442,26 @@ function renderCableTimeline(d) {
   const body = card.querySelector('.card-b');
   const meta = document.getElementById('cableTlMeta');
   const s = (d && d.summary) || {};
-  // Показуємо ЛИШЕ незакриті замовлення — те, що вже приїхало, з Ганта прибрано.
-  // Виміряний цикл лишаємо в підписі: він з історії, але це вхідна цифра для
-  // планування наступного замовлення, а не звіт про минуле.
-  const rows = ((d && d.rows) || []).filter(r => !r.done);
+  // Показуємо все, що ще НЕ доїхало до робочого складу — у двох виглядах:
+  //   • не прийняте по документах (outstanding);
+  //   • прийняте, але лежить на складі «В дорозі NN» — кабель фізично в дорозі.
+  // Те, що вже на робочому складі, з Ганта прибрано.
+  const rows = ((d && d.rows) || []).filter(r => !r.done || r.transitM > 0);
   const leadTxt = s.leadMed != null ? `цикл ${s.leadMin}–${s.leadMax} дн, медіана ${s.leadMed}` : '';
   if (!rows.length) {
     meta.textContent = leadTxt || '—';
-    body.innerHTML = `<div class="tl-empty">Незакритих замовлень нема — усе замовлене вже прийнято по документах${
+    body.innerHTML = `<div class="tl-empty">Нічого в дорозі — усе замовлене вже на складах${
       s.leadMed != null ? `.<br>Виміряний цикл поставки KBE: <b>${s.leadMin}–${s.leadMax} дн</b>, медіана <b>${s.leadMed}</b>.` : ''
     }</div>`;
     return;
   }
-  const openM = rows.reduce((a, r) => a + r.outstanding, 0);
-  meta.textContent = `${rows.length} в дорозі · не отримано ${fmtKm(openM)}${leadTxt ? ' · ' + leadTxt : ''}`;
+  const pendingM = rows.reduce((a, r) => a + (r.pending != null ? r.pending : r.outstanding), 0);
+  meta.textContent = `${rows.length} в дорозі · ${fmtKm(pendingM)}${leadTxt ? ' · ' + leadTxt : ''}`;
 
   // Вісь: від найранішого замовлення до найпізнішої з дат (прихід / план / сьогодні)
   const all = [d.today];
-  rows.forEach(r => [r.orderDate, r.arrival, r.planArrival].forEach(x => x && all.push(x)));
+  rows.forEach(r => [r.orderDate, r.arrival, r.planArrival, r.transit && r.transit.eta]
+    .forEach(x => x && all.push(x)));
   const lo = new Date(all.reduce((a, b) => a < b ? a : b) + 'T00:00:00').getTime();
   const hi = new Date(all.reduce((a, b) => a > b ? a : b) + 'T00:00:00').getTime();
   const pad = Math.max(3 * D_MS, (hi - lo) * 0.015);
@@ -1500,9 +1502,10 @@ function renderCableTimeline(d) {
     <div class="tl-row head"><div></div><div class="tl-track">${axis}</div><div></div><div></div></div>
     ${rows.map(r => tlRow(r, d, pos, pc)).join('')}
     <div class="tl-legend">
-      <span><i></i> від замовлення</span>
-      ${rows.some(r => r.planArrival && r.planArrival < d.today) ? '<span><i class="late"></i> прострочено проти плану</span>' : ''}
-      ${rows.some(r => r.planArrival && r.planArrival > d.today) ? '<span><i class="open"></i> лишилось до плану</span>' : ''}
+      <span><i></i> замовлено → відвантажено</span>
+      ${rows.some(r => r.transitM > 0) ? '<span><i class="open"></i> їде (склад «В дорозі»)</span>'
+        : rows.some(r => r.planArrival && r.planArrival > d.today) ? '<span><i class="open"></i> лишилось до плану</span>' : ''}
+      ${rows.some(r => tlIsLate(r, d)) ? '<span><i class="late"></i> прострочено</span>' : ''}
       ${rows.some(r => r.planArrival) ? '<span><i class="pin"></i> планова дата 1С</span>' : ''}
       <span><i class="now"></i> сьогодні</span>
     </div>
@@ -1518,55 +1521,87 @@ function tlShort(isoDate) {
   if (!isoDate) return '—';
   return isoDate.slice(8, 10) + '.' + isoDate.slice(5, 7);
 }
+// Прострочено = у дорозі й ETA складу минув, або не прийнято й план 1С минув
+function tlIsLate(r, d) {
+  if (r.transitM > 0) return !!(r.transit && r.transit.eta && r.transit.eta < d.today);
+  if (!r.done) return !!(r.planArrival && r.planArrival < d.today);
+  return r.delayDays != null && r.delayDays > TL_LATE_DAYS;
+}
 
 function tlRow(r, d, pos, pc) {
-  // Закрите замовлення: смуга до фактичного приходу. Незакрите: до сьогодні
-  // (скільки вже тягнеться), а далі пунктир до планової дати.
-  const end = r.done && r.arrival ? r.arrival : d.today;
+  // Три стани рядка:
+  //   transit — прийнято по документах, але лежить на складі «В дорозі NN»:
+  //             суцільна смуга до дати приходу (= відвантаження), далі «дорога»
+  //             до ETA складу («В дорозі 08» → кінець серпня);
+  //   open    — не прийнято зовсім: смуга до сьогодні, далі пунктир до плану 1С;
+  //   done    — закрите (у блоці не показуємо, але рендер лишається робочим).
+  const inTransit = r.transitM > 0;
+  const end = inTransit ? (r.arrival || d.today) : (r.done && r.arrival ? r.arrival : d.today);
   const l = pos(r.orderDate);
   let bars = `<div class="tl-bar" style="left:${pc(l)};width:${pc(Math.max(0.35, pos(end) - l))}"></div>`;
-  // Червоним — прострочка: у закритого від плану до приходу, у незакритого від
-  // простроченого плану до сьогодні (чекаємо довше, ніж обіцяв постачальник).
-  const lateFrom = !r.planArrival ? null
-    : r.done ? (r.delayDays > TL_LATE_DAYS ? r.planArrival : null)
-    : (r.planArrival < d.today ? r.planArrival : null);
-  if (lateFrom) {
-    const p = pos(lateFrom);
-    bars += `<div class="tl-late" style="left:${pc(p)};width:${pc(Math.max(0.3, pos(end) - p))}"></div>`;
-  }
-  // ще не приїхало, план попереду: пунктир від сьогодні до планової дати
-  if (!r.done && r.planArrival && r.planArrival > d.today) {
-    const t = pos(d.today);
-    bars += `<div class="tl-open" style="left:${pc(t)};width:${pc(Math.max(0.3, pos(r.planArrival) - t))}"></div>`;
+
+  let late = false;
+  if (inTransit) {
+    // дорога від складу «В дорозі» до очікуваного приходу; ETA минув → червоним
+    const eta = r.transit && r.transit.eta;
+    late = !!(eta && eta < d.today);
+    const to = late ? d.today : (eta && eta > end ? eta : null);
+    if (to) {
+      bars += `<div class="${late ? 'tl-late' : 'tl-open'}" style="left:${pc(pos(end))};width:${pc(Math.max(0.3, pos(to) - pos(end)))}"></div>`;
+    }
+  } else {
+    // Червоним — прострочка: у закритого від плану до приходу, у незакритого від
+    // простроченого плану до сьогодні (чекаємо довше, ніж обіцяв постачальник).
+    const lateFrom = !r.planArrival ? null
+      : r.done ? (r.delayDays > TL_LATE_DAYS ? r.planArrival : null)
+      : (r.planArrival < d.today ? r.planArrival : null);
+    if (lateFrom) {
+      late = true;
+      const p = pos(lateFrom);
+      bars += `<div class="tl-late" style="left:${pc(p)};width:${pc(Math.max(0.3, pos(end) - p))}"></div>`;
+    }
+    // ще не приїхало, план попереду: пунктир від сьогодні до планової дати
+    if (!r.done && r.planArrival && r.planArrival > d.today) {
+      const t = pos(d.today);
+      bars += `<div class="tl-open" style="left:${pc(t)};width:${pc(Math.max(0.3, pos(r.planArrival) - t))}"></div>`;
+    }
   }
   // насічки — межі партій усередині одного замовлення. У закритого останній
   // прихід збігається з кінцем смуги, тож насічку там не малюємо; у незакритого
   // смуга йде далі до сьогодні — потрібні всі.
-  const notches = r.done ? (r.receipts || []).slice(0, -1) : (r.receipts || []);
+  const notches = r.done && !inTransit ? (r.receipts || []).slice(0, -1) : (r.receipts || []);
   bars += notches.map(x => `<i class="tl-rc" style="left:${pc(pos(x.date))}"></i>`).join('');
   if (r.planArrival) bars += `<span class="tl-pin" style="left:${pc(pos(r.planArrival))}"></span>`;
 
-  const late = !!lateFrom;
   const parts = (r.receipts || []).length > 1
     ? '\nПартії: ' + r.receipts.map(x => `${x.date} — ${fmtKm(x.m)}`).join('; ')
     : '';
   const delay = r.delayDays == null ? 'ще не приїхало'
     : r.delayDays > 0 ? `на ${r.delayDays} дн пізніше плану`
     : r.delayDays < 0 ? `на ${-r.delayDays} дн раніше плану` : 'день у день';
+  const elapsed = r.orderDate ? Math.round((new Date(d.today) - new Date(r.orderDate)) / D_MS) : null;
+  const status = inTransit
+    ? `Зараз: ${fmtKm(r.transitM)} на складі «${r.transit.name}»\nОчікуваний прихід: ${r.transit.eta || '—'}${
+        late ? ` · прострочено на ${Math.round((new Date(d.today) - new Date(r.transit.eta)) / D_MS)} дн` : ''}\nВід замовлення минуло: ${elapsed} дн`
+    : r.done ? `Цикл: ${r.leadDays} дн · ${r.planArrival ? delay : 'плану нема'}`
+    : `Чекаємо: ${r.leadDays} дн${r.planArrival && r.planArrival < d.today ? ` · прострочено на ${Math.round((new Date(d.today) - new Date(r.planArrival)) / D_MS)} дн` : ''}`;
   const tip = `${r.number} · ${r.org}
 Замовлено: ${r.orderDate} — ${fmtKm(r.ordered)} (чорн ${fmt(r.black)} м · черв ${fmt(r.red)} м)
 План 1С: ${r.planArrival || 'не вказано'}
-Прийнято: ${r.received ? fmtKm(r.received) : 'нічого'}${parts}
-${r.done ? `Цикл: ${r.leadDays} дн · ${r.planArrival ? delay : 'плану нема'}`
-         : `Чекаємо: ${r.leadDays} дн${r.planArrival && r.planArrival < d.today ? ` · прострочено на ${Math.round((new Date(d.today) - new Date(r.planArrival)) / D_MS)} дн` : ''}`}
-Сума: ${fmt(r.sum)} ${r.sym || ''}${r.outstanding > 0 ? `\nЩе не отримано: ${fmtKm(r.outstanding)}` : ''}`;
+Прийнято по документах: ${r.received ? fmtKm(r.received) : 'нічого'}${r.arrival ? ` (${r.arrival})` : ''}${parts}
+${status}
+Сума: ${fmt(r.sum)} ${r.sym || ''}${r.outstanding > 0 ? `\nЩе не прийнято: ${fmtKm(r.outstanding)}` : ''}`;
 
-  // Ліворуч і праворуч показуємо те, чим блок живе: у незакритого — коли обіцяли
-  // прихід і скільки ще НЕ отримано (а не повний обсяг: частину могли вже прийняти).
-  const dates = r.done
-    ? `${tlShort(r.orderDate)} → ${tlShort(r.arrival)}`
+  // Ліворуч і праворуч показуємо те, чим блок живе: коли чекаємо кабель і скільки
+  // його ще їде (а не повний обсяг замовлення: частина могла вже лягти на склад).
+  const dates = inTransit
+    ? `${tlShort(r.orderDate)} → їде до ${tlShort(r.transit.eta)}`
+    : r.done ? `${tlShort(r.orderDate)} → ${tlShort(r.arrival)}`
     : `${tlShort(r.orderDate)} → ${r.planArrival ? 'план ' + tlShort(r.planArrival) : '?'}`;
-  const km = r.done ? r.ordered : r.outstanding;
+  const km = inTransit ? r.pending : r.done ? r.ordered : r.outstanding;
+  // для того, що ще їде, «цикл» — це скільки вже минуло, а не закритий lead
+  const leadTxt = (inTransit || !r.done) ? (elapsed != null ? elapsed + ' дн' : '—')
+    : (r.leadDays != null ? r.leadDays + ' дн' : '—');
 
   return `<div class="tl-row" title="${escapeHtml(tip)}">
     <div class="tl-lbl">
@@ -1575,7 +1610,7 @@ ${r.done ? `Цикл: ${r.leadDays} дн · ${r.planArrival ? delay : 'план�
     </div>
     <div class="tl-track">${bars}</div>
     <div class="tl-km">${fmtKm(km)}</div>
-    <div class="tl-lead${late ? ' late' : ''}">${r.leadDays != null ? r.leadDays + ' дн' : '—'}</div>
+    <div class="tl-lead${late ? ' late' : ''}">${leadTxt}</div>
   </div>`;
 }
 
