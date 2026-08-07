@@ -284,6 +284,23 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
 
   <div class="card" style="margin-top:24px">
     <div class="card-head">
+      <h2>Звіт по дзвінках — Telegram</h2>
+      <div class="spacer"></div>
+      <span style="font-size:12px;color:var(--text3)">бот Степан · щодня після РОП-аналізу</span>
+    </div>
+    <div style="padding:14px">
+      <div style="font-size:12px;color:var(--text3);line-height:1.6;margin-bottom:14px">
+        Промпт формує блок «Головне» — 3-5 висновків дня за вердиктами по всіх дзвінках.
+        Скрипт <code>daily_report.py</code> читає ці налаштування перед відправкою, тож правка діє з наступного ранку.
+        До промпта автоматично додається список дзвінків із посиланнями на транскрипції
+        (<code>?action=call_transcript</code>) — посилання відкривається без логіну в ERP.
+      </div>
+      <div id="callsReportWrap" style="font-size:13px;color:var(--text3)">Завантаження…</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:24px">
+    <div class="card-head">
       <h2>Ручний sync</h2>
       <div class="spacer"></div>
     </div>
@@ -553,6 +570,7 @@ Auth.require('admin').then(user => {
     loadUsers();
     loadAutosyncStatus();
     loadJobHealth();
+    loadCallsReport();
     loadOdataPassStatus();
     loadMotivation();
   }
@@ -806,6 +824,40 @@ async function loadJobHealth() {
   } catch (e) {
     tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red)">Помилка: ${jobEsc(e.message || e)}</td></tr>`;
   }
+}
+
+// ── Налаштування короткого TG-звіту по дзвінках (D1 report_settings) ──
+// Канон — D1: тут правимо, daily_report.py на Mac читає перед відправкою.
+async function loadCallsReport() {
+  const wrap = document.getElementById('callsReportWrap');
+  if (!wrap) return;
+  try {
+    const d = await Auth.apiFetch('_admin_calls_report_get');
+    if (d.error) { wrap.innerHTML = `<div style="color:var(--red)">${jobEsc(d.error)}</div>`; return; }
+    const inputStyle = 'padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;width:100%';
+    const rows = (d.settings || []).map(s => {
+      const long = s.key === 'calls_tg_prompt';
+      return `<div style="margin-bottom:14px">
+        <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px">${jobEsc(s.label || s.key)}</label>
+        <textarea data-calls="${jobEsc(s.key)}" style="${inputStyle};min-height:${long ? 180 : 60}px;resize:vertical;font-family:monospace;font-size:12px;line-height:1.5">${jobEsc(s.value)}</textarea>
+      </div>`;
+    }).join('');
+    wrap.innerHTML = rows + `<div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn--primary" onclick="saveCallsReport()">Зберегти</button>
+      <span id="callsReportStatus" style="font-size:12px;color:var(--text3)"></span>
+    </div>`;
+  } catch (e) { wrap.innerHTML = `<div style="color:var(--red)">Помилка: ${jobEsc(e.message || e)}</div>`; }
+}
+async function saveCallsReport() {
+  const settings = {};
+  document.querySelectorAll('[data-calls]').forEach(el => { settings[el.dataset.calls] = el.value; });
+  const status = document.getElementById('callsReportStatus');
+  try {
+    const d = await Auth.apiFetch('_admin_calls_report_set', { method: 'POST', body: { settings } });
+    status.textContent = d.ok ? 'Збережено ✓' : (d.error || 'Помилка');
+    status.style.color = d.ok ? 'var(--green)' : 'var(--red)';
+    setTimeout(() => { status.textContent = ''; }, 3000);
+  } catch (e) { status.textContent = e.message; status.style.color = 'var(--red)'; }
 }
 
 async function loadUsers() {
