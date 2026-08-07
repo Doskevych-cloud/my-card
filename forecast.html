@@ -233,6 +233,42 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 .sp-empty{color:var(--mute);font-size:12.5px;padding:6px 0}
 @media(max-width:720px){.sp-row{grid-template-columns:1fr;gap:5px;padding:12px 0}.sp-date{display:flex;align-items:baseline;gap:8px}.sp-date .rel{margin-top:0}.sp-m{justify-content:flex-start}.sp-sum{text-align:left}}
 
+/* Таймлайн замовлень кабелю (Гант): смуга замовлення → прихід на спільній осі часу */
+.timeline{grid-column:span 12}
+.tl{position:relative}
+.tl-grid{position:absolute;top:0;bottom:0;left:var(--tl-l);right:var(--tl-r);pointer-events:none}
+.tl-grid i{position:absolute;top:0;bottom:0;width:1px;background:var(--line)}
+.tl-grid i.y{background:var(--line-2)}
+.tl-grid b{position:absolute;top:0;bottom:0;width:1px;background:var(--accent);opacity:.5}
+.tl-row{position:relative;display:grid;grid-template-columns:var(--tl-l) 1fr var(--tl-km) var(--tl-lead);align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.tl-row:last-child{border-bottom:0}
+.tl-row.head{padding:0 0 6px;border-bottom:1px solid var(--line-2);height:16px;align-items:flex-start}
+.tl-mo{position:absolute;top:0;font-family:var(--mono);font-size:10px;color:var(--mute);white-space:nowrap;padding-left:3px}
+.tl-lbl .n{font-family:var(--mono);font-size:12px;color:var(--fg-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:12px}
+.tl-lbl .d{font-family:var(--mono);font-size:10.5px;color:var(--mute);margin-top:3px;white-space:nowrap}
+.tl-track{position:relative;height:18px}
+.tl-bar{position:absolute;top:5px;height:8px;border-radius:4px;background:var(--bar-fill);min-width:3px}
+.tl-late{position:absolute;top:5px;height:8px;border-radius:0 4px 4px 0;background:var(--neg);min-width:2px}
+.tl-open{position:absolute;top:5px;height:8px;border-radius:0 4px 4px 0;border:1px dashed var(--mute-2);border-left:0}
+.tl-rc{position:absolute;top:5px;width:1px;height:8px;background:var(--panel)}
+.tl-pin{position:absolute;top:1px;width:1px;height:16px;background:var(--mute-2)}
+.tl-km{font-family:var(--mono);font-size:12.5px;color:var(--fg);text-align:right;white-space:nowrap;padding-left:10px}
+.tl-lead{font-family:var(--mono);font-size:11.5px;color:var(--mute);text-align:right;white-space:nowrap;padding-left:8px}
+.tl-lead.late{color:var(--neg)}
+.tl-legend{display:flex;flex-wrap:wrap;gap:16px;font-size:11px;color:var(--mute);padding-top:11px;margin-top:2px;border-top:1px solid var(--line)}
+.tl-legend span{display:inline-flex;align-items:center;gap:6px}
+.tl-legend i{display:inline-block;width:16px;height:6px;border-radius:3px;background:var(--bar-fill);flex:0 0 16px}
+.tl-legend i.late{background:var(--neg)}
+.tl-legend i.pin{width:1px;height:12px;border-radius:0;background:var(--mute-2);flex:0 0 1px}
+.tl-legend i.now{width:1px;height:12px;border-radius:0;background:var(--accent);opacity:.5;flex:0 0 1px}
+.tl-empty{color:var(--mute);font-size:12.5px;padding:6px 0}
+@media(max-width:720px){
+  .tl-lead{display:none}
+  .tl-lbl .n{font-size:11px;padding-right:8px}
+  .tl-lbl .d{font-size:9.5px}
+  .tl-km{font-size:11.5px;padding-left:6px}
+}
+
 /* Payment calendar (KBE): таблиця замовлень + календар */
 .paycal{grid-column:span 12}
 .paycal input{font-family:var(--mono);font-size:12px;color:var(--fg);background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:3px 6px}
@@ -444,6 +480,14 @@ table.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
       <div class="card-h">
         <div class="title">Поставки кабелю — план надходжень</div>
         <div class="meta" id="supplyMeta">—</div>
+      </div>
+      <div class="card-b"><div class="loading">Завантаження…</div></div>
+    </div>
+
+    <div class="card timeline" id="cableTlCard">
+      <div class="card-h">
+        <div class="title">Таймлайн замовлень кабелю <span class="kbd">KBE</span></div>
+        <div class="meta" id="cableTlMeta">—</div>
       </div>
       <div class="card-b"><div class="loading">Завантаження…</div></div>
     </div>
@@ -1249,8 +1293,12 @@ function helpTemplate() {
     <div class="m-formula">Старт = вільне на складах + вільне в дорозі. Щоденний попит: нд — 0, сб — 40% буднього, разом за тиждень рівно 7×WMA. Дефіцит — день, коли залишок стає від'ємним. <b>Банер, «запас на N дн.» і графік рахуються з однієї проєкції</b> — цифри збігаються. Пунктир на графіку — рівномірний темп WMA без тижневого профілю.</div>
     <div class="m-section-title">До замовлення</div>
     <div class="m-formula"><code>max(0, WMA × ${LT_TOTAL} дн − Вільно − В дорозі вільне)</code> — окремо по кожному кольору; «Всі SKU» = сума. ${LT_TOTAL} дн = ${LEAD_TIME} дн поставка + 27 дн запас.</div>
+    <div class="m-section-title">План поставок · що вважається відкритим</div>
+    <div class="m-formula">Відкрите замовлення = таке, де по регістру <code>ЗаказыПоставщикам</code> <b>ще не все отримано</b> (замовлено − погашено приходами &gt; 0). Стан документа в 1С для цього непридатний: «В роботі» там не знімають після поставки, тож раніше картка показувала вже привезені партії як прострочені. «Очікується N м» — саме недоотриманий залишок, а не повний обсяг замовлення.</div>
+    <div class="m-section-title">Таймлайн замовлень кабелю (KBE)</div>
+    <div class="m-formula">Гант по зовнішніх замовленнях у <b>KBE Elektrotechnik GmbH</b>: смуга тягнеться від дати замовлення до дати <b>фактичного</b> приходу. Джерело те саме — регістр <code>ЗаказыПоставщикам</code>: рядки від <code>ЗаказПоставщику</code> = скільки замовили, рядки від <code>ПриходнаяНакладная</code> = скільки і коли погасили. Вертикальна риска — <b>планова дата з 1С</b>; якщо приїхало пізніше за неї, хвіст смуги від плану до факту червоний, і «цикл» у правій колонці теж червоний. Насічка всередині смуги — межа партій: одне замовлення може приїхати двома приходами (напр. 576 км = 288 + 288). Синя риска — сьогодні; незакрите замовлення тягнеться до неї, далі пунктир до планової дати. Наведення на рядок дає повну картку: метраж по кольорах, дати партій, сума. <b>Внутрішні міжфіліальні</b> замовлення (Реакт↔Генерація) сюди не входять — це перекидання на 87–500 м, у масштабі 288-кілометрових партій вони нечитабельні. Планова дата в кількох замовленнях 2025 року <b>раніша за дату самого замовлення</b> (її не оновили після перевиставлення) — такі відкидаємо як недостовірні, риски й «затримки» для них нема. Червоним підсвічуємо лише спізнення <b>понад ${TL_LATE_DAYS} дн</b>: на 35-денному імпортному циклі кілька днів — це шум. <b>«Усі закриті приходом» ≠ «В дорозі 0»</b> у KPI: KPI рахує товар, який уже прийняли <b>на транзитний склад</b> («В дорозі 08») — замовлення при цьому закрите, кабель просто фізично їде. Таймлайн натомість показує, чи лишилось щось <b>не прийняте по документах</b>.</div>
     <div class="m-section-title">Що може здивувати</div>
-    <div class="m-formula">Фільтр SKU у шапці перемикає KPI, банер і обидва графіки; «Кабель по складах» і план поставок завжди показують обидва кольори. Прострочені замовлення постачальнику — це незакриті в 1С документи «В роботі», вони сховані під тоглом і на прогноз не впливають. Резерви на складах «В дорозі» входять у «У резерві», але не у «Вільно». <b>Платіжний статус</b> (оплачено / лишилось) — лише по <b>KBE</b> (зовнішній постачальник, реальні платежі): «лишилось» = баланс замовлення в регістрі <code>РасчетыСПоставщиками</code> у валюті договору, дата оплати — остання банківська платіжка. По внутрішніх міжфіліальних замовленнях статусу нема — там оплата йде взаємозаліком без платіжки. <b>Календар платежів KBE</b>: таблиця по кожному замовленню — товар/метраж, сума, оплачено, лишилось. <b>Все в гривні</b> по курсу НБУ+1% (EUR sell, показаний у шапці блоку; оригінал у € — під сумою). «Оплачено/лишилось» — з D1 (ap_movements по Заказ_Key, оновлюється autosync'ом кожні 30 хв). Редаговані дати: аванс 10%, доплата 90% (=дата виготовлення кабеля) і план ПДВ. <b>ПДВ («мито»)</b>: факт сплати визначається по документах «Додаткові витрати» з контрагентом Держмитслужба, привʼязаних до приходної замовлення — є док → ПДВ по замовленню закритий і <b>не виводиться взагалі</b> («—» в обох колонках, в календар не потрапляє); нема → план 20% × (сума угоди + доставка 4500 €), дата за замовчуванням = дата приходу (можна перевизначити). <b>«Лишилось» включає несплачений ПДВ</b>; «Оплачено» — тільки товар. З цих дат нижче складається календар оплат (межі місяців — розділювальною лінією). <b>Показується лише несплачене</b>: повністю закриті замовлення (товар + ПДВ) і історія оплат не виводяться взагалі. Сплачені аванс/доплата в незакритих рядках — факт-дата з ✓, не редагуються. Календар — відомість по бух-принципу Дт/Кт: початковий залишок = «Рахунок А-Банк» (залишки Реакту, валютні зведені в ₴ по тих самих курсах), кожен платіж списується, і колонка праворуч показує сальдо рахунку після оплати — мінус червоним = недостача (скільки треба докинути станом на цей платіж), плюс = надлишок. «Кінцеве сальдо» в рядку рахунку = залишок після всіх платежів, включно з тими, що ще без дати.</div>`;
+    <div class="m-formula">Фільтр SKU у шапці перемикає KPI, банер і обидва графіки; «Кабель по складах», план поставок і таймлайн завжди показують обидва кольори. Резерви на складах «В дорозі» входять у «У резерві», але не у «Вільно». <b>Платіжний статус</b> (оплачено / лишилось) — лише по <b>KBE</b> (зовнішній постачальник, реальні платежі): «лишилось» = баланс замовлення в регістрі <code>РасчетыСПоставщиками</code> у валюті договору, дата оплати — остання банківська платіжка. По внутрішніх міжфіліальних замовленнях статусу нема — там оплата йде взаємозаліком без платіжки. <b>Календар платежів KBE</b>: таблиця по кожному замовленню — товар/метраж, сума, оплачено, лишилось. <b>Все в гривні</b> по курсу НБУ+1% (EUR sell, показаний у шапці блоку; оригінал у € — під сумою). «Оплачено/лишилось» — з D1 (ap_movements по Заказ_Key, оновлюється autosync'ом кожні 30 хв). Редаговані дати: аванс 10%, доплата 90% (=дата виготовлення кабеля) і план ПДВ. <b>ПДВ («мито»)</b>: факт сплати визначається по документах «Додаткові витрати» з контрагентом Держмитслужба, привʼязаних до приходної замовлення — є док → ПДВ по замовленню закритий і <b>не виводиться взагалі</b> («—» в обох колонках, в календар не потрапляє); нема → план 20% × (сума угоди + доставка 4500 €), дата за замовчуванням = дата приходу (можна перевизначити). <b>«Лишилось» включає несплачений ПДВ</b>; «Оплачено» — тільки товар. З цих дат нижче складається календар оплат (межі місяців — розділювальною лінією). <b>Показується лише несплачене</b>: повністю закриті замовлення (товар + ПДВ) і історія оплат не виводяться взагалі. Сплачені аванс/доплата в незакритих рядках — факт-дата з ✓, не редагуються. Календар — відомість по бух-принципу Дт/Кт: початковий залишок = «Рахунок А-Банк» (залишки Реакту, валютні зведені в ₴ по тих самих курсах), кожен платіж списується, і колонка праворуч показує сальдо рахунку після оплати — мінус червоним = недостача (скільки треба докинути станом на цей платіж), плюс = надлишок. «Кінцеве сальдо» в рядку рахунку = залишок після всіх платежів, включно з тими, що ще без дати.</div>`;
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
@@ -1374,6 +1422,160 @@ async function loadSupplyPlan() {
     body.innerHTML = `<div class="error">${e.message}</div>`;
   }
 }
+
+// ─── Таймлайн замовлень кабелю KBE (Гант) ───
+// Смуга = від дати замовлення до дати ФАКТИЧНОГО приходу на спільній осі часу;
+// планова дата з 1С — окремою рискою, тож видно, хто спізнився і на скільки.
+// Насічка всередині смуги — межа партій (одне замовлення може приїхати двома
+// приходами). Джерело — регістр «ЗаказыПоставщикам», не стан документа: у 1С
+// замовлення не закривають, і по стану вони вічно «В роботі».
+const D_MS = 86400000;
+// Спізнення менше тижня на 35-денному імпортному циклі — шум, не проблема:
+// червоним світимо лише реальні зриви, інакше рядок «+1 день» виглядає аварією.
+const TL_LATE_DAYS = 7;
+let cableTlData = null; // тримаємо для ре-рендера при зміні ширини вікна
+
+function renderCableTimeline(d) {
+  cableTlData = d;
+  const card = document.getElementById('cableTlCard');
+  const body = card.querySelector('.card-b');
+  const meta = document.getElementById('cableTlMeta');
+  const rows = (d && d.rows) || [];
+  if (!rows.length) {
+    meta.textContent = '—';
+    body.innerHTML = '<div class="tl-empty">Замовлень кабелю в KBE не знайдено</div>';
+    return;
+  }
+  const s = d.summary;
+  const leadTxt = s.leadMed != null ? ` · цикл ${s.leadMin}–${s.leadMax} дн, медіана ${s.leadMed}` : '';
+  // «не отримано», а не «в дорозі» — щоб не плутати з KPI «В дорозі»: там товар,
+  // уже прийнятий на транзитний склад (замовлення закрите), тут — ще не прийнятий.
+  const open = s.transitM > 0 ? `не отримано ${fmtKm(s.transitM)}` : 'усі закриті приходом';
+  meta.textContent = `${s.orders} замовл. · ${fmtKm(s.receivedM)} отримано · ${open}${leadTxt}`;
+
+  // Вісь: від найранішого замовлення до найпізнішої з дат (прихід / план / сьогодні)
+  const all = [d.today];
+  rows.forEach(r => [r.orderDate, r.arrival, r.planArrival].forEach(x => x && all.push(x)));
+  const lo = new Date(all.reduce((a, b) => a < b ? a : b) + 'T00:00:00').getTime();
+  const hi = new Date(all.reduce((a, b) => a > b ? a : b) + 'T00:00:00').getTime();
+  const pad = Math.max(3 * D_MS, (hi - lo) * 0.015);
+  const from = lo - pad, span = (hi + pad) - from || 1;
+  const pos = iso => ((new Date(iso + 'T00:00:00').getTime() - from) / span) * 100;
+  const pc = v => v.toFixed(3) + '%';
+
+  const narrow = window.innerWidth <= 720;
+  const C = narrow ? { l: 96, km: 62, lead: 0 } : { l: 132, km: 78, lead: 62 };
+
+  // Мітки місяців: рисуємо всі, підписуємо через N — щоб не злипались на вузькому екрані
+  const ticks = [];
+  const cur = new Date(lo); cur.setDate(1);
+  while (cur.getTime() <= hi + pad) {
+    if (cur.getTime() >= from) ticks.push(new Date(cur));
+    cur.setMonth(cur.getMonth() + 1);
+  }
+  const trackPx = Math.max(120, (body.clientWidth || 900) - 28 - C.l - C.km - C.lead);
+  const iso = t => `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-01`;
+
+  const grid = ticks.map(t => `<i class="${t.getMonth() === 0 ? 'y' : ''}" style="left:${pc(pos(iso(t)))}"></i>`).join('')
+    + `<b style="left:${pc(pos(d.today))}" title="сьогодні"></b>`;
+  // Підписи ставимо жадібно: наступний малюємо лише якщо він не наїде на попередній.
+  // Фіксований крок «через N місяців» тут не годиться — «січ ’26» удвічі ширший
+  // за «лип», і на вузькому екрані вони злипались.
+  let lastRight = -1e9;
+  const axis = ticks.map(t => {
+    const lbl = t.getMonth() === 0 ? `січ ’${String(t.getFullYear()).slice(2)}` : UA_MONTHS[t.getMonth()];
+    const x = (pos(iso(t)) / 100) * trackPx;
+    const w = lbl.length * 6.2 + 8; // mono 10px + запас
+    if (x < lastRight) return '';
+    lastRight = x + w;
+    return `<span class="tl-mo" style="left:${pc(pos(iso(t)))}">${lbl}</span>`;
+  }).join('');
+
+  const html = `<div class="tl" style="--tl-l:${C.l}px;--tl-km:${C.km}px;--tl-lead:${C.lead}px;--tl-r:${C.km + C.lead}px">
+    <div class="tl-grid">${grid}</div>
+    <div class="tl-row head"><div></div><div class="tl-track">${axis}</div><div></div><div></div></div>
+    ${rows.map(r => tlRow(r, d, pos, pc)).join('')}
+    <div class="tl-legend">
+      <span><i></i> замовлення → прихід</span>
+      <span><i class="late"></i> пізніше плану</span>
+      <span><i class="pin"></i> планова дата 1С</span>
+      <span><i class="now"></i> сьогодні</span>
+    </div>
+  </div>`;
+  body.innerHTML = html;
+}
+
+function fmtKm(m) {
+  if (!m) return '0 км';
+  return fmt(m / 1000, m % 1000 ? 1 : 0) + ' км';
+}
+function tlShort(isoDate) {
+  if (!isoDate) return '—';
+  return isoDate.slice(8, 10) + '.' + isoDate.slice(5, 7);
+}
+
+function tlRow(r, d, pos, pc) {
+  const end = r.arrival || d.today;
+  const l = pos(r.orderDate);
+  let bars = `<div class="tl-bar" style="left:${pc(l)};width:${pc(Math.max(0.35, pos(end) - l))}"></div>`;
+  // прострочка: сегмент від планової дати до фактичного приходу — червоним
+  if (r.arrival && r.planArrival && r.delayDays > TL_LATE_DAYS) {
+    const p = pos(r.planArrival);
+    bars += `<div class="tl-late" style="left:${pc(p)};width:${pc(Math.max(0.3, pos(r.arrival) - p))}"></div>`;
+  }
+  // ще не приїхало: пунктир від сьогодні до планової дати
+  if (!r.arrival && r.planArrival && r.planArrival > d.today) {
+    const t = pos(d.today);
+    bars += `<div class="tl-open" style="left:${pc(t)};width:${pc(Math.max(0.3, pos(r.planArrival) - t))}"></div>`;
+  }
+  // насічки — межі партій усередині одного замовлення
+  bars += (r.receipts || []).slice(0, -1).map(x => `<i class="tl-rc" style="left:${pc(pos(x.date))}"></i>`).join('');
+  if (r.planArrival) bars += `<span class="tl-pin" style="left:${pc(pos(r.planArrival))}"></span>`;
+
+  const late = r.delayDays != null && r.delayDays > TL_LATE_DAYS;
+  const parts = (r.receipts || []).length > 1
+    ? '\nПартії: ' + r.receipts.map(x => `${x.date} — ${fmtKm(x.m)}`).join('; ')
+    : '';
+  const delay = r.delayDays == null ? 'ще не приїхало'
+    : r.delayDays > 0 ? `на ${r.delayDays} дн пізніше плану`
+    : r.delayDays < 0 ? `на ${-r.delayDays} дн раніше плану` : 'день у день';
+  const tip = `${r.number} · ${r.org}
+Замовлено: ${r.orderDate} — ${fmtKm(r.ordered)} (чорн ${fmt(r.black)} м · черв ${fmt(r.red)} м)
+План 1С: ${r.planArrival || 'не вказано'}
+Прихід: ${r.arrival || '—'}${parts}
+Цикл: ${r.leadDays} дн · ${r.planArrival ? delay : 'плану нема'}
+Сума: ${fmt(r.sum)} ${r.sym || ''}${r.outstanding > 0 ? `\nЩе в дорозі: ${fmtKm(r.outstanding)}` : ''}`;
+
+  return `<div class="tl-row" title="${escapeHtml(tip)}">
+    <div class="tl-lbl">
+      <div class="n">${escapeHtml(r.number || '—')}</div>
+      <div class="d">${tlShort(r.orderDate)} → ${tlShort(r.arrival)}</div>
+    </div>
+    <div class="tl-track">${bars}</div>
+    <div class="tl-km">${fmtKm(r.ordered)}</div>
+    <div class="tl-lead${late ? ' late' : ''}">${r.leadDays != null ? r.leadDays + ' дн' : '—'}</div>
+  </div>`;
+}
+
+async function loadCableTimeline() {
+  const body = document.getElementById('cableTlCard').querySelector('.card-b');
+  try {
+    const d = await fetch(API + '?action=cable_order_timeline').then(r => r.json());
+    if (d.error) throw new Error(d.error);
+    renderCableTimeline(d);
+  } catch (e) {
+    document.getElementById('cableTlMeta').textContent = '—';
+    body.innerHTML = `<div class="error">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+// Ширина колонок і густина підписів осі залежать від в'юпорта — переміряти на resize
+let tlResizeT = null;
+window.addEventListener('resize', () => {
+  if (!cableTlData) return;
+  clearTimeout(tlResizeT);
+  tlResizeT = setTimeout(() => renderCableTimeline(cableTlData), 150);
+});
 
 // ─── Календар платежів KBE ───
 // Таблиця замовлень (сума/оплачено/лишилось + редаговані дати авансу, доплати
@@ -1584,6 +1786,7 @@ document.getElementById('updatedAt').textContent = fmtNow();
 loadForecast();
 loadAbankBalance();
 loadSupplyPlan();
+loadCableTimeline();
 loadPaymentCalendar();
 loadCablePrice();
 loadFxCross();
