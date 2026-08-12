@@ -778,6 +778,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
           <div id="whIncludeSuggest" class="wh-suggest" style="display:none"></div>
         </span>
         <div class="sep"></div>
+        <span class="lbl">Без складів</span>
+        <span class="wh-tags" id="whExcludeTags">
+          <input type="text" id="whExcludeIn" placeholder="Виключити склад…" autocomplete="off">
+          <div id="whExcludeSuggest" class="wh-suggest" style="display:none"></div>
+        </span>
+        <div class="sep"></div>
         <span class="group">
           <span class="chip" id="whSyncBtn" onclick="whSyncSnapshot()" title="Перезавантажити знімок залишків на вибрану дату з 1С">
             <span class="ic">↻</span> Оновити знімок
@@ -964,10 +970,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <p>Вартість позиції = <b>кількість × середньозважена собівартість</b>. Собівартість береться з <b>покупних накладних</b> (проведених, не позначених на видалення) як зважене середнє по всіх закупівлях цієї номенклатури в межах організації; якщо організація сама її не купувала — фолбек на середню по всіх організаціях. Кількість приходу зводиться до <b>базової одиниці</b> через коефіцієнт пакування (бухта кабелю 500 м = 500 базових метрів), тому собівартість завжди «за метр/шт» — так само, як міряються залишки. Позиції, для яких собівартості немає, показані як <b>«н/д»</b> і в підсумок вартості не входять (їх кількість — у картці «Без собівартості»).</p>
     <h3>Графік «Вартість запасів, USD»</h3>
     <p>Динаміка сумарної вартості складу по днях за обране вікно (30/90/365 днів). Кожен день — окремий знімок залишків, оцінений <b>тією самою</b> поточною собівартістю, тому лінія показує зміну <b>кількостей</b> на складі, а не коливання собівартості. <b>Крайня права точка = картці «Вартість запасів»</b> на обрану дату; «сер.» у шапці — середня вартість за вікно. Дні без знімка підтягуються останнім відомим значенням.</p>
+    <h3>Картки зверху</h3>
+    <p>«Вартість запасів» = «На складах» + «В дорозі». <b>В дорозі</b> — товар на транзитних складах «В дорозі …» (їде, ще не прийнятий на фізичний склад); <b>На складах</b> — решта. Всі картки рахуються з урахуванням фільтрів.</p>
     <h3>Фільтри</h3>
     <ul>
       <li><b>Організація</b> — «Генерація» = Одеса + Київ. Впливає і на таблицю, і на графік.</li>
       <li><b>Товар</b> — звужує таблицю і картки до обраних позицій; на графік динаміки <b>не впливає</b> (він завжди показує повну вартість по організації).</li>
+      <li><b>Без складів</b> — виключає обрані склади з таблиці і карток (напр. прибрати транзитні «В дорозі»); на графік динаміки не впливає. Вибір запам'ятовується в браузері.</li>
     </ul>
     <h3>Чому цифра може здивувати</h3>
     <ul>
@@ -3570,7 +3579,7 @@ document.addEventListener('DOMContentLoaded', function() {
    WAREHOUSE VALUE TAB (Вартісна оцінка складу)
    Дані з D1: stock_balances + weighted-avg cost per (nom × org)
    ═══════════════════════════════════════════════════ */
-const whState = { on: '', org: '', _loaded: false, data: null, search: '', limit: 200, includeList: [], includeQuery: '', openWh: new Set(), historyDays: 90, _historyChart: null };
+const whState = { on: '', org: '', _loaded: false, data: null, search: '', limit: 200, includeList: [], includeQuery: '', excludeWh: [], openWh: new Set(), historyDays: 90, _historyChart: null };
 
 function whSetPreset(p) {
   const now = new Date(), y = now.getFullYear(), m = now.getMonth();
@@ -3698,12 +3707,106 @@ const whTagInput = {
     }
   },
 };
-// Click handlers for tag × and suggest options
+/* Tag-input для виключення складів (дзеркало whTagInput, без вільнотекстового query) */
+const whExcludeInput = {
+  list() { return whState.excludeWh || []; },
+  save() { try { localStorage.setItem('wh_exclude_wh', JSON.stringify(this.list())); } catch (_) {} },
+  renderTags() {
+    const host = document.getElementById('whExcludeTags');
+    if (!host) return;
+    Array.from(host.querySelectorAll('.wh-tag')).forEach(n => n.remove());
+    const inp = document.getElementById('whExcludeIn');
+    this.list().forEach(name => {
+      const t = document.createElement('span');
+      t.className = 'wh-tag';
+      t.innerHTML = '<span class="name">' + esc(name) + '</span><span class="x" data-name="' + esc(name) + '">×</span>';
+      host.insertBefore(t, inp);
+    });
+  },
+  add(name) {
+    if (!name) return;
+    const cur = this.list();
+    if (!cur.some(n => n.toLowerCase() === name.toLowerCase())) {
+      whState.excludeWh = cur.concat([name]);
+      this.save();
+    }
+    const inp = document.getElementById('whExcludeIn');
+    if (inp) inp.value = '';
+    this.hide();
+    this.renderTags();
+    whRender();
+  },
+  remove(name) {
+    whState.excludeWh = this.list().filter(n => n !== name);
+    this.save();
+    this.renderTags();
+    whRender();
+  },
+  hide() { const dd = document.getElementById('whExcludeSuggest'); if (dd) dd.style.display = 'none'; },
+  allWarehouses() {
+    if (!whState.data) return [];
+    const seen = new Map();
+    (whState.data.items || []).forEach(it => {
+      const name = it.warehouse_name || '';
+      if (!name) return;
+      const key = name.toLowerCase();
+      const prev = seen.get(key) || { name, val: 0 };
+      prev.val += it.value_usd || 0;
+      seen.set(key, prev);
+    });
+    return [...seen.values()].sort((a, b) => b.val - a.val);
+  },
+  onInput() {
+    const inp = document.getElementById('whExcludeIn');
+    const dd  = document.getElementById('whExcludeSuggest');
+    if (!inp || !dd) return;
+    const q = inp.value.trim().toLowerCase();
+    const taken = new Set(this.list().map(n => n.toLowerCase()));
+    const matched = this.allWarehouses()
+      .filter(o => !taken.has(o.name.toLowerCase()))
+      .filter(o => !q || o.name.toLowerCase().includes(q))
+      .slice(0, 30);
+    if (!matched.length) { dd.innerHTML = '<div class="empty">Нічого не знайдено</div>'; dd.style.display = 'block'; return; }
+    dd.innerHTML = matched.map((o, i) =>
+      '<div class="opt' + (i === 0 ? ' hl' : '') + '" data-name="' + esc(o.name) + '">' +
+        '<span>' + esc(o.name) + '</span>' +
+        '<span class="meta">' + fmt(o.val, 0) + ' $</span>' +
+      '</div>').join('');
+    dd.style.display = 'block';
+  },
+  onKey(ev) {
+    const dd = document.getElementById('whExcludeSuggest');
+    if (!dd || dd.style.display === 'none') {
+      if (ev.key === 'Backspace' && !ev.target.value && this.list().length) {
+        this.remove(this.list()[this.list().length - 1]);
+      }
+      return;
+    }
+    const opts = Array.from(dd.querySelectorAll('.opt'));
+    let idx = opts.findIndex(o => o.classList.contains('hl'));
+    if (ev.key === 'ArrowDown') { ev.preventDefault(); idx = Math.min(idx + 1, opts.length - 1); opts.forEach((o, i) => o.classList.toggle('hl', i === idx)); opts[idx]?.scrollIntoView({ block: 'nearest' }); }
+    else if (ev.key === 'ArrowUp') { ev.preventDefault(); idx = Math.max(idx - 1, 0); opts.forEach((o, i) => o.classList.toggle('hl', i === idx)); opts[idx]?.scrollIntoView({ block: 'nearest' }); }
+    else if (ev.key === 'Enter') { ev.preventDefault(); const sel = opts[idx] || opts[0]; if (sel) this.add(sel.dataset.name); }
+    else if (ev.key === 'Escape') { this.hide(); }
+    else if (ev.key === 'Backspace' && !ev.target.value && this.list().length) {
+      this.remove(this.list()[this.list().length - 1]);
+    }
+  },
+};
+// Click handlers for tag × and suggest options (обидва tag-інпути вкладки)
 document.addEventListener('click', function(ev) {
   const x = ev.target.closest('.wh-tag .x[data-name]');
-  if (x) { whTagInput.remove(x.dataset.name); return; }
+  if (x) {
+    if (x.closest('#whExcludeTags')) whExcludeInput.remove(x.dataset.name);
+    else whTagInput.remove(x.dataset.name);
+    return;
+  }
   const opt = ev.target.closest('.wh-suggest .opt[data-name]');
-  if (opt) { whTagInput.add(opt.dataset.name); return; }
+  if (opt) {
+    if (opt.closest('#whExcludeSuggest')) whExcludeInput.add(opt.dataset.name);
+    else whTagInput.add(opt.dataset.name);
+    return;
+  }
 });
 
 function whSetOrg(el) {
@@ -3789,6 +3892,8 @@ function whRenderHistory(data) {
       responsive: true,
       maintainAspectRatio: false,
       animation: { duration: 220 },
+      // Без intersect:false tooltip вимагає влучити в точку (pointRadius=0) — курсор по лінії нічого не показував.
+      interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -3856,7 +3961,9 @@ function whRender() {
   };
   const incSet = new Set((whState.includeList || []).map(s => s.toLowerCase()));
   const incTerms = (whState.includeQuery || '').trim() ? whState.includeQuery.trim().split(/\s+/) : [];
-  const allOrgItems = (data.items || []).filter(it => orgMatch(it.organization_tag));
+  const excWhSet = new Set((whState.excludeWh || []).map(s => s.toLowerCase()));
+  const allOrgItems = (data.items || []).filter(it => orgMatch(it.organization_tag))
+    .filter(it => !excWhSet.has((it.warehouse_name || '').toLowerCase()));
   // Чіпи (конкретні товари) мають пріоритет; інакше — фільтр по введеному тексту (по частинах: назва+артикул).
   let items;
   if (incSet.size) {
@@ -3870,15 +3977,20 @@ function whRender() {
     items = allOrgItems;
   }
 
-  // Сумарна вартість (з фільтра).
-  let totalValue = 0, totalQty = 0, unpricedQty = 0;
+  // Сумарна вартість (з фільтра) + розбивка «на складах» / «в дорозі» (транзитні
+  // склади «В дорозі NN» — товар ще їде, це не наявний залишок).
+  const isTransit = it => (it.warehouse_name || '').toLowerCase().includes('дорозі');
+  let totalValue = 0, totalQty = 0, unpricedQty = 0, onhandValue = 0, transitValue = 0, onhandCnt = 0, transitCnt = 0;
   for (const it of items) {
     totalQty += it.qty;
-    if (it.value_usd != null) totalValue += it.value_usd;
-    else unpricedQty += it.qty;
+    if (it.value_usd != null) {
+      totalValue += it.value_usd;
+      if (isTransit(it)) transitValue += it.value_usd; else onhandValue += it.value_usd;
+    } else unpricedQty += it.qty;
+    if (isTransit(it)) transitCnt++; else onhandCnt++;
   }
 
-  // ── Summary: 3 картки (без кольорових плашок) ──
+  // ── Summary: картки (без кольорових плашок) ──
   const card = (lbl, val, sub, accent) => {
     const cv = accent ? ' class="cv" style="color:var(--green)"' : ' class="cv"';
     return '<div class="pnl-card">' +
@@ -3891,6 +4003,8 @@ function whRender() {
   document.getElementById('whSummary').innerHTML =
     '<div class="pnl-summary">' +
       card('Вартість запасів', fmt(totalValue, 0) + ' $', 'станом на ' + asOfPretty, true) +
+      card('На складах', fmt(onhandValue, 0) + ' $', onhandCnt + ' позицій') +
+      card('В дорозі', fmt(transitValue, 0) + ' $', transitCnt + ' позицій') +
       card('Позицій на складі', fmt(items.length, 0), fmt(totalQty, 0) + ' од. сумарно') +
       card('Без собівартості', fmt(unpricedQty, 0) + ' од.', items.filter(it=>it.value_usd==null).length + ' позицій не оцінено') +
     '</div>';
@@ -4068,6 +4182,16 @@ document.addEventListener('DOMContentLoaded', function() {
     inp.addEventListener('focus', () => whTagInput.onInput());
     inp.addEventListener('blur', () => setTimeout(() => whTagInput.hide(), 200));
     inp.addEventListener('keydown', e => whTagInput.onKey(e));
+  }
+  // Restore + wire exclude-warehouse filter
+  try { const s = localStorage.getItem('wh_exclude_wh'); if (s) { const a = JSON.parse(s); if (Array.isArray(a)) whState.excludeWh = a; } } catch (_) {}
+  whExcludeInput.renderTags();
+  const exInp = document.getElementById('whExcludeIn');
+  if (exInp) {
+    exInp.addEventListener('input', () => whExcludeInput.onInput());
+    exInp.addEventListener('focus', () => whExcludeInput.onInput());
+    exInp.addEventListener('blur', () => setTimeout(() => whExcludeInput.hide(), 200));
+    exInp.addEventListener('keydown', e => whExcludeInput.onKey(e));
   }
 });
 
