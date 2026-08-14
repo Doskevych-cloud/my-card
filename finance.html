@@ -648,6 +648,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
             <span class="ic">⊟</span> Згорнути
           </span>
         </span>
+        <span class="chip" onclick="openCfHelp()" title="Як працює цей звіт">❓ Як працює</span>
       </div>
       <div class="mc-block">
         <div class="mc-head">
@@ -925,6 +926,42 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li>Кеш звіту — <b>1 година</b>. Нові документи в 1С з'являться тут із затримкою до години.</li>
       <li>Собівартість може змінюватися заднім числом документами закриття місяця — цифри за минулі місяці не «замерзають».</li>
       <li>Це звіт за відвантаженням: оплати тут ні до чого — дивись Cash Flow і «Розрах. з покупцями».</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ── Довідка «Як працює Cash Flow» ── -->
+<div class="modal-backdrop" id="cfHelpModal" onclick="if(event.target===this)closeCfHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт Cash Flow">
+    <button class="close" onclick="closeCfHelp()" aria-label="Закрити">✕</button>
+    <h2>Як працює звіт Cash Flow</h2>
+    <h3>Джерела даних</h3>
+    <p>Два реєстри 1С, наживо (без D1):</p>
+    <ul>
+      <li><b>Потоки</b> — реєстр «Рух грошових коштів» (ДДС): кожен платіж/надходження зі своєю статтею ДДС. Секцію визначає верхня група статті в довіднику: Операційна / Інвестиційна / Фінансова / Переміщення.</li>
+      <li><b>Залишки на початок і кінець</b> — реєстр залишків грошей: залишок на початок дня «з» і на кінець дня «по» (включно з рядками закриття місяця, які 1С проводить о 23:59:59 останнього дня).</li>
+    </ul>
+    <p>Всі суми — <b>USD</b> (управлінська валюта, за курсами 1С на дату операції). «Всі» = Реакт + Генерація (Одеса + Київ); на відміну від P&L, Ген.Київ тут <b>включено</b>.</p>
+    <h3>Секції і Net Cash Flow</h3>
+    <ul>
+      <li><b>Net Cash Flow = операційна + інвестиційна + фінансова.</b> Переміщення між власними рахунками в нього не входять — це не потік, а зміна кишені.</li>
+      <li>З групи «Переміщення» довідника 1С у секцію переміщень потрапляють лише справжні переміщення; статті «Курсова різниця» та «Інше» ідуть в операційну.</li>
+      <li>Рух без статті ДДС не губиться — показується в операційній як «(без статті)».</li>
+    </ul>
+    <h3>Чому «Переміщення» нетто не нуль</h3>
+    <p>В ідеалі переміщення між власними рахунками дають нетто 0 (вийшло з каси — зайшло на рахунок). Ненульове нетто означає одне з двох:</p>
+    <ul>
+      <li><b>Рух з/на рахунок поза скоупом обліку</b> — інша організація (ФОП, особиста картка), яка не входить у звіт. Одна нога є, другої нема. Фактично це зовнішній потік, оформлений в 1С як «переміщення» — тому він показаний окремим рядком і входить у зміну залишку, але не в Net CF.</li>
+      <li><b>Гроші в дорозі через межу періоду</b> — вийшли в останній день періоду, зайшли в перший день наступного. У сусідніх періодах нетто дзеркальне.</li>
+    </ul>
+    <h3>Курсова переоцінка залишків</h3>
+    <p>Закриття місяця переоцінює валютні залишки (UAH/EUR-каси в USD-еквіваленті). Ця переоцінка міняє залишок, але не є рухом грошей — у ДДС її нема. Тому вона виводиться окремим рядком: <b>Залишок на початок + Net CF + Переміщення (нетто) + Курсова переоцінка = Залишок на кінець</b>. Ця тотожність сходиться завжди.</p>
+    <h3>Чому цифра може здивувати</h3>
+    <ul>
+      <li>Кеш звіту — <b>1 година</b>: свіжі документи 1С з'являться тут із затримкою до години.</li>
+      <li>Деякі касові документи (інкасація, еквайринг) пишуть потік ДДС одразу, а рух грошей — при повному проведенні. Протягом дня можливий тимчасовий розсинхрон між потоками і залишками — наступного дня сходиться.</li>
+      <li>Залишок тут — за курсами 1С на момент операцій + місячні переоцінки. Якщо перерахувати валютні залишки сьогоднішнім курсом, цифра відрізнятиметься на непроведену переоцінку поточного місяця (зазвичай одиниці тисяч $).</li>
+      <li>Помісячні колонки показують потоки; рядки звірки залишків (переоцінка, зміна залишку) рахуються лише за весь період.</li>
     </ul>
   </div>
 </div>
@@ -2479,7 +2516,9 @@ function openWhHelp()   { document.getElementById('whHelpModal').classList.add('
 function closeWhHelp()  { document.getElementById('whHelpModal').classList.remove('open'); }
 function openGpHelp()   { document.getElementById('gpHelpModal').classList.add('open'); }
 function closeGpHelp()  { document.getElementById('gpHelpModal').classList.remove('open'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closePnlHelp(); closeCbHelp(); closeWhHelp(); closeGpHelp(); } });
+function openCfHelp()   { document.getElementById('cfHelpModal').classList.add('open'); }
+function closeCfHelp()  { document.getElementById('cfHelpModal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closePnlHelp(); closeCbHelp(); closeWhHelp(); closeGpHelp(); closeCfHelp(); } });
 
 function pnlDateChanged() {
   pnlState.preset = detectPreset(pnlState.from, pnlState.to) || '';
@@ -2736,11 +2775,10 @@ function renderCf(data) {
   const closing = data.closing || 0;
   const ncf = data.netCashFlow || 0;
   const transfersNet = (data.transfers && data.transfers.net) || 0;
-  const totalChange = closing - opening;
-  // FX impact on residual balances: не проходить через ДвиженияДенежныхСредств,
-  // тільки переоцінка залишків в ДенежныеСредства за курсом кінця періоду.
-  // = фактична зміна − (NCF + Transfers)
-  const fxImpact = totalChange - ncf - transfersNet;
+  const totalChange = (typeof data.netChange === 'number') ? data.netChange : (closing - opening);
+  // Курсова переоцінка залишків: ЗакрытиеМесяца пише її в баланс, але не в ДДС.
+  // Бек віддає fxRevaluation; fallback для старих кешів = зміна − (NCF + переміщення).
+  const fxImpact = (typeof data.fxRevaluation === 'number') ? data.fxRevaluation : (totalChange - ncf - transfersNet);
   document.getElementById('cfSummary').innerHTML = '<div class="pnl-summary">' +
     `<div class="pnl-card c-rev"><span class="cl">Залишок на початок</span><span class="cv">${fmt(opening, 0)} $</span></div>` +
     `<div class="pnl-card c-grs"><span class="cl">Чистий грошовий потік</span><span class="cv${ncf<0?' ng':''}">${fmt(ncf, 0)} $</span><span class="cs">опер + інв + фін</span></div>` +
@@ -2767,12 +2805,12 @@ function renderCf(data) {
   rows += renderSection('Фінансова діяльність', 'fin', data.financing);
   rows += `<tr class="grd"><td>Чистий грошовий потік (опер + інв + фін)</td><td class="col-total"></td><td class="col-total"></td><td class="col-total">${fmtCell(ncf)}</td></tr>`;
   rows += `<tr class="sp"><td colspan="4"></td></tr>`;
-  rows += renderSection('Переміщення / Курсові різниці (інфо)', 'tr', data.transfers);
+  rows += renderSection('Переміщення між рахунками (поза Net CF)', 'tr', data.transfers);
   rows += `<tr class="sp"><td colspan="4"></td></tr>`;
   rows += `<tr class="sub"><td>Залишок на початок періоду</td><td class="col-total"></td><td class="col-total"></td><td class="col-total">${fmtCell(opening)}</td></tr>`;
   rows += `<tr class="itm"><td>+ Net Cash Flow (опер + інв + фін)</td><td class="col-total"></td><td class="col-total"></td><td class="col-total">${fmtCell(ncf)}</td></tr>`;
-  rows += `<tr class="itm"><td>+ Переміщення / курс. різниці</td><td class="col-total"></td><td class="col-total"></td><td class="col-total">${fmtCell(transfersNet)}</td></tr>`;
-  rows += `<tr class="itm"><td>+ Вплив FX на залишок валюти</td><td class="col-total"></td><td class="col-total"></td><td class="col-total">${fmtCell(fxImpact)}</td></tr>`;
+  rows += `<tr class="itm"><td>+ Переміщення (нетто)</td><td class="col-total"></td><td class="col-total"></td><td class="col-total">${fmtCell(transfersNet)}</td></tr>`;
+  rows += `<tr class="itm"><td>+ Курсова переоцінка залишків</td><td class="col-total"></td><td class="col-total"></td><td class="col-total">${fmtCell(fxImpact)}</td></tr>`;
   rows += `<tr class="sub"><td>= Зміна залишку</td><td class="col-total"></td><td class="col-total"></td><td class="col-total">${fmtCell(totalChange)}</td></tr>`;
   rows += `<tr class="grd"><td>Залишок на кінець періоду</td><td class="col-total"></td><td class="col-total"></td><td class="col-total">${fmtCell(closing)}</td></tr>`;
 
