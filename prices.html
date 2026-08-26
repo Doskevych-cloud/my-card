@@ -85,6 +85,8 @@ thead th{position:sticky;z-index:50;font-size:11px;border-bottom:1px solid var(-
 thead tr:first-child th{top:0}
 thead tr:last-child th{top:30px}
 .gh{color:#eaecef;font-weight:700;font-size:10px;letter-spacing:.8px;text-transform:uppercase;padding:8px 10px}
+.gh[onclick]{cursor:pointer}
+.gh[onclick]:hover{text-decoration:underline}
 .gh-tovar{background:#1e2026}
 .gh-gen{background:var(--sup-gen)}.gh-hel{background:var(--sup-hel)}.gh-dol{background:var(--sup-dol)}
 .gh-se{background:var(--sup-se)}.gh-atm{background:var(--sup-atm)}
@@ -567,19 +569,19 @@ tr:hover td{background:var(--bg3) !important}
         <tr>
           <th class="gh gh-tovar bl" colspan="2">ТОВАР</th>
           <th class="gh gh-best bl" colspan="5">НАЙКРАЩА</th>
-          <th class="gh gh-gen bl" colspan="4">Реакт</th>
-          <th class="gh gh-hel bl" colspan="6">Хеліус</th>
-          <th class="gh gh-dol bl" colspan="5">Доля</th>
-          <th class="gh gh-se bl" colspan="5">Сучасна</th>
-          <th class="gh gh-pe bl" colspan="5">Правильне</th>
-          <th class="gh gh-sv bl" colspan="5">Солар Верс</th>
-          <th class="gh gh-iso bl" colspan="5">Айсолар</th>
-          <th class="gh gh-sf bl" colspan="5">СоларФлоу</th>
-          <th class="gh gh-atm bl" colspan="5">Атмосфера</th>
-          <th class="gh gh-sig bl" colspan="5">СІГ</th>
-          <th class="gh gh-ssj bl" colspan="5">SSJ</th>
-          <th class="gh gh-sb bl" colspan="5">Солар Біз</th>
-          <th class="gh gh-alt bl" colspan="5">Альтек</th>
+          <th class="gh gh-gen bl" colspan="4" onclick="openSupplierPrice('gen')" title="Відкрити прайс">Реакт</th>
+          <th class="gh gh-hel bl" colspan="6" onclick="openSupplierPrice('hel')" title="Відкрити прайс">Хеліус</th>
+          <th class="gh gh-dol bl" colspan="5" onclick="openSupplierPrice('dol')" title="Відкрити прайс">Доля</th>
+          <th class="gh gh-se bl" colspan="5" onclick="openSupplierPrice('se')" title="Відкрити прайс">Сучасна</th>
+          <th class="gh gh-pe bl" colspan="5" onclick="openSupplierPrice('pe')" title="Відкрити прайс">Правильне</th>
+          <th class="gh gh-sv bl" colspan="5" onclick="openSupplierPrice('sv')" title="Відкрити прайс">Солар Верс</th>
+          <th class="gh gh-iso bl" colspan="5" onclick="openSupplierPrice('iso')" title="Відкрити прайс">Айсолар</th>
+          <th class="gh gh-sf bl" colspan="5" onclick="openSupplierPrice('sf')" title="Відкрити прайс">СоларФлоу</th>
+          <th class="gh gh-atm bl" colspan="5" onclick="openSupplierPrice('atm')" title="Відкрити прайс">Атмосфера</th>
+          <th class="gh gh-sig bl" colspan="5" onclick="openSupplierPrice('sig')" title="Відкрити прайс">СІГ</th>
+          <th class="gh gh-ssj bl" colspan="5" onclick="openSupplierPrice('ssj')" title="Відкрити прайс">SSJ</th>
+          <th class="gh gh-sb bl" colspan="5" onclick="openSupplierPrice('sb')" title="Відкрити прайс">Солар Біз</th>
+          <th class="gh gh-alt bl" colspan="5" onclick="openSupplierPrice('alt')" title="Відкрити прайс">Альтек</th>
         </tr>
         <tr>
           <th class="sh sh-tovar bl">&#8470;</th><th class="sh sh-tovar">Назва</th>
@@ -622,14 +624,22 @@ const SUPPLIER_DEFAULT_URLS = {
   se:  'https://se.net.ua',
   pe:  'https://docs.google.com/spreadsheets/d/1dXuNar4t3aemQSk5LnPOXxcB7DAqqEzraWEFASa2r4g',
   sv:  '',
-  iso: '',
+  iso: 'https://isolaradm-my.sharepoint.com/:x:/g/personal/isolar_adm_isolaradm_onmicrosoft_com/IQDZaFI1KJyCS5VQHkhFy72KATgV0s_OtOCe2pmN8HDaGZg',
   sf:  'https://docs.google.com/spreadsheets/d/1RHFOPt_RXxdMIVLOul7ubOAGw7ng-y-D/edit?gid=2052529586'
 };
-const SUPPLIER_NAMES = { gen:'Реакт', hel:'Хеліус', dol:'Доля', se:'Сучасна', pe:'Правильне', sv:'Солар Верс', iso:'Айсолар', sf:'СоларФлоу' };
+const SUPPLIER_NAMES = { gen:'Реакт', hel:'Хеліус', dol:'Доля', se:'Сучасна', pe:'Правильне', sv:'Солар Верс', iso:'Айсолар', sf:'СоларФлоу', atm:'Атмосфера', sig:'СІГ', ssj:'SSJ', sb:'Солар Біз', alt:'Альтек' };
 let _linkModalKey = null;
 
 function getSupplierUrl(key) {
   return localStorage.getItem('price_link_' + key) || SUPPLIER_DEFAULT_URLS[key] || '';
+}
+
+// Клік по назві постачальника в шапці таблиці: є лінк → відкриваємо прайс,
+// нема → модалка, щоб його задати (для paste-джерел типу СІГ/Альтек лінка нема).
+function openSupplierPrice(key) {
+  const url = getSupplierUrl(key);
+  if (url) window.open(url, '_blank', 'noopener');
+  else openLinkModal(key);
 }
 
 function openLinkModal(key) {
