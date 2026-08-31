@@ -1001,7 +1001,6 @@ function renderAdvanceReport(d) {
     ${ADV_INTEREST_GROUPS.map(g =>
       `<span class="chip${state.advInterest === g.key ? ' active' : ''}" onclick="setAdvInterest('${g.key}')">${g.label}</span>`).join('')}
     <span class="spacer"></span>
-    <button class="btn btn--secondary btn--sm" onclick="advExportGoogleSheet(this)" title="Створити Google Таблицю з поточними фільтрами (у твоєму Google Drive)">⇗ Google Таблиця</button>
     <button class="btn btn--secondary btn--sm" onclick="advDownloadXLSX()" title="Скачати .xlsx з поточними фільтрами">⬇ Excel</button>
   </div>
   <div class="kpi">
@@ -1133,83 +1132,6 @@ function advDownloadXLSX() {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Підписані угоди');
   XLSX.writeFile(wb, title + '.xlsx');
-}
-
-// ── Експорт у Google Таблицю: створюється в Drive того, хто натиснув ──
-// Клієнтський OAuth (Google Identity Services, той самий client_id, що й
-// логін) зі scope drive.file → Sheets API spreadsheets.create → відкриваємо
-// нову таблицю в сусідній вкладці. Жодних серверних секретів.
-const GOOGLE_CLIENT_ID = '970560011376-htrf3g3s3at0id7iegomi6q9jshgj7ro.apps.googleusercontent.com';
-let _gisLoad = null;
-function advLoadGis() {
-  if (window.google && google.accounts && google.accounts.oauth2) return Promise.resolve();
-  if (_gisLoad) return _gisLoad;
-  _gisLoad = new Promise((res, rej) => {
-    const s = document.createElement('script');
-    s.src = 'https://accounts.google.com/gsi/client';
-    s.onload = () => res();
-    s.onerror = () => { _gisLoad = null; rej(new Error('Не вдалося завантажити Google Identity')); };
-    document.head.appendChild(s);
-  });
-  return _gisLoad;
-}
-let _gTok = null; // {t, exp} — токен живе ~1 год, кешуємо на сесію сторінки
-async function advGoogleToken() {
-  if (_gTok && Date.now() < _gTok.exp) return _gTok.t;
-  await advLoadGis();
-  return new Promise((resolve, reject) => {
-    let tc;
-    try {
-      tc = google.accounts.oauth2.initTokenClient({
-        client_id: GOOGLE_CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/drive.file',
-        callback: (r) => {
-          if (r.error) return reject(new Error(r.error_description || r.error));
-          _gTok = { t: r.access_token, exp: Date.now() + ((r.expires_in || 3600) - 60) * 1000 };
-          resolve(r.access_token);
-        },
-        error_callback: (e) => reject(new Error((e && e.message) || 'Вікно Google закрито')),
-      });
-    } catch (e) { return reject(e); }
-    tc.requestAccessToken();
-  });
-}
-async function advExportGoogleSheet(btn) {
-  if (!state.raw || !state.raw.deals) return;
-  const { aoa, title, count } = advExportData();
-  if (!count) { alert('Немає даних для експорту'); return; }
-  const orig = btn && btn.textContent;
-  if (btn) { btn.disabled = true; btn.textContent = 'Створюю…'; }
-  try {
-    const token = await advGoogleToken();
-    const rowData = aoa.map(r => ({
-      values: r.map(v => ({ userEnteredValue: typeof v === 'number' ? { numberValue: v } : { stringValue: String(v == null ? '' : v) } })),
-    }));
-    const res = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        properties: { title, locale: 'uk_UA' },
-        sheets: [{
-          properties: { title: 'Підписані угоди', gridProperties: { frozenRowCount: 1 } },
-          data: [{ startRow: 0, startColumn: 0, rowData }],
-        }],
-      }),
-    });
-    const j = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      const msg = (j.error && j.error.message) || ('HTTP ' + res.status);
-      if (/has not been used|is disabled/i.test(msg)) {
-        throw new Error('для цього OAuth-проєкту вимкнено Google Sheets API. Увімкнути: console.cloud.google.com → APIs & Services → Library → «Google Sheets API» → Enable, і спробувати ще раз');
-      }
-      throw new Error(msg);
-    }
-    if (j.spreadsheetUrl) window.open(j.spreadsheetUrl, '_blank', 'noopener');
-  } catch (e) {
-    alert('Не вдалося створити Google Таблицю: ' + (e.message || e));
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = orig; }
-  }
 }
 
 // 8. Час на етапах воронки (stage time + SLA-регламенти)
