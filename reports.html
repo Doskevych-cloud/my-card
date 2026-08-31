@@ -187,6 +187,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <button class="stab" data-rep="dynamics" data-perm="reports_dynamics">📈 Динаміка</button>
       <button class="stab" data-rep="abc" data-perm="reports_abc">🏷️ ABC</button>
       <button class="stab" data-rep="cycle" data-perm="reports_cycle">⏱️ Цикл</button>
+      <button class="stab" data-rep="advance" data-perm="reports_advance">🤝 Підписані</button>
       <button class="stab" data-rep="stagetime" data-perm="reports_stagetime">⏳ Етапи</button>
       <button class="stab" data-rep="marketing" data-perm="reports_marketing">💸 Маркетинг</button>
     </div>
@@ -266,6 +267,34 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
 </div>
 
+<div class="modal-backdrop" id="advHelpModal" onclick="if(event.target===this)closeAdvHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт «Підписані»">
+    <button class="close" onclick="closeAdvHelp()" aria-label="Закрити">✕</button>
+    <h2>🤝 Як працює звіт «Підписані»</h2>
+    <h3>Джерело даних</h3>
+    <p>CRM-події Planfix (кожен перехід угоди у новий статус пишеться в нашу базу live) + щоденний снапшот полів угоди з Planfix (бюджет, канал, клас, інтерес — актуальні значення, а не на момент підписання).</p>
+    <h3>Що потрапляє у звіт</h3>
+    <ul>
+      <li><b>Підписана угода</b> = перший перехід у «Аванс отримано» (або одразу в «Успішно реалізовано») припадає на вибраний період. Кожна угода належить рівно одному періоду — без дублювання по місяцях.</li>
+      <li><b>Дата авансу</b> — дата саме цього першого переходу, не остання зміна угоди.</li>
+      <li>Якщо угоду після авансу закрили як неуспішну — вона лишається у своєму періоді з позначкою <b>«зірвано»</b> (сума входить у підсумок).</li>
+      <li><b>Сума</b> — поле Planfix «Бюджет в дол.» (актуальне значення). <b>Середній чек</b> = сума ÷ кількість угод, включно з угодами без проставленого бюджету.</li>
+    </ul>
+    <h3>Фільтри</h3>
+    <ul>
+      <li><b>Менеджер / Інтерес</b> — фільтрують таблицю і підсумки миттєво, без перезавантаження.</li>
+      <li><b>Інтерес</b> групується з Planfix-поля «Інтерес»: <b>Модернізація СЕС</b> / <b>Товари</b> / <b>Проектування</b> — за відповідним значенням; усе інше заповнене (Автономність, Під власне споживання, Пасивний дохід…) = <b>СЕС</b>.</li>
+      <li><b>Тип клієнта і Клас</b> — чіпи в основному тулбарі, як в інших звітах.</li>
+    </ul>
+    <h3>Нюанси, що можуть здивувати</h3>
+    <ul>
+      <li>Інтерес підтягується снапшотом з Planfix раз на ~добу: щойно підписана угода може день висіти з «—». Порожньо і в угод, де менеджер не заповнив поле в Planfix.</li>
+      <li>Бюджет/канал/клас — актуальні значення з Planfix: якщо їх відредагували після підписання, звіт покаже нові (сума за минулий місяць може «поїхати» — це правка в CRM, не помилка звіту).</li>
+      <li>Цифра «Угод» тут може відрізнятись від «Аванс отримано» у воронці за період: воронка рахує всі заходи у стадію (включно з поверненнями), цей звіт — тільки перший.</li>
+    </ul>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="slaModal" onclick="if(event.target===this)closeSla()">
   <div class="modal" role="dialog" aria-modal="true" aria-label="Регламенти етапів">
     <button class="close" onclick="closeSla()" aria-label="Закрити">✕</button>
@@ -303,6 +332,8 @@ const state = {
   loading: false,
   stageFilter: null,    // null | 0..7 — drilldown по funnel: показувати лідів які доходили до цієї стадії або далі
   channelFilter: null,  // null | '<назва каналу>' — drilldown по каналах: показувати угоди цього каналу
+  advMgr: '',           // звіт «Підписані»: фільтр по менеджеру ('' = всі)
+  advInterest: '',      // звіт «Підписані»: фільтр по групі інтересу ('' = всі)
 };
 
 const REPORT_ACTION = {
@@ -312,6 +343,7 @@ const REPORT_ACTION = {
   dynamics: 'sheet_dynamics',
   abc: 'sheet_abc',
   cycle: 'sheet_cycle',
+  advance: 'sheet_advance',
   stagetime: 'sheet_stage_time',
   marketing: 'sheet_marketing',
 };
@@ -359,6 +391,8 @@ function saveStateToUrl() {
   if (state.leadClass) h.set('lc', state.leadClass);
   if (state.mode && state.mode !== 'period') h.set('mode', state.mode);
   if (state.report && state.report !== 'funnel') h.set('rep', state.report);
+  if (state.advMgr) h.set('am', state.advMgr);
+  if (state.advInterest) h.set('ai', state.advInterest);
   history.replaceState(null, '', '#' + h.toString());
 }
 function hydrateFromHash() {
@@ -372,6 +406,8 @@ function hydrateFromHash() {
   if (h.get('lc'))     state.leadClass = h.get('lc');
   if (h.get('mode'))   state.mode = h.get('mode');
   if (h.get('rep'))    state.report = h.get('rep');
+  if (h.get('am'))     state.advMgr = h.get('am');
+  if (h.get('ai'))     state.advInterest = h.get('ai');
   if (!h.get('preset')) state.preset = detectPreset(state.from, state.to);
 }
 function detectPreset(from, to) {
@@ -909,6 +945,147 @@ function renderCycleReport(d) {
   return html;
 }
 
+// 6b. Підписані угоди (аванс отримано)
+// Групи фільтра «Інтерес» (ТЗ) ↔ значення Planfix-поля «Інтерес»:
+// все, що не модернізація/товари/проектування — нова СЕС (Автономність /
+// Під власне споживання / Пасивний дохід ...).
+const ADV_INTEREST_GROUPS = [
+  { key: 'ses',    label: 'СЕС',              test: v => !!v && !/модерн|товар|проект/i.test(v) },
+  { key: 'modern', label: 'Модернізація СЕС', test: v => /модерн/i.test(v) },
+  { key: 'goods',  label: 'Товари',           test: v => /товар/i.test(v) },
+  { key: 'design', label: 'Проектування',     test: v => /проект/i.test(v) },
+];
+let advSort = { col: 'advanceDate', dir: 'desc' };
+function advFiltered(d) {
+  let list = d.deals || [];
+  if (state.advMgr) list = list.filter(x => x.manager === state.advMgr);
+  if (state.advInterest) {
+    const g = ADV_INTEREST_GROUPS.find(g => g.key === state.advInterest);
+    if (g) list = list.filter(x => g.test(x.interest));
+  }
+  return list;
+}
+function renderAdvanceReport(d) {
+  const list = [...advFiltered(d)].sort((x, y) => {
+    let va = x[advSort.col], vb = y[advSort.col];
+    if (typeof va === 'number' && typeof vb === 'number') return advSort.dir === 'asc' ? va - vb : vb - va;
+    va = String(va || ''); vb = String(vb || '');
+    const cmp = va.localeCompare(vb, 'uk');
+    return advSort.dir === 'asc' ? cmp : -cmp;
+  });
+  const count = list.length;
+  const budget = list.reduce((s, x) => s + (x.budget || 0), 0);
+  const avg = count ? budget / count : 0;
+  const noInterest = (d.deals || []).filter(x => !x.interest).length;
+
+  let html = `
+  <div class="info-banner">
+    <span class="ib-tag">ПІДПИСАНІ</span>
+    Угоди, що <b>отримали аванс у вибрані дні</b> (дата = перший перехід у «Аванс отримано»). Заміна ручного журналу підписаних угод у «звіті з продажу».
+    <span class="chip" style="margin-left:10px" onclick="openAdvHelp()" title="Як працює цей звіт">❓ Як працює</span>
+  </div>
+  <div class="toolbar">
+    <span class="lbl">Менеджер</span>
+    <span class="chip${state.advMgr ? ' active' : ''}" onclick="advOpenMgrMenu(event)">${esc(state.advMgr || 'Всі')} ▾</span>
+    <span class="sep"></span>
+    <span class="lbl">Інтерес</span>
+    <span class="chip${!state.advInterest ? ' active' : ''}" onclick="setAdvInterest('')">Всі</span>
+    ${ADV_INTEREST_GROUPS.map(g =>
+      `<span class="chip${state.advInterest === g.key ? ' active' : ''}" onclick="setAdvInterest('${g.key}')">${g.label}</span>`).join('')}
+  </div>
+  <div class="kpi">
+    <div class="kpi-card"><div class="lbl">Угод</div><div class="val">${fmt(count)}</div></div>
+    <div class="kpi-card c-success"><div class="lbl">Сума угод</div><div class="val">${fmtMoney(budget)} <span style="font-size:14px">$</span></div></div>
+    <div class="kpi-card"><div class="lbl">Середній чек</div><div class="val">${fmtMoney(avg)} <span style="font-size:14px">$</span></div></div>
+  </div>`;
+
+  if (!count) {
+    html += `<div class="empty">У вибраний період підписаних угод немає${state.advMgr || state.advInterest ? ' (перевір фільтри менеджера/інтересу)' : ''}.</div>`;
+    return html;
+  }
+
+  const arrow = c => advSort.col === c ? (advSort.dir === 'asc' ? ' ↑' : ' ↓') : '';
+  const th = (c, label) => `<th class="sortable ${advSort.col === c ? 'sorted' : ''}" data-col="${c}">${label}${arrow(c)}</th>`;
+  html += `
+  <div class="section-h"><h2>🤝 Угоди (${fmt(count)})</h2><span class="hint">Клік по # — відкрити в Planfix · клік по заголовку — сортування</span></div>
+  <div class="mgr-wrap"><table class="tasks-table" id="advTable" style="min-width:760px">
+    <thead><tr>
+      <th class="num">№</th>
+      ${th('id', '#')}
+      ${th('name', 'Назва')}
+      ${th('advanceDate', 'Дата авансу')}
+      ${th('manager', 'Менеджер')}
+      ${th('clientClass', 'Клас')}
+      ${th('channel', 'Канал реклами')}
+      ${th('interest', 'Інтерес')}
+      ${th('budget', 'Сума $')}
+    </tr></thead><tbody>`;
+  list.forEach((x, i) => {
+    const url = `https://solar.planfix.ua/task/${x.id}`;
+    const failed = x.dealStatus === 'Неуспешно';
+    html += `
+    <tr>
+      <td class="num">${i + 1}</td>
+      <td class="num"><a class="tlink" href="${url}" target="_blank" rel="noopener">${esc(x.id)}</a></td>
+      <td>${esc(x.name)}${failed ? ' <span class="badge b-fail" title="Угода після авансу закрита як неуспішна">зірвано</span>' : ''}</td>
+      <td>${esc(fmtDateUA(x.advanceDate))}</td>
+      <td style="white-space:nowrap">${esc(x.manager || '—')}</td>
+      <td>${esc(x.clientClass || '—')}</td>
+      <td>${esc(x.channel || '—')}</td>
+      <td>${esc(x.interest || '—')}</td>
+      <td class="num">${x.budget ? fmt(x.budget) : '—'}</td>
+    </tr>`;
+  });
+  html += `
+    <tr class="sum-row" style="font-weight:700">
+      <td colspan="8">Разом: ${fmt(count)} угод · середній чек ${fmtMoney(avg)} $</td>
+      <td class="num">${fmtMoney(budget)}</td>
+    </tr>
+  </tbody></table></div>`;
+  if (noInterest) {
+    html += `<div class="muted" style="padding:4px 6px">Інтерес підтягується з Planfix раз на ~добу — у ${fmt(noInterest)} угод періоду він ще не заповнений або відсутній у картці.</div>`;
+  }
+  return html;
+}
+function setAdvInterest(v) { state.advInterest = v || ''; saveStateToUrl(); render(); }
+let advMenuEl = null;
+function advCloseMenu() {
+  if (!advMenuEl) return;
+  advMenuEl.remove(); advMenuEl = null;
+  document.removeEventListener('click', advMenuOutside, true);
+  window.removeEventListener('scroll', advCloseMenu, true);
+}
+function advMenuOutside(e) { if (advMenuEl && !advMenuEl.contains(e.target)) advCloseMenu(); }
+function advOpenMgrMenu(ev) {
+  ev.stopPropagation();
+  const wasOpen = !!advMenuEl;
+  advCloseMenu();
+  if (wasOpen) return;
+  const d = state.raw; if (!d || !d.managers) return;
+  const menu = document.createElement('div');
+  menu.className = 'st-menu';
+  const mk = (label, val) => {
+    const it = document.createElement('div');
+    it.className = 'st-menu-item' + (val === state.advMgr ? ' active' : '');
+    it.textContent = label;
+    it.onclick = () => { state.advMgr = val; advCloseMenu(); saveStateToUrl(); render(); };
+    return it;
+  };
+  menu.appendChild(mk('Всі менеджери', ''));
+  d.managers.forEach(m => menu.appendChild(mk(m, m)));
+  document.body.appendChild(menu);
+  const r = ev.currentTarget.getBoundingClientRect();
+  menu.style.top = (r.bottom + 4) + 'px';
+  menu.style.left = Math.max(8, Math.min(r.left, window.innerWidth - menu.offsetWidth - 8)) + 'px';
+  advMenuEl = menu;
+  setTimeout(() => {
+    document.addEventListener('click', advMenuOutside, true);
+    window.addEventListener('scroll', advCloseMenu, true);
+  }, 0);
+}
+function openAdvHelp()  { document.getElementById('advHelpModal').classList.add('open'); }
+function closeAdvHelp() { document.getElementById('advHelpModal').classList.remove('open'); }
+
 // 8. Час на етапах воронки (stage time + SLA-регламенти)
 // Дні з 1 знаком; хвилинні інтервали (0 < x < 0.1 дн) — «<0,1», щоб не
 // виглядало як «не зафіксовано»
@@ -1097,7 +1274,7 @@ function stSortBy(col) {
 }
 function openHelp()  { document.getElementById('helpModal').classList.add('open'); }
 function closeHelp() { document.getElementById('helpModal').classList.remove('open'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeHelp(); closeSla(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeHelp(); closeSla(); closeAdvHelp(); } });
 
 // ── Регламенти (SLA) — модалка нормативів класу А, admin-only ──
 function openSla() {
@@ -1387,6 +1564,19 @@ function render() {
     return;
   }
   if (state.report === 'cycle')    { document.getElementById('infoBanner').style.display='none'; document.getElementById('content').innerHTML = renderCycleReport(state.raw); return; }
+  if (state.report === 'advance')  {
+    document.getElementById('infoBanner').style.display='none';
+    document.getElementById('content').innerHTML = renderAdvanceReport(state.raw);
+    document.querySelectorAll('#advTable th.sortable').forEach(th => {
+      th.addEventListener('click', () => {
+        const col = th.dataset.col;
+        if (advSort.col === col) advSort.dir = advSort.dir === 'asc' ? 'desc' : 'asc';
+        else { advSort.col = col; advSort.dir = col === 'budget' ? 'desc' : 'asc'; }
+        render();
+      });
+    });
+    return;
+  }
   if (state.report === 'stagetime'){ document.getElementById('infoBanner').style.display='none'; document.getElementById('content').innerHTML = renderStageTimeReport(state.raw); return; }
   if (state.report === 'marketing'){
     document.getElementById('infoBanner').style.display='none';
