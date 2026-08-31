@@ -9,6 +9,8 @@
 </script>
 <script src="auth.js?v=mobhdr20260430"></script>
 <script src="header.js?v=brig20260622"></script>
+<!-- SheetJS (xlsx) — Excel-експорт звіту «Підписані» -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/uk.js"></script>
@@ -968,14 +970,17 @@ function advFiltered(d) {
   }
   return list;
 }
-function renderAdvanceReport(d) {
-  const list = [...advFiltered(d)].sort((x, y) => {
+function advSortedList(d) {
+  return [...advFiltered(d)].sort((x, y) => {
     let va = x[advSort.col], vb = y[advSort.col];
     if (typeof va === 'number' && typeof vb === 'number') return advSort.dir === 'asc' ? va - vb : vb - va;
     va = String(va || ''); vb = String(vb || '');
     const cmp = va.localeCompare(vb, 'uk');
     return advSort.dir === 'asc' ? cmp : -cmp;
   });
+}
+function renderAdvanceReport(d) {
+  const list = advSortedList(d);
   const count = list.length;
   const budget = list.reduce((s, x) => s + (x.budget || 0), 0);
   const avg = count ? budget / count : 0;
@@ -995,6 +1000,8 @@ function renderAdvanceReport(d) {
     <span class="chip${!state.advInterest ? ' active' : ''}" onclick="setAdvInterest('')">Всі</span>
     ${ADV_INTEREST_GROUPS.map(g =>
       `<span class="chip${state.advInterest === g.key ? ' active' : ''}" onclick="setAdvInterest('${g.key}')">${g.label}</span>`).join('')}
+    <span class="spacer"></span>
+    <button class="btn btn--secondary btn--sm" onclick="advDownloadXLSX()" title="Вивантажити таблицю з поточними фільтрами">⬇ Excel</button>
   </div>
   <div class="kpi">
     <div class="kpi-card"><div class="lbl">Угод</div><div class="val">${fmt(count)}</div></div>
@@ -1036,13 +1043,13 @@ function renderAdvanceReport(d) {
       <td>${esc(x.clientClass || '—')}</td>
       <td>${esc(x.channel || '—')}</td>
       <td>${esc(x.interest || '—')}</td>
-      <td class="num">${x.budget ? fmt(x.budget) : '—'}</td>
+      <td class="num" style="color:var(--text);font-weight:600">${x.budget ? fmt(x.budget) : '—'}</td>
     </tr>`;
   });
   html += `
     <tr class="sum-row" style="font-weight:700">
       <td colspan="8">Разом: ${fmt(count)} угод · середній чек ${fmtMoney(avg)} $</td>
-      <td class="num">${fmtMoney(budget)}</td>
+      <td class="num" style="color:var(--text);font-weight:700">${fmtMoney(budget)}</td>
     </tr>
   </tbody></table></div>`;
   if (noInterest) {
@@ -1088,6 +1095,40 @@ function advOpenMgrMenu(ev) {
 }
 function openAdvHelp()  { document.getElementById('advHelpModal').classList.add('open'); }
 function closeAdvHelp() { document.getElementById('advHelpModal').classList.remove('open'); }
+// Excel-експорт «Підписаних»: з даних (не з DOM), поточні фільтри й сортування,
+// внизу підсумок за ТЗ (кількість / сума / середній чек)
+function advDownloadXLSX() {
+  if (typeof XLSX === 'undefined') { alert('Excel-бібліотека не завантажилась. Перевірте інтернет-з\'єднання.'); return; }
+  const d = state.raw;
+  if (!d || !d.deals) return;
+  const list = advSortedList(d);
+  if (!list.length) { alert('Немає даних для експорту'); return; }
+  const count = list.length;
+  const budget = list.reduce((s, x) => s + (x.budget || 0), 0);
+  const aoa = [
+    ['№', '№ угоди', 'Назва', 'Дата авансу', 'Менеджер', 'Клас', 'Канал реклами', 'Інтерес', 'Тип клієнта', 'Сума $'],
+    ...list.map((x, i) => [
+      i + 1, Number(x.id) || x.id, x.name, fmtDateUA(x.advanceDate),
+      x.manager || '', x.clientClass || '', x.channel || '', x.interest || '',
+      x.clientType || '', x.budget || 0,
+    ]),
+    [],
+    ['Угод', count],
+    ['Сума, $', Math.round(budget * 100) / 100],
+    ['Середній чек, $', count ? Math.round(budget / count) : 0],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{wch:4},{wch:9},{wch:60},{wch:12},{wch:20},{wch:6},{wch:16},{wch:28},{wch:16},{wch:10}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Підписані угоди');
+  const parts = ['Підписані угоди', `${state.from} — ${state.to}`];
+  if (state.advMgr) parts.push(state.advMgr);
+  if (state.advInterest) {
+    const g = ADV_INTEREST_GROUPS.find(g => g.key === state.advInterest);
+    if (g) parts.push(g.label);
+  }
+  XLSX.writeFile(wb, parts.join(' · ') + '.xlsx');
+}
 
 // 8. Час на етапах воронки (stage time + SLA-регламенти)
 // Дні з 1 знаком; хвилинні інтервали (0 < x < 0.1 дн) — «<0,1», щоб не
