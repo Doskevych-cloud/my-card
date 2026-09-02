@@ -1810,7 +1810,26 @@ const BC_CAPTION_MAX = 1024;
 const BC_MEDIA_MAX = 10;
 const BC_PHOTO_MAX = 10 * 1024 * 1024;
 const BC_VIDEO_MAX = 30 * 1024 * 1024;
-let bcMedia = []; // [{file, type:'photo'|'video', url}]
+let bcMedia = []; // [{file, type:'photo'|'video', url, meta, metaPromise}]
+
+// Розміри відео читаємо в браузері: без width/height Telegram не завжди парсить
+// контейнер (особливо .MOV з iPhone) і зберігає відео квадратом 320×320 —
+// горизонтальне відео у чаті виходить обрізаним і розтягнутим.
+function readVideoMeta(url) {
+  return new Promise(resolve => {
+    const v = document.createElement('video');
+    let done = false;
+    const finish = m => { if (!done) { done = true; v.src = ''; resolve(m); } };
+    v.preload = 'metadata';
+    v.onloadedmetadata = () => finish(v.videoWidth > 0 ? {
+      width: v.videoWidth, height: v.videoHeight,
+      duration: isFinite(v.duration) ? Math.round(v.duration) : 0,
+    } : null);
+    v.onerror = () => finish(null);
+    setTimeout(() => finish(null), 5000);
+    v.src = url;
+  });
+}
 
 function addMediaFiles(files) {
   const res = document.getElementById('result');
@@ -1821,7 +1840,9 @@ function addMediaFiles(files) {
     if (bcMedia.length >= BC_MEDIA_MAX) { res.className = 'bc-result err'; res.textContent = `Не більше ${BC_MEDIA_MAX} медіа-файлів`; break; }
     const cap = isVideo ? BC_VIDEO_MAX : BC_PHOTO_MAX;
     if (f.size > cap) { res.className = 'bc-result err'; res.textContent = `«${f.name}» завеликий (${Math.round(f.size / 1048576)}MB, ліміт ${cap / 1048576}MB)`; continue; }
-    bcMedia.push({ file: f, type: isVideo ? 'video' : 'photo', url: isImage ? URL.createObjectURL(f) : null });
+    const item = { file: f, type: isVideo ? 'video' : 'photo', url: URL.createObjectURL(f), meta: null, metaPromise: null };
+    if (isVideo) item.metaPromise = readVideoMeta(item.url).then(m => { item.meta = m; });
+    bcMedia.push(item);
   }
   renderMediaStrip();
 }
@@ -1884,6 +1905,8 @@ async function sendBroadcast() {
   const chunk = bcMedia.length && text.length > BC_CAPTION_MAX ? BC_CHUNK / 2 : BC_CHUNK;
   let sent = 0, failed = 0;
   try {
+    // дочекатись зчитування розмірів відео (метадані, мілісекунди)
+    await Promise.all(bcMedia.map(m => m.metaPromise).filter(Boolean));
     let broadcastId = null;
     let mediaIds = null; // [{type, file_id}] з відповіді першого чанку
     for (let i = 0; i < chatIds.length; i += chunk) {
@@ -1894,6 +1917,7 @@ async function sendBroadcast() {
       };
       let data;
       if (bcMedia.length && !mediaIds) {
+        payload.media_meta = bcMedia.map(m => m.meta || null);
         const fd = new FormData();
         fd.append('payload', JSON.stringify(payload));
         bcMedia.forEach(m => fd.append('media', m.file, m.file.name));
