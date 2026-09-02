@@ -295,6 +295,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .bc-result{margin-top:14px;padding:12px 14px;border-radius:10px;font-size:12px;display:none}
 .bc-result.ok{display:block;background:var(--green-bg);color:var(--green);border:1px solid color-mix(in srgb,var(--green) 30%,transparent)}
 .bc-result.err{display:block;background:var(--red-bg);color:var(--red);border:1px solid color-mix(in srgb,var(--red) 30%,transparent)}
+.media-strip{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.media-item{position:relative;width:76px;height:76px;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg2)}
+.media-item img{width:100%;height:100%;object-fit:cover;display:block}
+.media-item .mi-vid{display:flex;align-items:center;justify-content:center;height:100%;font-size:9.5px;color:var(--text3);padding:4px;text-align:center;word-break:break-all;overflow:hidden}
+.media-item .mi-x{position:absolute;top:2px;right:2px;width:18px;height:18px;line-height:16px;text-align:center;border-radius:50%;background:var(--surface);border:1px solid var(--border);cursor:pointer;font-size:11px;color:var(--text2)}
+.media-item .mi-x:hover{color:var(--red);border-color:var(--red)}
+.hist-media{font-size:10px;color:var(--text3);white-space:nowrap;flex-shrink:0}
 .loading-msg{text-align:center;padding:30px;color:var(--text3);font-size:12px}
 .hist-list{display:flex;flex-direction:column;gap:6px}
 .hist-row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:background .1s}
@@ -475,9 +482,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
         <div id="tplPicker" class="tpl-picker" style="display:none"></div>
         <textarea id="msgText" class="bc-textarea" placeholder="Текст повідомлення…"></textarea>
         <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-          <div class="char-count" style="flex:1"><span id="charCount">0</span> символів</div>
+          <div class="char-count" style="flex:1"><span id="charCount">0</span> символів<span id="mediaNote"></span></div>
+          <span class="bc-chip" onclick="document.getElementById('mediaInput').click()" style="font-size:10px">Додати фото/відео</span>
           <span class="bc-chip" onclick="saveCurrentAsTemplate()" style="font-size:10px">Зберегти як шаблон</span>
         </div>
+        <input type="file" id="mediaInput" accept="image/*,video/*" multiple style="display:none">
+        <div id="mediaStrip" class="media-strip" style="display:none"></div>
       </div>
 
       <div class="bc-block">
@@ -1687,12 +1697,14 @@ async function bcFetch(action, opts = {}) {
   const params = new URLSearchParams({ action, ...(opts.params || {}) });
   const url = BOT_API + '?' + params;
   const headers = { 'Authorization': 'Bearer ' + getToken() };
-  if (opts.body) headers['Content-Type'] = 'application/json';
-  const r = await fetch(url, {
-    method: opts.body ? 'POST' : 'GET',
-    headers,
-    body: opts.body ? JSON.stringify(opts.body) : undefined,
-  });
+  let body;
+  if (opts.form) {
+    body = opts.form; // FormData — Content-Type з boundary ставить браузер
+  } else if (opts.body) {
+    headers['Content-Type'] = 'application/json';
+    body = JSON.stringify(opts.body);
+  }
+  const r = await fetch(url, { method: body ? 'POST' : 'GET', headers, body });
   return r.json();
 }
 
@@ -1787,19 +1799,81 @@ function selectNotSent() {
 function updateCount() {
   const n = allChats.filter(c => c.selected).length;
   document.getElementById('selCount').textContent = n;
-  const hasText = document.getElementById('msgText').value.trim().length > 0;
-  document.getElementById('sendBtn').disabled = !n || !hasText;
+  const hasContent = document.getElementById('msgText').value.trim().length > 0 || bcMedia.length > 0;
+  document.getElementById('sendBtn').disabled = !n || !hasContent;
+}
+
+// ─── Медіа-вкладення (фото/відео) ───
+// Ліміти Telegram: caption ≤1024 символів, альбом ≤10 медіа, фото ≤10MB;
+// відео ріжемо на 30MB, бо файл буферизується в памʼяті воркера.
+const BC_CAPTION_MAX = 1024;
+const BC_MEDIA_MAX = 10;
+const BC_PHOTO_MAX = 10 * 1024 * 1024;
+const BC_VIDEO_MAX = 30 * 1024 * 1024;
+let bcMedia = []; // [{file, type:'photo'|'video', url}]
+
+function addMediaFiles(files) {
+  const res = document.getElementById('result');
+  for (const f of files) {
+    const isVideo = (f.type || '').startsWith('video/');
+    const isImage = (f.type || '').startsWith('image/');
+    if (!isVideo && !isImage) { res.className = 'bc-result err'; res.textContent = `«${f.name}» — лише фото або відео`; continue; }
+    if (bcMedia.length >= BC_MEDIA_MAX) { res.className = 'bc-result err'; res.textContent = `Не більше ${BC_MEDIA_MAX} медіа-файлів`; break; }
+    const cap = isVideo ? BC_VIDEO_MAX : BC_PHOTO_MAX;
+    if (f.size > cap) { res.className = 'bc-result err'; res.textContent = `«${f.name}» завеликий (${Math.round(f.size / 1048576)}MB, ліміт ${cap / 1048576}MB)`; continue; }
+    bcMedia.push({ file: f, type: isVideo ? 'video' : 'photo', url: isImage ? URL.createObjectURL(f) : null });
+  }
+  renderMediaStrip();
+}
+
+function removeMedia(i) {
+  if (bcMedia[i]?.url) URL.revokeObjectURL(bcMedia[i].url);
+  bcMedia.splice(i, 1);
+  renderMediaStrip();
+}
+
+function clearMedia() {
+  bcMedia.forEach(m => { if (m.url) URL.revokeObjectURL(m.url); });
+  bcMedia = [];
+  document.getElementById('mediaInput').value = '';
+  renderMediaStrip();
+}
+
+function renderMediaStrip() {
+  const strip = document.getElementById('mediaStrip');
+  strip.style.display = bcMedia.length ? 'flex' : 'none';
+  strip.innerHTML = bcMedia.map((m, i) => `
+    <div class="media-item" title="${esc(m.file.name)}">
+      ${m.type === 'photo' ? `<img src="${m.url}" alt="">` : `<div class="mi-vid">відео<br>${esc(m.file.name.length > 24 ? m.file.name.slice(0, 22) + '…' : m.file.name)}</div>`}
+      <span class="mi-x" onclick="removeMedia(${i})">✕</span>
+    </div>
+  `).join('');
+  updateMediaNote();
+  updateCount();
+}
+
+// Підказка біля лічильника: з медіа текст >1024 не влазить у caption і піде
+// окремим повідомленням перед медіа.
+function updateMediaNote() {
+  const note = document.getElementById('mediaNote');
+  const len = document.getElementById('msgText').value.length;
+  note.textContent = bcMedia.length && len > BC_CAPTION_MAX
+    ? ` · текст довший за ${BC_CAPTION_MAX} — піде окремим повідомленням перед медіа`
+    : '';
 }
 
 // Воркер має бюджет ~50 fetch-субреквестів на інвокацію (1 Telegram-fetch на чат),
 // тому великі списки шлемо чанками: кожен чанк = окремий виклик, наступні чанки
 // дописуються в той самий broadcast_log через broadcast_id з першої відповіді.
+// Медіа-файли їдуть multipart'ом лише в першому чанку; бек заливає їх у Telegram
+// один раз і повертає file_id — наступні чанки передають уже їх (JSON).
+// Медіа + текст >1024 = 2 Telegram-fetch на чат → чанк удвічі менший.
 const BC_CHUNK = 40;
 
 async function sendBroadcast() {
   const text = document.getElementById('msgText').value.trim();
   const chatIds = allChats.filter(c => c.selected).map(c => c.chat_id);
-  if (!chatIds.length || !text) return;
+  if (!chatIds.length || (!text && !bcMedia.length)) return;
 
   const btn = document.getElementById('sendBtn');
   const res = document.getElementById('result');
@@ -1807,23 +1881,39 @@ async function sendBroadcast() {
   btn.textContent = 'Відправляю…';
   res.className = 'bc-result';
 
+  const chunk = bcMedia.length && text.length > BC_CAPTION_MAX ? BC_CHUNK / 2 : BC_CHUNK;
   let sent = 0, failed = 0;
   try {
     let broadcastId = null;
-    for (let i = 0; i < chatIds.length; i += BC_CHUNK) {
-      if (chatIds.length > BC_CHUNK) btn.textContent = `Відправляю… ${i}/${chatIds.length}`;
-      const data = await bcFetch('broadcast_send', { body: {
-        chat_ids: chatIds.slice(i, i + BC_CHUNK), text,
+    let mediaIds = null; // [{type, file_id}] з відповіді першого чанку
+    for (let i = 0; i < chatIds.length; i += chunk) {
+      if (chatIds.length > chunk) btn.textContent = `Відправляю… ${i}/${chatIds.length}`;
+      const payload = {
+        chat_ids: chatIds.slice(i, i + chunk), text,
         broadcast_id: broadcastId, total_chats: chatIds.length,
-      } });
+      };
+      let data;
+      if (bcMedia.length && !mediaIds) {
+        const fd = new FormData();
+        fd.append('payload', JSON.stringify(payload));
+        bcMedia.forEach(m => fd.append('media', m.file, m.file.name));
+        data = await bcFetch('broadcast_send', { form: fd });
+      } else {
+        if (mediaIds) payload.media = mediaIds;
+        data = await bcFetch('broadcast_send', { body: payload });
+      }
       if (data.error) throw new Error(data.error);
       broadcastId = data.broadcast_id || broadcastId;
+      // На реюз беремо file_id лише коли залилось ВСЕ — інакше наступний чанк
+      // повторить multipart і бек дозаллє, чого бракує.
+      if (data.media?.length && data.media.every(m => m.file_id)) mediaIds = data.media;
       sent += data.sent || 0;
       failed += data.failed || 0;
     }
     res.className = 'bc-result ok';
     res.textContent = `Відправлено: ${sent}` + (failed ? `, помилок: ${failed}` : '');
     if (broadcastId) lastBroadcastId = broadcastId;
+    clearMedia();
     const selectedIds = new Set(chatIds);
     await loadChats();
     allChats.forEach(c => { if (selectedIds.has(c.chat_id)) c.selected = true; });
@@ -1847,7 +1937,8 @@ async function loadHistory() {
   el.innerHTML = rows.map(b => `
     <div class="hist-row" onclick="openDetail(${b.id})">
       <span class="hist-date">${fmtDate(b.created_at)}</span>
-      <span class="hist-text">${esc(b.text.substring(0, 100))}${b.text.length > 100 ? '…' : ''}</span>
+      <span class="hist-text">${esc((b.text || '').substring(0, 100))}${(b.text || '').length > 100 ? '…' : ''}</span>
+      ${mediaBadge(b.media_json)}
       <span class="hist-stats">
         <span class="hist-ok">${b.sent_ok}</span>
         ${b.sent_fail ? `<span class="hist-fail">/ ${b.sent_fail}</span>` : ''}
@@ -1877,8 +1968,9 @@ async function openDetail(id) {
   document.getElementById('detailTitle').textContent = `Розсилка — ${fmtDate(b.created_at)}`;
 
   body.innerHTML = `
-    <div class="detail-msg">${esc(b.text)}</div>
+    ${b.text ? `<div class="detail-msg">${esc(b.text)}</div>` : ''}
     <div class="detail-summary">
+      ${mediaBadge(b.media_json, true)}
       <span>Відправив: <b>${esc(b.sent_by || '—')}</b></span>
       <span>Доставлено: <b style="color:var(--green)">${b.sent_ok}</b></span>
       ${b.sent_fail ? `<span>Помилок: <b style="color:var(--red)">${b.sent_fail}</b></span>` : ''}
@@ -1909,6 +2001,22 @@ async function openDetail(id) {
 
 function closeDetail() {
   document.getElementById('detailOverlay').classList.remove('open');
+}
+
+// Бейдж вкладень у історії/деталях: "2 фото · відео" з broadcast_log.media_json
+function mediaBadge(mediaJson, detail) {
+  let media = [];
+  try { media = JSON.parse(mediaJson || '[]') || []; } catch (_) {}
+  if (!media.length) return '';
+  const nP = media.filter(m => m.type === 'photo').length;
+  const nV = media.filter(m => m.type === 'video').length;
+  const parts = [];
+  if (nP) parts.push(nP > 1 ? `${nP} фото` : 'фото');
+  if (nV) parts.push(nV > 1 ? `${nV} відео` : 'відео');
+  const label = parts.join(' · ');
+  return detail
+    ? `<span>Вкладення: <b>${label}</b></span>`
+    : `<span class="hist-media">${label}</span>`;
 }
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
@@ -2011,7 +2119,12 @@ function initBroadcastOnce() {
   _bcInit = true;
   document.getElementById('msgText').addEventListener('input', function () {
     document.getElementById('charCount').textContent = this.value.length;
+    updateMediaNote();
     updateCount();
+  });
+  document.getElementById('mediaInput').addEventListener('change', function () {
+    addMediaFiles(this.files);
+    this.value = ''; // щоб повторний вибір того ж файлу знову тригерив change
   });
   document.getElementById('searchChats').addEventListener('input', function () {
     searchQuery = this.value;
