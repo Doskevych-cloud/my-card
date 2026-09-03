@@ -729,6 +729,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
             <span class="ic">⊟</span> Згорнути
           </span>
         </span>
+        <span class="chip" onclick="openArHelp()" title="Як працює цей звіт">❓ Як працює</span>
       </div>
       <div id="arSummary"></div>
       <div id="arBody"><div class="loading">Завантаження...</div></div>
@@ -1020,6 +1021,40 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li>Якщо на обрану дату знімка ще немає — таблиця запропонує «Зробити знімок зараз», а графік покаже історію до останнього наявного дня.</li>
       <li>Історія знімків веде з квітня 2026 — глибше графік даних не має.</li>
       <li>Собівартість — управлінська, у USD; курсова переоцінка на вартість складу тут не застосовується.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ── Довідка «Як працює Дебіторка» ── -->
+<div class="modal-backdrop" id="arHelpModal" onclick="if(event.target===this)closeArHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт Дебіторка">
+    <button class="close" onclick="closeArHelp()" aria-label="Закрити">✕</button>
+    <h2>Як працює звіт «Дебіторка»</h2>
+    <h3>Джерело даних</h3>
+    <p>Реєстр 1С:УНФ «Розрахунки з покупцями» наживо через OData (кеш 1 година). Групування:
+    <b>валюта договору → покупець → договір</b>. Усі суми — у валюті договору (СуммаВал у 1С),
+    незалежно від валюти фактичного платежу.</p>
+    <h3>Колонки</h3>
+    <ul>
+      <li><b>Сума замовлення</b> = борг на початок періоду + відвантажено за період
+      (видаткові накладні, акти). Це загальне зобов'язання покупця, а не сума документів
+      «Замовлення покупця».</li>
+      <li><b>Оплачено</b> — закриття боргу за період: платежі покупця <b>плюс заліки
+      передплат</b> у відвантаження. Передплачене замовлення після відвантаження тут
+      теж «оплачене».</li>
+      <li><b>Залишок</b> — борг на кінець періоду (= Сума замовлення − Оплачено).</li>
+    </ul>
+    <h3>Курсові переоцінки</h3>
+    <p>Регламентні рухи «Закриття місяця» (переоцінка боргу в управлінському USD-обліку; у валюті
+    договору сума нульова) у звіт <b>не потрапляють</b> — раніше вони підмішувались у колонки
+    і на повністю розрахованих договорах висіло фантомне сальдо в кілька доларів. USD-еквівалент
+    з курсовими різницями — це управлінський облік, а не борг покупця.</p>
+    <h3>Чому цифра може здивувати</h3>
+    <ul>
+      <li>Вкладка показує лише <b>борговий контур</b>. Передплата, що надійшла, але ще не
+      закрита відвантаженням, тут не видна — передплати дивись у звіті «Контрагенти».</li>
+      <li>Знак тут як в акті звірки УНФ: борг покупця — плюс. На вкладці «Контрагенти» знак протилежний (cashflow-конвенція).</li>
+      <li>Рухи без договору групуються по валюті платежу під «Без договору».</li>
     </ul>
   </div>
 </div>
@@ -2514,11 +2549,13 @@ function openCbHelp()   { document.getElementById('cbHelpModal').classList.add('
 function closeCbHelp()  { document.getElementById('cbHelpModal').classList.remove('open'); }
 function openWhHelp()   { document.getElementById('whHelpModal').classList.add('open'); }
 function closeWhHelp()  { document.getElementById('whHelpModal').classList.remove('open'); }
+function openArHelp()   { document.getElementById('arHelpModal').classList.add('open'); }
+function closeArHelp()  { document.getElementById('arHelpModal').classList.remove('open'); }
 function openGpHelp()   { document.getElementById('gpHelpModal').classList.add('open'); }
 function closeGpHelp()  { document.getElementById('gpHelpModal').classList.remove('open'); }
 function openCfHelp()   { document.getElementById('cfHelpModal').classList.add('open'); }
 function closeCfHelp()  { document.getElementById('cfHelpModal').classList.remove('open'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closePnlHelp(); closeCbHelp(); closeWhHelp(); closeGpHelp(); closeCfHelp(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closePnlHelp(); closeCbHelp(); closeWhHelp(); closeGpHelp(); closeCfHelp(); closeArHelp(); } });
 
 function pnlDateChanged() {
   pnlState.preset = detectPreset(pnlState.from, pnlState.to) || '';
