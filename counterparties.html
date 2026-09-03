@@ -47,6 +47,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 /* Sections */
 .sect{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.s-scroll{overflow-x:auto}
 .sect-head{padding:12px 14px;font-size:12px;font-weight:700;color:var(--text);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
 .sect-head .count{color:var(--text3);font-weight:500;font-size:11px;margin-left:auto}
 
@@ -197,9 +198,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   .toolbar .sep{display:none}
   .cp-tags{min-width:0;max-width:100%;flex:1 1 100%}
   .kpi-row{grid-template-columns:repeat(2,1fr);gap:8px}
-  .s-tbl{font-size:11px}
+  .s-tbl{font-size:11px;min-width:640px}
   .s-tbl thead th,.s-tbl tbody td{padding:7px 8px;font-size:11px}
   .s-tbl .kind-badge{display:none}
+  /* 8 колонок не влазять у 375px: таблиця скролиться у своєму боксі,
+     # ховаємо, колонка назви — sticky */
+  .s-tbl thead th:first-child,.s-tbl td.num{display:none}
+  .s-tbl thead th:nth-child(2){position:sticky;left:0;z-index:1;background:var(--bg2)}
+  .s-tbl td.name{position:sticky;left:0;z-index:1;background:var(--surface2)}
 }
 @media (max-width:480px){
   .kpi-row{grid-template-columns:1fr 1fr}
@@ -347,14 +353,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       «Закриття місяця».</li>
     </ul>
 
-    <h3>Залишок</h3>
+    <h3>Залишок: Борг / Передплата / Разом</h3>
     <ul>
-      <li>Закриваючий баланс на кінець вибраного періоду, накопичений за всю історію
-      (з 2020 року) — період фільтрує лише обороти.</li>
+      <li>Залишок розгорнутий, як у відомості УНФ: у «Покупцях» окремо <b>Борг</b>
+      (клієнт винен за відвантажене) і <b>Передплата</b> (його аванс у нас);
+      у «Постачальниках» — <b>Передплата</b> (наш аванс постачальнику) і <b>Борг</b>
+      (ми винні за отримане). «Разом» — згорнуте сальдо. Розбивка йде по договорах,
+      тому передплата по одному договору не тоне в нетто з боргом іншого.</li>
+      <li>Це закриваючий баланс на кінець вибраного періоду, накопичений за всю
+      історію (з 2020 року) — період фільтрує лише обороти.</li>
       <li>Знак єдиний по всіх вкладках (cashflow-конвенція): <b>+ ми винні</b>
-      (передплата покупця або наш борг постачальнику), <b>− нам винні</b> (дебіторка
-      покупця або наша передплата постачальнику). Тому для покупців знак протилежний
-      акту звірки УНФ — модулі сум збігаються.</li>
+      (гроші в нас), <b>− нам винні</b> (наш актив заморожений). Тому для покупців
+      знак протилежний акту звірки УНФ — модулі сум збігаються.</li>
       <li>USD-підсумок = сума залишків по валютах × курс на кінець періоду.</li>
     </ul>
 
@@ -713,13 +723,18 @@ function renderTop(rows){
     lines.push(`
     <tr class="clickable supplier-head" data-ref="${r.ref_key}">
       <td class="num">${i}</td>
-      <td class="name" colspan="4">${esc(r.description)}${kindBadge(r.kind)}</td>
+      <td class="name" colspan="6">${esc(r.description)}${kindBadge(r.kind)}</td>
       <td class="amount ${bUsdCls}" title="Підсумковий USD-еквівалент (з ap_movements, 1С-style)">${bUsdStr}</td>
     </tr>`);
     const ordered = [primary, ...allCurs.filter(c => c !== primary)];
     ordered.forEach(cur => {
       const act = (r.by_currency || {})[cur] || { r_cnt:0, r_period:0, p_cnt:0, p_period:0 };
       const bal = Number((r.balance_by_currency || {})[cur]) || 0;
+      // Розгорнутий залишок (ПФ 175121 п.3): нам винні / ми винні окремо, знак — cashflow.
+      const owed  = Number((r.owed_by_currency || {})[cur]) || 0;
+      const weOwe = Number((r.we_owe_by_currency || {})[cur]) || 0;
+      const owedStr  = owed  < 0.01 ? '—' : fmtCurSigned(-owed, cur);
+      const weOweStr = weOwe < 0.01 ? '—' : fmtCurSigned(weOwe, cur);
       // Per-currency деталі — без кольору (акцент лише на сумарному залишку контрагента).
       const balCls = Math.abs(bal) < 0.01 ? 'muted' : '';
       const balStr = Math.abs(bal) < 0.01 ? '—' : fmtCurSigned(bal, cur);
@@ -730,6 +745,8 @@ function renderTop(rows){
         <td class="cur">${cur}</td>
         <td class="amount">${Math.abs(act.r_period) < 0.01 ? '—' : fmtCur(act.r_period, cur)}</td>
         <td class="amount">${Math.abs(act.p_period) < 0.01 ? '—' : fmtCur(act.p_period, cur)}</td>
+        <td class="amount">${owedStr}</td>
+        <td class="amount">${weOweStr}</td>
         <td class="amount ${balCls}">${balStr}</td>
       </tr>`);
     });
@@ -739,18 +756,25 @@ function renderTop(rows){
                    : state.role === 'suppliers' ? 'Топ-постачальники'
                    : state.role === 'all' ? 'Топ-контрагенти (всі)'
                    : 'Контрагенти';
+  // Лейбли розбивки залишку: порядок сталий (нам винні → ми винні), назва — від ролі.
+  const OWED_LBL  = { customers:'Борг', suppliers:'Передплата', others:'Нам винні', all:'Нам винні' };
+  const WEOWE_LBL = { customers:'Передплата', suppliers:'Борг', others:'Ми винні', all:'Ми винні' };
   return `
   <div class="sect">
     <div class="sect-head">${titleLabel}<span class="count">${rows.length}</span></div>
+    <div class="s-scroll">
     <table class="s-tbl">
       <thead><tr>
         <th>#</th><th>${colLabel}</th><th>Вал</th>
         <th>Відвантажено</th>
         <th>Оплачено</th>
-        <th>Залишок</th>
+        <th title="нам винні — наш актив">${OWED_LBL[state.role] || 'Нам винні'}</th>
+        <th title="ми винні — наш пасив">${WEOWE_LBL[state.role] || 'Ми винні'}</th>
+        <th>Разом</th>
       </tr></thead>
       <tbody>${lines.join('')}</tbody>
     </table>
+    </div>
   </div>`;
 }
 
