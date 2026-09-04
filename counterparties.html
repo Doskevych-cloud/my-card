@@ -370,6 +370,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
     <h3>Нюанси</h3>
     <ul>
+      <li>Таблиця показує <b>всіх</b> контрагентів з оборотом за період або ненульовим
+      залишком — сума колонок «Борг»/«Передплата» по всіх рядках сходиться з KPI зверху
+      (KPI конвертує валюти в USD за курсом на кінець періоду). Сортування — за оборотом
+      періоду; контрагенти без обороту, але з залишком — у кінці, за розміром боргу.</li>
       <li>Вкладка «Всі» показує розрахунки покупця і постачальника разом — у контрагента
       з обома ролями цифри більші, ніж в окремих вкладках «Покупці»/«Постачальники».</li>
       <li>Передплати під різні замовлення одного клієнта не розрізняються — на таких
@@ -698,7 +702,7 @@ function renderKpi(k){
 }
 
 function renderTop(rows){
-  if (!rows.length) return `<div class="sect"><div class="sect-head">Топ-покупці</div><div class="empty">Немає даних у цьому періоді</div></div>`;
+  if (!rows.length) return `<div class="sect"><div class="sect-head">Контрагенти</div><div class="empty">Немає даних у цьому періоді</div></div>`;
   const CUR_ORDER = ['USD','UAH','EUR'];
   const lines = [];
   let i = 0;
@@ -752,9 +756,9 @@ function renderTop(rows){
     });
   }
   const colLabel = ROLE_LABEL_COL[state.role] || 'Контрагент';
-  const titleLabel = state.role === 'customers' ? 'Топ-покупці'
-                   : state.role === 'suppliers' ? 'Топ-постачальники'
-                   : state.role === 'all' ? 'Топ-контрагенти (всі)'
+  const titleLabel = state.role === 'customers' ? 'Покупці'
+                   : state.role === 'suppliers' ? 'Постачальники'
+                   : state.role === 'all' ? 'Контрагенти (всі)'
                    : 'Контрагенти';
   // Лейбли розбивки залишку: порядок сталий (нам винні → ми винні), назва — від ролі.
   const OWED_LBL  = { customers:'Борг', suppliers:'Передплата', others:'Нам винні', all:'Нам винні' };
@@ -808,7 +812,7 @@ async function loadOverview(){
   const params = new URLSearchParams({ action:endpoint, from:state.from, to:state.to });
   if (state.org) params.set('org', state.org);
   if (state.q) params.set('q', state.q);
-  params.set('limit', state.q ? '100' : '30');
+  params.set('limit', 'all'); // усі рядки — KPI рахує всіх, обрізаний топ збивав звірку
   try{
     const res = await fetch(`${API}/?${params}`);
     if (!res.ok) throw new Error(`${res.status} ${await res.text().catch(()=>res.statusText)}`);
