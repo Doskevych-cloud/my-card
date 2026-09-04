@@ -49,6 +49,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .sect{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
 .s-scroll{overflow-x:auto}
 .s-tbl tfoot td{border-top:2px solid var(--border);border-bottom:none;font-weight:700}
+.s-tbl .sub-note{display:block;font-size:10.5px;color:var(--text3);font-weight:400;white-space:nowrap}
 .sect-head{padding:12px 14px;font-size:12px;font-weight:700;color:var(--text);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
 .sect-head .count{color:var(--text3);font-weight:500;font-size:11px;margin-left:auto}
 
@@ -345,6 +346,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>Відвантажено</b> — боргові рухи від товарних документів: видаткові/прибуткові
       накладні, акти виконаних робіт, додаткові витрати, ввід початкових залишків.
       Повернення товару зменшують суму.</li>
+      <li><b>Прибуткові на склади «В дорозі»</b> — це віртуальна поставка: товар ще їде,
+      при прибутті накладну перепроводять на реальний склад. Для постачальника така
+      закупка ще не відбулась: у «Відвантажено» вона не входить (сума показана під
+      цифрою як «+… в дорозі»), її борг не рахується, а передплата під неї лишається
+      в «Передплата» як те, що постачальник нам ще винен. Тому по постачальниках
+      з товаром у дорозі сайт свідомо відрізняється від УНФ: «отримано + в дорозі»
+      = УНФ «закуплено».</li>
       <li><b>Оплачено</b> — тільки грошові документи: надходження на рахунок / в касу
       (для покупців) або витрата з рахунку / каси (для постачальників). Повернення грошей
       ідуть з мінусом. Передплата потрапляє в «Оплачено» в момент надходження грошей.</li>
@@ -738,6 +746,9 @@ function renderTop(rows){
     const ordered = [primary, ...allCurs.filter(c => c !== primary)];
     ordered.forEach(cur => {
       const act = (r.by_currency || {})[cur] || { r_cnt:0, r_period:0, p_cnt:0, p_period:0 };
+      // Прибуткові на склади «В дорозі» — товар ще їде: в «Отримано» не входять, показуємо окремо.
+      const transit = Number(act.transit_period) || 0;
+      const transitNote = transit > 0.01 ? `<span class="sub-note">+${fmtCur(transit, cur)} в дорозі</span>` : '';
       const bal = Number((r.balance_by_currency || {})[cur]) || 0;
       // Розгорнутий залишок (ПФ 175121 п.3): нам винні / ми винні окремо, знак — cashflow.
       const owed  = Number((r.owed_by_currency || {})[cur]) || 0;
@@ -752,7 +763,7 @@ function renderTop(rows){
         <td class="num"></td>
         <td class="name"><span class="cur-indent">↳ у ${cur}</span></td>
         <td class="cur">${cur}</td>
-        <td class="amount">${Math.abs(act.r_period) < 0.01 ? '—' : fmtCur(act.r_period, cur)}</td>
+        <td class="amount">${Math.abs(act.r_period) < 0.01 ? '—' : fmtCur(act.r_period, cur)}${transitNote}</td>
         <td class="amount">${Math.abs(act.p_period) < 0.01 ? '—' : fmtCur(act.p_period, cur)}</td>
         <td class="amount">${owedStr}</td>
         <td class="amount">${weOweStr}</td>
@@ -780,9 +791,9 @@ function renderTop(rows){
       ...Object.keys(r.we_owe_by_currency || {}),
     ]);
     for (const cur of curs) {
-      const t = tot[cur] || (tot[cur] = { r:0, p:0, owed:0, weOwe:0, bal:0 });
+      const t = tot[cur] || (tot[cur] = { r:0, p:0, transit:0, owed:0, weOwe:0, bal:0 });
       const act = (r.by_currency || {})[cur];
-      if (act) { t.r += Number(act.r_period) || 0; t.p += Number(act.p_period) || 0; }
+      if (act) { t.r += Number(act.r_period) || 0; t.p += Number(act.p_period) || 0; t.transit += Number(act.transit_period) || 0; }
       t.owed  += Number((r.owed_by_currency  || {})[cur]) || 0;
       t.weOwe += Number((r.we_owe_by_currency || {})[cur]) || 0;
       t.bal   += Number((r.balance_by_currency || {})[cur]) || 0;
@@ -797,7 +808,7 @@ function renderTop(rows){
         <td class="num"></td>
         <td class="name">Разом у ${cur}</td>
         <td class="cur">${cur}</td>
-        <td class="amount">${Math.abs(t.r) < 0.01 ? '—' : fmtCur(t.r, cur)}</td>
+        <td class="amount">${Math.abs(t.r) < 0.01 ? '—' : fmtCur(t.r, cur)}${t.transit > 0.01 ? `<span class="sub-note">+${fmtCur(t.transit, cur)} в дорозі</span>` : ''}</td>
         <td class="amount">${Math.abs(t.p) < 0.01 ? '—' : fmtCur(t.p, cur)}</td>
         <td class="amount">${t.owed < 0.01 ? '—' : fmtCurSigned(-t.owed, cur)}</td>
         <td class="amount">${t.weOwe < 0.01 ? '—' : fmtCurSigned(t.weOwe, cur)}</td>
