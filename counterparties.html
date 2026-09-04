@@ -48,6 +48,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 /* Sections */
 .sect{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
 .s-scroll{overflow-x:auto}
+.s-tbl tfoot td{border-top:2px solid var(--border);border-bottom:none;font-weight:700}
 .sect-head{padding:12px 14px;font-size:12px;font-weight:700;color:var(--text);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
 .sect-head .count{color:var(--text3);font-weight:500;font-size:11px;margin-left:auto}
 
@@ -371,9 +372,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <h3>Нюанси</h3>
     <ul>
       <li>Таблиця показує <b>всіх</b> контрагентів з оборотом за період або ненульовим
-      залишком — сума колонок «Борг»/«Передплата» по всіх рядках сходиться з KPI зверху
-      (KPI конвертує валюти в USD за курсом на кінець періоду). Сортування — за оборотом
-      періоду; контрагенти без обороту, але з залишком — у кінці, за розміром боргу.</li>
+      залишком. Внизу — підсумковий рядок по кожній валюті: його «Борг»/«Передплата»
+      збігаються з KPI «Борги нам»/«Борги наші», а «Разом» — з «Ітого» (KPI конвертує
+      валюти в USD за курсом на кінець періоду). Звіряти KPI з колонкою «Разом»
+      по рядках не можна: «Разом» — нетто по контрагенту, а KPI, як і 1С, рахує кожен
+      договір окремо (борг по одному договору не згортається з передплатою по іншому).
+      Сортування — за оборотом періоду; контрагенти без обороту, але з залишком —
+      у кінці, за розміром боргу.</li>
       <li>Вкладка «Всі» показує розрахунки покупця і постачальника разом — у контрагента
       з обома ролями цифри більші, ніж в окремих вкладках «Покупці»/«Постачальники».</li>
       <li>Передплати під різні замовлення одного клієнта не розрізняються — на таких
@@ -763,6 +768,42 @@ function renderTop(rows){
   // Лейбли розбивки залишку: порядок сталий (нам винні → ми винні), назва — від ролі.
   const OWED_LBL  = { customers:'Борг', suppliers:'Передплата', others:'Нам винні', all:'Нам винні' };
   const WEOWE_LBL = { customers:'Передплата', suppliers:'Борг', others:'Ми винні', all:'Ми винні' };
+  // Підсумок по валютах — таблиця звіряється з KPI без калькулятора:
+  // Σ борг/передплата = KPI «Борги нам»/«Борги наші», Σ«Разом» = «Ітого».
+  // Через «Разом» звіряти не можна: він нетто по контрагенту, а KPI — по договорах.
+  const tot = {};
+  for (const r of rows) {
+    const curs = new Set([
+      ...Object.keys(r.by_currency || {}),
+      ...Object.keys(r.balance_by_currency || {}),
+      ...Object.keys(r.owed_by_currency || {}),
+      ...Object.keys(r.we_owe_by_currency || {}),
+    ]);
+    for (const cur of curs) {
+      const t = tot[cur] || (tot[cur] = { r:0, p:0, owed:0, weOwe:0, bal:0 });
+      const act = (r.by_currency || {})[cur];
+      if (act) { t.r += Number(act.r_period) || 0; t.p += Number(act.p_period) || 0; }
+      t.owed  += Number((r.owed_by_currency  || {})[cur]) || 0;
+      t.weOwe += Number((r.we_owe_by_currency || {})[cur]) || 0;
+      t.bal   += Number((r.balance_by_currency || {})[cur]) || 0;
+    }
+  }
+  const totRows = Object.keys(tot)
+    .sort((a,b) => CUR_ORDER.indexOf(a) - CUR_ORDER.indexOf(b))
+    .map(cur => {
+      const t = tot[cur];
+      return `
+      <tr>
+        <td class="num"></td>
+        <td class="name">Разом у ${cur}</td>
+        <td class="cur">${cur}</td>
+        <td class="amount">${Math.abs(t.r) < 0.01 ? '—' : fmtCur(t.r, cur)}</td>
+        <td class="amount">${Math.abs(t.p) < 0.01 ? '—' : fmtCur(t.p, cur)}</td>
+        <td class="amount">${t.owed < 0.01 ? '—' : fmtCurSigned(-t.owed, cur)}</td>
+        <td class="amount">${t.weOwe < 0.01 ? '—' : fmtCurSigned(t.weOwe, cur)}</td>
+        <td class="amount">${Math.abs(t.bal) < 0.01 ? '—' : fmtCurSigned(t.bal, cur)}</td>
+      </tr>`;
+    }).join('');
   return `
   <div class="sect">
     <div class="sect-head">${titleLabel}<span class="count">${rows.length}</span></div>
@@ -777,6 +818,7 @@ function renderTop(rows){
         <th>Разом</th>
       </tr></thead>
       <tbody>${lines.join('')}</tbody>
+      ${totRows ? `<tfoot>${totRows}</tfoot>` : ''}
     </table>
     </div>
   </div>`;
