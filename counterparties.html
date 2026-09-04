@@ -310,6 +310,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <div id="cpExcludeSuggest" class="cp-suggest" style="display:none"></div>
       </span>
 
+      <span id="whExcludeWrap" title="Прибуткові з цих складів не вважаються поставкою">
+        <span class="lbl">Без складів</span>
+        <span class="cp-tags" id="whExcludeTags">
+          <input type="text" id="whExcludeIn" placeholder="Почни вводити…" autocomplete="off">
+          <div id="whExcludeSuggest" class="cp-suggest" style="display:none"></div>
+        </span>
+      </span>
+
       <span class="chip" id="exportPdfBtn" title="Експорт у PDF з поточними фільтрами" style="cursor:pointer">
         <span style="margin-right:5px">⤓</span> PDF
       </span>
@@ -346,13 +354,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>Відвантажено</b> — боргові рухи від товарних документів: видаткові/прибуткові
       накладні, акти виконаних робіт, додаткові витрати, ввід початкових залишків.
       Повернення товару зменшують суму.</li>
-      <li><b>Прибуткові на склади «В дорозі»</b> — це віртуальна поставка: товар ще їде,
-      при прибутті накладну перепроводять на реальний склад. Для постачальника така
+      <li><b>Без складів</b> — прибуткові на вибрані склади не вважаються поставкою.
+      За замовчуванням це всі склади «В дорозі»: така накладна — віртуальна поставка,
+      товар ще їде, при прибутті її перепроводять на реальний склад. Для постачальника
       закупка ще не відбулась: у «Відвантажено» вона не входить (сума показана під
       цифрою як «+… в дорозі»), її борг не рахується, а передплата під неї лишається
       в «Передплата» як те, що постачальник нам ще винен. Тому по постачальниках
       з товаром у дорозі сайт свідомо відрізняється від УНФ: «отримано + в дорозі»
-      = УНФ «закуплено».</li>
+      = УНФ «закуплено». Список запам'ятовується в браузері; прибери всі теги —
+      і звіт рахуватиме як 1С.</li>
       <li><b>Оплачено</b> — тільки грошові документи: надходження на рахунок / в касу
       (для покупців) або витрата з рахунку / каси (для постачальників). Повернення грошей
       ідуть з мінусом. Передплата потрапляє в «Оплачено» в момент надходження грошей.</li>
@@ -421,7 +431,7 @@ const body = document.getElementById('body');
 const sub  = document.getElementById('subTitle');
 
 const state = { from:'', to:'', org:'', preset:'12m', q:'', role:'suppliers', detailRef:'', tab:'overview', dvTable:'counterparties', dvSearch:'', dvOffset:0,
-                 includeList:[], excludeList:[], _lastRows:[] };
+                 includeList:[], excludeList:[], whExcludeList:null, _warehouses:[], _lastRows:[] };
 
 // Restore tag-filters з localStorage
 (function _cpRestoreTags(){
@@ -430,6 +440,9 @@ const state = { from:'', to:'', org:'', preset:'12m', q:'', role:'suppliers', de
     const ex  = localStorage.getItem('cp_exclude');
     if (inc) { try { const a = JSON.parse(inc); if (Array.isArray(a)) state.includeList = a; } catch (_) {} }
     if (ex)  { try { const a = JSON.parse(ex);  if (Array.isArray(a)) state.excludeList = a; } catch (_) {} }
+    // null = ще не ініціалізовано (перший запуск) → дефолт виставиться після завантаження складів.
+    const wx = localStorage.getItem('cp_excl_wh');
+    if (wx !== null) { try { const a = JSON.parse(wx); if (Array.isArray(a)) state.whExcludeList = a; } catch (_) {} }
   } catch (_) {}
 })();
 const ROLE_LABEL = { suppliers:'постачальник', customers:'покупець', others:'контрагент', all:'контрагент' };
@@ -523,6 +536,9 @@ function syncToolbar(){
   document.querySelectorAll('#tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.tab === state.tab));
   const qEl2 = document.getElementById('qIn');
   if (qEl2) qEl2.placeholder = '🔎 ' + (ROLE_LABEL[state.role] || 'контрагент') + ' (назва / ЕДРПОУ)';
+  // Поле «Без складів» стосується лише прибуткових (AP) — для покупців ховаємо.
+  const ww = document.getElementById('whExcludeWrap');
+  if (ww) ww.style.display = state.role === 'customers' ? 'none' : '';
 }
 
 function wireToolbar(){
@@ -562,14 +578,39 @@ function wireToolbar(){
   exIn.addEventListener('blur',  () => setTimeout(() => cpTagInput.hide('exclude'), 200));
   exIn.addEventListener('keydown', e => cpTagInput.onKey('exclude', e));
 
+  const whIn = document.getElementById('whExcludeIn');
+  whIn.addEventListener('input', () => cpTagInput.onInput('whExclude'));
+  whIn.addEventListener('focus', () => cpTagInput.onInput('whExclude'));
+  whIn.addEventListener('blur',  () => setTimeout(() => cpTagInput.hide('whExclude'), 200));
+  whIn.addEventListener('keydown', e => cpTagInput.onKey('whExclude', e));
+
   cpTagInput.renderTags('include');
   cpTagInput.renderTags('exclude');
+  cpTagInput.renderTags('whExclude');
+}
+
+// Довідник складів для «Без складів». Перший запуск (у localStorage ще нічого) —
+// дефолт: усі склади «В дорозі». Без довідника бекенд сам виключає «В дорозі».
+async function loadWarehouses(){
+  try {
+    const res = await fetch(`${API}/?action=cp_warehouses`);
+    if (!res.ok) return;
+    const d = await res.json();
+    state._warehouses = d.warehouses || [];
+    if (!Array.isArray(state.whExcludeList)) {
+      state.whExcludeList = state._warehouses.filter(w => w.is_transit).map(w => w.description);
+      cpTagInput.save('whExclude');
+    }
+    cpTagInput.renderTags('whExclude');
+  } catch (_) {}
 }
 
 /* Generic tag-input для counterparties (як в GP) */
 const CP_TAG_CFG = {
   include: { stateKey:'includeList', tagsId:'cpIncludeTags', inputId:'qIn',          suggestId:'cpIncludeSuggest', storageKey:'cp_include' },
   exclude: { stateKey:'excludeList', tagsId:'cpExcludeTags', inputId:'cpExcludeIn',  suggestId:'cpExcludeSuggest', storageKey:'cp_exclude' },
+  // Склади-виключення: підказки з довідника складів, зміна → рефетч (фільтр бекендовий).
+  whExclude: { stateKey:'whExcludeList', tagsId:'whExcludeTags', inputId:'whExcludeIn', suggestId:'whExcludeSuggest', storageKey:'cp_excl_wh', source:'warehouses' },
 };
 const cpTagInput = {
   list(field) { return state[CP_TAG_CFG[field].stateKey] || []; },
@@ -615,10 +656,12 @@ const cpTagInput = {
     const dd  = document.getElementById(cfg.suggestId);
     if (!inp || !dd) return;
     const q = inp.value.trim().toLowerCase();
-    const all = (state._lastRows || []).map(r => ({
-      name: r.description || r.name || '—',
-      meta: fmtCurSigned(Number(r.balance_usd) || 0, 'USD'),
-    })).filter(o => o.name && o.name !== '—');
+    const all = cfg.source === 'warehouses'
+      ? (state._warehouses || []).map(w => ({ name: w.description, meta: w.is_transit ? 'в дорозі' : '' }))
+      : (state._lastRows || []).map(r => ({
+          name: r.description || r.name || '—',
+          meta: fmtCurSigned(Number(r.balance_usd) || 0, 'USD'),
+        })).filter(o => o.name && o.name !== '—');
     if (!all.length) { dd.style.display = 'none'; return; }
     const taken = new Set(this.list(field).map(n => n.toLowerCase()));
     const matched = all
@@ -866,6 +909,13 @@ async function loadOverview(){
   if (state.org) params.set('org', state.org);
   if (state.q) params.set('q', state.q);
   params.set('limit', 'all'); // усі рядки — KPI рахує всіх, обрізаний топ збивав звірку
+  // «Без складів»: прибуткові з цих складів не вважаються поставкою (тільки AP).
+  // Порожній список → excl_wh='' → бекенд нічого не виключає; без довідника → дефолт бекенду («В дорозі»).
+  if (state.role !== 'customers' && Array.isArray(state.whExcludeList) && (state._warehouses || []).length) {
+    const byName = new Map(state._warehouses.map(w => [(w.description || '').toLowerCase(), w.ref_key]));
+    const refs = state.whExcludeList.map(n => byName.get((n || '').toLowerCase())).filter(Boolean);
+    params.set('excl_wh', refs.join(','));
+  }
   try{
     const res = await fetch(`${API}/?${params}`);
     if (!res.ok) throw new Error(`${res.status} ${await res.text().catch(()=>res.statusText)}`);
@@ -1116,7 +1166,8 @@ Auth.require('counterparties').then(user => {
 
   syncToolbar();
   wireToolbar();
-  load();
+  // Спершу довідник складів (щоб перший запит уже ніс excl_wh), потім дані.
+  loadWarehouses().then(load);
   // Прив'язуємо PDF-кнопку через addEventListener (надійніше за onclick=)
   const pdfBtn = document.getElementById('exportPdfBtn');
   if (pdfBtn) pdfBtn.addEventListener('click', () => {
