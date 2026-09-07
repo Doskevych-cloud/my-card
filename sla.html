@@ -655,11 +655,13 @@ async function renderAdmin(user) {
       </div>
       <h3 style="margin-top:16px">Чати</h3>
       <table class="admin-tbl">
-        <thead><tr><th>Chat ID</th><th>Контрагент</th><th>Менеджер</th><th>Орг</th><th>Act</th></tr></thead>
+        <thead><tr><th>Chat ID</th><th>Контрагент</th><th>Менеджер</th><th>Орг</th><th>Act</th><th title="Робочий чат (не дилер) — не отримує розсилок">Робочий</th><th title="Бот у чаті? Якщо видалили — чат випадає з розсилок">Бот</th></tr></thead>
         <tbody>${(chatsRes.chats || []).map(c => `<tr>
           <td class="mono">${escapeHtml(c.chat_id)}</td><td>${escapeHtml(c.counterparty_name)}</td>
           <td>${escapeHtml(c.manager_default || '—')}</td><td>${escapeHtml(c.org)}</td>
           <td>${c.active ? '+' : '—'}</td>
+          <td><input type="checkbox" ${c.internal ? 'checked' : ''} onchange="setChatInternal(${Number(c.chat_id)}, this.checked)"></td>
+          <td>${c.bot_left_at ? `<span style="color:var(--red)" title="Бота видалено ${escapeHtml(c.bot_left_at)}">видалено</span>` : '+'}</td>
         </tr>`).join('')}</tbody>
       </table>
       <div class="admin-row">
@@ -682,6 +684,13 @@ async function addManager() {
     body: JSON.stringify({ telegram_user_id:id, name, exclude_from_report: document.getElementById('newMgrExclude').checked ? 1 : 0 })
   });
   location.reload();
+}
+async function setChatInternal(chatId, internal) {
+  const r = await fetch(API + '?action=sla_chats_set_internal', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ chat_id: chatId, internal: internal ? 1 : 0 })
+  }).then(r => r.json()).catch(e => ({ error: e.message }));
+  if (r.error) alert('Не збереглось: ' + r.error);
 }
 async function addChat() {
   const chatId = +document.getElementById('newChatId').value;
