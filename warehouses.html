@@ -31,6 +31,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .toolbar input[type=text]{flex:1;min-width:200px;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;transition:border .15s}
 .toolbar input:focus{border-color:var(--accent)}
 .toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+#whFresh{display:inline;text-transform:none;letter-spacing:0;font-weight:500;margin-left:auto}
 .toolbar .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;display:inline-flex;align-items:center;gap:6px}
 .toolbar .chip:hover{background:var(--bg3);color:var(--text)}
 .toolbar .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
@@ -266,6 +267,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <button class="btn btn--secondary btn--sm" onclick="collapseAll()">⊟ Згорнути</button>
       <button class="btn btn--secondary btn--sm" onclick="downloadXLSX()" title="Вигрузити відфільтроване в Excel">⬇ Excel</button>
       <button class="btn btn--secondary btn--sm" onclick="openHelp()" title="Як працює цей звіт">❓ Як працює</button>
+      <span class="lbl" id="whFresh"></span>
 
       <span class="wh-tags" id="whIncludeTags">
         <input type="text" id="searchIn" placeholder="🔎 Пошук по товару чи клієнту…" autocomplete="off">
@@ -312,7 +314,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
     <h3>Що може здивувати</h3>
     <ul>
-      <li>Дані кешуються на <b>1 годину</b> — щойно проведений в 1С документ може приїхати з затримкою.</li>
+      <li><b>Свіжість.</b> При відкритті сторінки спершу показуються останні збережені дані (миттєво), а слідом звіт сам дотягує живі залишки з 1С і перемальовується, якщо щось змінилось. Підпис у тулбарі «1С · ЧЧ:ХХ» — час останнього оновлення; «з кешу» — 1С не відповіла, показано збережене. Повторний запит до 1С не частіше ніж раз на 45 секунд, тож F5 одразу після F5 покаже ті самі цифри. Для минулих дат — лише збережені дані (вони не змінюються).</li>
       <li>Склад без жодної позиції <b>не показується</b> взагалі — порожній блок не малюємо.</li>
       <li>Склади «В дорозі NN» — товар, що ще їде; він уже в залишках і може бути зарезервований.</li>
     </ul>
@@ -398,21 +400,52 @@ function _syncAsOfInput() {
 }
 
 // ─── Data loading ───
+// Два проходи: 1) кеш воркера — миттєво малюємо; 2) fresh=1 — воркер іде в 1С
+// (тротл 45 с на беку) і, якщо цифри змінились, перемальовуємо. Другий прохід
+// лише для сьогоднішньої дати: минулі дні в 1С не змінюються, ганяти 1С нема за що.
+let _loadSeq = 0;
+function _setFreshLabel(txt, title) {
+  const el = document.getElementById('whFresh');
+  if (!el) return;
+  el.textContent = txt || '';
+  el.title = title || '';
+}
 async function load() {
+  const seq = ++_loadSeq;
   state.loading = true;
   _syncAsOfInput();
+  _setFreshLabel('');
   document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
+  const base = state.asOf ? `?action=warehouses_stock&date=${state.asOf}` : '?action=warehouses_stock';
   try {
-    const q = state.asOf ? `?action=warehouses_stock&date=${state.asOf}` : '?action=warehouses_stock';
-    const res = await fetch(API_URL + q);
+    const res = await fetch(API_URL + base);
     const d = await res.json();
     if (d.error) throw new Error(d.error);
+    if (seq !== _loadSeq) return;
     state.data = d;
     state.loading = false;
     render();
   } catch (e) {
+    if (seq !== _loadSeq) return;
     state.loading = false;
     document.getElementById('body').innerHTML = `<div class="error">${esc(e.message)}</div>`;
+    return;
+  }
+  const isToday = !state.asOf || state.asOf === _todayISO();
+  if (!isToday) return;
+  _setFreshLabel('оновлюю з 1С…');
+  try {
+    const res = await fetch(API_URL + base + '&fresh=1');
+    const d = await res.json();
+    if (d.error) throw new Error(d.error);
+    if (seq !== _loadSeq) return;
+    const changed = JSON.stringify(d) !== JSON.stringify(state.data);
+    if (changed) { state.data = d; render(); }
+    const hm = new Date().toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+    _setFreshLabel('1С · ' + hm, changed ? 'Залишки оновлено з 1С' : 'Залишки актуальні, змін у 1С нема');
+  } catch (e) {
+    if (seq !== _loadSeq) return;
+    _setFreshLabel('з кешу', 'Не вдалося оновити з 1С: ' + e.message + '. Показано останні збережені дані.');
   }
 }
 
