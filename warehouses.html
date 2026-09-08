@@ -216,13 +216,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   .tree-tbl tr.client-row td,.tree-tbl tr.client-row td:first-child,
   .tree-tbl tr.order-row td,.tree-tbl tr.order-row td:first-child{
     padding:0;border:none;background:transparent;font-size:inherit}
+  /* Вкладені рівні: у них заповнена лише колонка «Резерв», а grid кожного
+     рядка свій — порожні клітинки схлопнулись би і число стало б під «Вільно».
+     Тому тут дві колонки (назва + число), а підпис «Резерв» лишаємо, щоб
+     не читалось як вільний залишок. */
+  .tree-tbl tr.reserve-row,.tree-tbl tr.client-row,
+  .tree-tbl tr.order-row{grid-template-columns:minmax(0,1fr) auto}
+  .tree-tbl tr.reserve-row td:empty,
+  .tree-tbl tr.client-row td:empty,
+  .tree-tbl tr.order-row td:empty{display:none}
   .tree-tbl tr.reserve-row td:not(:first-child),
   .tree-tbl tr.client-row td:not(:first-child),
   .tree-tbl tr.order-row td:not(:first-child){text-align:right}
-  /* на вкладених рівнях підписи колонок не повторюємо — вони вже є у товарі */
-  .tree-tbl tr.reserve-row td::before,
-  .tree-tbl tr.client-row td::before,
-  .tree-tbl tr.order-row td::before{content:none!important}
   /* шеврон збоку, назва переносить рядки під себе */
   .tree-tbl tr.item-row td:first-child,
   .tree-tbl tr.client-row td:first-child{display:flex;flex-wrap:wrap;gap:0 6px;align-items:flex-start}
