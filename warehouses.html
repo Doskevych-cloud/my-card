@@ -40,7 +40,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .toolbar .check:hover{background:var(--bg3);color:var(--text)}
 .toolbar .check input{accent-color:var(--accent);cursor:pointer}
 .toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
-.toolbar.cat-row{margin-top:-4px}
 .toolbar .chip .n{color:var(--text3);font-weight:500}
 .toolbar .chip.active .n{color:inherit;opacity:.7}
 /* Tag-filter */
@@ -239,6 +238,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <div class="page-head">
       <h1>📦 Склад · залишки</h1>
     </div>
+    <div class="toolbar cat-row" id="catBar" style="display:none" title="Група номенклатури в 1С (верхній рівень дерева)">
+      <span class="lbl">Категорія</span>
+    </div>
     <div class="toolbar">
       <span class="lbl">На дату</span>
       <input type="text" id="asOfIn" class="date-range-input" readonly title="Залишки на кінець обраної дати">
@@ -277,10 +279,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <div id="whIncludeSuggest" class="wh-suggest" style="display:none"></div>
       </span>
     </div>
-    <div class="toolbar cat-row" id="catBar" style="display:none" title="Група номенклатури в 1С (верхній рівень дерева)">
-      <span class="lbl">Категорія</span>
-    </div>
-
     <div id="body"><div class="loading">Завантаження…</div></div>
   </div>
 </div>
@@ -313,7 +311,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <h3>Фільтри</h3>
     <ul>
       <li><b>Разом</b> — один зведений список товарів по всіх складах; <b>За складами</b> — розбивка по складах.</li>
-      <li><b>Категорія</b> — група номенклатури в 1С <b>верхнього рівня</b> (перша папка під коренем дерева: «Електрика», «Крепления», «Инвенторы»…). Назви — рівно як у 1С, не перекладаємо. Число поруч — скільки SKU у цій групі в поточному фільтрі організації. Товар, який у 1С не покладено в жодну папку, потрапляє в <b>«Без групи»</b> — це стан довідника 1С, а не помилка звіту; лікується розкладанням номенклатури в 1С.</li>
+      <li><b>Категорія</b> — група номенклатури в 1С <b>верхнього рівня</b> (перша папка під коренем дерева: «Електрика», «Кріплення», «Інвертори»…). Російські назви папок 1С показуємо українською; папка, для якої переклад не заведено, покажеться як у 1С. Число поруч — скільки SKU у цій групі в поточному фільтрі організації. Товар, який у 1С не покладено в жодну папку (або лежить прямо в корені дерева), потрапляє в <b>«Без групи»</b> — це стан довідника 1С, а не помилка звіту; лікується розкладанням номенклатури в 1С.</li>
       <li><b>Виводити відсутні</b> — показує позиції з нульовим залишком (є картка в 1С, товару нема).</li>
       <li><b>Пошук</b> шукає і по товару, і по клієнту/номеру замовлення в резервах. Закріплені теги товарів діють, лише поки поле пошуку порожнє.</li>
       <li><b>Excel</b> вигружає рівно те, що зараз на екрані з урахуванням фільтрів.</li>
