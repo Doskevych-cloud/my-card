@@ -41,6 +41,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .toolbar .check input{accent-color:var(--accent);cursor:pointer}
 .toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
 .toolbar.cat-row{margin-top:-4px}
+.toolbar.sub-row{background:var(--bg2)}
 .toolbar .chip .n{color:var(--text3);font-weight:500}
 .toolbar .chip.active .n{color:inherit;opacity:.7}
 /* Tag-filter */
@@ -286,9 +287,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <div id="whIncludeSuggest" class="wh-suggest" style="display:none"></div>
       </span>
     </div>
-    <div class="toolbar cat-row" id="catBar" style="display:none" title="Група номенклатури в 1С (верхній рівень дерева)">
+    <div class="toolbar cat-row" id="catBar" style="display:none" title="Категорія номенклатури в 1С">
       <span class="lbl">Категорія</span>
     </div>
+    <div class="toolbar cat-row sub-row" id="subBar" style="display:none"></div>
     <div id="body"><div class="loading">Завантаження…</div></div>
   </div>
 </div>
@@ -321,7 +323,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <h3>Фільтри</h3>
     <ul>
       <li><b>Разом</b> — один зведений список товарів по всіх складах; <b>За складами</b> — розбивка по складах.</li>
-      <li><b>Категорія</b> — група номенклатури в 1С <b>верхнього рівня</b> (перша папка під коренем дерева: «Електрика», «Кріплення», «Інвертори»…). Російські назви папок 1С показуємо українською; папка, для якої переклад не заведено, покажеться як у 1С. Число поруч — скільки SKU у цій групі в поточному фільтрі організації. Товар, який у 1С не покладено в жодну папку (або лежить прямо в корені дерева), потрапляє в <b>«Без групи»</b> — це стан довідника 1С, а не помилка звіту; лікується розкладанням номенклатури в 1С.</li>
+      <li><b>Категорія</b> — довідник 1С «Категорії номенклатури» (реквізит картки товару, <b>не</b> папка, в якій вона лежить). Чіпи показують <b>верхній рівень</b> дерева: «Сонячні модулі», «Інвертори», «Акумулятори», «Електромонтажні вироби», «Кріплення». Обрав категорію — під нею зʼявляється другий рядок із підкатегоріями (для «Електромонтажних виробів» це «Захист AC», «Кабель та провід», «Монтажні вироби»…). Число поруч — скільки SKU у поточному фільтрі організації.</li>
       <li><b>Виводити відсутні</b> — показує позиції з нульовим залишком (є картка в 1С, товару нема).</li>
       <li><b>Пошук</b> шукає і по товару, і по клієнту/номеру замовлення в резервах. Закріплені теги товарів діють, лише поки поле пошуку порожнє.</li>
       <li><b>Excel</b> вигружає рівно те, що зараз на екрані з урахуванням фільтрів.</li>
@@ -332,7 +334,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>Свіжість.</b> При відкритті сторінки спершу показуються останні збережені дані (миттєво), а слідом звіт сам дотягує живі залишки з 1С і перемальовується, якщо щось змінилось. Підпис у тулбарі «1С · ЧЧ:ХХ» — час останнього оновлення; «з кешу» — 1С не відповіла, показано збережене. Повторний запит до 1С не частіше ніж раз на 45 секунд, тож F5 одразу після F5 покаже ті самі цифри. Для минулих дат — лише збережені дані (вони не змінюються).</li>
       <li>Склад без жодної позиції <b>не показується</b> взагалі — порожній блок не малюємо.</li>
       <li>Склади «В дорозі NN» — товар, що ще їде; він уже в залишках і може бути зарезервований.</li>
-      <li><b>«Без групи» — найбільша категорія.</b> Станом на 08.09.2026 близько 43% SKU на залишках (у т.ч. майже все торгове: Deye, Tongwei, HANERSUN) у 1С лежать поза деревом папок. Поки їх не розкладуть у 1С, фільтр по категорії для них марний. Якщо рядка категорій нема зовсім — довідник номенклатури недоступний, фільтр прихований.</li>
+      <li><b>Категорія береться не з папки.</b> Спокуслива, але хибна ознака — ієрархія папок довідника «Номенклатура»: вона заповнена лише у 55% карток, і майже вся торгова номенклатура (Deye, Tongwei, HANERSUN) лежить у корені без папки. Тому класифікуємо за реквізитом «Категорія номенклатури», заповненим у 100% карток. Якщо товар усе ж потрапив у <b>«Без категорії»</b> — його картка ще не приїхала в наш кеш нічним синком; після синку категорія зʼявиться.</li>
     </ul>
   </div>
 </div>
@@ -377,7 +379,8 @@ const state = {
   view: 'combined',      // 'combined' | 'perwh'
   org: 'Реакт',          // 'Реакт' | 'Генерація'
   search: '',
-  cat: '',               // категорія 1С (верхня група); '' = всі
+  cat: '',               // коренева категорія 1С; '' = всі
+  sub: '',               // підкатегорія всередині обраного кореня; '' = всі
   asOf: _todayISO(),     // YYYY-MM-DD — always start with today
   showEmpty: false,
   openKeys: new Set(),   // expanded item keys
@@ -492,6 +495,12 @@ function setOrg(v) {
 }
 function setCat(v) {
   state.cat = v || '';
+  state.sub = '';
+  state.openKeys.clear();
+  render();
+}
+function setSub(v) {
+  state.sub = v || '';
   state.openKeys.clear();
   render();
 }
@@ -500,27 +509,36 @@ function setCat(v) {
 // рівня; порожня група → noCategory («Без групи»). Рядок чіпів будуємо з
 // того, що реально є в поточному org-скоупі (з урахуванням «Виводити відсутні»),
 // щоб не було мертвих пунктів; підпис = назва · кількість SKU.
-function catOf(it) { return (it && it.cat) || (state.data && state.data.noCategory) || 'Без групи'; }
+function catOf(it) { return (it && it.cat) || (state.data && state.data.noCategory) || 'Без категорії'; }
+function subOf(it) { return (it && it.sub) || ''; }
 function rebuildCatOptions() {
   const bar = document.getElementById('catBar');
   if (!bar) return;
   const ready = !!(state.data && state.data.categoriesReady);
   bar.style.display = ready ? '' : 'none';
   if (!ready) { state.cat = ''; return; }
-  const noCat = state.data.noCategory || 'Без групи';
-  const counts = {};
+  const noCat = state.data.noCategory || 'Без категорії';
+  const counts = {}, subCounts = {};
   const seen = new Set();
   const add = it => {
     if (!state.showEmpty && !(it.total > 0)) return;
     const k = it.name; if (seen.has(k)) return; seen.add(k);
     const c = catOf(it); counts[c] = (counts[c] || 0) + 1;
+    // підкатегорії рахуємо лише всередині обраного кореня — інакше однойменні
+    // гілки різних коренів («Комплектуючі») змішались би в один лічильник
+    if (state.cat && c === state.cat) {
+      const sb = subOf(it) || '—';
+      subCounts[sb] = (subCounts[sb] || 0) + 1;
+    }
   };
   const byOrg = state.data.summaryByOrg || {};
   (state.org ? [byOrg[state.org] || []] : Object.values(byOrg)).forEach(arr => (arr || []).forEach(add));
   // Порядок — за вагою для продажу (рішення Дмитра 08.09.2026), не за кількістю SKU:
   // спершу головне обладнання СЕС, далі обв'язка, решта за алфавітом, «Без групи» в кінці.
-  const CAT_ORDER = ['Сонячні модулі', 'Сонячні панелі', 'Інвертори', 'Акумулятори',
-                     'Кріплення', 'Електрика', 'Автоматика'];
+  const CAT_ORDER = ['Сонячні модулі', 'Інвертори', 'Акумулятори', 'Кріплення',
+                     'Електромонтажні вироби', 'Комплекти сонячних станцій', 'Моніторинг',
+                     'Прилади обліку, контролю та вимірювання', 'Комплектуючі',
+                     'Зарядні автомобільні станції'];
   const rank = n => { const i = CAT_ORDER.indexOf(n); return i < 0 ? CAT_ORDER.length : i; };
   const names = Object.keys(counts).sort((a, b) => {
     if (a === noCat) return 1; if (b === noCat) return -1;
@@ -530,6 +548,22 @@ function rebuildCatOptions() {
   const chip = (v, label, n) => `<span class="chip${v === state.cat ? ' active' : ''}" data-cat="${esc(v)}" onclick="setCat(this.dataset.cat)">${esc(label)}${n != null ? ` <span class="n">${n}</span>` : ''}</span>`;
   bar.innerHTML = `<span class="lbl">Категорія</span>` + chip('', 'Всі', null) +
     names.map(n => chip(n, n, counts[n])).join('');
+
+  // Другий рівень: показуємо, лише коли обрано конкретний корінь і всередині
+  // реально є з чого вибирати (>1 гілки). Один клік до основного фільтра
+  // лишається, звуження — опційне.
+  const sbar = document.getElementById('subBar');
+  if (!sbar) return;
+  const subNames = Object.keys(subCounts).sort((a, b) => {
+    if (a === '—') return 1; if (b === '—') return -1;
+    return (subCounts[b] - subCounts[a]) || a.localeCompare(b, 'uk');
+  });
+  if (!state.cat || subNames.length < 2) { sbar.style.display = 'none'; state.sub = ''; return; }
+  if (state.sub && !subCounts[state.sub]) state.sub = '';
+  sbar.style.display = '';
+  const schip = (v, label, n) => `<span class="chip${v === state.sub ? ' active' : ''}" data-sub="${esc(v)}" onclick="setSub(this.dataset.sub)">${esc(label)}${n != null ? ` <span class="n">${n}</span>` : ''}</span>`;
+  sbar.innerHTML = `<span class="lbl">${esc(state.cat)}</span>` + schip('', 'Всі', null) +
+    subNames.map(n => schip(n, n === '—' ? 'Без підкатегорії' : n, subCounts[n])).join('');
 }
 function setToday() {
   state.asOf = _todayISO();
@@ -736,6 +770,7 @@ function getCombinedItems() {
   }
   if (!state.showEmpty) summary = summary.filter(s => s.total > 0);
   if (state.cat) summary = summary.filter(s => catOf(s) === state.cat);
+  if (state.cat && state.sub) summary = summary.filter(s => (subOf(s) || '—') === state.sub);
   // Вільний пошук має пріоритет над закріпленими тегами: набрав «Deye» — фільтрує
   // частковим збігом по всіх товарах; теги діють лише коли поле пошуку порожнє.
   const incSet = new Set((state.includeList || []).map(n => n.toLowerCase()));
@@ -770,10 +805,10 @@ function downloadXLSX() {
   if (state.view === 'combined') {
     const items = getCombinedItems();
     if (!items.length) { alert('Немає даних для експорту'); return; }
-    stockAoa.push(['Товар', 'Категорія', 'Всього', 'Резерв', 'Вільно']);
+    stockAoa.push(['Товар', 'Категорія', 'Підкатегорія', 'Всього', 'Резерв', 'Вільно']);
     resAoa.push(['Товар', 'Клієнт', '№ замовлення', 'Дата', 'Кількість']);
     items.forEach(s => {
-      stockAoa.push([s.name, catOf(s), s.total || 0, s.reserve || 0, s.free || 0]);
+      stockAoa.push([s.name, catOf(s), subOf(s), s.total || 0, s.reserve || 0, s.free || 0]);
       (s.reserves || []).forEach(r => {
         resAoa.push([s.name, r.client || '', r.orderNumber || '', fmtDate(r.orderDate), r.qty || 0]);
       });
@@ -781,11 +816,11 @@ function downloadXLSX() {
   } else {
     const sections = getFilteredWarehouses().filter(x => x.items.length);
     if (!sections.length) { alert('Немає даних для експорту'); return; }
-    stockAoa.push(['Склад', 'Організація', 'Товар', 'Категорія', 'Всього', 'Резерв', 'Вільно']);
+    stockAoa.push(['Склад', 'Організація', 'Товар', 'Категорія', 'Підкатегорія', 'Всього', 'Резерв', 'Вільно']);
     resAoa.push(['Склад', 'Товар', 'Клієнт', '№ замовлення', 'Дата', 'Кількість']);
     sections.forEach(({ w, items }) => {
       items.forEach(it => {
-        stockAoa.push([w.name, w.org, it.name, catOf(it), it.total || 0, it.reserve || 0, it.free || 0]);
+        stockAoa.push([w.name, w.org, it.name, catOf(it), subOf(it), it.total || 0, it.reserve || 0, it.free || 0]);
         const rs = (w.reservesByItem && w.reservesByItem[it.name]) || [];
         rs.forEach(r => resAoa.push([w.name, it.name, r.client || '', r.orderNumber || '', fmtDate(r.orderDate), r.qty || 0]));
       });
@@ -802,6 +837,7 @@ function downloadXLSX() {
     ['Вигляд', viewLabel],
     ['Організація', orgLabel],
     ['Категорія', state.cat || 'Всі'],
+    ['Підкатегорія', state.sub || 'Всі'],
     ['Показувати відсутні', state.showEmpty ? 'так' : 'ні'],
   ];
   if ((state.includeList || []).length) meta.push(['Фільтр товарів', state.includeList.join(', ')]);
@@ -814,8 +850,8 @@ function downloadXLSX() {
   // Аркуш «Залишки»
   const stockWs = XLSX.utils.aoa_to_sheet(stockAoa);
   stockWs['!cols'] = state.view === 'combined'
-    ? [{ wch: 46 }, { wch: 22 }, { wch: 12 }, { wch: 12 }, { wch: 12 }]
-    : [{ wch: 28 }, { wch: 12 }, { wch: 40 }, { wch: 22 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+    ? [{ wch: 46 }, { wch: 24 }, { wch: 24 }, { wch: 12 }, { wch: 12 }, { wch: 12 }]
+    : [{ wch: 28 }, { wch: 12 }, { wch: 40 }, { wch: 24 }, { wch: 24 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
   XLSX.utils.book_append_sheet(wb, stockWs, 'Залишки');
 
   // Аркуш «Резерви» — лише якщо є резерви
@@ -868,6 +904,7 @@ function getFilteredWarehouses() {
     let items = w.items || [];
     if (!state.showEmpty) items = items.filter(it => it.total > 0);
     if (state.cat) items = items.filter(it => catOf(it) === state.cat);
+    if (state.cat && state.sub) items = items.filter(it => (subOf(it) || '—') === state.sub);
     // Вільний пошук має пріоритет над тегами (див. getCombinedItems).
     if (state.search) {
       items = items.filter(it => {
