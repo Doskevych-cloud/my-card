@@ -40,8 +40,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .toolbar .check:hover{background:var(--bg3);color:var(--text)}
 .toolbar .check input{accent-color:var(--accent);cursor:pointer}
 .toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
-.toolbar select{padding:7px 30px 7px 11px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;outline:none;font-family:inherit;cursor:pointer;-webkit-appearance:none;appearance:none;max-width:260px;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");background-repeat:no-repeat;background-position:right 11px center}
-.toolbar select:focus{border-color:var(--accent)}
+.toolbar.cat-row{margin-top:-4px}
+.toolbar .chip .n{color:var(--text3);font-weight:500}
+.toolbar .chip.active .n{color:inherit;opacity:.7}
 /* Tag-filter */
 .wh-tags{position:relative;display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center;padding:4px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;flex:1;min-width:200px;min-height:30px}
 .wh-tags:focus-within{border-color:var(--accent)}
@@ -171,7 +172,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   .toolbar .date-range-input{flex:1 1 auto;font-size:12px;padding:6px 8px;min-width:0}
   .toolbar .chip{padding:6px 10px;font-size:11px}
   .toolbar .check{padding:6px 8px;font-size:10.5px}
-  .toolbar select{max-width:100%;padding:6px 26px 6px 9px}
   .toolbar .group{padding:3px;gap:2px}
   .toolbar .group .chip{padding:5px 8px;font-size:11px}
   .wh-suggest{min-width:0;max-height:240px}
@@ -258,12 +258,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <span class="chip active" data-org="Реакт" onclick="setOrg('Реакт')">Реакт</span>
       <span class="chip" data-org="Генерація" onclick="setOrg('Генерація')">Генерація</span>
 
-      <span class="sep" id="catSep"></span>
-
-      <select id="catSel" onchange="setCat(this.value)" title="Група номенклатури в 1С (верхній рівень дерева)">
-        <option value="">Всі категорії</option>
-      </select>
-
       <span class="sep"></span>
 
       <label class="check" title="Показувати товари з нульовим залишком (тільки в 1С, а не на складі)">
@@ -282,6 +276,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <input type="text" id="searchIn" placeholder="🔎 Пошук по товару чи клієнту…" autocomplete="off">
         <div id="whIncludeSuggest" class="wh-suggest" style="display:none"></div>
       </span>
+    </div>
+    <div class="toolbar cat-row" id="catBar" style="display:none" title="Група номенклатури в 1С (верхній рівень дерева)">
+      <span class="lbl">Категорія</span>
     </div>
 
     <div id="body"><div class="loading">Завантаження…</div></div>
@@ -327,7 +324,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>Свіжість.</b> При відкритті сторінки спершу показуються останні збережені дані (миттєво), а слідом звіт сам дотягує живі залишки з 1С і перемальовується, якщо щось змінилось. Підпис у тулбарі «1С · ЧЧ:ХХ» — час останнього оновлення; «з кешу» — 1С не відповіла, показано збережене. Повторний запит до 1С не частіше ніж раз на 45 секунд, тож F5 одразу після F5 покаже ті самі цифри. Для минулих дат — лише збережені дані (вони не змінюються).</li>
       <li>Склад без жодної позиції <b>не показується</b> взагалі — порожній блок не малюємо.</li>
       <li>Склади «В дорозі NN» — товар, що ще їде; він уже в залишках і може бути зарезервований.</li>
-      <li><b>«Без групи» — найбільша категорія.</b> Станом на 08.09.2026 близько 43% SKU на залишках (у т.ч. майже все торгове: Deye, Tongwei, HANERSUN) у 1С лежать поза деревом папок. Поки їх не розкладуть у 1С, фільтр по категорії для них марний. Якщо категорій у select нема зовсім — довідник номенклатури недоступний, фільтр прихований.</li>
+      <li><b>«Без групи» — найбільша категорія.</b> Станом на 08.09.2026 близько 43% SKU на залишках (у т.ч. майже все торгове: Deye, Tongwei, HANERSUN) у 1С лежать поза деревом папок. Поки їх не розкладуть у 1С, фільтр по категорії для них марний. Якщо рядка категорій нема зовсім — довідник номенклатури недоступний, фільтр прихований.</li>
     </ul>
   </div>
 </div>
@@ -492,17 +489,15 @@ function setCat(v) {
 }
 // ─── Категорії ───
 // Категорія приходить з беку на кожному товарі (item.cat) = група 1С верхнього
-// рівня; порожня група → noCategory («Без групи»). Список у select будуємо з
+// рівня; порожня група → noCategory («Без групи»). Рядок чіпів будуємо з
 // того, що реально є в поточному org-скоупі (з урахуванням «Виводити відсутні»),
 // щоб не було мертвих пунктів; підпис = назва · кількість SKU.
 function catOf(it) { return (it && it.cat) || (state.data && state.data.noCategory) || 'Без групи'; }
 function rebuildCatOptions() {
-  const sel = document.getElementById('catSel');
-  const sep = document.getElementById('catSep');
-  if (!sel) return;
+  const bar = document.getElementById('catBar');
+  if (!bar) return;
   const ready = !!(state.data && state.data.categoriesReady);
-  sel.style.display = ready ? '' : 'none';
-  if (sep) sep.style.display = ready ? '' : 'none';
+  bar.style.display = ready ? '' : 'none';
   if (!ready) { state.cat = ''; return; }
   const noCat = state.data.noCategory || 'Без групи';
   const counts = {};
@@ -519,8 +514,9 @@ function rebuildCatOptions() {
     return (counts[b] - counts[a]) || a.localeCompare(b, 'uk');
   });
   if (state.cat && !counts[state.cat]) state.cat = '';
-  sel.innerHTML = `<option value="">Всі категорії</option>` +
-    names.map(n => `<option value="${esc(n)}"${n === state.cat ? ' selected' : ''}>${esc(n)} · ${counts[n]}</option>`).join('');
+  const chip = (v, label, n) => `<span class="chip${v === state.cat ? ' active' : ''}" data-cat="${esc(v)}" onclick="setCat(this.dataset.cat)">${esc(label)}${n != null ? ` <span class="n">${n}</span>` : ''}</span>`;
+  bar.innerHTML = `<span class="lbl">Категорія</span>` + chip('', 'Всі', null) +
+    names.map(n => chip(n, n, counts[n])).join('');
 }
 function setToday() {
   state.asOf = _todayISO();
