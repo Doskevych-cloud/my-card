@@ -759,7 +759,9 @@ function getCombinedItems() {
     const merged = {};
     Object.values(byOrg).forEach(arr => {
       (arr || []).forEach(s => {
-        if (!merged[s.name]) merged[s.name] = { name: s.name, cat: s.cat || null, total: 0, reserve: 0, free: 0, reserves: [] };
+        // cat/sub обовʼязково переносимо в merged — інакше у фільтрі «Всі»
+        // товар втрачає категорію і жоден чіп його не знаходить.
+        if (!merged[s.name]) merged[s.name] = { name: s.name, cat: s.cat || null, sub: s.sub || null, total: 0, reserve: 0, free: 0, reserves: [] };
         const M = merged[s.name];
         M.total   += s.total   || 0;
         M.reserve += s.reserve || 0;
