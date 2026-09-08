@@ -40,6 +40,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .toolbar .check:hover{background:var(--bg3);color:var(--text)}
 .toolbar .check input{accent-color:var(--accent);cursor:pointer}
 .toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
+.toolbar select{padding:7px 30px 7px 11px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;outline:none;font-family:inherit;cursor:pointer;-webkit-appearance:none;appearance:none;max-width:260px;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");background-repeat:no-repeat;background-position:right 11px center}
+.toolbar select:focus{border-color:var(--accent)}
 /* Tag-filter */
 .wh-tags{position:relative;display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center;padding:4px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;flex:1;min-width:200px;min-height:30px}
 .wh-tags:focus-within{border-color:var(--accent)}
@@ -169,6 +171,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   .toolbar .date-range-input{flex:1 1 auto;font-size:12px;padding:6px 8px;min-width:0}
   .toolbar .chip{padding:6px 10px;font-size:11px}
   .toolbar .check{padding:6px 8px;font-size:10.5px}
+  .toolbar select{max-width:100%;padding:6px 26px 6px 9px}
   .toolbar .group{padding:3px;gap:2px}
   .toolbar .group .chip{padding:5px 8px;font-size:11px}
   .wh-suggest{min-width:0;max-height:240px}
@@ -255,6 +258,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <span class="chip active" data-org="Реакт" onclick="setOrg('Реакт')">Реакт</span>
       <span class="chip" data-org="Генерація" onclick="setOrg('Генерація')">Генерація</span>
 
+      <span class="sep" id="catSep"></span>
+
+      <select id="catSel" onchange="setCat(this.value)" title="Група номенклатури в 1С (верхній рівень дерева)">
+        <option value="">Всі категорії</option>
+      </select>
+
       <span class="sep"></span>
 
       <label class="check" title="Показувати товари з нульовим залишком (тільки в 1С, а не на складі)">
@@ -307,6 +316,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <h3>Фільтри</h3>
     <ul>
       <li><b>Разом</b> — один зведений список товарів по всіх складах; <b>За складами</b> — розбивка по складах.</li>
+      <li><b>Категорія</b> — група номенклатури в 1С <b>верхнього рівня</b> (перша папка під коренем дерева: «Електрика», «Крепления», «Инвенторы»…). Назви — рівно як у 1С, не перекладаємо. Число поруч — скільки SKU у цій групі в поточному фільтрі організації. Товар, який у 1С не покладено в жодну папку, потрапляє в <b>«Без групи»</b> — це стан довідника 1С, а не помилка звіту; лікується розкладанням номенклатури в 1С.</li>
       <li><b>Виводити відсутні</b> — показує позиції з нульовим залишком (є картка в 1С, товару нема).</li>
       <li><b>Пошук</b> шукає і по товару, і по клієнту/номеру замовлення в резервах. Закріплені теги товарів діють, лише поки поле пошуку порожнє.</li>
       <li><b>Excel</b> вигружає рівно те, що зараз на екрані з урахуванням фільтрів.</li>
@@ -317,6 +327,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>Свіжість.</b> При відкритті сторінки спершу показуються останні збережені дані (миттєво), а слідом звіт сам дотягує живі залишки з 1С і перемальовується, якщо щось змінилось. Підпис у тулбарі «1С · ЧЧ:ХХ» — час останнього оновлення; «з кешу» — 1С не відповіла, показано збережене. Повторний запит до 1С не частіше ніж раз на 45 секунд, тож F5 одразу після F5 покаже ті самі цифри. Для минулих дат — лише збережені дані (вони не змінюються).</li>
       <li>Склад без жодної позиції <b>не показується</b> взагалі — порожній блок не малюємо.</li>
       <li>Склади «В дорозі NN» — товар, що ще їде; він уже в залишках і може бути зарезервований.</li>
+      <li><b>«Без групи» — найбільша категорія.</b> Станом на 08.09.2026 близько 43% SKU на залишках (у т.ч. майже все торгове: Deye, Tongwei, HANERSUN) у 1С лежать поза деревом папок. Поки їх не розкладуть у 1С, фільтр по категорії для них марний. Якщо категорій у select нема зовсім — довідник номенклатури недоступний, фільтр прихований.</li>
     </ul>
   </div>
 </div>
@@ -361,6 +372,7 @@ const state = {
   view: 'combined',      // 'combined' | 'perwh'
   org: 'Реакт',          // 'Реакт' | 'Генерація'
   search: '',
+  cat: '',               // категорія 1С (верхня група); '' = всі
   asOf: _todayISO(),     // YYYY-MM-DD — always start with today
   showEmpty: false,
   openKeys: new Set(),   // expanded item keys
@@ -472,6 +484,43 @@ function setOrg(v) {
   state.org = v;
   document.querySelectorAll('.chip[data-org]').forEach(c => c.classList.toggle('active', c.dataset.org === v));
   render();
+}
+function setCat(v) {
+  state.cat = v || '';
+  state.openKeys.clear();
+  render();
+}
+// ─── Категорії ───
+// Категорія приходить з беку на кожному товарі (item.cat) = група 1С верхнього
+// рівня; порожня група → noCategory («Без групи»). Список у select будуємо з
+// того, що реально є в поточному org-скоупі (з урахуванням «Виводити відсутні»),
+// щоб не було мертвих пунктів; підпис = назва · кількість SKU.
+function catOf(it) { return (it && it.cat) || (state.data && state.data.noCategory) || 'Без групи'; }
+function rebuildCatOptions() {
+  const sel = document.getElementById('catSel');
+  const sep = document.getElementById('catSep');
+  if (!sel) return;
+  const ready = !!(state.data && state.data.categoriesReady);
+  sel.style.display = ready ? '' : 'none';
+  if (sep) sep.style.display = ready ? '' : 'none';
+  if (!ready) { state.cat = ''; return; }
+  const noCat = state.data.noCategory || 'Без групи';
+  const counts = {};
+  const seen = new Set();
+  const add = it => {
+    if (!state.showEmpty && !(it.total > 0)) return;
+    const k = it.name; if (seen.has(k)) return; seen.add(k);
+    const c = catOf(it); counts[c] = (counts[c] || 0) + 1;
+  };
+  const byOrg = state.data.summaryByOrg || {};
+  (state.org ? [byOrg[state.org] || []] : Object.values(byOrg)).forEach(arr => (arr || []).forEach(add));
+  const names = Object.keys(counts).sort((a, b) => {
+    if (a === noCat) return 1; if (b === noCat) return -1;
+    return (counts[b] - counts[a]) || a.localeCompare(b, 'uk');
+  });
+  if (state.cat && !counts[state.cat]) state.cat = '';
+  sel.innerHTML = `<option value="">Всі категорії</option>` +
+    names.map(n => `<option value="${esc(n)}"${n === state.cat ? ' selected' : ''}>${esc(n)} · ${counts[n]}</option>`).join('');
 }
 function setToday() {
   state.asOf = _todayISO();
@@ -666,7 +715,7 @@ function getCombinedItems() {
     const merged = {};
     Object.values(byOrg).forEach(arr => {
       (arr || []).forEach(s => {
-        if (!merged[s.name]) merged[s.name] = { name: s.name, total: 0, reserve: 0, free: 0, reserves: [] };
+        if (!merged[s.name]) merged[s.name] = { name: s.name, cat: s.cat || null, total: 0, reserve: 0, free: 0, reserves: [] };
         const M = merged[s.name];
         M.total   += s.total   || 0;
         M.reserve += s.reserve || 0;
@@ -677,6 +726,7 @@ function getCombinedItems() {
     summary = Object.values(merged);
   }
   if (!state.showEmpty) summary = summary.filter(s => s.total > 0);
+  if (state.cat) summary = summary.filter(s => catOf(s) === state.cat);
   // Вільний пошук має пріоритет над закріпленими тегами: набрав «Deye» — фільтрує
   // частковим збігом по всіх товарах; теги діють лише коли поле пошуку порожнє.
   const incSet = new Set((state.includeList || []).map(n => n.toLowerCase()));
@@ -687,6 +737,7 @@ function getCombinedItems() {
 
 function render() {
   if (!state.data) return;
+  rebuildCatOptions();
   if (state.view === 'combined') renderCombined();
   else renderPerWh();
 }
@@ -710,10 +761,10 @@ function downloadXLSX() {
   if (state.view === 'combined') {
     const items = getCombinedItems();
     if (!items.length) { alert('Немає даних для експорту'); return; }
-    stockAoa.push(['Товар', 'Всього', 'Резерв', 'Вільно']);
+    stockAoa.push(['Товар', 'Категорія', 'Всього', 'Резерв', 'Вільно']);
     resAoa.push(['Товар', 'Клієнт', '№ замовлення', 'Дата', 'Кількість']);
     items.forEach(s => {
-      stockAoa.push([s.name, s.total || 0, s.reserve || 0, s.free || 0]);
+      stockAoa.push([s.name, catOf(s), s.total || 0, s.reserve || 0, s.free || 0]);
       (s.reserves || []).forEach(r => {
         resAoa.push([s.name, r.client || '', r.orderNumber || '', fmtDate(r.orderDate), r.qty || 0]);
       });
@@ -721,11 +772,11 @@ function downloadXLSX() {
   } else {
     const sections = getFilteredWarehouses().filter(x => x.items.length);
     if (!sections.length) { alert('Немає даних для експорту'); return; }
-    stockAoa.push(['Склад', 'Організація', 'Товар', 'Всього', 'Резерв', 'Вільно']);
+    stockAoa.push(['Склад', 'Організація', 'Товар', 'Категорія', 'Всього', 'Резерв', 'Вільно']);
     resAoa.push(['Склад', 'Товар', 'Клієнт', '№ замовлення', 'Дата', 'Кількість']);
     sections.forEach(({ w, items }) => {
       items.forEach(it => {
-        stockAoa.push([w.name, w.org, it.name, it.total || 0, it.reserve || 0, it.free || 0]);
+        stockAoa.push([w.name, w.org, it.name, catOf(it), it.total || 0, it.reserve || 0, it.free || 0]);
         const rs = (w.reservesByItem && w.reservesByItem[it.name]) || [];
         rs.forEach(r => resAoa.push([w.name, it.name, r.client || '', r.orderNumber || '', fmtDate(r.orderDate), r.qty || 0]));
       });
@@ -741,6 +792,7 @@ function downloadXLSX() {
     ['На дату', asOf],
     ['Вигляд', viewLabel],
     ['Організація', orgLabel],
+    ['Категорія', state.cat || 'Всі'],
     ['Показувати відсутні', state.showEmpty ? 'так' : 'ні'],
   ];
   if ((state.includeList || []).length) meta.push(['Фільтр товарів', state.includeList.join(', ')]);
@@ -753,8 +805,8 @@ function downloadXLSX() {
   // Аркуш «Залишки»
   const stockWs = XLSX.utils.aoa_to_sheet(stockAoa);
   stockWs['!cols'] = state.view === 'combined'
-    ? [{ wch: 46 }, { wch: 12 }, { wch: 12 }, { wch: 12 }]
-    : [{ wch: 28 }, { wch: 12 }, { wch: 40 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+    ? [{ wch: 46 }, { wch: 22 }, { wch: 12 }, { wch: 12 }, { wch: 12 }]
+    : [{ wch: 28 }, { wch: 12 }, { wch: 40 }, { wch: 22 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
   XLSX.utils.book_append_sheet(wb, stockWs, 'Залишки');
 
   // Аркуш «Резерви» — лише якщо є резерви
@@ -806,6 +858,7 @@ function getFilteredWarehouses() {
   return warehouses.map(w => {
     let items = w.items || [];
     if (!state.showEmpty) items = items.filter(it => it.total > 0);
+    if (state.cat) items = items.filter(it => catOf(it) === state.cat);
     // Вільний пошук має пріоритет над тегами (див. getCombinedItems).
     if (state.search) {
       items = items.filter(it => {
