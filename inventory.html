@@ -26,8 +26,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .toolbar .chip:hover{background:var(--bg3);color:var(--text)}
 .toolbar .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
 .toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
-.toolbar select{padding:7px 30px 7px 11px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;outline:none;font-family:inherit;cursor:pointer;-webkit-appearance:none;appearance:none;max-width:230px;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");background-repeat:no-repeat;background-position:right 11px center}
-.toolbar select:focus{border-color:var(--accent)}
+/* Ряди категорій під тулбаром — як на сторінці «Склад» */
+.toolbar.cat-row{margin-top:-4px}
+.toolbar.sub-row{background:var(--bg2)}
+.toolbar .cat-off{font-size:11px;color:var(--text3)}
+.toolbar .chip .n{color:var(--text3);font-weight:500}
+.toolbar .chip.active .n{color:inherit;opacity:.7}
 
 /* Product typeahead picker */
 .ac-wrap{position:relative;display:inline-flex;align-items:center}
@@ -154,7 +158,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   .toolbar .chip{padding:6px 10px;font-size:11px}
   .toolbar .group{padding:3px;gap:2px}
   .toolbar .group .chip{padding:5px 8px;font-size:11px}
-  .toolbar select{max-width:150px;padding:6px 26px 6px 9px;font-size:11px}
   .toolbar input[type=text]{min-width:150px}
   .ac-list{min-width:220px;max-width:78vw}
   .toolbar .sep{display:none}
@@ -197,9 +200,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <span class="chip" data-org="Генерація" onclick="setOrg(this)">Генерація</span>
       </span>
       <div class="sep"></div>
-      <span class="lbl">Група</span>
-      <select id="groupSel" onchange="setGroup(this.value)"><option value="">Всі групи</option></select>
-      <div class="sep"></div>
       <span class="lbl">Товар</span>
       <span class="ac-wrap">
         <input type="text" id="searchIn" placeholder="Назва або артикул…" autocomplete="off" oninput="onSearchInput()">
@@ -218,6 +218,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <span class="chip" id="exportPdfBtn" title="Експорт у PDF з поточними фільтрами" onclick="downloadPDF()"><span style="margin-right:5px">⤓</span> PDF</span>
       <span class="chip" onclick="openHelp()" title="Як працює цей звіт">❓ Як працює</span>
     </div>
+    <div class="toolbar cat-row" id="catBar" style="display:none" title="Категорія номенклатури в 1С">
+      <span class="lbl">Категорія</span>
+    </div>
+    <div class="toolbar cat-row sub-row" id="subBar" style="display:none"></div>
 
     <div id="kpis"></div>
     <div id="statusCards"></div>
@@ -238,14 +242,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li>Беруться лише <b>додатні</b> залишки і лише товари — послуги та позначені на видалення не входять.</li>
       <li><b>Виключені склади:</b> «В дорозі», «Майно», «АВТО», «Інструменти», «Сонячна станція», «ПОСЛУГ», «НОВИЙ ОФИС». Тобто транзит у залишок не рахується.</li>
       <li><b>Продажі</b> — проведені видаткові накладні (не замовлення й не оплати). Кількість переводиться в базові одиниці: бухта 500 м рахується як 500 м.</li>
-      <li><b>Собівартість</b> — середньозважена ціна закупівлі <b>за всю історію</b>: сума прихідних накладних ($) ÷ кількість. Не FIFO і не остання ціна.</li>
-      <li>Усі суми — в <b>USD</b>. Вікна 90 і 365 днів рахуються <b>від сьогодні</b>, а не від дати залишків.</li>
+      <li><b>Собівартість</b> — середньозважена ціна закупівлі <b>за всю історію</b>: сума прихідних накладних ($) ÷ кількість у базових одиницях (бухта 500 м = 500 м, як і в продажах). Не FIFO і не остання ціна.</li>
+      <li>Усі суми — в <b>USD</b>. Сума рядка накладної береться з рядка; якщо курс для рядка ще не проставлено (позиції, що досинкались пізніше за документ), — пропорційно від суми шапки документа в USD, тож виручка й собівартість не губляться. Вікна 90 і 365 днів рахуються <b>від сьогодні</b>, а не від дати залишків.</li>
     </ul>
 
     <h3>📐 Що означають цифри</h3>
     <ul>
       <li><b>Вартість запасу</b> = залишок × середня ціна закупівлі. Якщо товар жодного разу не приходив прихідною накладною з сумою — ціни нема, у вартість він не входить, у колонках «—».</li>
-      <li><b>ITR (оборотність)</b> = COGS за рік ÷ вартість запасу, де COGS = продано за рік × середня ціна закупівлі. <code>4x</code> = запас обертається 4 рази на рік.</li>
+      <li><b>ITR (оборотність)</b> = COGS за рік ÷ вартість запасу, де COGS = продано за рік × середня ціна закупівлі. <code>4x</code> = запас обертається 4 рази на рік. По одному товару ціна в чисельнику й знаменнику та сама і скорочується, тому ITR рядка = продано за рік ÷ залишок — він є і в товару без ціни закупівлі. KPI зверху — грошовий, по товарах із ціною.</li>
       <li><b>DSI (дні запасу)</b> = 365 ÷ ITR. На скільки днів вистачить запасу — рахується <b>в грошах</b>.</li>
       <li><b>GMROI</b> = (виручка за рік − COGS за рік) ÷ вартість запасу. Скільки доларів маржі приносить кожен долар, вкладений у запас: <code>1.0</code> = долар за рік повернув долар маржі.</li>
       <li><b>Покриття днів</b> = залишок ÷ денний темп продажів. Темп = продано за 90 днів ÷ 90, а якщо за 90 днів не продавали — продано за рік ÷ 365.</li>
@@ -260,6 +264,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>Нормальний</b> — DSI 60–180 днів.</li>
       <li><b>Швидкий</b> — DSI менше 60 днів.</li>
     </ul>
+    <p>Товар без ціни закупівлі статус отримує так само (ITR і DSI рахуються з кількостей), але у вартість запасу, COGS і GMROI не входить — у цих колонках «—».</p>
 
     <h3>📦 Надлишок</h3>
     <p>Запас понад норму покриття <b>90 днів</b>: <code>надлишок = залишок − денний темп × 90</code> (у мінус не йде), у грошах — × середню ціну закупівлі.</p>
@@ -267,9 +272,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
     <h3>🔎 Фільтри</h3>
     <ul>
-      <li><b>Організація</b>: Реакт / Генерація (Одеса + Київ) / Всі. Фільтр діє одразу на залишки, продажі й закупівлі.</li>
-      <li><b>Група</b> — батьківська папка номенклатури в 1С. <b>Товар</b> — пошук по назві, артикулу й коду.</li>
-      <li><b>Картки статусів</b> клікабельні і звужують <b>тільки таблицю</b>. KPI зверху при цьому не міняються: вони рахуються по вибірці «група + пошук + ABC», статус на них не діє.</li>
+      <li><b>Організація</b>: Реакт / Генерація (Одеса + Київ) / Всі. Фільтр діє одразу на залишки, продажі й закупівлі. У зрізі однієї організації продаж Реакт → Генерація (і навпаки) — звичайний продаж: товар реально пішов зі складу. У зрізі <b>«Всі»</b> такі обороти виключаються разом із зустрічними закупівлями, бо товар групу не покинув — інакше одна партія продавалась би двічі при одному залишку.</li>
+      <li><b>Категорія</b> — реквізит «Категорія номенклатури» картки в 1С (заповнений у 100% товарів), <b>не</b> папка довідника: папка є лише у половини карток, а торгова номенклатура лежить у корені без неї. Чіп = корінь дерева категорій; обрав корінь — під ним другий ряд підкатегорій. «Категорію не завантажено» — картка ще не приїхала в нашу базу нічним синком. <b>Товар</b> — пошук по назві, артикулу й коду.</li>
+      <li><b>Картки статусів</b> клікабельні і звужують <b>тільки таблицю</b>. KPI зверху при цьому не міняються: вони рахуються по вибірці «категорія + пошук + ABC», статус на них не діє.</li>
       <li>Сортування — клік по заголовку колонки, за замовчуванням «Надлишок $» за спаданням.</li>
       <li><b>PDF</b> вивантажує рівно те, що зараз на екрані, з поточними фільтрами в шапці.</li>
     </ul>
@@ -277,9 +282,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <h3>⚠️ Чому цифра може здивувати</h3>
     <ul>
       <li><b>DSI ≠ «Покриття днів».</b> DSI — у грошах і завжди по річному вікну; покриття — у штуках і по свіжому 90-денному темпу. Товар, який щойно почали активно продавати, матиме мале покриття і великий DSI.</li>
-      <li><b>Товар продається, а статус «Повільний»</b> — найчастіше на нього нема закупівельної ціни, тож ITR і DSI не порахувались, а порожній DSI за правилом іде в «Повільний».</li>
+      <li><b>Матеріали бригад сидять у залишку.</b> Склади «під звіт» (видано монтажникам) входять у звіт, а списання на обʼєкт — не продаж. Тому в Генерації частина таких позицій виглядає мертвою чи надлишковою, хоча по факту витрачається на монтажах. Грошей там мало (≈2% вартості запасу), позицій — багато.</li>
       <li><b>Сезонність не враховується.</b> Темп лінійний: разовий сплеск продажів занижує покриття й надлишок, а мертвий сезон — завищує.</li>
-      <li><b>Ціна закупівлі береться в одиниці прихідної накладної.</b> Якщо товар купували упаковкою, а продають штуками, собівартість і вартість запасу такої позиції будуть завищені.</li>
+      <li><b>Ціна закупівлі — середня за всю історію.</b> Коли ціни росли чи падали, вона відрізняється від останнього приходу, і вартість запасу з нею — теж. У зрізі «Всі» середня рахується лише по зовнішніх закупівлях, без трансфертної ціни між Реактом і Генерацією.</li>
       <li><b>Транзит не в залишку.</b> Товар, який уже їде, у покриття та надлишок не входить.</li>
     </ul>
   </div>
@@ -287,7 +292,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 <script>
 const API = 'https://price-api.doskevich.workers.dev/';
-const state = { org: 'Реакт', group: '', productKey: null, statusFilter: null, abcFilter: '', sortCol: 'excess_val', sortAsc: false };
+const state = { org: 'Реакт', cat: '', sub: '', productKey: null, statusFilter: null, abcFilter: '', sortCol: 'excess_val', sortAsc: false };
 let DATA = null;
 
 const fmt  = (v, d=0) => v == null ? '—' : Number(v).toLocaleString('uk-UA', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -319,7 +324,8 @@ function setSort(col) {
   else { state.sortCol = col; state.sortAsc = false; }
   render();
 }
-function setGroup(v) { state.group = v; render(); }
+function setCat(v) { state.cat = v || ''; state.sub = ''; render(); }
+function setSub(v) { state.sub = v || ''; render(); }
 
 // ── Product typeahead ──────────────────────────────────────────────
 function hl(text, q) {
@@ -337,7 +343,7 @@ function onSearchInput() {
   const list = document.getElementById('acList');
   if (!q) { list.classList.remove('open'); render(); return; }
   let pool = DATA ? DATA.items : [];
-  if (state.group) pool = pool.filter(i => (i.category || '') === state.group);
+  pool = catScope(pool);
   const ql = q.toLowerCase();
   const matches = pool.filter(i =>
     (i.name || '').toLowerCase().includes(ql) ||
@@ -380,28 +386,70 @@ function openHelp()  { document.getElementById('helpModal').classList.add('open'
 function closeHelp() { document.getElementById('helpModal').classList.remove('open'); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHelp(); });
 
-// Populate group selector from categories present in stock
-function populateGroups() {
-  const sel = document.getElementById('groupSel');
-  if (!sel || !DATA) return;
-  const counts = new Map();
-  for (const it of DATA.items) {
-    const g = it.category || '';
-    if (g) counts.set(g, (counts.get(g) || 0) + 1);
+// ── Категорії ──
+// Категорія приходить з беку на кожному товарі: item.cat = корінь дерева
+// «Категорії номенклатури» 1С, item.sub = вузол другого рівня (може бути null).
+// Чіпи будуємо з того, що реально є у завантажених даних (org уже застосовано
+// на беку), підпис = назва · кількість SKU. Порядок і поведінка — як на «Складі».
+function catOf(it) { return (it && it.cat) || (DATA && DATA.noCategory) || 'Категорію не завантажено'; }
+function subOf(it) { return (it && it.sub) || ''; }
+function catScope(items) {
+  if (state.cat) items = items.filter(i => catOf(i) === state.cat);
+  if (state.cat && state.sub) items = items.filter(i => (subOf(i) || '—') === state.sub);
+  return items;
+}
+// Порядок — за вагою для продажу (рішення Дмитра 08.09.2026), не за кількістю SKU.
+const CAT_ORDER = ['Сонячні модулі', 'Інвертори', 'Акумулятори', 'Кріплення',
+                   'Електромонтажні вироби', 'Комплекти сонячних станцій', 'Моніторинг',
+                   'Прилади обліку, контролю та вимірювання', 'Комплектуючі',
+                   'Зарядні автомобільні станції'];
+function rebuildCatOptions() {
+  const bar = document.getElementById('catBar'), sbar = document.getElementById('subBar');
+  if (!bar || !sbar) return;
+  if (!DATA || !DATA.items.length) { bar.style.display = 'none'; sbar.style.display = 'none'; state.cat = ''; state.sub = ''; return; }
+  bar.style.display = '';
+  // Довідник не приїхав (D1 недоступна або master-sync упав) — кажемо це прямо,
+  // а не ховаємо ряд мовчки: інакше зникнення фільтра читається як «тут категорій не буває».
+  if (!DATA.categoriesReady) {
+    state.cat = ''; state.sub = '';
+    bar.innerHTML = '<span class="lbl">Категорія</span><span class="cat-off">Довідник категорій не завантажено — перевір синхронізацію з 1С</span>';
+    sbar.style.display = 'none';
+    return;
   }
-  const groups = [...counts.keys()].sort((a, b) => a.localeCompare(b, 'uk'));
-  let html = '<option value="">Всі групи</option>';
-  for (const g of groups) html += `<option value="${esc(g)}">${esc(g)} (${counts.get(g)})</option>`;
-  sel.innerHTML = html;
-  if (state.group && counts.has(state.group)) sel.value = state.group;
-  else { state.group = ''; sel.value = ''; }
+  const noCat = DATA.noCategory || 'Категорію не завантажено';
+  const counts = {}, subCounts = {};
+  for (const it of DATA.items) {
+    const c = catOf(it); counts[c] = (counts[c] || 0) + 1;
+    // підкатегорії рахуємо лише всередині обраного кореня — інакше однойменні
+    // гілки різних коренів («Комплектуючі») змішались би в один лічильник
+    if (state.cat && c === state.cat) { const sb = subOf(it) || '—'; subCounts[sb] = (subCounts[sb] || 0) + 1; }
+  }
+  const rank = n => { const i = CAT_ORDER.indexOf(n); return i < 0 ? CAT_ORDER.length : i; };
+  const names = Object.keys(counts).sort((a, b) => {
+    if (a === noCat) return 1; if (b === noCat) return -1;
+    return (rank(a) - rank(b)) || a.localeCompare(b, 'uk');
+  });
+  if (state.cat && !counts[state.cat]) { state.cat = ''; state.sub = ''; }
+  const chip = (v, label, n) => `<span class="chip${v === state.cat ? ' active' : ''}" data-cat="${esc(v)}" onclick="setCat(this.dataset.cat)">${esc(label)}${n != null ? ` <span class="n">${n}</span>` : ''}</span>`;
+  bar.innerHTML = '<span class="lbl">Категорія</span>' + chip('', 'Всі', null) + names.map(n => chip(n, n, counts[n])).join('');
+
+  // Другий рівень: лише коли обрано корінь і всередині є з чого вибирати (>1 гілки).
+  const subNames = Object.keys(subCounts).sort((a, b) => {
+    if (a === '—') return 1; if (b === '—') return -1;
+    return (subCounts[b] - subCounts[a]) || a.localeCompare(b, 'uk');
+  });
+  if (!state.cat || subNames.length < 2) { sbar.style.display = 'none'; state.sub = ''; return; }
+  if (state.sub && !subCounts[state.sub]) state.sub = '';
+  sbar.style.display = '';
+  const schip = (v, label, n) => `<span class="chip${v === state.sub ? ' active' : ''}" data-sub="${esc(v)}" onclick="setSub(this.dataset.sub)">${esc(label)}${n != null ? ` <span class="n">${n}</span>` : ''}</span>`;
+  sbar.innerHTML = `<span class="lbl">${esc(state.cat)}</span>` + schip('', 'Всі', null) +
+    subNames.map(n => schip(n, n === '—' ? 'Без підкатегорії' : n, subCounts[n])).join('');
 }
 
-// Items in the current selection scope (group ∧ product/search ∧ ABC).
+// Items in the current selection scope (category ∧ product/search ∧ ABC).
 // Status is the breakdown dimension → applied to the table only, not the scope.
 function scopedItems() {
-  let items = DATA.items.slice();
-  if (state.group) items = items.filter(i => (i.category || '') === state.group);
+  let items = catScope(DATA.items.slice());
   if (state.productKey) {
     items = items.filter(i => i.nom_key === state.productKey);
   } else {
@@ -467,7 +515,6 @@ async function load() {
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     DATA = await r.json();
-    populateGroups();
     render();
   } catch (e) {
     document.getElementById('body').innerHTML = `<div class="error">${e.message}</div>`;
@@ -476,7 +523,8 @@ async function load() {
 
 function render() {
   if (!DATA) return;
-  const scoped = scopedItems();         // group ∧ product/search ∧ ABC
+  rebuildCatOptions();                  // чіпи категорій + скидання неіснуючого вибору
+  const scoped = scopedItems();         // category ∧ product/search ∧ ABC
   const s = computeSummary(scoped);     // KPIs follow the selection
 
   // KPI cards
@@ -577,7 +625,7 @@ function render() {
     </table></div>
     <div style="font-size:11px;color:var(--text3);padding:4px 2px">
       Залишки на ${DATA.as_of_date} &middot; ${fmt(items.length)} позицій
-      &middot; Норма покриття: ${DATA.target_coverage_days} дн
+      &middot; Норма покриття: ${DATA.target_coverage_days} дн${DATA.consolidated ? ' &middot; Всі організації: внутрішні обороти Реакт ↔ Генерація виключено' : ''}${DATA.summary?.usd_gap_rows > 0 ? ` &middot; <span style="color:var(--red)">${fmt(DATA.summary.usd_gap_rows)} рядків продажів без суми в USD — виручка по них не врахована</span>` : ''}
     </div>`;
 }
 
@@ -622,7 +670,7 @@ function esc(s) { const d = document.createElement('div'); d.textContent = s; re
 function downloadPDF() {
   if (!DATA) { alert('Дані ще не завантажились'); return; }
   const org    = state.org || 'Всі організації';
-  const group  = state.group || 'Всі групи';
+  const cat    = state.cat ? state.cat + (state.sub ? ' / ' + (state.sub === '—' ? 'Без підкатегорії' : state.sub) : '') : 'Всі';
   const q      = (document.getElementById('searchIn')?.value || '').trim();
   const abc    = state.abcFilter || 'Всі';
   const status = state.statusFilter ? STATUS_LABELS[state.statusFilter] : 'Всі';
@@ -632,7 +680,7 @@ function downloadPDF() {
   const title  = `Обіговість запасів — ${org} — ${DATA.as_of_date || ''}`;
 
   const win = window.open('', '_blank', 'width=1280,height=860');
-  if (!win) { legacyPrintFallback(org, group, q, abc, status, dt); return; }
+  if (!win) { legacyPrintFallback(org, cat, q, abc, status, dt); return; }
 
   const fmtDate = d => {
     if (!d) return '—';
@@ -748,7 +796,7 @@ function downloadPDF() {
     <h1>Обіговість запасів</h1>
     <div class="meta">
       <b>Організація:</b> ${esc(org)} &nbsp;·&nbsp;
-      <b>Група:</b> ${esc(group)} &nbsp;·&nbsp;
+      <b>Категорія:</b> ${esc(cat)} &nbsp;·&nbsp;
       ${q ? `<b>Товар:</b> ${esc(q)} &nbsp;·&nbsp;` : ''}
       <b>ABC:</b> ${esc(abc)} &nbsp;·&nbsp;
       <b>Статус:</b> ${esc(status)} &nbsp;·&nbsp;
@@ -798,7 +846,7 @@ function downloadPDF() {
 }
 
 // Фолбек, коли попап заблоковано: друк самої сторінки через @media print.
-function legacyPrintFallback(org, group, q, abc, status, dt) {
+function legacyPrintFallback(org, cat, q, abc, status, dt) {
   let head = document.getElementById('__pdfHead');
   if (!head) {
     head = document.createElement('div');
@@ -810,7 +858,7 @@ function legacyPrintFallback(org, group, q, abc, status, dt) {
     <div style="font-size:18px;font-weight:700;margin-bottom:6px">Обіговість запасів</div>
     <div style="font-size:11px;color:#48484a;display:flex;flex-wrap:wrap;gap:14px">
       <span><b style="color:#1c1c1e">Організація:</b> ${esc(org)}</span>
-      <span><b style="color:#1c1c1e">Група:</b> ${esc(group)}</span>
+      <span><b style="color:#1c1c1e">Категорія:</b> ${esc(cat)}</span>
       ${q ? `<span><b style="color:#1c1c1e">Товар:</b> ${esc(q)}</span>` : ''}
       <span><b style="color:#1c1c1e">ABC:</b> ${esc(abc)}</span>
       <span><b style="color:#1c1c1e">Статус:</b> ${esc(status)}</span>
