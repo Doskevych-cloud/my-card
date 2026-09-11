@@ -152,6 +152,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   .toolbar .sep{display:none}
   /* фільтри воронки: без підписів чіпи «Всі ▾» неоднозначні (менеджер це чи канал) */
   #funnelFilters .lbl{display:inline}
+  /* матриця «Навантаження» широка — імʼя менеджера лишається видимим при горизонтальному скролі */
+  .load-matrix th:first-child,.load-matrix td:first-child{position:sticky;left:0;z-index:1;background:var(--surface2)}
+  .load-matrix th:first-child{background:var(--surface)}
+  /* виділений рядок: той самий відтінок, що .mgr-table tr.active, але на непрозорій основі — інакше цифри просвічують під імʼям */
+  .load-matrix tr.clickable.active td:first-child{background:linear-gradient(rgba(154,180,255,.12),rgba(154,180,255,.12)),var(--surface2)}
   .funnel-row,.funnel-head{grid-template-columns:120px 1fr 56px 64px 64px;font-size:10.5px;gap:5px;padding:7px 4px}
   table{font-size:11px}
   thead th,tbody td{padding:7px 6px;font-size:11px}
@@ -366,13 +371,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>Когорта</b> — ліди, <b>створені</b> у вибрані дні (+ чіпи «тип клієнта» і «клас»). Куди вони дійшли — за всю історію угоди.</li>
       <li><b>Менеджер</b> — <b>поточний</b> виконавець угоди (з її останньої зміни статусу в Planfix). Угоду, яку кваліфікатор передав менеджеру, рахуємо за тим, у кого вона зараз, — разом з етапами до передачі.</li>
       <li><b>Цільових</b> — дійшли до «Визначено як цільовий» або далі; <b>Цільових А</b> — з них клас А.</li>
-      <li><b>Аванс отримано</b> — виграні угоди (поле Planfix «Статус угоди» = «Успешно»). <b>Конверсія</b> = Аванс / Всього; <b>Конверсія А</b> = виграні класу А / Всього.</li>
+      <li><b>Аванс отримано</b> — виграні угоди (поле Planfix «Статус угоди» = «Успешно»), <b>Аванс А</b> — з них клас А. <b>Конверсія</b> = Аванс / Всього; <b>Конверсія А</b> = Аванс А / Цільових А — конверсія всередині класу А. Клас ставлять на кваліфікації, тож майже всі ліди класу А — цільові; ті, що до «Визначено як цільовий» не дійшли (закриті одразу або ще нові), у знаменник не входять — тому рядків класу А в розшифровці може бути трохи більше, ніж «Цільових А». «—», коли цільових А немає.</li>
       <li><b>Виручка</b> — сума «Бюджет в дол.» виграних угод (актуальне значення з картки); <b>Серед. чек</b> = Виручка / Аванс.</li>
     </ul>
     <h3>Розшифровка по лідах</h3>
     <ul>
       <li>Клік по рядку менеджера — нижче його ліди когорти: номер (відкривається в Planfix), поточний статус, дата останньої зміни, бюджет, клас, тип, канал. Повторний клік або «× скинути» — сховати.</li>
-      <li>Рядків у розшифровці рівно стільки, скільки «Всього» у менеджера.</li>
+      <li>Рядків у розшифровці рівно стільки, скільки «Всього» у менеджера. Клік по заголовку колонки — сортування, повторний — у зворотному порядку.</li>
+    </ul>
+    <h3>Навантаження</h3>
+    <ul>
+      <li>Перемикач «Навантаження» показує, де <b>зараз</b> угоди, створені у вибрані дні: скільки в кожного менеджера стоїть на кожному етапі. Для повної картини — пресет «Весь час».</li>
+      <li><b>Етапи</b> — що рахувати. За замовчуванням усі робочі, без «Відкладене», «Успішно реалізовано» і «Закрито та не реалізовано»; число на чіпі — скільки угод періоду зараз на цьому етапі. A / B / C — клас серед вибраних угод.</li>
+      <li>Клік по менеджеру — його угоди у вибраних етапах, із сортуванням.</li>
+      <li><b>Поточний етап</b> — останній статус, який Planfix передав подією переходу. Зміну статусу без події (робот, масова дія) ловить лише звірка з карткою угоди: вона йде з 10.09.2026 порціями, першими — угоди з найсвіжішим рухом, і угод без руху понад 200 днів не охоплює зовсім.</li>
+      <li><b>Без руху &gt;200 дн</b> — відкриті угоди, у яких понад 200 днів не було жодної зміни (у розшифровці — червона дата). Частина з них, імовірно, вже закрита — варто перевірити й закрити в Planfix. Закриті, реалізовані й відкладені сюди не рахуються.</li>
     </ul>
     <h3>Нюанси, що можуть здивувати</h3>
     <ul>
@@ -427,6 +440,12 @@ const state = {
   fInterest: '',        // '' | ses | modern | goods | design | none (не заповнено)
   fChannel: '',         // '' | ключ каналу (як рядок вкладки «Канали»)
   managerFilter: null,  // null | '<менеджер>' — drilldown на вкладці «Менеджери»
+  mgrView: '',          // «Менеджери»: '' = результати когорти | 'load' = навантаження (поточні етапи)
+  // «Навантаження»: зміни відносно дефолту (усі робочі етапи, без закритих/відкладених) — саме
+  // зміни, а не знімок вибраних: інакше етап, якого не було в поточному періоді, лишався б
+  // вимкненим після зміни періоду (рев'ю 11.09). Hash: ls=-Нове|+Відкладене
+  loadOff: [],          // робочі етапи, які користувач вимкнув
+  loadOn: [],           // закриті/відкладені етапи, які користувач увімкнув
 };
 
 const REPORT_ACTION = {
@@ -489,6 +508,9 @@ function saveStateToUrl() {
   if (state.fMgr) h.set('fm', state.fMgr);
   if (state.fInterest) h.set('fi', state.fInterest);
   if (state.fChannel) h.set('fc', state.fChannel);
+  if (state.mgrView) h.set('mv', state.mgrView);
+  const ls = [...state.loadOff.map(s => '-' + s), ...state.loadOn.map(s => '+' + s)];
+  if (ls.length) h.set('ls', ls.join('|'));
   history.replaceState(null, '', '#' + h.toString());
 }
 function hydrateFromHash() {
@@ -507,6 +529,10 @@ function hydrateFromHash() {
   if (h.get('fm'))     state.fMgr = h.get('fm');
   if (h.get('fi'))     state.fInterest = h.get('fi');
   if (h.get('fc'))     state.fChannel = h.get('fc');
+  if (h.get('mv'))     state.mgrView = h.get('mv');
+  if (h.get('ls'))     for (const t of h.get('ls').split('|')) {
+    if (t[0] === '-') state.loadOff.push(t.slice(1)); else if (t[0] === '+') state.loadOn.push(t.slice(1));
+  }
   if (!h.get('preset')) state.preset = detectPreset(state.from, state.to);
 }
 function detectPreset(from, to) {
@@ -908,7 +934,7 @@ function renderChannelsReport(d) {
     <span class="ib-tag">КАНАЛИ</span>
     Когорта: <b>ліди створені у вибрані дні</b>. <b>Цільових</b> = дійшли до стадії «Визначено як цільовий».
     <b>Аванс отримано</b> = виграна угода (поле Planfix «Статус угоди» = «Успешно»).
-    Конверсія = Аванс / Всього; <b>Конверсія А</b> = виграні угоди класу А / Всього (та сама база).
+    Конверсія = Аванс / Всього; <b>Конверсія А</b> = Аванс А / Цільових А — конверсія всередині класу А.
     Канали розбито на два підрозділи: <b>маркетингові</b> (Google / Meta / TikTok / Organic / Direct — ті самі, що входять у ROMI на вкладці «Маркетинг») і <b>поза маркетингом</b> (база / сарафан / партнери). Дані ті самі, що в «Маркетинг».
   </div>
   <div class="kpi">
@@ -917,7 +943,8 @@ function renderChannelsReport(d) {
     <div class="kpi-card c-success"><div class="lbl">Аванс отримано</div><div class="val">${fmt(t.won)}</div><div class="sub">${pct(t.conversionRate)} конверсія</div></div>
     <div class="kpi-card c-rate"><div class="lbl">Виручка</div><div class="val">${fmtMoney(t.revenue)} <span style="font-size:14px">$</span></div></div>
   </div>`;
-  const head = ['Канал', 'Всього', 'Цільових', 'Цільових А', 'Аванс отримано', 'Конверсія', 'Конверсія А', 'Виручка $', 'Серед. чек $'];
+  // «Аванс А» — чисельник «Конверсії А» (Аванс А / Цільових А): без нього відсоток не звірити з таблицею
+  const head = ['Канал', 'Всього', 'Цільових', 'Цільових А', 'Аванс отримано', 'Аванс А', 'Конверсія', 'Конверсія А', 'Виручка $', 'Серед. чек $'];
   const NCOL = head.length;
   const chRow = (c, i) => {
     const active = state.channelFilter === c.name ? ' active' : '';
@@ -926,8 +953,9 @@ function renderChannelsReport(d) {
       c.target ? fmt(c.target) : '—',
       c.targetA ? fmt(c.targetA) : '—',
       c.won ? fmt(c.won) : '—',
+      c.wonA ? fmt(c.wonA) : '—',
       pct(c.conversionRate),
-      pct(c.conversionRateA),
+      c.targetA ? pct(c.conversionRateA) : '—',
       fmtMoney(c.revenue), c.avgCheck ? fmtMoney(c.avgCheck) : '—',
     ];
     return `<tr class="clickable${active}" data-ch-idx="${i}">${cells.map((v, ci) => `<td${ci === 0 ? '' : ' class="num"'}>${v}</td>`).join('')}</tr>`;
@@ -938,8 +966,9 @@ function renderChannelsReport(d) {
       a.target ? fmt(a.target) : '—',
       a.targetA ? fmt(a.targetA) : '—',
       a.won ? fmt(a.won) : '—',
+      a.wonA ? fmt(a.wonA) : '—',
       pct(a.leads ? a.won / a.leads : 0),
-      pct(a.leads ? a.wonA / a.leads : 0),
+      a.targetA ? pct(a.wonA / a.targetA) : '—',
       fmtMoney(a.revenue), a.won ? fmtMoney(a.revenue / a.won) : '—',
     ];
     return `<tr class="sum-row">${cells.map((v, ci) => `<td${ci === 0 ? '' : ' class="num"'}>${v}</td>`).join('')}</tr>`;
@@ -982,33 +1011,60 @@ function renderChannelsReport(d) {
 const NO_CHANNEL_LABEL = '— без каналу';
 const NO_CHANNEL_HIDE_STATUS = new Set(['Нове', "Спробу зв'язатись зроблено", 'Закрито та не реалізовано']);
 
-// Розшифровка по лідах (канал / менеджер) — той самий вигляд, що «Усі ліди» у воронці.
+// Розшифровка по лідах (канал / менеджер / навантаження) — той самий вигляд і сортування,
+// що «Усі ліди» у воронці: клік по заголовку, повторний — у зворотному порядку.
 // lastCol: 'manager' — угоди каналу; 'channel' — ліди менеджера.
+// staleBefore (YYYY-MM-DD): дата зміни раніше — червоним (навантаження: статус не звірявся).
 // mgr-wrap + min-width: на мобілці таблиця гортається у своєму боксі.
-function drillLeadsHTML({ anchorId, clearId, title, hint, leads, lastCol, emptyText }) {
+let drillSort = { col: 'changeDate', dir: 'desc' };
+function drillSorted(leads) {
+  const { col, dir } = drillSort;
+  return [...leads].sort((x, y) => {
+    let va = x[col], vb = y[col];
+    if (col === 'id') { va = Number(va) || 0; vb = Number(vb) || 0; }
+    if (typeof va === 'number' && typeof vb === 'number') return dir === 'asc' ? va - vb : vb - va;
+    const cmp = String(va || '').localeCompare(String(vb || ''), 'uk');
+    return dir === 'asc' ? cmp : -cmp;
+  });
+}
+function attachDrillSort() {
+  document.querySelectorAll('#content th.sortable[data-dcol]').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.dcol;
+      if (drillSort.col === col) drillSort.dir = drillSort.dir === 'asc' ? 'desc' : 'asc';
+      else drillSort = { col, dir: 'desc' };
+      render();
+    });
+  });
+}
+function drillLeadsHTML({ anchorId, clearId, title, hint, leads, lastCol, emptyText, staleBefore }) {
+  const lastKey = lastCol === 'channel' ? 'channel' : 'manager';
+  const arrow = c => drillSort.col === c ? (drillSort.dir === 'asc' ? ' ↑' : ' ↓') : '';
+  const th = (c, label) => `<th class="sortable${drillSort.col === c ? ' sorted' : ''}" data-dcol="${c}" style="white-space:nowrap">${label}${arrow(c)}</th>`;
   let html = `
     <div id="${anchorId}" class="section-h">
       <h2>${title}</h2>
       <span class="hint">${hint} <a href="#" id="${clearId}" style="color:var(--accent);text-decoration:none;margin-left:8px">× скинути</a></span>
     </div>
     <div class="mgr-wrap"><table class="tasks-table" style="min-width:820px"><thead><tr>
-      <th>#</th><th>Назва</th><th>Створено</th><th>Поточний статус</th><th>Дата зміни</th><th style="white-space:nowrap">Бюджет $</th><th>Клас</th><th>Тип</th><th>${lastCol === 'channel' ? 'Канал' : 'Менеджер'}</th>
+      ${th('id', '#')}${th('name', 'Назва')}${th('createdDate', 'Створено')}${th('currentStatus', 'Поточний статус')}${th('changeDate', 'Дата зміни')}${th('budget', 'Бюджет $')}${th('clientClass', 'Клас')}${th('clientType', 'Тип')}${th(lastKey, lastCol === 'channel' ? 'Канал' : 'Менеджер')}
     </tr></thead><tbody>`;
   if (!leads.length) {
     html += `<tr><td colspan="9" class="muted" style="text-align:center;padding:14px">${emptyText}</td></tr>`;
   }
-  leads.forEach(l => {
+  drillSorted(leads).forEach(l => {
     const url = `https://solar.planfix.ua/task/${l.id}`;
+    const stale = staleBefore && !LOAD_CLOSED.includes(l.currentStatus) && (l.changeDate || '').slice(0, 10) < staleBefore;
     html += `<tr>
       <td class="num"><a class="tlink" href="${url}" target="_blank" rel="noopener">${esc(l.id)}</a></td>
       <td>${esc(l.name)}</td>
       <td style="white-space:nowrap">${esc(l.createdDate)}</td>
       <td>${esc(l.currentStatus)}</td>
-      <td>${esc(l.changeDate)}</td>
+      <td${stale ? ` style="color:var(--red)" title="Без руху понад ${LOAD_STALE_DAYS} днів — статус з карткою Planfix не звіряється"` : ''}>${esc(l.changeDate)}</td>
       <td class="num" style="white-space:nowrap">${l.budget ? fmt(l.budget) : '—'}</td>
       <td>${esc(l.clientClass)}</td>
       <td>${esc(l.clientType)}</td>
-      <td>${esc((lastCol === 'channel' ? l.channel : l.manager) || '—')}</td>
+      <td>${esc(l[lastKey] || '—')}</td>
     </tr>`;
   });
   html += `</tbody></table></div>`;
@@ -1023,8 +1079,8 @@ function channelLeadsHTML(ch) {
     anchorId: 'channelLeads', clearId: 'clearChannelFilter',
     title: `📋 Угоди каналу «${esc(ch.name)}» (${fmt(leads.length)})`,
     hint: isNoChannel
-      ? `Лише ті, кому вже додзвонились (без «Нове / Спробу зв'язатись / Закрито») · клік по # — відкрити в Planfix`
-      : `Клік по # — відкрити в Planfix`,
+      ? `Лише ті, кому вже додзвонились (без «Нове / Спробу зв'язатись / Закрито») · клік по заголовку — сортування, по # — відкрити в Planfix`
+      : `Клік по заголовку — сортування, по # — відкрити в Planfix`,
     leads, lastCol: 'manager',
     emptyText: 'Немає угод у роботі — усім у цьому каналі ще не додзвонились.',
   });
@@ -1033,20 +1089,148 @@ function managerLeadsHTML(m) {
   return drillLeadsHTML({
     anchorId: 'managerLeads', clearId: 'clearManagerFilter',
     title: `📋 Ліди менеджера «${esc(ffShort(m.name))}» (${fmt(m.leadsList.length)})`,
-    hint: 'Когорта періоду, свіжі зміни вгорі · клік по # — відкрити в Planfix',
+    hint: 'Когорта періоду · клік по заголовку — сортування, по # — відкрити в Planfix',
     leads: m.leadsList, lastCol: 'channel', emptyText: '',
   });
 }
 
-// 3. Менеджери
-function renderManagersReport(d) {
-  const t = d.totals || {};
+// 3. Менеджери: «Результати» (когорта: конверсія, виручка) | «Навантаження» (де ліди зараз)
+function mgrViewBarHTML() {
+  const load = state.mgrView === 'load';
+  return `<div class="toolbar"><span class="lbl">Вигляд</span><span class="group">
+    <span class="chip${load ? '' : ' active'}" onclick="setMgrView('')">Результати</span>
+    <span class="chip${load ? ' active' : ''}" onclick="setMgrView('load')">Навантаження</span>
+  </span></div>`;
+}
+function setMgrView(v) { state.mgrView = v === 'load' ? 'load' : ''; saveStateToUrl(); render(); }
+
+// «Навантаження»: де ЗАРАЗ угоди когорти періоду — поточний етап по менеджерах.
+// Рахуємо з managers[].leadsList (поточний статус = найсвіжіший рядок угоди), без
+// окремого запиту. Етапи — мультивибір; за замовчуванням без закритих/відкладених.
+const LOAD_STATUS_LABEL = {
+  'Нове': 'Нове', "Спробу зв'язатись зроблено": 'Спроба звʼязку', 'Визначено як цільовий': 'Цільовий',
+  'Виявлено потребу': 'Потреба', 'ТЗ сформовано': 'ТЗ', 'КП презентовано': 'КП', 'Згоду отримано': 'Згода',
+  'Аванс отримано': 'Аванс', 'Відкладене': 'Відкладене', 'Успішно реалізовано': 'Реалізовано',
+  'Закрито та не реалізовано': 'Закрито',
+  // статуси зустрічей того ж процесу — рідкісні, повна назва в title
+  'Призначено в офісі зустріч': 'Зустріч в офісі: призн.', 'Проведено в офісі зустріч': 'Зустріч в офісі: пров.',
+  "Призначено на об'єкті зустріч": 'Зустріч на обʼєкті: призн.', "Проведено на об'єкті зустріч": 'Зустріч на обʼєкті: пров.',
+};
+const LOAD_CLOSED = ['Відкладене', 'Успішно реалізовано', 'Закрито та не реалізовано'];
+// = вікно синку снапшотів Planfix (syncCrmDealSnapshots, days=200): для угод без руху
+// довше поточний статус з Planfix не звіряється — міг змінитись без нашої події.
+const LOAD_STALE_DAYS = 200;
+const LOAD_CLASS = { 'A': 'A', 'А': 'A', 'B': 'B', 'В': 'B', 'C': 'C', 'С': 'C' };  // латиниця/кирилиця
+function loadStatusOrder(d) {
+  const all = new Set();
+  d.managers.forEach(m => m.leadsList.forEach(l => all.add(l.currentStatus || '—')));
+  const rest = [...all].filter(s => !SHEET_STAGES.includes(s) && !LOAD_CLOSED.includes(s)).sort((a, b) => a.localeCompare(b, 'uk'));
+  return [...SHEET_STAGES.filter(s => all.has(s)), ...rest, ...LOAD_CLOSED.filter(s => all.has(s))];
+}
+function loadSelected(order) {
+  return order.filter(s => LOAD_CLOSED.includes(s) ? state.loadOn.includes(s) : !state.loadOff.includes(s));
+}
+function toggleLoadStatus(s) {
+  const arr = LOAD_CLOSED.includes(s) ? state.loadOn : state.loadOff;
+  const i = arr.indexOf(s);
+  if (i >= 0) arr.splice(i, 1); else arr.push(s);
+  saveStateToUrl(); render();
+}
+function resetLoadStatuses() { state.loadOff = []; state.loadOn = []; saveStateToUrl(); render(); }
+function renderManagersLoad(d) {
+  if (!d.managers.length) return `<div class="empty">У вибрані дні нових лідів немає.</div>`;
+  const order = loadStatusOrder(d);
+  const sel = loadSelected(order);
+  const selSet = new Set(sel);
+  const staleBefore = _localISO(new Date(Date.now() - LOAD_STALE_DAYS * 86400000));
+  const statusCount = {};
+  d.managers.forEach(m => m.leadsList.forEach(l => { const s = l.currentStatus || '—'; statusCount[s] = (statusCount[s] || 0) + 1; }));
+  const rows = d.managers.map((m, i) => {
+    const leads = m.leadsList.filter(l => selSet.has(l.currentStatus || '—'));
+    const r = { m, i, leads, total: leads.length, by: {}, cls: { A: 0, B: 0, C: 0 }, stale: 0 };
+    for (const l of leads) {
+      const s = l.currentStatus || '—';
+      r.by[s] = (r.by[s] || 0) + 1;
+      const k = LOAD_CLASS[String(l.clientClass || '').trim()]; if (k) r.cls[k]++;
+      if (!LOAD_CLOSED.includes(s) && (l.changeDate || '').slice(0, 10) < staleBefore) r.stale++;  // закриті/відкладені не «висять»
+    }
+    return r;
+  }).filter(r => r.total).sort((a, b) => b.total - a.total);
+  const T = { total: 0, by: {}, cls: { A: 0, B: 0, C: 0 }, stale: 0 };
+  for (const r of rows) {
+    T.total += r.total; T.stale += r.stale;
+    for (const s of sel) T.by[s] = (T.by[s] || 0) + (r.by[s] || 0);
+    for (const k of ['A', 'B', 'C']) T.cls[k] += r.cls[k];
+  }
+  const allTime = state.preset === 'all';
+  const dot = '<span style="color:var(--text3)">·</span>';
+  const cell = n => n ? fmt(n) : dot;
   let html = `
+  <div class="info-banner">
+    <span class="ib-tag">НАВАНТАЖЕННЯ</span>
+    Де <b>зараз</b> угоди, створені у вибрані дні: скільки в кожного менеджера стоїть на кожному етапі. Чіпи «Етапи» — що рахувати; за замовчуванням без відкладених, реалізованих і закритих.
+    ${allTime ? '' : `Повна картина навантаження — за <a href="#" onclick="setPreset('all');return false" style="color:var(--accent)">весь час</a>.`}
+    <span class="chip" style="margin-left:10px" onclick="openMgrHelp()" title="Як працює цей звіт">❓ Як працює</span>
+  </div>
+  <div class="toolbar">
+    <span class="lbl">Етапи</span>
+    ${order.map(s => `<span class="chip${selSet.has(s) ? ' active' : ''}" data-ls="${esc(s)}" title="${esc(s)}">${esc(LOAD_STATUS_LABEL[s] || s)} <span style="opacity:.6">${fmt(statusCount[s] || 0)}</span></span>`).join('')}
+    ${state.loadOff.length || state.loadOn.length ? '<span class="sep"></span><span class="chip" data-ls-reset="1">× Скинути</span>' : ''}
+  </div>`;
+  if (!sel.length || !rows.length) {
+    // «Оберіть етап» — лише коли користувач сам вимкнув усі робочі; інакше робочих угод просто нема
+    const userOff = order.some(s => !LOAD_CLOSED.includes(s) && state.loadOff.includes(s));
+    return html + `<div class="empty">${userOff
+      ? 'Оберіть хоча б один етап.'
+      : `Робочих угод серед створених у вибрані дні немає — усі закриті, реалізовані або відкладені (їх можна увімкнути чіпами)${allTime ? '' : ', або спробуйте «весь час»'}.`}</div>`;
+  }
+  html += `
+  <div class="kpi">
+    <div class="kpi-card"><div class="lbl">Угод у вибраних етапах</div><div class="val">${fmt(T.total)}</div></div>
+    <div class="kpi-card"><div class="lbl">З них клас A</div><div class="val">${fmt(T.cls.A)}</div></div>
+    <div class="kpi-card${T.stale ? ' c-fail' : ''}"><div class="lbl">Без руху понад ${LOAD_STALE_DAYS} днів</div><div class="val">${fmt(T.stale)}</div><div class="sub">відкриті; з карткою Planfix не звіряються</div></div>
+  </div>`;
+  html += `<div class="section-h"><h2>👥 Навантаження менеджерів</h2><span class="hint">поточний етап угоди · клік по менеджеру — його угоди нижче</span></div>`;
+  html += `<div class="mgr-wrap"><table class="mgr-table load-matrix"><thead><tr><th>Менеджер</th>`
+    + sel.map(s => `<th title="${esc(s)}">${esc(LOAD_STATUS_LABEL[s] || s)}</th>`).join('')
+    + `<th>Разом</th><th title="Клас клієнта серед угод у вибраних етапах">A</th><th>B</th><th>C</th>`
+    + `<th title="Відкриті угоди без руху понад ${LOAD_STALE_DAYS} днів: їхній статус з карткою Planfix не звіряється">Без руху &gt;${LOAD_STALE_DAYS} дн</th></tr></thead><tbody>`;
+  for (const r of rows) {
+    const active = state.managerFilter === r.m.name ? ' active' : '';
+    html += `<tr class="clickable${active}" data-mgr-idx="${r.i}"><td title="${esc(r.m.name)}">${esc(ffShort(r.m.name))}</td>`
+      + sel.map(s => `<td class="num">${cell(r.by[s])}</td>`).join('')
+      + `<td class="num" style="color:var(--text);font-weight:700">${fmt(r.total)}</td>`
+      + ['A', 'B', 'C'].map(k => `<td class="num">${cell(r.cls[k])}</td>`).join('')
+      + `<td class="num">${r.stale ? `<span style="color:var(--red);font-weight:700">${fmt(r.stale)}</span>` : dot}</td></tr>`;
+  }
+  html += `<tr class="sum-row"><td>Разом</td>` + sel.map(s => `<td class="num">${cell(T.by[s])}</td>`).join('')
+    + `<td class="num">${fmt(T.total)}</td>` + ['A', 'B', 'C'].map(k => `<td class="num">${cell(T.cls[k])}</td>`).join('')
+    + `<td class="num">${T.stale ? `<span style="color:var(--red)">${fmt(T.stale)}</span>` : dot}</td></tr>`;
+  html += `</tbody></table></div>`;
+  if (T.stale) {
+    html += `<div class="muted" style="padding:0 6px 12px">${fmt(T.stale)} відкритих угод без руху понад ${LOAD_STALE_DAYS} днів: їхній етап — з останньої події Planfix, а звірка з карткою угоди таких не охоплює. Частина з них, імовірно, вже закрита — перевірте й закрийте в Planfix; у розшифровці їхня дата зміни червона.</div>`;
+  }
+  if (state.managerFilter) {
+    const r = rows.find(x => x.m.name === state.managerFilter);
+    if (r) html += drillLeadsHTML({
+      anchorId: 'managerLeads', clearId: 'clearManagerFilter',
+      title: `📋 Угоди менеджера «${esc(ffShort(r.m.name))}» у вибраних етапах (${fmt(r.total)})`,
+      hint: 'Поточний етап · клік по заголовку — сортування, по # — відкрити в Planfix',
+      leads: r.leads, lastCol: 'channel', emptyText: '', staleBefore,
+    });
+  }
+  return html;
+}
+
+function renderManagersReport(d) {
+  if (state.mgrView === 'load') return mgrViewBarHTML() + renderManagersLoad(d);
+  const t = d.totals || {};
+  let html = mgrViewBarHTML() + `
   <div class="info-banner">
     <span class="ib-tag">МЕНЕДЖЕРИ</span>
     Когорта: <b>ліди створені у вибрані дні</b> + хто з менеджерів за них відповідав.
     <b>Цільових</b> = дійшли до стадії «Визначено як цільовий». <b>Аванс отримано</b> = виграна угода (поле Planfix «Статус угоди» = «Успешно»).
-    Конверсія = Аванс / Всього; <b>Конверсія А</b> = виграні угоди класу А / Всього (та сама база).
+    Конверсія = Аванс / Всього; <b>Конверсія А</b> = Аванс А / Цільових А — конверсія всередині класу А.
     <span class="chip" style="margin-left:10px" onclick="openMgrHelp()" title="Як працює цей звіт">❓ Як працює</span>
   </div>
   <div class="kpi">
@@ -1058,7 +1242,7 @@ function renderManagersReport(d) {
   if (!d.managers.length) {
     return html + `<div class="empty">У вибрані дні нових лідів немає.</div>`;
   }
-  const head = ['Менеджер', 'Всього', 'Цільових', 'Цільових А', 'Аванс отримано', 'Конверсія', 'Конверсія А', 'Виручка $', 'Серед. чек $'];
+  const head = ['Менеджер', 'Всього', 'Цільових', 'Цільових А', 'Аванс отримано', 'Аванс А', 'Конверсія', 'Конверсія А', 'Виручка $', 'Серед. чек $'];
   html += `<div class="section-h"><h2>👥 Менеджери</h2><span class="hint">Сортовано за кількістю лідів · клік по менеджеру — його ліди нижче</span></div>`;
   html += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr>${head.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>`;
   d.managers.forEach((m, i) => {
@@ -1067,8 +1251,9 @@ function renderManagersReport(d) {
       m.target ? fmt(m.target) : '—',
       m.targetA ? fmt(m.targetA) : '—',
       m.won ? fmt(m.won) : '—',
+      m.wonA ? fmt(m.wonA) : '—',
       pct(m.conversionRate),
-      pct(m.conversionRateA),
+      m.targetA ? pct(m.conversionRateA) : '—',
       fmtMoney(m.revenue), m.avgCheck ? fmtMoney(m.avgCheck) : '—',
     ];
     const active = state.managerFilter === m.name ? ' active' : '';
@@ -1804,6 +1989,7 @@ function attachChannelDrilldown(d) {
   });
   const clr = document.getElementById('clearChannelFilter');
   if (clr) clr.addEventListener('click', e => { e.preventDefault(); state.channelFilter = null; render(); });
+  attachDrillSort();
 }
 
 // Drilldown менеджерів: клік по рядку → його ліди нижче (toggle), як у каналів
@@ -1822,6 +2008,11 @@ function attachManagerDrilldown(d) {
   });
   const clr = document.getElementById('clearManagerFilter');
   if (clr) clr.addEventListener('click', e => { e.preventDefault(); state.managerFilter = null; render(); });
+  attachDrillSort();
+  // «Навантаження»: чіпи етапів (data-атрибут, бо в назвах статусів апострофи)
+  document.querySelectorAll('#content [data-ls]').forEach(c => c.addEventListener('click', () => toggleLoadStatus(c.dataset.ls)));
+  const lsReset = document.querySelector('#content [data-ls-reset]');
+  if (lsReset) lsReset.addEventListener('click', resetLoadStatuses);
 }
 
 // Застереження до фільтра «Інтерес» — за фактичним покриттям вибірки (угоди періоду з
