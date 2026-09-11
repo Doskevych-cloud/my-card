@@ -83,6 +83,7 @@
     finance_ms: 'Фінанси — Взаєморозрахунки',
     finance_wh: 'Фінанси — Склад (вартість)',
     finance_cb: 'Фінанси — Кошти',
+    finance_eq: 'Фінанси — Капітал',
     reports: 'Звіти',
     reports_funnel: 'Звіти — Воронка',
     reports_channels: 'Звіти — Канали',

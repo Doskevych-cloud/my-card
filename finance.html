@@ -33,7 +33,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .export-dropdown .export-item{display:flex;align-items:center;gap:8px;width:100%;padding:9px 14px;background:transparent;border:0;color:var(--text);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;text-align:left;transition:background .12s}
 .export-dropdown .export-item:hover{background:var(--surface2)}
 .export-dropdown .export-item .ic{font-size:15px;opacity:.85;width:18px;text-align:center}
-.page-tabs{display:flex;align-items:center;gap:6px}
+/* flex-wrap: з 9 вкладками («Капітал») ряд на ~1280px ширший за екран — «Експорт» вилазив за край */
+.page-tabs{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 /* ── Print styles: only active view, expanded rows, clean layout ── */
 @media print{
   @page{size:A4;margin:14mm 10mm}
@@ -445,6 +446,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   .pnl-table tr.itm-det2 td:first-child{padding-left:54px}
 }
 
+/* ─── Капітал (eq) ─── */
+.eq-note{font-size:11px;color:var(--text3);margin:0 0 8px 2px}
+.eq-note.eq-bad{color:var(--red)}
+.eq-empty{padding:40px 20px;text-align:center;color:var(--text3);font-size:13px}
+/* Статті без розгортання — той самий хребет, але без трикутника й кліку */
+#eqBody .pnl-table tr.sec:not([data-is-sec]) td:first-child{cursor:default}
+#eqBody .pnl-table tr.sec:not([data-is-sec]) td:first-child:hover{background:transparent}
+#eqBody .pnl-table tr.sec:not([data-is-sec]):not([data-cat]) td:first-child::before{content:'';display:inline-block;width:18px}
+
 /* ── Help-модалка «Як працює» (шаблон top_products.html) ── */
 .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
 .modal-backdrop.open{display:flex}
@@ -476,6 +486,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <span class="ptab" data-view="ms" data-perm="finance_ms" onclick="switchTab(this)">Взаєморозрахунки</span>
       <span class="ptab" data-view="wh" data-perm="finance_wh" onclick="switchTab(this)">Склад (вартість)</span>
       <span class="ptab" data-view="cb" data-perm="finance_cb" onclick="switchTab(this)">Кошти</span>
+      <span class="ptab" data-view="eq" data-perm="finance_eq" onclick="switchTab(this)">Капітал</span>
       <span class="export-menu" style="margin-left:auto;position:relative">
         <button type="button" class="btn btn--secondary export-btn" onclick="toggleExportMenu(event)" title="Експортувати поточну вкладку">
           <span class="ic">⬇</span> Експорт <span style="opacity:.7">▾</span>
@@ -845,6 +856,47 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       </div>
       <div id="cbBody"><div class="loading">Завантаження...</div></div>
     </div>
+
+    <!-- ═══ Капітал View ═══ -->
+    <div id="eqView" class="view">
+      <div class="toolbar" id="eqToolbar">
+        <span class="lbl">Період</span>
+        <input type="text" id="eqDateRange" class="date-range-input" readonly>
+        <span class="group" id="eqPresetGroup">
+          <span class="chip active" onclick="eqSetPreset('all')">Весь час</span>
+          <span class="chip" onclick="eqSetPreset('year')">Рік</span>
+          <span class="chip" onclick="eqSetPreset('prevyear')">Минулий рік</span>
+          <span class="chip" onclick="eqSetPreset('quarter')">Квартал</span>
+          <span class="chip" onclick="eqSetPreset('month')">Цей місяць</span>
+        </span>
+        <div class="sep"></div>
+        <span class="group" id="eqOrgGroup">
+          <span class="chip active" data-org="" onclick="eqSetOrg(this)">Всі</span>
+          <span class="chip" data-org="Реакт" onclick="eqSetOrg(this)">Реакт</span>
+          <span class="chip" data-org="Генерація" onclick="eqSetOrg(this)">Генерація</span>
+        </span>
+        <div class="sep"></div>
+        <span class="group" id="eqViewGroup" title="Колонки: залишок на дату «по» або на кінець кожного року / кварталу / місяця">
+          <span class="chip" data-pview="" onclick="eqSetView(this)">Разом</span>
+          <span class="chip active" data-pview="y" onclick="eqSetView(this)">Роки</span>
+          <span class="chip" data-pview="q" onclick="eqSetView(this)">Квартали</span>
+          <span class="chip" data-pview="m" onclick="eqSetView(this)">Місяці</span>
+        </span>
+        <div class="sep"></div>
+        <span class="group pnl-collapse-ctl" title="Керування згортанням груп">
+          <span class="chip" onclick="eqToggleAll(false)">
+            <span class="ic">⊞</span> Розгорнути
+          </span>
+          <span class="chip active" onclick="eqToggleAll(true)">
+            <span class="ic">⊟</span> Згорнути
+          </span>
+        </span>
+        <span class="chip" id="eqSyncBtn" onclick="eqSync()" title="Перечитати з 1С проводки попереднього й поточного місяця (давнішу історію синк оновлює щодня)">↻ Оновити з 1С</span>
+        <span class="chip" onclick="openEqHelp()" title="Як працює цей звіт">❓ Як працює</span>
+      </div>
+      <div id="eqSummary"></div>
+      <div id="eqBody"><div class="loading">Завантаження...</div></div>
+    </div>
   </div>
 </div>
 
@@ -1059,6 +1111,65 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
 </div>
 
+<!-- ── Довідка «Як працює Капітал» ── -->
+<div class="modal-backdrop" id="eqHelpModal" onclick="if(event.target===this)closeEqHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт Капітал">
+    <button class="close" onclick="closeEqHelp()" aria-label="Закрити">✕</button>
+    <h2>Як працює звіт «Капітал»</h2>
+    <h3>Що це</h3>
+    <p><b>Власний капітал = активи − зобовʼязання.</b> Три таблиці: статті капіталу, його рух за період і активи та зобовʼязання, з яких він складається. Підсумок останньої таблиці завжди дорівнює капіталу — це та сама цифра, порахована з іншого боку балансу.</p>
+    <h3>Джерело даних</h3>
+    <p>Бух-проводки управлінського реєстру 1С (сценарій «Фактичний»), продубльовані в нашу базу. Залишок рахунку = усі дебетові обороти мінус кредитові до кінця дня «по» включно. Суми в <b>USD</b> — управлінська валюта 1С, курсова конвертація на сайті не виконується.</p>
+    <ul>
+      <li>Попередній і поточний місяць оновлюються кожні 30 хв (08:00–20:30) — разом із «Закриттям місяця», яке 1С проводить заднім числом.</li>
+      <li>Давніша історія перечитується щодня по одному року, тож правка чи перезакриття старого місяця в 1С доїде сюди за кілька днів. Адмін може одразу оновити хвіст кнопкою «↻ Оновити з 1С».</li>
+      <li>Час останнього оновлення — над таблицями; якщо синк мовчить понад добу, напис червоний.</li>
+    </ul>
+    <h3>Статті капіталу</h3>
+    <ul>
+      <li><b>40 Статутний капітал</b> — стартовий капітал і внески власника, оприбутковані в капітал.</li>
+      <li><b>43.1 Нерозподілений прибуток</b> — те, що в 1С явно перенесли з 44.01.</li>
+      <li><b>44.01 Прибутки та збитки</b> — сюди «Закриття місяця» щомісяця переносить результат (доходи − витрати). Річної реформації в 43.1 1С не робить, тож тут прибуток <b>усіх років</b>. Сюди ж ідуть ручні операції з прибутком, напр. нарахування дивідендів.</li>
+      <li><b>44.02 Податок на прибуток</b> — нарахований податок, зменшує капітал.</li>
+      <li><b>Незакритий фінрезультат</b> — доходи й витрати, ще не перенесені в 44.01: поточний місяць до закриття плюс «хвости» — документи, проведені в уже закритому місяці після його закриття. Розгортається по групах: виручка, собівартість, витрати…</li>
+      <li><b>Технічні рахунки</b> — службовий рахунок 00 (введення початкових залишків). Не нуль тут означає, що залишки на старті обліку внесли незбалансовано: капітал за рахунками відрізняється від реальних активів на цю суму. Звіт її вже враховує в підсумку.</li>
+    </ul>
+    <h3>Колонки: Разом / Роки / Квартали / Місяці</h3>
+    <ul>
+      <li>У таблицях <b>капіталу</b> та <b>активів і зобовʼязань</b> колонка — це <b>залишок на кінець періоду</b>, остання — на дату «по» (тоді в підписі «· на дд.мм»). Тому квартал не дорівнює сумі місяців, а «Разом» — одна колонка на дату «по».</li>
+      <li>У <b>русі капіталу</b> колонка — це <b>зміна за період</b>, «Всього» — за весь вибраний період.</li>
+      <li>Періоди до першої проводки організації не малюються.</li>
+    </ul>
+    <h3>Рух капіталу</h3>
+    <p>Кожна проводка між балансовим рахунком (гроші, товар, борги) і рахунком капіталу чи доходів/витрат змінює капітал на свою суму. Категорію визначає небалансова сторона:</p>
+    <ul>
+      <li><b>Внески й вилучення статутного капіталу</b> — рух по 40;</li>
+      <li><b>Фінансовий результат</b> — доходи мінус витрати в момент проведення документів, не чекаючи закриття місяця;</li>
+      <li><b>Податок на прибуток</b> — нарахування на 44.02;</li>
+      <li><b>Розподіл прибутку і прямі операції</b> — ручні проводки прямо на 44.01/43.1 повз доходи й витрати: дивіденди, списання боргів тощо. Розгортається до рахунку-кореспондента;</li>
+      <li><b>Введення початкових залишків</b> — старт обліку.</li>
+    </ul>
+    <p>Перенесення всередині капіталу (закриття місяця: доходи/витрати → 44.01) капітал не змінюють і в рух не потрапляють. <b>На початок + рух = на кінець</b> — сходиться завжди.</p>
+    <h3>Активи і зобовʼязання</h3>
+    <ul>
+      <li>Рахунок із дебетовим залишком на дату «по» — актив, із кредитовим — зобовʼязання. Тому переплата податків чи видана позика на рахунку 60 стоять в активах.</li>
+      <li>Групи — тип рахунку в плані рахунків 1С, розгортаються до рахунків.</li>
+    </ul>
+    <h3>Організації</h3>
+    <ul>
+      <li><b>Генерація</b> = Одеса + Київ.</li>
+      <li><b>Всі</b> = проста сума Реакт + Генерація. Взаємні борги між фірмами (напр. 60 «Розрахунки (разделение по 2-м ТОВ)») при цьому гасяться самі. <b>Нереалізована націнка</b> Реакта в товарі, що ще лежить на складі Генерації, не виключається — консолідований капітал на неї завищений.</li>
+    </ul>
+    <h3>Чому цифра може здивувати</h3>
+    <ul>
+      <li>Фінрезультат тут — з бух-проводок, а на вкладці P&amp;L — з реєстру «Доходи і витрати». Вони можуть різнитися на ручні операції й курсові переоцінки.</li>
+      <li>Рахунок «74 Інші доходи (курсов разница)» у плані рахунків 1С має тип «Прочие оборотные активы». Закриття місяця переносить його в прибуток, тому звіт рахує його як дохід, а не як актив.</li>
+      <li>Проводки з датою після «по» (передплачений софт, амортизація на кінець року) у залишок не входять.</li>
+      <li>Суми округлені до долара, тож підсумок може відрізнятися від суми рядків на ±1&nbsp;$.</li>
+    </ul>
+  </div>
+</div>
+
 <script>
 const API_URL = 'https://price-api.doskevich.workers.dev';
 
@@ -1070,7 +1181,7 @@ const activeView = { tab: 'pnl' };
 // ── Пресети періоду (спільні для P&L/GP/CF/FI/AR) ──
 // q1..q4 — квартали поточного року, чіпи римськими I–IV (повний квартал,
 // на відміну від «Квартал», який дає поточний квартал по сьогодні).
-const PRESET_LABELS = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', q1:'I', q2:'II', q3:'III', q4:'IV', year:'Рік', today:'Сьогодні', meom:'Кінець місяця', prevMeom:'Кінець попер. міс' };
+const PRESET_LABELS = { month:'Цей місяць', prevmonth:'Минулий', quarter:'Квартал', q1:'I', q2:'II', q3:'III', q4:'IV', year:'Рік', today:'Сьогодні', meom:'Кінець місяця', prevMeom:'Кінець попер. міс', all:'Весь час', prevyear:'Минулий рік' };
 function presetRange(p) {
   const now = new Date(), y = now.getFullYear(), m = now.getMonth();
   let from, to = now;
@@ -1079,6 +1190,8 @@ function presetRange(p) {
   else if (p === 'quarter')   { const q = Math.floor(m/3); from = new Date(y, q*3, 1); }
   else if (p === 'year')      from = new Date(y, 0, 1);
   else if (/^q[1-4]$/.test(p)) { const q = +p[1] - 1; from = new Date(y, q*3, 1); to = new Date(y, q*3 + 3, 0); }
+  else if (p === 'prevyear')  { from = new Date(y-1, 0, 1); to = new Date(y-1, 11, 31); }
+  else if (p === 'all')       from = new Date(2020, 0, 1); // «Весь час» («Капітал»): раніше будь-якої проводки в 1С
   return { from, to };
 }
 
@@ -1089,7 +1202,7 @@ function saveStateToUrl() {
   p.set('tab', tab);
   // Date-range tabs (P&L, GP, AR, CF, FI) — пишемо from/to/preset/org.
   // Point-in-time tabs (MS, WH, CB) — пишемо тільки on/org.
-  const RANGE = { pnl: pnlState, gp: gpState, ar: arState };
+  const RANGE = { pnl: pnlState, gp: gpState, ar: arState, eq: typeof eqState !== 'undefined' ? eqState : null };
   const POINT = { ms: typeof msState !== 'undefined' ? msState : null,
                   wh: typeof whState !== 'undefined' ? whState : null,
                   cb: typeof cbState !== 'undefined' ? cbState : null };
@@ -1100,6 +1213,7 @@ function saveStateToUrl() {
     if (st.org) p.set('org', st.org);
     if (st.preset) p.set('preset', st.preset);
     if (st.view) p.set('view', st.view);
+    else if (tab === 'eq') p.set('view', 'total'); // «Разом» у «Капіталі» ≠ дефолт (Роки)
     if (st.collapsed === false) p.set('exp', '1');
   } else if (POINT[tab]) {
     const st = POINT[tab];
@@ -1155,7 +1269,8 @@ function _stateForTab(tab) {
             fi: typeof fiState !== 'undefined' ? fiState : null,
             ms: typeof msState !== 'undefined' ? msState : null,
             wh: typeof whState !== 'undefined' ? whState : null,
-            cb: typeof cbState !== 'undefined' ? cbState : null }[tab]) || null;
+            cb: typeof cbState !== 'undefined' ? cbState : null,
+            eq: typeof eqState !== 'undefined' ? eqState : null }[tab]) || null;
 }
 
 function switchTab(el) {
@@ -1168,7 +1283,8 @@ function switchTab(el) {
 
   // Синхронізуємо фільтри з попередньої вкладки (якщо була і відрізняється)
   if (prev && prev !== v) {
-    _syncFiltersFromTo(_stateForTab(prev), _stateForTab(v));
+    if (v === 'eq' || prev === 'eq') _syncEqFilters(_stateForTab(prev), _stateForTab(v), v === 'eq');
+    else _syncFiltersFromTo(_stateForTab(prev), _stateForTab(v));
   }
 
   // Завантажуємо вкладку. Для всіх вкладок викликаємо load — sync дав свіжі
@@ -1181,6 +1297,7 @@ function switchTab(el) {
   else if (v === 'ms') { if (msState.on) msLoad(); else msSetPreset('today'); }
   else if (v === 'wh') { if (whState.on) whLoad(); else whSetPreset('today'); }
   else if (v === 'cb') { if (cbState.on) cbLoad(); else cbSetPreset('today'); }
+  else if (v === 'eq') eqLoad();
 
   // Синхронізуємо UI-стан (date inputs, chips) для нової активної вкладки
   _refreshTabToolbar(v);
@@ -1216,6 +1333,11 @@ function _refreshTabToolbar(v) {
   else if (v === 'ms') { if (_msPicker && st.on) _msPicker.setDate(st.on); setOrgChips('msOrgGroup', st.org); }
   else if (v === 'wh') { if (_whPicker && st.on) _whPicker.setDate(st.on); setOrgChips('whOrgGroup', st.org); }
   else if (v === 'cb') { if (_cbPicker && st.on) _cbPicker.setDate(st.on); setOrgChips('cbOrgGroup', st.org); }
+  else if (v === 'eq') {
+    if (_eqPicker) _eqPicker.setDates(st.from, st.to);
+    setPresetChips('eqPresetGroup', st.preset, st.from, st.to); setOrgChips('eqOrgGroup', st.org);
+    document.querySelectorAll('#eqViewGroup .chip').forEach(c => c.classList.toggle('active', (c.dataset.pview || '') === (st.view || '')));
+  }
 }
 
 // Export the active tab to a real PDF file using html2pdf.js.
@@ -1248,9 +1370,9 @@ function downloadXLSX() {
   }
   const tabEl = document.querySelector('.ptab.active');
   const view  = tabEl && tabEl.dataset.view;
-  const titles = { pnl: 'P&L звіт', gp: 'Валовий прибуток', fi: 'Фінансові показники', cf: 'Cash Flow', ar: 'Розрахунки з покупцями' };
+  const titles = { pnl: 'P&L звіт', gp: 'Валовий прибуток', fi: 'Фінансові показники', cf: 'Cash Flow', ar: 'Розрахунки з покупцями', eq: 'Капітал' };
   const title  = titles[view] || 'Фінансовий звіт';
-  const state  = view === 'gp' ? gpState : view === 'ar' ? arState : view === 'fi' ? fiState : (view === 'cf' ? (window.cfState || {}) : pnlState);
+  const state  = view === 'eq' ? eqState : view === 'gp' ? gpState : view === 'ar' ? arState : view === 'fi' ? fiState : (view === 'cf' ? (window.cfState || {}) : pnlState);
   const from   = state.from || '';
   const to     = state.to   || '';
   const org    = state.org  || 'Всі організації';
@@ -1349,9 +1471,9 @@ function downloadXLSX() {
 function downloadPDF() {
   const tabEl = document.querySelector('.ptab.active');
   const view  = tabEl && tabEl.dataset.view;
-  const titles = { pnl: 'P&L звіт', gp: 'Валовий прибуток', fi: 'Фінансові показники', ar: 'Розрахунки з покупцями' };
+  const titles = { pnl: 'P&L звіт', gp: 'Валовий прибуток', fi: 'Фінансові показники', ar: 'Розрахунки з покупцями', eq: 'Капітал' };
   const title  = titles[view] || 'Фінансовий звіт';
-  const state  = view === 'gp' ? gpState : view === 'ar' ? arState : view === 'fi' ? fiState : pnlState;
+  const state  = view === 'eq' ? eqState : view === 'gp' ? gpState : view === 'ar' ? arState : view === 'fi' ? fiState : pnlState;
   const from   = state.from || '';
   const to     = state.to   || '';
   const org    = state.org  || 'Всі організації';
@@ -2555,7 +2677,9 @@ function openGpHelp()   { document.getElementById('gpHelpModal').classList.add('
 function closeGpHelp()  { document.getElementById('gpHelpModal').classList.remove('open'); }
 function openCfHelp()   { document.getElementById('cfHelpModal').classList.add('open'); }
 function closeCfHelp()  { document.getElementById('cfHelpModal').classList.remove('open'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closePnlHelp(); closeCbHelp(); closeWhHelp(); closeGpHelp(); closeCfHelp(); closeArHelp(); } });
+function openEqHelp()   { document.getElementById('eqHelpModal').classList.add('open'); }
+function closeEqHelp()  { document.getElementById('eqHelpModal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closePnlHelp(); closeCbHelp(); closeWhHelp(); closeGpHelp(); closeCfHelp(); closeArHelp(); closeEqHelp(); } });
 
 function pnlDateChanged() {
   pnlState.preset = detectPreset(pnlState.from, pnlState.to) || '';
@@ -4728,6 +4852,313 @@ document.addEventListener('DOMContentLoaded', function() {
   _cbPicker = initDateSingle({ inputId: 'cbDateIn', date: cbState.on || _localISO(new Date()), onChange: function(d) { cbState.on = d; saveStateToUrl(); cbLoad(); } });
 });
 
+
+/* ═══════════════════════════════════════════════════
+   КАПІТАЛ — власний капітал = активи − зобовʼязання
+   Бекенд: action=equity_report (price-api/src/reports/equity.js, D1
+   mgmt_postings — дзеркало бух-проводок 1С). Відповідь: open (залишки до from)
+   + net (помісячні обороти в [from..to]) по рахунках із класом eq/pnl/tech/bs
+   і moves — рух капіталу по категоріях.
+   Колонки капіталу й балансу — ЗАЛИШОК на кінець періоду (остання — на «по»),
+   тож квартал ≠ сума місяців; колонки руху — зміна за період + «Всього».
+   var, не const: стан читають saveStateToUrl/_stateForTab, оголошені вище.
+   ═══════════════════════════════════════════════════ */
+var _eqPicker = null;
+var _eqLastData = null;
+var _eqSeq = 0;
+var eqState = { from: '2020-01-01', to: _localISO(new Date()), org: '', preset: 'all', view: 'y', collapsed: true };
+var EQ_MOVE_CATS = [
+  { key: 'contrib', label: 'Внески й вилучення статутного капіталу' },
+  { key: 'result',  label: 'Фінансовий результат (доходи − витрати)' },
+  { key: 'tax',     label: 'Податок на прибуток' },
+  { key: 'direct',  label: 'Розподіл прибутку і прямі операції' },
+  { key: 'opening', label: 'Введення початкових залишків' },
+];
+var EQ_PNL_ORDER = ['revenue', 'other_income', 'cogs', 'expenses', 'other_expenses', 'interest'];
+
+function _eqPresetChips() {
+  document.querySelectorAll('#eqPresetGroup .chip').forEach(function(c) {
+    c.classList.toggle('active', c.textContent.trim() === PRESET_LABELS[eqState.preset]);
+  });
+}
+function eqSetPreset(p) {
+  const r = presetRange(p);
+  eqState.from = _localISO(r.from); eqState.to = _localISO(r.to); eqState.preset = p;
+  if (_eqPicker) _eqPicker.setDates(eqState.from, eqState.to);
+  _eqPresetChips();
+  saveStateToUrl();
+  eqLoad();
+}
+function eqSetOrg(el) {
+  eqState.org = el.dataset.org;
+  el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  saveStateToUrl();
+  eqLoad();
+}
+// Колонки — ре-рендер з останньої відповіді: бекенд уже віддав помісячні обороти.
+function eqSetView(el) {
+  eqState.view = el.dataset.pview || '';
+  el.closest('.group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  saveStateToUrl();
+  if (_eqLastData) eqRender(_eqLastData); else eqLoad();
+}
+function eqDateChanged() {
+  eqState.preset = detectPreset(eqState.from, eqState.to) || '';
+  _eqPresetChips();
+  saveStateToUrl();
+  eqLoad();
+}
+// «Капітал» має власне вікно динаміки (за замовчуванням «Весь час»), тож з іншими
+// вкладками ділимо лише org і дату «на» (to/on). Інакше «Цей місяць» з P&L звузив
+// би динаміку до однієї колонки, а «Весь час» звідси погнав би P&L наживо з 1С
+// за шість років.
+function _syncEqFilters(fromSt, toSt, intoEq) {
+  if (!fromSt || !toSt) return;
+  if (toSt._noSync) { delete toSt._noSync; return; } // відновлення з URL: стан уже виставлено
+  if (fromSt.org !== undefined) toSt.org = fromSt.org;
+  if (intoEq) {
+    const d = fromSt.on || fromSt.to;
+    if (d && d !== toSt.to) {
+      toSt.to = d;
+      if (toSt.from > toSt.to) toSt.from = toSt.to.slice(0, 4) + '-01-01';
+      toSt.preset = detectPreset(toSt.from, toSt.to) || '';
+    }
+  } else if ('on' in toSt && fromSt.to) {
+    toSt.on = fromSt.to;
+  }
+}
+
+async function eqLoad() {
+  // Вкладку приховано по правах (data-perm="finance_eq") — бекенд однаково дав би 403.
+  var tab = document.querySelector('.ptab[data-view="eq"]');
+  if (tab && tab.style.display === 'none') return;
+  const seq = ++_eqSeq;
+  document.getElementById('eqBody').innerHTML = '<div class="loading">Завантаження...</div>';
+  document.getElementById('eqSummary').innerHTML = '';
+  try {
+    const q = '?action=equity_report&from=' + eqState.from + '&to=' + eqState.to + (eqState.org ? '&org=' + encodeURIComponent(eqState.org) : '');
+    const data = await fetch(API_URL + q).then(r => r.json());
+    if (seq !== _eqSeq) return; // уже летить новіший запит (швидко клацали фільтри)
+    if (data.error) throw new Error(data.error);
+    _eqLastData = data;
+    eqRender(data);
+  } catch (e) {
+    if (seq !== _eqSeq) return;
+    document.getElementById('eqBody').innerHTML = '<div class="error">' + esc(e.message) + '</div>';
+  }
+}
+
+// Адмінська кнопка: перечитати хвіст проводок (з 1-го числа попереднього місяця) —
+// те саме, що autosync щопівгодини. Давня історія — щоденна ротація по роках.
+async function eqSync() {
+  const btn = document.getElementById('eqSyncBtn');
+  if (!btn || btn.dataset.busy) return;
+  const d = new Date();
+  const from = _localISO(new Date(d.getFullYear(), d.getMonth() - 1, 1));
+  const orig = btn.innerHTML;
+  btn.dataset.busy = '1'; btn.style.opacity = '.6';
+  btn.innerHTML = '⏳ Синкаю проводки…';
+  try {
+    const r = await fetch(API_URL + '?action=_admin_sync_mgmt_postings&from=' + from).then(x => x.json());
+    if (r.error) throw new Error(r.error);
+    btn.innerHTML = '✓ ' + fmt(r.pulled || 0, 0) + ' проводок';
+    await eqLoad();
+  } catch (e) {
+    alert('Синк не вдався: ' + (e.message || e));
+  } finally {
+    setTimeout(() => { btn.innerHTML = orig; btn.style.opacity = ''; delete btn.dataset.busy; }, 2500);
+  }
+}
+
+function _eqDmy(iso) { return iso ? iso.slice(8, 10) + '.' + iso.slice(5, 7) + '.' + iso.slice(0, 4) : ''; }
+// Кінець періоду (рік / квартал / місяць), якому належить місяць ym.
+function _eqPeriodEnd(ym, view) {
+  const y = +ym.slice(0, 4), m = +ym.slice(5, 7);
+  const endM = view === 'y' ? 12 : view === 'q' ? Math.ceil(m / 3) * 3 : m;
+  return _localISO(new Date(y, endM, 0));
+}
+// Колонки періоду { label, months }. Для залишків значення = на кінець останнього
+// місяця колонки; «Разом» — одна колонка на дату «по».
+function _eqColumns(months, view, to) {
+  if (!months.length) return [];
+  if (!view) return [{ label: 'на ' + _eqDmy(to), months: months.slice() }];
+  const cols = [];
+  if (view === 'm') months.forEach(m => cols.push({ label: mLabel(m), months: [m] }));
+  else {
+    const idx = {};
+    months.forEach(m => {
+      const qi = Math.floor((+m.slice(5, 7) - 1) / 3);
+      const k = view === 'y' ? m.slice(0, 4) : m.slice(0, 4) + 'Q' + qi; // ключ з роком — квартали різних років не злипаються
+      if (!idx[k]) { idx[k] = { label: view === 'y' ? m.slice(0, 4) : ['I', 'II', 'III', 'IV'][qi] + " кв'" + m.slice(2, 4), months: [] }; cols.push(idx[k]); }
+      idx[k].months.push(m);
+    });
+  }
+  // Остання колонка обрізана датою «по» — підписуємо, щоб її не читали як кінець року/кварталу.
+  const last = cols[cols.length - 1];
+  if (to < _eqPeriodEnd(last.months[last.months.length - 1], view)) last.label += ' · на ' + _eqDmy(to).slice(0, 5);
+  return cols;
+}
+
+function eqRender(data) {
+  const body = document.getElementById('eqBody');
+  const summary = document.getElementById('eqSummary');
+  const months = data.months || [];
+  if (!data.rows || !months.length) {
+    summary.innerHTML = '';
+    body.innerHTML = '<div class="eq-empty">' + (data.syncedAt
+      ? 'За цей період в організації немає бух-проводок.'
+      : 'Бух-проводки з 1С ще не завантажені — синк не виконувався.') + '</div>';
+    return;
+  }
+  const accs = data.accounts || {};
+  const open = data.open || {}, net = data.net || {};
+  const cols = _eqColumns(months, eqState.view, data.to);
+  const lastCol = cols[cols.length - 1];
+  const lastM = c => c.months[c.months.length - 1];
+
+  // Залишок рахунку (Дт+) на кінець кожного місяця
+  const stock = {};
+  Object.keys(accs).forEach(k => {
+    let b = open[k] || 0; const n = net[k] || {}; const s = {};
+    months.forEach(m => { b += n[m] || 0; s[m] = b; });
+    stock[k] = s;
+  });
+  const at = (k, c) => c ? ((stock[k] || {})[lastM(c)] || 0) : (open[k] || 0); // c = null → на початок періоду
+  const keysOf = cls => Object.keys(accs).filter(k => accs[k].cls === cls);
+  const sumAt = (keys, c) => keys.reduce((s, k) => s + at(k, c), 0);
+  const eqKeys = keysOf('eq'), pnlKeys = keysOf('pnl'), techKeys = keysOf('tech'), bsKeys = keysOf('bs');
+  // Капітал = активи − зобовʼязання = −(рахунки капіталу + незакритий P&L + технічні)
+  const equityAt = c => sumAt(bsKeys, c);
+
+  const cell = v => Math.abs(v) < 0.5 ? '<span class="zr">—</span>' : '<span class="' + (v > 0 ? 'pos' : 'neg') + '">' + fmt(v, 0) + ' $</span>';
+  const tds = f => cols.map(c => '<td>' + cell(f(c)) + '</td>').join('');
+  const nz = f => cols.some(c => Math.abs(f(c)) >= 0.5);
+  const accLabel = k => { const a = accs[k]; return ((a.code ? a.code + ' ' : '') + (a.name || '')).replace(/\(\s+/g, '('); };
+  const byCode = (a, b) => String(accs[a].code || '').localeCompare(String(accs[b].code || ''), 'uk', { numeric: true });
+
+  // ── 1. Статті капіталу (Кт+) ──
+  let r1 = '';
+  eqKeys.slice().sort(byCode).forEach(k => {
+    const f = c => -at(k, c);
+    if (nz(f)) r1 += `<tr class="sec"><td>${esc(accLabel(k))}</td>${tds(f)}</tr>`;
+  });
+  const pnlF = c => -sumAt(pnlKeys, c);
+  if (nz(pnlF)) {
+    r1 += `<tr class="sec" data-sec="eqPnl" data-is-sec="1"><td><span class="tri">▾</span>Незакритий фінрезультат</td>${tds(pnlF)}</tr>`;
+    EQ_PNL_ORDER.forEach(g => {
+      const ks = pnlKeys.filter(k => accs[k].grp === g);
+      const f = c => -sumAt(ks, c);
+      if (ks.length && nz(f)) r1 += `<tr class="itm" data-sec="eqPnl"><td>${esc((data.pnlGroups || {})[g] || g)}</td>${tds(f)}</tr>`;
+    });
+  }
+  const techF = c => -sumAt(techKeys, c);
+  if (nz(techF)) {
+    r1 += `<tr class="sec" data-sec="eqTech" data-is-sec="1"><td><span class="tri">▾</span>Технічні рахунки (введення залишків)</td>${tds(techF)}</tr>`;
+    techKeys.slice().sort(byCode).forEach(k => {
+      const f = c => -at(k, c);
+      if (nz(f)) r1 += `<tr class="itm" data-sec="eqTech"><td>${esc(accLabel(k))}</td>${tds(f)}</tr>`;
+    });
+  }
+  r1 += `<tr class="grd"><td>Власний капітал</td>${tds(equityAt)}</tr>`;
+
+  // ── 2. Рух капіталу (зміна за період, Кт+) ──
+  const moves = data.moves || {};
+  const mCols = eqState.view ? cols : []; // «Разом» — лише «Всього» за період
+  const flow = (bm, c) => c.months.reduce((s, m) => s + ((bm || {})[m] || 0), 0);
+  const flowAll = bm => months.reduce((s, m) => s + ((bm || {})[m] || 0), 0);
+  const tdsFlow = bm => mCols.map(c => '<td>' + cell(flow(bm, c)) + '</td>').join('') + '<td class="col-total">' + cell(flowAll(bm)) + '</td>';
+  const nzFlow = bm => Math.abs(flowAll(bm)) >= 0.5 || mCols.some(c => Math.abs(flow(bm, c)) >= 0.5);
+  let r2 = `<tr class="sub"><td>Капітал на початок</td>${mCols.map((c, i) => '<td>' + cell(equityAt(i ? mCols[i - 1] : null)) + '</td>').join('')}<td class="col-total">${cell(equityAt(null))}</td></tr>`;
+  EQ_MOVE_CATS.forEach(cat => {
+    const mv = moves[cat.key];
+    if (!mv || !nzFlow(mv.total)) return;
+    const det = Object.keys(mv.detail || {}).map(k => Object.assign({ k: k }, mv.detail[k])).filter(d => nzFlow(d.byMonth));
+    if (cat.key === 'result') det.sort((a, b) => EQ_PNL_ORDER.indexOf(a.k) - EQ_PNL_ORDER.indexOf(b.k));
+    else det.sort((a, b) => Math.abs(flowAll(b.byMonth)) - Math.abs(flowAll(a.byMonth)));
+    const exp = det.length > 1;
+    r2 += `<tr class="sec"${exp ? ` data-sec="eqM_${cat.key}" data-is-sec="1"` : ''}><td>${exp ? '<span class="tri">▾</span>' : ''}${esc(cat.label)}</td>${tdsFlow(mv.total)}</tr>`;
+    if (exp) det.forEach(d => { r2 += `<tr class="itm" data-sec="eqM_${cat.key}"><td>${esc(d.label || '')}</td>${tdsFlow(d.byMonth)}</tr>`; });
+  });
+  r2 += `<tr class="grd"><td>Капітал на кінець</td>${mCols.map(c => '<td>' + cell(equityAt(c)) + '</td>').join('')}<td class="col-total">${cell(equityAt(lastCol))}</td></tr>`;
+
+  // ── 3. Активи і зобовʼязання: розділ — за знаком залишку на дату «по» ──
+  const sideVal = k => {
+    for (let i = cols.length - 1; i >= 0; i--) { const v = at(k, cols[i]); if (Math.abs(v) >= 0.5) return v; }
+    return 0;
+  };
+  const assets = [], liabs = [];
+  bsKeys.forEach(k => { const v = sideVal(k); if (v > 0) assets.push(k); else if (v < 0) liabs.push(k); });
+  const section = (keys, key, label, sign) => {
+    if (!keys.length) return '';
+    const groups = {};
+    keys.forEach(k => { const g = accs[k].grp || 'Інші рахунки'; (groups[g] = groups[g] || []).push(k); });
+    let h = `<tr class="cat" data-cat="${key}" data-is-cat="1"><td><span class="tri">▾</span>${label}</td>${tds(c => sign * sumAt(keys, c))}</tr>`;
+    Object.keys(groups)
+      .sort((a, b) => Math.abs(sumAt(groups[b], lastCol)) - Math.abs(sumAt(groups[a], lastCol)))
+      .forEach((g, gi) => {
+        const gk = groups[g];
+        h += `<tr class="sec" data-cat="${key}" data-sec="${key}${gi}" data-is-sec="1"><td><span class="tri">▾</span>${esc(g)}</td>${tds(c => sign * sumAt(gk, c))}</tr>`;
+        gk.sort((a, b) => Math.abs(at(b, lastCol)) - Math.abs(at(a, lastCol))).forEach(k => {
+          h += `<tr class="itm" data-cat="${key}" data-sec="${key}${gi}"><td>${esc(accLabel(k))}</td>${tds(c => sign * at(k, c))}</tr>`;
+        });
+      });
+    return h;
+  };
+  let r3 = section(assets, 'eqA', 'Активи', 1) + section(liabs, 'eqL', 'Зобовʼязання', -1);
+  r3 += `<tr class="grd"><td>Активи − зобовʼязання = капітал</td>${tds(equityAt)}</tr>`;
+
+  // ── Картки ──
+  const eqEnd = equityAt(lastCol), eqStart = equityAt(null);
+  const res = flowAll((moves.result || {}).total);
+  const aEnd = assets.reduce((s, k) => s + at(k, lastCol), 0);
+  const lEnd = -liabs.reduce((s, k) => s + at(k, lastCol), 0);
+  const money = v => fmt(v, 0) + ' $';
+  const first = String(data.dataFrom || '').slice(0, 10);
+  const since = first && data.from <= first ? 'з початку обліку (' + _eqDmy(first) + ')' : 'з ' + _eqDmy(data.from);
+  summary.innerHTML = '<div class="pnl-summary">' +
+    '<div class="pnl-card c-net"><span class="cl">Власний капітал</span><span class="cv' + (eqEnd < 0 ? ' ng' : '') + '">' + money(eqEnd) + '</span><span class="cs">на ' + _eqDmy(data.to) + '</span></div>' +
+    '<div class="pnl-card"><span class="cl">Зміна за період</span><span class="cv">' + (eqEnd - eqStart > 0 ? '+' : '') + money(eqEnd - eqStart) + '</span><span class="cs">' + esc(since) + '</span></div>' +
+    '<div class="pnl-card"><span class="cl">Фінансовий результат</span><span class="cv">' + money(res) + '</span><span class="cs">доходи − витрати за період</span></div>' +
+    '<div class="pnl-card"><span class="cl">Активи</span><span class="cv">' + money(aEnd) + '</span><span class="cs">зобовʼязання ' + money(lEnd) + '</span></div>' +
+    '</div>';
+
+  // Свіжість: хвіст проводок синкається щопівгодини 08:00–20:30, тож > доби — синк зламався.
+  const syncedMs = data.syncedAt ? Date.parse(data.syncedAt) : NaN;
+  const stale = !isFinite(syncedMs) || Date.now() - syncedMs > 26 * 3600e3;
+  const syncedTxt = isFinite(syncedMs)
+    ? new Date(syncedMs).toLocaleString('uk-UA', { timeZone: 'Europe/Kiev', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+    : '';
+  const note = '<div class="eq-note' + (stale ? ' eq-bad' : '') + '">' +
+    (syncedTxt ? 'Проводки 1С на ' + syncedTxt + (stale ? ' — синк не оновлювався понад добу' : '') : 'Хвіст проводок ще не синкався') +
+    ' · у таблицях капіталу й балансу колонка — залишок на кінець періоду</div>';
+  const head = (title, cs, total) => '<thead><tr><th>' + title + '</th>' + cs.map(c => '<th>' + esc(c.label) + '</th>').join('') + (total ? '<th class="col-total">Всього</th>' : '') + '</tr></thead>';
+  const multi = cols.length > 1 ? ' pnl-multi' : '';
+  body.innerHTML = note +
+    '<div class="pnl-wrap"><table class="pnl-table' + multi + '">' + head('Власний капітал', cols, false) + '<tbody>' + r1 + '</tbody></table></div>' +
+    '<div class="pnl-wrap"><table class="pnl-table' + (mCols.length ? ' pnl-multi' : '') + '">' + head('Рух капіталу', mCols, true) + '<tbody>' + r2 + '</tbody></table></div>' +
+    '<div class="pnl-wrap"><table class="pnl-table' + multi + '">' + head('Активи і зобовʼязання', cols, false) + '<tbody>' + r3 + '</tbody></table></div>';
+  body.querySelectorAll('.pnl-table').forEach(t => pnlBindCollapse(t));
+  _eqApplyCollapse(eqState.collapsed !== false);
+}
+
+function _eqApplyCollapse(collapse) {
+  document.querySelectorAll('#eqBody .pnl-table').forEach(tbl => {
+    tbl.querySelectorAll('tr[data-is-cat], tr[data-is-sec]').forEach(tr => tr.setAttribute('data-collapsed', collapse ? 'true' : 'false'));
+    tbl.querySelectorAll('tr[data-cat]:not([data-is-cat]), tr[data-sec]:not([data-is-sec])').forEach(r => r.classList.toggle('collapsed-hidden', collapse));
+  });
+  setToggleActive('#eqToolbar .pnl-collapse-ctl', collapse);
+}
+function eqToggleAll(collapse) {
+  _eqApplyCollapse(collapse);
+  eqState.collapsed = collapse;
+  saveStateToUrl();
+}
+
+_eqPicker = initDateRange({ inputId: 'eqDateRange', from: eqState.from, to: eqState.to,
+  onChange: function(f, t) { eqState.from = f; eqState.to = t; eqDateChanged(); } });
+
 /* ═══════════════════════════════════════════════════
    INIT
    ═══════════════════════════════════════════════════ */
@@ -4737,6 +5168,11 @@ function detectPreset(from, to) {
   const now = new Date();
   const y = now.getFullYear(), m = now.getMonth();
   const iso = d => _localISO(d);
+
+  // «Весь час» (вкладка «Капітал»): початок раніше будь-якої проводки в 1С
+  if (from <= '2020-12-31') return 'all';
+  // Минулий рік — точні межі
+  if (from === iso(new Date(y - 1, 0, 1)) && to === iso(new Date(y - 1, 11, 31))) return 'prevyear';
 
   // Цей місяць: from = 1-ше поточного місяця, to — у межах цього місяця
   const monthStart = iso(new Date(y, m, 1));
@@ -4832,7 +5268,7 @@ Auth.require('finance').then(function(user) {
   // Всі 8 org-груп сторінки — видимість чіпів і дефолтна org мають бути
   // консистентні на КОЖНІЙ вкладці: інакше юзер з однією орг на вкладці
   // з дефолтом «Всі» (org='') ловить 403 від бекенд org-scope.
-  var ORG_GROUPS = ['pnlOrgGroup', 'gpOrgGroup', 'fiOrgGroup', 'cfOrgGroup', 'arOrgGroup', 'msOrgGroup', 'whOrgGroup', 'cbOrgGroup'];
+  var ORG_GROUPS = ['pnlOrgGroup', 'gpOrgGroup', 'fiOrgGroup', 'cfOrgGroup', 'arOrgGroup', 'msOrgGroup', 'whOrgGroup', 'cbOrgGroup', 'eqOrgGroup'];
   if (hasAnyOrg) {
     var allowedOrgs = ['Реакт', 'Генерація'].filter(function(o) { return userOrgs[o]; });
     ORG_GROUPS.forEach(function(groupId) {
@@ -4853,7 +5289,7 @@ Auth.require('finance').then(function(user) {
 
   // Auto-select org — на всіх вкладках
   const defaultOrg = (hasAnyOrg && allowedOrgs.length === 1) ? allowedOrgs[0] : '';
-  [pnlState, gpState, fiState, cfState, arState, msState, whState, cbState].forEach(function(st) {
+  [pnlState, gpState, fiState, cfState, arState, msState, whState, cbState, eqState].forEach(function(st) {
     st.org = defaultOrg;
   });
   ORG_GROUPS.forEach(function(groupId) {
@@ -4865,7 +5301,7 @@ Auth.require('finance').then(function(user) {
   // Кнопки ручного синку (gp/wh) б'ють в _admin_sync_* — вони admin-only на
   // бекенді, тож не-адмінам їх не показуємо взагалі.
   if (!user.roles || !user.roles.admin) {
-    ['gpSyncBtn', 'whSyncBtn'].forEach(function(id) {
+    ['gpSyncBtn', 'whSyncBtn', 'eqSyncBtn'].forEach(function(id) {
       var b = document.getElementById(id);
       if (b) b.style.display = 'none';
     });
@@ -4881,7 +5317,7 @@ Auth.require('finance').then(function(user) {
   // Restore state from URL or default to 'year'
   const saved = readStateFromUrl();
   if (saved && ((saved.from && saved.to) || saved.on)) {
-   if (saved.from && saved.to) {
+   if (saved.from && saved.to && saved.tab !== 'eq') {
     // Restore PNL state
     pnlState.from = saved.from;
     pnlState.to = saved.to;
@@ -4987,6 +5423,16 @@ Auth.require('finance').then(function(user) {
       }
       var cbTabEl = document.querySelector('.ptab[data-view="cb"]');
       if (cbTabEl) switchTab(cbTabEl);
+    } else if (chosenTab === 'eq') {
+      // «Капітал» — власний період (за замовчуванням «Весь час»): from/to з URL
+      // ідуть лише в eqState, не в P&L/ВП/Розрахунки (див. умову restore вище).
+      if (saved.from && saved.to) { eqState.from = saved.from; eqState.to = saved.to; }
+      eqState.preset = saved.preset || detectPreset(eqState.from, eqState.to) || '';
+      eqState.view = saved.view === 'total' ? '' : (['y', 'q', 'm'].includes(saved.view) ? saved.view : 'y');
+      eqState.collapsed = saved.exp !== '1';
+      if (saved.org !== undefined && (!hasAnyOrg || allowedOrgs.includes(saved.org))) eqState.org = saved.org;
+      var eqTabEl = document.querySelector('.ptab[data-view="eq"]');
+      if (eqTabEl) { eqState._noSync = true; switchTab(eqTabEl); }
     } else if (chosenTab === 'wh') {
       // Дата для warehouse — приймаємо обидва: ?on= (новий) і ?wh_on= (legacy
       // з executive dashboard).
@@ -5042,6 +5488,7 @@ Auth.require('finance').then(function(user) {
     else if (forcedTab === 'ar') { var t = document.querySelector('.ptab[data-view="ar"]'); if (t) switchTab(t); }
     else if (forcedTab === 'ms') { var t = document.querySelector('.ptab[data-view="ms"]'); if (t) switchTab(t); }
     else if (forcedTab === 'wh') { var t = document.querySelector('.ptab[data-view="wh"]'); if (t) switchTab(t); }
+    else if (forcedTab === 'eq') { var t = document.querySelector('.ptab[data-view="eq"]'); if (t) switchTab(t); }
   }
 });
 </script>
