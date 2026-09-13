@@ -331,7 +331,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <h3>Фільтри: менеджер, інтерес, канал</h3>
     <ul>
       <li>Фільтрують <b>угоди</b> за їхнім <b>поточним</b> значенням; воронка, KPI і список лідів перераховуються лише по цих угодах — у всіх трьох режимах. Колонки «Менеджер» і «Канал» у списку лідів — теж поточні значення.</li>
-      <li><b>Менеджер</b> — поточний виконавець: той, хто стоїть в угоді на її останній зміні статусу (Planfix передає виконавця з кожним переходом). Угоду, яку кваліфікатор передав менеджеру, воронка менеджера показує всю — разом з етапами до передачі. У режимі «Когорта» «Лідів» і «Аванс» збігаються з рядком менеджера на вкладці «Менеджери».</li>
+      <li><b>Менеджер</b> — поточний виконавець угоди з найсвіжішого джерела: картки Planfix (відкриті угоди звіряються щопівгодини в робочий час, закриті з рухом за останні 200 днів — поступово, раз на кілька днів) або останньої зміни статусу, якщо вона новіша. Для старіших закритих угод — виконавець на момент останньої зміни статусу. Угоду, яку кваліфікатор передав менеджеру, воронка менеджера показує всю — разом з етапами до передачі. У режимі «Когорта» «Лідів» і «Аванс» збігаються з рядком менеджера на вкладці «Менеджери».</li>
       <li>Конверсію менеджера дивіться в «Когорті». У «За період» «Лідів» — ті самі угоди, створені в період, а етапи й Win — заходи у вибрані дні угод будь-якого місяця створення (напр. аванс по ліду минулого місяця), тож частки «від лідів» не про самі ліди й можуть бути понад 100%.</li>
       <li><b>Канал</b> — актуальний канал реклами з картки угоди; «— без каналу» — поле не заповнене. У «Когорті» збігається з вкладкою «Канали».</li>
       <li><b>Інтерес</b> — групи, як у «Підписаних»: Модернізація СЕС / Товари / Проєктування — за значенням поля «Інтерес»; усе інше заповнене (Автономність, Під власне споживання, Пасивний дохід…) = СЕС. «Не заповнено» — поле порожнє.</li>
@@ -369,7 +369,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <h3>Що рахуємо</h3>
     <ul>
       <li><b>Когорта</b> — ліди, <b>створені</b> у вибрані дні (+ чіпи «тип клієнта» і «клас»). Куди вони дійшли — за всю історію угоди.</li>
-      <li><b>Менеджер</b> — <b>поточний</b> виконавець угоди (з її останньої зміни статусу в Planfix). Угоду, яку кваліфікатор передав менеджеру, рахуємо за тим, у кого вона зараз, — разом з етапами до передачі.</li>
+      <li><b>Менеджер</b> — <b>поточний</b> виконавець угоди з найсвіжішого джерела: картки Planfix (відкриті угоди — щопівгодини в робочий час; закриті з рухом за останні 200 днів — поступово) або останньої зміни статусу, якщо вона новіша; для старіших закритих угод — виконавець на момент останньої зміни статусу. Угоду, яку кваліфікатор передав менеджеру, рахуємо за тим, у кого вона зараз, — разом з етапами до передачі.</li>
       <li><b>Цільових</b> — дійшли до «Визначено як цільовий» або далі; <b>Цільових А</b> — з них клас А.</li>
       <li><b>Аванс отримано</b> — виграні угоди (поле Planfix «Статус угоди» = «Успешно»), <b>Аванс А</b> — з них клас А. <b>Конверсія</b> = Аванс / Всього; <b>Конверсія А</b> = Аванс А / Цільових А — конверсія всередині класу А. Клас ставлять на кваліфікації, тож майже всі ліди класу А — цільові; ті, що до «Визначено як цільовий» не дійшли (закриті одразу або ще нові), у знаменник не входять — тому рядків класу А в розшифровці може бути трохи більше, ніж «Цільових А». «—», коли цільових А немає.</li>
       <li><b>Виручка</b> — сума «Бюджет в дол.» виграних угод (актуальне значення з картки); <b>Серед. чек</b> = Виручка / Аванс.</li>
@@ -381,11 +381,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     </ul>
     <h3>Навантаження</h3>
     <ul>
-      <li>Перемикач «Навантаження» показує, де <b>зараз</b> угоди, створені у вибрані дні: скільки в кожного менеджера стоїть на кожному етапі. Для повної картини — пресет «Весь час».</li>
-      <li><b>Етапи</b> — що рахувати. За замовчуванням усі робочі, без «Відкладене», «Успішно реалізовано» і «Закрито та не реалізовано»; число на чіпі — скільки угод періоду зараз на цьому етапі. A / B / C — клас серед вибраних угод.</li>
+      <li>Перемикач «Навантаження» показує <b>відкриті угоди прямо з Planfix</b>: поточний етап і виконавця беремо з картки угоди, а не з історії переходів. Список оновлюється щопівгодини в робочий час (autosync), час останнього оновлення — у тулбарі. Відкриті — усі статуси, крім «Успішно реалізовано» і «Закрито та не реалізовано», — той самий набір, що у звіті Planfix «Активні угоди по менеджерах». Але той звіт показує лише відділ продажів, а тут — усі відкриті угоди шаблону «Продажі станцій»: «Разом» більше на угоди інсталяторів («Юрій Булава / Інсталятор»…), інших виконавців і «— без виконавця»; угода з кількома виконавцями тут — окремий рядок «Ім'я, Ім'я», а в Planfix рахується в кожного.</li>
+      <li>Період — за датою створення угоди; для повної картини навантаження — «Весь час». Тип клієнта й клас — з картки угоди.</li>
+      <li><b>Етапи</b> — що рахувати; за замовчуванням усі, разом із «Відкладене». Число на чіпі — скільки угод періоду зараз на цьому етапі. A / B / C — клас серед вибраних угод.</li>
       <li>Клік по менеджеру — його угоди у вибраних етапах, із сортуванням.</li>
-      <li><b>Поточний етап</b> — останній статус, який Planfix передав подією переходу. Зміну статусу без події (робот, масова дія) ловить лише звірка з карткою угоди: вона йде з 10.09.2026 порціями, першими — угоди з найсвіжішим рухом, і угод без руху понад 200 днів не охоплює зовсім.</li>
-      <li><b>Без руху &gt;200 дн</b> — відкриті угоди, у яких понад 200 днів не було жодної зміни (у розшифровці — червона дата). Частина з них, імовірно, вже закрита — варто перевірити й закрити в Planfix. Закриті, реалізовані й відкладені сюди не рахуються.</li>
+      <li><b>Без руху &gt;200 дн</b> — угоди, у яких понад 200 днів задача в Planfix не змінювалась (дата останньої зміни задачі; будь-яка зміна, не лише статусу, скидає лічильник — тож угода, що стоїть на етапі, але її редагували, сюди не потрапить). Однойменний чип показує лише їх — варто пройтись і закрити неактуальні; у розшифровці їхня дата зміни червона.</li>
+      <li>Цифри тут можуть відрізнятися від «Результатів»: там — ліди, створені в період, і куди вони дійшли за подіями переходів; тут — лише ті, що відкриті зараз, у поточному стані з Planfix.</li>
     </ul>
     <h3>Нюанси, що можуть здивувати</h3>
     <ul>
@@ -443,9 +444,11 @@ const state = {
   mgrView: '',          // «Менеджери»: '' = результати когорти | 'load' = навантаження (поточні етапи)
   // «Навантаження»: зміни відносно дефолту (усі робочі етапи, без закритих/відкладених) — саме
   // зміни, а не знімок вибраних: інакше етап, якого не було в поточному періоді, лишався б
-  // вимкненим після зміни періоду (рев'ю 11.09). Hash: ls=-Нове|+Відкладене
+  // вимкненим після зміни періоду (рев'ю 11.09). Дефолт — усі відкриті, разом із «Відкладене».
+  // Hash: ls=-Нове|-Відкладене
   loadOff: [],          // робочі етапи, які користувач вимкнув
-  loadOn: [],           // закриті/відкладені етапи, які користувач увімкнув
+  loadOn: [],           // закриті етапи, які користувач увімкнув (у Planfix-джерелі не трапляються)
+  loadStale: false,     // лише угоди без руху понад 200 днів (hash lst=1)
 };
 
 const REPORT_ACTION = {
@@ -511,6 +514,7 @@ function saveStateToUrl() {
   if (state.mgrView) h.set('mv', state.mgrView);
   const ls = [...state.loadOff.map(s => '-' + s), ...state.loadOn.map(s => '+' + s)];
   if (ls.length) h.set('ls', ls.join('|'));
+  if (state.loadStale) h.set('lst', '1');
   history.replaceState(null, '', '#' + h.toString());
 }
 function hydrateFromHash() {
@@ -530,8 +534,12 @@ function hydrateFromHash() {
   if (h.get('fi'))     state.fInterest = h.get('fi');
   if (h.get('fc'))     state.fChannel = h.get('fc');
   if (h.get('mv'))     state.mgrView = h.get('mv');
+  if (h.get('lst') === '1') state.loadStale = true;
   if (h.get('ls'))     for (const t of h.get('ls').split('|')) {
-    if (t[0] === '-') state.loadOff.push(t.slice(1)); else if (t[0] === '+') state.loadOn.push(t.slice(1));
+    // '+' має сенс лише для закритих етапів, '-' — лише для робочих (старі закладки з +Відкладене)
+    const s = t.slice(1);
+    if (t[0] === '-' && !LOAD_CLOSED.includes(s)) state.loadOff.push(s);
+    else if (t[0] === '+' && LOAD_CLOSED.includes(s)) state.loadOn.push(s);
   }
   if (!h.get('preset')) state.preset = detectPreset(state.from, state.to);
 }
@@ -759,7 +767,9 @@ async function load(force = false) {
   state.loading = true;
   document.getElementById('content').innerHTML = `<div class="loading">Завантаження звіту…</div>`;
   try {
-    const action = REPORT_ACTION[state.report] || 'sheet_funnel';
+    // «Навантаження» на «Менеджерах» — окреме джерело: відкриті угоди прямо з Planfix
+    const action = state.report === 'managers' && state.mgrView === 'load'
+      ? 'sheet_workload' : (REPORT_ACTION[state.report] || 'sheet_funnel');
     const params = new URLSearchParams({ action, from: state.from, to: state.to });
     if (state.clientType) params.set('clientType', state.clientType);
     if (state.leadClass) params.set('leadClass', state.leadClass);
@@ -784,7 +794,14 @@ async function load(force = false) {
     state.raw = data;
     state.loading = false;
     let label = '';
-    if (state.mode === 'period') {
+    if (data.source === 'planfix_open') {
+      // Нічна пауза autosync ~11,5 год; довше 14 год без синку — він зламався, кажемо прямо
+      const ageH = data.syncedAt ? (Date.now() - Date.parse(String(data.syncedAt).replace(' ', 'T') + 'Z')) / 3600000 : 0;
+      label = data.syncedAt
+        ? `Planfix · відкриті угоди, оновлено <b>${esc(fmtSyncedAt(data.syncedAt))}</b>`
+          + (ageH > 14 ? ' <span style="color:var(--red)">— синк давно не проходив, дані можуть бути застарілі</span>' : '')
+        : 'Planfix · відкриті угоди ще не завантажені';
+    } else if (state.mode === 'period') {
       label = `Джерело: <b>Planfix</b> · подій у періоді: <b>${fmt(data._rowsInPeriod || 0)}</b>`;
     } else {
       const fresh = data.generatedAt ? data.generatedAt.replace('T',' ').slice(0,16) : '';
@@ -872,6 +889,8 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;',
 function fmt(n){return Number(n||0).toLocaleString('uk-UA')}
 function pct(n){return (Math.round((n||0)*1000)/10).toFixed(1) + '%'}
 function fmtDateUA(iso){if(!iso)return '—';const d=iso.slice(0,10).split('-');return `${d[2]}.${d[1]}.${d[0]}`}
+// synced_at з D1 — UTC 'YYYY-MM-DD HH:MM:SS' → «13.09 14:30» за місцевим часом
+function fmtSyncedAt(s){const d=new Date(String(s).replace(' ','T')+'Z');if(isNaN(d))return s;const p=n=>String(n).padStart(2,'0');return `${p(d.getDate())}.${p(d.getMonth()+1)} ${p(d.getHours())}:${p(d.getMinutes())}`}
 
 // ─── Render ───
 function updateInfoBanner() {
@@ -1014,7 +1033,7 @@ const NO_CHANNEL_HIDE_STATUS = new Set(['Нове', "Спробу зв'язат�
 // Розшифровка по лідах (канал / менеджер / навантаження) — той самий вигляд і сортування,
 // що «Усі ліди» у воронці: клік по заголовку, повторний — у зворотному порядку.
 // lastCol: 'manager' — угоди каналу; 'channel' — ліди менеджера.
-// staleBefore (YYYY-MM-DD): дата зміни раніше — червоним (навантаження: статус не звірявся).
+// staleBefore (YYYY-MM-DD): дата зміни раніше — червоним («Навантаження»: задача в Planfix давно не змінювалась).
 // mgr-wrap + min-width: на мобілці таблиця гортається у своєму боксі.
 let drillSort = { col: 'changeDate', dir: 'desc' };
 function drillSorted(leads) {
@@ -1060,7 +1079,7 @@ function drillLeadsHTML({ anchorId, clearId, title, hint, leads, lastCol, emptyT
       <td>${esc(l.name)}</td>
       <td style="white-space:nowrap">${esc(l.createdDate)}</td>
       <td>${esc(l.currentStatus)}</td>
-      <td${stale ? ` style="color:var(--red)" title="Без руху понад ${LOAD_STALE_DAYS} днів — статус з карткою Planfix не звіряється"` : ''}>${esc(l.changeDate)}</td>
+      <td${stale ? ` style="color:var(--red)" title="Понад ${LOAD_STALE_DAYS} днів задача в Planfix не змінювалась"` : ''}>${esc(l.changeDate)}</td>
       <td class="num" style="white-space:nowrap">${l.budget ? fmt(l.budget) : '—'}</td>
       <td>${esc(l.clientClass)}</td>
       <td>${esc(l.clientType)}</td>
@@ -1102,11 +1121,12 @@ function mgrViewBarHTML() {
     <span class="chip${load ? ' active' : ''}" onclick="setMgrView('load')">Навантаження</span>
   </span></div>`;
 }
-function setMgrView(v) { state.mgrView = v === 'load' ? 'load' : ''; saveStateToUrl(); render(); }
+// Вигляди мають різні джерела (sheet_managers / sheet_workload) — перемикання = новий запит
+function setMgrView(v) { state.mgrView = v === 'load' ? 'load' : ''; saveStateToUrl(); load(); }
 
-// «Навантаження»: де ЗАРАЗ угоди когорти періоду — поточний етап по менеджерах.
-// Рахуємо з managers[].leadsList (поточний статус = найсвіжіший рядок угоди), без
-// окремого запиту. Етапи — мультивибір; за замовчуванням без закритих/відкладених.
+// «Навантаження»: відкриті угоди прямо з Planfix (окремий запит sheet_workload → D1
+// crm_open_deals), створені у вибрані дні; поточний етап і виконавець — з картки угоди.
+// Етапи — мультивибір; за замовчуванням усі відкриті, разом із «Відкладене».
 const LOAD_STATUS_LABEL = {
   'Нове': 'Нове', "Спробу зв'язатись зроблено": 'Спроба звʼязку', 'Визначено як цільовий': 'Цільовий',
   'Виявлено потребу': 'Потреба', 'ТЗ сформовано': 'ТЗ', 'КП презентовано': 'КП', 'Згоду отримано': 'Згода',
@@ -1116,9 +1136,11 @@ const LOAD_STATUS_LABEL = {
   'Призначено в офісі зустріч': 'Зустріч в офісі: призн.', 'Проведено в офісі зустріч': 'Зустріч в офісі: пров.',
   "Призначено на об'єкті зустріч": 'Зустріч на обʼєкті: призн.', "Проведено на об'єкті зустріч": 'Зустріч на обʼєкті: пров.',
 };
-const LOAD_CLOSED = ['Відкладене', 'Успішно реалізовано', 'Закрито та не реалізовано'];
-// = вікно синку снапшотів Planfix (syncCrmDealSnapshots, days=200): для угод без руху
-// довше поточний статус з Planfix не звіряється — міг змінитись без нашої події.
+// Закриті в «Навантаження» не приходять (sheet_workload = відкриті з Planfix); «Відкладене» —
+// робочий етап за замовчуванням, як «Активні угоди по менеджерах» у Planfix.
+const LOAD_CLOSED = ['Успішно реалізовано', 'Закрито та не реалізовано'];
+// Поріг «Без руху»: задача в Planfix не змінювалась (pf_updated_at = dateOfLastUpdate) довше за
+// стільки днів. Самостійне бізнес-правило — НЕ пов'язане з вікном синку снапшотів (days=200).
 const LOAD_STALE_DAYS = 200;
 const LOAD_CLASS = { 'A': 'A', 'А': 'A', 'B': 'B', 'В': 'B', 'C': 'C', 'С': 'C' };  // латиниця/кирилиця
 function loadStatusOrder(d) {
@@ -1136,23 +1158,34 @@ function toggleLoadStatus(s) {
   if (i >= 0) arr.splice(i, 1); else arr.push(s);
   saveStateToUrl(); render();
 }
-function resetLoadStatuses() { state.loadOff = []; state.loadOn = []; saveStateToUrl(); render(); }
+function resetLoadStatuses() { state.loadOff = []; state.loadOn = []; state.loadStale = false; saveStateToUrl(); render(); }
 function renderManagersLoad(d) {
-  if (!d.managers.length) return `<div class="empty">У вибрані дні нових лідів немає.</div>`;
+  if (!d.syncedAt) return `<div class="empty">Відкриті угоди з Planfix ще не завантажені — синк іде щопівгодини в робочий час.</div>`;
+  if (!d.managers.length) {
+    // Що саме відсікло: період чи чіпи тип/клас (inPeriod — відкриті, створені в період, до тип/клас)
+    const chips = [state.clientType === 'private' ? 'Приватні' : state.clientType === 'business' ? 'Бізнес' : '',
+      state.leadClass ? 'клас ' + state.leadClass : ''].filter(Boolean).join(' · ');
+    return `<div class="empty">${d.inPeriod && chips
+      ? `Відкриті угоди, створені у вибрані дні, є (${fmt(d.inPeriod)}), але жодна не підходить під «${esc(chips)}» — скиньте тип або клас.`
+      : `Серед відкритих угод Planfix немає створених у вибрані дні${state.preset === 'all' ? '' : ' — спробуйте «весь час»'}.`}</div>`;
+  }
   const order = loadStatusOrder(d);
   const sel = loadSelected(order);
   const selSet = new Set(sel);
   const staleBefore = _localISO(new Date(Date.now() - LOAD_STALE_DAYS * 86400000));
+  // «Без руху» = задача в Planfix не змінювалась понад LOAD_STALE_DAYS (changeDate = остання зміна задачі)
+  const isStale = l => !LOAD_CLOSED.includes(l.currentStatus) && (l.changeDate || '').slice(0, 10) < staleBefore;
+  const staleAll = d.managers.reduce((n, m) => n + m.leadsList.filter(l => selSet.has(l.currentStatus || '—') && isStale(l)).length, 0);
   const statusCount = {};
   d.managers.forEach(m => m.leadsList.forEach(l => { const s = l.currentStatus || '—'; statusCount[s] = (statusCount[s] || 0) + 1; }));
   const rows = d.managers.map((m, i) => {
-    const leads = m.leadsList.filter(l => selSet.has(l.currentStatus || '—'));
+    const leads = m.leadsList.filter(l => selSet.has(l.currentStatus || '—') && (!state.loadStale || isStale(l)));
     const r = { m, i, leads, total: leads.length, by: {}, cls: { A: 0, B: 0, C: 0 }, stale: 0 };
     for (const l of leads) {
       const s = l.currentStatus || '—';
       r.by[s] = (r.by[s] || 0) + 1;
       const k = LOAD_CLASS[String(l.clientClass || '').trim()]; if (k) r.cls[k]++;
-      if (!LOAD_CLOSED.includes(s) && (l.changeDate || '').slice(0, 10) < staleBefore) r.stale++;  // закриті/відкладені не «висять»
+      if (isStale(l)) r.stale++;
     }
     return r;
   }).filter(r => r.total).sort((a, b) => b.total - a.total);
@@ -1168,33 +1201,35 @@ function renderManagersLoad(d) {
   let html = `
   <div class="info-banner">
     <span class="ib-tag">НАВАНТАЖЕННЯ</span>
-    Де <b>зараз</b> угоди, створені у вибрані дні: скільки в кожного менеджера стоїть на кожному етапі. Чіпи «Етапи» — що рахувати; за замовчуванням без відкладених, реалізованих і закритих.
+    Відкриті угоди <b>прямо з Planfix</b>: поточний етап і виконавець з картки угоди (оновлюється щопівгодини в робочий час) — скільки в кожного менеджера на кожному етапі. Період — за датою створення угоди; чіпи «Етапи» — що рахувати.
     ${allTime ? '' : `Повна картина навантаження — за <a href="#" onclick="setPreset('all');return false" style="color:var(--accent)">весь час</a>.`}
     <span class="chip" style="margin-left:10px" onclick="openMgrHelp()" title="Як працює цей звіт">❓ Як працює</span>
   </div>
   <div class="toolbar">
     <span class="lbl">Етапи</span>
     ${order.map(s => `<span class="chip${selSet.has(s) ? ' active' : ''}" data-ls="${esc(s)}" title="${esc(s)}">${esc(LOAD_STATUS_LABEL[s] || s)} <span style="opacity:.6">${fmt(statusCount[s] || 0)}</span></span>`).join('')}
-    ${state.loadOff.length || state.loadOn.length ? '<span class="sep"></span><span class="chip" data-ls-reset="1">× Скинути</span>' : ''}
+    <span class="sep"></span><span class="chip${state.loadStale ? ' active' : ''}" data-lstale="1" title="Лише угоди, у яких понад ${LOAD_STALE_DAYS} днів задача в Planfix не змінювалась">Без руху &gt;${LOAD_STALE_DAYS} дн <span style="opacity:.6">${fmt(staleAll)}</span></span>
+    ${state.loadOff.length || state.loadOn.length || state.loadStale ? '<span class="sep"></span><span class="chip" data-ls-reset="1">× Скинути</span>' : ''}
   </div>`;
+  if (state.loadStale && sel.length && !rows.length) {
+    return html + `<div class="empty">Угод без руху понад ${LOAD_STALE_DAYS} днів у вибраних етапах немає.</div>`;
+  }
   if (!sel.length || !rows.length) {
-    // «Оберіть етап» — лише коли користувач сам вимкнув усі робочі; інакше робочих угод просто нема
+    // «Оберіть етап» — коли користувач сам вимкнув усі етапи; інакше (теоретично) угод просто нема
     const userOff = order.some(s => !LOAD_CLOSED.includes(s) && state.loadOff.includes(s));
-    return html + `<div class="empty">${userOff
-      ? 'Оберіть хоча б один етап.'
-      : `Робочих угод серед створених у вибрані дні немає — усі закриті, реалізовані або відкладені (їх можна увімкнути чіпами)${allTime ? '' : ', або спробуйте «весь час»'}.`}</div>`;
+    return html + `<div class="empty">${userOff ? 'Оберіть хоча б один етап.' : 'У вибраних етапах угод немає.'}</div>`;
   }
   html += `
   <div class="kpi">
     <div class="kpi-card"><div class="lbl">Угод у вибраних етапах</div><div class="val">${fmt(T.total)}</div></div>
     <div class="kpi-card"><div class="lbl">З них клас A</div><div class="val">${fmt(T.cls.A)}</div></div>
-    <div class="kpi-card${T.stale ? ' c-fail' : ''}"><div class="lbl">Без руху понад ${LOAD_STALE_DAYS} днів</div><div class="val">${fmt(T.stale)}</div><div class="sub">відкриті; з карткою Planfix не звіряються</div></div>
+    <div class="kpi-card${T.stale ? ' c-fail' : ''}"><div class="lbl">Без руху понад ${LOAD_STALE_DAYS} днів</div><div class="val">${fmt(T.stale)}</div><div class="sub">задача в Planfix не змінювалась</div></div>
   </div>`;
   html += `<div class="section-h"><h2>👥 Навантаження менеджерів</h2><span class="hint">поточний етап угоди · клік по менеджеру — його угоди нижче</span></div>`;
   html += `<div class="mgr-wrap"><table class="mgr-table load-matrix"><thead><tr><th>Менеджер</th>`
     + sel.map(s => `<th title="${esc(s)}">${esc(LOAD_STATUS_LABEL[s] || s)}</th>`).join('')
     + `<th>Разом</th><th title="Клас клієнта серед угод у вибраних етапах">A</th><th>B</th><th>C</th>`
-    + `<th title="Відкриті угоди без руху понад ${LOAD_STALE_DAYS} днів: їхній статус з карткою Planfix не звіряється">Без руху &gt;${LOAD_STALE_DAYS} дн</th></tr></thead><tbody>`;
+    + `<th title="Угоди, у яких понад ${LOAD_STALE_DAYS} днів задача в Planfix не змінювалась">Без руху &gt;${LOAD_STALE_DAYS} дн</th></tr></thead><tbody>`;
   for (const r of rows) {
     const active = state.managerFilter === r.m.name ? ' active' : '';
     html += `<tr class="clickable${active}" data-mgr-idx="${r.i}"><td title="${esc(r.m.name)}">${esc(ffShort(r.m.name))}</td>`
@@ -1208,7 +1243,7 @@ function renderManagersLoad(d) {
     + `<td class="num">${T.stale ? `<span style="color:var(--red)">${fmt(T.stale)}</span>` : dot}</td></tr>`;
   html += `</tbody></table></div>`;
   if (T.stale) {
-    html += `<div class="muted" style="padding:0 6px 12px">${fmt(T.stale)} відкритих угод без руху понад ${LOAD_STALE_DAYS} днів: їхній етап — з останньої події Planfix, а звірка з карткою угоди таких не охоплює. Частина з них, імовірно, вже закрита — перевірте й закрийте в Planfix; у розшифровці їхня дата зміни червона.</div>`;
+    html += `<div class="muted" style="padding:0 6px 12px">${fmt(T.stale)} угод понад ${LOAD_STALE_DAYS} днів без жодної зміни в Planfix — варто перевірити, чи вони ще актуальні, і закрити зайві. Чип «Без руху &gt;${LOAD_STALE_DAYS} дн» показує лише їх; у розшифровці їхня дата зміни червона.</div>`;
   }
   if (state.managerFilter) {
     const r = rows.find(x => x.m.name === state.managerFilter);
@@ -2011,6 +2046,8 @@ function attachManagerDrilldown(d) {
   attachDrillSort();
   // «Навантаження»: чіпи етапів (data-атрибут, бо в назвах статусів апострофи)
   document.querySelectorAll('#content [data-ls]').forEach(c => c.addEventListener('click', () => toggleLoadStatus(c.dataset.ls)));
+    const lstChip = document.querySelector('#content [data-lstale]');
+    if (lstChip) lstChip.addEventListener('click', () => { state.loadStale = !state.loadStale; saveStateToUrl(); render(); });
   const lsReset = document.querySelector('#content [data-ls-reset]');
   if (lsReset) lsReset.addEventListener('click', resetLoadStatuses);
 }
