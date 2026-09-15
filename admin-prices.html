@@ -918,31 +918,25 @@ async function apiCall(action, opts = {}) {
   return data;
 }
 
+const REFRESH_STEP_LABEL = {
+  prices: 'Ціни', nomenclature: 'Нові позиції з 1С', stock: 'Залишки',
+  invalidate_price_api_kv: 'Кеш прайсу', refresh_react_pricelist: 'Публічний прайс',
+};
+
 async function refreshAll(btn) {
   const orig = btn.textContent;
   btn.disabled = true;
-  btn.textContent = 'Оновлюю…';
-  const errors = [];
+  btn.textContent = 'Оновлюю… ~20 с';
   try {
-    const [prices, stocks] = await Promise.all([
-      apiCall('_admin_public_prices_refresh').catch(e => ({ _err: e })),
-      apiCall('_admin_sync_stock').catch(e => ({ _err: e })),
-    ]);
-    if (prices._err) {
-      errors.push('Ціни: ' + (prices._err.message || prices._err));
-    } else if (Array.isArray(prices.steps)) {
-      const failed = prices.steps.filter(s => !s.ok);
-      if (failed.length) errors.push('Ціни: ' + failed.map(s => s.error || 'fail').join('; '));
-    }
-    if (stocks._err) {
-      errors.push('Залишки: ' + (stocks._err.message || stocks._err));
-    } else if (stocks.error) {
-      errors.push('Залишки: ' + stocks.error);
-    }
-    if (errors.length) {
-      toast(errors.join(' · '), 'err');
+    // Один запит на бек (роль prices): ціни ‖ нові позиції з 1С → залишки,
+    // потім публічний прайс react.ink — вже зі свіжими залишками.
+    const r = await apiCall('price_list_refresh');
+    const failed = (r.steps || []).filter(s => !s.ok);
+    if (failed.length) {
+      toast(failed.map(s => (REFRESH_STEP_LABEL[s.step] || s.step) + ': ' + (s.error || 'помилка')).join(' · '), 'err');
     } else {
-      toast('Ціни і залишки оновлено', 'ok');
+      const added = (r.steps || []).find(s => s.step === 'nomenclature')?.result?.added || 0;
+      toast('Ціни, залишки і публічний прайс оновлено' + (added ? ` · нових позицій з 1С: ${added}` : ''), 'ok');
     }
     load();
   } catch (e) {
