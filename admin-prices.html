@@ -302,6 +302,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .media-item .mi-x{position:absolute;top:2px;right:2px;width:18px;height:18px;line-height:16px;text-align:center;border-radius:50%;background:var(--surface);border:1px solid var(--border);cursor:pointer;font-size:11px;color:var(--text2)}
 .media-item .mi-x:hover{color:var(--red);border-color:var(--red)}
 .hist-media{font-size:10px;color:var(--text3);white-space:nowrap;flex-shrink:0}
+.bc-tools{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap}
+.emoji-pop{display:none;grid-template-columns:repeat(8,34px);gap:2px;margin-top:8px;padding:6px;width:max-content;max-width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:8px}
+.emoji-pop.open{display:grid}
+.emoji-pop button{width:34px;height:34px;border:0;background:none;border-radius:6px;font-size:18px;line-height:1;cursor:pointer}
+.emoji-pop button:hover{background:var(--bg3)}
 .loading-msg{text-align:center;padding:30px;color:var(--text3);font-size:12px}
 .hist-list{display:flex;flex-direction:column;gap:6px}
 .hist-row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:background .1s}
@@ -481,12 +486,15 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
         <h2>Повідомлення</h2>
         <div id="tplPicker" class="tpl-picker" style="display:none"></div>
         <textarea id="msgText" class="bc-textarea" placeholder="Текст повідомлення…"></textarea>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+        <div class="bc-tools">
           <div class="char-count" style="flex:1"><span id="charCount">0</span> символів<span id="mediaNote"></span></div>
-          <span class="bc-chip" onclick="document.getElementById('mediaInput').click()" style="font-size:10px">Додати фото/відео</span>
+          <span class="bc-chip" onclick="insertLink()" title="Виділіть слова в тексті — вони стануть посиланням" style="font-size:10px">Посилання</span>
+          <span class="bc-chip" id="emojiBtn" onclick="toggleEmoji(event)" style="font-size:10px">Смайли</span>
+          <span class="bc-chip" onclick="document.getElementById('mediaInput').click()" title="Фото, відео, PDF, Excel… — до 10 файлів" style="font-size:10px">Прикріпити файли</span>
           <span class="bc-chip" onclick="saveCurrentAsTemplate()" style="font-size:10px">Зберегти як шаблон</span>
         </div>
-        <input type="file" id="mediaInput" accept="image/*,video/*" multiple style="display:none">
+        <div id="emojiPop" class="emoji-pop"></div>
+        <input type="file" id="mediaInput" multiple style="display:none">
         <div id="mediaStrip" class="media-strip" style="display:none"></div>
       </div>
 
@@ -1804,7 +1812,71 @@ const BC_CAPTION_MAX = 1024;
 const BC_MEDIA_MAX = 10;
 const BC_PHOTO_MAX = 10 * 1024 * 1024;
 const BC_VIDEO_MAX = 30 * 1024 * 1024;
-let bcMedia = []; // [{file, type:'photo'|'video', url, meta, metaPromise}]
+const BC_DOC_MAX = 30 * 1024 * 1024;
+const BC_TOTAL_MAX = 50 * 1024 * 1024; // сума вкладень — ліміт бека (буферизація в памʼяті воркера)
+let bcMedia = []; // [{file, type:'photo'|'video'|'document', url, meta, metaPromise}]
+
+// Та сама класифікація, що й у react-bot (broadcastMediaType): фото — лише
+// jpeg/png/webp, відео — video/*, решта (pdf, xlsx, heic, gif…) — файлом.
+function bcMediaType(mime) {
+  if (/^image\/(jpeg|png|webp)$/i.test(mime || '')) return 'photo';
+  if (/^video\//i.test(mime || '')) return 'video';
+  return 'document';
+}
+// Посилання в тексті — [текст](https://…) (вставляє «Посилання»); бот шле його
+// гіперпосиланням. Ліміт підпису 1024 Telegram рахує без розмітки — видима довжина.
+const BC_LINK_RE = /\[([^\]\n]{1,256})\]\(((?:https?|tg):\/\/[^\s)]+)\)/g;
+function bcVisibleLen(text) { return String(text || '').replace(BC_LINK_RE, '$1').length; }
+// Скільки Telegram-запитів на чат — дзеркало broadcastFetchesPerChat у react-bot:
+// окремий текст (довший за підпис) + група фото/відео + група файлів.
+function bcPerChat(text) {
+  const hasVisual = bcMedia.some(m => m.type !== 'document');
+  const hasDocs = bcMedia.some(m => m.type === 'document');
+  if (!hasVisual && !hasDocs) return 1;
+  return (text && bcVisibleLen(text) > BC_CAPTION_MAX ? 1 : 0) + (hasVisual ? 1 : 0) + (hasDocs ? 1 : 0);
+}
+function bcFileExt(name) {
+  const e = (String(name).match(/\.([a-z0-9]{1,5})$/i) || [])[1];
+  return e ? e.toUpperCase() : 'файл';
+}
+function bcPlural(n, one, few, many) {
+  const d = n % 10, h = n % 100;
+  return d === 1 && h !== 11 ? one : d >= 2 && d <= 4 && (h < 12 || h > 14) ? few : many;
+}
+
+// «Посилання»: виділений у тексті фрагмент стає [фрагмент](адреса) — бот шле його
+// гіперпосиланням. Без виділення — питаємо і текст посилання.
+function insertLink() {
+  const ta = document.getElementById('msgText');
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  let url = (prompt('Адреса посилання:', 'https://') || '').trim();
+  if (!url || url === 'https://') return;
+  if (!/^(https?|tg):\/\//i.test(url)) url = 'https://' + url;
+  if (/[\s)]/.test(url)) { alert('В адресі не має бути пробілів і дужок'); return; }
+  let label = ta.value.slice(s, e).trim();
+  if (!label) label = (prompt('Текст посилання:', '') || '').trim() || url;
+  ta.setRangeText(`[${label.replace(/[\[\]\n]/g, ' ')}](${url})`, s, e, 'end');
+  ta.focus();
+  ta.dispatchEvent(new Event('input'));
+}
+
+const BC_EMOJI = ['👍','👌','🙏','🤝','👋','💪','😊','😉','🔥','⚡','☀️','🔋','🏠','🏭','📦','🚚','✅','❗','⚠️','ℹ️','📌','🆕','🎉','💯','💰','💵','📈','📉','📞','✉️','📍','🕐','📅','👉','➡️','⬇️','🇺🇦','❤️'];
+function toggleEmoji(ev) {
+  if (ev) ev.stopPropagation();
+  const pop = document.getElementById('emojiPop');
+  if (!pop.childElementCount) {
+    pop.innerHTML = BC_EMOJI.map(e => `<button type="button">${e}</button>`).join('');
+    pop.addEventListener('mousedown', e => e.preventDefault()); // курсор лишається в тексті
+    pop.addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      const ta = document.getElementById('msgText');
+      ta.setRangeText(b.textContent, ta.selectionStart, ta.selectionEnd, 'end');
+      ta.dispatchEvent(new Event('input'));
+    });
+  }
+  pop.classList.toggle('open');
+}
 
 // Розміри відео читаємо в браузері: без width/height Telegram не завжди парсить
 // контейнер (особливо .MOV з iPhone) і зберігає відео квадратом 320×320 —
@@ -1828,13 +1900,13 @@ function readVideoMeta(url) {
 function addMediaFiles(files) {
   const res = document.getElementById('result');
   for (const f of files) {
-    const isVideo = (f.type || '').startsWith('video/');
-    const isImage = (f.type || '').startsWith('image/');
-    if (!isVideo && !isImage) { res.className = 'bc-result err'; res.textContent = `«${f.name}» — лише фото або відео`; continue; }
-    if (bcMedia.length >= BC_MEDIA_MAX) { res.className = 'bc-result err'; res.textContent = `Не більше ${BC_MEDIA_MAX} медіа-файлів`; break; }
-    const cap = isVideo ? BC_VIDEO_MAX : BC_PHOTO_MAX;
+    const type = bcMediaType(f.type);
+    const isVideo = type === 'video';
+    if (bcMedia.length >= BC_MEDIA_MAX) { res.className = 'bc-result err'; res.textContent = `Не більше ${BC_MEDIA_MAX} файлів`; break; }
+    const cap = { photo: BC_PHOTO_MAX, video: BC_VIDEO_MAX, document: BC_DOC_MAX }[type];
     if (f.size > cap) { res.className = 'bc-result err'; res.textContent = `«${f.name}» завеликий (${Math.round(f.size / 1048576)}MB, ліміт ${cap / 1048576}MB)`; continue; }
-    const item = { file: f, type: isVideo ? 'video' : 'photo', url: URL.createObjectURL(f), meta: null, metaPromise: null };
+    if (bcMedia.reduce((a, m) => a + m.file.size, 0) + f.size > BC_TOTAL_MAX) { res.className = 'bc-result err'; res.textContent = `Разом файлів більше ${BC_TOTAL_MAX / 1048576}MB`; break; }
+    const item = { file: f, type, url: type === 'document' ? null : URL.createObjectURL(f), meta: null, metaPromise: null };
     if (isVideo) item.metaPromise = readVideoMeta(item.url).then(m => { item.meta = m; });
     bcMedia.push(item);
   }
@@ -1859,7 +1931,7 @@ function renderMediaStrip() {
   strip.style.display = bcMedia.length ? 'flex' : 'none';
   strip.innerHTML = bcMedia.map((m, i) => `
     <div class="media-item" title="${esc(m.file.name)}">
-      ${m.type === 'photo' ? `<img src="${m.url}" alt="">` : `<div class="mi-vid">відео<br>${esc(m.file.name.length > 24 ? m.file.name.slice(0, 22) + '…' : m.file.name)}</div>`}
+      ${m.type === 'photo' ? `<img src="${m.url}" alt="">` : `<div class="mi-vid">${m.type === 'video' ? 'відео' : esc(bcFileExt(m.file.name))}<br>${esc(m.file.name.length > 24 ? m.file.name.slice(0, 22) + '…' : m.file.name)}</div>`}
       <span class="mi-x" onclick="removeMedia(${i})">✕</span>
     </div>
   `).join('');
@@ -1871,9 +1943,9 @@ function renderMediaStrip() {
 // окремим повідомленням перед медіа.
 function updateMediaNote() {
   const note = document.getElementById('mediaNote');
-  const len = document.getElementById('msgText').value.length;
+  const len = bcVisibleLen(document.getElementById('msgText').value);
   note.textContent = bcMedia.length && len > BC_CAPTION_MAX
-    ? ` · текст довший за ${BC_CAPTION_MAX} — піде окремим повідомленням перед медіа`
+    ? ` · текст довший за ${BC_CAPTION_MAX} — піде окремим повідомленням перед вкладеннями`
     : '';
 }
 
@@ -1896,7 +1968,7 @@ async function sendBroadcast() {
   btn.textContent = 'Відправляю…';
   res.className = 'bc-result';
 
-  const chunk = bcMedia.length && text.length > BC_CAPTION_MAX ? BC_CHUNK / 2 : BC_CHUNK;
+  const chunk = Math.floor(BC_CHUNK / bcPerChat(text));
   let sent = 0, failed = 0;
   try {
     // дочекатись зчитування розмірів відео (метадані, мілісекунди)
@@ -2028,9 +2100,11 @@ function mediaBadge(mediaJson, detail) {
   if (!media.length) return '';
   const nP = media.filter(m => m.type === 'photo').length;
   const nV = media.filter(m => m.type === 'video').length;
+  const nD = media.filter(m => m.type === 'document').length;
   const parts = [];
   if (nP) parts.push(nP > 1 ? `${nP} фото` : 'фото');
   if (nV) parts.push(nV > 1 ? `${nV} відео` : 'відео');
+  if (nD) parts.push(nD > 1 ? `${nD} ${bcPlural(nD, 'файл', 'файли', 'файлів')}` : 'файл');
   const label = parts.join(' · ');
   return detail
     ? `<span>Вкладення: <b>${label}</b></span>`
@@ -2136,9 +2210,17 @@ function initBroadcastOnce() {
   if (_bcInit) return;
   _bcInit = true;
   document.getElementById('msgText').addEventListener('input', function () {
-    document.getElementById('charCount').textContent = this.value.length;
+    document.getElementById('charCount').textContent = bcVisibleLen(this.value);
     updateMediaNote();
     updateCount();
+  });
+  // Палітра смайлів закривається кліком повз неї або Esc.
+  document.addEventListener('click', e => {
+    const pop = document.getElementById('emojiPop');
+    if (pop.classList.contains('open') && !pop.contains(e.target) && e.target.id !== 'emojiBtn') pop.classList.remove('open');
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.getElementById('emojiPop').classList.remove('open');
   });
   document.getElementById('mediaInput').addEventListener('change', function () {
     addMediaFiles(this.files);
