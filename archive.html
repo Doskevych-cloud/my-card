@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Первинка</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+<script>
+  try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light'); } catch(e){ document.documentElement.setAttribute('data-theme','light'); }
+</script>
+<script src="auth.js?v=mobhdr20260430"></script>
+<script src="header.js?v=arch20260916"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/uk.js"></script>
+<script src="date-range.js?v=20260522"></script>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="base.css?v=20260712">
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+.wrap{margin:0 auto;padding:14px 16px}
+h1.pg{font-size:18px;font-weight:800;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+h1.pg .sub{font-size:12px;color:var(--text3);font-weight:500}
+
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px}
+.toolbar input[type=text]{padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none}
+.toolbar input#searchIn{flex:1;min-width:180px}
+.toolbar input:focus{border-color:var(--accent)}
+.toolbar .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.toolbar .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;display:inline-flex;align-items:center;gap:6px}
+.toolbar .chip:hover{background:var(--bg3);color:var(--text)}
+.toolbar .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.toolbar .group .chip{border:none;background:transparent;padding:5px 10px;border-radius:6px}
+
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:14px}
+.kpi{padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:2px;cursor:pointer}
+.kpi.active{border-color:var(--accent)}
+.kpi .lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+.kpi .v{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.3px;line-height:1.2;font-variant-numeric:tabular-nums;margin-top:3px}
+.kpi .v.green{color:var(--green)} .kpi .v.red{color:var(--red)}
+.kpi .sub{font-size:11px;color:var(--text3);font-weight:500;font-variant-numeric:tabular-nums}
+
+.box{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px}
+.box .h{padding:10px 14px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.box .h .meta{margin-left:auto;font-weight:500;text-transform:none;letter-spacing:0}
+.tbl-wrap{overflow-x:auto}
+table.t{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+table.t th{padding:7px 10px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+table.t th.num,table.t td.num{text-align:right}
+table.t td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
+table.t tbody tr:last-child td{border-bottom:none}
+table.t tbody tr.row{cursor:pointer}
+table.t tbody tr.row:hover td{background:var(--bg3)}
+table.t td.cp{color:var(--text);font-weight:600;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+table.t td.amt{color:var(--text);font-weight:700;white-space:nowrap}
+table.t td.dim{color:var(--text3);font-size:11.5px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+table.t td.st{white-space:nowrap;font-weight:700}
+.st-missing,.st-unsigned,.st-invoice_only,.st-invoice_no_docs{color:var(--red)}
+.st-ok{color:var(--green)} .st-expected,.st-review,.st-no_payment{color:var(--text2)}
+.st-partial{color:var(--red)} .st-not_in_unf{color:var(--text2)}
+.doc{display:inline-block;padding:1px 7px;border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--text2);margin:1px 4px 1px 0;white-space:nowrap}
+.doc.none{color:var(--text3);border-style:dashed}
+.det{background:var(--bg2);padding:10px 14px 12px 28px;font-size:12px}
+.det .g{margin:4px 0 8px}
+.det .g b{color:var(--text)}
+.det .path{color:var(--text3);font-size:11px;word-break:break-all}
+.det .btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.det .btn{padding:5px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface2);color:var(--text2);font-size:11px;font-weight:600;cursor:pointer}
+.det .btn:hover{border-color:var(--accent);color:var(--accent)}
+.det .verd{color:var(--text3);font-size:11px;margin-top:6px}
+
+.loading{padding:60px 20px;text-align:center;color:var(--text2);font-size:13px}
+.loading::after{content:'';display:block;width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:14px auto 0}
+.error{padding:20px;text-align:center;color:var(--red);background:rgba(231,76,60,.12);border-radius:10px;font-size:12px;margin-top:16px}
+.empty{padding:40px 20px;text-align:center;color:var(--text3);font-size:13px}
+.note{padding:9px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);color:var(--text2);font-size:12px;margin-bottom:14px}
+
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.modal-backdrop.open{display:flex}
+.modal{position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:14px;max-width:680px;width:100%;max-height:85vh;overflow-y:auto;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.modal h2{font-size:16px;font-weight:800;color:var(--text);margin-bottom:8px;padding-right:28px}
+.modal h3{font-size:13px;font-weight:700;color:var(--accent);margin:16px 0 5px}
+.modal p{font-size:12.5px;color:var(--text2);line-height:1.6;margin:4px 0}
+.modal ul{margin:5px 0 5px 6px;list-style:none}
+.modal li{font-size:12.5px;color:var(--text2);line-height:1.55;margin:5px 0;padding-left:16px;position:relative}
+.modal li::before{content:'·';position:absolute;left:4px;color:var(--text3);font-weight:800}
+.modal b{color:var(--text);font-weight:700}
+.modal code{background:var(--bg2);padding:1px 6px;border-radius:5px;font-size:11.5px;color:var(--text);border:1px solid var(--border)}
+.modal .close{position:absolute;top:16px;right:18px;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;border:none;background:none;padding:4px}
+
+@media (max-width:720px){
+  .wrap{padding:10px 12px}
+  .toolbar{padding:8px;gap:6px}
+  .toolbar .lbl,.toolbar .sep{display:none}
+  .toolbar .chip{padding:6px 10px}
+  .toolbar input#searchIn{min-width:0;width:100%}
+  table.t td.dim{display:none} table.t th.dim{display:none}
+  table.t td.cp{max-width:150px}
+  table.t th:first-child,table.t td:first-child{position:sticky;left:0;background:var(--surface2)}
+  .det{padding-left:14px}
+}
+</style>
+</head>
+<body>
+<div id="appHeader"></div>
+<div id="app">
+  <div class="wrap">
+    <h1 class="pg">🗂 Первинка <span class="sub" id="idxMeta"></span></h1>
+
+    <div class="toolbar">
+      <span class="lbl">Період</span>
+      <input type="text" id="dateRange" class="date-range-input" readonly>
+      <span class="group">
+        <span class="chip" data-preset="month"     onclick="setPreset('month')">Цей місяць</span>
+        <span class="chip" data-preset="prevmonth" onclick="setPreset('prevmonth')">Минулий</span>
+        <span class="chip" data-preset="quarter"   onclick="setPreset('quarter')">Квартал</span>
+        <span class="chip active" data-preset="year" onclick="setPreset('year')">Рік</span>
+      </span>
+      <span class="sep"></span>
+      <span class="chip" data-org="" onclick="setOrg('')">Всі</span>
+      <span class="chip" data-org="Реакт" onclick="setOrg('Реакт')">Реакт</span>
+      <span class="chip active" data-org="Генерація" onclick="setOrg('Генерація')">Генерація</span>
+      <span class="sep"></span>
+      <span class="group">
+        <span class="chip active" data-view="chains" onclick="setView('chains')">Платежі</span>
+        <span class="chip" data-view="docs" onclick="setView('docs')">Документи</span>
+        <span class="chip" data-view="coverage" onclick="setView('coverage')">Виписки</span>
+      </span>
+      <span class="sep"></span>
+      <span class="group">
+        <span class="chip active" data-dir="" onclick="setDir('')">Прихід і витрата</span>
+        <span class="chip" data-dir="sale" onclick="setDir('sale')">Прихід</span>
+        <span class="chip" data-dir="purchase" onclick="setDir('purchase')">Витрата</span>
+      </span>
+      <input type="text" id="searchIn" placeholder="Контрагент, ЄДРПОУ, №, призначення…">
+      <span class="chip" onclick="openHelp()" title="Як працює">❓ Як працює</span>
+    </div>
+
+    <div id="summary"></div>
+    <div id="body"><div class="loading">Завантаження…</div></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="helpModal" onclick="if(event.target===this)closeHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює">
+    <button class="close" onclick="closeHelp()" aria-label="Закрити">✕</button>
+    <h2>Як працює «Первинка»</h2>
+    <p>Звіт перевіряє, чи є в бухгалтерському архіві на Google Drive документ під кожен платіж з рахунку ТОВ. <b>Джерело даних — тільки архів</b>: скани документів і файли банківських виписок з папок року. Нічого не береться з 1С, крім датчика «чи повна виписка» (вкладка «Виписки»).</p>
+
+    <h3>Два реєстри</h3>
+    <ul>
+      <li><b>Платежі</b> — рядки xls-виписок з папки «Банк (виписки)». Прихід = плюс, витрата = мінус. У рядку є юрособа, ЄДРПОУ і призначення платежу.</li>
+      <li><b>Документи</b> — усе, що індексатор на Mac розпізнав у PDF архіву: тип, номер, дата, сторони з ЄДРПОУ, сума з ПДВ, посилання на рахунок («Розр. док.»). Пачки на 50 сторінок він сам ділить на документи; продовження й ТТН чіпляє до свого документа.</li>
+    </ul>
+
+    <h3>Ланцюжок</h3>
+    <p>Рядок звіту — ланцюжок <code>платіж → рахунок → накладна або акт → ТТН</code>. Якір — перше, що є: платіж; нема платежу — рахунок; нема рахунку — накладна. Звʼязки, від точного до слабкого:</p>
+    <ul>
+      <li>номер рахунку з призначення платежу («зг. рах. №6 від 23.01») ↔ рахунок або накладна з таким «Розр. док.»;</li>
+      <li>сума документа = сума платежу ±1 грн, той самий контрагент, документ у вікні −30…+90 днів від оплати;</li>
+      <li>кілька накладних разом = один платіж (складене відвантаження), або кілька платежів = одна накладна (аванс + доплата);</li>
+      <li>ручна привʼязка в рядку — перебиває автоматичну.</li>
+    </ul>
+
+    <h3>Статуси</h3>
+    <ul>
+      <li><b>Є</b> — документ під платіж знайдено.</li>
+      <li><b>Не підписано</b> — скан є, але одна сторона без підпису чи печатки (коли індексатор це бачить).</li>
+      <li><b>Очікується</b> — платежу менше 45 днів, документ ще не повернувся. Не дірка.</li>
+      <li><b>Нема</b> — платіж старший за 45 днів, документа в архіві нема. Це дірка.</li>
+      <li><b>Лише рахунок</b> — є рахунок, але нема накладної чи акта.</li>
+      <li><b>Перевірити</b> — документ є, але OCR не впевнений (нема суми, дати або низька впевненість).</li>
+      <li><b>Без платежу</b> — документ в архіві є, платежу у виписках нема: готівка, інша організація або виписка не завантажена.</li>
+      <li><b>Не потребує</b> — зарплата, ЄСВ, податки, комісії, кредити, перекази між своїми рахунками. Правила по призначенню платежу; можна поставити вручну.</li>
+    </ul>
+
+    <h3>Виписки</h3>
+    <p>По кожному рахунку і місяцю: скільки рядків у виписці в архіві проти руху коштів в УНФ. «Нема» — виписку за цей місяць не завантажили в архів; тоді платежі цього місяця в звіті відсутні і дірок по них не видно. Це єдине місце, де звіт дивиться в 1С.</p>
+
+    <h3>Що треба знати</h3>
+    <ul>
+      <li>Нумерація на папері (бухгалтерська база) не збігається з номерами УНФ, тому звірка йде по сумі й контрагенту, а не по номеру.</li>
+      <li>Індексатор працює на Mac: новий файл у папці потрапляє в реєстр після наступного прогону. Час останнього оновлення — біля заголовка.</li>
+      <li>Один документ, відсканований двічі (у пачці і окремим файлом), рахується один раз.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://price-api.doskevich.workers.dev';
+const ORG_CODE = { 'Реакт': 'react', 'Генерація': 'gen' };
+const ST = {
+  missing: 'Нема', unsigned: 'Не підписано', invoice_only: 'Лише рахунок', invoice_no_docs: 'Лише рахунок', review: 'Перевірити',
+  no_payment: 'Без платежу', expected: 'Очікується', ok: 'Є', not_needed: 'Не потребує',
+};
+const DOC_T = { 'видаткова': 'ВН', 'акт': 'Акт', 'прибуткова': 'ПН', 'рахунок': 'Рах.', 'ттн': 'ТТН', 'акт_звірки': 'Акт звірки', 'договір': 'Договір', 'інше': 'Інше' };
+const state = { org: 'Генерація', from: '', to: '', view: 'chains', dir: '', status: '', search: '', data: null, sort: { key: '', dir: 1 } };
+let _picker = null;
+
+Auth.require('archive').then(user => {
+  AppHeader.mount({ active: 'archive', user });
+  const userOrgs = user.orgs || {};
+  const hasAnyOrg = Object.values(userOrgs).some(v => v);
+  if (hasAnyOrg) {
+    const allowedOrgs = ['Реакт', 'Генерація'].filter(o => userOrgs[o]);
+    document.querySelectorAll('.chip[data-org]').forEach(chip => {
+      const org = chip.dataset.org;
+      if (org === '') { if (allowedOrgs.length < 2) chip.style.display = 'none'; }
+      else if (!userOrgs[org]) chip.style.display = 'none';
+    });
+    const defaultOrg = allowedOrgs.length === 1 ? allowedOrgs[0] : 'Генерація';
+    state.org = defaultOrg;
+    document.querySelectorAll('.chip[data-org]').forEach(c => c.classList.toggle('active', c.dataset.org === defaultOrg));
+  }
+  readHash();
+  setPreset(state.preset || 'year', true);
+  load();
+});
+
+function _localISO(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function setPreset(p, silent) {
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  let from, to = now;
+  if (p === 'month') from = new Date(y, m, 1);
+  else if (p === 'prevmonth') { from = new Date(y, m-1, 1); to = new Date(y, m, 0); }
+  else if (p === 'quarter') { const q = Math.floor(m/3); from = new Date(y, q*3, 1); }
+  else from = new Date(y, 0, 1);
+  state.preset = p; state.from = _localISO(from); state.to = _localISO(to);
+  if (_picker) _picker.setDates(state.from, state.to);
+  document.querySelectorAll('.chip[data-preset]').forEach(c => c.classList.toggle('active', c.dataset.preset === p));
+  if (!silent) load();
+}
+function setOrg(v) { state.org = v; document.querySelectorAll('.chip[data-org]').forEach(c => c.classList.toggle('active', c.dataset.org === v)); load(); }
+function setView(v) { state.view = v; document.querySelectorAll('.chip[data-view]').forEach(c => c.classList.toggle('active', c.dataset.view === v)); render(); }
+function setDir(v) { state.dir = v; document.querySelectorAll('.chip[data-dir]').forEach(c => c.classList.toggle('active', c.dataset.dir === v)); render(); }
+function setStatus(s) { state.status = state.status === s ? '' : s; render(); }
+function openHelp()  { document.getElementById('helpModal').classList.add('open'); }
+function closeHelp() { document.getElementById('helpModal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHelp(); });
+document.addEventListener('DOMContentLoaded', () => {
+  _picker = initDateRange({ inputId: 'dateRange', from: state.from || _localISO(new Date(new Date().getFullYear(), 0, 1)), to: state.to || _localISO(new Date()),
+    onChange: (from, to) => { state.from = from; state.to = to; state.preset = ''; document.querySelectorAll('.chip[data-preset]').forEach(c => c.classList.remove('active')); load(); } });
+});
+document.getElementById('searchIn').addEventListener('input', e => { state.search = e.target.value.trim().toLowerCase(); render(); });
+function readHash() {
+  try { const h = new URLSearchParams(location.hash.slice(1)); if (h.get('view')) state.view = h.get('view'); if (h.get('org') != null && document.querySelector(`.chip[data-org="${h.get('org')}"]`)) state.org = h.get('org'); if (h.get('p')) state.preset = h.get('p'); } catch(_) {}
+  document.querySelectorAll('.chip[data-view]').forEach(c => c.classList.toggle('active', c.dataset.view === state.view));
+  document.querySelectorAll('.chip[data-org]').forEach(c => c.classList.toggle('active', c.dataset.org === state.org));
+}
+function saveHash() { try { history.replaceState(null, '', '#' + new URLSearchParams({ view: state.view, org: state.org, p: state.preset || '' })); } catch(_) {} }
+
+const fmt = (n, d=0) => { if (n == null || isNaN(n)) return '0'; const [i, f] = Number(n).toFixed(d).split('.'); const s = i.replace(/\B(?=(\d{3})+(?!\d))/g, ' '); return d ? `${s},${f}` : s; };
+const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fmtD = iso => iso ? iso.slice(0,10).split('-').reverse().join('.') : '—';
+
+async function load() {
+  saveHash();
+  document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
+  document.getElementById('summary').innerHTML = '';
+  try {
+    const orgs = state.org ? [state.org] : ['Реакт', 'Генерація'];
+    const parts = await Promise.all(orgs.map(o => fetch(`${API_URL}?action=archive_register&org=${ORG_CODE[o]}&from=${state.from}&to=${state.to}`).then(x => x.json()).then(r => { if (r.error) throw new Error(r.error); r._org = o; return r; })));
+    state.data = mergeParts(parts);
+    render();
+  } catch (e) { document.getElementById('body').innerHTML = `<div class="error">${esc(e.message)}</div>`; }
+}
+function mergeParts(parts) {
+  if (parts.length === 1) { const p = parts[0]; p.rows.forEach(r => r.org = p._org); p.coverage.forEach(c => c.org = p._org); return p; }
+  const out = { kpi: {}, rows: [], gaps_by_cp: [], coverage: [], files: {}, multi: true };
+  for (const p of parts) {
+    for (const k of Object.keys(p.kpi)) out.kpi[k] = (out.kpi[k] || 0) + (p.kpi[k] || 0);
+    p.rows.forEach(r => { r.org = p._org; out.rows.push(r); });
+    p.coverage.forEach(c => { c.org = p._org; out.coverage.push(c); });
+    out.gaps_by_cp.push(...p.gaps_by_cp.map(g => ({ ...g, org: p._org })));
+    for (const k of Object.keys(p.files || {})) if (!out.files[k] || (p.files[k].last_sync > out.files[k].last_sync)) out.files[k] = p.files[k];
+  }
+  const order = { missing: 0, unsigned: 1, review: 2, invoice_only: 3, invoice_no_docs: 4, no_payment: 5, expected: 6, ok: 7 };
+  out.rows.sort((a, b) => (order[a.status] - order[b.status]) || (b.amount - a.amount));
+  out.gaps_by_cp.sort((a, b) => b.sum - a.sum);
+  return out;
+}
+
+function render() {
+  const d = state.data; if (!d) return;
+  const k = d.kpi;
+  const lastSync = (d.files.ok || {}).last_sync;
+  document.getElementById('idxMeta').textContent = lastSync ? `індекс архіву оновлено ${fmtD(lastSync)} ${lastSync.slice(11,16)} UTC` : 'реєстр порожній';
+  const kpiCard = (key, lbl, v, sub, cls='') => `<div class="kpi${state.status === key ? ' active' : ''}" onclick="setStatus('${key}')"><span class="lbl">${lbl}</span><span class="v ${cls}">${v}</span><span class="sub">${sub}</span></div>`;
+  document.getElementById('summary').innerHTML = `<div class="summary">
+    ${kpiCard('', 'Платежів, потребують первинки', fmt(k.need), fmt(k.need_sum) + ' грн · з ' + fmt(k.payments) + ' рядків')}
+    ${kpiCard('ok', 'З документом', fmt(k.ok), fmt(k.ok_sum) + ' грн', 'green')}
+    ${kpiCard('missing', 'Без документа', fmt(k.missing + k.invoice_only), fmt(k.missing_sum) + ' грн', (k.missing + k.invoice_only) ? 'red' : '')}
+    ${kpiCard('expected', 'Очікується', fmt(k.expected), fmt(k.expected_sum) + ' грн · молодші 45 дн')}
+    ${kpiCard('no_payment', 'Документ без платежу', fmt(k.no_payment), fmt(k.no_payment_sum) + ' грн')}
+    ${kpiCard('not_needed', 'Не потребує', fmt(k.not_needed), fmt(k.not_needed_sum) + ' грн · документів у реєстрі ' + fmt(k.docs))}
+  </div>`;
+  if (state.view === 'coverage') return renderCoverage(d);
+  if (state.view === 'docs') return renderDocs(d);
+  renderChains(d);
+}
+
+function rowMatches(r) {
+  if (state.dir && r.direction && r.direction !== state.dir) return false;
+  if (state.status) {
+    if (state.status === 'missing' && !(r.status === 'missing' || r.status === 'invoice_only' || r.status === 'invoice_no_docs')) return false;
+    else if (state.status === 'ok' && !(r.status === 'ok' || r.status === 'unsigned' || r.status === 'review')) return false;
+    else if (state.status !== 'missing' && state.status !== 'ok' && state.status !== 'not_needed' && r.status !== state.status) return false;
+    if (state.status === 'not_needed') return false;
+  }
+  if (state.search) {
+    const hay = [r.cp_name, r.cp_edrpou, ...r.payments.map(p => p.purpose), ...r.payments.map(p => p.doc_no), ...[...r.invoices, ...r.deliveries].map(x => x.number)].join(' ').toLowerCase();
+    if (!hay.includes(state.search)) return false;
+  }
+  return true;
+}
+
+function renderChains(d) {
+  const rows = d.rows.filter(rowMatches);
+  const gaps = d.gaps_by_cp.slice(0, 12);
+  const gapsHtml = gaps.length && !state.search ? `<div class="box"><div class="h">Без первинки — по контрагентах <span class="meta">топ ${gaps.length}</span></div>
+    <div class="tbl-wrap"><table class="t"><thead><tr><th>Контрагент</th><th>ЄДРПОУ</th>${d.multi ? '<th>Орг.</th>' : ''}<th class="num">Платежів</th><th class="num">Сума, грн</th></tr></thead><tbody>
+    ${gaps.map(g => `<tr class="row" onclick="document.getElementById('searchIn').value='${esc(g.cp_edrpou || g.cp_name || '')}';state.search='${esc((g.cp_edrpou || g.cp_name || '').toLowerCase())}';render()"><td class="cp">${esc(g.cp_name || '—')}</td><td class="dim">${esc(g.cp_edrpou || '')}</td>${d.multi ? `<td>${esc(g.org)}</td>` : ''}<td class="num">${g.n}</td><td class="num amt" style="color:var(--red)">${fmt(g.sum)}</td></tr>`).join('')}
+    </tbody></table></div></div>` : '';
+  if (!rows.length) { document.getElementById('body').innerHTML = gapsHtml + '<div class="empty">Нічого не знайдено за фільтрами</div>'; return; }
+  const docCell = (arr, none) => arr.length ? arr.map(x => `<span class="doc" title="${esc(x.files.map(f => f.path + ' · стор. ' + f.page).join('\n'))}">${DOC_T[x.type] || esc(x.type || '?')} ${esc(x.number || '')}${x.date ? ' · ' + fmtD(x.date) : ''}</span>`).join('') : `<span class="doc none">${none}</span>`;
+  const html = rows.map((r, i) => {
+    const p0 = r.payments[0];
+    const purpose = p0 ? p0.purpose : (r.invoices[0] || r.deliveries[0] || {}).number ? 'документ без платежу' : '';
+    return `<tr class="row" onclick="toggleDet(${i})">
+      <td>${fmtD(r.date)}</td>
+      <td class="cp" title="${esc(r.cp_name)}">${esc(r.cp_name || '—')}${d.multi ? ` <span style="color:var(--text3);font-weight:500">· ${esc(r.org)}</span>` : ''}</td>
+      <td class="dim" title="${esc(purpose)}">${esc(purpose)}</td>
+      <td class="num amt">${r.direction === 'purchase' ? '−' : ''}${fmt(r.amount, 2)}</td>
+      <td>${docCell(r.invoices, '—')}</td>
+      <td>${docCell(r.deliveries, r.anchor === 'payment' ? 'нема' : '—')}</td>
+      <td>${r.ttn.length ? r.ttn.map(t => `<span class="doc">ТТН ${esc(t.number || '')}</span>`).join('') : ''}</td>
+      <td class="st st-${r.status}">${ST[r.status] || r.status}${r.payments.some(p => p.verdict) ? ' ·' : ''}</td>
+    </tr><tr id="det-${i}" style="display:none"><td colspan="8" class="det">${detHtml(r)}</td></tr>`;
+  }).join('');
+  document.getElementById('body').innerHTML = gapsHtml + `<div class="box"><div class="h">Ланцюжки <span class="meta">${rows.length} з ${d.rows.length}</span></div>
+    <div class="tbl-wrap"><table class="t"><thead><tr><th>Дата</th><th>Контрагент</th><th class="dim">Призначення</th><th class="num">Сума, грн</th><th>Рахунок</th><th>Накладна / акт</th><th>ТТН</th><th>Статус</th></tr></thead><tbody>${html}</tbody></table></div></div>`;
+  window._rows = rows;
+}
+function detHtml(r) {
+  const pays = r.payments.map(p => `<div>${fmtD(p.date)} · <b>${p.amount > 0 ? '+' : ''}${fmt(p.amount, 2)}</b> ${esc(p.bank || '')} ${p.doc_no ? '№' + esc(p.doc_no) : ''} — ${esc(p.purpose || '')}${p.verdict ? ` <span class="verd">вердикт: ${ST[p.verdict] || p.verdict}${p.note ? ' (' + esc(p.note) + ')' : ''}</span>` : ''}</div>`).join('');
+  const docs = [...r.invoices, ...r.deliveries, ...r.ttn].map(x => `<div><b>${DOC_T[x.type] || esc(x.type || '?')} ${esc(x.number || '')}</b> від ${fmtD(x.date)} · ${x.total != null ? fmt(x.total, 2) + ' грн' : 'сума не розпізнана'}${x.invoice_ref ? ' · розр. док. №' + esc(x.invoice_ref) : ''}${x.confidence != null ? ` · впевненість ${Math.round(x.confidence * 100)}%` : ''}<br>${x.files.map(f => `<span class="path">${esc(f.path)} · стор. ${f.page}${f.page_to > f.page ? '–' + f.page_to : ''}</span>`).join('<br>')}</div>`).join('');
+  const pk = r.payments[0] ? r.payments[0].key : null;
+  const btns = pk ? `<div class="btns">
+      <span class="btn" onclick="event.stopPropagation();verdict('${esc(r.org)}','${pk}','not_needed')">Не потребує первинки</span>
+      <span class="btn" onclick="event.stopPropagation();verdict('${esc(r.org)}','${pk}','expected')">Очікується</span>
+      <span class="btn" onclick="event.stopPropagation();verdict('${esc(r.org)}','${pk}','link')">Привʼязати документ…</span>
+      <span class="btn" onclick="event.stopPropagation();verdict('${esc(r.org)}','${pk}','clear')">Скинути вердикт</span>
+    </div>` : '';
+  return `<div class="g"><b>Платежі</b>${pays ? '<br>' + pays : ' — нема у виписках'}</div><div class="g"><b>Документи</b>${docs ? '<br>' + docs : ' — нема в архіві'}</div>${r.tiers.length ? `<div class="verd">звʼязок: ${r.tiers.join(', ')}</div>` : ''}${btns}`;
+}
+function toggleDet(i) { const el = document.getElementById('det-' + i); if (el) el.style.display = el.style.display === 'none' ? '' : 'none'; }
+async function verdict(org, key, v) {
+  let value = null, note = null;
+  if (v === 'link') { value = prompt('Ключ документа (з вкладки «Документи», колонка «Ключ»):'); if (!value) return; }
+  if (v === 'not_needed') { note = prompt('Чому не потребує первинки? (коротко)') || ''; }
+  try {
+    const r = await fetch(`${API_URL}?action=archive_verdict&org=${ORG_CODE[org]}`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target: 'payment', target_key: key, verdict: v, value, note }) }).then(x => x.json());
+    if (r.error) throw new Error(r.error);
+    load();
+  } catch (e) { alert('Не збережено: ' + e.message); }
+}
+
+function renderDocs(d) {
+  const docs = [];
+  for (const r of d.rows) for (const x of [...r.invoices, ...r.deliveries, ...r.ttn]) docs.push({ ...x, chain: r.status, org: r.org, direction: r.direction });
+  const seen = new Set();
+  const list = docs.filter(x => { if (seen.has(x.key)) return false; seen.add(x.key); return true; })
+    .filter(x => !state.dir || !x.direction || x.direction === state.dir)
+    .filter(x => !state.search || [x.cp_name, x.cp_edrpou, x.number, x.key, ...x.files.map(f => f.path)].join(' ').toLowerCase().includes(state.search))
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  if (!list.length) { document.getElementById('body').innerHTML = '<div class="empty">Документів нема</div>'; return; }
+  document.getElementById('body').innerHTML = `<div class="box"><div class="h">Документи в реєстрі <span class="meta">${list.length}</span></div>
+    <div class="tbl-wrap"><table class="t"><thead><tr><th>Дата</th><th>Тип</th><th>№</th><th>Контрагент</th><th class="num">Сума, грн</th><th>Файл</th><th>Ланцюжок</th><th class="dim">Ключ</th></tr></thead><tbody>
+    ${list.map(x => `<tr><td>${fmtD(x.date)}</td><td>${DOC_T[x.type] || esc(x.type || '?')}</td><td>${esc(x.number || '—')}</td><td class="cp">${esc(x.cp_name || '—')}${d.multi ? ` <span style="color:var(--text3);font-weight:500">· ${esc(x.org)}</span>` : ''}</td><td class="num amt">${x.total != null ? fmt(x.total, 2) : '<span style="color:var(--red)">?</span>'}</td><td class="dim" title="${esc(x.files.map(f => f.path + ' · стор. ' + f.page).join('\n'))}">${esc(x.files[0].path.split('/').slice(-1)[0])} · стор. ${x.files[0].page}${x.files.length > 1 ? ' (+' + (x.files.length - 1) + ')' : ''}</td><td class="st st-${x.chain}">${ST[x.chain] || x.chain}</td><td class="dim" style="font-size:10px">${esc(x.key)}</td></tr>`).join('')}
+    </tbody></table></div></div>`;
+}
+
+function renderCoverage(d) {
+  const cov = d.coverage.filter(c => !state.search || (c.iban || '').toLowerCase().includes(state.search) || (c.acc || '').toLowerCase().includes(state.search));
+  if (!cov.length) { document.getElementById('body').innerHTML = '<div class="empty">Нема даних по виписках за період</div>'; return; }
+  const CS = { ok: 'Є', partial: 'Неповна', missing: 'Нема', not_in_unf: 'Нема в УНФ' };
+  document.getElementById('body').innerHTML = `<div class="note">Рядки виписки в архіві проти руху коштів по рахунку в УНФ. «Нема» — виписку за місяць не завантажили в архів: платежі цього місяця у звіті відсутні, дірок по них не видно.</div>
+    <div class="box"><div class="h">Покриття виписок <span class="meta">${cov.length} рядків</span></div>
+    <div class="tbl-wrap"><table class="t"><thead><tr><th>Місяць</th><th>Рахунок</th>${d.multi ? '<th>Орг.</th>' : ''}<th class="num">УНФ прихід</th><th class="num">УНФ витрата</th><th class="num">Архів прихід</th><th class="num">Архів витрата</th><th>Стан</th></tr></thead><tbody>
+    ${cov.map(c => `<tr><td>${esc(c.ym)}</td><td class="dim" style="max-width:none" title="${esc(c.acc || '')}">${esc(c.iban || '?')}${c.cur ? ' · ' + esc(c.cur) : ''}</td>${d.multi ? `<td>${esc(c.org)}</td>` : ''}
+      <td class="num">${c.unf ? `${c.unf.n_in} · ${fmt(c.unf.sum_in)}` : '—'}</td><td class="num">${c.unf ? `${c.unf.n_out} · ${fmt(c.unf.sum_out)}` : '—'}</td>
+      <td class="num">${c.archive.n_in} · ${fmt(c.archive.sum_in)}</td><td class="num">${c.archive.n_out} · ${fmt(c.archive.sum_out)}</td>
+      <td class="st st-${c.status}">${CS[c.status] || c.status}</td></tr>`).join('')}
+    </tbody></table></div></div>`;
+}
+</script>
+</body>
+</html>

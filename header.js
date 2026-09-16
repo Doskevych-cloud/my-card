@@ -436,6 +436,7 @@
       { role: 'sales_motivation', active: 'staff',      href: '/motivation.html',   label: '👤 Основний персонал' },
       { role: 'sales',         active: 'sales',         href: '/sales.html',        label: '📈 Продажі' },
       { role: 'counterparties',active: 'counterparties',href: '/counterparties.html', label: '👥 Контрагенти' },
+      { role: 'archive',       active: 'archive',       href: '/archive.html',      label: '🗂 Первинка' },
       { role: 'finance',       active: 'finance',       href: '/finance.html',      label: '💰 Фінанси' },
       { role: 'reports',       active: 'reports',       href: '/reports.html',      label: '📑 Звіти' },
     ];
