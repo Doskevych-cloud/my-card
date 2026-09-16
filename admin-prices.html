@@ -2214,6 +2214,26 @@ function initBroadcastOnce() {
     updateMediaNote();
     updateCount();
   });
+  // Вставка гіперпосилання з Google Docs / Planfix / браузера: textarea лишає
+  // сам текст і губить адресу. Беремо HTML з буфера і перетворюємо <a> на
+  // [текст](адреса) — далі бот шле це гіперпосиланням. Без <a> — звичайна вставка.
+  document.getElementById('msgText').addEventListener('paste', function (e) {
+    const html = e.clipboardData?.getData('text/html');
+    if (!html || !/<a\s[^>]*href=/i.test(html)) return;
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    doc.querySelectorAll('a[href]').forEach(a => {
+      const href = a.getAttribute('href') || '';
+      const label = (a.textContent || '').replace(/[\[\]\n]/g, ' ').trim();
+      if (/^(https?|tg):\/\//i.test(href) && !/[\s)]/.test(href) && label) a.replaceWith(`[${label}](${href})`);
+    });
+    doc.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
+    doc.querySelectorAll('p, div, li, tr').forEach(el => el.append('\n'));
+    const text = (doc.body.textContent || '').replace(/ /g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+    if (!text) return;
+    e.preventDefault();
+    this.setRangeText(text, this.selectionStart, this.selectionEnd, 'end');
+    this.dispatchEvent(new Event('input'));
+  });
   // Палітра смайлів закривається кліком повз неї або Esc.
   document.addEventListener('click', e => {
     const pop = document.getElementById('emojiPop');
