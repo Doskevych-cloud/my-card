@@ -55,7 +55,7 @@ table.t td.amt{color:var(--text);font-weight:700;white-space:nowrap}
 table.t td.dim{color:var(--text3);font-size:11.5px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 table.t td.st{white-space:nowrap;font-weight:700}
 .st-missing,.st-unsigned,.st-invoice_only,.st-invoice_no_docs{color:var(--red)}
-.st-ok{color:var(--green)} .st-expected,.st-review,.st-no_payment{color:var(--text2)}
+.st-ok{color:var(--green)} .st-expected,.st-review,.st-no_payment,.st-no_statement{color:var(--text2)}
 .st-partial{color:var(--red)} .st-not_in_unf{color:var(--text2)}
 .doc{display:inline-block;padding:1px 7px;border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--text2);margin:1px 4px 1px 0;white-space:nowrap}
 .doc.none{color:var(--text3);border-style:dashed}
@@ -169,7 +169,8 @@ table.t td.st{white-space:nowrap;font-weight:700}
       <li><b>Нема</b> — платіж старший за 45 днів, документа в архіві нема. Це дірка.</li>
       <li><b>Лише рахунок</b> — є рахунок, але нема накладної чи акта.</li>
       <li><b>Перевірити</b> — документ є, але OCR не впевнений (нема суми, дати або низька впевненість).</li>
-      <li><b>Без платежу</b> — документ в архіві є, платежу у виписках нема: готівка, інша організація або виписка не завантажена.</li>
+      <li><b>Без платежу</b> — документ в архіві є, виписка за той місяць є, а платежу в ній нема: готівка, інша організація або оплата в іншому місяці.</li>
+      <li><b>Нема виписки</b> — документ є, а виписки за його місяць в архіві ще нема. Зникне, коли виписку завантажать.</li>
       <li><b>Не потребує</b> — зарплата, ЄСВ, податки, комісії, кредити, перекази між своїми рахунками. Правила по призначенню платежу; можна поставити вручну.</li>
     </ul>
 
@@ -190,7 +191,7 @@ const API_URL = 'https://price-api.doskevich.workers.dev';
 const ORG_CODE = { 'Реакт': 'react', 'Генерація': 'gen' };
 const ST = {
   missing: 'Нема', unsigned: 'Не підписано', invoice_only: 'Лише рахунок', invoice_no_docs: 'Лише рахунок', review: 'Перевірити',
-  no_payment: 'Без платежу', expected: 'Очікується', ok: 'Є', not_needed: 'Не потребує',
+  no_payment: 'Без платежу', no_statement: 'Нема виписки', expected: 'Очікується', ok: 'Є', not_needed: 'Не потребує',
 };
 const DOC_T = { 'видаткова': 'ВН', 'акт': 'Акт', 'прибуткова': 'ПН', 'рахунок': 'Рах.', 'ттн': 'ТТН', 'акт_звірки': 'Акт звірки', 'договір': 'Договір', 'інше': 'Інше' };
 const state = { org: 'Генерація', from: '', to: '', view: 'chains', dir: '', status: '', search: '', data: null, sort: { key: '', dir: 1 } };
@@ -290,7 +291,7 @@ function render() {
     ${kpiCard('ok', 'З документом', fmt(k.ok), fmt(k.ok_sum) + ' грн', 'green')}
     ${kpiCard('missing', 'Без документа', fmt(k.missing + k.invoice_only), fmt(k.missing_sum) + ' грн', (k.missing + k.invoice_only) ? 'red' : '')}
     ${kpiCard('expected', 'Очікується', fmt(k.expected), fmt(k.expected_sum) + ' грн · молодші 45 дн')}
-    ${kpiCard('no_payment', 'Документ без платежу', fmt(k.no_payment), fmt(k.no_payment_sum) + ' грн')}
+    ${kpiCard('no_payment', 'Документ без платежу', fmt(k.no_payment), fmt(k.no_payment_sum) + ' грн' + (k.no_statement ? ' · ще ' + fmt(k.no_statement) + ' у місяцях без виписки' : ''))}
     ${kpiCard('not_needed', 'Не потребує', fmt(k.not_needed), fmt(k.not_needed_sum) + ' грн · документів у реєстрі ' + fmt(k.docs))}
   </div>`;
   if (state.view === 'coverage') return renderCoverage(d);
