@@ -160,6 +160,7 @@ table.t td.st{white-space:nowrap;font-weight:700}
       <li>сума документа = сума платежу ±1 грн, той самий контрагент, документ у вікні −30…+90 днів від оплати;</li>
       <li>кілька накладних разом = один платіж (складене відвантаження), або кілька платежів = одна накладна (аванс + доплата);</li>
       <li><b>по контрагенту</b>: якщо 1-в-1 не зійшлось (аванс під кілька поставок, щомісячні акти під довільні оплати), суму платежу закривають документи того ж контрагента в порядку дат. Накладна ділиться між платежами; у рядку видно «зараховано N грн». Надлишок накладної понад привʼязаний платіж теж іде в цей розподіл;</li>
+      <li><b>імпорт у валюті</b>: платіж у гривні з сумою у валюті в призначенні («217 555,89 Euro») звіряється з інвойсом того ж постачальника у валюті (±0,2%, вікно ±180 днів) або з кількома інвойсами разом. Покриття рахується у валюті й переводиться в гривні за курсом самого платежу. Валюту документа індексатор визначає з тексту скану;</li>
       <li>ручна привʼязка в рядку — перебиває автоматичну.</li>
     </ul>
     <p>Колонка <b>«Без документа»</b> — непокрита частина платежу. Саме вона — дірка, а не вся сума.</p>
@@ -259,6 +260,9 @@ function saveHash() { try { history.replaceState(null, '', '#' + new URLSearchPa
 const fmt = (n, d=0) => { if (n == null || isNaN(n)) return '0'; const [i, f] = Number(n).toFixed(d).split('.'); const s = i.replace(/\B(?=(\d{3})+(?!\d))/g, ' '); return d ? `${s},${f}` : s; };
 const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const fmtD = iso => iso ? iso.slice(0,10).split('-').reverse().join('.') : '—';
+const curL = c => (!c || c === 'UAH') ? 'грн' : c;
+// Валютний «рахунок»/«інше» — це інвойс імпорту.
+const docT = x => (x.currency && x.currency !== 'UAH' && (x.type === 'інше' || x.type === 'рахунок')) ? 'Інвойс' : (DOC_T[x.type] || esc(x.type || '?'));
 
 async function load() {
   saveHash();
@@ -330,7 +334,7 @@ function renderChains(d) {
     ${gaps.map(g => `<tr class="row" onclick="document.getElementById('searchIn').value='${esc(g.cp_edrpou || g.cp_name || '')}';state.search='${esc((g.cp_edrpou || g.cp_name || '').toLowerCase())}';render()"><td class="cp">${esc(g.cp_name || '—')}</td><td class="dim">${esc(g.cp_edrpou || '')}</td>${d.multi ? `<td>${esc(g.org)}</td>` : ''}<td class="num">${g.n}</td><td class="num amt" style="color:var(--red)">${fmt(g.sum)}</td></tr>`).join('')}
     </tbody></table></div></div>` : '';
   if (!rows.length) { document.getElementById('body').innerHTML = gapsHtml + '<div class="empty">Нічого не знайдено за фільтрами</div>'; return; }
-  const docCell = (arr, none) => arr.length ? arr.map(x => `<span class="doc" title="${esc(x.files.map(f => f.path + ' · стор. ' + f.page).join('\n'))}${x.fifo_amount != null ? '\nзараховано по контрагенту: ' + fmt(x.fifo_amount, 2) + ' грн з ' + fmt(x.total, 2) : ''}">${DOC_T[x.type] || esc(x.type || '?')} ${esc(x.number || '')}${x.date ? ' · ' + fmtD(x.date) : ''}${x.fifo_amount != null ? ' ·&nbsp;част.' : ''}</span>`).join('') : `<span class="doc none">${none}</span>`;
+  const docCell = (arr, none) => arr.length ? arr.map(x => `<span class="doc" title="${esc(x.files.map(f => f.path + ' · стор. ' + f.page).join('\n'))}${x.fifo_amount != null ? '\nзараховано по контрагенту: ' + fmt(x.fifo_amount, 2) + ' ' + curL(x.currency) + ' з ' + fmt(x.total, 2) : ''}">${docT(x)} ${esc(x.number || '')}${x.date ? ' · ' + fmtD(x.date) : ''}${x.fifo_amount != null ? ' ·&nbsp;част.' : ''}</span>`).join('') : `<span class="doc none">${none}</span>`;
   const RED = { missing: 1, partial: 1, invoice_only: 1 };
   const html = rows.map((r, i) => {
     const p0 = r.payments[0];
@@ -340,7 +344,7 @@ function renderChains(d) {
       <td>${fmtD(r.date)}${fromUnf ? '<br><span class="src">з УНФ</span>' : ''}</td>
       <td class="cp" title="${esc(r.cp_name)}">${esc(r.cp_name || '—')}${d.multi ? ` <span style="color:var(--text3);font-weight:500">· ${esc(r.org)}</span>` : ''}</td>
       <td class="dim" title="${esc(purpose)}">${esc(purpose)}</td>
-      <td class="num amt">${r.direction === 'purchase' ? '−' : ''}${fmt(r.amount, 2)}</td>
+      <td class="num amt">${r.direction === 'purchase' ? '−' : ''}${fmt(r.amount, 2)}${r.currency && r.currency !== 'UAH' ? ' ' + r.currency : ''}${(r.fx || []).length ? `<br><span class="src">${r.fx.map(f => fmt(f.amount, 2) + ' ' + f.cur).join(' + ')}</span>` : ''}</td>
       <td class="num amt"${RED[r.status] ? ' style="color:var(--red)"' : ''}>${r.gap ? fmt(r.gap, 2) : ''}</td>
       <td>${docCell(r.invoices, '—')}</td>
       <td>${docCell(r.deliveries, r.anchor === 'payment' ? 'нема' : '—')}</td>
@@ -353,8 +357,8 @@ function renderChains(d) {
   window._rows = rows;
 }
 function detHtml(r) {
-  const pays = r.payments.map(p => `<div>${fmtD(p.date)} · <b>${p.amount > 0 ? '+' : ''}${fmt(p.amount, 2)}</b> ${esc(p.bank || '')}${p.source === 'unf' ? ' <span class="src">(з УНФ — виписки за цей місяць в архіві нема)</span>' : ''} ${p.doc_no ? '№' + esc(p.doc_no) : ''} — ${esc(p.purpose || '')}${p.verdict ? ` <span class="verd">вердикт: ${ST[p.verdict] || p.verdict}${p.note ? ' (' + esc(p.note) + ')' : ''}</span>` : ''}</div>`).join('');
-  const docs = [...r.invoices, ...r.deliveries, ...r.ttn].map(x => `<div><b>${DOC_T[x.type] || esc(x.type || '?')} ${esc(x.number || '')}</b> від ${fmtD(x.date)} · ${x.total != null ? fmt(x.total, 2) + ' грн' : 'сума не розпізнана'}${x.fifo_amount != null ? ` · <b>зараховано ${fmt(x.fifo_amount, 2)}</b> по контрагенту` : ''}${x.invoice_ref ? ' · розр. док. №' + esc(x.invoice_ref) : ''}${x.confidence != null ? ` · впевненість ${Math.round(x.confidence * 100)}%` : ''}<br>${x.files.map(f => `<span class="path">${esc(f.path)} · стор. ${f.page}${f.page_to > f.page ? '–' + f.page_to : ''}</span>`).join('<br>')}</div>`).join('');
+  const pays = r.payments.map(p => `<div>${fmtD(p.date)} · <b>${p.amount > 0 ? '+' : ''}${fmt(p.amount, 2)}</b>${p.fx ? ` (${fmt(p.fx.amount, 2)} ${p.fx.cur})` : ''} ${esc(p.bank || '')}${p.source === 'unf' ? ' <span class="src">(з УНФ — виписки за цей місяць в архіві нема)</span>' : ''} ${p.doc_no ? '№' + esc(p.doc_no) : ''} — ${esc(p.purpose || '')}${p.verdict ? ` <span class="verd">вердикт: ${ST[p.verdict] || p.verdict}${p.note ? ' (' + esc(p.note) + ')' : ''}</span>` : ''}</div>`).join('');
+  const docs = [...r.invoices, ...r.deliveries, ...r.ttn].map(x => `<div><b>${docT(x)} ${esc(x.number || '')}</b> від ${fmtD(x.date)} · ${x.total != null ? fmt(x.total, 2) + ' ' + curL(x.currency) : 'сума не розпізнана'}${x.fifo_amount != null ? ` · <b>зараховано ${fmt(x.fifo_amount, 2)} ${curL(x.currency)}</b> по контрагенту` : ''}${x.invoice_ref ? ' · розр. док. №' + esc(x.invoice_ref) : ''}${x.confidence != null ? ` · впевненість ${Math.round(x.confidence * 100)}%` : ''}<br>${x.files.map(f => `<span class="path">${esc(f.path)} · стор. ${f.page}${f.page_to > f.page ? '–' + f.page_to : ''}</span>`).join('<br>')}</div>`).join('');
   const pk = r.payments[0] ? r.payments[0].key : null;
   const btns = pk ? `<div class="btns">
       <span class="btn" onclick="event.stopPropagation();verdict('${esc(r.org)}','${pk}','not_needed')">Не потребує первинки</span>
@@ -388,7 +392,7 @@ function renderDocs(d) {
   if (!list.length) { document.getElementById('body').innerHTML = '<div class="empty">Документів нема</div>'; return; }
   document.getElementById('body').innerHTML = `<div class="box"><div class="h">Документи в реєстрі <span class="meta">${list.length}</span></div>
     <div class="tbl-wrap"><table class="t"><thead><tr><th>Дата</th><th>Тип</th><th>№</th><th>Контрагент</th><th class="num">Сума, грн</th><th>Файл</th><th>Ланцюжок</th><th class="dim">Ключ</th></tr></thead><tbody>
-    ${list.map(x => `<tr><td>${fmtD(x.date)}</td><td>${DOC_T[x.type] || esc(x.type || '?')}</td><td>${esc(x.number || '—')}</td><td class="cp">${esc(x.cp_name || '—')}${d.multi ? ` <span style="color:var(--text3);font-weight:500">· ${esc(x.org)}</span>` : ''}</td><td class="num amt">${x.total != null ? fmt(x.total, 2) : '<span style="color:var(--red)">?</span>'}</td><td class="dim" title="${esc(x.files.map(f => f.path + ' · стор. ' + f.page).join('\n'))}">${esc(x.files[0].path.split('/').slice(-1)[0])} · стор. ${x.files[0].page}${x.files.length > 1 ? ' (+' + (x.files.length - 1) + ')' : ''}</td><td class="st st-${x.chain}">${ST[x.chain] || x.chain}</td><td class="dim" style="font-size:10px">${esc(x.key)}</td></tr>`).join('')}
+    ${list.map(x => `<tr><td>${fmtD(x.date)}</td><td>${docT(x)}</td><td>${esc(x.number || '—')}</td><td class="cp">${esc(x.cp_name || '—')}${d.multi ? ` <span style="color:var(--text3);font-weight:500">· ${esc(x.org)}</span>` : ''}</td><td class="num amt">${x.total != null ? fmt(x.total, 2) : '<span style="color:var(--red)">?</span>'}</td><td class="dim" title="${esc(x.files.map(f => f.path + ' · стор. ' + f.page).join('\n'))}">${esc(x.files[0].path.split('/').slice(-1)[0])} · стор. ${x.files[0].page}${x.files.length > 1 ? ' (+' + (x.files.length - 1) + ')' : ''}</td><td class="st st-${x.chain}">${ST[x.chain] || x.chain}</td><td class="dim" style="font-size:10px">${esc(x.key)}</td></tr>`).join('')}
     </tbody></table></div></div>`;
 }
 
