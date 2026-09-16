@@ -54,8 +54,9 @@ table.t td.cp{color:var(--text);font-weight:600;max-width:260px;overflow:hidden;
 table.t td.amt{color:var(--text);font-weight:700;white-space:nowrap}
 table.t td.dim{color:var(--text3);font-size:11.5px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 table.t td.st{white-space:nowrap;font-weight:700}
-.st-missing,.st-unsigned,.st-invoice_only,.st-invoice_no_docs{color:var(--red)}
-.st-ok{color:var(--green)} .st-expected,.st-review,.st-no_payment,.st-no_statement{color:var(--text2)}
+.st-missing,.st-partial,.st-unsigned,.st-invoice_only,.st-invoice_no_docs{color:var(--red)}
+.st-ok,.st-cp_covered{color:var(--green)} .st-expected,.st-review,.st-no_payment,.st-no_statement,.st-unclear{color:var(--text2)}
+.src{color:var(--text3);font-weight:500;font-size:11px}
 .st-partial{color:var(--red)} .st-not_in_unf{color:var(--text2)}
 .doc{display:inline-block;padding:1px 7px;border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--text2);margin:1px 4px 1px 0;white-space:nowrap}
 .doc.none{color:var(--text3);border-style:dashed}
@@ -144,11 +145,11 @@ table.t td.st{white-space:nowrap;font-weight:700}
   <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює">
     <button class="close" onclick="closeHelp()" aria-label="Закрити">✕</button>
     <h2>Як працює «Первинка»</h2>
-    <p>Звіт перевіряє, чи є в бухгалтерському архіві на Google Drive документ під кожен платіж з рахунку ТОВ. <b>Джерело даних — тільки архів</b>: скани документів і файли банківських виписок з папок року. Нічого не береться з 1С, крім датчика «чи повна виписка» (вкладка «Виписки»).</p>
+    <p>Звіт перевіряє, чи є в бухгалтерському архіві на Google Drive документ під кожен платіж з рахунку ТОВ. <b>Документи — тільки з архіву</b> (скани). <b>Платежі</b> — з виписок в архіві, а де виписки за місяць по рахунку ще нема — з УНФ (позначка «з УНФ»).</p>
 
     <h3>Два реєстри</h3>
     <ul>
-      <li><b>Платежі</b> — рядки xls-виписок з папки «Банк (виписки)». Прихід = плюс, витрата = мінус. У рядку є юрособа, ЄДРПОУ і призначення платежу.</li>
+      <li><b>Платежі</b> — рядки xls-виписок з папки «Банк (виписки)». Прихід = плюс, витрата = мінус. У рядку є юрособа, ЄДРПОУ і призначення платежу. Для рахунків і місяців без виписки в архіві — банківські документи з УНФ; ЄДРПОУ контрагента для них підставляється з виписок за назвою.</li>
       <li><b>Документи</b> — усе, що індексатор на Mac розпізнав у PDF архіву: тип, номер, дата, сторони з ЄДРПОУ, сума з ПДВ, посилання на рахунок («Розр. док.»). Пачки на 50 сторінок він сам ділить на документи; продовження й ТТН чіпляє до свого документа.</li>
     </ul>
 
@@ -158,12 +159,17 @@ table.t td.st{white-space:nowrap;font-weight:700}
       <li>номер рахунку з призначення платежу («зг. рах. №6 від 23.01») ↔ рахунок або накладна з таким «Розр. док.»;</li>
       <li>сума документа = сума платежу ±1 грн, той самий контрагент, документ у вікні −30…+90 днів від оплати;</li>
       <li>кілька накладних разом = один платіж (складене відвантаження), або кілька платежів = одна накладна (аванс + доплата);</li>
+      <li><b>по контрагенту</b>: якщо 1-в-1 не зійшлось (аванс під кілька поставок, щомісячні акти під довільні оплати), суму платежу закривають документи того ж контрагента в порядку дат. Накладна ділиться між платежами; у рядку видно «зараховано N грн». Надлишок накладної понад привʼязаний платіж теж іде в цей розподіл;</li>
       <li>ручна привʼязка в рядку — перебиває автоматичну.</li>
     </ul>
+    <p>Колонка <b>«Без документа»</b> — непокрита частина платежу. Саме вона — дірка, а не вся сума.</p>
 
     <h3>Статуси</h3>
     <ul>
-      <li><b>Є</b> — документ під платіж знайдено.</li>
+      <li><b>Є</b> — документ під платіж знайдено, сума документів покриває платіж.</li>
+      <li><b>Є по контрагенту</b> — окремого документа під платіж нема, але документи контрагента покривають суму.</li>
+      <li><b>Частково</b> — документи покривають лише частину; непокрите — в колонці «Без документа».</li>
+      <li><b>Незрозумілий рядок УНФ</b> — рядок з УНФ без контрагента й призначення (управлінська проводка, внутрішній рух). Це питання до обліку, не до архіву; в дірки не рахується.</li>
       <li><b>Не підписано</b> — скан є, але одна сторона без підпису чи печатки (коли індексатор це бачить).</li>
       <li><b>Очікується</b> — платежу менше 45 днів, документ ще не повернувся. Не дірка.</li>
       <li><b>Нема</b> — платіж старший за 45 днів, документа в архіві нема. Це дірка.</li>
@@ -171,11 +177,11 @@ table.t td.st{white-space:nowrap;font-weight:700}
       <li><b>Перевірити</b> — документ є, але OCR не впевнений (нема суми, дати або низька впевненість).</li>
       <li><b>Без платежу</b> — документ в архіві є, виписка за той місяць є, а платежу в ній нема: готівка, інша організація або оплата в іншому місяці.</li>
       <li><b>Нема виписки</b> — документ є, а виписки за його місяць в архіві ще нема. Зникне, коли виписку завантажать.</li>
-      <li><b>Не потребує</b> — зарплата, ЄСВ, податки, комісії, кредити, перекази між своїми рахунками. Правила по призначенню платежу; можна поставити вручну.</li>
+      <li><b>Не потребує</b> — зарплата, ЄСВ, податки й платежі до бюджету, комісії, кредити, фіндопомога, купівля валюти, перекази між своїми рахунками. Правила по призначенню, назві контрагента і статті руху коштів УНФ; можна поставити вручну.</li>
     </ul>
 
     <h3>Виписки</h3>
-    <p>По кожному рахунку і місяцю: скільки рядків у виписці в архіві проти руху коштів в УНФ. «Нема» — виписку за цей місяць не завантажили в архів; тоді платежі цього місяця в звіті відсутні і дірок по них не видно. Це єдине місце, де звіт дивиться в 1С.</p>
+    <p>По кожному рахунку і місяцю: скільки рядків у виписці в архіві проти банківських документів в УНФ. «Нема» — виписку за цей місяць не завантажили в архів; платежі цього місяця по рахунку тоді беруться з УНФ. «Неповна» — у виписці менше рядків, ніж в УНФ: частина платежів може бути не видна.</p>
 
     <h3>Що треба знати</h3>
     <ul>
@@ -190,8 +196,9 @@ table.t td.st{white-space:nowrap;font-weight:700}
 const API_URL = 'https://price-api.doskevich.workers.dev';
 const ORG_CODE = { 'Реакт': 'react', 'Генерація': 'gen' };
 const ST = {
-  missing: 'Нема', unsigned: 'Не підписано', invoice_only: 'Лише рахунок', invoice_no_docs: 'Лише рахунок', review: 'Перевірити',
-  no_payment: 'Без платежу', no_statement: 'Нема виписки', expected: 'Очікується', ok: 'Є', not_needed: 'Не потребує',
+  missing: 'Нема', partial: 'Частково', unsigned: 'Не підписано', invoice_only: 'Лише рахунок', invoice_no_docs: 'Лише рахунок', review: 'Перевірити',
+  no_payment: 'Без платежу', no_statement: 'Нема виписки', expected: 'Очікується', ok: 'Є', cp_covered: 'Є по контрагенту',
+  unclear: 'Незрозумілий рядок УНФ', not_needed: 'Не потребує',
 };
 const DOC_T = { 'видаткова': 'ВН', 'акт': 'Акт', 'прибуткова': 'ПН', 'рахунок': 'Рах.', 'ттн': 'ТТН', 'акт_звірки': 'Акт звірки', 'договір': 'Договір', 'інше': 'Інше' };
 const state = { org: 'Генерація', from: '', to: '', view: 'chains', dir: '', status: '', search: '', data: null, sort: { key: '', dir: 1 } };
@@ -274,8 +281,8 @@ function mergeParts(parts) {
     out.gaps_by_cp.push(...p.gaps_by_cp.map(g => ({ ...g, org: p._org })));
     for (const k of Object.keys(p.files || {})) if (!out.files[k] || (p.files[k].last_sync > out.files[k].last_sync)) out.files[k] = p.files[k];
   }
-  const order = { missing: 0, unsigned: 1, review: 2, invoice_only: 3, invoice_no_docs: 4, no_payment: 5, expected: 6, ok: 7 };
-  out.rows.sort((a, b) => (order[a.status] - order[b.status]) || (b.amount - a.amount));
+  const order = { missing: 0, partial: 1, unsigned: 2, review: 3, invoice_only: 4, invoice_no_docs: 5, unclear: 6, no_payment: 7, expected: 8, cp_covered: 9, ok: 10, no_statement: 11 };
+  out.rows.sort((a, b) => (order[a.status] - order[b.status]) || ((b.gap || b.amount) - (a.gap || a.amount)));
   out.gaps_by_cp.sort((a, b) => b.sum - a.sum);
   return out;
 }
@@ -287,9 +294,10 @@ function render() {
   document.getElementById('idxMeta').textContent = lastSync ? `індекс архіву оновлено ${fmtD(lastSync)} ${lastSync.slice(11,16)} UTC` : 'реєстр порожній';
   const kpiCard = (key, lbl, v, sub, cls='') => `<div class="kpi${state.status === key ? ' active' : ''}" onclick="setStatus('${key}')"><span class="lbl">${lbl}</span><span class="v ${cls}">${v}</span><span class="sub">${sub}</span></div>`;
   document.getElementById('summary').innerHTML = `<div class="summary">
-    ${kpiCard('', 'Платежів, потребують первинки', fmt(k.need), fmt(k.need_sum) + ' грн · з ' + fmt(k.payments) + ' рядків')}
-    ${kpiCard('ok', 'З документом', fmt(k.ok), fmt(k.ok_sum) + ' грн', 'green')}
-    ${kpiCard('missing', 'Без документа', fmt(k.missing + k.invoice_only), fmt(k.missing_sum) + ' грн', (k.missing + k.invoice_only) ? 'red' : '')}
+    ${kpiCard('', 'Платежів, потребують первинки', fmt(k.need), fmt(k.need_sum) + ' грн · з них з УНФ ' + fmt(k.from_unf || 0))}
+    ${kpiCard('ok', 'З документом', fmt(k.ok), fmt(k.ok_sum) + ' грн' + (k.cp_covered ? ' · по контрагенту ' + fmt(k.cp_covered) : ''), 'green')}
+    ${kpiCard('missing', 'Без документа', fmt(k.missing + k.invoice_only + (k.partial || 0)), fmt(k.missing_sum) + ' грн' + (k.partial ? ' · частково ' + fmt(k.partial) : ''), (k.missing + k.invoice_only + (k.partial || 0)) ? 'red' : '')}
+    ${k.unclear ? kpiCard('unclear', 'Незрозумілі рядки УНФ', fmt(k.unclear), fmt(k.unclear_sum) + ' грн · без контрагента') : ''}
     ${kpiCard('expected', 'Очікується', fmt(k.expected), fmt(k.expected_sum) + ' грн · молодші 45 дн')}
     ${kpiCard('no_payment', 'Документ без платежу', fmt(k.no_payment), fmt(k.no_payment_sum) + ' грн' + (k.no_statement ? ' · ще ' + fmt(k.no_statement) + ' у місяцях без виписки' : ''))}
     ${kpiCard('not_needed', 'Не потребує', fmt(k.not_needed), fmt(k.not_needed_sum) + ' грн · документів у реєстрі ' + fmt(k.docs))}
@@ -302,8 +310,8 @@ function render() {
 function rowMatches(r) {
   if (state.dir && r.direction && r.direction !== state.dir) return false;
   if (state.status) {
-    if (state.status === 'missing' && !(r.status === 'missing' || r.status === 'invoice_only' || r.status === 'invoice_no_docs')) return false;
-    else if (state.status === 'ok' && !(r.status === 'ok' || r.status === 'unsigned' || r.status === 'review')) return false;
+    if (state.status === 'missing' && !(r.status === 'missing' || r.status === 'partial' || r.status === 'invoice_only' || r.status === 'invoice_no_docs')) return false;
+    else if (state.status === 'ok' && !(r.status === 'ok' || r.status === 'unsigned' || r.status === 'review' || r.status === 'cp_covered')) return false;
     else if (state.status !== 'missing' && state.status !== 'ok' && state.status !== 'not_needed' && r.status !== state.status) return false;
     if (state.status === 'not_needed') return false;
   }
@@ -322,28 +330,31 @@ function renderChains(d) {
     ${gaps.map(g => `<tr class="row" onclick="document.getElementById('searchIn').value='${esc(g.cp_edrpou || g.cp_name || '')}';state.search='${esc((g.cp_edrpou || g.cp_name || '').toLowerCase())}';render()"><td class="cp">${esc(g.cp_name || '—')}</td><td class="dim">${esc(g.cp_edrpou || '')}</td>${d.multi ? `<td>${esc(g.org)}</td>` : ''}<td class="num">${g.n}</td><td class="num amt" style="color:var(--red)">${fmt(g.sum)}</td></tr>`).join('')}
     </tbody></table></div></div>` : '';
   if (!rows.length) { document.getElementById('body').innerHTML = gapsHtml + '<div class="empty">Нічого не знайдено за фільтрами</div>'; return; }
-  const docCell = (arr, none) => arr.length ? arr.map(x => `<span class="doc" title="${esc(x.files.map(f => f.path + ' · стор. ' + f.page).join('\n'))}">${DOC_T[x.type] || esc(x.type || '?')} ${esc(x.number || '')}${x.date ? ' · ' + fmtD(x.date) : ''}</span>`).join('') : `<span class="doc none">${none}</span>`;
+  const docCell = (arr, none) => arr.length ? arr.map(x => `<span class="doc" title="${esc(x.files.map(f => f.path + ' · стор. ' + f.page).join('\n'))}${x.fifo_amount != null ? '\nзараховано по контрагенту: ' + fmt(x.fifo_amount, 2) + ' грн з ' + fmt(x.total, 2) : ''}">${DOC_T[x.type] || esc(x.type || '?')} ${esc(x.number || '')}${x.date ? ' · ' + fmtD(x.date) : ''}${x.fifo_amount != null ? ' ·&nbsp;част.' : ''}</span>`).join('') : `<span class="doc none">${none}</span>`;
+  const RED = { missing: 1, partial: 1, invoice_only: 1 };
   const html = rows.map((r, i) => {
     const p0 = r.payments[0];
     const purpose = p0 ? p0.purpose : (r.invoices[0] || r.deliveries[0] || {}).number ? 'документ без платежу' : '';
+    const fromUnf = r.payments.length && r.payments.every(p => p.source === 'unf');
     return `<tr class="row" onclick="toggleDet(${i})">
-      <td>${fmtD(r.date)}</td>
+      <td>${fmtD(r.date)}${fromUnf ? '<br><span class="src">з УНФ</span>' : ''}</td>
       <td class="cp" title="${esc(r.cp_name)}">${esc(r.cp_name || '—')}${d.multi ? ` <span style="color:var(--text3);font-weight:500">· ${esc(r.org)}</span>` : ''}</td>
       <td class="dim" title="${esc(purpose)}">${esc(purpose)}</td>
       <td class="num amt">${r.direction === 'purchase' ? '−' : ''}${fmt(r.amount, 2)}</td>
+      <td class="num amt"${RED[r.status] ? ' style="color:var(--red)"' : ''}>${r.gap ? fmt(r.gap, 2) : ''}</td>
       <td>${docCell(r.invoices, '—')}</td>
       <td>${docCell(r.deliveries, r.anchor === 'payment' ? 'нема' : '—')}</td>
       <td>${r.ttn.length ? r.ttn.map(t => `<span class="doc">ТТН ${esc(t.number || '')}</span>`).join('') : ''}</td>
       <td class="st st-${r.status}">${ST[r.status] || r.status}${r.payments.some(p => p.verdict) ? ' ·' : ''}</td>
-    </tr><tr id="det-${i}" style="display:none"><td colspan="8" class="det">${detHtml(r)}</td></tr>`;
+    </tr><tr id="det-${i}" style="display:none"><td colspan="9" class="det">${detHtml(r)}</td></tr>`;
   }).join('');
   document.getElementById('body').innerHTML = gapsHtml + `<div class="box"><div class="h">Ланцюжки <span class="meta">${rows.length} з ${d.rows.length}</span></div>
-    <div class="tbl-wrap"><table class="t"><thead><tr><th>Дата</th><th>Контрагент</th><th class="dim">Призначення</th><th class="num">Сума, грн</th><th>Рахунок</th><th>Накладна / акт</th><th>ТТН</th><th>Статус</th></tr></thead><tbody>${html}</tbody></table></div></div>`;
+    <div class="tbl-wrap"><table class="t"><thead><tr><th>Дата</th><th>Контрагент</th><th class="dim">Призначення</th><th class="num">Сума, грн</th><th class="num">Без документа</th><th>Рахунок</th><th>Накладна / акт</th><th>ТТН</th><th>Статус</th></tr></thead><tbody>${html}</tbody></table></div></div>`;
   window._rows = rows;
 }
 function detHtml(r) {
-  const pays = r.payments.map(p => `<div>${fmtD(p.date)} · <b>${p.amount > 0 ? '+' : ''}${fmt(p.amount, 2)}</b> ${esc(p.bank || '')} ${p.doc_no ? '№' + esc(p.doc_no) : ''} — ${esc(p.purpose || '')}${p.verdict ? ` <span class="verd">вердикт: ${ST[p.verdict] || p.verdict}${p.note ? ' (' + esc(p.note) + ')' : ''}</span>` : ''}</div>`).join('');
-  const docs = [...r.invoices, ...r.deliveries, ...r.ttn].map(x => `<div><b>${DOC_T[x.type] || esc(x.type || '?')} ${esc(x.number || '')}</b> від ${fmtD(x.date)} · ${x.total != null ? fmt(x.total, 2) + ' грн' : 'сума не розпізнана'}${x.invoice_ref ? ' · розр. док. №' + esc(x.invoice_ref) : ''}${x.confidence != null ? ` · впевненість ${Math.round(x.confidence * 100)}%` : ''}<br>${x.files.map(f => `<span class="path">${esc(f.path)} · стор. ${f.page}${f.page_to > f.page ? '–' + f.page_to : ''}</span>`).join('<br>')}</div>`).join('');
+  const pays = r.payments.map(p => `<div>${fmtD(p.date)} · <b>${p.amount > 0 ? '+' : ''}${fmt(p.amount, 2)}</b> ${esc(p.bank || '')}${p.source === 'unf' ? ' <span class="src">(з УНФ — виписки за цей місяць в архіві нема)</span>' : ''} ${p.doc_no ? '№' + esc(p.doc_no) : ''} — ${esc(p.purpose || '')}${p.verdict ? ` <span class="verd">вердикт: ${ST[p.verdict] || p.verdict}${p.note ? ' (' + esc(p.note) + ')' : ''}</span>` : ''}</div>`).join('');
+  const docs = [...r.invoices, ...r.deliveries, ...r.ttn].map(x => `<div><b>${DOC_T[x.type] || esc(x.type || '?')} ${esc(x.number || '')}</b> від ${fmtD(x.date)} · ${x.total != null ? fmt(x.total, 2) + ' грн' : 'сума не розпізнана'}${x.fifo_amount != null ? ` · <b>зараховано ${fmt(x.fifo_amount, 2)}</b> по контрагенту` : ''}${x.invoice_ref ? ' · розр. док. №' + esc(x.invoice_ref) : ''}${x.confidence != null ? ` · впевненість ${Math.round(x.confidence * 100)}%` : ''}<br>${x.files.map(f => `<span class="path">${esc(f.path)} · стор. ${f.page}${f.page_to > f.page ? '–' + f.page_to : ''}</span>`).join('<br>')}</div>`).join('');
   const pk = r.payments[0] ? r.payments[0].key : null;
   const btns = pk ? `<div class="btns">
       <span class="btn" onclick="event.stopPropagation();verdict('${esc(r.org)}','${pk}','not_needed')">Не потребує первинки</span>
