@@ -165,6 +165,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 @media (max-width:480px){
   .summary-grand{grid-template-columns:1fr}
 }
+
+/* Help modal (еталон — top_products.html) */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.modal-backdrop.open{display:flex}
+.modal{position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:14px;max-width:640px;width:100%;max-height:85vh;overflow-y:auto;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.modal h2{font-size:16px;font-weight:800;color:var(--text);margin-bottom:8px;padding-right:28px}
+.modal h3{font-size:13px;font-weight:700;color:var(--accent);margin:16px 0 5px;display:flex;align-items:center;gap:7px}
+.modal p{font-size:12.5px;color:var(--text2);line-height:1.6;margin:4px 0}
+.modal ul{margin:5px 0 5px 6px;list-style:none}
+.modal li{font-size:12.5px;color:var(--text2);line-height:1.55;margin:5px 0;padding-left:16px;position:relative}
+.modal li::before{content:'·';position:absolute;left:4px;color:var(--text3);font-weight:800}
+.modal b{color:var(--text);font-weight:700}
+.modal code{background:var(--bg2);padding:1px 6px;border-radius:5px;font-size:11.5px;color:var(--text);border:1px solid var(--border)}
+.modal .note{margin-top:8px;padding:9px 11px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-size:12.5px;color:var(--text2);line-height:1.6}
+.modal .close{position:absolute;top:16px;right:18px;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;border:none;background:none;padding:4px}
+.modal .close:hover{color:var(--text)}
 </style>
 </head>
 <body>
@@ -210,6 +226,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <input type="text" id="sExcludeIn" placeholder="Почни вводити…" autocomplete="off">
         <div id="sExcludeSuggest" class="s-suggest" style="display:none"></div>
       </span>
+
+      <span class="chip" onclick="openHelp()" title="Як працює цей звіт">❓ Як працює</span>
     </div>
 
     <div class="mc-block">
@@ -222,6 +240,67 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
     <div id="curSummary"></div>
     <div id="body"><div class="loading">Завантаження…</div></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="helpModal" onclick="if(event.target===this)closeHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт">
+    <button class="close" onclick="closeHelp()" aria-label="Закрити">✕</button>
+    <h2>📈 Як працює звіт «Продажі менеджерів»</h2>
+    <p>Звіт показує, <b>скільки грошей зайшло за період</b>, у розрізі менеджер → валюта → клієнт → замовлення. Дані беруться з нашої копії 1С (оновлюється кожні 30 хв), а не з 1С наживо.</p>
+
+    <h3>Період фільтрує оплати, а не замовлення</h3>
+    <ul>
+      <li><b>Оплачено</b> — платежі, які пройшли <b>всередині періоду</b>: надходження на рахунок і в касу <b>мінус</b> повернення клієнтам.</li>
+      <li>Дата самого замовлення значення не має: замовлення від лютого, оплачене у вересні, стоїть у <b>вересні</b>.</li>
+      <li>Додатково у звіт потрапляють замовлення, <b>розміщені в періоді</b>, навіть без жодної оплати — вони дають «потенціал», а «Оплачено» у них 0.</li>
+      <li>Аванс, у якому касир не проставив замовлення в реєстрі, підтягується через <b>документ-основу</b> в шапці ПКО/ПНР — як і в 1С.</li>
+    </ul>
+
+    <h3>Колонки таблиці</h3>
+    <ul>
+      <li><b>Сума замовлення</b> — сума документа замовлення, у валюті договору.</li>
+      <li><b>Оплачено</b> — скільки зайшло <b>за обраний період</b>.</li>
+      <li><b>Залишилось</b> — сума замовлення мінус <b>усі</b> оплати за всю історію (не лише за період), не менше нуля.</li>
+    </ul>
+    <p class="note">💡 <b>Чому «Оплачено» 0, а «Залишилось» теж 0?</b> Бо замовлення закрили оплатою <b>раніше</b>, ніж почався період, а в звіт воно потрапило як розміщене або через рух цього періоду. Дві колонки рахуються на різних базах: одна — за період, друга — за всю історію.</p>
+
+    <h3>Менеджер</h3>
+    <ul>
+      <li>Береться з реквізиту <b>«Менеджер»</b> у самому замовленні 1С — <b>не</b> з автора документа і <b>не</b> з відповідального.</li>
+      <li>Звіряється з 1С <b>щодня по всіх замовленнях</b>: перепризначив менеджера в 1С — наступного дня цифри переїдуть до нього, навіть на давньому замовленні.</li>
+      <li>Не проставили менеджера в 1С — замовлення йде в окремий рядок <b>«Без менеджера»</b>.</li>
+    </ul>
+
+    <h3>Валюти й USD</h3>
+    <ul>
+      <li>Гілки — по <b>валюті договору</b>. Платіж у гривні за доларовим договором лишається у своїй валютній гілці, як у 1С.</li>
+      <li>Порядок валют фіксований: <code>USD → EUR → UAH</code>.</li>
+      <li>«Оплачено за період», «Потенціал» і бонус перераховуються в USD за <b>курсом 1С-документів</b>; залишок — за поточним курсом. Тому сума в доларах може не збігтись із ручним перерахунком по НБУ.</li>
+      <li>Якщо для якоїсь валюти немає курсу — замість суми стоїть <code>—</code>.</li>
+    </ul>
+
+    <h3>Блок «Топ менеджери»</h3>
+    <ul>
+      <li><b>Сума справа</b> — оплачено за період у USD, смужка — відносно лідера.</li>
+      <li><b>пот.</b> (потенціал) — оплачено + залишок по всіх замовленнях менеджера у звіті.</li>
+      <li><b>бонус</b> — 0,08% від оплаченого. Це орієнтир зі звіту, а не розрахунок ЗП: мотивація рахується окремо, на своїй сторінці.</li>
+      <li>Клік по менеджеру розгортає його валюти → клієнтів → замовлення.</li>
+    </ul>
+
+    <h3>Фільтри</h3>
+    <ul>
+      <li><b>Організація</b>: «Всі» складає Реакт і Генерацію разом (Київ входить у Генерацію). Видно лише ті організації, до яких є доступ.</li>
+      <li><b>Пошук</b> — по клієнту, менеджеру або номеру замовлення.</li>
+      <li><b>Виключити</b> — локальний список клієнтів: ховає їх із таблиці й підсумків. Він живе <b>тільки у цій вкладці браузера</b>, на дашборді й в інших звітах не діє — тому цифра на головній може бути трохи більшою.</li>
+      <li>Графік «Виторг (оплачено) — 12 місяців» рахується тим самим методом, але <b>ігнорує пошук і список виключень</b>.</li>
+    </ul>
+
+    <h3>Чому цифра може відставати</h3>
+    <ul>
+      <li>Відповідь звіту кешується на <b>годину</b>, синхронізація з 1С — кожні 30 хв. Свіжий платіж може зайти в звіт із затримкою.</li>
+      <li>Замовлення, видалене в 1С, зникає і зі звіту — на наступному нічному прогоні.</li>
+    </ul>
   </div>
 </div>
 
@@ -271,6 +350,10 @@ Auth.require('sales').then(user => {
     setPreset('month');
   }
 });
+
+function openHelp()  { document.getElementById('helpModal').classList.add('open'); }
+function closeHelp() { document.getElementById('helpModal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHelp(); });
 
 function _readHashState() {
   try { return Object.fromEntries(new URLSearchParams(location.hash.slice(1))); }
