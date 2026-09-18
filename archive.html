@@ -187,7 +187,7 @@ table.t td.st{white-space:nowrap;font-weight:700}
     <h3>Що треба знати</h3>
     <ul>
       <li>Нумерація на папері (бухгалтерська база) не збігається з номерами УНФ, тому звірка йде по сумі й контрагенту, а не по номеру.</li>
-      <li>Індексатор працює на Mac: новий файл у папці потрапляє в реєстр після наступного прогону. Час останнього оновлення — біля заголовка.</li>
+      <li>Індексатор працює на Mac: новий файл у папці потрапляє в реєстр після наступного прогону. Час останнього оновлення — біля заголовка. Файли, яких ще нема на компʼютері (лежать тільки на Google Drive), він завантажує сам; якщо якийсь прочитати не вдалось — біля заголовка зʼявиться червоне «не прочитано з диска».</li>
       <li>Один документ, відсканований двічі (у пачці і окремим файлом), рахується один раз.</li>
     </ul>
   </div>
@@ -295,7 +295,11 @@ function render() {
   const d = state.data; if (!d) return;
   const k = d.kpi;
   const lastSync = (d.files.ok || {}).last_sync;
-  document.getElementById('idxMeta').textContent = lastSync ? `індекс архіву оновлено ${fmtD(lastSync)} ${lastSync.slice(11,16)} UTC` : 'реєстр порожній';
+  // Файли, які індексатор не зміг прочитати з диска (Drive не запущений, битий PDF) — мовчати про них
+  // не можна: їхні документи в реєстр не потрапили.
+  const bad = ((d.files.error || {}).n || 0) + ((d.files.placeholder || {}).n || 0);
+  document.getElementById('idxMeta').innerHTML = (lastSync ? `індекс архіву оновлено ${fmtD(lastSync)} ${lastSync.slice(11,16)} UTC` : 'реєстр порожній')
+    + (bad ? ` · <span style="color:var(--red)">не прочитано з диска: ${bad}</span>` : '');
   const kpiCard = (key, lbl, v, sub, cls='') => `<div class="kpi${state.status === key ? ' active' : ''}" onclick="setStatus('${key}')"><span class="lbl">${lbl}</span><span class="v ${cls}">${v}</span><span class="sub">${sub}</span></div>`;
   document.getElementById('summary').innerHTML = `<div class="summary">
     ${kpiCard('', 'Платежів, потребують первинки', fmt(k.need), fmt(k.need_sum) + ' грн · з них з УНФ ' + fmt(k.from_unf || 0))}
