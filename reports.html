@@ -420,7 +420,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <ul>
       <li><b>Перша спроба</b> — перший вихідний дзвінок будь-якого співробітника на номер ліда, з будь-яким результатом. «Без дзвінка» — телефон є, дані дзвінків є, а вихідного дзвінка досі нема.</li>
       <li><b>Дозвон</b> — перша відповідена розмова: вихідна, або вхідна від цього номера (клієнт передзвонив сам). «Спроб» — вихідних дзвінків до розмови включно. «Додзв.» — частка лідів із телефоном, з якими поговорили.</li>
-      <li><b>Передача</b> — у виконавцях зʼявився хтось, кого не було на старті. «Від Цільового A/B» — від статусу «Визначено як цільовий» до передачі для класів A і B (норма: цільовий A/B = передати). «У ту ж год.» — передано не пізніше ніж за 1 робочу годину після «Цільового».</li>
+      <li><b>Передача</b> — у виконавцях зʼявився хтось, кого не було на старті. Це головна метрика лід-менеджера: весь шлях від появи ліда (нове + спроби додзвонитись + призначення) до передачі. «≤1 год» і «≤1 день» — частка всіх лідів менеджера, переданих у цей строк (не передані = не встигли). «Від Цільового A/B» — окремо крок від статусу «Визначено як цільовий» до передачі для класів A і B (норма: цільовий A/B = передати).</li>
       <li><b>«Передано, час невідомий»</b> — виконавець уже інший, але після передачі не було жодного переходу статусу, а журналу змін до 22.09.2026 не існувало: факт є, момент невідомий. Такі ліди входять у «передано %», але не в медіани. За серпень–вересень 2026 це 62 зі 164 цільових A/B Ангеліни. З 22.09.2026 вебхук Planfix пише точний час, і таких лідів більше не буде.</li>
       <li><b>Мітка CRM</b> — подія «Спробу зв'язатись зроблено». «Без дзвінка» — мітка стоїть, а вихідного дзвінка нема або він пізніше ніж за добу після мітки.</li>
       <li><b>Робочий час</b> — хвилини лише в межах графіка (за замовчуванням пн–пт 09:00–18:00; «⚙ Графік» — адмін): лід о 21:00 і дзвінок о 09:05 = 5 хв. «Календарний» — разом із ніччю та вихідними.</li>
@@ -1850,7 +1850,7 @@ const rsMarkNoCall = l => !!l.mark && (!l.fa || (l.d.fa && l.d.mark && l.d.fa[0]
 // Агрегат по масиву лідів (менеджер / місяць / усе). ti: 0 = календарні, 1 = робочі хвилини.
 function rsAgg(leads, ti) {
   const a = { n: leads.length, phone: 0, base: 0, fromCall: 0, noData: 0, attempted: 0, fa: [], fa15: 0, fa60: 0, fa240: 0,
-    answered: 0, ans: [], tries: [], handed: 0, hoUnknown: 0, ho: [], hoApprox: 0, tgtAB: 0, tgtHanded: 0, tgtHo: [], tgtHour: 0,
+    answered: 0, ans: [], tries: [], handed: 0, hoUnknown: 0, ho: [], ho60: 0, ho540: 0, hoApprox: 0, tgtAB: 0, tgtHanded: 0, tgtHo: [], tgtHour: 0,
     marked: 0, mark: [], markNoCall: 0 };
   for (const l of leads) {
     if (l.phone) a.phone++;
@@ -1865,7 +1865,7 @@ function rsAgg(leads, ti) {
     // передано = час відомий (журнал/подія) АБО лише факт з поточного виконавця (hoSrc 'current', без часу)
     if (l.hoTo && (l.d.ho || l.hoSrc === 'current')) {
       a.handed++;
-      if (l.d.ho) { a.ho.push(l.d.ho[ti]); if (l.hoSrc === 'event') a.hoApprox++; } else a.hoUnknown++;
+      if (l.d.ho) { const v = l.d.ho[ti]; a.ho.push(v); if (v <= 60) a.ho60++; if (v <= 540) a.ho540++; if (l.hoSrc === 'event') a.hoApprox++; } else a.hoUnknown++;
     }
     if (l.tgt && rsIsAB(l)) {
       a.tgtAB++;
@@ -1885,14 +1885,14 @@ function rsCells(a) { // клітинки після першої колонки
   return `<td>${fmt(a.n)}</td><td>${a.n ? pct(a.phone, a.n) : RS_DOT}</td>` +
     `<td>${med(a.fa)}</td><td>${pct(a.fa15, a.base)}</td><td>${pct(a.fa60, a.base)}</td><td>${pct(a.fa240, a.base)}</td><td>${noCall ? red(fmt(noCall)) : (a.base ? '0' : RS_DOT)}</td>` +
     `<td>${pct(a.answered, a.base)}</td><td>${med(a.ans)}</td><td>${avg1(a.tries)}</td>` +
-    `<td>${pct(a.handed, a.n)}</td><td>${med(a.ho)}${a.hoApprox ? ' <span title="частина — за подіями: час наступного переходу, оцінка завищена">≈</span>' : ''}${a.hoUnknown ? ` <span style="color:var(--text3);font-weight:500" title="передані, але час невідомий: зміна виконавця без наступного переходу статусу (до вебхука 22.09.2026 видно лише з поточного виконавця)">${fmt(a.hoUnknown)} без часу</span>` : ''}</td><td>${med(a.tgtHo)}</td><td>${pct(a.tgtHour, a.tgtAB)}</td>` +
+    `<td>${pct(a.handed, a.n)}</td><td>${med(a.ho)}${a.hoApprox ? ' <span title="частина — за подіями: час наступного переходу, оцінка завищена">≈</span>' : ''}${a.hoUnknown ? ` <span style="color:var(--text3);font-weight:500" title="передані, але час невідомий: зміна виконавця без наступного переходу статусу (до вебхука 22.09.2026 видно лише з поточного виконавця)">${fmt(a.hoUnknown)} без часу</span>` : ''}</td><td>${pct(a.ho60, a.n)}</td><td>${pct(a.ho540, a.n)}</td><td>${med(a.tgtHo)}</td>` +
     `<td>${med(a.mark)}</td><td>${a.markNoCall ? red(fmt(a.markNoCall)) : (a.marked ? '0' : RS_DOT)}</td>`;
 }
-const RS_HEAD = `<tr><th rowspan="2">%LBL%</th><th colspan="2">Ліди</th><th colspan="5">Перша спроба</th><th colspan="3">Дозвон</th><th colspan="4">Передача</th><th colspan="2">Мітка CRM</th></tr>
+const RS_HEAD = `<tr><th rowspan="2">%LBL%</th><th colspan="2">Ліди</th><th colspan="5">Перша спроба</th><th colspan="3">Дозвон</th><th colspan="5">Передача</th><th colspan="2">Мітка CRM</th></tr>
   <tr><th>усього</th><th title="Частка лідів із телефоном (назва або контакт Planfix)">з тел.</th>
   <th title="Медіана від появи ліда до першого вихідного дзвінка">медіана</th><th title="Частка лідів із телефоном, яким подзвонили за 15 хвилин">≤15 хв</th><th>≤1 год</th><th>≤4 год</th><th title="Телефон є, дані дзвінків є, вихідного дзвінка нема">без дзвінка</th>
   <th title="Частка лідів із телефоном, з якими відбулась розмова">додзв.</th><th title="Медіана від появи ліда до першої розмови">медіана</th><th title="Середня кількість вихідних дзвінків до розмови включно">спроб</th>
-  <th title="Частка лідів, у яких змінився виконавець (разом із тими, де час зміни невідомий)">передано</th><th title="Медіана від появи ліда до зміни виконавця">від Нове</th><th title="Медіана від «Визначено як цільовий» до зміни виконавця, лише класи A і B">від Цільового A/B</th><th title="Передано не пізніше ніж за 1 робочу годину після «Цільового» (A/B)">у ту ж год.</th>
+  <th title="Частка лідів, у яких змінився виконавець (разом із тими, де час зміни невідомий)">передано</th><th title="Медіана від появи ліда до зміни виконавця (весь шлях лід-менеджера: нове + спроби додзвонитись + призначення)">від Нове</th><th title="Частка ВСІХ лідів менеджера, переданих за 1 робочу годину від появи">≤1 год</th><th title="Частка ВСІХ лідів менеджера, переданих за 1 робочий день (9 год) від появи">≤1 день</th><th title="Медіана від «Визначено як цільовий» до зміни виконавця, лише класи A і B — окремо крок передачі">від Цільового A/B</th>
   <th title="Медіана від появи ліда до мітки «Спробу зв'язатись зроблено»">медіана</th><th title="Мітка є, а вихідного дзвінка нема (або він пізніше ніж за добу після мітки)">без дзвінка</th></tr>`;
 function renderResponseReport(d) {
   const ti = rsTi();
@@ -1923,7 +1923,7 @@ function renderResponseReport(d) {
     <div class="kpi-card"><div class="lbl">Перша спроба · медіана</div><div class="val">${medTxt(t.fa)}</div><div class="sub">≤15 хв — ${pct(t.fa15, t.base)} · ≤1 год — ${pct(t.fa60, t.base)}</div></div>
     <div class="kpi-card${noCall ? ' c-fail' : ''}"><div class="lbl">Без дзвінка</div><div class="val">${fmt(noCall)}</div><div class="sub">телефон є, вихідного дзвінка нема</div></div>
     <div class="kpi-card"><div class="lbl">Додзвонились</div><div class="val">${pct(t.answered, t.base)}</div><div class="sub">до розмови — ${medTxt(t.ans)}${t.tries.length ? ` · ${(t.tries.reduce((s, v) => s + v, 0) / t.tries.length).toLocaleString('uk-UA', { maximumFractionDigits: 1 })} спроб` : ''}</div></div>
-    <div class="kpi-card"><div class="lbl">Передача · медіана</div><div class="val">${medTxt(t.ho)}</div><div class="sub">передано ${pct(t.handed, t.n)}${t.hoUnknown ? ` (час відомий у ${fmt(t.handed - t.hoUnknown)} з ${fmt(t.handed)})` : ''} · від Цільового A/B — ${medTxt(t.tgtHo)}</div></div>
+    <div class="kpi-card"><div class="lbl">Передача · медіана</div><div class="val">${medTxt(t.ho)}</div><div class="sub">передано ${pct(t.handed, t.n)}${t.hoUnknown ? ` (час відомий у ${fmt(t.handed - t.hoUnknown)} з ${fmt(t.handed)})` : ''} · за 1 год — ${pct(t.ho60, t.n)} · за 1 день — ${pct(t.ho540, t.n)}</div></div>
   </div>`;
   // ── по менеджерах (хто отримав лід) ──
   const byMgr = new Map();
