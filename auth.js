@@ -93,6 +93,7 @@
     reports_cycle: 'Звіти — Цикл',
     reports_stagetime: 'Звіти — Етапи',
     reports_marketing: 'Звіти — Маркетинг',
+    reports_response: 'Звіти — Реакція',
     counterparties: 'Контрагенти',
     suppliers: 'Постачальники',
     customers: 'Покупці',

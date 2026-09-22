@@ -154,6 +154,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   #funnelFilters .lbl{display:inline}
   /* матриця «Навантаження» широка — імʼя менеджера лишається видимим при горизонтальному скролі */
   .load-matrix th:first-child,.load-matrix td:first-child{position:sticky;left:0;z-index:1;background:var(--surface2)}
+  .rs-table th:first-child,.rs-table td:first-child{position:sticky;left:0;z-index:1;background:var(--surface2)}
+  .rs-table thead th:first-child{background:var(--surface)}
   .load-matrix th:first-child{background:var(--surface)}
   /* виділений рядок: той самий відтінок, що .mgr-table tr.active, але на непрозорій основі — інакше цифри просвічують під імʼям */
   .load-matrix tr.clickable.active td:first-child{background:linear-gradient(rgba(154,180,255,.12),rgba(154,180,255,.12)),var(--surface2)}
@@ -179,6 +181,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .modal b{color:var(--text);font-weight:700}
 .modal .close{position:absolute;top:16px;right:18px;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;border:none;background:none;padding:4px}
 .modal .close:hover{color:var(--text)}
+/* «Реакція»: дворядковий заголовок, числа праворуч, перша колонка ліворуч */
+.rs-table th,.rs-table td{white-space:nowrap;text-align:right}
+.rs-table th:first-child,.rs-table td:first-child{text-align:left}
+.rs-table thead tr:first-child th{color:var(--text3);font-weight:600;border-bottom:none;padding-bottom:2px}
+.rs-table thead tr+tr th{padding-top:2px}
 </style>
 </head>
 <body>
@@ -199,6 +206,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <button class="stab" data-rep="advance" data-perm="reports_advance">🤝 Підписані</button>
       <button class="stab" data-rep="stagetime" data-perm="reports_stagetime">⏳ Етапи</button>
       <button class="stab" data-rep="marketing" data-perm="reports_marketing">💸 Маркетинг</button>
+      <button class="stab" data-rep="response" data-perm="reports_response">📞 Реакція</button>
     </div>
   </div>
 
@@ -397,6 +405,55 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
 </div>
 
+<div class="modal-backdrop" id="rsHelpModal" onclick="if(event.target===this)closeRsHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт «Реакція»">
+    <button class="close" onclick="closeRsHelp()" aria-label="Закрити">✕</button>
+    <h2>📞 Як працює звіт «Реакція»</h2>
+    <h3>Джерела даних</h3>
+    <ul>
+      <li><b>Ліди</b> — CRM-події Planfix: подія «Нове» = момент появи ліда. Когорта: створені у вибраний період, шаблон «Продажі станцій», без каналу «Тест» і видалених; фільтри «тип клієнта» і «клас» діють.</li>
+      <li><b>Дзвінки</b> — Binotel, обидва напрямки, усі результати (зайнято, скинуто, не відповіли — теж). Синк кожні 30 хв; дані є з дати, вказаної над таблицями.</li>
+      <li><b>Телефон ліда</b> — з назви угоди, інакше з контакту Planfix (позначка «pf»). Матч із дзвінком — по останніх 9 цифрах.</li>
+      <li><b>Передача</b> — зміна виконавця: журнал змін — вебхук Planfix (сценарій «ERP: зміна виконавця», точний час, з 22.09.2026) і синк відкритих угод кожні 30 хв; для лідів до 22.09.2026 — перша подія з іншим виконавцем, тоді час ≈ наступного переходу, оцінка завищена (позначка ≈).</li>
+    </ul>
+    <h3>Показники (усі — від появи ліда)</h3>
+    <ul>
+      <li><b>Перша спроба</b> — перший вихідний дзвінок будь-якого співробітника на номер ліда, з будь-яким результатом. «Без дзвінка» — телефон є, дані дзвінків є, а вихідного дзвінка досі нема.</li>
+      <li><b>Дозвон</b> — перша відповідена розмова: вихідна, або вхідна від цього номера (клієнт передзвонив сам). «Спроб» — вихідних дзвінків до розмови включно. «Додзв.» — частка лідів із телефоном, з якими поговорили.</li>
+      <li><b>Передача</b> — перша зміна виконавця відносно того, хто отримав лід. «Від Цільового A/B» — від статусу «Визначено як цільовий» до передачі для класів A і B (норма: цільовий A/B = передати). «У ту ж год.» — передано не пізніше ніж за 1 робочу годину після «Цільового».</li>
+      <li><b>Мітка CRM</b> — подія «Спробу зв'язатись зроблено». «Без дзвінка» — мітка стоїть, а вихідного дзвінка нема або він пізніше ніж за добу після мітки.</li>
+      <li><b>Робочий час</b> — хвилини лише в межах графіка (за замовчуванням пн–пт 09:00–18:00; «⚙ Графік» — адмін): лід о 21:00 і дзвінок о 09:05 = 5 хв. «Календарний» — разом із ніччю та вихідними.</li>
+      <li><b>Медіана, не середнє</b> — половина лідів швидше, половина повільніше; нічні заявки середнє ламають. Частки ≤15 хв / ≤1 год / ≤4 год — від усіх лідів із телефоном (кому не дзвонили — не встигли).</li>
+    </ul>
+    <h3>Стани, виключені зі швидкості</h3>
+    <ul>
+      <li><b>Нема телефону</b> — ні в назві, ні в контакті Planfix.</li>
+      <li><b>Створено після дзвінка</b> — дзвінок із цим номером був за годину до появи ліда: лід завели з розмови, швидкість реакції тут не має сенсу.</li>
+      <li><b>До старту даних</b> — лід старіший за перший дзвінок у базі.</li>
+    </ul>
+    <h3>Нюанси, що можуть здивувати</h3>
+    <ul>
+      <li>Дзвінок на номер, якого нема ні в назві, ні в контакті, звіт не побачить — лід стане «без дзвінка». Перевір телефон у картці Planfix.</li>
+      <li>Мітку ставить менеджер, дзвінок — факт. На звірці 14–22.09.2026 у 25 з 26 лідів вони збіглися в межах хвилини, тож розбіжність — привід відкрити угоду.</li>
+      <li>Свіжі ліди ще в роботі: «без дзвінка» чи «без передачі» за сьогодні — не провал, а «ще не встигли». Найчесніші цифри — за повні минулі тижні.</li>
+      <li>Дзвінки менеджера з особистого мобільного поза Binotel звіт не бачить.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="rsSetModal" onclick="if(event.target===this)closeRsSet()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Графік робочого часу">
+    <button class="close" onclick="closeRsSet()" aria-label="Закрити">✕</button>
+    <h2>⚙ Графік робочого часу</h2>
+    <p>Робочі хвилини у звіті «Реакція» рахуються лише в ці години та дні. Діє для всіх користувачів.</p>
+    <div id="rsSetFields" style="margin-top:10px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn--secondary btn--sm" onclick="closeRsSet()">Скасувати</button>
+      <button class="btn btn--sm" id="rsSetSaveBtn" onclick="saveRsSet()">Зберегти</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="slaModal" onclick="if(event.target===this)closeSla()">
   <div class="modal" role="dialog" aria-modal="true" aria-label="Регламенти етапів">
     <button class="close" onclick="closeSla()" aria-label="Закрити">✕</button>
@@ -449,6 +506,8 @@ const state = {
   loadOff: [],          // робочі етапи, які користувач вимкнув
   loadOn: [],           // закриті етапи, які користувач увімкнув (у Planfix-джерелі не трапляються)
   loadStale: false,     // лише угоди без руху понад 200 днів (hash lst=1)
+  rsTime: 'work',       // «Реакція»: work = робочі хвилини за графіком | cal = календарні (hash rt)
+  rsMgr: '',            // «Реакція»: фільтр по менеджеру, що отримав лід (hash rm)
 };
 
 const REPORT_ACTION = {
@@ -461,6 +520,7 @@ const REPORT_ACTION = {
   advance: 'sheet_advance',
   stagetime: 'sheet_stage_time',
   marketing: 'sheet_marketing',
+  response: 'sheet_response',
 };
 let leadsSort = { col: 'changeDate', dir: 'desc' };
 
@@ -515,6 +575,8 @@ function saveStateToUrl() {
   const ls = [...state.loadOff.map(s => '-' + s), ...state.loadOn.map(s => '+' + s)];
   if (ls.length) h.set('ls', ls.join('|'));
   if (state.loadStale) h.set('lst', '1');
+  if (state.rsTime === 'cal') h.set('rt', 'cal');
+  if (state.rsMgr) h.set('rm', state.rsMgr);
   history.replaceState(null, '', '#' + h.toString());
 }
 function hydrateFromHash() {
@@ -535,6 +597,8 @@ function hydrateFromHash() {
   if (h.get('fc'))     state.fChannel = h.get('fc');
   if (h.get('mv'))     state.mgrView = h.get('mv');
   if (h.get('lst') === '1') state.loadStale = true;
+  if (h.get('rt') === 'cal') state.rsTime = 'cal';
+  if (h.get('rm'))     state.rsMgr = h.get('rm');
   if (h.get('ls'))     for (const t of h.get('ls').split('|')) {
     // '+' має сенс лише для закритих етапів, '-' — лише для робочих (старі закладки з +Відкладене)
     const s = t.slice(1);
@@ -801,6 +865,8 @@ async function load(force = false) {
         ? `Planfix · відкриті угоди, оновлено <b>${esc(fmtSyncedAt(data.syncedAt))}</b>`
           + (ageH > 14 ? ' <span style="color:var(--red)">— синк давно не проходив, дані можуть бути застарілі</span>' : '')
         : 'Planfix · відкриті угоди ще не завантажені';
+    } else if (data.reportName === 'Реакція') {
+      label = `Джерело: <b>Planfix</b> + <b>Binotel</b> · лідів у когорті: <b>${fmt((data.counts || {}).total || 0)}</b>`;
     } else if (state.mode === 'period') {
       label = `Джерело: <b>Planfix</b> · подій у періоді: <b>${fmt(data._rowsInPeriod || 0)}</b>`;
     } else {
@@ -1758,13 +1824,226 @@ function stSortBy(col) {
   else stageSort = { col, dir: 'asc' };
   render();
 }
+// 8. Реакція — швидкість першого контакту: Binotel (факт дзвінка) + CRM-події + журнал змін полів.
+// Бек (sheet_response) віддає рядок на лід з обома дельтами [календарні, робочі] хвилин;
+// медіани/частки по менеджерах і місяцях рахуємо тут — перемикачі без нового запиту.
+const RS_STATE_LABEL = {
+  no_phone: 'нема телефону', from_call: 'створено після дзвінка', no_calls_data: 'до старту даних дзвінків',
+  no_attempt: 'не дзвонили', no_answer: 'не додзвонились', ok: '',
+};
+let rsSort = { col: 't0', dir: 'desc' };
+function rsTi() { return state.rsTime === 'cal' ? 0 : 1; }
+function rsDur(v) {
+  if (v == null) return null;
+  const f = (n, d) => n.toLocaleString('uk-UA', { maximumFractionDigits: d });
+  if (v < 60) return f(Math.round(v), 0) + ' хв';
+  if (v < 1440) return f(v / 60, 1) + ' год';
+  return f(v / 1440, 1) + ' дн';
+}
+function rsMedian(arr) { if (!arr.length) return null; const a = arr.slice().sort((x, y) => x - y); const m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; }
+function rsWhen(iso) { const s = String(iso || ''); return s.length >= 16 ? `${s.slice(8, 10)}.${s.slice(5, 7)} ${s.slice(11, 16)}` : s; }
+function rsFmtPhone(p) { const d = String(p || ''); return d.length === 9 ? `0${d.slice(0, 2)} ${d.slice(2, 5)} ${d.slice(5, 7)} ${d.slice(7)}` : d; }
+const rsIsAB = l => l.cls === 'A' || l.cls === 'B';
+const rsInBase = l => !!l.phone && l.st !== 'from_call' && l.st !== 'no_calls_data';
+const rsMarkNoCall = l => !!l.mark && (!l.fa || (l.d.fa && l.d.mark && l.d.fa[0] > l.d.mark[0] + 1440));
+// Агрегат по масиву лідів (менеджер / місяць / усе). ti: 0 = календарні, 1 = робочі хвилини.
+function rsAgg(leads, ti) {
+  const a = { n: leads.length, phone: 0, base: 0, fromCall: 0, noData: 0, attempted: 0, fa: [], fa15: 0, fa60: 0, fa240: 0,
+    answered: 0, ans: [], tries: [], handed: 0, ho: [], hoApprox: 0, tgtAB: 0, tgtHanded: 0, tgtHo: [], tgtHour: 0,
+    marked: 0, mark: [], markNoCall: 0 };
+  for (const l of leads) {
+    if (l.phone) a.phone++;
+    if (l.st === 'from_call') a.fromCall++;
+    if (l.st === 'no_calls_data') a.noData++;
+    if (rsInBase(l)) {
+      a.base++;
+      if (l.d.fa) { a.attempted++; const v = l.d.fa[ti]; a.fa.push(v); if (v <= 15) a.fa15++; if (v <= 60) a.fa60++; if (v <= 240) a.fa240++; }
+      if (l.d.ans) { a.answered++; a.ans.push(l.d.ans[ti]); a.tries.push(l.tries || 1); }
+      if (l.mark) { a.marked++; if (l.d.mark) a.mark.push(l.d.mark[ti]); if (rsMarkNoCall(l)) a.markNoCall++; }
+    }
+    if (l.ho && l.d.ho) { a.handed++; a.ho.push(l.d.ho[ti]); if (l.hoSrc === 'event') a.hoApprox++; }
+    if (l.tgt && rsIsAB(l)) { a.tgtAB++; if (l.d.tgtho) { a.tgtHanded++; a.tgtHo.push(l.d.tgtho[ti]); if (l.d.tgtho[1] <= 60) a.tgtHour++; } }
+  }
+  return a;
+}
+const RS_DOT = '<span style="color:var(--text3)">·</span>';
+function rsCells(a) { // клітинки після першої колонки — один порядок для таблиць менеджерів і місяців
+  const pct = (n, d) => d ? Math.round(n * 100 / d) + '%' : RS_DOT;
+  const med = arr => { const m = rsMedian(arr); return m == null ? RS_DOT : rsDur(m); };
+  const red = s => `<span style="color:var(--red);font-weight:700">${s}</span>`;
+  const avg1 = arr => arr.length ? (arr.reduce((s, v) => s + v, 0) / arr.length).toLocaleString('uk-UA', { maximumFractionDigits: 1 }) : RS_DOT;
+  const noCall = a.base - a.attempted;
+  return `<td>${fmt(a.n)}</td><td>${a.n ? pct(a.phone, a.n) : RS_DOT}</td>` +
+    `<td>${med(a.fa)}</td><td>${pct(a.fa15, a.base)}</td><td>${pct(a.fa60, a.base)}</td><td>${pct(a.fa240, a.base)}</td><td>${noCall ? red(fmt(noCall)) : (a.base ? '0' : RS_DOT)}</td>` +
+    `<td>${pct(a.answered, a.base)}</td><td>${med(a.ans)}</td><td>${avg1(a.tries)}</td>` +
+    `<td>${pct(a.handed, a.n)}</td><td>${med(a.ho)}${a.hoApprox ? ' <span title="частина — за подіями: час наступного переходу, оцінка завищена">≈</span>' : ''}</td><td>${med(a.tgtHo)}</td><td>${pct(a.tgtHour, a.tgtAB)}</td>` +
+    `<td>${med(a.mark)}</td><td>${a.markNoCall ? red(fmt(a.markNoCall)) : (a.marked ? '0' : RS_DOT)}</td>`;
+}
+const RS_HEAD = `<tr><th rowspan="2">%LBL%</th><th colspan="2">Ліди</th><th colspan="5">Перша спроба</th><th colspan="3">Дозвон</th><th colspan="4">Передача</th><th colspan="2">Мітка CRM</th></tr>
+  <tr><th>усього</th><th title="Частка лідів із телефоном (назва або контакт Planfix)">з тел.</th>
+  <th title="Медіана від появи ліда до першого вихідного дзвінка">медіана</th><th title="Частка лідів із телефоном, яким подзвонили за 15 хвилин">≤15 хв</th><th>≤1 год</th><th>≤4 год</th><th title="Телефон є, дані дзвінків є, вихідного дзвінка нема">без дзвінка</th>
+  <th title="Частка лідів із телефоном, з якими відбулась розмова">додзв.</th><th title="Медіана від появи ліда до першої розмови">медіана</th><th title="Середня кількість вихідних дзвінків до розмови включно">спроб</th>
+  <th title="Частка лідів, у яких змінився виконавець">передано</th><th title="Медіана від появи ліда до зміни виконавця">від Нове</th><th title="Медіана від «Визначено як цільовий» до зміни виконавця, лише класи A і B">від Цільового A/B</th><th title="Передано не пізніше ніж за 1 робочу годину після «Цільового» (A/B)">у ту ж год.</th>
+  <th title="Медіана від появи ліда до мітки «Спробу зв'язатись зроблено»">медіана</th><th title="Мітка є, а вихідного дзвінка нема (або він пізніше ніж за добу після мітки)">без дзвінка</th></tr>`;
+function renderResponseReport(d) {
+  const ti = rsTi();
+  const all = d.leads || [];
+  const mine = state.rsMgr ? all.filter(l => l.m0 === state.rsMgr) : all;
+  const isAdmin = !!(curUser && curUser.roles && curUser.roles.admin);
+  const w = d.work || {};
+  const dayNames = ['', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'нд'];
+  const sched = `${(w.days || []).map(x => dayNames[x]).join(', ')} ${w.start || ''}–${w.end || ''}`;
+  let html = `<div class="toolbar" style="margin-bottom:10px"><span class="lbl">Час</span><span class="group">
+      <span class="chip${ti === 1 ? ' active' : ''}" onclick="setRsTime('work')" title="Хвилини лише в межах графіка: ${esc(sched)}">Робочий</span>
+      <span class="chip${ti === 0 ? ' active' : ''}" onclick="setRsTime('cal')" title="Календарні хвилини, разом із ніччю та вихідними">Календарний</span></span>
+    <span class="sep"></span>
+    <span class="chip" onclick="openRsHelp()" title="Як працює цей звіт">❓ Як працює</span>
+    ${isAdmin ? '<span class="chip" onclick="openRsSet()" title="Графік робочого часу для робочих хвилин">⚙ Графік</span>' : ''}
+    <span class="spacer"></span>
+    <span class="meta">${d.callsFrom ? `дзвінки Binotel з <b>${esc(rsWhen(d.callsFrom))}</b> по <b>${esc(rsWhen(d.callsTo))}</b>` : '<span style="color:var(--red)">дзвінків Binotel у базі ще нема</span>'} · графік: ${esc(sched)}</span>
+  </div>`;
+  if (!all.length) {
+    return html + `<div class="info-banner"><span class="ib-tag">РЕАКЦІЯ</span> У вибраному періоді немає створених лідів${d.counts && d.counts.excluded ? ` (виключено тестових/видалених: ${fmt(d.counts.excluded)})` : ''}.</div>`;
+  }
+  const t = rsAgg(mine, ti);
+  const pct = (n, dd) => dd ? Math.round(n * 100 / dd) + '%' : '—';
+  const medTxt = arr => { const m = rsMedian(arr); return m == null ? '—' : rsDur(m); };
+  const noCall = t.base - t.attempted;
+  html += `<div class="kpi">
+    <div class="kpi-card"><div class="lbl">Лідів</div><div class="val">${fmt(t.n)}</div><div class="sub">з телефоном ${pct(t.phone, t.n)}${t.fromCall ? ` · створено після дзвінка ${fmt(t.fromCall)}` : ''}${t.noData ? ` · до старту даних ${fmt(t.noData)}` : ''}</div></div>
+    <div class="kpi-card"><div class="lbl">Перша спроба · медіана</div><div class="val">${medTxt(t.fa)}</div><div class="sub">≤15 хв — ${pct(t.fa15, t.base)} · ≤1 год — ${pct(t.fa60, t.base)}</div></div>
+    <div class="kpi-card${noCall ? ' c-fail' : ''}"><div class="lbl">Без дзвінка</div><div class="val">${fmt(noCall)}</div><div class="sub">телефон є, вихідного дзвінка нема</div></div>
+    <div class="kpi-card"><div class="lbl">Додзвонились</div><div class="val">${pct(t.answered, t.base)}</div><div class="sub">до розмови — ${medTxt(t.ans)}${t.tries.length ? ` · ${(t.tries.reduce((s, v) => s + v, 0) / t.tries.length).toLocaleString('uk-UA', { maximumFractionDigits: 1 })} спроб` : ''}</div></div>
+    <div class="kpi-card"><div class="lbl">Передача · медіана</div><div class="val">${medTxt(t.ho)}</div><div class="sub">передано ${pct(t.handed, t.n)} · від Цільового A/B — ${medTxt(t.tgtHo)}</div></div>
+  </div>`;
+  // ── по менеджерах (хто отримав лід) ──
+  const byMgr = new Map();
+  for (const l of all) { const k = l.m0 || '— без виконавця'; if (!byMgr.has(k)) byMgr.set(k, []); byMgr.get(k).push(l); }
+  html += `<div class="section-h"><h2>👥 По менеджерах</h2><span class="hint">хто отримав лід · клік по рядку — фільтр місяців і списку${state.rsMgr ? ' · <a href="#" onclick="setRsMgr(\'\');return false" style="color:var(--accent);text-decoration:none">× скинути</a>' : ''}</span></div>`;
+  html += `<div class="mgr-wrap"><table class="mgr-table rs-table"><thead>${RS_HEAD.replace('%LBL%', 'Менеджер')}</thead><tbody>`;
+  for (const [name, list] of [...byMgr.entries()].sort((x, y) => y[1].length - x[1].length)) {
+    const sel = state.rsMgr === name;
+    html += `<tr class="rs-row" data-mgr="${esc(name)}" style="cursor:pointer${sel ? ';background:var(--bg3)' : ''}"><td>${esc(ffShort(name))}</td>${rsCells(rsAgg(list, ti))}</tr>`;
+  }
+  if (byMgr.size > 1) html += `<tr style="font-weight:700"><td>Разом</td>${rsCells(rsAgg(all, ti))}</tr>`;
+  html += `</tbody></table></div>`;
+  // ── по місяцях (місяць появи ліда) ──
+  const byMon = new Map();
+  for (const l of mine) { const k = String(l.t0).slice(0, 7); if (!byMon.has(k)) byMon.set(k, []); byMon.get(k).push(l); }
+  if (byMon.size > 1) {
+    html += `<div class="section-h"><h2>📅 По місяцях</h2><span class="hint">${state.rsMgr ? `менеджер: ${esc(ffShort(state.rsMgr))}` : 'усі менеджери'} · місяць появи ліда</span></div>`;
+    html += `<div class="mgr-wrap"><table class="mgr-table rs-table"><thead>${RS_HEAD.replace('%LBL%', 'Місяць')}</thead><tbody>`;
+    for (const [mon, list] of [...byMon.entries()].sort()) html += `<tr><td>${esc(mon)}</td>${rsCells(rsAgg(list, ti))}</tr>`;
+    html += `</tbody></table></div>`;
+  }
+  html += rsLeadsHTML(mine, ti);
+  return html;
+}
+function rsLeadsHTML(leads, ti) {
+  const arrow = c => rsSort.col === c ? (rsSort.dir === 'asc' ? ' ↑' : ' ↓') : '';
+  const th = (c, label, title) => `<th class="sortable${rsSort.col === c ? ' sorted' : ''}" data-rscol="${c}" style="white-space:nowrap;cursor:pointer"${title ? ` title="${esc(title)}"` : ''}>${label}${arrow(c)}</th>`;
+  const val = l => {
+    const c = rsSort.col;
+    if (c === 't0') return l.t0;
+    if (c === 'name') return l.name;
+    if (c === 'm0') return l.m0;
+    return l.d[c] ? l.d[c][ti] : null;
+  };
+  const sorted = leads.slice().sort((a, b) => {
+    const va = val(a), vb = val(b);
+    const na = va == null || va === '', nb = vb == null || vb === '';
+    if (na && nb) return 0; if (na) return 1; if (nb) return -1;
+    const r = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb));
+    return rsSort.dir === 'asc' ? r : -r;
+  });
+  const MAX = 600;
+  const red = s => `<span style="color:var(--red)">${s}</span>`;
+  const muted = s => `<span style="color:var(--text3)">${s}</span>`;
+  const sub = s => `<div style="font-size:11px;color:var(--text3);white-space:nowrap">${s}</div>`;
+  let html = `<div class="section-h"><h2>📋 Ліди (${fmt(leads.length)})</h2><span class="hint">${state.rsMgr ? `менеджер: ${esc(ffShort(state.rsMgr))} · ` : ''}клік по заголовку — сортування, по # — відкрити в Planfix${leads.length > MAX ? ` · показано перші ${MAX}` : ''}</span></div>`;
+  html += `<div class="mgr-wrap"><table class="tasks-table" style="min-width:1100px"><thead><tr>
+    <th>#</th>${th('name', 'Назва')}${th('m0', 'Отримав')}${th('t0', 'Створено')}<th>Телефон</th>${th('fa', 'Перша спроба', 'від появи ліда до першого вихідного дзвінка')}${th('ans', 'Дозвон', 'від появи ліда до першої розмови')}${th('ho', 'Передача', 'від появи ліда до зміни виконавця')}<th>Клас</th>${th('mark', 'Мітка CRM', 'від появи ліда до «Спробу зв\'язатись зроблено»')}<th>Зараз</th></tr></thead><tbody>`;
+  for (const l of sorted.slice(0, MAX)) {
+    const url = `https://solar.planfix.ua/task/${l.id}`;
+    const inBase = rsInBase(l);
+    let faCell, ansCell;
+    if (!inBase) { faCell = muted(esc(RS_STATE_LABEL[l.st] || l.st)); ansCell = muted('·'); }
+    else {
+      faCell = l.d.fa ? `${rsDur(l.d.fa[ti])}${sub(`${rsWhen(l.fa)} · ${esc(l.faBy || '?')} · ${esc(l.faDisp || '')}`)}` : red('не дзвонили');
+      ansCell = l.d.ans ? `${rsDur(l.d.ans[ti])}${sub(`${rsWhen(l.ans)} · ${l.tries || 1} спроб · ${l.ansDir === 'in' ? 'клієнт передзвонив' : esc(l.ansBy || '')}`)}`
+        : (l.d.fa ? red('не додзвонились') + sub(`${l.tries} спроб`) : muted('·'));
+    }
+    const hoCell = l.d.ho ? `${rsDur(l.d.ho[ti])}${l.hoSrc === 'event' ? ' <span title="за подіями: час наступного переходу, оцінка завищена">≈</span>' : ''}${sub(`${rsWhen(l.ho)} → ${esc(ffShort(l.hoTo || ''))}`)}` : muted('·');
+    const markCell = l.d.mark ? `${rsDur(l.d.mark[ti])}${inBase && rsMarkNoCall(l) ? ' ' + red('без дзвінка') : ''}${sub(rsWhen(l.mark))}` : muted('·');
+    html += `<tr>
+      <td class="num"><a class="tlink" href="${url}" target="_blank" rel="noopener">${esc(l.id)}</a></td>
+      <td title="${esc(l.name)}">${esc(l.name.length > 42 ? l.name.slice(0, 41) + '…' : l.name)}</td>
+      <td style="white-space:nowrap">${esc(ffShort(l.m0 || '—'))}</td>
+      <td style="white-space:nowrap">${rsWhen(l.t0)}</td>
+      <td style="white-space:nowrap">${l.phone ? esc(rsFmtPhone(l.phone)) + (l.ps === 'planfix' ? ' <span title="з контакту Planfix" style="color:var(--text3)">pf</span>' : '') : muted('нема')}</td>
+      <td style="white-space:nowrap">${faCell}</td>
+      <td style="white-space:nowrap">${ansCell}</td>
+      <td style="white-space:nowrap">${hoCell}</td>
+      <td>${esc(l.cls || '')}</td>
+      <td style="white-space:nowrap">${markCell}</td>
+      <td style="white-space:nowrap">${esc(l.status || '')}</td>
+    </tr>`;
+  }
+  if (!sorted.length) html += `<tr><td colspan="11" class="muted" style="text-align:center;padding:14px">Немає лідів</td></tr>`;
+  html += `</tbody></table></div>`;
+  return html;
+}
+function attachResponseHandlers() {
+  document.querySelectorAll('tr.rs-row').forEach(tr => tr.addEventListener('click', () => setRsMgr(tr.dataset.mgr === state.rsMgr ? '' : tr.dataset.mgr)));
+  document.querySelectorAll('th[data-rscol]').forEach(th => th.addEventListener('click', () => {
+    const col = th.dataset.rscol;
+    if (rsSort.col === col) rsSort.dir = rsSort.dir === 'asc' ? 'desc' : 'asc';
+    else { rsSort.col = col; rsSort.dir = (col === 'name' || col === 'm0') ? 'asc' : 'desc'; }
+    render();
+  }));
+}
+function setRsTime(v) { state.rsTime = v === 'cal' ? 'cal' : 'work'; saveStateToUrl(); render(); }
+function setRsMgr(v) { state.rsMgr = v || ''; saveStateToUrl(); render(); }
+function openRsHelp() { document.getElementById('rsHelpModal').classList.add('open'); }
+function closeRsHelp() { const m = document.getElementById('rsHelpModal'); if (m) m.classList.remove('open'); }
+function openRsSet() {
+  const w = (state.raw && state.raw.work) || { start: '09:00', end: '18:00', days: [1, 2, 3, 4, 5] };
+  const names = ['', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'нд'];
+  const inp = (id, v) => `<input type="time" id="${id}" value="${esc(v)}" style="padding:6px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px">`;
+  document.getElementById('rsSetFields').innerHTML =
+    `<div style="display:flex;align-items:center;gap:10px;margin:6px 0"><span style="font-size:12.5px;color:var(--text2);width:60px">Години</span>${inp('rsSetStart', w.start)} <span style="color:var(--text3)">–</span> ${inp('rsSetEnd', w.end)}</div>
+     <div style="display:flex;align-items:center;gap:10px;margin:10px 0;flex-wrap:wrap"><span style="font-size:12.5px;color:var(--text2);width:60px">Дні</span>${[1, 2, 3, 4, 5, 6, 7].map(d => `<label style="display:inline-flex;align-items:center;gap:4px;font-size:12.5px;cursor:pointer"><input type="checkbox" class="rsSetDay" value="${d}"${(w.days || []).includes(d) ? ' checked' : ''}>${names[d]}</label>`).join('')}</div>`;
+  document.getElementById('rsSetModal').classList.add('open');
+}
+function closeRsSet() { const m = document.getElementById('rsSetModal'); if (m) m.classList.remove('open'); }
+async function saveRsSet() {
+  const body = { start: document.getElementById('rsSetStart').value, end: document.getElementById('rsSetEnd').value,
+    days: [...document.querySelectorAll('.rsSetDay:checked')].map(x => Number(x.value)) };
+  const btn = document.getElementById('rsSetSaveBtn');
+  btn.disabled = true; btn.textContent = 'Зберігаю…';
+  try {
+    const res = await fetch(API + '?action=response_settings_set', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + Auth.getToken() },
+      body: JSON.stringify(body),
+    });
+    const j = await res.json();
+    if (!res.ok) throw new Error(j.error || 'HTTP ' + res.status);
+    closeRsSet();
+    load(true);
+  } catch (e) {
+    alert('Помилка збереження: ' + (e.message || e));
+  }
+  btn.disabled = false; btn.textContent = 'Зберегти';
+}
+
 function openHelp()  { document.getElementById('helpModal').classList.add('open'); }
 function closeHelp() { document.getElementById('helpModal').classList.remove('open'); }
 function openFunnelHelp()  { document.getElementById('funnelHelpModal').classList.add('open'); }
 function closeFunnelHelp() { document.getElementById('funnelHelpModal').classList.remove('open'); }
 function openMgrHelp()  { document.getElementById('mgrHelpModal').classList.add('open'); }
 function closeMgrHelp() { document.getElementById('mgrHelpModal').classList.remove('open'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeHelp(); closeSla(); closeAdvHelp(); closeFunnelHelp(); closeMgrHelp(); ffCloseMenu(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeHelp(); closeSla(); closeAdvHelp(); closeFunnelHelp(); closeMgrHelp(); closeRsHelp(); closeRsSet(); ffCloseMenu(); } });
 
 // ── Регламенти (SLA) — модалка нормативів класу А, admin-only ──
 function openSla() {
@@ -2125,6 +2404,12 @@ function render() {
     return;
   }
   if (state.report === 'stagetime'){ document.getElementById('infoBanner').style.display='none'; document.getElementById('content').innerHTML = renderStageTimeReport(state.raw); return; }
+  if (state.report === 'response') {
+    document.getElementById('infoBanner').style.display='none';
+    document.getElementById('content').innerHTML = renderResponseReport(state.raw);
+    attachResponseHandlers();
+    return;
+  }
   if (state.report === 'marketing'){
     document.getElementById('infoBanner').style.display='none';
     document.getElementById('content').innerHTML = renderMarketingReport(state.raw);
