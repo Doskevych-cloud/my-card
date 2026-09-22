@@ -447,8 +447,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         </ul>
         Знаменник — передані ліди, бо непередані менеджер не перевіряв. Поле, яке при передачі було порожнім, не рахується: дозаповнення — не помилка. У списку лідів змінене поле підсвічене червоним, у підказці — «було → стало»; чіп «Невірна кваліфікація» лишає в списку тільки такі ліди.</li>
     </ul>
-    <h3>Конверсія за класом</h3>
-    <p>Скільки лідів кожного класу дійшли до стадії воронки або далі (за найдальшою досягнутою стадією, разом із поточним статусом картки), скільки реалізовано і скільки закрито. Клас — той, що поставила лід-менеджер: зафіксований при передачі, для непереданих поточний. Читати навпаки від KPI 3: якщо лід класу C доходить до КП чи авансу, кваліфікацію занижено, а якщо A масово закривають з «цільового», завищено. «Без класу» — ліди, які закрили до кваліфікації.</p>
+    <h3>Куди йдуть ліди класу C (або A, B — перемикач)</h3>
+    <p>Усі ліди, яким лід-менеджер поставила цей клас (зафіксований при передачі, для непереданих — поточний), розкладені за двома осями. Рядок — що стало з класом: лишився таким самим, або менеджер перекласифікував у інший. Колонка — результат угоди зараз: в роботі, відкладено, закрито, аванс, реалізовано. Відсотки — від усіх лідів цього класу. Це дзеркало KPI 3: якщо ліди C регулярно переходять у B чи A і доходять до авансу, кваліфікацію занижено; якщо ліди A масово закривають, завищено.</p>
     <h3>Поля кваліфікації — заморожені на момент передачі</h3>
     <p>Тип клієнта, Канал реклами, Область, Інтерес, Клас, Бюджет — це поля лід-менеджера. У звіті вони показуються такими, якими були <b>в момент передачі менеджеру</b>: усе, що правлять у Planfix пізніше, цих колонок не змінює (саме різниця між «тоді» і «зараз» і є ознакою невірної кваліфікації). Для лідів, переданих до 22.09.2026, значення відновлені з останньої події перед передачею; інтересу й області в подіях не було, тому там вони поточні. Сірим — лід ще не передано, значення поточні й ще зміняться.</p>
     <h3>Решта показників (усі — від появи ліда)</h3>
@@ -541,6 +541,7 @@ const state = {
   loadStale: false,     // лише угоди без руху понад 200 днів (hash lst=1)
   rsTime: 'work',       // «Кваліфікація лідів»: work = робочі хвилини за графіком | cal = календарні (hash rt)
   rsBad: false,         // «Кваліфікація лідів»: у списку лише ліди з невірною кваліфікацією (hash rb=1)
+  rsConvCls: 'C',       // «Кваліфікація лідів»: клас у таблиці «куди йдуть ліди» (hash cc)
 };
 
 const REPORT_ACTION = {
@@ -610,6 +611,7 @@ function saveStateToUrl() {
   if (state.loadStale) h.set('lst', '1');
   if (state.rsTime === 'cal') h.set('rt', 'cal');
   if (state.rsBad) h.set('rb', '1');
+  if (state.rsConvCls && state.rsConvCls !== 'C') h.set('cc', state.rsConvCls);
   history.replaceState(null, '', '#' + h.toString());
 }
 function hydrateFromHash() {
@@ -632,6 +634,7 @@ function hydrateFromHash() {
   if (h.get('lst') === '1') state.loadStale = true;
   if (h.get('rt') === 'cal') state.rsTime = 'cal';
   if (h.get('rb') === '1') state.rsBad = true;
+  if (h.get('cc'))     state.rsConvCls = h.get('cc');
   if (h.get('ls'))     for (const t of h.get('ls').split('|')) {
     // '+' має сенс лише для закритих етапів, '-' — лише для робочих (старі закладки з +Відкладене)
     const s = t.slice(1);
@@ -1934,18 +1937,27 @@ const RS_DOT = '<span style="color:var(--text3)">·</span>';
 // Конверсія за класом, який поставила лід-менеджер (клас на момент передачі; не передано — поточний):
 // скільки лідів класу дійшли до кожної стадії воронки або далі (найдальша досягнута стадія `stage`),
 // скільки реалізовано і скільки закрито. Клас C, що доходить до авансу, — занижена кваліфікація.
-const RS_CONV_STAGES = [[2, 'Цільовий'], [3, 'Потреба'], [4, 'ТЗ'], [5, 'КП'], [6, 'Згода'], [7, 'Аванс']];
-function rsClassConv(leads) {
-  const by = {};
+// «Куди йдуть ліди класу X»: рядки — що стало з класом (лишився / → інший клас), колонки — результат
+// угоди зараз. Клас X — той, що поставила лід-менеджер (зафіксований при передачі, інакше поточний).
+const RS_OUTCOMES = [['active', 'в роботі'], ['deferred', 'відкладено'], ['closed', 'закрито'], ['advance', 'аванс'], ['won', 'реалізовано']];
+function rsOutcome(l) {
+  if (l.won) return 'won';
+  if (l.status === 'Аванс отримано') return 'advance';
+  if (l.status === 'Закрито та не реалізовано') return 'closed';
+  if (l.status === 'Відкладене') return 'deferred';
+  return 'active';
+}
+function rsClassFlow(leads, cls) {
+  const rows = {}; let n = 0;
   for (const l of leads) {
-    const k = ((l.q || {}).cls || '') || '—';
-    const a = by[k] || (by[k] = { n: 0, st: [0, 0, 0, 0, 0, 0, 0, 0], won: 0, closed: 0 });
-    a.n++;
-    for (let i = 0; i <= 7; i++) if ((l.stage ?? -1) >= i) a.st[i]++;
-    if (l.won) a.won++;
-    if (l.status === 'Закрито та не реалізовано') a.closed++;
+    if ((((l.q || {}).cls || '') || '—') !== cls) continue;
+    n++;
+    const now = l.cls || '—';
+    const key = now === cls ? 'stay' : now;
+    const r = rows[key] || (rows[key] = { n: 0, o: { active: 0, deferred: 0, closed: 0, advance: 0, won: 0 } });
+    r.n++; r.o[rsOutcome(l)]++;
   }
-  return by;
+  return { n, rows };
 }
 function rsCells(a) { // клітинки після першої колонки — один порядок для таблиць менеджерів і місяців
   const pct = (n, d) => d ? Math.round(n * 100 / d) + '%' : RS_DOT;
@@ -2007,21 +2019,25 @@ function renderResponseReport(d) {
   for (const [mon, list] of [...byMon.entries()].sort()) html += `<tr><td>${esc(mon)}</td>${rsCells(rsAgg(list, ti))}</tr>`;
   if (byMon.size > 1) html += `<tr style="font-weight:700"><td>Разом</td>${rsCells(rsAgg(mine, ti))}</tr>`;
   html += `</tbody></table></div>`;
-  // ── конверсія за класом лід-менеджера ──
-  const conv = rsClassConv(mine);
-  const convKeys = ['A', 'B', 'C', '—'].filter(k => conv[k]);
-  if (convKeys.length) {
+  // ── куди йдуть ліди класу X (дефолт C) ──
+  {
+    const cls = state.rsConvCls || 'C';
+    const flow = rsClassFlow(mine, cls);
     const cellNP = (n, tot) => n ? `${fmt(n)} <span class="sb">${Math.round(n * 100 / tot)}%</span>` : RS_DOT;
-    html += `<div class="section-h"><h2>🏷️ Конверсія за класом</h2><span class="hint">клас, який поставила лід-менеджер · стадія = дійшов до неї або далі · % від лідів класу</span></div>`;
-    html += `<div class="mgr-wrap"><table class="mgr-table rs-table"><thead><tr><th>Клас</th><th>лідів</th>${RS_CONV_STAGES.map(([, n]) => `<th>${n}</th>`).join('')}<th title="Статус «Успішно реалізовано»">Реалізовано</th><th title="Статус «Закрито та не реалізовано» зараз">Закрито</th></tr></thead><tbody>`;
-    for (const k of convKeys) {
-      const a = conv[k];
-      html += `<tr><td>${k === '—' ? 'без класу' : k}</td><td>${fmt(a.n)}</td>${RS_CONV_STAGES.map(([i]) => `<td>${cellNP(a.st[i], a.n)}</td>`).join('')}<td>${cellNP(a.won, a.n)}</td><td>${cellNP(a.closed, a.n)}</td></tr>`;
+    const chips = ['C', 'B', 'A'].map(k => `<span class="chip${k === cls ? ' active' : ''}" onclick="setRsConvCls('${k}')">${k}</span>`).join('');
+    html += `<div class="section-h"><h2>🏷️ Куди йдуть ліди класу ${esc(cls)}</h2><span class="hint"><span class="group" style="margin-right:8px">${chips}</span>клас, який поставила лід-менеджер · рядок — що стало з класом · колонка — результат угоди зараз · % від лідів класу</span></div>`;
+    html += `<div class="mgr-wrap"><table class="mgr-table rs-table"><thead><tr><th>Клас зараз</th><th>лідів</th>${RS_OUTCOMES.map(([, n]) => `<th>${n}</th>`).join('')}</tr></thead><tbody>`;
+    if (!flow.n) html += `<tr><td colspan="7" style="text-align:center;color:var(--text3)">лідів класу ${esc(cls)} у періоді нема</td></tr>`;
+    const order = ['stay', 'A', 'B', 'C', '—'].filter(k => flow.rows[k]);
+    for (const k of order) {
+      const r = flow.rows[k];
+      const label = k === 'stay' ? `лишився ${esc(cls)}` : (k === '—' ? 'клас стерто' : `→ ${esc(k)}`);
+      html += `<tr><td>${label}</td><td>${cellNP(r.n, flow.n)}</td>${RS_OUTCOMES.map(([o]) => `<td>${cellNP(r.o[o], flow.n)}</td>`).join('')}</tr>`;
     }
-    if (convKeys.length > 1) {
-      const t2 = rsClassConv(mine); const all = { n: 0, st: [0, 0, 0, 0, 0, 0, 0, 0], won: 0, closed: 0 };
-      for (const a of Object.values(t2)) { all.n += a.n; all.won += a.won; all.closed += a.closed; for (let i = 0; i <= 7; i++) all.st[i] += a.st[i]; }
-      html += `<tr style="font-weight:700"><td>Разом</td><td>${fmt(all.n)}</td>${RS_CONV_STAGES.map(([i]) => `<td>${cellNP(all.st[i], all.n)}</td>`).join('')}<td>${cellNP(all.won, all.n)}</td><td>${cellNP(all.closed, all.n)}</td></tr>`;
+    if (order.length > 1) {
+      const all = { active: 0, deferred: 0, closed: 0, advance: 0, won: 0 };
+      for (const r of Object.values(flow.rows)) for (const o in all) all[o] += r.o[o];
+      html += `<tr style="font-weight:700"><td>Разом</td><td>${fmt(flow.n)}</td>${RS_OUTCOMES.map(([o]) => `<td>${cellNP(all[o], flow.n)}</td>`).join('')}</tr>`;
     }
     html += `</tbody></table></div>`;
   }
@@ -2112,6 +2128,7 @@ function attachResponseHandlers() {
 }
 function setRsTime(v) { state.rsTime = v === 'cal' ? 'cal' : 'work'; saveStateToUrl(); render(); }
 function setRsBad(v) { state.rsBad = !!v; saveStateToUrl(); render(); }
+function setRsConvCls(v) { state.rsConvCls = ['A', 'B', 'C'].includes(v) ? v : 'C'; saveStateToUrl(); render(); }
 function openRsHelp() { document.getElementById('rsHelpModal').classList.add('open'); }
 function closeRsHelp() { const m = document.getElementById('rsHelpModal'); if (m) m.classList.remove('open'); }
 function openRsSet() {
