@@ -88,16 +88,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .mgr-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px;background:var(--surface2);margin-bottom:20px}
 .mgr-table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;min-width:560px}
 .rs-table,.rs-leads{min-width:0;table-layout:fixed}
-.rs-table th,.rs-table td{padding:8px 9px}
+.rs-table th,.rs-table td{padding:8px 7px}
 .rs-table th:first-child,.rs-table td:first-child{width:11%}
 /* Ліди: фіксована сітка — таблиця точно в ширину боксу, довгий текст обрізається */
 .rs-leads th,.rs-leads td{padding:5px 8px;overflow:hidden;text-overflow:ellipsis}
 .rs-leads th:nth-child(1),.rs-leads td:nth-child(1){width:72px}
 .rs-leads th:nth-child(2),.rs-leads td:nth-child(2){width:104px}
-.rs-leads th:nth-child(6),.rs-leads td:nth-child(6){width:54px}
-.rs-leads th:nth-child(7),.rs-leads td:nth-child(7){width:88px}
-.rs-leads th:nth-child(8),.rs-leads td:nth-child(8){width:94px}
-.rs-leads th:nth-child(10),.rs-leads td:nth-child(10){width:76px}
+.rs-leads th:nth-child(6),.rs-leads td:nth-child(6){width:50px}
+.rs-leads th:nth-child(7),.rs-leads td:nth-child(7){width:84px}
+.rs-leads th:nth-child(8),.rs-leads td:nth-child(8){width:90px}
+.rs-leads th:nth-child(9),.rs-leads td:nth-child(9){width:98px}
+.rs-leads th:nth-child(11),.rs-leads td:nth-child(11){width:74px}
 .mgr-table th,.mgr-table td{padding:10px 14px;text-align:right;white-space:nowrap;line-height:1.25}
 .mgr-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;background:var(--surface);border-bottom:1px solid var(--border)}
 .mgr-table th:first-child,.mgr-table td:first-child{text-align:left;font-weight:600;color:var(--text)}
@@ -223,7 +224,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <button class="stab" data-rep="advance" data-perm="reports_advance">🤝 Підписані</button>
       <button class="stab" data-rep="stagetime" data-perm="reports_stagetime">⏳ Етапи</button>
       <button class="stab" data-rep="marketing" data-perm="reports_marketing">💸 Маркетинг</button>
-      <button class="stab" data-rep="response" data-perm="reports_response">📞 Реакція</button>
+      <button class="stab" data-rep="response" data-perm="reports_response">📞 Кваліфікація лідів</button>
     </div>
   </div>
 
@@ -423,44 +424,50 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 </div>
 
 <div class="modal-backdrop" id="rsHelpModal" onclick="if(event.target===this)closeRsHelp()">
-  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт «Реакція»">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт «Кваліфікація лідів»">
     <button class="close" onclick="closeRsHelp()" aria-label="Закрити">✕</button>
-    <h2>📞 Як працює звіт «Реакція»</h2>
-    <p>Звіт про роботу <b>відділу лідогенерації</b>: ліди, які отримав лід-менеджер (зараз Ангеліна Заболотна). Менеджери з продажу тут не оцінюються — їхня зона починається після передачі.</p>
+    <h2>📞 Як працює звіт «Кваліфікація лідів»</h2>
+    <p>Звіт про роботу <b>відділу лідогенерації</b>: беруться лише ліди, які отримав лід-менеджер (зараз Ангеліна Заболотна). Менеджери з продажу тут не оцінюються — їхня зона починається після передачі. Три плитки KPI — це три бонусні показники лід-менеджера.</p>
     <h3>Джерела даних</h3>
     <ul>
       <li><b>Ліди</b> — CRM-події Planfix: подія «Нове» = момент появи ліда. Когорта: створені у вибраний період, шаблон «Продажі станцій», без каналу «Тест» і видалених; фільтри «тип клієнта» і «клас» діють.</li>
-      <li><b>Дзвінки</b> — Binotel, обидва напрямки, усі результати (зайнято, скинуто, не відповіли — теж). Синк кожні 30 хв; дані є з дати, вказаної над таблицями.</li>
-      <li><b>Телефон ліда</b> — з назви угоди, інакше з контакту Planfix (позначка «pf»). Матч із дзвінком — по останніх 9 цифрах.</li>
-      <li><b>Передача</b> — зміна виконавця: журнал змін — вебхук Planfix (сценарій «ERP: зміна виконавця», точний час, з 22.09.2026) і синк відкритих угод кожні 30 хв; для лідів до 22.09.2026 — перша подія з іншим виконавцем, тоді час ≈ наступного переходу, оцінка завищена (позначка ≈).</li>
+      <li><b>Дзвінки</b> — Binotel, обидва напрямки, усі результати (зайнято, скинуто, не відповіли — теж спроба). Синк кожні 30 хв; кнопка «Оновити» дотягує дзвінки за сьогодні одразу.</li>
+      <li><b>Телефон ліда</b> — з назви угоди, інакше з контакту Planfix. Матч із дзвінком — по останніх 9 цифрах.</li>
+      <li><b>Передача і зміни полів</b> — вебхуки Planfix: при зміні виконавця, класу, бюджету, типу клієнта, каналу, області сценарій одразу шле в ERP нове значення, час і статус угоди в цей момент. Працює з 22.09.2026; для лідів до цієї дати передача відновлюється з подій (час ≈ наступного переходу, позначка ≈), а зміни полів — порівнянням «при передачі» з «зараз».</li>
     </ul>
     <h3>Плитки = бонусні KPI лід-менеджера</h3>
     <ul>
-      <li><b>KPI 1 · швидкість 1-го контакту</b> — від появи ліда до першого вихідного дзвінка. Велике число — медіана (половина лідів швидше), поруч середнє: воно вище, бо кілька дуже пізніх дзвінків тягнуть його вгору.</li>
-      <li><b>KPI 2 · Нове → призначення МП</b> — увесь шлях лід-менеджера: поява ліда, спроби додзвонитись, кваліфікація, і призначення менеджера з продажу. Рахується лише по лідах, де час передачі відомий.</li>
-      <li><b>KPI 3 · невірна кваліфікація</b> — критерій ще узгоджується, тому цифри нема. Дані вже збираються: видно, у скількох переданих лідів клас клієнта змінили вже після передачі.</li>
+      <li><b>KPI 1 · швидкість 1-го контакту</b> — від появи ліда до першого вихідного дзвінка будь-якого співробітника на номер ліда, з будь-яким результатом. Велике число — медіана (половина лідів швидше), поруч середнє: воно вище, бо кілька дуже пізніх дзвінків тягнуть його вгору.</li>
+      <li><b>KPI 2 · Нове → призначення МП</b> — увесь шлях лід-менеджера: поява ліда, спроби додзвонитись, кваліфікація і призначення менеджера з продажу. Передача = у виконавцях зʼявився хтось, кого не було на старті. Медіана — лише по лідах із відомим часом передачі.</li>
+      <li><b>KPI 3 · невірна кваліфікація</b> — частка <b>переданих</b> лідів, у яких менеджер з продажу спростував кваліфікацію. Лід рахується невірно кваліфікованим, якщо після передачі сталось хоч одне з:
+        <ul>
+          <li>угоду <b>закрито як нереалізовану одразу</b> зі статусу «Визначено як цільовий» або «Виявлено потребу»;</li>
+          <li><b>змінено клас клієнта або бюджет</b>, поки угода була в цих двох статусах (далі по воронці правка бюджету — робота менеджера, не помилка);</li>
+          <li><b>змінено тип клієнта, канал реклами або область</b> — у будь-якому статусі.</li>
+        </ul>
+        Знаменник — передані ліди, бо непередані менеджер не перевіряв. Поле, яке при передачі було порожнім, не рахується: дозаповнення — не помилка. У списку лідів змінене поле підсвічене червоним, у підказці — «було → стало»; чіп «Невірна кваліфікація» лишає в списку тільки такі ліди.</li>
     </ul>
-    <h3>Показники (усі — від появи ліда)</h3>
+    <h3>Поля кваліфікації — заморожені на момент передачі</h3>
+    <p>Тип клієнта, Канал реклами, Область, Інтерес, Клас, Бюджет — це поля лід-менеджера. У звіті вони показуються такими, якими були <b>в момент передачі менеджеру</b>: усе, що правлять у Planfix пізніше, цих колонок не змінює (саме різниця між «тоді» і «зараз» і є ознакою невірної кваліфікації). Для лідів, переданих до 22.09.2026, значення відновлені з останньої події перед передачею; інтересу й області в подіях не було, тому там вони поточні. Сірим — лід ще не передано, значення поточні й ще зміняться.</p>
+    <h3>Решта показників (усі — від появи ліда)</h3>
     <ul>
-      <li><b>Перша спроба</b> — перший вихідний дзвінок будь-якого співробітника на номер ліда, з будь-яким результатом. «Без дзвінка» — телефон є, дані дзвінків є, а вихідного дзвінка досі нема.</li>
       <li><b>Дозвон</b> — перша відповідена розмова: вихідна, або вхідна від цього номера (клієнт передзвонив сам). «Спроб» — вихідних дзвінків до розмови включно. «Додзв.» — частка лідів із телефоном, з якими поговорили.</li>
-      <li><b>Передача</b> — у виконавцях зʼявився хтось, кого не було на старті. Це головна метрика лід-менеджера: весь шлях від появи ліда (нове + спроби додзвонитись + призначення) до передачі. «≤1 год» і «≤1 день» — частка всіх лідів менеджера, переданих у цей строк (не передані = не встигли). «Від Цільового A/B» — окремо крок від статусу «Визначено як цільовий» до передачі для класів A і B (норма: цільовий A/B = передати).</li>
-      <li><b>Поля кваліфікації</b> (Клас, Тип, Канал, Інтерес, Бюджет) — <b>заморожені на момент передачі менеджеру</b>: усе, що правлять у Planfix після передачі, у цьому звіті не змінюється. Для лідів, переданих до 22.09.2026, значення відновлені з останньої події перед передачею, інтерес там поточний (у подіях його не було). Сірим — лід ще не передано, значення поточні й ще зміняться.</li>
-      <li><b>«Передано, час невідомий»</b> — виконавець уже інший, але після передачі не було жодного переходу статусу, а журналу змін до 22.09.2026 не існувало: факт є, момент невідомий. Такі ліди входять у «передано %», але не в медіани. За серпень–вересень 2026 це 62 зі 164 цільових A/B Ангеліни. З 22.09.2026 вебхук Planfix пише точний час, і таких лідів більше не буде.</li>
+      <li><b>Без дзвінка</b> — телефон є, дані дзвінків є, а вихідного дзвінка досі нема.</li>
       <li><b>Робочий час</b> — хвилини лише в межах графіка (за замовчуванням пн–пт 09:00–18:00; «⚙ Графік» — адмін): лід о 21:00 і дзвінок о 09:05 = 5 хв. «Календарний» — разом із ніччю та вихідними.</li>
-      <li><b>Медіана, не середнє</b> — половина лідів швидше, половина повільніше; нічні заявки середнє ламають. Частки ≤15 хв / ≤1 год / ≤4 год — від усіх лідів із телефоном (кому не дзвонили — не встигли).</li>
+      <li><b>Медіана, не середнє</b> — половина лідів швидше, половина повільніше; нічні заявки середнє ламають. Частки ≤15 хв / ≤1 год / ≤1 день — від усіх лідів (кому не дзвонили чи не передали — не встигли).</li>
     </ul>
     <h3>Стани, виключені зі швидкості</h3>
     <ul>
       <li><b>Нема телефону</b> — ні в назві, ні в контакті Planfix.</li>
-      <li><b>Створено після дзвінка</b> — дзвінок із цим номером був за годину до появи ліда: лід завели з розмови, швидкість реакції тут не має сенсу.</li>
-      <li><b>До старту даних</b> — лід старіший за перший дзвінок у базі.</li>
+      <li><b>Створено після дзвінка</b> — дзвінок із цим номером був за годину до появи ліда або в ту ж хвилину: лід завели з розмови, швидкість реакції тут не має сенсу.</li>
+      <li><b>До старту даних</b> — лід старіший за перший дзвінок у базі (01.07.2026).</li>
     </ul>
     <h3>Нюанси, що можуть здивувати</h3>
     <ul>
-      <li>Дзвінок на номер, якого нема ні в назві, ні в контакті, звіт не побачить — лід стане «без дзвінка». Перевір телефон у картці Planfix.</li>
+      <li>Дзвінок на номер, якого нема ні в назві, ні в контакті, звіт не побачить — лід стане «без дзвінка». Перевір телефон у картці Planfix. Дзвінки з особистого мобільного поза Binotel звіт теж не бачить.</li>
+      <li>«Передано, без часу» — виконавець уже інший, але після передачі не було жодного переходу статусу, а вебхука до 22.09.2026 не існувало: факт є, момент невідомий. Такі ліди входять у «передано %», але не в медіани.</li>
       <li>Свіжі ліди ще в роботі: «без дзвінка» чи «без передачі» за сьогодні — не провал, а «ще не встигли». Найчесніші цифри — за повні минулі тижні.</li>
-      <li>Дзвінки менеджера з особистого мобільного поза Binotel звіт не бачить.</li>
+      <li>KPI 3 за минулі місяці — оцінка знизу: без вебхука зміна класу чи бюджету видна лише в лідів, які так і не пішли далі «Виявлено потребу», а зміну області до 22.09.2026 не видно взагалі.</li>
     </ul>
   </div>
 </div>
@@ -530,7 +537,8 @@ const state = {
   loadOff: [],          // робочі етапи, які користувач вимкнув
   loadOn: [],           // закриті етапи, які користувач увімкнув (у Planfix-джерелі не трапляються)
   loadStale: false,     // лише угоди без руху понад 200 днів (hash lst=1)
-  rsTime: 'work',       // «Реакція»: work = робочі хвилини за графіком | cal = календарні (hash rt)
+  rsTime: 'work',       // «Кваліфікація лідів»: work = робочі хвилини за графіком | cal = календарні (hash rt)
+  rsBad: false,         // «Кваліфікація лідів»: у списку лише ліди з невірною кваліфікацією (hash rb=1)
 };
 
 const REPORT_ACTION = {
@@ -599,6 +607,7 @@ function saveStateToUrl() {
   if (ls.length) h.set('ls', ls.join('|'));
   if (state.loadStale) h.set('lst', '1');
   if (state.rsTime === 'cal') h.set('rt', 'cal');
+  if (state.rsBad) h.set('rb', '1');
   history.replaceState(null, '', '#' + h.toString());
 }
 function hydrateFromHash() {
@@ -620,6 +629,7 @@ function hydrateFromHash() {
   if (h.get('mv'))     state.mgrView = h.get('mv');
   if (h.get('lst') === '1') state.loadStale = true;
   if (h.get('rt') === 'cal') state.rsTime = 'cal';
+  if (h.get('rb') === '1') state.rsBad = true;
   if (h.get('ls'))     for (const t of h.get('ls').split('|')) {
     // '+' має сенс лише для закритих етапів, '-' — лише для робочих (старі закладки з +Відкладене)
     const s = t.slice(1);
@@ -886,7 +896,7 @@ async function load(force = false) {
         ? `Planfix · відкриті угоди, оновлено <b>${esc(fmtSyncedAt(data.syncedAt))}</b>`
           + (ageH > 14 ? ' <span style="color:var(--red)">— синк давно не проходив, дані можуть бути застарілі</span>' : '')
         : 'Planfix · відкриті угоди ще не завантажені';
-    } else if (data.reportName === 'Реакція') {
+    } else if (data.reportName === 'Реакція' || data.reportName === 'Кваліфікація лідів') {
       label = `Джерело: <b>Planfix</b> + <b>Binotel</b> · лідів у когорті: <b>${fmt((data.counts || {}).total || 0)}</b>`;
     } else if (state.mode === 'period') {
       label = `Джерело: <b>Planfix</b> · подій у періоді: <b>${fmt(data._rowsInPeriod || 0)}</b>`;
@@ -1876,7 +1886,7 @@ const rsMarkNoCall = l => !!l.mark && (!l.fa || (l.d.fa && l.d.mark && l.d.fa[0]
 function rsAgg(leads, ti) {
   const a = { n: leads.length, phone: 0, base: 0, fromCall: 0, noData: 0, attempted: 0, fa: [], fa15: 0, fa60: 0, fa240: 0,
     answered: 0, ans: [], tries: [], handed: 0, hoUnknown: 0, ho: [], ho60: 0, ho540: 0, hoApprox: 0, reclass: 0, tgtAB: 0, tgtHanded: 0, tgtHo: [], tgtHour: 0,
-    marked: 0, mark: [], markNoCall: 0 };
+    marked: 0, mark: [], markNoCall: 0, mqBad: 0, mqWhy: {} };
   for (const l of leads) {
     if (l.phone) a.phone++;
     if (l.st === 'from_call') a.fromCall++;
@@ -1895,6 +1905,7 @@ function rsAgg(leads, ti) {
     // Перекваліфікація: клас, зафіксований при передачі, менеджер потім змінив.
     // Поки довідково (KPI 3 «невірна кваліфікація» чекає на критерій Дмитра).
     if (l.hoTo && l.q && l.q.cls && l.cls && l.q.cls !== l.cls) a.reclass++;
+    if (l.mq && l.mq.bad) { a.mqBad++; for (const w of l.mq.why) { const k = w.split(':')[0].split(' «')[0]; a.mqWhy[k] = (a.mqWhy[k] || 0) + 1; } }
     if (l.tgt && rsIsAB(l)) {
       a.tgtAB++;
       if (l.d.tgtho) { a.tgtHanded++; a.tgtHo.push(l.d.tgtho[ti]); if (l.d.tgtho[1] <= 60) a.tgtHour++; }
@@ -1912,12 +1923,13 @@ function rsCells(a) { // клітинки після першої колонки
   return `<td>${fmt(a.n)}</td>` +
     `<td>${med(a.fa)}</td><td>${pct(a.fa15, a.base)}</td><td>${pct(a.fa60, a.base)}</td><td>${noCall ? red(fmt(noCall)) : (a.base ? '0' : RS_DOT)}</td>` +
     `<td>${pct(a.answered, a.base)}</td><td>${med(a.ans)}</td>` +
-    `<td>${pct(a.handed, a.n)}</td><td>${med(a.ho)}${a.hoApprox ? ' <span title="частина — за подіями: час наступного переходу, оцінка завищена">≈</span>' : ''}${a.hoUnknown ? `<span class="sb" title="ще ${fmt(a.hoUnknown)} передано без відомого часу: зміна виконавця без наступного переходу статусу (до вебхука 22.09.2026)">*</span>` : ''}</td><td>${pct(a.ho60, a.n)}</td><td>${pct(a.ho540, a.n)}</td>`;
+    `<td>${pct(a.handed, a.n)}</td><td>${med(a.ho)}${a.hoApprox ? ' <span title="частина — за подіями: час наступного переходу, оцінка завищена">≈</span>' : ''}${a.hoUnknown ? `<span class="sb" title="ще ${fmt(a.hoUnknown)} передано без відомого часу: зміна виконавця без наступного переходу статусу (до вебхука 22.09.2026)">*</span>` : ''}</td><td>${pct(a.ho60, a.n)}</td><td>${pct(a.ho540, a.n)}</td>` +
+    `<td>${a.mqBad ? red(pct(a.mqBad, a.handed)) : (a.handed ? '0%' : RS_DOT)}</td>`;
 }
-const RS_HEAD = `<tr><th rowspan="2">%LBL%</th><th rowspan="2">лідів</th><th colspan="4">Перша спроба</th><th colspan="2">Дозвон</th><th colspan="4">Передача менеджеру</th></tr>
+const RS_HEAD = `<tr><th rowspan="2">%LBL%</th><th rowspan="2">лідів</th><th colspan="4">Перша спроба</th><th colspan="2">Дозвон</th><th colspan="4">Передача менеджеру</th><th>Кваліфікація</th></tr>
   <tr><th title="Медіана від появи ліда до першого вихідного дзвінка">медіана</th><th title="Частка лідів із телефоном, яким подзвонили за 15 хвилин">≤15 хв</th><th>≤1 год</th><th title="Телефон є, дані дзвінків є, вихідного дзвінка нема">без дзвінка</th>
   <th title="Частка лідів із телефоном, з якими відбулась розмова">додзв.</th><th title="Медіана від появи ліда до першої розмови">медіана</th>
-  <th title="Частка лідів, у яких змінився виконавець (разом із тими, де час зміни невідомий)">передано</th><th title="Медіана від появи ліда до призначення менеджера з продажу">медіана</th><th title="Частка всіх лідів, переданих за 1 робочу годину від появи">≤1 год</th><th title="Частка всіх лідів, переданих за 1 робочий день (9 год) від появи">≤1 день</th></tr>`;
+  <th title="Частка лідів, у яких змінився виконавець (разом із тими, де час зміни невідомий)">передано</th><th title="Медіана від появи ліда до призначення менеджера з продажу">медіана</th><th title="Частка всіх лідів, переданих за 1 робочу годину від появи">≤1 год</th><th title="Частка всіх лідів, переданих за 1 робочий день (9 год) від появи">≤1 день</th><th title="Частка переданих лідів, де менеджер закрив угоду одразу з «цільового»/«потреби», або змінив клас чи бюджет у цих статусах, або тип клієнта, канал, область у будь-якому статусі">невірна</th></tr>`;
 function renderResponseReport(d) {
   const ti = rsTi();
   const all = (d.leads || []).filter(rsIsLeadMgr);
@@ -1930,13 +1942,15 @@ function renderResponseReport(d) {
       <span class="chip${ti === 1 ? ' active' : ''}" onclick="setRsTime('work')" title="Хвилини лише в межах графіка: ${esc(sched)}">Робочий</span>
       <span class="chip${ti === 0 ? ' active' : ''}" onclick="setRsTime('cal')" title="Календарні хвилини, разом із ніччю та вихідними">Календарний</span></span>
     <span class="sep"></span>
+    <span class="chip${state.rsBad ? ' active' : ''}" onclick="setRsBad(!state.rsBad)" title="У списку лише передані ліди з ознаками невірної кваліфікації">Невірна кваліфікація</span>
+    <span class="sep"></span>
     <span class="chip" onclick="openRsHelp()" title="Як працює цей звіт">❓ Як працює</span>
     ${isAdmin ? '<span class="chip" onclick="openRsSet()" title="Графік робочого часу для робочих хвилин">⚙ Графік</span>' : ''}
     <span class="spacer"></span>
     <span class="meta">${d.callsFrom ? `дзвінки Binotel з <b>${esc(rsWhen(d.callsFrom))}</b> по <b>${esc(rsWhen(d.callsTo))}</b>` : '<span style="color:var(--red)">дзвінків Binotel у базі ще нема</span>'} · графік: ${esc(sched)}</span>
   </div>`;
   if (!all.length) {
-    return html + `<div class="info-banner"><span class="ib-tag">РЕАКЦІЯ</span> У вибраному періоді немає створених лідів${d.counts && d.counts.excluded ? ` (виключено тестових/видалених: ${fmt(d.counts.excluded)})` : ''}.</div>`;
+    return html + `<div class="info-banner"><span class="ib-tag">КВАЛІФІКАЦІЯ</span> У вибраному періоді немає створених лідів${d.counts && d.counts.excluded ? ` (виключено тестових/видалених: ${fmt(d.counts.excluded)})` : ''}.</div>`;
   }
   const t = rsAgg(mine, ti);
   const pct = (n, dd) => dd ? Math.round(n * 100 / dd) + '%' : '—';
@@ -1950,7 +1964,7 @@ function renderResponseReport(d) {
     <div class="kpi-card"><div class="lbl">Лідів</div><div class="val">${fmt(t.n)}</div><div class="sub">з телефоном ${pct(t.phone, t.n)}${t.fromCall ? ` · створено після дзвінка ${fmt(t.fromCall)}` : ''}${noCall ? ` · <span style="color:var(--red)">без дзвінка ${fmt(noCall)}</span>` : ''}</div></div>
     <div class="kpi-card"><div class="lbl">KPI 1 · швидкість 1-го контакту</div><div class="val">${medTxt(t.fa)}</div><div class="sub">медіана · сер. ${avgTxt(t.fa)} · ≤15 хв — ${pct(t.fa15, t.base)}</div></div>
     <div class="kpi-card"><div class="lbl">KPI 2 · Нове → призначення МП</div><div class="val">${medTxt(t.ho)}</div><div class="sub">медіана · сер. ${avgTxt(t.ho)} · передано ${pct(t.handed, t.n)}${t.hoUnknown ? `, час відомий у ${fmt(t.handed - t.hoUnknown)}` : ''}</div></div>
-    <div class="kpi-card"><div class="lbl">KPI 3 · невірна кваліфікація</div><div class="val" style="color:var(--text3)">—</div><div class="sub">критерій узгоджується${t.reclass ? ` · клас змінено після передачі: ${fmt(t.reclass)}` : ''}</div></div>
+    <div class="kpi-card${t.mqBad ? ' c-fail' : ''}"><div class="lbl">KPI 3 · невірна кваліфікація</div><div class="val">${t.handed ? pct(t.mqBad, t.handed) : '—'}</div><div class="sub">${t.handed ? `${fmt(t.mqBad)} з ${fmt(t.handed)} переданих` + (t.mqBad ? ' · ' + Object.entries(t.mqWhy).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${k} ${v}`).join(' · ') : '') : 'передач ще нема'}</div></div>
     <div class="kpi-card"><div class="lbl">Додзвонились</div><div class="val">${pct(t.answered, t.base)}</div><div class="sub">до розмови — ${medTxt(t.ans)}${t.tries.length ? ` · ${(t.tries.reduce((s, v) => s + v, 0) / t.tries.length).toLocaleString('uk-UA', { maximumFractionDigits: 1 })} спроб` : ''}</div></div>
   </div>`;
   // ── по місяцях (місяць появи ліда) ──
@@ -1961,7 +1975,7 @@ function renderResponseReport(d) {
   for (const [mon, list] of [...byMon.entries()].sort()) html += `<tr><td>${esc(mon)}</td>${rsCells(rsAgg(list, ti))}</tr>`;
   if (byMon.size > 1) html += `<tr style="font-weight:700"><td>Разом</td>${rsCells(rsAgg(mine, ti))}</tr>`;
   html += `</tbody></table></div>`;
-  html += rsLeadsHTML(mine, ti);
+  html += rsLeadsHTML(state.rsBad ? mine.filter(l => l.mq && l.mq.bad) : mine, ti);
   return html;
 }
 function rsLeadsHTML(leads, ti) {
@@ -1987,7 +2001,7 @@ function rsLeadsHTML(leads, ti) {
   const sub = s => `<span class="sb">${s}</span>`;  // підпис у тому самому рядку, не другий рядок
   let html = `<div class="section-h"><h2>📋 Ліди (${fmt(leads.length)})</h2><span class="hint">клік по заголовку — сортування, по # — відкрити в Planfix${leads.length > MAX ? ` · показано перші ${MAX}` : ''}</span></div>`;
   html += `<div class="mgr-wrap"><table class="tasks-table rs-leads"><thead><tr>
-    <th>#</th>${th('t0', 'Створено')}${th('fa', 'Перша спроба', 'від появи ліда до першого вихідного дзвінка')}${th('ans', 'Дозвон', 'від появи ліда до першої розмови')}${th('ho', 'Передача', 'від появи ліда до призначення менеджера з продажу')}<th title="Клас на момент передачі менеджеру">Клас</th><th title="Тип клієнта на момент передачі менеджеру">Тип</th><th title="Канал реклами на момент передачі менеджеру">Канал</th><th title="Інтерес на момент передачі менеджеру">Інтерес</th><th title="Бюджет у доларах — на момент передачі менеджеру">Бюджет</th><th>Зараз</th></tr></thead><tbody>`;
+    <th>#</th>${th('t0', 'Створено')}${th('fa', 'Перша спроба', 'від появи ліда до першого вихідного дзвінка')}${th('ans', 'Дозвон', 'від появи ліда до першої розмови')}${th('ho', 'Передача', 'від появи ліда до призначення менеджера з продажу')}<th title="Клас на момент передачі менеджеру">Клас</th><th title="Тип клієнта на момент передачі менеджеру">Тип</th><th title="Канал реклами на момент передачі менеджеру">Канал</th><th title="Область на момент передачі менеджеру">Область</th><th title="Інтерес на момент передачі менеджеру">Інтерес</th><th title="Бюджет у доларах — на момент передачі менеджеру">Бюджет</th><th>Зараз</th></tr></thead><tbody>`;
   for (const l of sorted.slice(0, MAX)) {
     const url = `https://solar.planfix.ua/task/${l.id}`;
     const inBase = rsInBase(l);
@@ -2012,10 +2026,10 @@ function rsLeadsHTML(leads, ti) {
       <td style="white-space:nowrap">${ansCell}</td>
       <td style="white-space:nowrap">${hoCell}</td>
       ${qCells(l)}
-      <td style="white-space:nowrap" title="${esc(l.status || '')}">${esc(l.status || '')}</td>
+      <td style="white-space:nowrap${l.mq && l.mq.why.some(w => w.startsWith('закрито')) ? ';color:var(--red)' : ''}" title="${esc(l.status || '')}${l.mq && l.mq.why.some(w => w.startsWith('закрито')) ? ' — ' + esc(l.mq.why.find(w => w.startsWith('закрито'))) + ', вже менеджером' : ''}">${esc(l.status || '')}</td>
     </tr>`;
   }
-  if (!sorted.length) html += `<tr><td colspan="11" class="muted" style="text-align:center;padding:14px">Немає лідів</td></tr>`;
+  if (!sorted.length) html += `<tr><td colspan="12" class="muted" style="text-align:center;padding:14px">${state.rsBad ? 'Невірно кваліфікованих лідів у періоді нема' : 'Немає лідів'}</td></tr>`;
   html += `</tbody></table></div>`;
   return html;
 }
@@ -2026,11 +2040,17 @@ const Q_TITLE = { frozen: 'зафіксовано в момент передач
 function qCells(l) {
   const q = l.q || {}; const live = l.qSrc === 'live';
   const t = esc(Q_TITLE[l.qSrc] || '');
-  const cell = (v, extra = '') => `<td style="white-space:nowrap${live ? ';color:var(--text3)' : ''}${extra}" title="${t}">${v === '' || v == null ? '<span style="color:var(--text3)">·</span>' : esc(String(v))}</td>`;
+  // Поле, змінене менеджером після передачі (ознака невірної кваліфікації) — червоним, у підказці «було → стало»
+  const changed = {};
+  for (const w of ((l.mq && l.mq.why) || [])) { const i = w.indexOf(':'); if (i > 0) changed[w.slice(0, i)] = w.slice(i + 1).trim(); }
+  const cell = (v, key, extra = '') => {
+    const bad = changed[key];
+    return `<td style="white-space:nowrap${bad ? ';color:var(--red);font-weight:600' : (live ? ';color:var(--text3)' : '')}${extra}" title="${bad ? esc('менеджер змінив після передачі: ' + bad) : t}">${v === '' || v == null ? '<span style="color:var(--text3)">·</span>' : esc(String(v))}</td>`;
+  };
   const int = q.int && q.int !== '--' ? (q.int.length > 22 ? q.int.slice(0, 21) + '…' : q.int) : '';
-  return cell(q.cls) + cell(q.ct === 'Приватний клієнт' ? 'Приватний' : q.ct === 'Бізнес клієнт' ? 'Бізнес' : q.ct) + cell(q.ch) +
+  return cell(q.cls, 'клас') + cell(q.ct === 'Приватний клієнт' ? 'Приватний' : q.ct === 'Бізнес клієнт' ? 'Бізнес' : q.ct, 'тип') + cell(q.ch, 'канал') + cell(q.region, 'область') +
     `<td style="max-width:170px;overflow:hidden;text-overflow:ellipsis${live ? ';color:var(--text3)' : ''}" title="${esc(q.int || '')} ${t}">${int ? esc(int) : '<span style="color:var(--text3)">·</span>'}</td>` +
-    cell(q.budget ? fmt(q.budget) : '', ';text-align:right');
+    cell(q.budget ? fmt(q.budget) : '', 'бюджет', ';text-align:right');
 }
 function attachResponseHandlers() {
   document.querySelectorAll('th[data-rscol]').forEach(th => th.addEventListener('click', () => {
@@ -2041,6 +2061,7 @@ function attachResponseHandlers() {
   }));
 }
 function setRsTime(v) { state.rsTime = v === 'cal' ? 'cal' : 'work'; saveStateToUrl(); render(); }
+function setRsBad(v) { state.rsBad = !!v; saveStateToUrl(); render(); }
 function openRsHelp() { document.getElementById('rsHelpModal').classList.add('open'); }
 function closeRsHelp() { const m = document.getElementById('rsHelpModal'); if (m) m.classList.remove('open'); }
 function openRsSet() {
