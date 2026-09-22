@@ -542,6 +542,7 @@ const state = {
   rsTime: 'work',       // «Кваліфікація лідів»: work = робочі хвилини за графіком | cal = календарні (hash rt)
   rsBad: false,         // «Кваліфікація лідів»: у списку лише ліди з невірною кваліфікацією (hash rb=1)
   rsConvCls: 'C',       // «Кваліфікація лідів»: клас у таблиці «куди йдуть ліди» (hash cc)
+  rsHist: false,        // «Кваліфікація лідів»: показати історію до RS_DATA_FROM — admin, дані неповні (hash rh=1)
 };
 
 const REPORT_ACTION = {
@@ -612,6 +613,7 @@ function saveStateToUrl() {
   if (state.rsTime === 'cal') h.set('rt', 'cal');
   if (state.rsBad) h.set('rb', '1');
   if (state.rsConvCls && state.rsConvCls !== 'C') h.set('cc', state.rsConvCls);
+  if (state.rsHist) h.set('rh', '1');
   history.replaceState(null, '', '#' + h.toString());
 }
 function hydrateFromHash() {
@@ -635,6 +637,7 @@ function hydrateFromHash() {
   if (h.get('rt') === 'cal') state.rsTime = 'cal';
   if (h.get('rb') === '1') state.rsBad = true;
   if (h.get('cc'))     state.rsConvCls = h.get('cc');
+  if (h.get('rh') === '1') state.rsHist = true;
   if (h.get('ls'))     for (const t of h.get('ls').split('|')) {
     // '+' має сенс лише для закритих етапів, '-' — лише для робочих (старі закладки з +Відкладене)
     const s = t.slice(1);
@@ -870,7 +873,9 @@ async function load(force = false) {
   try {
     // «Навантаження» на «Менеджерах» — окреме джерело: відкриті угоди прямо з Planfix
     const action = state.report === 'managers' && state.mgrView === 'load'
-      ? 'sheet_workload' : (REPORT_ACTION[state.report] || 'sheet_funnel');
+      ? 'sheet_workload'
+      : (state.report === 'response' && state.rsHist) ? '_debug_response_nofloor'
+      : (REPORT_ACTION[state.report] || 'sheet_funnel');
     const params = new URLSearchParams({ action, from: state.from, to: state.to });
     if (state.clientType) params.set('clientType', state.clientType);
     if (state.leadClass) params.set('leadClass', state.leadClass);
@@ -1879,7 +1884,7 @@ const RS_LEAD_MGRS = ['Заболотна'];
 const RS_DATA_FROM = '2026-09-23';
 function rsClampPeriod() {
   const fp = _picker && _picker.instance;
-  if (state.report !== 'response') { if (fp) fp.set('minDate', null); return; }
+  if (state.report !== 'response' || state.rsHist) { if (fp) fp.set('minDate', null); return; }
   if (fp) fp.set('minDate', new Date(2026, 8, 23)); // Date, не рядок: у пікера формат d.m.Y і '2026-09-23' він парсить у сміття
   let changed = false;
   if (state.from < RS_DATA_FROM) { state.from = RS_DATA_FROM; changed = true; }
@@ -1987,12 +1992,16 @@ function renderResponseReport(d) {
       <span class="chip${ti === 0 ? ' active' : ''}" onclick="setRsTime('cal')" title="Календарні хвилини, разом із ніччю та вихідними">Календарний</span></span>
     <span class="sep"></span>
     <span class="chip${state.rsBad ? ' active' : ''}" onclick="setRsBad(!state.rsBad)" title="У списку лише передані ліди з ознаками невірної кваліфікації">Невірна кваліфікація</span>
+    ${curUser && curUser.roles && curUser.roles.admin ? `<span class="chip${state.rsHist ? ' active' : ''}" onclick="setRsHist(!state.rsHist)" title="Показати період до 23.09.2026. Дані неповні: журналу передач і змін полів тоді не було">Історія до 23.09</span>` : ''}
     <span class="sep"></span>
     <span class="chip" onclick="openRsHelp()" title="Як працює цей звіт">❓ Як працює</span>
     ${isAdmin ? '<span class="chip" onclick="openRsSet()" title="Графік робочого часу для робочих хвилин">⚙ Графік</span>' : ''}
     <span class="spacer"></span>
     <span class="meta">дані з <b>23.09.2026</b> (журнал передач і змін полів) · ${d.callsFrom ? `дзвінки Binotel по <b>${esc(rsWhen(d.callsTo))}</b>` : '<span style="color:var(--red)">дзвінків Binotel у базі ще нема</span>'} · графік: ${esc(sched)}</span>
   </div>`;
+  if (state.rsHist) {
+    html += `<div class="info-banner"><span class="ib-tag">ІСТОРІЯ</span> Період до <b>23.09.2026</b>: журналу передач і змін полів тоді не було. Швидкість першого контакту і дозвону тут <b>точна</b> (дзвінки Binotel є з 01.07.2026), а <b>KPI 2 і KPI 3 занижені</b> — час передачі відомий не у всіх, а зміни класу, бюджету й області видно лише частково.</div>`;
+  }
   if (!all.length) {
     return html + `<div class="info-banner"><span class="ib-tag">КВАЛІФІКАЦІЯ</span> Лідів у вибраному періоді ще нема. Дані ведуться з 23.09.2026: раніші періоди не показуються, бо для них немає точних даних про передачу і зміни кваліфікації${d.counts && d.counts.excluded ? ` (виключено тестових/видалених: ${fmt(d.counts.excluded)})` : ''}.</div>`;
   }
@@ -2129,6 +2138,13 @@ function attachResponseHandlers() {
 function setRsTime(v) { state.rsTime = v === 'cal' ? 'cal' : 'work'; saveStateToUrl(); render(); }
 function setRsBad(v) { state.rsBad = !!v; saveStateToUrl(); render(); }
 function setRsConvCls(v) { state.rsConvCls = ['A', 'B', 'C'].includes(v) ? v : 'C'; saveStateToUrl(); render(); }
+// Історичний режим: той самий звіт без нижньої межі періоду (admin-екшен). Дані до 23.09.2026 неповні —
+// KPI 2 і KPI 3 занижені, тому режим окремий і з банером, а не мовчазним розширенням періоду.
+function setRsHist(v) {
+  state.rsHist = !!v;
+  if (state.rsHist && state.from >= RS_DATA_FROM) { state.from = '2026-08-01'; state.to = _todayISO(); state.preset = detectPreset(state.from, state.to); syncInputs(); syncPresetChips(); }
+  saveStateToUrl(); load();
+}
 function openRsHelp() { document.getElementById('rsHelpModal').classList.add('open'); }
 function closeRsHelp() { const m = document.getElementById('rsHelpModal'); if (m) m.classList.remove('open'); }
 function openRsSet() {
