@@ -421,6 +421,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>Перша спроба</b> — перший вихідний дзвінок будь-якого співробітника на номер ліда, з будь-яким результатом. «Без дзвінка» — телефон є, дані дзвінків є, а вихідного дзвінка досі нема.</li>
       <li><b>Дозвон</b> — перша відповідена розмова: вихідна, або вхідна від цього номера (клієнт передзвонив сам). «Спроб» — вихідних дзвінків до розмови включно. «Додзв.» — частка лідів із телефоном, з якими поговорили.</li>
       <li><b>Передача</b> — у виконавцях зʼявився хтось, кого не було на старті. Це головна метрика лід-менеджера: весь шлях від появи ліда (нове + спроби додзвонитись + призначення) до передачі. «≤1 год» і «≤1 день» — частка всіх лідів менеджера, переданих у цей строк (не передані = не встигли). «Від Цільового A/B» — окремо крок від статусу «Визначено як цільовий» до передачі для класів A і B (норма: цільовий A/B = передати).</li>
+      <li><b>Поля кваліфікації</b> (Клас, Тип, Канал, Інтерес, Бюджет) — <b>заморожені на момент передачі менеджеру</b>: усе, що правлять у Planfix після передачі, у цьому звіті не змінюється. Для лідів, переданих до 22.09.2026, значення відновлені з останньої події перед передачею, інтерес там поточний (у подіях його не було). Сірим — лід ще не передано, значення поточні й ще зміняться.</li>
       <li><b>«Передано, час невідомий»</b> — виконавець уже інший, але після передачі не було жодного переходу статусу, а журналу змін до 22.09.2026 не існувало: факт є, момент невідомий. Такі ліди входять у «передано %», але не в медіани. За серпень–вересень 2026 це 62 зі 164 цільових A/B Ангеліни. З 22.09.2026 вебхук Planfix пише точний час, і таких лідів більше не буде.</li>
       <li><b>Мітка CRM</b> — подія «Спробу зв'язатись зроблено». «Без дзвінка» — мітка стоїть, а вихідного дзвінка нема або він пізніше ніж за добу після мітки.</li>
       <li><b>Робочий час</b> — хвилини лише в межах графіка (за замовчуванням пн–пт 09:00–18:00; «⚙ Графік» — адмін): лід о 21:00 і дзвінок о 09:05 = 5 хв. «Календарний» — разом із ніччю та вихідними.</li>
@@ -1971,7 +1972,7 @@ function rsLeadsHTML(leads, ti) {
   const sub = s => `<div style="font-size:11px;color:var(--text3);white-space:nowrap">${s}</div>`;
   let html = `<div class="section-h"><h2>📋 Ліди (${fmt(leads.length)})</h2><span class="hint">${state.rsMgr ? `менеджер: ${esc(ffShort(state.rsMgr))} · ` : ''}клік по заголовку — сортування, по # — відкрити в Planfix${leads.length > MAX ? ` · показано перші ${MAX}` : ''}</span></div>`;
   html += `<div class="mgr-wrap"><table class="tasks-table" style="min-width:1100px"><thead><tr>
-    <th>#</th>${th('name', 'Назва')}${th('m0', 'Отримав')}${th('t0', 'Створено')}<th>Телефон</th>${th('fa', 'Перша спроба', 'від появи ліда до першого вихідного дзвінка')}${th('ans', 'Дозвон', 'від появи ліда до першої розмови')}${th('ho', 'Передача', 'від появи ліда до зміни виконавця')}<th>Клас</th>${th('mark', 'Мітка CRM', 'від появи ліда до «Спробу зв\'язатись зроблено»')}<th>Зараз</th></tr></thead><tbody>`;
+    <th>#</th>${th('name', 'Назва')}${th('m0', 'Отримав')}${th('t0', 'Створено')}<th>Телефон</th>${th('fa', 'Перша спроба', 'від появи ліда до першого вихідного дзвінка')}${th('ans', 'Дозвон', 'від появи ліда до першої розмови')}${th('ho', 'Передача', 'від появи ліда до зміни виконавця')}${th('mark', 'Мітка CRM', 'від появи ліда до «Спробу зв\'язатись зроблено»')}<th title="Клас на момент передачі менеджеру">Клас</th><th title="Тип клієнта на момент передачі менеджеру">Тип</th><th title="Канал реклами на момент передачі менеджеру">Канал</th><th title="Інтерес на момент передачі менеджеру">Інтерес</th><th title="Бюджет, $ — на момент передачі менеджеру">Бюджет $</th><th>Зараз</th></tr></thead><tbody>`;
   for (const l of sorted.slice(0, MAX)) {
     const url = `https://solar.planfix.ua/task/${l.id}`;
     const inBase = rsInBase(l);
@@ -1994,14 +1995,27 @@ function rsLeadsHTML(leads, ti) {
       <td style="white-space:nowrap">${faCell}</td>
       <td style="white-space:nowrap">${ansCell}</td>
       <td style="white-space:nowrap">${hoCell}</td>
-      <td>${esc(l.cls || '')}</td>
       <td style="white-space:nowrap">${markCell}</td>
+      ${qCells(l)}
       <td style="white-space:nowrap">${esc(l.status || '')}</td>
     </tr>`;
   }
-  if (!sorted.length) html += `<tr><td colspan="11" class="muted" style="text-align:center;padding:14px">Немає лідів</td></tr>`;
+  if (!sorted.length) html += `<tr><td colspan="15" class="muted" style="text-align:center;padding:14px">Немає лідів</td></tr>`;
   html += `</tbody></table></div>`;
   return html;
+}
+// Поля кваліфікації, заморожені на момент передачі менеджеру: після передачі правки в Planfix
+// звіт більше не змінюють. qSrc: frozen — знімок вебхука (точно), event — з події до передачі
+// (історичні ліди, інтересу в подіях нема), live — передачі ще не було, значення поточні.
+const Q_TITLE = { frozen: 'зафіксовано в момент передачі менеджеру', event: 'на момент передачі, відновлено з події — інтерес поточний', live: 'лід ще не передано: значення поточні, зміняться до моменту передачі' };
+function qCells(l) {
+  const q = l.q || {}; const live = l.qSrc === 'live';
+  const t = esc(Q_TITLE[l.qSrc] || '');
+  const cell = (v, extra = '') => `<td style="white-space:nowrap${live ? ';color:var(--text3)' : ''}${extra}" title="${t}">${v === '' || v == null ? '<span style="color:var(--text3)">·</span>' : esc(String(v))}</td>`;
+  const int = q.int && q.int !== '--' ? (q.int.length > 22 ? q.int.slice(0, 21) + '…' : q.int) : '';
+  return cell(q.cls) + cell(q.ct === 'Приватний клієнт' ? 'Приватний' : q.ct === 'Бізнес клієнт' ? 'Бізнес' : q.ct) + cell(q.ch) +
+    `<td style="max-width:170px;overflow:hidden;text-overflow:ellipsis${live ? ';color:var(--text3)' : ''}" title="${esc(q.int || '')} ${t}">${int ? esc(int) : '<span style="color:var(--text3)">·</span>'}</td>` +
+    cell(q.budget != null ? fmt(q.budget) : '', ';text-align:right');
 }
 function attachResponseHandlers() {
   document.querySelectorAll('tr.rs-row').forEach(tr => tr.addEventListener('click', () => setRsMgr(tr.dataset.mgr === state.rsMgr ? '' : tr.dataset.mgr)));
