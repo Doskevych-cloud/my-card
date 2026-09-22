@@ -155,6 +155,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   /* матриця «Навантаження» широка — імʼя менеджера лишається видимим при горизонтальному скролі */
   .load-matrix th:first-child,.load-matrix td:first-child{position:sticky;left:0;z-index:1;background:var(--surface2)}
   .rs-table th:first-child,.rs-table td:first-child{position:sticky;left:0;z-index:1;background:var(--surface2)}
+  .rs-leads td,.rs-leads th{padding:5px 8px}
   .rs-table thead th:first-child{background:var(--surface)}
   .load-matrix th:first-child{background:var(--surface)}
   /* виділений рядок: той самий відтінок, що .mgr-table tr.active, але на непрозорій основі — інакше цифри просвічують під імʼям */
@@ -181,6 +182,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .modal b{color:var(--text);font-weight:700}
 .modal .close{position:absolute;top:16px;right:18px;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;border:none;background:none;padding:4px}
 .modal .close:hover{color:var(--text)}
+/* «Реакція»: щільні рядки — один рядок на лід, підпис у тому ж рядку сірим */
+.rs-leads td{padding:6px 10px;vertical-align:middle;line-height:1.35}
+.rs-leads th{padding:6px 10px}
+.rs-leads td.nm{max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rs-leads .sb{color:var(--text3);font-size:11px;margin-left:5px}
 /* «Реакція»: дворядковий заголовок, числа праворуч, перша колонка ліворуч */
 .rs-table th,.rs-table td{white-space:nowrap;text-align:right}
 .rs-table th:first-child,.rs-table td:first-child{text-align:left}
@@ -415,6 +421,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>Дзвінки</b> — Binotel, обидва напрямки, усі результати (зайнято, скинуто, не відповіли — теж). Синк кожні 30 хв; дані є з дати, вказаної над таблицями.</li>
       <li><b>Телефон ліда</b> — з назви угоди, інакше з контакту Planfix (позначка «pf»). Матч із дзвінком — по останніх 9 цифрах.</li>
       <li><b>Передача</b> — зміна виконавця: журнал змін — вебхук Planfix (сценарій «ERP: зміна виконавця», точний час, з 22.09.2026) і синк відкритих угод кожні 30 хв; для лідів до 22.09.2026 — перша подія з іншим виконавцем, тоді час ≈ наступного переходу, оцінка завищена (позначка ≈).</li>
+    </ul>
+    <h3>Плитки = бонусні KPI лід-менеджера</h3>
+    <ul>
+      <li><b>KPI 1 · швидкість 1-го контакту</b> — від появи ліда до першого вихідного дзвінка. Велике число — медіана (половина лідів швидше), поруч середнє: воно вище, бо кілька дуже пізніх дзвінків тягнуть його вгору.</li>
+      <li><b>KPI 2 · Нове → призначення МП</b> — увесь шлях лід-менеджера: поява ліда, спроби додзвонитись, кваліфікація, і призначення менеджера з продажу. Рахується лише по лідах, де час передачі відомий.</li>
+      <li><b>KPI 3 · невірна кваліфікація</b> — критерій ще узгоджується, тому цифри нема. Дані вже збираються: видно, у скількох переданих лідів клас клієнта змінили вже після передачі.</li>
     </ul>
     <h3>Показники (усі — від появи ліда)</h3>
     <ul>
@@ -1851,7 +1863,7 @@ const rsMarkNoCall = l => !!l.mark && (!l.fa || (l.d.fa && l.d.mark && l.d.fa[0]
 // Агрегат по масиву лідів (менеджер / місяць / усе). ti: 0 = календарні, 1 = робочі хвилини.
 function rsAgg(leads, ti) {
   const a = { n: leads.length, phone: 0, base: 0, fromCall: 0, noData: 0, attempted: 0, fa: [], fa15: 0, fa60: 0, fa240: 0,
-    answered: 0, ans: [], tries: [], handed: 0, hoUnknown: 0, ho: [], ho60: 0, ho540: 0, hoApprox: 0, tgtAB: 0, tgtHanded: 0, tgtHo: [], tgtHour: 0,
+    answered: 0, ans: [], tries: [], handed: 0, hoUnknown: 0, ho: [], ho60: 0, ho540: 0, hoApprox: 0, reclass: 0, tgtAB: 0, tgtHanded: 0, tgtHo: [], tgtHour: 0,
     marked: 0, mark: [], markNoCall: 0 };
   for (const l of leads) {
     if (l.phone) a.phone++;
@@ -1868,6 +1880,9 @@ function rsAgg(leads, ti) {
       a.handed++;
       if (l.d.ho) { const v = l.d.ho[ti]; a.ho.push(v); if (v <= 60) a.ho60++; if (v <= 540) a.ho540++; if (l.hoSrc === 'event') a.hoApprox++; } else a.hoUnknown++;
     }
+    // Перекваліфікація: клас, зафіксований при передачі, менеджер потім змінив.
+    // Поки довідково (KPI 3 «невірна кваліфікація» чекає на критерій Дмитра).
+    if (l.hoTo && l.q && l.q.cls && l.cls && l.q.cls !== l.cls) a.reclass++;
     if (l.tgt && rsIsAB(l)) {
       a.tgtAB++;
       if (l.d.tgtho) { a.tgtHanded++; a.tgtHo.push(l.d.tgtho[ti]); if (l.d.tgtho[1] <= 60) a.tgtHour++; }
@@ -1886,14 +1901,14 @@ function rsCells(a) { // клітинки після першої колонки
   return `<td>${fmt(a.n)}</td><td>${a.n ? pct(a.phone, a.n) : RS_DOT}</td>` +
     `<td>${med(a.fa)}</td><td>${pct(a.fa15, a.base)}</td><td>${pct(a.fa60, a.base)}</td><td>${pct(a.fa240, a.base)}</td><td>${noCall ? red(fmt(noCall)) : (a.base ? '0' : RS_DOT)}</td>` +
     `<td>${pct(a.answered, a.base)}</td><td>${med(a.ans)}</td><td>${avg1(a.tries)}</td>` +
-    `<td>${pct(a.handed, a.n)}</td><td>${med(a.ho)}${a.hoApprox ? ' <span title="частина — за подіями: час наступного переходу, оцінка завищена">≈</span>' : ''}${a.hoUnknown ? ` <span style="color:var(--text3);font-weight:500" title="передані, але час невідомий: зміна виконавця без наступного переходу статусу (до вебхука 22.09.2026 видно лише з поточного виконавця)">${fmt(a.hoUnknown)} без часу</span>` : ''}</td><td>${pct(a.ho60, a.n)}</td><td>${pct(a.ho540, a.n)}</td><td>${med(a.tgtHo)}</td>` +
+    `<td>${pct(a.handed, a.n)}</td><td>${med(a.ho)}${a.hoApprox ? ' <span title="частина — за подіями: час наступного переходу, оцінка завищена">≈</span>' : ''}${a.hoUnknown ? `<span class="sb" title="ще ${fmt(a.hoUnknown)} передано без відомого часу: зміна виконавця без наступного переходу статусу (до вебхука 22.09.2026)">*</span>` : ''}</td><td>${pct(a.ho60, a.n)}</td><td>${pct(a.ho540, a.n)}</td><td>${med(a.tgtHo)}</td>` +
     `<td>${med(a.mark)}</td><td>${a.markNoCall ? red(fmt(a.markNoCall)) : (a.marked ? '0' : RS_DOT)}</td>`;
 }
 const RS_HEAD = `<tr><th rowspan="2">%LBL%</th><th colspan="2">Ліди</th><th colspan="5">Перша спроба</th><th colspan="3">Дозвон</th><th colspan="5">Передача</th><th colspan="2">Мітка CRM</th></tr>
-  <tr><th>усього</th><th title="Частка лідів із телефоном (назва або контакт Planfix)">з тел.</th>
-  <th title="Медіана від появи ліда до першого вихідного дзвінка">медіана</th><th title="Частка лідів із телефоном, яким подзвонили за 15 хвилин">≤15 хв</th><th>≤1 год</th><th>≤4 год</th><th title="Телефон є, дані дзвінків є, вихідного дзвінка нема">без дзвінка</th>
-  <th title="Частка лідів із телефоном, з якими відбулась розмова">додзв.</th><th title="Медіана від появи ліда до першої розмови">медіана</th><th title="Середня кількість вихідних дзвінків до розмови включно">спроб</th>
-  <th title="Частка лідів, у яких змінився виконавець (разом із тими, де час зміни невідомий)">передано</th><th title="Медіана від появи ліда до зміни виконавця (весь шлях лід-менеджера: нове + спроби додзвонитись + призначення)">від Нове</th><th title="Частка ВСІХ лідів менеджера, переданих за 1 робочу годину від появи">≤1 год</th><th title="Частка ВСІХ лідів менеджера, переданих за 1 робочий день (9 год) від появи">≤1 день</th><th title="Медіана від «Визначено як цільовий» до зміни виконавця, лише класи A і B — окремо крок передачі">від Цільового A/B</th>
+  <tr><th>усього</th><th title="Частка лідів із телефоном (назва або контакт Planfix)">тел.</th>
+  <th title="Медіана від появи ліда до першого вихідного дзвінка">медіана</th><th title="Частка лідів із телефоном, яким подзвонили за 15 хвилин">≤15 хв</th><th>≤1 год</th><th>≤4 год</th><th title="Телефон є, дані дзвінків є, вихідного дзвінка нема">немає</th>
+  <th title="Частка лідів із телефоном, з якими відбулась розмова">%</th><th title="Медіана від появи ліда до першої розмови">медіана</th><th title="Середня кількість вихідних дзвінків до розмови включно">спр.</th>
+  <th title="Частка лідів, у яких змінився виконавець (разом із тими, де час зміни невідомий)">%</th><th title="Медіана від появи ліда до зміни виконавця (весь шлях лід-менеджера: нове + спроби додзвонитись + призначення)">від Нове</th><th title="Частка ВСІХ лідів менеджера, переданих за 1 робочу годину від появи">≤1 год</th><th title="Частка ВСІХ лідів менеджера, переданих за 1 робочий день (9 год) від появи">≤1 день</th><th title="Медіана від «Визначено як цільовий» до зміни виконавця, лише класи A і B — окремо крок передачі">від Цільового A/B</th>
   <th title="Медіана від появи ліда до мітки «Спробу зв'язатись зроблено»">медіана</th><th title="Мітка є, а вихідного дзвінка нема (або він пізніше ніж за добу після мітки)">без дзвінка</th></tr>`;
 function renderResponseReport(d) {
   const ti = rsTi();
@@ -1919,12 +1934,16 @@ function renderResponseReport(d) {
   const pct = (n, dd) => dd ? Math.round(n * 100 / dd) + '%' : '—';
   const medTxt = arr => { const m = rsMedian(arr); return m == null ? '—' : rsDur(m); };
   const noCall = t.base - t.attempted;
+  // Плитки = бонусні KPI лід-менеджера (постановка Дмитра 22.09.2026): 1) швидкість першого
+  // контакту, 2) час від «Нове» до призначення менеджера з продажу, 3) невірна кваліфікація
+  // (критерій ще узгоджується — плитка-заглушка, дані для неї вже збираються).
+  const avgTxt = arr => arr.length ? rsDur(arr.reduce((s, v) => s + v, 0) / arr.length) : '—';
   html += `<div class="kpi">
-    <div class="kpi-card"><div class="lbl">Лідів</div><div class="val">${fmt(t.n)}</div><div class="sub">з телефоном ${pct(t.phone, t.n)}${t.fromCall ? ` · створено після дзвінка ${fmt(t.fromCall)}` : ''}${t.noData ? ` · до старту даних ${fmt(t.noData)}` : ''}</div></div>
-    <div class="kpi-card"><div class="lbl">Перша спроба · медіана</div><div class="val">${medTxt(t.fa)}</div><div class="sub">≤15 хв — ${pct(t.fa15, t.base)} · ≤1 год — ${pct(t.fa60, t.base)}</div></div>
-    <div class="kpi-card${noCall ? ' c-fail' : ''}"><div class="lbl">Без дзвінка</div><div class="val">${fmt(noCall)}</div><div class="sub">телефон є, вихідного дзвінка нема</div></div>
+    <div class="kpi-card"><div class="lbl">Лідів</div><div class="val">${fmt(t.n)}</div><div class="sub">з телефоном ${pct(t.phone, t.n)}${t.fromCall ? ` · створено після дзвінка ${fmt(t.fromCall)}` : ''}${noCall ? ` · <span style="color:var(--red)">без дзвінка ${fmt(noCall)}</span>` : ''}</div></div>
+    <div class="kpi-card"><div class="lbl">KPI 1 · швидкість 1-го контакту</div><div class="val">${medTxt(t.fa)}</div><div class="sub">медіана · сер. ${avgTxt(t.fa)} · ≤15 хв — ${pct(t.fa15, t.base)}</div></div>
+    <div class="kpi-card"><div class="lbl">KPI 2 · Нове → призначення МП</div><div class="val">${medTxt(t.ho)}</div><div class="sub">медіана · сер. ${avgTxt(t.ho)} · передано ${pct(t.handed, t.n)}${t.hoUnknown ? `, час відомий у ${fmt(t.handed - t.hoUnknown)}` : ''}</div></div>
+    <div class="kpi-card"><div class="lbl">KPI 3 · невірна кваліфікація</div><div class="val" style="color:var(--text3)">—</div><div class="sub">критерій узгоджується${t.reclass ? ` · клас змінено після передачі: ${fmt(t.reclass)}` : ''}</div></div>
     <div class="kpi-card"><div class="lbl">Додзвонились</div><div class="val">${pct(t.answered, t.base)}</div><div class="sub">до розмови — ${medTxt(t.ans)}${t.tries.length ? ` · ${(t.tries.reduce((s, v) => s + v, 0) / t.tries.length).toLocaleString('uk-UA', { maximumFractionDigits: 1 })} спроб` : ''}</div></div>
-    <div class="kpi-card"><div class="lbl">Передача · медіана</div><div class="val">${medTxt(t.ho)}</div><div class="sub">передано ${pct(t.handed, t.n)}${t.hoUnknown ? ` (час відомий у ${fmt(t.handed - t.hoUnknown)} з ${fmt(t.handed)})` : ''} · за 1 год — ${pct(t.ho60, t.n)} · за 1 день — ${pct(t.ho540, t.n)}</div></div>
   </div>`;
   // ── по менеджерах (хто отримав лід) ──
   const byMgr = new Map();
@@ -1969,9 +1988,9 @@ function rsLeadsHTML(leads, ti) {
   const MAX = 600;
   const red = s => `<span style="color:var(--red)">${s}</span>`;
   const muted = s => `<span style="color:var(--text3)">${s}</span>`;
-  const sub = s => `<div style="font-size:11px;color:var(--text3);white-space:nowrap">${s}</div>`;
+  const sub = s => `<span class="sb">${s}</span>`;  // підпис у тому самому рядку, не другий рядок
   let html = `<div class="section-h"><h2>📋 Ліди (${fmt(leads.length)})</h2><span class="hint">${state.rsMgr ? `менеджер: ${esc(ffShort(state.rsMgr))} · ` : ''}клік по заголовку — сортування, по # — відкрити в Planfix${leads.length > MAX ? ` · показано перші ${MAX}` : ''}</span></div>`;
-  html += `<div class="mgr-wrap"><table class="tasks-table" style="min-width:1100px"><thead><tr>
+  html += `<div class="mgr-wrap"><table class="tasks-table rs-leads" style="min-width:1180px"><thead><tr>
     <th>#</th>${th('name', 'Назва')}${th('m0', 'Отримав')}${th('t0', 'Створено')}<th>Телефон</th>${th('fa', 'Перша спроба', 'від появи ліда до першого вихідного дзвінка')}${th('ans', 'Дозвон', 'від появи ліда до першої розмови')}${th('ho', 'Передача', 'від появи ліда до зміни виконавця')}${th('mark', 'Мітка CRM', 'від появи ліда до «Спробу зв\'язатись зроблено»')}<th title="Клас на момент передачі менеджеру">Клас</th><th title="Тип клієнта на момент передачі менеджеру">Тип</th><th title="Канал реклами на момент передачі менеджеру">Канал</th><th title="Інтерес на момент передачі менеджеру">Інтерес</th><th title="Бюджет, $ — на момент передачі менеджеру">Бюджет $</th><th>Зараз</th></tr></thead><tbody>`;
   for (const l of sorted.slice(0, MAX)) {
     const url = `https://solar.planfix.ua/task/${l.id}`;
@@ -1979,19 +1998,24 @@ function rsLeadsHTML(leads, ti) {
     let faCell, ansCell;
     if (!inBase) { faCell = muted(esc(RS_STATE_LABEL[l.st] || l.st)); ansCell = muted('·'); }
     else {
-      faCell = l.d.fa ? `${rsDur(l.d.fa[ti])}${sub(`${rsWhen(l.fa)} · ${esc(l.faBy || '?')} · ${esc(l.faDisp || '')}`)}` : red('не дзвонили');
-      ansCell = l.d.ans ? `${rsDur(l.d.ans[ti])}${sub(`${rsWhen(l.ans)} · ${l.tries || 1} спроб · ${l.ansDir === 'in' ? 'клієнт передзвонив' : esc(l.ansBy || '')}`)}`
+      // Деталі (хто дзвонив, точний час) — у tooltip: у рядку лише цифра + коротка примітка.
+      faCell = l.d.fa
+        ? `<span title="${esc(rsWhen(l.fa) + ' · ' + (l.faBy || '?') + ' · ' + (l.faDisp || ''))}">${rsDur(l.d.fa[ti])}</span>${l.faDisp && l.faDisp !== 'ANSWER' ? sub(l.faDisp === 'BUSY' ? 'зайнято' : 'скинуто') : ''}`
+        : red('не дзвонили');
+      ansCell = l.d.ans
+        ? `<span title="${esc(rsWhen(l.ans) + ' · ' + (l.ansDir === 'in' ? 'клієнт передзвонив' : (l.ansBy || '')))}">${rsDur(l.d.ans[ti])}</span>${(l.tries || 1) > 1 ? sub(l.tries + ' спроб') : ''}${l.ansDir === 'in' ? sub('вхідний') : ''}`
         : (l.d.fa ? red('не додзвонились') + sub(`${l.tries} спроб`) : muted('·'));
     }
-    const hoCell = l.d.ho ? `${rsDur(l.d.ho[ti])}${l.hoSrc === 'event' ? ' <span title="за подіями: час наступного переходу, оцінка завищена">≈</span>' : ''}${sub(`${rsWhen(l.ho)} → ${esc(ffShort(l.hoTo || ''))}`)}`
-      : (l.hoSrc === 'current' ? `${muted('передано, час невідомий')}${sub(`→ ${esc(ffShort(l.hoTo || ''))}`)}` : muted('·'));
-    const markCell = l.d.mark ? `${rsDur(l.d.mark[ti])}${inBase && rsMarkNoCall(l) ? ' ' + red('без дзвінка') : ''}${sub(rsWhen(l.mark))}` : muted('·');
+    const hoCell = l.d.ho
+      ? `<span title="${esc(rsWhen(l.ho) + ' → ' + (l.hoTo || ''))}">${rsDur(l.d.ho[ti])}</span>${l.hoSrc === 'event' ? '<span class="sb" title="за подіями: час наступного переходу, оцінка завищена">≈</span>' : ''}${sub(esc(ffShort(l.hoTo || '')))}`
+      : (l.hoSrc === 'current' ? `${muted('без часу')}${sub(esc(ffShort(l.hoTo || '')))}` : muted('·'));
+    const markCell = l.d.mark ? `<span title="${esc(rsWhen(l.mark))}">${rsDur(l.d.mark[ti])}</span>${inBase && rsMarkNoCall(l) ? sub(red('без дзвінка')) : ''}` : muted('·');
     html += `<tr>
       <td class="num"><a class="tlink" href="${url}" target="_blank" rel="noopener">${esc(l.id)}</a></td>
-      <td title="${esc(l.name)}">${esc(l.name.length > 42 ? l.name.slice(0, 41) + '…' : l.name)}</td>
-      <td style="white-space:nowrap">${esc(ffShort(l.m0 || '—'))}</td>
+      <td class="nm" title="${esc(l.name)}">${esc(l.name)}</td>
+      <td style="white-space:nowrap" title="${esc(l.m0 || '')}">${esc(ffShort(l.m0 || '—'))}</td>
       <td style="white-space:nowrap">${rsWhen(l.t0)}</td>
-      <td style="white-space:nowrap">${l.phone ? esc(rsFmtPhone(l.phone)) + (l.ps === 'planfix' ? ' <span title="з контакту Planfix" style="color:var(--text3)">pf</span>' : '') : muted('нема')}</td>
+      <td style="white-space:nowrap">${l.phone ? esc(rsFmtPhone(l.phone)) + (l.ps === 'planfix' ? ' <span title="з контакту Planfix" class="sb">pf</span>' : '') : muted('нема')}</td>
       <td style="white-space:nowrap">${faCell}</td>
       <td style="white-space:nowrap">${ansCell}</td>
       <td style="white-space:nowrap">${hoCell}</td>
