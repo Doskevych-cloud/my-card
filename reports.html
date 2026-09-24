@@ -442,6 +442,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     </ul>
     <h3>Плитки = бонусні KPI лід-менеджера</h3>
     <ul>
+      <li><b>Лідів</b> — ліди, за які преміюємо лід-менеджера: без спаму, дублів, недійсних номерів і тих, хто заявку не залишав («не цікавились або помилились»). Визначається за причиною відмови з підзадачі «Отказ», тому число може зменшитись, коли такий лід закриють. Нижче — усього лідів і скільки виключено з кожної причини. «Інше», «Інший регіон» і «Спроби вичерпано» рахуються: це реальні люди, яких відпрацювали. KPI 1–3 рахують усіх лідів, бо що лід — сміття, видно лише після дзвінка: дублі й «не залишали заявку» Ангеліна теж обдзвонює.</li>
       <li><b>KPI 1 · швидкість 1-го контакту</b> — від появи ліда до першого вихідного дзвінка будь-якого співробітника на номер ліда, з будь-яким результатом. Велике число — медіана (половина лідів швидше), поруч середнє: воно вище, бо кілька дуже пізніх дзвінків тягнуть його вгору.</li>
       <li><b>KPI 2 · Нове → призначення МП</b> — увесь шлях лід-менеджера: поява ліда, спроби додзвонитись, кваліфікація і призначення менеджера з продажу. Передача = у виконавцях зʼявився хтось, кого не було на старті. Медіана — лише по лідах із відомим часом передачі.</li>
       <li><b>KPI 3 · невірна кваліфікація</b> — частка <b>переданих</b> лідів, у яких менеджер з продажу спростував кваліфікацію. Лід рахується невірно кваліфікованим, якщо після передачі сталось хоч одне з:
@@ -1955,6 +1956,12 @@ const RS_DOT = '<span style="color:var(--text3)">·</span>';
 // «2. Відсутній інтерес … (пояснення)» → «Відсутній інтерес …». rf.by: lead — закрила лід-менеджер
 // (до передачі), sales — менеджер з продажу (після передачі).
 const rsRefusalShort = v => String(v || '').replace(/^\s*\d+\.\s*/, '').replace(/\s*\(.*\)\s*$/s, '').trim();
+// Ліди, за які лід-менеджера НЕ преміюємо (Дмитро 24.09.2026): не справжні заявки — за причиною відмови.
+// «Інше» сюди не входить (там звичайні заявки: дах, модернізація, АКБ), «Інший регіон» і «Спроби вичерпано»
+// теж: це реальні люди, яких відпрацювали. Лише плитка «Лідів»: KPI 1–3 рахують усіх, бо що лід — сміття,
+// видно тільки після дзвінка (08–09.2026: дублі обдзвонено 43 з 52, «не залишали заявку» — 45 з 45).
+const RS_JUNK = [['дублі', /^дубль/i], ['не залишали заявку', /^не цікавились/i], ['спам', /^спам/i], ['недійсний номер', /^номер не дійсний/i]];
+const rsJunkOf = l => { if (!l.rf || !l.rf.r) return null; const k = rsRefusalShort(l.rf.r); for (const [lbl, rx] of RS_JUNK) if (rx.test(k)) return lbl; return null; };
 function rsRefusals(leads) {
   const rows = new Map(); const tot = { lead: 0, sales: 0, n: 0 };
   for (const l of leads) {
@@ -2035,8 +2042,11 @@ function renderResponseReport(d) {
   // контакту, 2) час від «Нове» до призначення менеджера з продажу, 3) невірна кваліфікація.
   // Плитку «Додзвонились» прибрано 24.09.2026 (Дмитро: «не потрібна тут») — дозвон лишився в «Динаміці» і списку лідів.
   const avgTxt = arr => arr.length ? rsDur(arr.reduce((s, v) => s + v, 0) / arr.length) : '—';
+  const junkBy = new Map(); let nJunk = 0;
+  for (const l of mine) { const j = rsJunkOf(l); if (j) { junkBy.set(j, (junkBy.get(j) || 0) + 1); nJunk++; } }
+  const junkTxt = [...junkBy.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${fmt(v)}`).join(', ');
   html += `<div class="kpi">
-    <div class="kpi-card"><div class="lbl">Лідів</div><div class="val">${fmt(t.n)}</div><div class="sub">з телефоном ${pct(t.phone, t.n)}${t.fromCall ? ` · створено після дзвінка ${fmt(t.fromCall)}` : ''}${noCall ? ` · <span style="color:var(--red)">без дзвінка ${fmt(noCall)}</span>` : ''}</div></div>
+    <div class="kpi-card" title="Ліди, за які преміюємо лід-менеджера: без спаму, дублів, недійсних номерів і тих, хто заявку не залишав (за причиною відмови в підзадачі «Отказ»)"><div class="lbl">Лідів</div><div class="val">${fmt(t.n - nJunk)}</div><div class="sub">усього ${fmt(t.n)} · ${nJunk ? 'не рахуються: ' + junkTxt : 'виключених поки нема'}</div><div class="sub">з телефоном ${pct(t.phone, t.n)}${t.fromCall ? ` · створено після дзвінка ${fmt(t.fromCall)}` : ''}${noCall ? ` · <span style="color:var(--red)">без дзвінка ${fmt(noCall)}</span>` : ''}</div></div>
     <div class="kpi-card"><div class="lbl">KPI 1 · швидкість 1-го контакту</div><div class="val">${medTxt(t.fa)}</div><div class="sub">медіана · сер. ${avgTxt(t.fa)} · ≤15 хв — ${pct(t.fa15, t.base)}</div></div>
     <div class="kpi-card"><div class="lbl">KPI 2 · Нове → призначення МП</div><div class="val">${medTxt(t.ho)}</div><div class="sub">медіана · сер. ${avgTxt(t.ho)} · передано ${pct(t.handed, t.n)}${t.hoUnknown ? `, час відомий у ${fmt(t.handed - t.hoUnknown)}` : ''}</div></div>
     <div class="kpi-card${t.mqBad ? ' c-fail' : ''}"><div class="lbl">KPI 3 · невірна кваліфікація</div><div class="val">${t.handed ? pct(t.mqBad, t.handed) : '—'}</div><div class="sub">${t.handed ? `${fmt(t.mqBad)} з ${fmt(t.handed)} переданих` + (t.mqBad ? ' · ' + Object.entries(t.mqWhy).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${k} ${v}`).join(' · ') : '') : 'передач ще нема'}</div></div>
