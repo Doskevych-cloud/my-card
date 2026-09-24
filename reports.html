@@ -100,6 +100,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .rs-leads th:nth-child(8),.rs-leads td:nth-child(8){width:90px}
 .rs-leads th:nth-child(9),.rs-leads td:nth-child(9){width:98px}
 .rs-leads th:nth-child(11),.rs-leads td:nth-child(11){width:74px}
+.rs-leads th:nth-child(13),.rs-leads td:nth-child(13){width:170px}
 .mgr-table th,.mgr-table td{padding:10px 14px;text-align:right;white-space:nowrap;line-height:1.25}
 .mgr-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;background:var(--surface);border-bottom:1px solid var(--border)}
 .mgr-table th:first-child,.mgr-table td:first-child{text-align:left;font-weight:600;color:var(--text)}
@@ -451,7 +452,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <h3>Куди йдуть ліди класу C (або A, B — перемикач)</h3>
     <p>Усі ліди, яким лід-менеджер поставила цей клас (зафіксований при передачі, для непереданих — поточний), розкладені за двома осями. Рядок — що стало з класом: лишився таким самим, або менеджер перекласифікував у інший. Колонка — результат угоди зараз: в роботі, відкладено, закрито, аванс, реалізовано. Відсотки — від усіх лідів цього класу. Це дзеркало KPI 3: якщо ліди C регулярно переходять у B чи A і доходять до авансу, кваліфікацію занижено; якщо ліди A масово закривають, завищено.</p>
     <h3>Причини відмови</h3>
-    <p>Коли угоду закривають як «Закрито та не реалізовано», Planfix створює в ній підзадачу «Отказ», і той, хто закриває, вибирає «Причину відмови» з довідника. Звіт бере причину з цієї підзадачі (оновлення щопівгодини і кнопкою «Оновити»). Таблиця — ліди періоду, закриті <b>зараз</b>: «до передачі» — лід закрила лід-менеджер сама (спам, дублі, не той регіон — її фільтр), «після передачі» — закрив менеджер з продажу. Відсотки — від стовпця. У списку лідів у колонці «Зараз» причина стоїть поруч із «Закрито», повний текст — у підказці; у KPI 3 до «закрито з цільового» теж дописана причина. «Причину не вказано» — у підзадачі не вибрали значення або підзадачі нема.</p>
+    <p>Коли угоду закривають як «Закрито та не реалізовано», Planfix створює в ній підзадачу «Отказ», і той, хто закриває, вибирає «Причину відмови» з довідника. Звіт бере причину з цієї підзадачі (оновлення щопівгодини і кнопкою «Оновити»). Таблиця — ліди періоду, закриті <b>зараз</b>: «до передачі» — лід закрила лід-менеджер сама (спам, дублі, не той регіон — її фільтр), «після передачі» — закрив менеджер з продажу. Відсотки — від стовпця. У списку лідів причина — в окремій колонці «Причина відмови» (коротко; повний текст і хто закрив — у підказці); у KPI 3 до «закрито з цільового» теж дописана причина. «Причину не вказано» — у підзадачі не вибрали значення або підзадачі нема.</p>
     <h3>Поля кваліфікації — заморожені на момент передачі</h3>
     <p>Тип клієнта, Канал реклами, Область, Інтерес, Клас, Бюджет — це поля лід-менеджера. У звіті вони показуються такими, якими були <b>в момент передачі менеджеру</b>: усе, що правлять у Planfix пізніше, цих колонок не змінює (саме різниця між «тоді» і «зараз» і є ознакою невірної кваліфікації). Для лідів, переданих до 22.09.2026, значення відновлені з останньої події перед передачею; інтересу й області в подіях не було, тому там вони поточні. Сірим — лід ще не передано, значення поточні й ще зміняться.</p>
     <h3>Решта показників (усі — від появи ліда)</h3>
@@ -2086,16 +2087,18 @@ function renderResponseReport(d) {
   html += rsLeadsHTML(state.rsBad ? mine.filter(l => l.mq && l.mq.bad) : mine, ti);
   return html;
 }
-// «Зараз»: статус; для закритих — «Закрито» + коротка причина відмови (повна — у підказці).
-function rsNowCell(l, sub) {
+// «Зараз» — статус (закрита угода коротко «Закрито»), «Причина відмови» — окремою колонкою:
+// коротко в рядку, повний текст довідника і хто закрив — у підказці. Лише для закритих зараз.
+function rsNowCells(l) {
   const early = l.mq && l.mq.why.find(w => w.startsWith('закрито'));
   const closed = l.status === 'Закрито та не реалізовано';
-  let title = l.status || '';
-  if (l.rf) title += ' — ' + (l.rf.r || 'причину не вказано') + (l.rf.by === 'sales' ? ' · закрив менеджер з продажу' : ' · закрила лід-менеджер');
-  if (early) title += ' · ' + early.split(' · ')[0] + ' — невірна кваліфікація';
+  const title = (l.status || '') + (early ? ' · ' + early.split(' · ')[0] + ' — невірна кваліфікація' : '');
+  const now = `<td style="white-space:nowrap${early ? ';color:var(--red)' : ''}" title="${esc(title)}">${closed ? 'Закрито' : esc(l.status || '')}</td>`;
+  if (!closed) return now + '<td><span style="color:var(--text3)">·</span></td>';
+  const by = l.rf ? (l.rf.by === 'sales' ? 'закрив менеджер з продажу' : 'закрила лід-менеджер') : '';
   const short = l.rf && l.rf.r ? rsRefusalShort(l.rf.r) : '';
-  const txt = closed ? 'Закрито' + sub(short ? esc(short) : 'без причини') : esc(l.status || '');
-  return `<td style="white-space:nowrap${early ? ';color:var(--red)' : ''}" title="${esc(title)}">${txt}</td>`;
+  const rTitle = (l.rf && l.rf.r ? l.rf.r : 'у підзадачі «Отказ» причину не вибрано або підзадачі нема') + (by ? ' · ' + by : '');
+  return now + `<td style="white-space:nowrap" title="${esc(rTitle)}">${short ? esc(short) : '<span style="color:var(--text3)">не вказано</span>'}</td>`;
 }
 function rsLeadsHTML(leads, ti) {
   const arrow = c => rsSort.col === c ? (rsSort.dir === 'asc' ? ' ↑' : ' ↓') : '';
@@ -2120,7 +2123,7 @@ function rsLeadsHTML(leads, ti) {
   const sub = s => `<span class="sb">${s}</span>`;  // підпис у тому самому рядку, не другий рядок
   let html = `<div class="section-h"><h2>📋 Ліди (${fmt(leads.length)})</h2><span class="hint">клік по заголовку — сортування, по # — відкрити в Planfix${leads.length > MAX ? ` · показано перші ${MAX}` : ''}</span></div>`;
   html += `<div class="mgr-wrap"><table class="tasks-table rs-leads"><thead><tr>
-    <th>#</th>${th('t0', 'Створено')}${th('fa', 'Перша спроба', 'від появи ліда до першого вихідного дзвінка')}${th('ans', 'Дозвон', 'від появи ліда до першої розмови')}${th('ho', 'Передача', 'від появи ліда до призначення менеджера з продажу')}<th title="Клас на момент передачі менеджеру">Клас</th><th title="Тип клієнта на момент передачі менеджеру">Тип</th><th title="Канал реклами на момент передачі менеджеру">Канал</th><th title="Область на момент передачі менеджеру">Область</th><th title="Інтерес на момент передачі менеджеру">Інтерес</th><th title="Бюджет у доларах — на момент передачі менеджеру">Бюджет</th><th>Зараз</th></tr></thead><tbody>`;
+    <th>#</th>${th('t0', 'Створено')}${th('fa', 'Перша спроба', 'від появи ліда до першого вихідного дзвінка')}${th('ans', 'Дозвон', 'від появи ліда до першої розмови')}${th('ho', 'Передача', 'від появи ліда до призначення менеджера з продажу')}<th title="Клас на момент передачі менеджеру">Клас</th><th title="Тип клієнта на момент передачі менеджеру">Тип</th><th title="Канал реклами на момент передачі менеджеру">Канал</th><th title="Область на момент передачі менеджеру">Область</th><th title="Інтерес на момент передачі менеджеру">Інтерес</th><th title="Бюджет у доларах — на момент передачі менеджеру">Бюджет</th><th>Зараз</th><th title="З підзадачі «Отказ» у Planfix — лише для лідів, закритих зараз">Причина відмови</th></tr></thead><tbody>`;
   for (const l of sorted.slice(0, MAX)) {
     const url = `https://solar.planfix.ua/task/${l.id}`;
     const inBase = rsInBase(l);
@@ -2145,10 +2148,10 @@ function rsLeadsHTML(leads, ti) {
       <td style="white-space:nowrap">${ansCell}</td>
       <td style="white-space:nowrap">${hoCell}</td>
       ${qCells(l)}
-      ${rsNowCell(l, sub)}
+      ${rsNowCells(l)}
     </tr>`;
   }
-  if (!sorted.length) html += `<tr><td colspan="12" class="muted" style="text-align:center;padding:14px">${state.rsBad ? 'Невірно кваліфікованих лідів у періоді нема' : 'Немає лідів'}</td></tr>`;
+  if (!sorted.length) html += `<tr><td colspan="13" class="muted" style="text-align:center;padding:14px">${state.rsBad ? 'Невірно кваліфікованих лідів у періоді нема' : 'Немає лідів'}</td></tr>`;
   html += `</tbody></table></div>`;
   return html;
 }
