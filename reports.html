@@ -2031,16 +2031,15 @@ function renderResponseReport(d) {
   const pct = (n, dd) => dd ? Math.round(n * 100 / dd) + '%' : '—';
   const medTxt = arr => { const m = rsMedian(arr); return m == null ? '—' : rsDur(m); };
   const noCall = t.base - t.attempted;
-  // Плитки = бонусні KPI лід-менеджера (постановка Дмитра 22.09.2026): 1) швидкість першого
-  // контакту, 2) час від «Нове» до призначення менеджера з продажу, 3) невірна кваліфікація
-  // (критерій ще узгоджується — плитка-заглушка, дані для неї вже збираються).
+  // Плитки = «Лідів» + бонусні KPI лід-менеджера (постановка Дмитра 22.09.2026): 1) швидкість першого
+  // контакту, 2) час від «Нове» до призначення менеджера з продажу, 3) невірна кваліфікація.
+  // Плитку «Додзвонились» прибрано 24.09.2026 (Дмитро: «не потрібна тут») — дозвон лишився в «Динаміці» і списку лідів.
   const avgTxt = arr => arr.length ? rsDur(arr.reduce((s, v) => s + v, 0) / arr.length) : '—';
   html += `<div class="kpi">
     <div class="kpi-card"><div class="lbl">Лідів</div><div class="val">${fmt(t.n)}</div><div class="sub">з телефоном ${pct(t.phone, t.n)}${t.fromCall ? ` · створено після дзвінка ${fmt(t.fromCall)}` : ''}${noCall ? ` · <span style="color:var(--red)">без дзвінка ${fmt(noCall)}</span>` : ''}</div></div>
     <div class="kpi-card"><div class="lbl">KPI 1 · швидкість 1-го контакту</div><div class="val">${medTxt(t.fa)}</div><div class="sub">медіана · сер. ${avgTxt(t.fa)} · ≤15 хв — ${pct(t.fa15, t.base)}</div></div>
     <div class="kpi-card"><div class="lbl">KPI 2 · Нове → призначення МП</div><div class="val">${medTxt(t.ho)}</div><div class="sub">медіана · сер. ${avgTxt(t.ho)} · передано ${pct(t.handed, t.n)}${t.hoUnknown ? `, час відомий у ${fmt(t.handed - t.hoUnknown)}` : ''}</div></div>
     <div class="kpi-card${t.mqBad ? ' c-fail' : ''}"><div class="lbl">KPI 3 · невірна кваліфікація</div><div class="val">${t.handed ? pct(t.mqBad, t.handed) : '—'}</div><div class="sub">${t.handed ? `${fmt(t.mqBad)} з ${fmt(t.handed)} переданих` + (t.mqBad ? ' · ' + Object.entries(t.mqWhy).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${k} ${v}`).join(' · ') : '') : 'передач ще нема'}</div></div>
-    <div class="kpi-card"><div class="lbl">Додзвонились</div><div class="val">${pct(t.answered, t.base)}</div><div class="sub">до розмови — ${medTxt(t.ans)}${t.tries.length ? ` · ${(t.tries.reduce((s, v) => s + v, 0) / t.tries.length).toLocaleString('uk-UA', { maximumFractionDigits: 1 })} спроб` : ''}</div></div>
   </div>`;
   // ── по місяцях (місяць появи ліда) ──
   const byMon = new Map();
