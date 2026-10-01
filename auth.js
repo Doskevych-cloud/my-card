@@ -94,6 +94,7 @@
     reports_stagetime: 'Звіти — Етапи',
     reports_marketing: 'Звіти — Маркетинг',
     reports_response: 'Звіти — Кваліфікація лідів',
+    reports_backoffice: 'Звіти — Бек-офіс',
     counterparties: 'Контрагенти',
     suppliers: 'Постачальники',
     customers: 'Покупці',

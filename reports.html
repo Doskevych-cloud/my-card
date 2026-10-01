@@ -119,6 +119,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .mgr-table tr.sec-row td{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;background:var(--surface);padding-top:12px}
 .mgr-table tr.sec-row:hover td{background:var(--surface)}
 .mgr-table tr.sum-row td{font-weight:700;color:var(--text)}
+/* «Бек-офіс»: широка таблиця по днях — компактні клітинки, дворядкова шапка, підсумки тижнів */
+.bo-table{min-width:980px}
+.bo-table th,.bo-table td{padding:7px 8px}
+.bo-table thead tr:first-child th{border-bottom:none;padding-bottom:2px;text-align:center}
+.bo-table thead tr:first-child th:first-child{text-align:left}
+.bo-table thead tr+tr th{padding-top:2px}
+.bo-table thead tr+tr th:first-child{text-align:right;color:var(--text3);font-weight:700}
+.bo-table td.bo-tot{font-weight:700;color:var(--text)}
+.bo-table tr.sum-row td{background:var(--surface)}
+.bo-table tr.bo-grand td{border-top:2px solid var(--border2)}
 
 /* Tasks list (collapsible) */
 .tasks-wrap{border:1px solid var(--border);border-radius:12px;background:var(--surface2);overflow:hidden;margin-bottom:20px}
@@ -230,6 +240,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <button class="stab" data-rep="stagetime" data-perm="reports_stagetime">⏳ Етапи</button>
       <button class="stab" data-rep="marketing" data-perm="reports_marketing">💸 Маркетинг</button>
       <button class="stab" data-rep="response" data-perm="reports_response">📞 Кваліфікація лідів</button>
+      <button class="stab" data-rep="backoffice" data-perm="reports_backoffice">🗂️ Бек-офіс</button>
     </div>
   </div>
 
@@ -253,6 +264,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <span class="chip" data-mode="cohort" title="Ліди створені у вибрані дні + куди дійшли">Когорта</span>
     </span>
 
+    <!-- Тип клієнта / клас ліда — фільтри угод; на «Бек-офісі» ховаються (syncModeGroupsVisibility) -->
+    <span id="leadFilters" style="display:contents">
     <span class="sep"></span>
 
     <span class="chip active" data-ct="" onclick="setClientType('')">Усі</span>
@@ -268,6 +281,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <span class="chip" data-lc="C" onclick="setLeadClass('C')">C</span>
 
     <span class="sep"></span>
+    </span>
 
     <button class="btn btn--secondary btn--sm" id="btnRefresh">↻ Оновити</button>
 
@@ -508,6 +522,38 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
 </div>
 
+<div class="modal-backdrop" id="boHelpModal" onclick="if(event.target===this)closeBoHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт «Бек-офіс»">
+    <button class="close" onclick="closeBoHelp()" aria-label="Закрити">✕</button>
+    <h2>🗂️ Як працює звіт «Бек-офіс»</h2>
+    <p>Звіт про роботу <b>менеджера з адміністративного супроводу продажу</b>: КП, договори і рахунки — те саме, що в щоденній Google-таблиці, тільки рахується автоматично з Planfix.</p>
+    <h3>Звідки дані</h3>
+    <ul>
+      <li>Позначки ставлять сценарії Planfix [Gen Robo]: на <b>КП</b> і <b>договорі</b> — «Передано в бек-офіс» і «Здано бек-офісом», на <b>рахунку</b> (об'єкт «Документ», тип «Рахунок») — «Дата та час виставлення рахунку».</li>
+      <li>RE:ACT забирає ці задачі з Planfix кожні 30 хв у робочий час. Кнопка «↻ Оновити» дотягує зміни одразу.</li>
+      <li>КП і договори є відколи в Planfix з'явились позначки (кінець вересня 2026, точна дата — в рядку над таблицею). За вересень дивіться Google-таблицю.</li>
+    </ul>
+    <h3>Таблиця по днях</h3>
+    <ul>
+      <li><b>День — коли роботу здано</b>: КП і договір — «Здано бек-офісом», рахунок — «Дата та час виставлення рахунку».</li>
+      <li><b>КП</b> діляться за полем «Тип клієнта» на самому КП: приватні, бізнес, решта (дилер або не заповнено).</li>
+      <li><b>Договори</b>: «Форма оплати» = Кредит — кредитні; інакше за «Тип договору»: з фізособою — приватні, з юрособою — комерційні, решта — інші.</li>
+      <li><b>Термінові</b> — задачі з позначкою «Термінове» в Planfix, решта — планові.</li>
+      <li><b>Рахунки</b> — лише рахунки бек-офісу: постановник або виконавець — Лариса Ярославська, або виконавець — група «Бек-офіс». Рахунки інших відділів не рахуються.</li>
+      <li><b>Дог./КП</b> — скільки договорів на кожні 100 КП тижня (як рядок відсотків у Google-таблиці).</li>
+    </ul>
+    <h3>Швидкість</h3>
+    <ul>
+      <li>КП і договір — від «Передано в бек-офіс» до «Здано бек-офісом». Рахунок — від створення задачі до виставлення.</li>
+      <li><b>Робочий час</b> — лише в межах графіка (той самий, що в «Кваліфікації лідів», за замовчуванням пн–пт 09:00–18:00): передали о 17:00, здали наступного дня о 10:00 — це 2 год. <b>Календарний</b> — разом із ніччю і вихідними.</li>
+      <li><b>Медіана</b> — половина робіт швидше, половина повільніше. «≤ 1 дня» — частка робіт, зданих не довше одного робочого дня (у календарному режимі — 24 год).</li>
+      <li>Якщо роботу повернули на доопрацювання (нове «Передано» вже після «Здано»), вона знову в «В роботі зараз», а в таблиці поки лишається на дні попередньої здачі, без часу. Коли її здадуть знову, вона переїде на день нової здачі.</li>
+    </ul>
+    <h3>В роботі зараз</h3>
+    <p>Передано в бек-офіс, але ще не здано: КП і договори з позначкою «Передано» без «Здано» (або повернуті на доопрацювання), рахунки бек-офісу, ще не виставлені (статус «Підготовка» чи «В роботі»). Скасовані, відкладені й закриті задачі сюди не потрапляють. Показуються передані за останні 60 днів, старші — лише кількістю. Цей блок не залежить від вибраного періоду.</p>
+  </div>
+</div>
+
 <script>
 const API = 'https://price-api.doskevich.workers.dev/';
 
@@ -551,6 +597,8 @@ const state = {
   rsBad: false,         // «Кваліфікація лідів»: у списку лише ліди з невірною кваліфікацією (hash rb=1)
   rsConvCls: 'C',       // «Кваліфікація лідів»: клас у таблиці «куди йдуть ліди» (hash cc)
   rsHist: false,        // «Кваліфікація лідів»: показати історію до RS_DATA_FROM — admin, дані неповні (hash rh=1)
+  boTime: 'work',       // «Бек-офіс»: work = робочі хвилини за графіком | cal = календарні (hash bt)
+  boKind: '',           // «Бек-офіс»: список зданого — '' усе | kp | contract | invoice (hash bk)
 };
 
 const REPORT_ACTION = {
@@ -564,6 +612,7 @@ const REPORT_ACTION = {
   stagetime: 'sheet_stage_time',
   marketing: 'sheet_marketing',
   response: 'sheet_response',
+  backoffice: 'sheet_backoffice',
 };
 let leadsSort = { col: 'changeDate', dir: 'desc' };
 
@@ -622,6 +671,8 @@ function saveStateToUrl() {
   if (state.rsBad) h.set('rb', '1');
   if (state.rsConvCls && state.rsConvCls !== 'C') h.set('cc', state.rsConvCls);
   if (state.rsHist) h.set('rh', '1');
+  if (state.boTime === 'cal') h.set('bt', 'cal');
+  if (state.boKind) h.set('bk', state.boKind);
   history.replaceState(null, '', '#' + h.toString());
 }
 function hydrateFromHash() {
@@ -646,6 +697,8 @@ function hydrateFromHash() {
   if (h.get('rb') === '1') state.rsBad = true;
   if (h.get('cc'))     state.rsConvCls = h.get('cc');
   if (h.get('rh') === '1') state.rsHist = true;
+  if (h.get('bt') === 'cal') state.boTime = 'cal';
+  if (['kp', 'contract', 'invoice'].includes(h.get('bk'))) state.boKind = h.get('bk');
   if (h.get('ls'))     for (const t of h.get('ls').split('|')) {
     // '+' має сенс лише для закритих етапів, '-' — лише для робочих (старі закладки з +Відкладене)
     const s = t.slice(1);
@@ -777,6 +830,9 @@ function syncModeGroupsVisibility() {
   if (ml) ml.style.display = show;
   const ff = document.getElementById('funnelFilters');
   if (ff && state.report !== 'funnel') ff.style.display = 'none';
+  // «Бек-офіс» — не про угоди: тип клієнта і клас ліда там нічого не фільтрують
+  const lf = document.getElementById('leadFilters');
+  if (lf) lf.style.display = state.report === 'backoffice' ? 'none' : 'contents';
 }
 
 // ─── Воронка: фільтри угоди (менеджер / інтерес / канал) ───
@@ -915,6 +971,12 @@ async function load(force = false) {
         ? `Planfix · відкриті угоди, оновлено <b>${esc(fmtSyncedAt(data.syncedAt))}</b>`
           + (ageH > 14 ? ' <span style="color:var(--red)">— синк давно не проходив, дані можуть бути застарілі</span>' : '')
         : 'Planfix · відкриті угоди ще не завантажені';
+    } else if (data.reportName === 'Бек-офіс') {
+      const ageH = data.syncedAt ? (Date.now() - Date.parse(String(data.syncedAt).replace(' ', 'T') + 'Z')) / 3600000 : 0;
+      label = data.syncedAt
+        ? `Джерело: <b>Planfix</b> · КП, договори, рахунки · синк <b>${esc(fmtSyncedAt(data.syncedAt))}</b>`
+          + (ageH > 14 ? ' <span style="color:var(--red)">— синк давно не проходив, дані можуть бути застарілі</span>' : '')
+        : 'Planfix · дані бек-офісу ще не завантажені';
     } else if (data.reportName === 'Реакція' || data.reportName === 'Кваліфікація лідів') {
       label = `Джерело: <b>Planfix</b> + <b>Binotel</b> · лідів у когорті: <b>${fmt((data.counts || {}).total || 0)}</b>`;
     } else if (state.mode === 'period') {
@@ -2246,7 +2308,7 @@ function openFunnelHelp()  { document.getElementById('funnelHelpModal').classLis
 function closeFunnelHelp() { document.getElementById('funnelHelpModal').classList.remove('open'); }
 function openMgrHelp()  { document.getElementById('mgrHelpModal').classList.add('open'); }
 function closeMgrHelp() { document.getElementById('mgrHelpModal').classList.remove('open'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeHelp(); closeSla(); closeAdvHelp(); closeFunnelHelp(); closeMgrHelp(); closeRsHelp(); closeRsSet(); ffCloseMenu(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeHelp(); closeSla(); closeAdvHelp(); closeFunnelHelp(); closeMgrHelp(); closeRsHelp(); closeRsSet(); closeBoHelp(); ffCloseMenu(); } });
 
 // ── Регламенти (SLA) — модалка нормативів класу А, admin-only ──
 function openSla() {
@@ -2559,6 +2621,174 @@ function interestCoverageNoteHTML(a) {
   return note(`Інтерес заповнюють після кваліфікації: у вибірці він є в ${fmt(c.filled)} з ${fmt(c.leads)} угод, серед цільових — у ${fmt(c.targetFilled)} з ${fmt(c.target)}. Тому етапи 1–2 неповні, а «% від №1» і «% з попереднього» на етапі 3 завищені — дивіться «% з попереднього» з етапу 4.`);
 }
 
+// ─── «Бек-офіс»: КП / договори / рахунки бек-офісу (backoffice_tasks — синк з Planfix) ───
+// Бекенд віддає здані за період роботи (items) і те, що в роботі зараз (pending); таблицю по днях,
+// швидкість і плитки рахуємо тут. Колонки — як у звіті Planfix «Бек-офіс: щоденна таблиця».
+const BO_KIND = { kp: 'КП', contract: 'Договір', invoice: 'Рахунок' };
+const BO_CAT_LABEL = {
+  kp: { priv: 'приватний', biz: 'бізнес', other: 'дилер / без типу' },
+  contract: { priv: 'приватний', com: 'комерційний', cred: 'кредит', other: 'інший' },
+  invoice: { inv: '' },
+};
+const BO_WD = ['нд', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+const BO_DAY_COLS = ['kp', 'kpPrivP', 'kpPrivU', 'kpBizP', 'kpBizU', 'kpOther', 'ct', 'ctPrivP', 'ctPrivU', 'ctComP', 'ctComU', 'ctCredP', 'ctCredU', 'ctOther', 'inv'];
+const BO_TOTAL_COLS = new Set(['kp', 'ct', 'inv']);
+function boKey() { return state.boTime === 'cal' ? 'cal' : 'wm'; }
+function boAddDays(iso, n) { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+function boWeekStart(iso) { return boAddDays(iso, -((new Date(iso + 'T00:00:00Z').getUTCDay() || 7) - 1)); }
+function boDM(iso) { return iso ? `${iso.slice(8, 10)}.${iso.slice(5, 7)}` : ''; }
+function boDayLabel(iso) { return `${boDM(iso)} ${BO_WD[new Date(iso + 'T00:00:00Z').getUTCDay()]}`; }
+function boDayLen(w) {
+  const hm = s => { const m = String(s || '').match(/^(\d{1,2}):(\d{2})$/); return m ? +m[1] * 60 + +m[2] : null; };
+  const a = hm(w && w.start), b = hm(w && w.end);
+  return a != null && b != null && b > a ? b - a : 540;
+}
+// Робочі хвилини — у годинах і робочих днях (день = довжина графіка), календарні — як скрізь у звітах.
+function boDur(min, key, dayLen) {
+  if (min == null) return null;
+  if (key !== 'wm') return rsDur(min);
+  const f = (n, dd) => n.toLocaleString('uk-UA', { maximumFractionDigits: dd });
+  if (min < 60) return f(Math.round(min), 0) + ' хв';
+  if (min < dayLen) return f(min / 60, 1) + ' год';
+  return f(min / dayLen, 1) + ' роб. дн';
+}
+function boZero() { const c = {}; for (const k of BO_DAY_COLS) c[k] = 0; return c; }
+function boAdd(c, it) {
+  const U = it.u ? 'U' : 'P';
+  if (it.k === 'kp') { c.kp++; if (it.cat === 'priv') c['kpPriv' + U]++; else if (it.cat === 'biz') c['kpBiz' + U]++; else c.kpOther++; }
+  else if (it.k === 'contract') { c.ct++; if (it.cat === 'priv') c['ctPriv' + U]++; else if (it.cat === 'com') c['ctCom' + U]++; else if (it.cat === 'cred') c['ctCred' + U]++; else c.ctOther++; }
+  else if (it.k === 'invoice') c.inv++;
+}
+function boCells(c, withConv) {
+  return BO_DAY_COLS.map(k => `<td${BO_TOTAL_COLS.has(k) ? ' class="bo-tot"' : ''}>${c[k] ? fmt(c[k]) : RS_DOT}</td>`).join('')
+    + `<td>${withConv ? (c.kp ? Math.round(c.ct * 100 / c.kp) + '%' : RS_DOT) : ''}</td>`;
+}
+function boStats(list, key, dayLen) {
+  const v = list.map(i => i[key]).filter(x => x != null);
+  const lim = key === 'wm' ? dayLen : 1440;
+  return { n: list.length, timed: v.length, med: rsMedian(v), avg: v.length ? v.reduce((a, b) => a + b, 0) / v.length : null,
+    max: v.length ? Math.max(...v) : null, fast: v.filter(x => x <= lim).length };
+}
+function boTypeLabel(it) {
+  if (it.k === 'invoice') return it.sum ? fmtMoney(it.sum) + ' грн' : '';
+  const c = (BO_CAT_LABEL[it.k] || {})[it.cat] || '';
+  return it.k === 'contract' && it.pf && it.cat !== 'cred' ? `${c} · ${it.pf}` : c;
+}
+function renderBackofficeReport(d) {
+  const key = boKey();
+  const w = d.work || {};
+  const dayLen = boDayLen(w);
+  const dur = v => { const s = boDur(v, key, dayLen); return s == null ? RS_DOT : s; };
+  const dayNames = ['', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'нд'];
+  const sched = `${(w.days || []).map(x => dayNames[x]).join(', ')} ${w.start || ''}–${w.end || ''}`;
+  const items = d.items || [], pend = d.pending || [];
+  let html = `<div class="toolbar" style="margin-bottom:10px"><span class="lbl">Час</span><span class="group">
+      <span class="chip${key === 'wm' ? ' active' : ''}" onclick="setBoTime('work')" title="Лише в межах графіка: ${esc(sched)}">Робочий</span>
+      <span class="chip${key === 'cal' ? ' active' : ''}" onclick="setBoTime('cal')" title="Разом із ніччю та вихідними">Календарний</span></span>
+    <span class="sep"></span>
+    <span class="chip" onclick="openBoHelp()" title="Як працює цей звіт">❓ Як працює</span>
+    <span class="spacer"></span>
+    <span class="meta">${d.stampsFrom ? `КП і договори з <b>${esc(fmtDateUA(d.stampsFrom))}</b> · ` : ''}графік: ${esc(sched)}${d.excludedInvoices ? ` · рахунки інших відділів не враховано: ${fmt(d.excludedInvoices)}` : ''}</span>
+  </div>`;
+  if (!items.length && !pend.length) {
+    return html + `<div class="info-banner"><span class="ib-tag">БЕК-ОФІС</span> За вибраний період зданих робіт нема. КП і договори потрапляють у звіт, відколи в Planfix ставляться позначки «Передано в бек-офіс» / «Здано бек-офісом»${d.stampsFrom ? ` (з ${esc(fmtDateUA(d.stampsFrom))})` : ''}; за вересень 2026 дивіться Google-таблицю.</div>`;
+  }
+  // ── плитки ──
+  const of = k => items.filter(i => i.k === k);
+  const kpL = of('kp'), ctL = of('contract'), invL = of('invoice');
+  const urg = l => l.filter(i => i.u).length;
+  const med = l => { const m = rsMedian(l.map(i => i[key]).filter(x => x != null)); return m == null ? '—' : boDur(m, key, dayLen); };
+  const ageOf = p => (key === 'wm' ? p.agew : p.age);
+  const oldest = pend.reduce((a, p) => (ageOf(p) != null && (a == null || ageOf(p) > ageOf(a)) ? p : a), null);
+  html += `<div class="kpi">
+    <div class="kpi-card"><div class="lbl">КП здано</div><div class="val">${fmt(kpL.length)}</div><div class="sub">термінових ${fmt(urg(kpL))} · медіана ${med(kpL)}</div></div>
+    <div class="kpi-card"><div class="lbl">Договорів здано</div><div class="val">${fmt(ctL.length)}</div><div class="sub">термінових ${fmt(urg(ctL))} · кредитних ${fmt(ctL.filter(i => i.cat === 'cred').length)} · медіана ${med(ctL)}</div></div>
+    <div class="kpi-card"><div class="lbl">Рахунків виставлено</div><div class="val">${fmt(invL.length)}</div><div class="sub">медіана ${med(invL)} від створення</div></div>
+    <div class="kpi-card"><div class="lbl">В роботі зараз</div><div class="val">${fmt(pend.length)}</div><div class="sub">${oldest ? `найдовше чекає ${esc(BO_KIND[oldest.k] || '')} — ${boDur(ageOf(oldest), key, dayLen)}` : 'нічого не чекає'}</div></div>
+  </div>`;
+  // ── по днях (день здачі), як у щоденній Google-таблиці ──
+  const today = _todayISO();
+  const byDay = new Map();
+  for (const it of items) { const day = String(it.d || '').slice(0, 10); if (!byDay.has(day)) byDay.set(day, []); byDay.get(day).push(it); }
+  const days = new Set(byDay.keys());
+  // порожні робочі дні — лише від першого дня з даними (КП і договори — від появи позначок) і не далі сьогодні
+  const firstData = [d.stampsFrom, [...days].sort()[0]].filter(Boolean).sort()[0];
+  const end = d.to < today ? d.to : today;
+  if (firstData) {
+    for (let x = firstData > d.from ? firstData : d.from, n = 0; x <= end && n < 1200; x = boAddDays(x, 1), n++) {
+      const wd = new Date(x + 'T00:00:00Z').getUTCDay();
+      if (wd >= 1 && wd <= 5) days.add(x);
+    }
+  }
+  const dayList = [...days].sort();
+  if (dayList.length) {
+    let rows = '', week = null, wc = null, wFrom = '', wTo = '', weeks = 0;
+    const total = boZero();
+    const flush = () => { if (week) rows += `<tr class="sum-row"><td>Тиждень ${boDM(wFrom)}–${boDM(wTo)}</td>${boCells(wc, true)}</tr>`; };
+    for (const day of dayList) {
+      const ws = boWeekStart(day);
+      if (ws !== week) { flush(); week = ws; wc = boZero(); wFrom = day; weeks++; }
+      wTo = day;
+      const c = boZero();
+      for (const it of (byDay.get(day) || [])) { boAdd(c, it); boAdd(wc, it); boAdd(total, it); }
+      rows += `<tr><td>${boDayLabel(day)}</td>${boCells(c, false)}</tr>`;
+    }
+    flush();
+    if (weeks > 1) rows += `<tr class="sum-row bo-grand"><td>Разом за період</td>${boCells(total, true)}</tr>`;
+    html += `<div class="section-h"><h2>📅 По днях</h2><span class="hint">день — коли здано · план / терм. — без і з позначкою «Термінове» в Planfix</span></div>`;
+    html += `<div class="mgr-wrap"><table class="mgr-table bo-table"><thead>
+      <tr><th rowspan="2">День</th><th colspan="6">КП</th><th colspan="8">Договори</th><th rowspan="2">Рахунки</th><th rowspan="2" title="Договорів на 100 КП за тиждень">Дог./КП</th></tr>
+      <tr><th>усього</th><th>прив. план</th><th>прив. терм.</th><th>бізнес план</th><th>бізнес терм.</th><th title="Дилер або тип клієнта не заповнено">інші</th>
+        <th>усього</th><th>прив. план</th><th>прив. терм.</th><th>комерц. план</th><th>комерц. терм.</th><th>кредит план</th><th>кредит терм.</th><th title="Договір поставки або тип не заповнено">інші</th></tr>
+    </thead><tbody>${rows}</tbody></table></div>`;
+  }
+  // ── швидкість ──
+  const noTime = items.filter(i => i.h && i[key] == null).length;
+  html += `<div class="section-h"><h2>⏱ Швидкість</h2><span class="hint">${key === 'wm' ? `робочий час (${esc(sched)}), роб. день = ${Math.round(dayLen / 6) / 10} год` : 'календарний час'} · КП і договір — від «Передано» до «Здано», рахунок — від створення до виставлення${noTime ? ` · без часу (повернуто на доопрацювання): ${fmt(noTime)}` : ''}</span></div>`;
+  html += `<div class="mgr-wrap"><table class="mgr-table"><thead><tr><th></th><th>здано</th><th>медіана</th><th>середнє</th><th title="${key === 'wm' ? 'Частка зданих не довше одного робочого дня' : 'Частка зданих не довше 24 годин'}">≤ 1 дня</th><th>найдовше</th></tr></thead><tbody>`;
+  for (const [k, title] of [['kp', 'КП'], ['contract', 'Договори'], ['invoice', 'Рахунки']]) {
+    const l = of(k);
+    html += `<tr class="sec-row"><td colspan="6">${title}</td></tr>`;
+    for (const [lab, sub] of [['усі', l], ['планові', l.filter(i => !i.u)], ['термінові', l.filter(i => i.u)]]) {
+      if (lab !== 'усі' && (!sub.length || sub.length === l.length)) continue;
+      const s = boStats(sub, key, dayLen);
+      html += `<tr><td>${lab}</td><td>${s.n ? fmt(s.n) : RS_DOT}</td><td>${dur(s.med)}</td><td>${dur(s.avg)}</td><td>${s.timed ? Math.round(s.fast * 100 / s.timed) + '%' : RS_DOT}</td><td>${dur(s.max)}</td></tr>`;
+    }
+  }
+  html += `</tbody></table></div>`;
+  // ── в роботі зараз ──
+  const link = id => `<a class="tlink" href="https://solar.planfix.ua/task/${encodeURIComponent(id)}" target="_blank" rel="noopener">${esc(id)}</a>`;
+  html += `<div class="section-h"><h2>⏳ В роботі зараз (${fmt(pend.length)})</h2><span class="hint">передано, ще не здано · не залежить від періоду${d.pendingOld ? ` · старших за ${fmt(d.pendingDays)} днів не показано: ${fmt(d.pendingOld)}` : ''}</span></div>`;
+  html += `<div class="mgr-wrap"><table class="tasks-table"><thead><tr><th>#</th><th>Що</th><th>Задача</th><th>Клієнт</th><th>Передано</th><th>Чекає</th><th>Терм.</th><th>Статус</th><th>Виконавці</th></tr></thead><tbody>`;
+  for (const p of pend) {
+    html += `<tr><td class="num">${link(p.id)}</td><td>${esc(BO_KIND[p.k] || p.k)}</td><td title="${esc(p.n)}">${esc(ffShort(p.n))}</td><td>${esc(p.cp)}</td>
+      <td style="white-space:nowrap">${esc(rsWhen(p.h))}</td><td style="white-space:nowrap">${dur(ageOf(p))}</td><td>${p.u ? 'так' : ''}</td><td>${esc(p.st)}</td><td>${esc(p.ex)}</td></tr>`;
+  }
+  if (!pend.length) html += `<tr><td colspan="9" class="muted" style="text-align:center;padding:14px">Нічого не чекає</td></tr>`;
+  html += `</tbody></table></div>`;
+  // ── здано за період ──
+  const kinds = [['', 'Усе'], ['kp', 'КП'], ['contract', 'Договори'], ['invoice', 'Рахунки']]
+    .map(([k, l]) => `<span class="chip${(state.boKind || '') === k ? ' active' : ''}" onclick="setBoKind('${k}')">${l}</span>`).join('');
+  const list = items.filter(i => !state.boKind || i.k === state.boKind).sort((a, b) => String(b.d).localeCompare(String(a.d)));
+  const MAX = 600;
+  html += `<div class="section-h"><h2>📋 Здано за період (${fmt(list.length)})</h2><span class="hint">клік по # — відкрити в Planfix${list.length > MAX ? ` · показано перші ${MAX}` : ''}</span></div>`;
+  html += `<div class="toolbar" style="margin-bottom:8px"><span class="lbl">Показати</span><span class="group">${kinds}</span></div>`;
+  html += `<div class="mgr-wrap"><table class="tasks-table"><thead><tr><th>#</th><th>Що</th><th>Тип</th><th>Задача</th><th>Клієнт</th><th>Передано</th><th>Здано</th><th>Час</th><th>Терм.</th><th>Статус</th></tr></thead><tbody>`;
+  for (const it of list.slice(0, MAX)) {
+    const t = it[key];
+    const timeCell = t != null ? dur(t) : (it.h ? `<span title="Повернуто на доопрацювання: нове «Передано» після «Здано» — у швидкість не йде">${RS_DOT}</span>` : RS_DOT);
+    html += `<tr><td class="num">${link(it.id)}</td><td>${esc(BO_KIND[it.k] || it.k)}</td><td>${esc(boTypeLabel(it))}</td><td title="${esc(it.n)}">${esc(ffShort(it.n))}</td><td>${esc(it.cp)}</td>
+      <td style="white-space:nowrap">${esc(rsWhen(it.h))}</td><td style="white-space:nowrap">${esc(rsWhen(it.d))}</td><td style="white-space:nowrap">${timeCell}</td><td>${it.u ? 'так' : ''}</td><td>${esc(it.st)}</td></tr>`;
+  }
+  if (!list.length) html += `<tr><td colspan="10" class="muted" style="text-align:center;padding:14px">Нічого не здано</td></tr>`;
+  html += `</tbody></table></div>`;
+  return html;
+}
+function setBoTime(v) { state.boTime = v === 'cal' ? 'cal' : 'work'; saveStateToUrl(); render(); }
+function setBoKind(v) { state.boKind = ['kp', 'contract', 'invoice'].includes(v) ? v : ''; saveStateToUrl(); render(); }
+function openBoHelp() { document.getElementById('boHelpModal').classList.add('open'); }
+function closeBoHelp() { const m = document.getElementById('boHelpModal'); if (m) m.classList.remove('open'); }
+
 function render() {
   updateInfoBanner();
   renderFunnelFilters();
@@ -2611,6 +2841,11 @@ function render() {
     document.getElementById('infoBanner').style.display='none';
     document.getElementById('content').innerHTML = renderResponseReport(state.raw);
     attachResponseHandlers();
+    return;
+  }
+  if (state.report === 'backoffice') {
+    document.getElementById('infoBanner').style.display='none';
+    document.getElementById('content').innerHTML = renderBackofficeReport(state.raw);
     return;
   }
   if (state.report === 'marketing'){
