@@ -34,7 +34,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .toolbar .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;display:inline-flex;align-items:center;gap:6px}
 .toolbar .chip:hover{background:var(--bg3);color:var(--text)}
 .toolbar .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
-.toolbar .sep{width:1px;height:20px;background:var(--border);margin:0 2px}
 .mvf{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
 .toolbar input.date-range-input{flex:0 0 auto;min-width:190px;cursor:pointer}
 .toolbar input.date-range-input.active,.toolbar input.date-range-input:focus{border-color:var(--accent)}
@@ -45,6 +44,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .brig{margin-bottom:8px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
 .brig-head{display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;user-select:none}
 .brig-head:hover{background:var(--bg3)}
+.brig-head.static{cursor:default}
+.brig-head.static:hover{background:transparent}
+.brig-head.static .chev{visibility:hidden}
 .brig-head .chev{flex:0 0 auto;width:12px;color:var(--text3);font-size:11px;transition:transform .15s}
 .brig.open>.brig-head .chev{transform:rotate(90deg)}
 .brig-head .nm{flex:1;min-width:0;font-weight:700;font-size:14px;color:var(--text);overflow-wrap:anywhere}
@@ -55,10 +57,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .brig-body{display:none;border-top:1px solid var(--border)}
 .brig.open>.brig-body{display:block}
 .brig-item{display:flex;align-items:baseline;gap:14px;padding:8px 16px;border-bottom:1px solid var(--border)}
-.brig-item:last-of-type{border-bottom:none}
-.brig-item .nm{flex:1;min-width:0;color:var(--text2);overflow-wrap:anywhere}
+.brig-item:last-child{border-bottom:none}
+.brig-item .nm{flex:1;min-width:0;color:var(--text);overflow-wrap:anywhere}
 .brig-item .q{flex:0 0 auto;min-width:120px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--text)}
-.brig-empty{padding:12px 16px;color:var(--text3);font-style:italic;font-size:12px}
+/* Склад із резервом під замовлення: шеврон + Всього + Під замовл. (як рядок товару на «Складі») */
+.brig-cols{display:flex;gap:14px;padding:7px 16px;border-bottom:1px solid var(--border);font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);font-weight:700;background:var(--bg2)}
+.brig-cols .nm{flex:1}
+.brig-cols .q{flex:0 0 auto;min-width:96px;text-align:right}
+.brig-item .ich{flex:0 0 auto;width:10px;color:var(--text3);font-size:10px;transition:transform .15s}
+.brig.res .brig-item .q{min-width:96px}
+.brig.res .brig-cols{padding-left:40px}
+.brig-item.rx{cursor:pointer}
+.brig-item.rx:hover{background:var(--bg3)}
+.brig-item.rx.open .ich{transform:rotate(90deg)}
+.brig-item:not(.rx) .ich{visibility:hidden}
+.brig-res{display:flex;align-items:baseline;gap:14px;padding:6px 16px 6px 40px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:11.5px;color:var(--text2)}
+.brig-res .nm{flex:1;min-width:0;overflow-wrap:anywhere}
+.brig-res .q{flex:0 0 auto;text-align:right;font-variant-numeric:tabular-nums}
+.brig-res .client{color:var(--text)}
+.brig-res .meta{color:var(--text3)}
+.brig-res.free .nm{color:var(--text3)}
+.brig-res a.ord{color:var(--text);text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:2px;cursor:pointer}
+.brig-res a.ord:hover{color:var(--accent);text-decoration-color:var(--accent)}
+.brig-empty{padding:12px 16px;color:var(--text3);font-size:12px}
+.sub .stale{color:var(--red)}
 
 /* Переміщення — пласка таблиця (Дата · Відправник · Одержувач · Покупець · К-сть) */
 .mv-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
@@ -166,13 +188,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   .page-tabs .ptab{flex:1;justify-content:center;padding:8px 10px}
   .toolbar{padding:8px;gap:6px}
   .toolbar input[type=text]{flex:1 1 100%;min-width:0;font-size:12px;padding:6px 8px}
+  #searchIn{order:-1}
   .toolbar .chip{padding:6px 10px;font-size:11px}
   .toolbar .sep{display:none}
   .mv-select{flex:1 1 100%;max-width:none}
   .brig-head{padding:11px 12px}
   .brig-item .q,.mv-it-q,.mv-money{min-width:0}
-  .mv-th{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;position:static}
-  .mv-th .lbl{display:none}
+  .brig-item{padding:8px 12px}
+  .brig-res{padding:6px 12px 6px 36px}
+  /* Склад із резервом: підписи над числами замість рядка заголовків (як на «Складі») */
+  .brig-cols{display:none}
+  .brig.res .brig-item{gap:8px}
+  .brig.res .brig-item .q{min-width:52px}
+  /* підписи лише там, де чисел два (рядок із резервом); решта — просто кількість */
+  .brig.res .brig-item.rx .q::before{display:block;font-weight:400;font-size:9px;line-height:1.2;color:var(--text3);letter-spacing:.2px;white-space:nowrap}
+  .brig.res .brig-item.rx .q.t::before{content:'Всього'}
+  .brig.res .brig-item.rx .q.r::before{content:'Під зам.'}
+  .mv-th{display:none}
   .flt{flex:1 1 100%}
   .toolbar .flt input{flex:1 1 auto;width:auto}
   .mv-doc-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;padding:9px 12px}
@@ -211,9 +243,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <div class="toolbar">
       <!-- Склад -->
       <span class="mvf" id="stockTools">
-        <span class="chip" onclick="expandAll()">⊞ Розгорнути</span>
-        <span class="chip" onclick="collapseAll()">⊟ Згорнути</span>
-        <span class="chip" onclick="downloadStockXLSX()" title="Залишки в Excel">⬇ Excel</span>
+        <button class="btn btn--secondary btn--sm" onclick="expandAll()">⊞ Розгорнути</button>
+        <button class="btn btn--secondary btn--sm" onclick="collapseAll()">⊟ Згорнути</button>
+        <button class="btn btn--secondary btn--sm" onclick="downloadStockXLSX()" title="Вигрузити відфільтроване в Excel">⬇ Excel</button>
       </span>
       <!-- Переміщення -->
       <span class="mvf" id="mvFilters" style="display:none">
@@ -224,7 +256,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <span class="chip mvp mv-list-only" data-preset="year" onclick="setPreset('year')">Рік</span>
         <span class="chip mvp active mv-list-only" data-preset="all" onclick="setPreset('all')">Весь час</span>
         <span class="sep mv-list-only"></span>
-        <span class="chip mvcat active mv-list-only" data-cat="all" onclick="setCat('all')">Усі</span>
+        <span class="chip mvcat active mv-list-only" data-cat="all" onclick="setCat('all')">Всі</span>
         <span class="chip mvcat mv-list-only" data-cat="received" onclick="setCat('received')">↓ Отримано</span>
         <span class="chip mvcat mv-list-only" data-cat="returned" onclick="setCat('returned')">↑ Повернено</span>
         <span class="chip mvcat mv-list-only" data-cat="internal" onclick="setCat('internal')">⇄ Між бригадами</span>
@@ -235,10 +267,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <span class="flt mv-list-only"><label>Покупець</label><input type="text" id="fCust" placeholder="Почни вводити…" autocomplete="off" data-1p-ignore data-lpignore="true"></span>
         <span class="flt mv-list-only"><label>Замовлення</label><input type="text" id="fOrder" placeholder="Почни вводити…" autocomplete="off" data-1p-ignore data-lpignore="true"></span>
         <span class="flt mv-recon-only" style="min-width:300px"><label>Замовлення</label><input type="text" id="fReconOrder" placeholder="№ або покупець…" autocomplete="off" data-1p-ignore data-lpignore="true"></span>
-        <span class="chip" onclick="downloadMovesXLSX()" title="Експорт у Excel">⬇ Excel</span>
+        <button class="btn btn--secondary btn--sm" onclick="downloadMovesXLSX()" title="Експорт у Excel">⬇ Excel</button>
       </span>
-      <input type="text" id="searchIn" placeholder="🔎 Пошук…" autocomplete="off">
-      <span class="chip" onclick="openHelp()" title="Як працює цей звіт">❓ Як працює</span>
+      <input type="text" id="searchIn" placeholder="🔎 Пошук: склад, товар, клієнт або №" autocomplete="off">
+      <button class="btn btn--secondary btn--sm" onclick="openHelp()" title="Як працює цей звіт">❓ Як працює</button>
     </div>
 
     <div id="body"><div class="loading">Завантаження…</div></div>
@@ -252,7 +284,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <p>Розділ показує склади монтажних бригад (назви «…/під звіт») і їхні особисті склади інструментів («Інструменти/…») по даних 1С + звіти бригадирів про фактичне використання.</p>
 
     <h3>📦 Склад</h3>
-    <p>Поточний залишок кожного бригадного складу (знімок 1С, оновлюється кілька разів на день — дата знімка вгорі). Бригадир бачить лише свої склади, проєктний менеджер і адмін — усі.</p>
+    <p>Поточний залишок кожного бригадного складу. Це знімок 1С у базі ERP: оновлюється щопівгодини приблизно з 08:00 до 20:30 (взимку на годину раніше). Час знімка — у підзаголовку; червоний час = синхронізація пропустила два такти поспіль (залишок не оновлювався понад годину). Документ, проведений у 1С пізніше, з'явиться наступним тактом. Бригадир бачить лише свої склади (1–2 відкриті одразу), проєктний менеджер і адмін — усі.</p>
+    <ul>
+      <li><b>N поз.</b> у шапці складу — кількість різних позицій. Суму кількостей не показуємо: вона складала б метри кабелю зі штуками.</li>
+      <li><b>Під замовл.</b> — скільки з залишку зарезервовано в 1С під замовлення покупця. Тап по рядку показує, під які замовлення (№ · дата · клієнт), № веде у «Звірку» цього замовлення. Колонка з'являється лише на складі, де є такий резерв.</li>
+      <li><b>без замовлення</b> — частина залишку без прив'язки до замовлення. Це не обов'язково «вільно»: переміщення могли провести без прив'язки до обʼєкта.</li>
+      <li>Порожній склад показується з позначкою «залишку нема». Пошук шукає і по товару, і по клієнту чи № замовлення.</li>
+    </ul>
     <p>Склади інструментів — окремою секцією «Інструменти» під складами «під звіт». Центральні склади інструментів («Основний склад», «МЕНЕДЖЕРИ з продажів») тут не показуються — для бригади це відправник у рухах. У звірці по замовленню й у звіті бригади інструментів немає: вони не видаються під замовлення.</p>
 
     <h3>📋 Список рухів</h3>
@@ -297,8 +335,12 @@ const state = {
   asOf: null,
   search: '',
   // Склад
-  stock: {},            // ref → items[]
+  stock: {},            // ref → items[] ({name, qty} | + reserve, orders[{ref,no,date,client,qty}])
   openKeys: new Set(),
+  openItems: new Set(), // розгорнуті позиції з резервом: 'ref|name'
+  closedItems: new Set(), // згорнуті вручну попри збіг пошуку (скидається зі зміною пошуку)
+  syncedAt: null,       // час знімка залишку (ISO UTC, MIN по видимих складах)
+  _autoOpened: false,
   // Переміщення (плаский список)
   allMoves: null,       // [] | null(не вантажили) | 'loading' | 'error'
   brigSet: new Set(),   // refs бригадних складів (для напрямку)
@@ -353,20 +395,61 @@ async function load() {
       fetch(API_URL + '?action=brigade_stock_all').then(r => r.json()).catch(() => ({})),
     ]);
     if (ov.error) throw new Error(ov.error);
-    // Спершу склади «під звіт», під ними — інструменти; всередині — за кількістю.
-    state.list = (ov.warehouses || []).slice().sort((a, b) =>
-      ((a.kind === 'tools') - (b.kind === 'tools')) || ((b.qty || 0) - (a.qty || 0)));
+    state.list = (ov.warehouses || []).slice();
     state.asOf = ov.as_of_date || null;
+    state.syncedAt = ov.synced_at || null;
     state.brigSet = new Set(state.list.map(b => String(b.ref_key)));
     const allStock = (st && st.stock) || {};
     for (const ref in allStock) state.stock[ref] = allStock[ref];
+    // «N поз.» — з фактичного списку позицій (огляд рахує й SKU з нульовою сумою)
+    for (const b of state.list) { const s = state.stock[String(b.ref_key)]; if (Array.isArray(s)) b.items = s.length; }
+    // Спершу «під звіт», під ними — інструменти; всередині — за кількістю позицій, порожні в кінці.
+    // Не за сумою кількостей: вона складає метри зі штуками.
+    state.list.sort((a, b) => ((a.kind === 'tools') - (b.kind === 'tools')) || ((b.items || 0) - (a.items || 0)));
+    // Свої 1–2 склади (бригадир, сервісний інженер) — одразу відкриті, без зайвого тапу
+    if (!state._autoOpened) {
+      state._autoOpened = true;
+      const filled = state.list.filter(b => b.items > 0);
+      if (filled.length && filled.length <= 2) filled.forEach(b => { const r = String(b.ref_key); state.openKeys.add(r); ensureStock(r); });
+    }
     state.loaded = true;
-    const sub = document.getElementById('sub');
-    if (sub) sub.textContent = 'склади монтажних бригад та інструменти' + (state.asOf ? ' · залишок на ' + fmtDatePretty(state.asOf) : '');
+    renderSub();
     render();
   } catch (e) {
     document.getElementById('body').innerHTML = `<div class="error">${esc(e.message)}</div>`;
   }
+}
+
+// Час знімка залишку в підзаголовку. Залишок — знімок 1С у D1, autosync оновлює щопівгодини
+// (cron */30 5-17 UTC, крок залишку закінчується ~2 хв після тику). Червоний — синхронізація
+// пропустила два такти поспіль; один пропуск — ще не тривога. Рахуємо в UTC: київське вікно
+// зсувається з переходом на зимовий час.
+function _lastTick(t) {   // останній тик cron, не пізніший за t
+  const x = new Date(t), h = x.getUTCHours();
+  if (h >= 5 && h < 18) x.setUTCMinutes(x.getUTCMinutes() < 30 ? 0 : 30, 0, 0);
+  else { if (h < 5) x.setUTCDate(x.getUTCDate() - 1); x.setUTCHours(17, 30, 0, 0); }
+  return x;
+}
+function isStockStale(d) {
+  const exp = _lastTick(Date.now() - 10 * 60 * 1000);   // такт, чий синк уже мав завершитись
+  const prev = _lastTick(exp.getTime() - 60 * 1000);    // такт перед ним (о 05:00 — вчорашній 17:30)
+  return d < prev;
+}
+function renderSub() {
+  const sub = document.getElementById('sub');
+  if (!sub) return;
+  let snap = '';
+  const d = state.syncedAt ? new Date(state.syncedAt) : null;
+  if (d && !isNaN(d)) {
+    const k = o => d.toLocaleString('uk-UA', Object.assign({ timeZone: 'Europe/Kyiv' }, o));
+    const day = x => x.toLocaleDateString('uk-UA', { timeZone: 'Europe/Kyiv' });
+    const t = k({ hour: '2-digit', minute: '2-digit' });
+    const txt = day(d) === day(new Date()) ? t : k({ day: '2-digit', month: '2-digit' }) + ', ' + t;
+    snap = ' · залишок станом на ' + (isStockStale(d)
+      ? '<span class="stale" title="Синхронізація з 1С не оновлювала залишок з ' + esc(txt) + '">' + esc(txt) + '</span>'
+      : esc(txt));
+  } else if (state.asOf) snap = ' · залишок на ' + fmtDatePretty(state.asOf);
+  sub.innerHTML = 'склади монтажних бригад та інструменти' + snap;
 }
 
 // Плаский список усіх переміщень (lazy — при першому вході в підрозділ).
@@ -401,45 +484,101 @@ function render() {
 
 // Склад: картки бригад із залишком (пошук по бригаді/товару)
 function renderStock(body) {
-  const q = state.search;
+  const q = state.search, nq = _norm(q);
   let list = state.list;
   if (q) list = list.filter(b => {
-    if ((b.name || '').toLowerCase().includes(q)) return true;
+    if (_norm(b.name).includes(nq)) return true;
     const s = state.stock[String(b.ref_key)];
-    return Array.isArray(s) && s.some(it => (it.name || '').toLowerCase().includes(q));
+    return Array.isArray(s) && s.some(it => itemHit(it, nq));
   });
-  if (!list.length) { body.innerHTML = '<div class="empty">' + (q ? '— нічого не знайдено —' : '— немає доступних складів —') + '</div>'; return; }
+  if (!list.length) { body.innerHTML = '<div class="empty">' + (q ? 'Нічого не знайдено' : emptyListText()) + '</div>'; return; }
   // Секції «Під звіт» / «Інструменти» — лише коли в списку є склади інструментів.
   const hasTools = list.some(b => b.kind === 'tools');
   let curKind = null;
   body.innerHTML = list.map(b => {
     const ref = String(b.ref_key);
-    const open = state.openKeys.has(ref) || !!q;
+    const s = state.stock[ref];
+    const empty = Array.isArray(s) ? !s.length : !b.items;
+    const open = !empty && (state.openKeys.has(ref) || !!q);
+    const res = Array.isArray(s) && s.some(it => it.reserve);
     const isTools = b.kind === 'tools';
     const kind = isTools ? 'tools' : 'brigade';
     const sec = hasTools && kind !== curKind ? '<div class="brig-sec">' + (isTools ? 'Інструменти' : 'Під звіт') + '</div>' : '';
     curKind = kind;
-    const nm = isTools ? String(b.name || '').replace(/^Інструменти\s*\/\s*/, '') : b.name;
+    // Секція вже каже «Під звіт» / «Інструменти» — у назві складу техсуфікс не дублюємо
+    const nm = isTools ? String(b.name || '').replace(/^Інструменти\s*\/\s*/, '') : brigName(b.name);
+    // Без суми кількостей: вона складає метри зі штуками
+    const stats = empty ? '<span>залишку нема</span>' : '<b>' + fmt(b.items) + '</b><span>поз.</span>';
     return sec + (
-      '<div class="brig' + (open ? ' open' : '') + '" data-key="' + esc(ref) + '">' +
-        '<div class="brig-head"><span class="chev">▸</span><span class="nm">' + esc(nm) + '</span>' +
-          '<span class="stats"><b>' + fmt(b.qty) + '</b><span>' + fmt(b.items) + ' поз.</span></span></div>' +
-        '<div class="brig-body">' + stockHtml(ref, b) + '</div>' +
+      '<div class="brig' + (open ? ' open' : '') + (res ? ' res' : '') + '" data-key="' + esc(ref) + '">' +
+        '<div class="brig-head' + (empty ? ' static' : '') + '" title="' + esc(b.name) + '"><span class="chev">▸</span><span class="nm">' + esc(nm) + '</span>' +
+          '<span class="stats">' + stats + '</span></div>' +
+        (empty ? '' : '<div class="brig-body">' + stockHtml(ref, b) + '</div>') +
       '</div>'
     );
   }).join('');
 }
+// Назва бригади без техсуфікса «/під звіт» (як в адмінці й «Звіті бригади»)
+function brigName(s) { const c = String(s ?? '').replace(/\s*\/?\s*під\s+звіт\s*$/i, '').trim(); return c || String(s ?? ''); }
+function emptyListText() {
+  const r = (window.__user && window.__user.roles) || {};
+  return (r.brigades && !r.admin && !r.warehouses && !r.brigades_all)
+    ? 'Склад не привʼязано до вашого акаунта — зверніться до адміністратора.'
+    : 'Складів бригад не знайдено.';
+}
+// Пошук по позиції: назва товару, клієнт або № замовлення, під яке вона в резерві
+function itemOrderHit(it, nq) { return (it.orders || []).some(o => _norm(o.client).includes(nq) || _norm(o.no).includes(nq)); }
+function itemHit(it, nq) { return _norm(it.name).includes(nq) || itemOrderHit(it, nq); }
 function stockHtml(ref, b) {
   const s = state.stock[ref];
   if (s === undefined || s === 'loading') return '<div class="brig-empty">Завантаження залишку…</div>';
   if (s === 'error') return '<div class="brig-empty">Не вдалося завантажити залишок</div>';
-  const q = state.search;
-  const nm = q && b && (b.name || '').toLowerCase().includes(q);
-  const items = (q && !nm) ? s.filter(it => (it.name || '').toLowerCase().includes(q)) : s;
-  if (!items.length) return '<div class="brig-empty">— немає позицій із залишком —</div>';
-  return items.map(it =>
-    '<div class="brig-item"><span class="nm">' + esc(it.name) + '</span><span class="q">' + fmt(it.qty, it.qty < 100 ? 2 : 0) + '</span></div>'
+  const q = state.search, nq = _norm(q);
+  const whHit = q && b && _norm(b.name).includes(nq);
+  const items = (q && !whHit) ? s.filter(it => itemHit(it, nq)) : s;
+  if (!items.length) return '<div class="brig-empty">Позицій із залишком нема</div>';
+  // Склад без резерву під замовлення (усі інструменти, частина бригад) — одне число, як і було
+  if (!s.some(it => it.reserve)) return items.map(it =>
+    '<div class="brig-item"><span class="nm">' + esc(it.name) + '</span><span class="q">' + _fmtQ(it.qty) + '</span></div>'
   ).join('');
+  // Із резервом: Всього + Під замовл.; тап по рядку — під які замовлення (як на «Складі»)
+  return '<div class="brig-cols"><span class="nm">Товар</span><span class="q">Всього</span><span class="q">Під замовл.</span></div>' +
+    items.map(it => {
+      const k = b.ref_key + '|' + it.name;
+      const rx = !!it.reserve;
+      // знайдено за клієнтом/№ — розгорнуто, щоб було видно, чому позиція в результатах
+      const forced = !!(q && !whHit && !_norm(it.name).includes(nq) && itemOrderHit(it, nq));
+      const open = rx && (forced ? !state.closedItems.has(k) : state.openItems.has(k));
+      let h = '<div class="brig-item' + (rx ? ' rx' : '') + (open ? ' open' : '') + '" data-it="' + esc(k) + '">' +
+        '<span class="ich">▸</span><span class="nm">' + esc(it.name) + '</span>' +
+        '<span class="q t">' + _fmtQ(it.qty) + '</span><span class="q r">' + (rx ? _fmtQ(it.reserve) : '') + '</span></div>';
+      if (!open) return h;
+      h += it.orders.map(o => '<div class="brig-res"><span class="nm">' +
+        (o.no ? '<a class="ord" data-order="' + esc(o.ref) + '" data-no="' + esc(o.no) + '" data-client="' + esc(o.client || '') + '" data-date="' + esc(o.date || '') + '" title="Звірка по цьому замовленню">' + esc(o.no) + '</a>'
+              : '<span class="meta">замовлення не знайдено в базі</span>') +
+        (o.date ? ' <span class="meta">· ' + fmtDatePretty(o.date) + '</span>' : '') +
+        (o.client ? ' · <span class="client">' + esc(o.client) + '</span>' : '') +
+        '</span><span class="q">' + _fmtQ(o.qty) + '</span></div>').join('');
+      // «без замовлення» ≠ вільно: переміщення могли провести без прив'язки до обʼєкта
+      const rest = Math.round((it.qty - it.reserve) * 1000) / 1000;
+      if (rest) h += '<div class="brig-res free"><span class="nm">без замовлення</span><span class="q">' + _fmtQ(rest) + '</span></div>';
+      return h;
+    }).join('');
+}
+// № замовлення в резерві → «Звірка» цього замовлення (той самий шлях, що deep-link зі звіту бригади)
+function openReconOrder(ref, label, meta) {
+  state.reconOrder = ref; state._reconDeep = true; state._reconFromWh = '';
+  state._reconMeta = Object.assign({ ref }, meta || {});
+  try { localStorage.setItem('brigReconOrder', ref); } catch (e) {}
+  const el = document.getElementById('fReconOrder');
+  if (el) { el.value = label || ''; el.classList.toggle('set', !!label); }
+  updateReportTab();
+  setSection('recon');
+}
+// Шапка звірки для замовлення, якого нема серед рухів у скоупі (відкрили з резерву на «Складі»)
+function _reconMetaFor(ref) {
+  const m = state._reconMeta;
+  return m && m.ref === ref ? { ref, no: m.no || '—', customer: m.customer || '', date: m.date || '' } : null;
 }
 
 // Переміщення: спільний фільтр (бригада/покупець/період) без категорії
@@ -628,8 +767,10 @@ function reconOrderHtml() {
       '<div class="rec-empty-s">У полі «Замовлення» вгорі почніть вводити номер або покупця. ' +
       'Звірка покаже по всіх переміщеннях цього замовлення: скільки замовлено, отримано бригадою, повернено, списано — і що лишилось на бригаді.</div></div>';
   }
-  const o = _reconOrders().find(x => x.ref === state.reconOrder) || { no: '—', customer: '', date: '' };
+  const o = _reconOrders().find(x => x.ref === state.reconOrder) || _reconMetaFor(state.reconOrder) || { no: '—', customer: '', date: '' };
   const brigades = _reconBrigades(state.reconOrder);
+  // Прийшли з резерву на «Складі», а переміщень по замовленню у скоупі нема — пояснюємо «Отримано 0»
+  const noMoves = Array.isArray(state.allMoves) && !state.allMoves.some(d => d.order_ref === state.reconOrder);
   const brigTag = brigades.length > 1 ? '<span class="rec-u">· ' + brigades.length + ' бригади</span>' : '';
   const oh = '<div class="rec-oh"><span class="rec-oh-lbl">Замовлення</span>' +
     (o.customer ? '<span class="rec-oh-cust">' + esc(o.customer) + '</span>' : '') + brigTag +
@@ -639,9 +780,10 @@ function reconOrderHtml() {
                (summary.usage === 'loading' ? ' <span class="rec-u">(рахую «Використано»…)</span>' : '') +
                (summary.usage === 'error' ? ' <span class="rec-u">⚠ «Використано» не завантажилось — <span class="rec-retry" onclick="retryUsage()">повторити</span></span>' : '');
   const hint = '<span class="rec-hint">Залишок на бригаді = Отримано − Використано − Повернено · «Використано» — зі звітів бригадирів (📝 Звіт бригади) · червоне «Списано» = розходиться зі звітом бригади' +
-    (summary.hasInternal ? ' · «Між бригадами» — передача бригада→бригада: + отримала / − передала, «Разом по замовленню» не зачіпає' : '') + note + '</span>';
+    (summary.hasInternal ? ' · «Між бригадами» — передача бригада→бригада: + отримала / − передала, «Разом по замовленню» не зачіпає' : '') + note + '</span>' +
+    (noMoves ? '<div class="mv-tip">Переміщень по цьому замовленню на склади бригад нема. Залишок під нього на складі міг з\'явитись іншим документом 1С — у «Отримано» він не потрапляє.</div>' : '');
   if (!summary.rows.length) {
-    const msg = (summary.total && state.search) ? '— за пошуком «' + esc(state.search) + '» нічого не знайдено —' : '— по цьому замовленню рухів немає —';
+    const msg = (summary.total && state.search) ? 'За пошуком «' + esc(state.search) + '» нічого не знайдено' : 'По цьому замовленню рухів немає';
     return oh + hint + '<div class="empty">' + msg + '</div>';
   }
   let out = oh + hint;
@@ -688,14 +830,14 @@ function movesHtml() {
   if (state.allMoves === 'error') return '<div class="error">Не вдалося завантажити переміщення</div>';
   if (state.mvMode === 'recon') return reconOrderHtml();
   const docs = filteredMoves();
-  if (!docs.length) return '<div class="empty">— переміщень за фільтром немає —</div>';
+  if (!docs.length) return '<div class="empty">Переміщень за фільтром немає</div>';
   const rows = docs.map(d => {
     const open = state.openDocs.has(d.ref_key);
     const itemsHtml = (d.items || []).map(it => {
       const unit = it.unit ? (' ' + esc(it.unit)) : '';
       const money = it.amount ? '<span class="mv-money">' + fmt(it.amount, it.amount < 100 ? 2 : 0) + ' грн</span>' : '';
       return '<div class="mv-it"><span class="mv-it-nm">' + esc(it.name || '—') + '</span>' +
-             '<span class="mv-it-q">' + fmt(it.qty, it.qty < 100 ? 2 : 0) + unit + '</span>' + money + '</div>';
+             '<span class="mv-it-q">' + _fmtQ(it.qty) + unit + '</span>' + money + '</div>';
     }).join('');
     const cmFull = (d.posted ? '' : 'не проведено · ') + (d.comment || '');
     const cmCell = (d.posted ? '' : '<span class="mv-no">не проведено</span> ') + esc(d.comment || '');
@@ -711,7 +853,7 @@ function movesHtml() {
       '<div class="mv-items">' + itemsHtml + '</div>' +
     '</div>';
   }).join('');
-  const head = '<div class="mv-th"><span class="lbl">Дата</span><span class="lbl">Відправник</span><span class="lbl">Одержувач</span><span class="lbl">Покупець</span><span class="lbl">Коментар</span><span class="lbl r">К-сть</span></div>';
+  const head = '<div class="mv-th"><span class="lbl">Дата</span><span class="lbl">Відправник</span><span class="lbl">Одержувач</span><span class="lbl">Покупець</span><span class="lbl">Коментар</span><span class="lbl r">Поз.</span></div>';
   const tip = '<div class="mv-tip">Потрібна звірка план/факт по замовленню? Перемкни вгорі на <b>🧮 Звірка</b>.</div>';
   return tip + '<div class="mv-count">Знайдено переміщень: ' + fmt(docs.length) + '</div><div class="mv-wrap">' + head + rows + '</div>';
 }
@@ -726,7 +868,9 @@ async function ensureStock(ref) {
   if (!ref || state.stock[ref] !== undefined) return;
   state.stock[ref] = 'loading'; render();
   try {
-    const d = await fetch(API_URL + '?action=brigade_stock&wh=' + encodeURIComponent(ref)).then(r => r.json());
+    const r = await fetch(API_URL + '?action=brigade_stock&wh=' + encodeURIComponent(ref));
+    const d = await r.json();
+    if (!r.ok || d.error) throw new Error(d.error || ('HTTP ' + r.status));   // помилка ≠ «залишку нема»
     state.stock[ref] = d.items || [];
   } catch (e) { state.stock[ref] = 'error'; }
   render();
@@ -753,7 +897,7 @@ function setSection(sec) {
   // Пошук різний за змістом (список: склад/покупець/№ · звірка: товар) — скидаємо при зміні підрозділу.
   state.search = '';
   const s = document.getElementById('searchIn');
-  if (s) { s.value = ''; s.placeholder = sec === 'recon' ? '🔎 Пошук по товару…' : sec === 'list' ? '🔎 Пошук: склад / покупець / №' : '🔎 Пошук по бригаді або товару…'; }
+  if (s) { s.value = ''; s.placeholder = sec === 'recon' ? '🔎 Пошук по товару…' : sec === 'list' ? '🔎 Пошук: склад / покупець / №' : '🔎 Пошук: склад, товар, клієнт або №'; }
   if (isMoves) loadMoves();   // async; рендерить сам коли вантажить
   render();                   // завжди рендеримо — інакше при кешованих рухах тіло лишається від попередньої секції
 }
@@ -881,8 +1025,24 @@ document.getElementById('body').addEventListener('click', function(ev) {
     if (doc) { const k = doc.dataset.doc; if (state.openDocs.has(k)) state.openDocs.delete(k); else state.openDocs.add(k); render(); }
     return;
   }
+  const ord = ev.target.closest('a.ord[data-order]');
+  if (ord) {
+    ev.preventDefault();
+    const dd = ord.dataset;
+    openReconOrder(dd.order, dd.no + (dd.client ? ' · ' + dd.client : ''), { no: dd.no, customer: dd.client, date: dd.date });
+    return;
+  }
+  const itRow = ev.target.closest('.brig-item.rx[data-it]');
+  if (itRow) {
+    const k = itRow.dataset.it, isOpen = itRow.classList.contains('open');
+    // перемикаємо від того, що бачить юзер: форсоване пошуком відкриття гасимо через closedItems
+    if (isOpen) { state.openItems.delete(k); state.closedItems.add(k); }
+    else { state.closedItems.delete(k); state.openItems.add(k); }
+    render();
+    return;
+  }
   const head = ev.target.closest('.brig-head');
-  if (!head) return;
+  if (!head || head.classList.contains('static')) return;   // порожній склад не розгортається
   const card = head.closest('.brig[data-key]');
   if (card) toggleCard(card.dataset.key);
 });
@@ -910,16 +1070,27 @@ let _searchTimer = null;
 document.getElementById('searchIn').addEventListener('input', e => {
   const v = e.target.value.toLowerCase().trim();
   clearTimeout(_searchTimer);
-  _searchTimer = setTimeout(() => { state.search = v; render(); }, 150);
+  _searchTimer = setTimeout(() => { state.search = v; state.closedItems.clear(); render(); }, 150);
 });
 
 // ─── Excel ───
 function downloadStockXLSX() {
   if (typeof XLSX === 'undefined') { alert('Excel не завантажився.'); return; }
   if (!state.list.length) { alert('Немає даних'); return; }
-  const aoa = [['Склад бригади', 'Товар', 'Кількість']];
-  state.list.forEach(b => { const s = state.stock[String(b.ref_key)]; if (Array.isArray(s)) s.forEach(it => aoa.push([b.name, it.name, it.qty || 0])); });
-  _saveXLSX(aoa, [{ wch: 30 }, { wch: 48 }, { wch: 12 }], 'brigades_stock_' + (state.asOf || ''));
+  // Те, що на екрані: з урахуванням пошуку; резерв — колонками, як на «Складі»
+  const q = state.search, nq = _norm(q);
+  const aoa = [['Склад', 'Товар', 'Всього', 'Під замовл.', 'Замовлення']];
+  state.list.forEach(b => {
+    const s = state.stock[String(b.ref_key)]; if (!Array.isArray(s)) return;
+    const whHit = q && _norm(b.name).includes(nq);
+    s.forEach(it => {
+      if (q && !whHit && !itemHit(it, nq)) return;
+      aoa.push([b.name, it.name, it.qty || 0, it.reserve || '',
+        (it.orders || []).map(o => (o.no || '?') + (o.client ? ' ' + o.client : '') + ' — ' + o.qty).join('; ')]);
+    });
+  });
+  if (aoa.length === 1) { alert('Немає даних'); return; }
+  _saveXLSX(aoa, [{ wch: 30 }, { wch: 48 }, { wch: 10 }, { wch: 12 }, { wch: 50 }], 'brigades_stock_' + (state.asOf || ''));
 }
 function downloadMovesXLSX() {
   if (typeof XLSX === 'undefined') { alert('Excel не завантажився.'); return; }
@@ -929,7 +1100,7 @@ function downloadMovesXLSX() {
     if (summary.plan === 'loading' || summary.usage === 'loading') { alert('Зачекай — ще вантажаться «Замовлено»/«Використано». Спробуй за секунду.'); return; }
     if (summary.usage === 'error') { alert('«Використано» не завантажилось — натисни «повторити» у звірці й експортуй знову.'); return; }
     if (!summary.rows.length) { alert('Немає даних'); return; }
-    const o = _reconOrders().find(x => x.ref === state.reconOrder) || { no: '' };
+    const o = _reconOrders().find(x => x.ref === state.reconOrder) || _reconMetaFor(state.reconOrder) || { no: '' };
     const no = o.no || '';
     // Формат акта звірки: групи колонок по кожній бригаді
     // (Отримано 1С / Використано по факту / Повернено / Списано бухгалтерією),
