@@ -50,6 +50,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .brig-head .nm{flex:1;min-width:0;font-weight:700;font-size:14px;color:var(--text);overflow-wrap:anywhere}
 .brig-head .stats{flex:0 0 auto;display:flex;align-items:baseline;gap:8px;font-size:11.5px;color:var(--text3);font-variant-numeric:tabular-nums;white-space:nowrap}
 .brig-head .stats b{color:var(--text);font-size:14px;font-weight:700}
+.brig-sec{margin:16px 2px 8px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text3)}
+.brig-sec:first-child{margin-top:2px}
 .brig-body{display:none;border-top:1px solid var(--border)}
 .brig.open>.brig-body{display:block}
 .brig-item{display:flex;align-items:baseline;gap:14px;padding:8px 16px;border-bottom:1px solid var(--border)}
@@ -247,16 +249,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт Бригади">
     <button class="close" onclick="closeHelp()" aria-label="Закрити">✕</button>
     <h2>👷 Як працює розділ «Бригади»</h2>
-    <p>Розділ показує склади монтажних бригад (назви «…/під звіт»; склади «Інструменти/…» — не бригади, їх тут немає) по даних 1С + звіти бригадирів про фактичне використання.</p>
+    <p>Розділ показує склади монтажних бригад (назви «…/під звіт») і їхні особисті склади інструментів («Інструменти/…») по даних 1С + звіти бригадирів про фактичне використання.</p>
 
     <h3>📦 Склад</h3>
     <p>Поточний залишок кожного бригадного складу (знімок 1С, оновлюється кілька разів на день — дата знімка вгорі). Бригадир бачить лише свої склади, проєктний менеджер і адмін — усі.</p>
+    <p>Склади інструментів — окремою секцією «Інструменти» під складами «під звіт». Центральні склади інструментів («Основний склад», «МЕНЕДЖЕРИ з продажів») тут не показуються — для бригади це відправник у рухах. У звірці по замовленню й у звіті бригади інструментів немає: вони не видаються під замовлення.</p>
 
     <h3>📋 Список рухів</h3>
     <ul>
       <li><b>Отримано</b> — переміщення зі складу компанії на склад бригади.</li>
       <li><b>Повернено</b> — переміщення зі складу бригади назад на склад компанії.</li>
-      <li><b>Між бригадами</b> — переміщення зі складу однієї бригади на склад іншої (передача, не повернення).</li>
+      <li><b>Між бригадами</b> — переміщення зі складу однієї бригади на склад іншої (передача, не повернення). Сюди ж — переміщення між складом «під звіт» і складом інструментів, зокрема своїм.</li>
       <li><b>Списано</b> — видаткова накладна зі складу бригади на клієнта (так бухгалтерія оформлює використане).</li>
     </ul>
 
@@ -346,18 +349,20 @@ async function load() {
   document.getElementById('body').innerHTML = '<div class="loading">Завантаження…</div>';
   try {
     const [ov, st] = await Promise.all([
-      fetch(API_URL + '?action=brigades_overview').then(r => r.json()),
+      fetch(API_URL + '?action=brigades_overview&tools=1').then(r => r.json()),
       fetch(API_URL + '?action=brigade_stock_all').then(r => r.json()).catch(() => ({})),
     ]);
     if (ov.error) throw new Error(ov.error);
-    state.list = (ov.warehouses || []).slice().sort((a, b) => (b.qty || 0) - (a.qty || 0));
+    // Спершу склади «під звіт», під ними — інструменти; всередині — за кількістю.
+    state.list = (ov.warehouses || []).slice().sort((a, b) =>
+      ((a.kind === 'tools') - (b.kind === 'tools')) || ((b.qty || 0) - (a.qty || 0)));
     state.asOf = ov.as_of_date || null;
     state.brigSet = new Set(state.list.map(b => String(b.ref_key)));
     const allStock = (st && st.stock) || {};
     for (const ref in allStock) state.stock[ref] = allStock[ref];
     state.loaded = true;
     const sub = document.getElementById('sub');
-    if (sub) sub.textContent = 'склади монтажних бригад' + (state.asOf ? ' · залишок на ' + fmtDatePretty(state.asOf) : '');
+    if (sub) sub.textContent = 'склади монтажних бригад та інструменти' + (state.asOf ? ' · залишок на ' + fmtDatePretty(state.asOf) : '');
     render();
   } catch (e) {
     document.getElementById('body').innerHTML = `<div class="error">${esc(e.message)}</div>`;
@@ -404,12 +409,20 @@ function renderStock(body) {
     return Array.isArray(s) && s.some(it => (it.name || '').toLowerCase().includes(q));
   });
   if (!list.length) { body.innerHTML = '<div class="empty">' + (q ? '— нічого не знайдено —' : '— немає доступних складів —') + '</div>'; return; }
+  // Секції «Під звіт» / «Інструменти» — лише коли в списку є склади інструментів.
+  const hasTools = list.some(b => b.kind === 'tools');
+  let curKind = null;
   body.innerHTML = list.map(b => {
     const ref = String(b.ref_key);
     const open = state.openKeys.has(ref) || !!q;
-    return (
+    const isTools = b.kind === 'tools';
+    const kind = isTools ? 'tools' : 'brigade';
+    const sec = hasTools && kind !== curKind ? '<div class="brig-sec">' + (isTools ? 'Інструменти' : 'Під звіт') + '</div>' : '';
+    curKind = kind;
+    const nm = isTools ? String(b.name || '').replace(/^Інструменти\s*\/\s*/, '') : b.name;
+    return sec + (
       '<div class="brig' + (open ? ' open' : '') + '" data-key="' + esc(ref) + '">' +
-        '<div class="brig-head"><span class="chev">▸</span><span class="nm">' + esc(b.name) + '</span>' +
+        '<div class="brig-head"><span class="chev">▸</span><span class="nm">' + esc(nm) + '</span>' +
           '<span class="stats"><b>' + fmt(b.qty) + '</b><span>' + fmt(b.items) + ' поз.</span></span></div>' +
         '<div class="brig-body">' + stockHtml(ref, b) + '</div>' +
       '</div>'

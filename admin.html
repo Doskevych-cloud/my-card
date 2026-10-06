@@ -65,6 +65,7 @@ tbody tr:hover { background: rgba(154,180,255,.04); }
 .wh-modal label input { width: 16px; height: 16px; accent-color: var(--accent); flex: 0 0 auto; }
 .wh-modal .foot { padding: 14px 18px; display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--border); }
 .wh-modal .wh-muted { color: var(--text3); font-size: 12px; padding: 10px 0; }
+.wh-modal .wh-sec { padding: 14px 0 4px; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
 .wh-modal .wh-search { margin: 10px 18px 0; padding: 8px 12px; width: calc(100% - 36px); background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; outline: none; }
 .wh-modal .wh-search:focus { border-color: var(--accent); }
 .wh-modal .wh-hint { padding: 8px 18px 0; font-size: 11.5px; color: var(--text3); }
@@ -1837,8 +1838,8 @@ function esc(s) { const d = document.createElement('div'); d.textContent = s; re
 let _brigadeWh = null, _whModalEmail = null;
 async function ensureBrigadeWh() {
   if (_brigadeWh) return _brigadeWh;
-  const r = await Auth.apiFetch('brigades_overview');
-  _brigadeWh = (r.warehouses || []).map(w => ({ ref_key: w.ref_key, name: w.name }));
+  const r = await Auth.apiFetch('brigades_overview&tools=1');
+  _brigadeWh = (r.warehouses || []).map(w => ({ ref_key: w.ref_key, name: w.name, kind: w.kind }));
   return _brigadeWh;
 }
 async function openWarehousesModal(email) {
@@ -1853,8 +1854,11 @@ async function openWarehousesModal(email) {
   try {
     const list = await ensureBrigadeWh();
     const assigned = new Set(u.warehouses || []);
+    // Особисті склади інструментів — окремою секцією після складів «під звіт»
+    const whLabel = w => `<label data-nm="${escapeHtml(brigName(w.name).toLowerCase())}"><input type="checkbox" value="${escapeHtml(w.ref_key)}" ${assigned.has(w.ref_key) ? 'checked' : ''}><span>${escapeHtml(brigName(w.name))}</span></label>`;
+    const brig = list.filter(w => w.kind !== 'tools'), tools = list.filter(w => w.kind === 'tools');
     body.innerHTML = list.length
-      ? list.map(w => `<label data-nm="${escapeHtml(brigName(w.name).toLowerCase())}"><input type="checkbox" value="${escapeHtml(w.ref_key)}" ${assigned.has(w.ref_key) ? 'checked' : ''}><span>${escapeHtml(brigName(w.name))}</span></label>`).join('')
+      ? brig.map(whLabel).join('') + (tools.length ? '<div class="wh-muted wh-sec">Інструменти</div>' + tools.map(whLabel).join('') : '')
       : '<div class="wh-muted">Бригадних складів не знайдено.</div>';
     if (list.length > 8) { search.style.display = ''; search.focus(); }
   } catch (e) { body.innerHTML = '<div class="wh-muted">Помилка: ' + escapeHtml(e.message) + '</div>'; }
