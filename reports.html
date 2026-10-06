@@ -574,6 +574,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     </ul>
     <h3>Чекає зараз</h3>
     <p>КП і договори з позначкою «Передано» без «Здано» (або повернуті на доопрацювання — позначка «повторно»), рахунки бек-офісу, ще не виставлені (статус «Підготовка» чи «В роботі»). Скасовані, відкладені й закриті сюди не потрапляють. «Чекає» — робочий час від передачі до моменту формування звіту; «У кого» — чий зараз хід (для рахунку — бухгалтер). Показуються передані за останні 60 днів, старші — лише кількістю. Блок не залежить від вибраного періоду.</p>
+    <h3>Не заповнено в Planfix</h3>
+    <p>Задачі періоду і черги, де порожнє поле, від якого залежить звіт: у КП — «Тип клієнта?» (інакше КП йде в «дилер або тип не вказано»), у договорі — «Тип договору» і «Форма оплати» (інакше договір іде в «інші», а рахунок не створюється), у рахунку — «Сума документа, грн». Planfix ці поля підставляє або просить, але статус назад не повертає — щоб не ламати воронку й час на етапах (сценарії [Gen Robo], 06.10.2026): у КП тип клієнта копіюється з угоди сам; угода на «Згоду отримано» просить тип клієнта, інтерес і форму оплати; договір на «На підпис» — форму оплати; рахунок на «Очікує оплати» — суму. Вікно можна закрити порожнім — тому контроль тут: «Хто ставив» — постановник задачі в Planfix. Блок показується, лише коли є що виправляти.</p>
     <h3>Навантаження</h3>
     <ul>
       <li><b>По днях</b> — скільки здано в кожен робочий день. День — коли роботу здано: КП і договір — «Здано бек-офісом», рахунок — «Дата та час виставлення рахунку». Сірий рядок над днями — підсумок тижня (пн–нд, обрізаний періодом). Довгий період групується по тижнях, понад 4 місяці — по місяцях.</li>
@@ -2817,6 +2819,20 @@ function renderBackofficeReport(d) {
   }
   if (pend.length) html += `</tbody></table></div>`;
   if (pend.length && oldTxt) html += `<p class="muted bo-note"><span class="bo-bad">І ${oldTxt}.</span></p>`;
+
+  // ── ⚠️ Не заповнено в Planfix: задачі періоду і черги з порожніми полями звіту (бек — miss) ──
+  const missMap = new Map();
+  for (const it of [...pend, ...items]) if (it.miss && it.miss.length && !missMap.has(String(it.id))) missMap.set(String(it.id), it);
+  const missing = [...missMap.values()].sort((a, b) => String(b.d || b.h).localeCompare(String(a.d || a.h)));
+  if (missing.length) {
+    html += `<div class="section-h bo-sec"><h2>⚠️ Не заповнено в Planfix (${fmt(missing.length)})</h2><span class="hint">без цих полів робота у звіті йде в «інші» або без суми · заповніть у Planfix — звіт оновиться за ~30 хв</span></div>`;
+    html += `<div class="mgr-wrap"><table class="tasks-table bo-list"><thead><tr><th>#</th><th>Що</th><th>Клієнт</th><th>Бракує</th><th class="bo-hide-m">Хто ставив</th></tr></thead><tbody>`;
+    for (const it of missing) {
+      html += `<tr><td class="num" title="${esc(it.n)} · ${esc(it.st)}">${boLink(it.id)}</td><td>${esc(BO_KIND[it.k] || it.k)}${it.d ? '' : '<span class="bo-dim"> · чекає</span>'}</td>
+        <td class="bo-cp" title="${esc(it.cp)}">${esc(boClient(it.cp))}</td><td class="bo-bad">${esc(it.miss.join(', '))}</td><td class="bo-hide-m">${esc(it.o || '')}</td></tr>`;
+    }
+    html += `</tbody></table></div>`;
+  }
 
   if (!items.length) return html + `<div class="empty">За період нічого не здано.</div>`;
 
