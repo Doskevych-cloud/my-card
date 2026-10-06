@@ -222,6 +222,9 @@ a.kpi:hover{border-color:var(--accent);transform:translateY(-1px)}
     <ul>
       <li>Оплачено — сума <code>paidUsd</code> по всіх менеджерах (курс з 1С-документів), джерело <code>sales_report_d1</code>. Локальний список виключених клієнтів зі сторінки продажів тут не застосовується — цифра може бути трохи більшою.</li>
       <li>Активних клієнтів — унікальні клієнти з ≥1 оплатою за останні 3 місяці (<code>active_clients</code>, тільки Реакт, фільтри періоду/орг не діють).</li>
+      <li>Конверсія · приватні / бізнес — воронка продажів станцій (Planfix, це Генерація; при фільтрі «Реакт» картки сховані) по когорті: ліди, <b>створені</b> у вибраному періоді, і скільки з них уже отримали аванс — за всю історію, не лише в цих датах. Те саме, що «Кінцева конверсія» у Звіти → Воронка → Когорта з фільтром «Тип клієнта» (<code>sheet_funnel</code>, mode=cohort).</li>
+      <li>Ліди без типу клієнта в жодну картку не входять: тип ставлять на кваліфікації, а без нього лишаються ліди, закриті до неї (спам, дублі, «не цікавились», інший регіон). Тому сума приватних і бізнесу менша за всіх лідів, а конверсія за типом вища за загальну.</li>
+      <li>«ще в роботі» — ліди когорти, де угода ще не завершена. Поки їх багато, конверсія занижена: половина авансів приходить до 13 днів від створення ліда, 90% — до 2 місяців. Тому поточний і минулий місяць ще доростуть.</li>
     </ul>
     <h3>👥 Контрагенти</h3>
     <ul>
@@ -248,12 +251,13 @@ const API_URL = 'https://price-api.doskevich.workers.dev';
 
 const DASH_CACHE_TTL = 10 * 60 * 1000;
 let _noCache = false; // «Оновити» пробиває localStorage-кеш
-function dashFetch(url) {
+// pick — звузити відповідь перед кешем (sheet_funnel несе весь leadsList, у localStorage він не потрібен)
+function dashFetch(url, pick) {
   const key = 'execCache:' + url;
   const now = Date.now();
   let cached = null;
   try { const raw = localStorage.getItem(key); if (raw) cached = JSON.parse(raw); } catch(_) {}
-  const net = fetch(url).then(r => r.json()).then(d => {
+  const net = fetch(url).then(r => r.json()).then(d => (pick && !d.error) ? pick(d) : d).then(d => {
     try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), d })); } catch(_) {}
     return d;
   });
@@ -500,13 +504,38 @@ async function loadFinance() {
 // ── ПРОДАЖІ: оплачено (як summary-grand у sales.html) + активні клієнти ──
 // Оплачено = Σ paidUsd (курси 1С-документів). Локальний excludeList сторінки
 // продажів тут не застосовується (він у sessionStorage сторінки).
+// Конверсія когорти (воронка Planfix «Продажі станцій» = Генерація): ліди, створені
+// в періоді, які дійшли до авансу за всю історію — як «Кінцева конверсія» у
+// Звіти → Воронка → Когорта з фільтром «Тип клієнта». Ліди без типу (закриті на
+// кваліфікації: спам, дублі, інший регіон) не входять ні в приватні, ні в бізнес.
+const CONV_TYPES = [{ ct: 'private', lbl: 'Конверсія · приватні' }, { ct: 'business', lbl: 'Конверсія · бізнес' }];
+function convPick(d) {
+  const f0 = (d.funnel && d.funnel[0]) || {};
+  return { leads: d.leads || 0, won: d.won || 0, open: f0.inProgress || 0 };
+}
+function convCard(t, d) {
+  const href = canRole('reports')
+    ? `/reports.html#from=${state.from}&to=${state.to}&mode=cohort&ct=${t.ct}` : '';
+  if (!d.leads) return { lbl: t.lbl, val: '—', sub: 'нових лідів у періоді нема', href };
+  return {
+    lbl: t.lbl,
+    val: (d.won / d.leads * 100).toFixed(1).replace('.', ',') + '%',
+    sub: `${d.won} з ${d.leads} лідів` + (d.open ? ` · ${d.open} ще в роботі` : ''),
+    href,
+  };
+}
+
 async function loadSales() {
   if (document.getElementById('secSales').style.display === 'none') return;
-  renderLoading('salesSummary', 2);
+  const withConv = state.org !== 'Реакт';
+  renderLoading('salesSummary', withConv ? 4 : 2);
   try {
-    const [salesRes, clientsRes] = await Promise.allSettled([
+    const convReqs = withConv ? CONV_TYPES.map(t => dashFetch(
+      API_URL + `/?action=sheet_funnel&mode=cohort&from=${state.from}&to=${state.to}&clientType=${t.ct}`, convPick)) : [];
+    const [salesRes, clientsRes, ...convRes] = await Promise.allSettled([
       dashFetch(API_URL + `/?action=sales_report_d1&from=${state.from}&to=${state.to}` + orgQ()),
       dashFetch(API_URL + '/?action=active_clients'),
+      ...convReqs,
     ]);
     if (salesRes.status !== 'fulfilled' || salesRes.value.error) throw new Error((salesRes.value && salesRes.value.error) || 'err');
     const byOrg = salesRes.value.byOrg || {};
@@ -527,6 +556,10 @@ async function loadSales() {
         href: '/active_clients.html',
       });
     }
+    // без доступу / помилка воронки — картки просто не малюємо, як «Активних клієнтів»
+    convRes.forEach((r, i) => {
+      if (r.status === 'fulfilled' && r.value && !r.value.error) cards.push(convCard(CONV_TYPES[i], r.value));
+    });
     renderCards('salesSummary', cards);
   } catch (e) { renderError('salesSummary', e.message); }
 }
