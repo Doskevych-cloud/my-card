@@ -221,7 +221,7 @@ a.kpi:hover{border-color:var(--accent);transform:translateY(-1px)}
     <h3>📈 Продажі</h3>
     <ul>
       <li>Оплачено — сума <code>paidUsd</code> по всіх менеджерах (курс з 1С-документів), джерело <code>sales_report_d1</code>. Локальний список виключених клієнтів зі сторінки продажів тут не застосовується — цифра може бути трохи більшою.</li>
-      <li>Активних клієнтів — унікальні клієнти з ≥1 оплатою за останні 3 місяці (<code>active_clients</code>, тільки Реакт, фільтри періоду/орг не діють).</li>
+      <li>Активних клієнтів — унікальні клієнти з ≥1 оплатою за останні 3 місяці (<code>active_clients</code>, лише Реакт: при фільтрі «Генерація» картки нема; фільтр періоду не діє).</li>
       <li>Конверсія · приватні / бізнес — воронка продажів станцій (Planfix, це Генерація; при фільтрі «Реакт» картки сховані) по когорті: ліди, <b>створені</b> у вибраному періоді, і скільки з них уже отримали аванс — за всю історію, не лише в цих датах. Те саме, що «Кінцева конверсія» у Звіти → Воронка → Когорта з фільтром «Тип клієнта» (<code>sheet_funnel</code>, mode=cohort).</li>
       <li>Ліди без типу клієнта в жодну картку не входять: тип ставлять на кваліфікації, а без нього лишаються ліди, закриті до неї (спам, дублі, «не цікавились», інший регіон). Тому сума приватних і бізнесу менша за всіх лідів, а конверсія за типом вища за загальну.</li>
       <li>«ще в роботі» — ліди когорти, де угода ще не завершена. Поки їх багато, конверсія занижена: половина авансів приходить до 13 днів від створення ліда, 90% — до 2 місяців. Тому поточний і минулий місяць ще доростуть.</li>
@@ -528,13 +528,15 @@ function convCard(t, d) {
 async function loadSales() {
   if (document.getElementById('secSales').style.display === 'none') return;
   const withConv = state.org !== 'Реакт';
-  renderLoading('salesSummary', withConv ? 4 : 2);
+  // Активні клієнти — метрика Реакту (active_clients рахує лише його), Генерації не показуємо
+  const withClients = state.org !== 'Генерація';
+  renderLoading('salesSummary', 1 + (withClients ? 1 : 0) + (withConv ? 2 : 0));
   try {
     const convReqs = withConv ? CONV_TYPES.map(t => dashFetch(
       API_URL + `/?action=sheet_funnel&mode=cohort&from=${state.from}&to=${state.to}&clientType=${t.ct}`, convPick)) : [];
     const [salesRes, clientsRes, ...convRes] = await Promise.allSettled([
       dashFetch(API_URL + `/?action=sales_report_d1&from=${state.from}&to=${state.to}` + orgQ()),
-      dashFetch(API_URL + '/?action=active_clients'),
+      withClients ? dashFetch(API_URL + '/?action=active_clients') : Promise.resolve(null),
       ...convReqs,
     ]);
     if (salesRes.status !== 'fulfilled' || salesRes.value.error) throw new Error((salesRes.value && salesRes.value.error) || 'err');
@@ -545,7 +547,7 @@ async function loadSales() {
       (od.managers || []).forEach(m => { gPaid += Number(m.paidUsd) || 0; });
     });
     const cards = [{ lbl: 'Оплачено за період', val: '$' + fmt(gPaid, 0), cls: 'pos' }];
-    if (clientsRes.status === 'fulfilled' && clientsRes.value && !clientsRes.value.error) {
+    if (withClients && clientsRes.status === 'fulfilled' && clientsRes.value && !clientsRes.value.error) {
       const cs = clientsRes.value.summary || {};
       const cp = clientsRes.value.period || {};
       const fmtD = d => d ? d.slice(8,10) + '.' + d.slice(5,7) + '.' + d.slice(0,4) : '';
@@ -816,7 +818,7 @@ async function loadKpis() {
     prev ? dashFetch(`${API_URL}/?action=cash_flow_report&from=${prev.from}&to=${prev.to}${oq}`).catch(() => null) : Promise.resolve(null),
     dashFetch(`${API_URL}/?action=cash_balance_report${oq}`).catch(() => null),
     dashFetch(`${API_URL}/?action=inventory_turnover${oq}`).catch(() => null),
-    dashFetch(`${API_URL}/?action=active_clients`).catch(() => null),
+    state.org === 'Генерація' ? Promise.resolve(null) : dashFetch(`${API_URL}/?action=active_clients`).catch(() => null),
   ]);
 
   const [salesR, salesPR, arR, arPR, apR, apPR, pnlR, pnlPR, gpR, stockR, cfR, cfPR, cbR, itrR, clientsR] = results;
@@ -939,7 +941,11 @@ async function loadKpis() {
     }
   } else { kpiError('kItr', itrR?.value?.error || 'err'); }
 
-  // Active Clients (≥1 оплата за 3 міс)
+  // Active Clients (≥1 оплата за 3 міс) — лише Реакт: при «Генерація» плитку ховаємо
+  const genOnly = state.org === 'Генерація';
+  const kcEl = document.getElementById('kClients');
+  if (kcEl) kcEl.style.display = genOnly ? 'none' : '';
+  if (genOnly) return;
   if (clientsR && clientsR.status === 'fulfilled' && clientsR.value && !clientsR.value.error) {
     const cs = clientsR.value.summary || {};
     const cp = clientsR.value.period || {};
