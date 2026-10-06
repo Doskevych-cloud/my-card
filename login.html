@@ -90,14 +90,16 @@ function toggleTheme(){
 }
 applyTheme(localStorage.getItem('theme') || 'light');
 
-function returnTo() {
+function returnTo(u) {
   const p = new URLSearchParams(location.search).get('return') || '';
   // Same-origin internal path only — blocks `javascript:`, `data:`, `//evil.com`
   // and any absolute external URL. The 2nd char must exist and must NOT be /
   // or \ (protocol-relative bypass), and the path must not contain a colon
   // (scheme smuggling via `/%3A`, though URL decoding is limited here).
   if (/^\/[^\/\\:]/.test(p) && !p.includes(':')) return p;
-  return 'index.html';
+  // Без return — у домашній розділ юзера, а не на дашборд, до якого доступу може не бути
+  const h = u && Auth.homeHref ? Auth.homeHref(u) : '';
+  return h && h !== 'login.html' ? h : 'index.html';
 }
 
 // If already logged in, skip straight to the return URL
@@ -105,7 +107,7 @@ function returnTo() {
   if (!Auth.getToken()) return;
   try {
     const u = await Auth.fetchMe();
-    if (u) location.replace(returnTo());
+    if (u) location.replace(returnTo(u));
   } catch {}
 })();
 
@@ -113,8 +115,8 @@ async function handleCredential(resp) {
   const err = document.getElementById('err');
   err.innerHTML = '<span class="spinner"></span> Перевіряємо…';
   try {
-    await Auth.loginWithIdToken(resp.credential);
-    location.replace(returnTo());
+    const u = await Auth.loginWithIdToken(resp.credential);
+    location.replace(returnTo(u));
   } catch (e) {
     err.textContent = '❌ ' + (e.message || 'Не вдалося увійти');
   }

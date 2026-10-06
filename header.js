@@ -400,6 +400,13 @@
     const user = opts.user || (global.Auth && global.Auth.cachedUser && global.Auth.cachedUser()) || null;
     const roles = (user && user.roles) || {};
     const isAdmin = !!roles.admin;
+    // Лого = домашній розділ юзера (homeHref), а не завжди «/»: без ролі dashboard
+    // дашборд мигав, поки Auth.require не перекидав далі (сервісні інженери, 06.10.2026).
+    let homeUrl = '/';
+    try {
+      const h = user && global.Auth && global.Auth.homeHref ? global.Auth.homeHref(user) : '';
+      if (h && h !== 'index.html' && h !== 'login.html') homeUrl = '/' + h;
+    } catch (e) {}
     const can = (r) => {
       if (isAdmin) return true;
       if (roles[r]) return true;
@@ -466,7 +473,7 @@
     host.innerHTML = `
       ${impBanner}
       <header class="app-topbar">
-        <a class="brand" href="/" title="REACT">
+        <a class="brand" href="${esc(homeUrl)}" title="REACT">
           <img class="name" src="/assets/logo-transparent.png" alt="React">
         </a>
         <nav class="nav">${navLinksHtml}</nav>

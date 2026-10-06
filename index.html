@@ -9,7 +9,22 @@
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light'); } catch(e){ document.documentElement.setAttribute('data-theme','light'); }
 </script>
 <script src="auth.js?v=execnew20260430"></script>
-<script src="header.js?v=brig20260622"></script>
+<script src="header.js?v=home20261006"></script>
+<script>
+// Без доступу до дашборда — одразу у свій розділ, ще до рендеру сторінки.
+// Інакше дашборд мигає, поки Auth.require ходить по auth_me (06.10.2026).
+// Кеш юзера застарів — не страшно: require нижче все одно перевірить по серверу.
+(function () {
+  try {
+    if (!Auth.getToken()) return;
+    var u = Auth.cachedUser(); if (!u) return;
+    var r = u.roles || {};
+    if (r.admin || r.dashboard || Object.keys(r).some(function (k) { return k.indexOf('dashboard_') === 0 && r[k]; })) return;
+    var h = Auth.homeHref(u);
+    if (h && h !== 'login.html' && h !== 'index.html') location.replace(h);
+  } catch (e) {}
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/uk.js"></script>
 <script src="date-range.js?v=20260522"></script>
