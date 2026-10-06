@@ -10,7 +10,7 @@
 </script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 <script src="auth.js?v=mobhdr20260430"></script>
-<script src="header.js?v=brig20260622"></script>
+<script src="header.js?v=home20261006"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/uk.js"></script>
 <script src="date-range.js?v=20260522"></script>
@@ -109,8 +109,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .tree-tbl tr.order-row td:first-child{padding-left:58px}
 .tree-tbl tr.order-row .ord{color:var(--text)}
 .tree-tbl tr.order-row .meta{color:var(--text3);font-size:10.5px;margin-left:8px}
-.tree-tbl td.qty-pos{color:var(--green);font-weight:600}
-.tree-tbl td.qty-res{color:var(--blue);font-weight:600}
+.tree-tbl td.qty-pos,.tree-tbl td.qty-res{color:var(--text);font-weight:600}
 .tree-tbl td.qty-zero{color:var(--text3)}
 .tree-tbl td.qty-neg{color:var(--red);font-weight:600}
 .tree-tbl .type-ico{margin-right:6px;opacity:.8}
@@ -319,7 +318,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <p><b>Що виключено.</b> Склади інструментів («Інструменти/…»), «Майно компанії» та «Склад НОВИЙ ОФІС» у звіт не входять зовсім — це не товарні залишки. Вони не рахуються ані у «За складами», ані у зведеному «Разом».</p>
 
     <h3>Розгорнути / Згорнути</h3>
-    <p><b>Згорнути</b> складає все до рівня складів — лишаються самі заголовки з підсумком (позицій · одиниць · резерв). Клік по заголовку розкриває конкретний склад. <b>Розгорнути</b> відкриває всі склади разом із деревом резерву.</p>
+    <p><b>Згорнути</b> складає все до рівня складів — лишаються самі заголовки з кількістю позицій. Суму кількостей не показуємо: вона складала б метри кабелю зі штуками. Клік по заголовку розкриває конкретний склад. <b>Розгорнути</b> відкриває всі склади разом із деревом резерву.</p>
 
     <h3>Фільтри</h3>
     <ul>
@@ -395,9 +394,11 @@ const IN_TRANSIT_MARKER = 'В дорозі';
 // Іконка блоку складів — структурно-навігаційна (не прикраса даних).
 const WH_GROUP_ICO = { phys: '🏢', transit: '🚛', brigade: '🔧', tools: '🧰', office: '🏠', other: '📦' };
 
-function fmt(n, dec = 0) {
+function fmt(n, dec) {
   if (n === null || n === undefined || isNaN(n)) return '—';
-  return Number(n).toLocaleString('uk-UA', { maximumFractionDigits: dec, minimumFractionDigits: dec });
+  // Без dec — кількість: до 2 знаків дробу, без хвостових нулів (0,5 м кабелю — не «1», 4 — не «4,00»)
+  const o = dec === undefined ? { maximumFractionDigits: 2 } : { maximumFractionDigits: dec, minimumFractionDigits: dec };
+  return Number(n).toLocaleString('uk-UA', o);
 }
 function esc(s) {
   return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -666,7 +667,7 @@ const whTagInput = {
     dd.innerHTML = matched.map((o, i) =>
       '<div class="opt' + (i === 0 ? ' hl' : '') + '" data-name="' + esc(o.name) + '">' +
         '<span>' + esc(o.name) + '</span>' +
-        '<span class="meta">' + fmt(o.total, 0) + ' шт</span>' +
+        '<span class="meta">' + fmt(o.total) + '</span>' +
       '</div>').join('');
     dd.style.display = 'block';
   },
@@ -946,8 +947,6 @@ function renderPerWh() {
     if (!items.length) return '';
     const isTransit = w.group === 'transit' || w.name.startsWith(IN_TRANSIT_MARKER);
     const collapsed = state.closedWh.has(w.id);
-    const totalTot = items.reduce((a, it) => a + it.total, 0);
-    const totalRes = items.reduce((a, it) => a + it.reserve, 0);
     const rows = collapsed ? '' : items.map(it => {
       const reserves = (w.reservesByItem && w.reservesByItem[it.name]) || [];
       const key = 'w:' + w.id + '|' + it.name;
@@ -967,7 +966,7 @@ function renderPerWh() {
           <span>${esc(w.name)}</span>
           <span class="org-badge">${esc(w.org)}</span>
           ${w.homeOrg && w.homeOrg !== w.org ? `<span class="foreign" title="Товар ${esc(w.org)} лежить на складі ${esc(w.homeOrg)}">на складі ${esc(w.homeOrg)}</span>` : ''}
-          <span class="tot">${items.length} поз · ${fmt(totalTot)} од · резерв ${fmt(totalRes)}</span>
+          <span class="tot">${items.length} поз</span>
         </div>
         <div class="tree-wrap">
           <table class="tree-tbl">
@@ -1026,7 +1025,7 @@ function groupReservesByClient(reserves) {
 function whBreakdownHtml(r) {
   if (!(r.warehouses && r.warehouses.length > 1)) return '';
   return r.warehouses.map(w =>
-    `<div class="wh-break-inner" style="padding-left:16px;font-size:10.5px;color:var(--text3);font-style:italic">└ ${esc(w.whName)} · ${fmt(w.qty)} од</div>`
+    `<div class="wh-break-inner" style="padding-left:16px;font-size:10.5px;color:var(--text3);font-style:italic">└ ${esc(w.whName)} · ${fmt(w.qty)}</div>`
   ).join('');
 }
 
