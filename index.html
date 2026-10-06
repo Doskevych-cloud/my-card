@@ -247,7 +247,7 @@ a.kpi:hover{border-color:var(--accent);transform:translateY(-1px)}
     </ul>
     <h3>📦 Склад</h3>
     <ul>
-      <li>Агрегат по <code>warehouses_stock</code> (поточні залишки, без періоду): унікальні позиції, всього/резерв/вільно в одиницях. Фільтр «Організація» діє.</li>
+      <li>Вартість запасів — та сама цифра, що у «Фінанси → Склад» (<code>warehouse_value_report</code>). Позицій (SKU) — кількість різних товарів на складах за поточними залишками (<code>warehouses_stock</code>, без періоду). Суму кількостей не показуємо: одиниць у даних нема, вона складала б метри кабелю зі штуками. Фільтр «Організація» діє.</li>
     </ul>
     <h3>📊 Закупівлі</h3>
     <ul>
@@ -611,7 +611,7 @@ async function loadCp() {
 // ── СКЛАД: агрегат warehouses_stock (сторінка фільтрує org клієнтськи) ─
 async function loadWh() {
   if (document.getElementById('secWh').style.display === 'none') return;
-  renderLoading('whSummary', 5);
+  renderLoading('whSummary', 2);
   try {
     const [stockRes, valRes] = await Promise.allSettled([
       dashFetch(API_URL + '/?action=warehouses_stock'),
@@ -620,12 +620,10 @@ async function loadWh() {
     if (stockRes.status !== 'fulfilled' || stockRes.value.error) throw new Error((stockRes.value && stockRes.value.error) || 'err');
     const d = stockRes.value;
     const whs = (d.warehouses || []).filter(w => !state.org || w.org === state.org);
+    // Лише кількість позицій: суму кількостей (всього/резерв/вільно) не показуємо —
+    // одиниць у даних нема, вона складала б метри кабелю зі штуками (06.10.2026).
     const sku = new Set();
-    let tot = 0, res = 0, free = 0;
-    whs.forEach(w => (w.items || []).forEach(it => {
-      sku.add(it.name);
-      tot += it.total || 0; res += it.reserve || 0; free += it.free || 0;
-    }));
+    whs.forEach(w => (w.items || []).forEach(it => sku.add(it.name)));
     document.getElementById('whMeta').textContent = whs.length + ' складів · ' + (state.org || 'всі організації');
     const cards = [];
     // Вартість запасів — та сама цифра, що finance#tab=wh (warehouse_value_report);
@@ -640,12 +638,7 @@ async function loadWh() {
         href: '/finance.html#tab=wh' + (asOf ? '&on=' + asOf : ''),
       });
     }
-    cards.push(
-      { lbl: 'Позицій (SKU)', val: fmt(sku.size, 0) },
-      { lbl: 'Всього', val: fmt(tot, 0) + ' <span class="u">од</span>' },
-      { lbl: 'У резерві', val: fmt(res, 0) + ' <span class="u">од</span>' },
-      { lbl: 'Вільно', val: fmt(free, 0) + ' <span class="u">од</span>', cls: 'pos' }
-    );
+    cards.push({ lbl: 'Позицій (SKU)', val: fmt(sku.size, 0) });
     renderCards('whSummary', cards);
   } catch (e) { renderError('whSummary', e.message); }
 }
