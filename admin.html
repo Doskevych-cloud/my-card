@@ -232,6 +232,27 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
 
   <div class="card" style="margin-top:24px">
     <div class="card-head">
+      <h2>Догін 1С поза 7-денним вікном</h2>
+      <div class="spacer"></div>
+      <span id="catchupModeStatus" style="font-size:12px;color:var(--text3);white-space:nowrap">—</span>
+    </div>
+    <div style="padding:12px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <select id="catchupModeSelect" style="padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+        <option value="off">off — вимкнено</option>
+        <option value="dry">dry — лише рахує розбіжності</option>
+        <option value="on">on — пише в D1</option>
+      </select>
+      <button class="btn btn--primary" id="catchupModeBtn" onclick="saveCatchupMode()">Зберегти</button>
+    </div>
+    <div style="padding:0 16px 12px;font-size:12px;color:var(--text3)">
+      Щоранку (master-sync) звіряє з 1С документи й регістри за 180 днів і по колу старші роки.
+      У dry — лише лічильники в sync_log.details; on — дописує й виправляє D1 по всіх організаціях.
+      Вмикати on — після перевірки dry.
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:24px">
+    <div class="card-head">
       <h2>Autosync</h2>
       <div class="spacer"></div>
     </div>
@@ -586,6 +607,7 @@ Auth.require('admin').then(user => {
     loadJobHealth();
     loadCallsReport();
     loadOdataPassStatus();
+    loadCatchupMode();
     loadMotivation();
   }
   loadBotPrompt();
@@ -1283,6 +1305,32 @@ async function saveOdataPassword() {
     out.style.color = 'var(--bad)';
     out.textContent = '✗ ' + e.message;
     toast(e.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ─── Режим догону 1С (sync_settings, лише адмін) ───
+function renderCatchupMode(d) {
+  document.getElementById('catchupModeSelect').value = d.mode;
+  const upd = d.updated_at ? ` · ${d.updated_at.slice(0, 16).replace('T', ' ')} UTC${d.updated_by && d.updated_by !== 'default' ? ' · ' + esc(d.updated_by) : ''}` : '';
+  document.getElementById('catchupModeStatus').innerHTML = `режим <b>${esc(d.mode)}</b>${upd}`;
+}
+async function loadCatchupMode() {
+  try { renderCatchupMode(await Auth.apiFetch('_admin_sync_catchup_mode')); }
+  catch (e) { document.getElementById('catchupModeStatus').textContent = '—'; }
+}
+async function saveCatchupMode() {
+  const mode = document.getElementById('catchupModeSelect').value;
+  if (mode === 'on' && !confirm('Увімкнути запис догону в D1 по всіх організаціях?')) return;
+  const btn = document.getElementById('catchupModeBtn');
+  btn.disabled = true;
+  try {
+    renderCatchupMode(await Auth.apiFetch('_admin_sync_catchup_mode&mode=' + encodeURIComponent(mode)));
+    toast('Режим догону: ' + mode, 'ok');
+  } catch (e) {
+    toast(e.message, 'err');
+    loadCatchupMode();
   } finally {
     btn.disabled = false;
   }

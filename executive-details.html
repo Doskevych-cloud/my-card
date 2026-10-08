@@ -59,6 +59,8 @@ table.t .neg{color:var(--red)}
 
 .split-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:900px){.split-grid{grid-template-columns:1fr}}
+.tbl-x{overflow-x:auto}
+.tbl-x table.t td.num,.tbl-x table.t th.num{white-space:nowrap}
 
 /* FX position rows */
 .fx-row{display:grid;grid-template-columns:80px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
@@ -165,6 +167,11 @@ table.t .neg{color:var(--red)}
 
   <!-- ═══ PRICE TRENDS ═══ -->
   <div class="panel" id="panel-price-trends">
+    <div class="card">
+      <h2>Постачальники за період</h2>
+      <div class="sub">Нетто = закуплено − повернення постачальнику · топ-15 за нетто, частка — від усіх постачальників</div>
+      <div id="suppliersBody"><div class="loading">Завантаження…</div></div>
+    </div>
     <div class="card">
       <h2>Тренд закупівельних цін · топ-5 SKU</h2>
       <div class="sub">Сер. ціна за період / 3 міс тому / 6 міс тому · підсвічено динаміку</div>
@@ -320,10 +327,13 @@ function switchTab(tab) {
   history.replaceState(null, '', '#' + tab);
   document.querySelectorAll('.ptab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
-  // Довідка поки написана лише для «Валютної позиції» — на інших вкладках кнопку не показуємо.
+  // Довідка є для «Алертів запасів», «Тренду цін» і «Валютної позиції» — на інших вкладках
+  // кнопку не показуємо. У модалці видно лише розділ поточної вкладки.
+  const HELP_TABS = ['stock-alerts', 'price-trends', 'fx-position'];
   const hg = document.getElementById('helpGroup');
-  if (hg) hg.style.display = tab === 'fx-position' ? '' : 'none';
-  if (tab !== 'fx-position') closeHelp();
+  if (hg) hg.style.display = HELP_TABS.includes(tab) ? '' : 'none';
+  document.querySelectorAll('#helpModal [data-help]').forEach(el => { el.style.display = el.dataset.help === tab ? '' : 'none'; });
+  if (!HELP_TABS.includes(tab)) closeHelp();
   loadCurrentTab();
 }
 function openHelp()  { document.getElementById('helpModal').classList.add('open'); }
@@ -383,18 +393,21 @@ async function loadStockAlerts() {
 async function loadPriceTrends() {
   const orgQ = state.org ? '&org=' + encodeURIComponent(state.org) : '';
   document.getElementById('priceTrendsBody').innerHTML = '<div class="loading">Завантаження…</div>';
+  document.getElementById('suppliersBody').innerHTML = '<div class="loading">Завантаження…</div>';
   const r = await fetch(`${API_URL}/?action=executive_suppliers_breakdown&from=${state.from}&to=${state.to}${orgQ}`).then(r=>r.json()).catch(e=>({error:String(e)}));
   if (r.error) {
     document.getElementById('priceTrendsBody').innerHTML = `<div class="error">${esc(r.error)}</div>`;
+    document.getElementById('suppliersBody').innerHTML = `<div class="error">${esc(r.error)}</div>`;
     return;
   }
+  renderSuppliers(r);
   const trends = r.price_trends || [];
   if (!trends.length) {
     document.getElementById('priceTrendsBody').innerHTML = '<div class="empty">Немає даних по топ-SKU</div>';
     return;
   }
   const fmtP = v => v == null ? '—' : '$ ' + (v >= 1000 ? (v/1000).toFixed(1) + 'k' : v.toFixed(2));
-  document.getElementById('priceTrendsBody').innerHTML = `<table class="t">
+  document.getElementById('priceTrendsBody').innerHTML = `<div class="tbl-x"><table class="t">
     <thead><tr><th>SKU</th><th>Категорія</th><th class="num">Зараз</th><th class="num">3 міс тому</th><th class="num">6 міс тому</th><th class="num">Δ 6м</th></tr></thead>
     <tbody>${trends.map(t => {
       const cls = t.delta_6m == null ? '' : t.delta_6m > 0.05 ? 'neg' : t.delta_6m < -0.05 ? 'pos' : '';
@@ -407,7 +420,43 @@ async function loadPriceTrends() {
         <td class="num">${fmtP(t.price_6m_ago)}</td>
         <td class="num ${cls}">${dlt}</td>
       </tr>`;
-    }).join('')}</tbody></table>`;
+    }).join('')}</tbody></table></div>`;
+}
+
+// Постачальники: закуплено / повернення / нетто (E9). Тотал — по всіх постачальниках періоду,
+// не лише по топ-15; додаткові витрати 1С — окремим рядком (у закупівлі постачальників не входять).
+function renderSuppliers(r) {
+  const el = document.getElementById('suppliersBody');
+  const sup = r.suppliers || [];
+  const t = r.totals || {};
+  if (!sup.length) { el.innerHTML = '<div class="empty">Немає закупівель за період</div>'; return; }
+  const m = v => v ? fmtMoneyShort(v) : '—';
+  const pct = v => (v * 100).toFixed(1).replace('.', ',') + '%';
+  const ec = r.extra_costs || {};
+  el.innerHTML = `<div class="tbl-x"><table class="t">
+    <thead><tr><th>Постачальник</th><th class="num">Закуплено</th><th class="num">Повернення</th><th class="num">Нетто</th><th class="num">Частка</th><th class="num">Накладних</th><th class="num">Lead time</th></tr></thead>
+    <tbody>${sup.map(s => `<tr>
+      <td>${esc(s.name).slice(0, 70)}</td>
+      <td class="num">${m(s.gross_usd)}</td>
+      <td class="num">${s.returns_usd ? '−' + fmtMoneyShort(s.returns_usd) : '—'}</td>
+      <td class="num">${fmtMoneyShort(s.amount_usd)}</td>
+      <td class="num">${pct(s.share)}</td>
+      <td class="num">${fmt(s.receipts_count)}</td>
+      <td class="num">${s.avg_lead_days != null ? s.avg_lead_days + ' д' : '—'}</td>
+    </tr>`).join('')}
+    <tr>
+      <td><strong>Разом · ${fmt(t.suppliers)} постачальн.</strong></td>
+      <td class="num"><strong>${m(t.gross_usd)}</strong></td>
+      <td class="num"><strong>${t.returns_usd ? '−' + fmtMoneyShort(t.returns_usd) : '—'}</strong></td>
+      <td class="num"><strong>${fmtMoneyShort(t.net_usd)}</strong></td>
+      <td class="num">100%</td><td></td><td></td>
+    </tr>
+    <tr>
+      <td style="color:var(--text2)">Додаткові витрати 1С · ${fmt(ec.count)} док.</td>
+      <td class="num" style="color:var(--text2)">${m(ec.total_usd)}</td>
+      <td></td><td></td><td></td><td></td><td></td>
+    </tr>
+    </tbody></table></div>`;
 }
 
 // ═══ FX POSITION ═══
@@ -614,6 +663,30 @@ async function loadCeoAlerts() {
 <div class="modal-backdrop" id="helpModal" onclick="if(event.target===this)closeHelp()">
   <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює вкладка">
     <button class="close" onclick="closeHelp()" aria-label="Закрити">✕</button>
+    <div data-help="stock-alerts" style="display:none">
+    <h2>Як працюють «Алерти запасів»</h2>
+    <p>Залишки — останній знімок складу (autosync оновлює його кожні 30 хв удень). Організація впливає, період у тулбарі — ні.</p>
+    <h3>Stockouts</h3>
+    <p>Товари групи A (дають 80% виручки за 180 днів), у яких запасу на руках менше ніж на 14 днів продажів або 0 при активних продажах. «Продаж/30д» — кількість за 30 днів у <b>базових одиницях</b> (кабель — у метрах, не в бухтах) і <b>за мінусом повернень від покупців</b> (датою повернення, з 08.10.2026). Повернень більше, ніж продажів, — «продажу не було», а не мінус.</p>
+    <h3>Dead stock</h3>
+    <p>Товар є на складі, а нетто-продажів за 180 днів нема: або не було видаткових, або все продане за цей час покупці повернули (тоді «Днів» рахується від останньої видаткової і буде менше 180). Повернення від покупця не робить товар «живим». «Заморож. USD» = залишок × середня ціна закупівлі за 12 місяців.</p>
+    <h3>Собівартість</h3>
+    <p>Середня ціна закупівлі за останні 12 місяців (за датою партії): прихідні накладні − повернення постачальникам (за ціною повернення) + додаткові витрати 1С (доставка, митниця, банк), розподілені 1С на партію. Сума по всіх товарах підганяється під картку «Вартість запасів» звіту «Склад (вартість)».</p>
+    </div>
+    <div data-help="price-trends" style="display:none">
+    <h2>Як працює «Тренд цін»</h2>
+    <h3>Постачальники за період</h3>
+    <ul>
+      <li><b>Закуплено</b> — проведені прихідні накладні «Надходження від постачальника» за датою накладної, USD за курсом дати.</li>
+      <li><b>Повернення</b> — повернення постачальнику за датою повернення, як у 1С: товар, отриманий у Q2 і повернутий у Q3, зменшує Q3.</li>
+      <li><b>Нетто</b> = Закуплено − Повернення. Список — 15 найбільших за нетто; <b>частка</b> і рядок «Разом» — від <b>усіх</b> постачальників періоду (до 08.10.2026 база частки була сумою топ-15, частки були завищені).</li>
+      <li><b>Додаткові витрати 1С</b> — документи «Додаткові витрати» (доставка, митниця, банк, ретро-бонус) за їхньою датою, одним рядком. У закупівлі постачальників вони не входять, але 1С додає їх до собівартості партій.</li>
+      <li>«Всі» — проста сума організацій: закупівлі Генерації в Реакта і повернення між ними тут лишаються.</li>
+    </ul>
+    <h3>Тренд закупівельних цін</h3>
+    <p>П'ять товарів з найбільшою сумою закупівлі за період; середня ціна (USD за базову одиницю) за період, за попередній такий самий проміжок і ще на один раніше. Δ 6м — зміна відносно найстарішого проміжку. Тут — лише прихідні накладні, без повернень і додаткових витрат, і <b>по обох організаціях</b>: фільтр організації на тренд поки не діє.</p>
+    </div>
+    <div data-help="fx-position">
     <h2>Як працює «Валютна позиція»</h2>
     <p>Скільки балансу компанії оцінено в доларах <b>на сьогодні</b>: гроші + запаси + товар у дорозі + дебіторка − кредиторка. Період у тулбарі на цю вкладку не впливає, організація — впливає.</p>
     <h3>Рядки</h3>
@@ -633,6 +706,7 @@ async function loadCeoAlerts() {
     </ul>
     <h3>Чутливість</h3>
     <p>Чиста позиція × курс НБУ +1% зі зсувом −5…+5%: скільки гривень додасть або забере зміна курсу.</p>
+    </div>
   </div>
 </div>
 </body>

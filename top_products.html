@@ -76,6 +76,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .tp-row .receipts{font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums;text-align:right;min-width:60px}
 .tp-row .revenue{font-size:13px;font-variant-numeric:tabular-nums;font-weight:700;color:var(--green);text-align:right;min-width:96px}
 .tp-row .revenue.zero{color:var(--text3)}
+.tp-row .revenue.neg{color:var(--red)}
 
 /* Hot indicator: позиція з продажем сьогодні/вчора */
 .tp-row.hot .date b{color:var(--accent)}
@@ -189,6 +190,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
     <h3>📦 Відвантаження</h3>
     <p>Класична логіка: фактичні відвантаження (видаткові накладні) за датою відвантаження. Кількість і сума — з рядків накладних.</p>
+    <p><b>Повернення від покупців</b> (з 08.10.2026) віднімаються <b>датою повернення</b>, як у 1С: товар, відвантажений у червні й повернутий у липні, зменшує липень. Тому в день повернення кількість і сума товару можуть бути відʼємними. У деталях такий рядок підписано «Повернення &lt;номер&gt;». Накладні, клієнти й «останній продаж» рахуються лише за видатковими. Під виручкою — скільки з неї вже віднято поверненнями.</p>
+    <p>У режимі «За першою подією» повернення <b>не віднімаються</b> — там рахуються замовлені позиції. У зрізі «Всі» внутрішні повернення між Реактом і Генерацією лишаються, як і внутрішні продажі.</p>
 
     <h3>Фільтри та підсумки</h3>
     <ul>
@@ -349,21 +352,22 @@ function render() {
   let t = d.totals || {};
   if (state.search) {
     const noms = new Set();
-    let revenue_usd = 0, qty = 0, receipts = 0;
+    let revenue_usd = 0, qty = 0, receipts = 0, returns_usd = 0;
     items.forEach(it => {
       noms.add(it.nom_key || it.nom_code || it.nom_name);
       revenue_usd += it.revenue_usd || 0;
       qty += it.qty || 0;
       receipts += it.receipts || 0;
+      returns_usd += it.returns_usd || 0;
     });
-    t = { revenue_usd, qty, receipts, products: noms.size };
+    t = { revenue_usd, qty, receipts, products: noms.size, returns_usd };
   }
   document.getElementById('summary').innerHTML = `
     <div class="summary">
       <div class="kpi">
         <span class="lbl">${revLabel}</span>
         <span class="v green">${fmt(t.revenue_usd, 0)} $</span>
-        <span class="sub">за ${state.from} — ${state.to}</span>
+        <span class="sub">за ${state.from} — ${state.to}${!isOrders && t.returns_usd ? ` · повернення ${fmt(t.returns_usd, 0)} $` : ''}</span>
       </div>
       <div class="kpi">
         <span class="lbl">Унікальних товарів</span>
@@ -403,7 +407,8 @@ function render() {
     const dInfo = fmtDate(it.last_sold || it.day);
     const isHot = dInfo.iso === today || dInfo.iso === yesterday;
     // Один рядок = 1 (товар, день). Підпис — лише к-сть клієнтів цього дня (>1).
-    const stats = it.clients > 1 ? `${it.clients} клієнт.` : '';
+    // Повернення від покупців цього дня (лише «Відвантаження») — уже відняті з к-сті й суми.
+    const stats = [it.clients > 1 ? `${it.clients} клієнт.` : '', it.returns_qty ? `повернення ${fmt(-it.returns_qty, 0)} шт` : ''].filter(Boolean).join(' · ');
     const ref = it.nom_key || '';
     const day = it.day || dInfo.iso;
     const rowId = `${esc(ref)}__${esc(day)}`;
@@ -417,7 +422,7 @@ function render() {
         </div>
         <div class="qty">${fmt(it.qty, 0)}<span class="unit">шт</span></div>
         <div class="receipts">${fmt(it.receipts, 0)} ${unitDoc}</div>
-        <div class="revenue${(it.revenue_usd || 0) === 0 ? ' zero' : ''}">${fmt(it.revenue_usd, 0)} $</div>
+        <div class="revenue${(it.revenue_usd || 0) === 0 ? ' zero' : (it.revenue_usd < 0 ? ' neg' : '')}">${fmt(it.revenue_usd, 0)} $</div>
       </div>
       <div class="tp-details" id="det-${rowId}" style="display:none"></div>`;
   }).join('');
@@ -517,7 +522,7 @@ function renderDetails(d) {
           <td class="num">${fmt(r.qty, 0)}</td>
           <td class="num">${fmt(r.amount, 2)}</td>
           <td>${esc(r.cur)}</td>
-          <td class="num" style="color:var(--green)">${fmt(r.amount_usd, 0)} $</td>
+          <td class="num" style="color:${r.is_return ? 'var(--red)' : 'var(--green)'}">${fmt(r.amount_usd, 0)} $</td>
         </tr>`).join('')}</tbody>
     </table>`;
   const clientsTbl = tc.length > 1 ? `
