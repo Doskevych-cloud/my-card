@@ -67,6 +67,20 @@ table.t .neg{color:var(--red)}
 .fx-name{font-size:11px;color:var(--text3)}
 .fx-val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);text-align:right}
 
+/* Help modal (шаблон top_products.html) */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.modal-backdrop.open{display:flex}
+.modal{position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:14px;max-width:640px;width:100%;max-height:85vh;overflow-y:auto;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.modal h2{font-size:16px;font-weight:800;color:var(--text);margin-bottom:8px;padding-right:28px}
+.modal h3{font-size:13px;font-weight:700;color:var(--accent);margin:16px 0 5px}
+.modal p{font-size:12.5px;color:var(--text2);line-height:1.6;margin:4px 0}
+.modal ul{margin:5px 0 5px 6px;list-style:none}
+.modal li{font-size:12.5px;color:var(--text2);line-height:1.55;margin:5px 0;padding-left:16px;position:relative}
+.modal li::before{content:'·';position:absolute;left:4px;color:var(--text3);font-weight:800}
+.modal b{color:var(--text);font-weight:700}
+.modal .close{position:absolute;top:16px;right:18px;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;border:none;background:none;padding:4px}
+.modal .close:hover{color:var(--text)}
+
 .position-row{display:grid;grid-template-columns:1fr auto;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
 .position-row.tot{border-top:2px solid var(--border2);font-size:15px;font-weight:700;padding-top:11px}
 .position-row .num{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600}
@@ -127,6 +141,9 @@ table.t .neg{color:var(--red)}
       <span class="chip active" data-org="">Всі</span>
       <span class="chip" data-org="Реакт">Реакт</span>
       <span class="chip" data-org="Генерація">Генерація</span>
+    </span>
+    <span class="group" id="helpGroup" style="display:none">
+      <span class="chip" onclick="openHelp()" title="Як працює ця вкладка">❓ Як працює</span>
     </span>
   </div>
 
@@ -303,8 +320,15 @@ function switchTab(tab) {
   history.replaceState(null, '', '#' + tab);
   document.querySelectorAll('.ptab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
+  // Довідка поки написана лише для «Валютної позиції» — на інших вкладках кнопку не показуємо.
+  const hg = document.getElementById('helpGroup');
+  if (hg) hg.style.display = tab === 'fx-position' ? '' : 'none';
+  if (tab !== 'fx-position') closeHelp();
   loadCurrentTab();
 }
+function openHelp()  { document.getElementById('helpModal').classList.add('open'); }
+function closeHelp() { const m = document.getElementById('helpModal'); if (m) m.classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHelp(); });
 
 function loadCurrentTab() {
   if (state.tab === 'stock-alerts') return loadStockAlerts();
@@ -410,15 +434,25 @@ async function loadFxPosition() {
   `;
 
   const pos = r.position_usd || {};
-  const positionRow = (lbl, val, isLiability) => `<div class="position-row">
+  // Знак рядка = внесок у чисту позицію: актив +val, зобовʼязання −val. Дебіторка буває
+  // відʼємною (аванси клієнтів > боргів), кредиторка — відʼємною (наші передплати > боргу);
+  // старий рендер показував |val| з фіксованим знаком і губив це.
+  const positionRow = (lbl, val, isLiability) => {
+    const v = Number(val) || 0;
+    const c = isLiability ? -v : v;
+    return `<div class="position-row">
     <span style="color:var(--text2)">${lbl}</span>
-    <span class="num ${isLiability ? 'neg' : (val > 0 ? 'pos' : '')}">${isLiability ? '−' : (val > 0 ? '+' : '')} ${fmtMoneyShort(Math.abs(val))}</span>
+    <span class="num ${c < 0 ? 'neg' : (c > 0 && !isLiability ? 'pos' : '')}">${c > 0 ? '+' : (c < 0 ? '−' : '')} ${fmtMoneyShort(Math.abs(c))}</span>
   </div>`;
+  };
   const lbl = pos.net > 0 ? 'довга' : pos.net < 0 ? 'коротка' : 'нейтральна';
+  // Запаси — з останнього знімка складу; не сьогоднішній (уночі до першого autosync) → дата біля рядка.
+  const sa = /^\d{4}-\d{2}-\d{2}$/.test(r.stock_as_of || '') ? r.stock_as_of : '';
+  const stockNote = sa && sa !== r.on_date ? ` <span style="color:var(--text3)">· знімок ${sa.slice(8,10)}.${sa.slice(5,7)}</span>` : '';
   document.getElementById('positionBody').innerHTML = `
     ${positionRow('USD на рахунках', pos.cash, false)}
-    ${positionRow('USD у запасах', pos.inventory, false)}
-    ${positionRow('USD у дорозі (PO)', pos.transit, false)}
+    ${positionRow('USD у запасах' + stockNote, pos.inventory, false)}
+    ${positionRow('USD у дорозі (PO)' + stockNote, pos.transit, false)}
     ${positionRow('USD дебіторка', pos.ar, false)}
     ${positionRow('USD кредиторка', pos.ap, true)}
     <div class="position-row tot">
@@ -576,5 +610,30 @@ async function loadCeoAlerts() {
   `).join('');
 }
 </script>
+
+<div class="modal-backdrop" id="helpModal" onclick="if(event.target===this)closeHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює вкладка">
+    <button class="close" onclick="closeHelp()" aria-label="Закрити">✕</button>
+    <h2>Як працює «Валютна позиція»</h2>
+    <p>Скільки балансу компанії оцінено в доларах <b>на сьогодні</b>: гроші + запаси + товар у дорозі + дебіторка − кредиторка. Період у тулбарі на цю вкладку не впливає, організація — впливає.</p>
+    <h3>Рядки</h3>
+    <ul>
+      <li><b>На рахунках</b> — залишки кас і банківських рахунків у USD (як у звіті залишків коштів).</li>
+      <li><b>У запасах / У дорозі</b> — кількість на останньому знімку складу (autosync оновлює його кожні 30 хв удень; якщо знімок не сьогоднішній, біля рядка стоїть його дата) × середньозважена ціна закупівлі в USD, як у звіті вартості складу. «У дорозі» — склади «В дорозі…».</li>
+      <li><b>Дебіторка / Кредиторка</b> — залишки регістрів 1С «Розрахунки з покупцями / з постачальниками» на сьогодні, з копії регістрів у ERP. Сума — поле «Сумма» 1С: USD <b>за курсом дати кожного документа</b> плюс курсові різниці, які 1С проводить на закритті місяця. Це не переоцінка за сьогоднішнім курсом.</li>
+      <li>Дебіторка = нам винні мінус аванси клієнтів. Буває відʼємною, коли передплат більше за борги (аванси за станції). Кредиторка = ми винні мінус наші передплати постачальникам.</li>
+      <li>Знак біля рядка — внесок у чисту позицію: кредиторка віднімається, тож «−», якщо ми винні, і «+», якщо передплат постачальникам більше за борг.</li>
+    </ul>
+    <h3>Що може здивувати</h3>
+    <ul>
+      <li>Не збігається з сальдо в «Контрагентах»: там борг рахується у валюті договору і переводиться в USD за курсом на дату звіту, тут — за курсом дати документа.</li>
+      <li>Гривневі договори теж входять (у доларовій оцінці), тож це USD-оцінка балансу, а не чиста валютна експозиція.</li>
+      <li>До 08.10.2026 дебіторка й кредиторка тут були перекручені: суми переводились у USD двічі, а знак кредиторки був перевернутий. Старі цифри з цієї вкладки не порівнювати.</li>
+      <li><b>Копія регістрів у ERP поки не звірена з 1С.</b> На 08.10.2026 залишки 1С: Реакт — кредиторка −42,8 k $ (постачальники винні нам), тут +246,6 k $; дебіторка 12,4 k $, тут 85,2 k $. Генерація — кредиторка 19,5 k $, тут 83,7 k $; дебіторка −270,0 k $, тут −260,2 k $. Причина — пропущені рухи в синку, їх дотягуємо. До звірки дебіторку й кредиторку тут читати як орієнтир, рішення приймати за 1С.</li>
+    </ul>
+    <h3>Чутливість</h3>
+    <p>Чиста позиція × курс НБУ +1% зі зсувом −5…+5%: скільки гривень додасть або забере зміна курсу.</p>
+  </div>
+</div>
 </body>
 </html>

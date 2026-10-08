@@ -252,13 +252,13 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
       <div>7 днів від <b>00:00 UTC</b> (boundary-fix 2026-05-04 — фіксує ордери створені вранці того ж дня)</div>
 
       <div style="color:var(--text3)">Кожен прохід (~30 хв)</div>
-      <div>sales_orders → sales_receipts → sales_order_items → orphan-перевірка менеджерів (90 днів) → ar_movements → payments_in → purchase_* → ap_movements → payments_out → cash_* → fx_rates_1c → amount_usd_backfill → stock_balances → price_types → nomenclature_prices → cache-bust</div>
+      <div>sales_orders → sales_receipts → sales_order_items → sales_receipt_items → orphan-перевірка менеджерів (90 днів) → ar_movements → payments_in → purchase_orders → purchase_receipts → purchase_receipt_items → ap_movements → payments_out → cash_* → fx_rates_1c → amount_usd_backfill → stock_balances → price_types → nomenclature_prices → cache-bust</div>
 
       <div style="color:var(--text3)">Ранковий прохід<br><span style="font-size:11px">(06:00 UTC, тільки 1 раз/добу)</span></div>
       <div>+ master_data (контрагенти/контракти/SKU/склади/працівники) <br>+ fx_rates_pb (НБУ +1% fallback, window 7 днів) <br>+ <b>sales_orders_managers_full</b> (повний re-sync менеджерів за 180 днів — ловить пере-проставлених у 1С)</div>
 
-      <div style="color:var(--text3)">НЕ в крон<br><span style="font-size:11px">(scan-based, важкі)</span></div>
-      <div>sales_receipt_items, purchase_receipt_items — запускати вручну з потрібним періодом</div>
+      <div style="color:var(--text3)">Позиції накладних</div>
+      <div>sales_receipt_items, purchase_receipt_items — у кожному проході: до 100 накладних, нових або змінених у 1С, поки документ у 7-денному вікні; старіші (до 180 днів) — ранковий прохід за DataVersion. Ручний запуск бере ту саму чергу, період ігнорує. Ручний ресинк «Видаткових / Прибуткових накладних» за період, раніший ніж 180 днів тому (зокрема рік за замовчуванням), поставить у чергу ~1 000 видаткових і ~900 прибуткових — autosync розгрібатиме їх кілька годин; лише свідомо</div>
     </div>
     </details>
     <div id="autosyncResult" style="margin-top:12px;font-size:12px;color:var(--text2);display:none"></div>
