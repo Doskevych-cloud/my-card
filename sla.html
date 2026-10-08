@@ -181,7 +181,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <a href="/ar_aging.html" class="ptab" data-perm="sales_ar_aging">⏱ Заборгованість покупців</a>
       <a href="/active_clients.html" class="ptab" data-org-required="Реакт" data-perm="sales_active_clients">👥 Клієнтська база</a>
       <a href="/inventory.html" class="ptab" data-perm="sales_inventory">📊 Обіговість запасів</a>
-      <a href="/sla.html" class="ptab active" data-perm="sales_sla">⚡ SLA</a>
+      <a href="/sla.html" class="ptab active" data-perm="sales_sla" data-org-required="Реакт">⚡ SLA</a>
     </div>
 
     <div class="toolbar">
@@ -709,6 +709,8 @@ async function addChat() {
 
 // ── Init ──
 Auth.require('sales_sla').then(user => {
+  // SLA — лише дилерські чати Реакту: юзер без орг «Реакт» (напр. продавці Генерації) сюди не ходить.
+  if (!(user.roles && user.roles.admin) && !(user.orgs && user.orgs['Реакт'])) { location.replace('/sales.html'); return; }
   Auth.filterSubNav(user);
   AppHeader.mount({ active: 'sales', user });
   canExclude = !!(user.roles && (user.roles.admin || user.roles.sales_sla_exclude));
