@@ -1178,7 +1178,7 @@ function renderChannelsReport(d) {
     Когорта: <b>ліди створені у вибрані дні</b>. <b>Цільових</b> = дійшли до стадії «Визначено як цільовий».
     <b>Аванс отримано</b> = виграна угода (поле Planfix «Статус угоди» = «Успешно»).
     Конверсія = Аванс / Всього; <b>Конверсія А</b> = Аванс А / Цільових А — конверсія всередині класу А.
-    Канали розбито на два підрозділи: <b>маркетингові</b> (Google / Meta / TikTok / Organic / Direct — ті самі, що входять у ROMI на вкладці «Маркетинг») і <b>поза маркетингом</b> (база / сарафан / партнери). Дані ті самі, що в «Маркетинг».
+    Канали розбито на два підрозділи: <b>маркетингові</b> (Google / Meta / TikTok / Organic / Direct / AI — ті самі, що входять у ROMI на вкладці «Маркетинг») і <b>поза маркетингом</b> (база / сарафан / партнери). Дані ті самі, що в «Маркетинг».
   </div>
   <div class="kpi">
     <div class="kpi-card"><div class="lbl">Всього лідів</div><div class="val">${fmt(t.leads)}</div></div>
@@ -1230,7 +1230,7 @@ function renderChannelsReport(d) {
   head.forEach(c => { html += `<th>${c}</th>`; });
   html += `</tr></thead><tbody>`;
   if (mkt.length) {
-    html += `<tr class="sec-row"><td colspan="${NCOL}">Маркетингові канали (Google / Meta / TikTok / Organic / Direct)</td></tr>`;
+    html += `<tr class="sec-row"><td colspan="${NCOL}">Маркетингові канали (Google / Meta / TikTok / Organic / Direct / AI)</td></tr>`;
     mkt.forEach(([c, i]) => { html += chRow(c, i); });
     html += sumRow('Разом маркетинг', agg(mkt));
   }
@@ -2416,7 +2416,7 @@ function renderMarketingReport(d) {
   <div class="info-banner">
     <span class="ib-tag">МАРКЕТИНГ</span>
     ${baseExplain}
-    <b>KPI рахуються тільки по каналах-результатах маркетингу</b>: Google / Meta (Facebook) / TikTok / Organic / Direct.
+    <b>KPI рахуються тільки по каналах-результатах маркетингу</b>: Google / Meta (Facebook) / TikTok / Organic / Direct / AI (ліди з ChatGPT та інших ШІ-сервісів).
     Sarafan, Repeat, Upsale, партнери виграють без рекламних грошей і завищують ROMI — вони є в таблиці каналів, але поза KPI.
     <b>Витрати на маркетинг</b> — статті P&L за той самий період
     (нарахування, USD): «Маркетинг послуги» (ведення), рекламні кабінети Google / Facebook Meta / TikTok, «Маркетинг продукція»,
