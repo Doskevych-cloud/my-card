@@ -195,6 +195,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   .load-matrix th:first-child,.load-matrix td:first-child{position:sticky;left:0;z-index:1;background:var(--surface2)}
   .rs-table th:first-child,.rs-table td:first-child{position:sticky;left:0;z-index:1;background:var(--surface2)}
   .rs-leads td,.rs-leads th{padding:5px 8px}
+  /* «По днях» / «Причини» / «Куди йдуть»: перемикач і підказка — під заголовком; «Тиждень» у підписі ховаємо — рядок і так виділений */
+  .section-h.rs-sec{flex-direction:column;align-items:flex-start;gap:4px}
+  .pr-wk{display:none}
+  /* «По днях · Результат» на телефоні: 4 числа влазять у 349 px без скролу вбік; класи A/B/C — лише на десктопі */
+  .mgr-table.rs-table.rs-res{min-width:0;table-layout:auto}
+  .mgr-table.rs-table.rs-res th{width:auto;white-space:normal;vertical-align:bottom}
+  .mgr-table.rs-table.rs-res th,.mgr-table.rs-table.rs-res td{padding:7px 6px}
+  .rs-res .sb{margin-left:3px}
+  .rs-res td:first-child .bo-dim{display:block}
+  .rs-res .cls-split{display:none}
   .rs-table thead th:first-child{background:var(--surface)}
   .load-matrix th:first-child{background:var(--surface)}
   /* виділений рядок: той самий відтінок, що .mgr-table tr.active, але на непрозорій основі — інакше цифри просвічують під імʼям */
@@ -247,6 +257,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .rs-table thead tr+tr th{padding-top:2px}
 /* 2-й рядок дворівневої шапки: перший th — підзаголовок числової колонки, а не колонка назв */
 .rs-table thead tr+tr th:first-child{text-align:right;color:var(--text3);font-weight:700;position:static}
+/* «Кваліфікація лідів» → «По днях» (з 14.10.2026): «Разом» першим рядком; лише числа — смужку складу Дмитро прибрав («нічого не дає») */
+.mgr-table tr.pr-total td,.mgr-table tr.pr-total:hover td{background:var(--surface);border-bottom:2px solid var(--border)}
+.mgr-table tr.rs-click{cursor:pointer}
+.rs-table.rs-res{min-width:560px}
+.rs-table.rs-res th.c-day{width:34%}.rs-table.rs-res th.c-n{width:14%}
+.rs-table.rs-res th.c-t{width:22%}.rs-table.rs-res th.c-o{width:16%}.rs-table.rs-res th.c-w{width:14%}
+.rs-res .sb{color:var(--text3);font-size:11px;margin-left:5px;font-weight:500}
+/* перемикачі в заголовку секції (лінза «По днях», клас у «Куди йдуть ліди») — до 14.10.2026 .chip мав стилі лише в .toolbar */
+.section-h .group{display:inline-flex;gap:2px;padding:2px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;vertical-align:middle}
+.section-h .chip{padding:3px 9px;border-radius:6px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;user-select:none}
+.section-h .chip:hover{color:var(--text);background:var(--bg3)}
+.section-h .chip.active{background:var(--accent-bg);color:var(--accent)}
+/* «Причини відмови»: групи як «відсіяно» (Сміття / Інший регіон / Інші причини), причини — з відступом */
+.mgr-table tr.rf-grp td{font-weight:600;color:var(--text)}
+.mgr-table td.rf-sub{padding-left:26px;font-weight:500;color:var(--text2)}
+.rs-table.rs-refusals thead tr:first-child th[colspan]{text-align:center}
 </style>
 </head>
 <body>
@@ -496,10 +522,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         </ul>
         Знаменник — передані ліди, бо непередані менеджер не перевіряв. Поле, яке при передачі було порожнім, не рахується: дозаповнення — не помилка. Порожній бюджет Planfix передає як 0 — він теж вважається порожнім. У списку лідів змінене поле підсвічене червоним, у підказці — «було → стало»; чіп «Невірна кваліфікація» лишає в списку тільки такі ліди.</li>
     </ul>
+    <h3>По днях</h3>
+    <ul>
+      <li>Ліди за днем появи; період до 31 дня — по днях із підсумком кожного тижня, до 124 днів — по тижнях, довший — по місяцях. «Разом» — першим рядком. Клік по дню чи тижню лишає в списку внизу тільки ці ліди (там клас, статус і причина відмови); клік по «Разом» або ще раз по рядку — знову всі.</li>
+      <li><b>Результат</b> — що лід-менеджер зробила з лідами: кожен лід рівно в одному стовпці, <b>лідів = цільові + відсіяно + в роботі</b>. <b>Цільові</b> — дійшли до «Визначено як цільовий» або далі, навіть якщо потім закриті; у рядку «Разом» — розбивка за класом, який поставила лід-менеджер. <b>Відсіяно</b> — закриті, не дійшовши до цільового: сміття (не рахується в бонус), інший регіон і відмова; розбивка — у «Причинах відмови». <b>В роботі</b> — ще відкриті й не дійшли до цільового (разом із «Відкладеним»). Частки цих трьох — у рядку «Разом» і в підсумках тижнів; у дні лідів мало, тож там лише кількість.</li>
+      <li><b>Швидкість</b> — показники плиток по днях: перша спроба, дозвон, передача, невірна кваліфікація (що означає кожен — нижче, у «Решті показників»). У дні лідів мало, медіани стрибають — дивіться тижні.</li>
+    </ul>
+    <h3>Причини відмови</h3>
+    <p>Коли угоду закривають як «Закрито та не реалізовано», Planfix створює в ній підзадачу «Отказ», і той, хто закриває, вибирає «Причину відмови» з довідника. Таблиця — ліди періоду, закриті <b>зараз</b>. Групи — як «відсіяно»: <b>Сміття</b> (дублі, спам, «не цікавились або помилились», недійсний номер — не рахуються в бонус), <b>Інший регіон</b>, <b>Інші причини</b>. Колонка «відсіяно» дорівнює «відсіяно» в «По днях»; «після цільового» — ліди, що дійшли до цільового і втрачені пізніше, зазвичай уже менеджером з продажу. Частка — від своєї колонки. У списку лідів причина — в окремій колонці (коротко; повний текст і хто закрив — у підказці), у KPI 3 — біля «закрито з цільового». «Причину не вказано» — у підзадачі не вибрали значення або підзадачі нема.</p>
     <h3>Куди йдуть ліди класу C (або A, B — перемикач)</h3>
     <p>Усі ліди, яким лід-менеджер поставила цей клас (зафіксований при передачі, для непереданих — поточний), розкладені за двома осями. Рядок — що стало з класом: лишився таким самим, або менеджер перекласифікував у інший. Колонка — результат угоди зараз: в роботі, відкладено, закрито, аванс, реалізовано. Відсотки — від усіх лідів цього класу. Це дзеркало KPI 3: якщо ліди C регулярно переходять у B чи A і доходять до авансу, кваліфікацію занижено; якщо ліди A масово закривають, завищено.</p>
-    <h3>Причини відмови</h3>
-    <p>Коли угоду закривають як «Закрито та не реалізовано», Planfix створює в ній підзадачу «Отказ», і той, хто закриває, вибирає «Причину відмови» з довідника. Звіт бере причину з цієї підзадачі (оновлення щопівгодини і кнопкою «Оновити»). Таблиця — ліди періоду, закриті <b>зараз</b>: «до передачі» — лід закрила лід-менеджер сама (спам, дублі, не той регіон — її фільтр), «після передачі» — закрив менеджер з продажу. У кожній групі дві колонки: «лідів» — скільки закрито з цією причиною, «частка» — який це відсоток від усіх закритих у групі. У списку лідів причина — в окремій колонці «Причина відмови» (коротко; повний текст і хто закрив — у підказці); у KPI 3 до «закрито з цільового» теж дописана причина. «Причину не вказано» — у підзадачі не вибрали значення або підзадачі нема.</p>
     <h3>Поля кваліфікації — заморожені на момент передачі</h3>
     <p>Тип клієнта, Канал реклами, Область, Інтерес, Клас, Бюджет — це поля лід-менеджера. У звіті вони показуються такими, якими були <b>в момент передачі менеджеру</b>: усе, що правлять у Planfix пізніше, цих колонок не змінює (саме різниця між «тоді» і «зараз» і є ознакою невірної кваліфікації). Для лідів, переданих до 22.09.2026, значення відновлені з останньої події перед передачею; інтересу й області в подіях не було, тому там вони поточні. Сірим — лід ще не передано, значення поточні й ще зміняться.</p>
     <h3>Решта показників (усі — від появи ліда)</h3>
@@ -646,6 +678,7 @@ const state = {
   rsTime: 'work',       // «Кваліфікація лідів»: work = робочі хвилини за графіком | cal = календарні (hash rt)
   rsBad: false,         // «Кваліфікація лідів»: у списку лише ліди з невірною кваліфікацією (hash rb=1)
   rsConvCls: 'C',       // «Кваліфікація лідів»: клас у таблиці «куди йдуть ліди» (hash cc)
+  rsLens: 'res',        // «Кваліфікація лідів» → «По днях»: res = результат кваліфікації | speed = швидкість (hash rl)
   rsHist: false,        // «Кваліфікація лідів»: показати історію до RS_DATA_FROM — admin, дані неповні (hash rh=1)
   boSort: 'd',          // «Бек-офіс»: список зданого — d за датою здачі | wm за часом (лише в памʼяті)
   boKind: '',           // «Бек-офіс»: список зданого — '' усе | kp | contract | invoice (hash bk)
@@ -720,6 +753,7 @@ function saveStateToUrl() {
   if (state.rsTime === 'cal') h.set('rt', 'cal');
   if (state.rsBad) h.set('rb', '1');
   if (state.rsConvCls && state.rsConvCls !== 'C') h.set('cc', state.rsConvCls);
+  if (state.rsLens === 'speed') h.set('rl', 'speed');
   if (state.rsHist) h.set('rh', '1');
   if (state.boKind) h.set('bk', state.boKind);
   history.replaceState(null, '', '#' + h.toString());
@@ -745,6 +779,7 @@ function hydrateFromHash() {
   if (h.get('rt') === 'cal') state.rsTime = 'cal';
   if (h.get('rb') === '1') state.rsBad = true;
   if (h.get('cc'))     state.rsConvCls = h.get('cc');
+  if (h.get('rl') === 'speed') state.rsLens = 'speed';
   if (h.get('rh') === '1') state.rsHist = true;
   if (['kp', 'contract', 'invoice'].includes(h.get('bk'))) state.boKind = h.get('bk');
   if (h.get('ls'))     for (const t of h.get('ls').split('|')) {
@@ -2067,21 +2102,43 @@ const RS_DOT = '<span style="color:var(--text3)">·</span>';
 // (до передачі), sales — менеджер з продажу (після передачі).
 const rsRefusalShort = v => String(v || '').replace(/^\s*\d+\.\s*/, '').replace(/\s*\(.*\)\s*$/s, '').trim();
 // Ліди, за які лід-менеджера НЕ преміюємо (Дмитро 24.09.2026): не справжні заявки — за причиною відмови.
-// «Інше» сюди не входить (там звичайні заявки: дах, модернізація, АКБ), «Інший регіон» і «Спроби вичерпано»
-// теж: це реальні люди, яких відпрацювали. Лише плитка «Лідів»: KPI 1–3 рахують усіх, бо що лід — сміття,
-// видно тільки після дзвінка (08–09.2026: дублі обдзвонено 43 з 52, «не залишали заявку» — 45 з 45).
-const RS_JUNK = [['дублі', /^дубль/i], ['не залишали заявку', /^не цікавились/i], ['спам', /^спам/i], ['недійсний номер', /^номер не дійсний/i]];
-const rsJunkOf = l => { if (!l.rf || !l.rf.r) return null; const k = rsRefusalShort(l.rf.r); for (const [lbl, rx] of RS_JUNK) if (rx.test(k)) return lbl; return null; };
-function rsRefusals(leads) {
-  const rows = new Map(); const tot = { lead: 0, sales: 0, n: 0 };
+// Правило — на беку (JUNK_REASONS / junkOfReason у price-api sheet.js) → мітка rf.junk. «Інше», «Інший
+// регіон», «Спроби вичерпано» — не сміття: реальні люди. У плитці «Лідів» KPI 1–3 рахують усіх, бо що лід —
+// сміття, видно тільки після дзвінка (08–09.2026: дублі обдзвонено 43 з 52, «не залишали заявку» — 45 з 45).
+const rsJunkOf = l => (l.rf && l.rf.junk) || null;
+// Результат кваліфікації ліда (з 14.10.2026, PF 180068 — щоденний звіт лід-менеджера) — рівно один, Σ = лідів:
+// сміття (першим, як у бонусі) → цільові (дійшов до «Визначено як цільовий» чи далі — бек tg) → інший регіон
+// (причина «Інший регіон» — бек rf.region) → відмова (закрито з іншої причини) → в роботі.
+// Відсіяно = сміття + інший регіон + відмова.
+const RS_CLOSED = 'Закрито та не реалізовано';
+function rsResultOf(l) {
+  if (l.rf && l.rf.junk) return 'junk';
+  if (l.tg) return 'tgt';
+  if (l.status === RS_CLOSED) return l.rf && l.rf.region ? 'region' : 'refuse';
+  return 'work';
+}
+// Клас цільового — той, що поставила лід-менеджер (зафіксований при передачі, для непереданих — поточний)
+const rsMgrClass = l => ((l.q || {}).cls || l.cls || '');
+function rsResAgg(leads) {
+  const a = { n: leads.length, tgt: 0, junk: 0, region: 0, refuse: 0, work: 0, A: 0, B: 0, C: 0, X: 0 };
   for (const l of leads) {
-    if (!l.rf) continue;
-    const k = l.rf.r ? rsRefusalShort(l.rf.r) : '';
-    if (!rows.has(k)) rows.set(k, { lead: 0, sales: 0, n: 0, full: l.rf.r || '' });
-    const r = rows.get(k), by = l.rf.by === 'sales' ? 'sales' : 'lead';
-    r[by]++; r.n++; tot[by]++; tot.n++;
+    const r = rsResultOf(l); a[r]++;
+    if (r === 'tgt') { const c = rsMgrClass(l); a[['A', 'B', 'C'].includes(c) ? c : 'X']++; }
   }
-  return { rows: [...rows.entries()].sort((a, b) => (a[0] === '') - (b[0] === '') || b[1].n - a[1].n), tot };
+  a.out = a.junk + a.region + a.refuse;
+  return a;
+}
+// «Причини відмови»: ліди, закриті зараз, — відсіяно (сміття / інший регіон / відмова) і після цільового.
+// Σ відсіяно == «відсіяно» в «По днях».
+function rsReasons(leads) {
+  const rows = new Map();
+  for (const l of leads) {
+    if (l.status !== RS_CLOSED) continue;
+    const r = (l.rf && l.rf.r) || '';
+    if (!rows.has(r)) rows.set(r, { r, junk: !!(l.rf && l.rf.junk), region: !!(l.rf && l.rf.region), out: 0, after: 0 });
+    rows.get(r)[rsResultOf(l) === 'tgt' ? 'after' : 'out']++;
+  }
+  return [...rows.values()].sort((a, b) => (a.r === '') - (b.r === '') || (b.out + b.after) - (a.out + a.after));
 }
 const RS_OUTCOMES = [['active', 'в роботі'], ['deferred', 'відкладено'], ['closed', 'закрито'], ['advance', 'аванс'], ['won', 'реалізовано']];
 function rsOutcome(l) {
@@ -2161,21 +2218,16 @@ function renderResponseReport(d) {
     <div class="kpi-card"><div class="lbl">KPI 2 · Нове → призначення МП</div><div class="val">${medTxt(t.ho)}</div><div class="sub">медіана · сер. ${avgTxt(t.ho)} · передано ${pct(t.handed, t.n)}${t.hoUnknown ? `, час відомий у ${fmt(t.handed - t.hoUnknown)}` : ''}</div></div>
     <div class="kpi-card${t.mqBad ? ' c-fail' : ''}"><div class="lbl">KPI 3 · невірна кваліфікація</div><div class="val">${t.handed ? pct(t.mqBad, t.handed) : '—'}</div><div class="sub">${t.handed ? `${fmt(t.mqBad)} з ${fmt(t.handed)} переданих` + (t.mqBad ? ' · ' + Object.entries(t.mqWhy).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${k} ${v}`).join(' · ') : '') : 'передач ще нема'}</div></div>
   </div>`;
-  // ── по місяцях (місяць появи ліда) ──
-  const byMon = new Map();
-  for (const l of mine) { const k = String(l.t0).slice(0, 7); if (!byMon.has(k)) byMon.set(k, []); byMon.get(k).push(l); }
-  html += `<div class="section-h"><h2>📅 Динаміка</h2><span class="hint">місяць появи ліда</span></div>`;
-  html += `<div class="mgr-wrap"><table class="mgr-table rs-table"><thead>${RS_HEAD.replace('%LBL%', 'Місяць')}</thead><tbody>`;
-  for (const [mon, list] of [...byMon.entries()].sort()) html += `<tr><td>${esc(mon)}</td>${rsCells(rsAgg(list, ti))}</tr>`;
-  if (byMon.size > 1) html += `<tr style="font-weight:700"><td>Разом</td>${rsCells(rsAgg(mine, ti))}</tr>`;
-  html += `</tbody></table></div>`;
+  // ── по днях: результат кваліфікації / швидкість (день появи ліда); причини відмови — одразу за ним ──
+  html += rsDaysHTML(d, mine, ti);
+  html += rsReasonsHTML(mine);
   // ── куди йдуть ліди класу X (дефолт C) ──
   {
     const cls = state.rsConvCls || 'C';
     const flow = rsClassFlow(mine, cls);
     const cellNP = (n, tot) => n ? `${fmt(n)} <span class="sb">${Math.round(n * 100 / tot)}%</span>` : RS_DOT;
     const chips = ['C', 'B', 'A'].map(k => `<span class="chip${k === cls ? ' active' : ''}" onclick="setRsConvCls('${k}')">${k}</span>`).join('');
-    html += `<div class="section-h"><h2>🏷️ Куди йдуть ліди класу ${esc(cls)}</h2><span class="hint"><span class="group" style="margin-right:8px">${chips}</span>клас, який поставила лід-менеджер · рядок — що стало з класом · колонка — результат угоди зараз · % від лідів класу</span></div>`;
+    html += `<div class="section-h rs-sec"><h2>🏷️ Куди йдуть ліди класу ${esc(cls)}</h2><span class="hint"><span class="group" style="margin-right:8px">${chips}</span>клас, який поставила лід-менеджер · рядок — що стало з класом · колонка — результат угоди зараз · % від лідів класу</span></div>`;
     html += `<div class="mgr-wrap"><table class="mgr-table rs-table"><thead><tr><th>Клас зараз</th><th>лідів</th>${RS_OUTCOMES.map(([, n]) => `<th>${n}</th>`).join('')}</tr></thead><tbody>`;
     if (!flow.n) html += `<tr><td colspan="7" style="text-align:center;color:var(--text3)">лідів класу ${esc(cls)} у періоді нема</td></tr>`;
     const order = ['stay', 'A', 'B', 'C', '—'].filter(k => flow.rows[k]);
@@ -2191,25 +2243,10 @@ function renderResponseReport(d) {
     }
     html += `</tbody></table></div>`;
   }
-  // ── причини відмови (підзадача «Отказ») ──
-  {
-    const rf = rsRefusals(mine);
-    const pc = (n, tot) => { const v = n * 100 / tot; return v < 1 ? '<1' : String(Math.round(v)); };
-    // кількість і частка — окремими колонками (Дмитро 24.09: в одній клітинці злипались)
-    const cellNP = (n, tot) => n ? `<td>${fmt(n)}</td><td>${pc(n, tot)}%</td>` : `<td>${RS_DOT}</td><td>${RS_DOT}</td>`;
-    html += `<div class="section-h"><h2>🚫 Причини відмови</h2><span class="hint">ліди періоду, закриті зараз · до передачі — закрила лід-менеджер, після — менеджер з продажу · частка — від закритих у своїй групі</span></div>`;
-    html += `<div class="mgr-wrap"><table class="mgr-table rs-table rs-refusals"><thead>
-      <tr><th rowspan="2">Причина</th><th colspan="2" title="Лід закрила лід-менеджер, менеджеру з продажу не передавали">до передачі</th><th colspan="2" title="Лід закрив менеджер з продажу після передачі">після передачі</th><th colspan="2">разом</th></tr>
-      <tr><th>лідів</th><th title="% від лідів, закритих до передачі">частка</th><th>лідів</th><th title="% від лідів, закритих після передачі">частка</th><th>лідів</th><th title="% від усіх закритих лідів">частка</th></tr></thead><tbody>`;
-    if (!rf.tot.n) html += `<tr><td colspan="7" style="text-align:center;color:var(--text3)">закритих лідів у періоді нема</td></tr>`;
-    for (const [k, r] of rf.rows) {
-      html += `<tr><td title="${esc(r.full || 'у підзадачі «Отказ» причину не вибрано або підзадачі нема')}">${k ? esc(k) : '<span style="color:var(--text3)">причину не вказано</span>'}</td>${cellNP(r.lead, rf.tot.lead)}${cellNP(r.sales, rf.tot.sales)}${cellNP(r.n, rf.tot.n)}</tr>`;
-    }
-    const tot = n => n ? `<td>${fmt(n)}</td><td>100%</td>` : `<td>${RS_DOT}</td><td>${RS_DOT}</td>`;
-    if (rf.rows.length > 1) html += `<tr style="font-weight:700"><td>Разом</td>${tot(rf.tot.lead)}${tot(rf.tot.sales)}${tot(rf.tot.n)}</tr>`;
-    html += `</tbody></table></div>`;
-  }
-  html += rsLeadsHTML(state.rsBad ? mine.filter(l => l.mq && l.mq.bad) : mine, ti);
+  const sel = rsDaySel(d);
+  let list = state.rsBad ? mine.filter(l => l.mq && l.mq.bad) : mine;
+  if (sel) list = list.filter(l => { const x = String(l.t0).slice(0, 10); return x >= sel.lo && x <= sel.hi; });
+  html += rsLeadsHTML(list, ti, sel);
   return html;
 }
 // «Зараз» — статус (закрита угода коротко «Закрито»), «Причина відмови» — окремою колонкою:
@@ -2225,7 +2262,7 @@ function rsNowCells(l) {
   const rTitle = (l.rf && l.rf.r ? l.rf.r : 'у підзадачі «Отказ» причину не вибрано або підзадачі нема') + (by ? ' · ' + by : '');
   return now + `<td style="white-space:nowrap" title="${esc(rTitle)}">${short ? esc(short) : '<span style="color:var(--text3)">не вказано</span>'}</td>`;
 }
-function rsLeadsHTML(leads, ti) {
+function rsLeadsHTML(leads, ti, sel) {
   const arrow = c => rsSort.col === c ? (rsSort.dir === 'asc' ? ' ↑' : ' ↓') : '';
   const th = (c, label, title) => `<th class="sortable${rsSort.col === c ? ' sorted' : ''}" data-rscol="${c}" style="white-space:nowrap;cursor:pointer"${title ? ` title="${esc(title)}"` : ''}>${label}${arrow(c)}</th>`;
   const val = l => {
@@ -2246,7 +2283,8 @@ function rsLeadsHTML(leads, ti) {
   const red = s => `<span style="color:var(--red)">${s}</span>`;
   const muted = s => `<span style="color:var(--text3)">${s}</span>`;
   const sub = s => `<span class="sb">${s}</span>`;  // підпис у тому самому рядку, не другий рядок
-  let html = `<div class="section-h"><h2>📋 Ліди (${fmt(leads.length)})</h2><span class="hint">клік по заголовку — сортування, по # — відкрити в Planfix${leads.length > MAX ? ` · показано перші ${MAX}` : ''}</span></div>`;
+  const selTag = sel ? ` · ${esc(sel.label)} <a href="#" onclick="setRsDay(null);return false" style="color:var(--accent);text-decoration:none;margin-left:6px">✕ усі дні</a>` : '';
+  let html = `<div class="section-h" id="rsLeadsHead"><h2>📋 Ліди${sel ? ' · ' + esc(sel.label) : ''} (${fmt(leads.length)})</h2><span class="hint">клік по заголовку — сортування, по # — відкрити в Planfix${leads.length > MAX ? ` · показано перші ${MAX}` : ''}${selTag}</span></div>`;
   html += `<div class="mgr-wrap"><table class="tasks-table rs-leads"><thead><tr>
     <th>#</th>${th('t0', 'Створено')}${th('fa', 'Перша спроба', 'від появи ліда до першого вихідного дзвінка')}${th('ans', 'Дозвон', 'від появи ліда до першої розмови')}${th('ho', 'Передача', 'від появи ліда до призначення менеджера з продажу')}<th title="Клас на момент передачі менеджеру">Клас</th><th title="Тип клієнта на момент передачі менеджеру">Тип</th><th title="Канал реклами на момент передачі менеджеру">Канал</th><th title="Область на момент передачі менеджеру">Область</th><th title="Інтерес на момент передачі менеджеру">Інтерес</th><th title="Бюджет у доларах — на момент передачі менеджеру">Бюджет</th><th>Зараз</th><th title="З підзадачі «Отказ» у Planfix — лише для лідів, закритих зараз">Причина відмови</th></tr></thead><tbody>`;
   for (const l of sorted.slice(0, MAX)) {
@@ -2300,6 +2338,12 @@ function qCells(l) {
     cell(q.budget ? fmt(q.budget) : '', 'бюджет', ';text-align:right');
 }
 function attachResponseHandlers() {
+  // «По днях»: клік по дню / тижню — список лідів лише за ці дні; по «Разом» або вибраному рядку ще раз — усі
+  document.querySelectorAll('tr[data-rsd]').forEach(tr => tr.addEventListener('click', () => {
+    const [lo, hi, label] = tr.dataset.rsd.split('|');
+    const same = rsDayFilter && rsDayFilter.lo === lo && rsDayFilter.hi === hi;
+    setRsDay(tr.classList.contains('pr-total') || same ? null : { lo, hi, label }, true);
+  }));
   document.querySelectorAll('th[data-rscol]').forEach(th => th.addEventListener('click', () => {
     const col = th.dataset.rscol;
     if (rsSort.col === col) rsSort.dir = rsSort.dir === 'asc' ? 'desc' : 'asc';
@@ -2310,6 +2354,11 @@ function attachResponseHandlers() {
 function setRsTime(v) { state.rsTime = v === 'cal' ? 'cal' : 'work'; saveStateToUrl(); render(); }
 function setRsBad(v) { state.rsBad = !!v; saveStateToUrl(); render(); }
 function setRsConvCls(v) { state.rsConvCls = ['A', 'B', 'C'].includes(v) ? v : 'C'; saveStateToUrl(); render(); }
+function setRsLens(v) { state.rsLens = v === 'speed' ? 'speed' : 'res'; saveStateToUrl(); render(); }
+function setRsDay(v, scroll) {
+  rsDayFilter = v; render();
+  if (v && scroll) { const h = document.getElementById('rsLeadsHead'); if (h) h.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+}
 // Історичний режим: той самий звіт без нижньої межі періоду (admin-екшен). Дані до 23.09.2026 неповні —
 // KPI 2 і KPI 3 занижені, тому режим окремий і з банером, а не мовчазним розширенням періоду.
 function setRsHist(v) {
@@ -2692,6 +2741,117 @@ function boWd(iso) { return BO_WD[new Date(String(iso).slice(0, 10) + 'T00:00:00
 function boWhenWd(iso) { return iso ? `${boWd(iso)} ${rsWhen(iso)}` : ''; }
 function boPlural(n, f) { const a = Math.abs(n) % 100, b = a % 10; return f[a > 10 && a < 20 ? 2 : b === 1 ? 0 : b >= 2 && b <= 4 ? 1 : 2]; }
 const BO_W_DAYS = ['робочий день', 'робочі дні', 'робочих днів'];
+// Рядки таблиці за періодом — як «Навантаження» Бек-офісу: до 31 дня — дні з рядками-підсумками
+// тижнів, до 124 — тижні, далі — місяці. Порожні дні теж (провал має бути видно), майбутні — ні.
+// «Разом» — ПЕРШИМ рядком: таблиця довга (до ~35 рядків), відповідь має бути видно одразу.
+// cellsFor(a, b, kind) → '<td>…' без першої колонки за дні a…b; kind: 'day' | 'group' | 'total'.
+// rowExtra(a, b, kind, label) → { cls, attr } — клас і атрибути рядка (кліки).
+function periodRowsHTML(from, to, cellsFor, rowExtra) {
+  const today = _todayISO();
+  const last = to && to < today ? to : today;
+  const span = Math.round((Date.parse(to) - Date.parse(from)) / 86400000) + 1;
+  const mode = span > 124 ? 'month' : span > 31 ? 'week' : 'day';
+  const firstCol = { day: 'День', week: 'Тиждень', month: 'Місяць' }[mode];
+  if (!from || last < from) return { mode, firstCol, rows: '' };
+  const tr = (cls, a, b, kind, label) => {
+    const x = rowExtra ? rowExtra(a, b, kind, label) : {};
+    const c = [cls, x.cls].filter(Boolean).join(' ');
+    return `<tr${c ? ` class="${c}"` : ''}${x.attr || ''}><td>${label}</td>${cellsFor(a, b, kind)}</tr>`;
+  };
+  const keyOf = mode === 'month' ? x => x.slice(0, 7) : boWeekStart;
+  const groups = [];
+  for (let x = from, n = 0; x <= last && n < 4000; x = boAddDays(x, 1), n++) {
+    const k = keyOf(x);
+    if (!groups.length || groups[groups.length - 1].k !== k) groups.push({ k, days: [] });
+    groups[groups.length - 1].days.push(x);
+  }
+  let body = '';
+  for (const g of groups) {
+    const a = g.days[0], b = g.days[g.days.length - 1];
+    if (mode === 'month') { body += tr('', a, b, 'group', `${BO_MONTHS[+g.k.slice(5, 7) - 1]} ${g.k.slice(0, 4)}`); continue; }
+    if (mode === 'week') { body += tr('', a, b, 'group', `${boDM(a)}–${boDM(b)}`); continue; }
+    if (groups.length > 1) body += tr('bo-wk', a, b, 'group', `<span class="pr-wk">Тиждень </span>${boDM(a)}–${boDM(b)}`);
+    for (const x of g.days) body += tr('bo-day', x, x, 'day', `${boWd(x)} ${boDM(x)}${x === today ? '<span class="bo-dim"> · сьогодні</span>' : ''}`);
+  }
+  const many = mode === 'day' ? groups.reduce((s, g) => s + g.days.length, 0) > 1 : groups.length > 1;
+  return { mode, firstCol, rows: (many ? tr('sum-row pr-total', from, last, 'total', 'Разом') : '') + body };
+}
+// «Кваліфікація лідів» → «По днях» (з 14.10.2026; PF 180068 — щоденний звіт лід-менеджера, але не копія
+// таблиці): ті самі рядки, дві лінзи. «Результат» — що лід-менеджер зробила з лідами дня: цільові /
+// відсіяно / в роботі (Σ = лідів); частки й класи — лише в підсумках, у дні лідів мало. Смужку складу
+// Дмитро прибрав 14.10.2026 («складно сприймати, нічого не дає») — лише числа.
+// «Швидкість» — колонки KPI (колишня «Динаміка» по місяцях). Деталі — кліком: список лідів за день.
+let rsDayFilter = null; // { lo, hi, label } — клік по рядку «По днях»
+function rsDaySel(d) {
+  const s = rsDayFilter;
+  return s && d && s.lo >= d.from && s.hi <= d.to ? s : null;
+}
+function rsDaysHTML(d, mine, ti) {
+  const lens = state.rsLens === 'speed' ? 'speed' : 'res';
+  const sel = rsDaySel(d);
+  const pick = (lo, hi) => mine.filter(l => { const x = String(l.t0).slice(0, 10); return x >= lo && x <= hi; });
+  const v = n => n ? fmt(n) : RS_DOT;
+  const resCells = (lo, hi, kind) => {
+    const a = rsResAgg(pick(lo, hi));
+    const pc = n => Math.round(n * 100 / a.n);
+    const sh = n => kind !== 'day' && n && a.n ? `<span class="sb">${pc(n)}%</span>` : '';
+    const cls = kind === 'total' && a.tgt
+      ? `<span class="sb cls-split">${['A', 'B', 'C'].filter(k => a[k]).map(k => `${k} ${a[k]}`).concat(a.X ? [`без класу ${a.X}`] : []).join(' · ')}</span>` : '';
+    return `<td class="bo-strong">${v(a.n)}</td><td class="bo-strong">${v(a.tgt)}${sh(a.tgt)}${cls}</td><td>${v(a.out)}${sh(a.out)}</td><td>${v(a.work)}${sh(a.work)}</td>`;
+  };
+  const speedCells = (lo, hi) => rsCells(rsAgg(pick(lo, hi), ti));
+  const rowExtra = (a, b, kind, label) => ({
+    cls: 'rs-click' + (sel && sel.lo === a && sel.hi === b ? ' active' : ''),
+    attr: ` data-rsd="${a}|${b}|${esc(String(label).replace(/<[^>]+>/g, '').replace(/\|/g, ' '))}"`,
+  });
+  const pr = periodRowsHTML(d.from, d.to, lens === 'res' ? resCells : speedCells, rowExtra);
+  const chips = [['res', 'Результат'], ['speed', 'Швидкість']]
+    .map(([k, n]) => `<span class="chip${lens === k ? ' active' : ''}" onclick="setRsLens('${k}')">${n}</span>`).join('');
+  const hint = lens === 'res'
+    ? 'день появи ліда · частки — у підсумках · клік по рядку — ці ліди у списку'
+    : 'показники плиток і списку — по днях появи ліда · клік по рядку — ці ліди у списку';
+  let html = `<div class="section-h rs-sec"><h2>📅 По днях</h2><span class="hint"><span class="group" style="margin-right:8px">${chips}</span>${hint}</span></div>`;
+  if (!pr.rows) return html + `<div class="empty">Немає днів у періоді.</div>`;
+  if (lens === 'speed') {
+    return html + `<div class="mgr-wrap"><table class="mgr-table rs-table"><thead>${RS_HEAD.replace('%LBL%', pr.firstCol)}</thead><tbody>${pr.rows}</tbody></table></div>`;
+  }
+  return html + `<div class="mgr-wrap"><table class="mgr-table rs-table rs-res">
+    <thead><tr><th class="c-day">${pr.firstCol}</th><th class="c-n" title="Ліди лід-менеджера, що зʼявились у ці дні">лідів</th>`
+    + `<th class="c-t" title="Дійшли до «Визначено як цільовий» або далі; клас — той, що поставила лід-менеджер">цільові</th>`
+    + `<th class="c-o" title="Закрито, не дійшовши до цільового: сміття, інший регіон, відмова — розбивка в «Причинах відмови»">відсіяно</th>`
+    + `<th class="c-w" title="Ще відкриті й не дійшли до цільового (разом із «Відкладеним»)">в роботі</th></tr></thead>
+    <tbody>${pr.rows}</tbody></table></div>`;
+}
+// «Причини відмови» (з 14.10.2026 — по результатах кваліфікації): ліди періоду, закриті зараз. Групи —
+// як «відсіяно»: Сміття / Інший регіон / Інші причини; «відсіяно» тут == «відсіяно» в «По днях»,
+// «після цільового» — дійшли до цільового і втрачені пізніше, зазвичай уже в продажу.
+function rsReasonsHTML(leads) {
+  const rows = rsReasons(leads);
+  const groups = [
+    { label: 'Сміття', tip: 'Не рахуються в бонус лід-менеджера', rows: rows.filter(r => r.junk) },
+    { label: 'Інший регіон', rows: rows.filter(r => !r.junk && r.region), flat: true },
+    { label: 'Інші причини', rows: rows.filter(r => !r.junk && !r.region) },
+  ].filter(g => g.rows.length);
+  const sum = list => list.reduce((s, r) => ({ out: s.out + r.out, after: s.after + r.after }), { out: 0, after: 0 });
+  const tot = sum(rows), all = tot.out + tot.after;
+  const pc = (n, t) => { const x = n * 100 / t; return x < 1 ? '<1' : String(Math.round(x)); };
+  const cellNP = (n, t) => n ? `<td>${fmt(n)}</td><td>${pc(n, t)}%</td>` : `<td>${RS_DOT}</td><td>${RS_DOT}</td>`;
+  const cells = x => cellNP(x.out, tot.out) + cellNP(x.after, tot.after) + cellNP(x.out + x.after, all);
+  const title = r => esc(r.r || 'у підзадачі «Отказ» причину не вибрано або підзадачі нема');
+  let html = `<div class="section-h rs-sec"><h2>🚫 Причини відмови</h2><span class="hint">ліди періоду, закриті зараз · «відсіяно» = колонка «По днях» · частка — від своєї колонки</span></div>`;
+  html += `<div class="mgr-wrap"><table class="mgr-table rs-table rs-refusals"><thead>
+    <tr><th rowspan="2">Причина</th><th colspan="2" title="Закрито, не дійшовши до «Визначено як цільовий» (сміття — будь-коли): відсів на кваліфікації">відсіяно</th><th colspan="2" title="Дійшли до «Визначено як цільовий», закрито пізніше — зазвичай уже менеджером з продажу">після цільового</th><th colspan="2">разом</th></tr>
+    <tr><th>лідів</th><th>частка</th><th>лідів</th><th>частка</th><th>лідів</th><th>частка</th></tr>
+  </thead><tbody>`;
+  if (!all) html += `<tr><td colspan="7" style="text-align:center;color:var(--text3)">закритих лідів у періоді нема</td></tr>`;
+  else html += `<tr class="sum-row pr-total"><td>Разом</td>${cells(tot)}</tr>`;
+  for (const g of groups) {
+    if (g.flat && g.rows.length === 1) { html += `<tr class="rf-grp"><td title="${title(g.rows[0])}">${g.label}</td>${cells(g.rows[0])}</tr>`; continue; }
+    html += `<tr class="rf-grp"><td${g.tip ? ` title="${g.tip}"` : ''}>${g.label}</td>${cells(sum(g.rows))}</tr>`;
+    for (const r of g.rows) html += `<tr><td class="rf-sub" title="${title(r)}">${r.r ? esc(rsRefusalShort(r.r)) : '<span style="color:var(--text3)">причину не вказано</span>'}</td>${cells(r)}</tr>`;
+  }
+  return html + `</tbody></table></div>`;
+}
 // Єдиний формат часу: «14 хв», «1 год 17 хв» — без десяткових («1,3 год» читали як 1:30) і без «роб. дн».
 function boFmt(min) {
   if (min == null) return '—';
