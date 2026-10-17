@@ -205,6 +205,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   .rs-res .sb{margin-left:3px}
   .rs-res td:first-child .bo-dim{display:block}
   .rs-res .cls-split{display:none}
+  /* «Клас A»: 5 чисел — без розрядки шапки «ВІД ЦІЛЬОВИХ» таблиця влазить у 349 px */
+  .mgr-table.rs-table.rs-cls th{letter-spacing:0}
   .rs-table thead th:first-child{background:var(--surface)}
   .load-matrix th:first-child{background:var(--surface)}
   /* виділений рядок: той самий відтінок, що .mgr-table tr.active, але на непрозорій основі — інакше цифри просвічують під імʼям */
@@ -264,6 +266,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .rs-table.rs-res th.c-day{width:34%}.rs-table.rs-res th.c-n{width:14%}
 .rs-table.rs-res th.c-t{width:22%}.rs-table.rs-res th.c-o{width:16%}.rs-table.rs-res th.c-w{width:14%}
 .rs-res .sb{color:var(--text3);font-size:11px;margin-left:5px;font-weight:500}
+/* «По днях · Клас A» (з 17.10.2026): група «клас A» над трьома колонками — по центру й з лінією, щоб не читалась як підпис останньої */
+.rs-table.rs-cls th.c-t{width:14%}
+.rs-table.rs-cls th.c-grp{text-align:center;border-bottom:1px solid var(--border);padding-bottom:4px}
+.rs-table.rs-cls thead th[rowspan]{vertical-align:bottom;border-bottom:1px solid var(--border)}
+.rs-foot{font-size:11px;color:var(--text3);margin:-12px 4px 20px}
 /* перемикачі в заголовку секції (лінза «По днях», клас у «Куди йдуть ліди») — до 14.10.2026 .chip мав стилі лише в .toolbar */
 .section-h .group{display:inline-flex;gap:2px;padding:2px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;vertical-align:middle}
 .section-h .chip{padding:3px 9px;border-radius:6px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;user-select:none}
@@ -526,6 +533,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <ul>
       <li>Ліди за днем появи; період до 31 дня — по днях із підсумком кожного тижня, до 124 днів — по тижнях, довший — по місяцях. «Разом» — першим рядком. Клік по дню чи тижню лишає в списку внизу тільки ці ліди (там клас, статус і причина відмови); клік по «Разом» або ще раз по рядку — знову всі.</li>
       <li><b>Результат</b> — що лід-менеджер зробила з лідами: кожен лід рівно в одному стовпці, <b>лідів = цільові + відсіяно + в роботі</b>. <b>Цільові</b> — дійшли до «Визначено як цільовий» або далі, навіть якщо потім закриті; у рядку «Разом» — розбивка за класом, який поставила лід-менеджер. <b>Відсіяно</b> — закриті, не дійшовши до цільового: сміття (не рахується в бонус), інший регіон і відмова; розбивка — у «Причинах відмови». <b>В роботі</b> — ще відкриті й не дійшли до цільового (разом із «Відкладеним»). Частки цих трьох — у рядку «Разом» і в підсумках тижнів; у дні лідів мало, тож там лише кількість.</li>
+      <li><b>Клас A</b> — частка лідів класу A, показник рівня попиту (як у Google-таблиці лід-менеджера). Дві частки з різною базою: <b>від цільових</b> — клас A ÷ цільові рядка; <b>від усіх лідів</b> — клас A ÷ усі ліди рядка, разом зі сміттям. Клас — той, що поставила лід-менеджер (зафіксований при передачі менеджеру). Цільові без класу лишаються в знаменнику «від цільових», їх кількість — під таблицею. Частки — у «Разом» і підсумках тижнів чи місяців: динаміку видно по рядках; у дні лідів мало, там лише кількість.</li>
       <li><b>Швидкість</b> — показники плиток по днях: перша спроба, дозвон, передача, невірна кваліфікація (що означає кожен — нижче, у «Решті показників»). У дні лідів мало, медіани стрибають — дивіться тижні.</li>
     </ul>
     <h3>Причини відмови</h3>
@@ -678,7 +686,7 @@ const state = {
   rsTime: 'work',       // «Кваліфікація лідів»: work = робочі хвилини за графіком | cal = календарні (hash rt)
   rsBad: false,         // «Кваліфікація лідів»: у списку лише ліди з невірною кваліфікацією (hash rb=1)
   rsConvCls: 'C',       // «Кваліфікація лідів»: клас у таблиці «куди йдуть ліди» (hash cc)
-  rsLens: 'res',        // «Кваліфікація лідів» → «По днях»: res = результат кваліфікації | speed = швидкість (hash rl)
+  rsLens: 'res',        // «Кваліфікація лідів» → «По днях»: res = результат кваліфікації | cls = клас A | speed = швидкість (hash rl)
   rsHist: false,        // «Кваліфікація лідів»: показати історію до RS_DATA_FROM — admin, дані неповні (hash rh=1)
   boSort: 'd',          // «Бек-офіс»: список зданого — d за датою здачі | wm за часом (лише в памʼяті)
   boKind: '',           // «Бек-офіс»: список зданого — '' усе | kp | contract | invoice (hash bk)
@@ -753,7 +761,7 @@ function saveStateToUrl() {
   if (state.rsTime === 'cal') h.set('rt', 'cal');
   if (state.rsBad) h.set('rb', '1');
   if (state.rsConvCls && state.rsConvCls !== 'C') h.set('cc', state.rsConvCls);
-  if (state.rsLens === 'speed') h.set('rl', 'speed');
+  if (state.rsLens !== 'res') h.set('rl', state.rsLens);
   if (state.rsHist) h.set('rh', '1');
   if (state.boKind) h.set('bk', state.boKind);
   history.replaceState(null, '', '#' + h.toString());
@@ -779,7 +787,7 @@ function hydrateFromHash() {
   if (h.get('rt') === 'cal') state.rsTime = 'cal';
   if (h.get('rb') === '1') state.rsBad = true;
   if (h.get('cc'))     state.rsConvCls = h.get('cc');
-  if (h.get('rl') === 'speed') state.rsLens = 'speed';
+  if (['cls', 'speed'].includes(h.get('rl'))) state.rsLens = h.get('rl');
   if (h.get('rh') === '1') state.rsHist = true;
   if (['kp', 'contract', 'invoice'].includes(h.get('bk'))) state.boKind = h.get('bk');
   if (h.get('ls'))     for (const t of h.get('ls').split('|')) {
@@ -2354,7 +2362,7 @@ function attachResponseHandlers() {
 function setRsTime(v) { state.rsTime = v === 'cal' ? 'cal' : 'work'; saveStateToUrl(); render(); }
 function setRsBad(v) { state.rsBad = !!v; saveStateToUrl(); render(); }
 function setRsConvCls(v) { state.rsConvCls = ['A', 'B', 'C'].includes(v) ? v : 'C'; saveStateToUrl(); render(); }
-function setRsLens(v) { state.rsLens = v === 'speed' ? 'speed' : 'res'; saveStateToUrl(); render(); }
+function setRsLens(v) { state.rsLens = ['cls', 'speed'].includes(v) ? v : 'res'; saveStateToUrl(); render(); }
 function setRsDay(v, scroll) {
   rsDayFilter = v; render();
   if (v && scroll) { const h = document.getElementById('rsLeadsHead'); if (h) h.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
@@ -2787,7 +2795,7 @@ function rsDaySel(d) {
   return s && d && s.lo >= d.from && s.hi <= d.to ? s : null;
 }
 function rsDaysHTML(d, mine, ti) {
-  const lens = state.rsLens === 'speed' ? 'speed' : 'res';
+  const lens = ['cls', 'speed'].includes(state.rsLens) ? state.rsLens : 'res';
   const sel = rsDaySel(d);
   const pick = (lo, hi) => mine.filter(l => { const x = String(l.t0).slice(0, 10); return x >= lo && x <= hi; });
   const v = n => n ? fmt(n) : RS_DOT;
@@ -2799,21 +2807,41 @@ function rsDaysHTML(d, mine, ti) {
       ? `<span class="sb cls-split">${['A', 'B', 'C'].filter(k => a[k]).map(k => `${k} ${a[k]}`).concat(a.X ? [`без класу ${a.X}`] : []).join(' · ')}</span>` : '';
     return `<td class="bo-strong">${v(a.n)}</td><td class="bo-strong">${v(a.tgt)}${sh(a.tgt)}${cls}</td><td>${v(a.out)}${sh(a.out)}</td><td>${v(a.work)}${sh(a.work)}</td>`;
   };
+  // «Клас A» (з 17.10.2026, PF 183392 — Лєбєдєв: частка A = «критерій рівня попиту», дивитись у динаміці). Частки —
+  // окремими колонками, бо бази різні: від цільових (17/48 у Google-таблиці лід-менеджера) і від усіх лідів разом зі
+  // сміттям (17/108). Сірим поруч із числом, як у «Результаті», дві частки з різними базами в одній клітинці плутали.
+  // У дні — лише кількість: цільових за день 1–6, частка стрибає.
+  const clsCells = (lo, hi, kind) => {
+    const a = rsResAgg(pick(lo, hi));
+    const pct = (n, base) => kind === 'day' ? '' : base ? Math.round(n * 100 / base) + '%' : RS_DOT;
+    return `<td>${v(a.n)}</td><td>${v(a.tgt)}</td><td>${v(a.A)}</td><td class="bo-strong">${pct(a.A, a.tgt)}</td><td>${pct(a.A, a.n)}</td>`;
+  };
   const speedCells = (lo, hi) => rsCells(rsAgg(pick(lo, hi), ti));
   const rowExtra = (a, b, kind, label) => ({
     cls: 'rs-click' + (sel && sel.lo === a && sel.hi === b ? ' active' : ''),
     attr: ` data-rsd="${a}|${b}|${esc(String(label).replace(/<[^>]+>/g, '').replace(/\|/g, ' '))}"`,
   });
-  const pr = periodRowsHTML(d.from, d.to, lens === 'res' ? resCells : speedCells, rowExtra);
-  const chips = [['res', 'Результат'], ['speed', 'Швидкість']]
+  const pr = periodRowsHTML(d.from, d.to, { res: resCells, cls: clsCells, speed: speedCells }[lens], rowExtra);
+  const chips = [['res', 'Результат'], ['cls', 'Клас A'], ['speed', 'Швидкість']]
     .map(([k, n]) => `<span class="chip${lens === k ? ' active' : ''}" onclick="setRsLens('${k}')">${n}</span>`).join('');
-  const hint = lens === 'res'
-    ? 'день появи ліда · частки — у підсумках · клік по рядку — ці ліди у списку'
-    : 'показники плиток і списку — по днях появи ліда · клік по рядку — ці ліди у списку';
+  const hint = {
+    res: 'день появи ліда · частки — у підсумках · клік по рядку — ці ліди у списку',
+    cls: 'клас ставить лід-менеджер · частки — у підсумках · клік по рядку — ці ліди у списку',
+    speed: 'показники плиток і списку — по днях появи ліда · клік по рядку — ці ліди у списку',
+  }[lens];
   let html = `<div class="section-h rs-sec"><h2>📅 По днях</h2><span class="hint"><span class="group" style="margin-right:8px">${chips}</span>${hint}</span></div>`;
   if (!pr.rows) return html + `<div class="empty">Немає днів у періоді.</div>`;
   if (lens === 'speed') {
     return html + `<div class="mgr-wrap"><table class="mgr-table rs-table"><thead>${RS_HEAD.replace('%LBL%', pr.firstCol)}</thead><tbody>${pr.rows}</tbody></table></div>`;
+  }
+  if (lens === 'cls') {
+    const t = rsResAgg(pick(d.from, d.to));
+    return html + `<div class="mgr-wrap"><table class="mgr-table rs-table rs-res rs-cls">
+      <thead><tr><th rowspan="2" class="c-day">${pr.firstCol}</th><th rowspan="2" class="c-n" title="Усі ліди лід-менеджера, що зʼявились у ці дні, разом зі сміттям">лідів</th>`
+      + `<th rowspan="2" class="c-t" title="Дійшли до «Визначено як цільовий» або далі">цільові</th><th colspan="3" class="c-grp">клас A</th></tr>
+      <tr><th title="Цільові, яким лід-менеджер поставила клас A">лідів</th><th title="Клас A ÷ цільові рядка">від цільових</th><th title="Клас A ÷ усі ліди рядка, разом зі сміттям">від усіх лідів</th></tr></thead>
+      <tbody>${pr.rows}</tbody></table></div>`
+      + (t.X ? `<div class="rs-foot">Без класу: ${fmt(t.X)} з ${fmt(t.tgt)} цільових — вони в знаменнику «від цільових».</div>` : '');
   }
   return html + `<div class="mgr-wrap"><table class="mgr-table rs-table rs-res">
     <thead><tr><th class="c-day">${pr.firstCol}</th><th class="c-n" title="Ліди лід-менеджера, що зʼявились у ці дні">лідів</th>`
