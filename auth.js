@@ -94,6 +94,7 @@
     reports_stagetime: 'Звіти — Етапи',
     reports_marketing: 'Звіти — Маркетинг',
     reports_response: 'Звіти — Кваліфікація лідів',
+    reports_response_review: 'Звіти — Кваліфікація: знімати помилки KPI 3',
     reports_backoffice: 'Звіти — Бек-офіс',
     counterparties: 'Контрагенти',
     suppliers: 'Постачальники',

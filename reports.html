@@ -102,6 +102,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .rs-leads th:nth-child(9),.rs-leads td:nth-child(9){width:98px}
 .rs-leads th:nth-child(11),.rs-leads td:nth-child(11){width:74px}
 .rs-leads th:nth-child(13),.rs-leads td:nth-child(13){width:170px}
+.rs-leads th:nth-child(14),.rs-leads td:nth-child(14){width:230px} /* KPI 3 — лише з чіпом «Невірна кваліфікація» */
 .mgr-table th,.mgr-table td{padding:10px 14px;text-align:right;white-space:nowrap;line-height:1.25}
 .mgr-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;background:var(--surface);border-bottom:1px solid var(--border)}
 .mgr-table th:first-child,.mgr-table td:first-child{text-align:left;font-weight:600;color:var(--text)}
@@ -252,6 +253,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .rs-leads th{padding:6px 10px}
 .rs-leads td.nm{max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rs-leads .sb{color:var(--text3);font-size:11px;margin-left:5px}
+/* «Кваліфікація лідів» → KPI 3: дія керівника «не помилка» / «повернути» — тихе посилання, акцент лише на hover */
+.rs-act{background:none;border:0;padding:0;font:inherit;font-size:12px;color:var(--text2);text-decoration:underline dotted;text-underline-offset:2px;cursor:pointer;margin-left:8px;white-space:nowrap}
+.rs-act:hover,.rs-act:focus-visible{color:var(--accent)}
+/* клітинка KPI 3: текст скорочується, дія лишається видимою */
+.rs-mq{display:flex;align-items:center;min-width:0}
+.rs-mq>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.rs-mq>.rs-act{flex:none}
+#rsMqNote{width:100%;box-sizing:border-box;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font:inherit;font-size:13px;resize:vertical}
+#rsMqNote:focus{outline:none;border-color:var(--accent)}
 /* «Реакція»: дворядковий заголовок, числа праворуч, перша колонка ліворуч */
 .rs-table th,.rs-table td{white-space:nowrap;text-align:right}
 .rs-table th:first-child,.rs-table td:first-child{text-align:left}
@@ -527,7 +537,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
           <li><b>змінено клас клієнта або бюджет</b>, поки угода була в цих двох статусах (далі по воронці правка бюджету — робота менеджера, не помилка);</li>
           <li><b>змінено тип клієнта, канал реклами або область</b> — у будь-якому статусі.</li>
         </ul>
-        Знаменник — передані ліди, бо непередані менеджер не перевіряв. Поле, яке при передачі було порожнім, не рахується: дозаповнення — не помилка. Порожній бюджет Planfix передає як 0 — він теж вважається порожнім. У списку лідів змінене поле підсвічене червоним, у підказці — «було → стало»; чіп «Невірна кваліфікація» лишає в списку тільки такі ліди.</li>
+        Знаменник — передані ліди, бо непередані менеджер не перевіряв. Поле, яке при передачі було порожнім, не рахується: дозаповнення — не помилка. Порожній бюджет Planfix передає як 0 — він теж вважається порожнім. У списку лідів змінене поле підсвічене червоним, у підказці — «було → стало»; чіп «Невірна кваліфікація» лишає в списку тільки такі ліди і додає колонку «KPI 3» з ознаками.<br>Правило автоматичне і причини не бачить: якщо клієнт сам відклав рішення, а менеджер з продажу закрив угоду одразу з «цільового», це теж рахується. Тому керівник відділу продажу (роль «Кваліфікація: знімати помилки KPI 3») може в колонці «KPI 3» відзначити лід як <b>«не помилка»</b> з обовʼязковим коментарем. Такий лід виходить з KPI 3 (у плитці — «не помилка N»), у списку лишається сірим з коментарем, і відмітку можна повернути. Знімаються лише ознаки, що були на момент відмітки: якщо потім зʼявиться нова, лід знову рахується.</li>
     </ul>
     <h3>По днях</h3>
     <ul>
@@ -574,6 +584,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
       <button class="btn btn--secondary btn--sm" onclick="closeRsSet()">Скасувати</button>
       <button class="btn btn--sm" id="rsSetSaveBtn" onclick="saveRsSet()">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="rsMqModal" onclick="if(event.target===this)closeRsMq()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Не помилка кваліфікації">
+    <button class="close" onclick="closeRsMq()" aria-label="Закрити">✕</button>
+    <h2>Не помилка кваліфікації</h2>
+    <div id="rsMqInfo"></div>
+    <textarea id="rsMqNote" rows="3" maxlength="500" placeholder="Чому це не помилка лід-менеджера (напр.: клієнт відклав рішення на сезон)"></textarea>
+    <div id="rsMqErr" style="color:var(--red);font-size:12.5px;min-height:16px;margin-top:6px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn--secondary btn--sm" onclick="closeRsMq()">Скасувати</button>
+      <button class="btn btn--sm" id="rsMqSaveBtn" onclick="saveRsMq()">Зняти з KPI 3</button>
     </div>
   </div>
 </div>
@@ -2071,7 +2095,7 @@ const rsMarkNoCall = l => !!l.mark && (!l.fa || (l.d.fa && l.d.mark && l.d.fa[0]
 function rsAgg(leads, ti) {
   const a = { n: leads.length, phone: 0, base: 0, fromCall: 0, noData: 0, attempted: 0, fa: [], fa15: 0, fa60: 0, fa240: 0,
     answered: 0, ans: [], tries: [], handed: 0, hoUnknown: 0, ho: [], ho60: 0, ho540: 0, hoApprox: 0, reclass: 0, tgtAB: 0, tgtHanded: 0, tgtHo: [], tgtHour: 0,
-    marked: 0, mark: [], markNoCall: 0, mqBad: 0, mqWhy: {} };
+    marked: 0, mark: [], markNoCall: 0, mqBad: 0, mqWhy: {}, mqWaived: 0 };
   for (const l of leads) {
     if (l.phone) a.phone++;
     if (l.st === 'from_call') a.fromCall++;
@@ -2091,6 +2115,7 @@ function rsAgg(leads, ti) {
     // Поки довідково (KPI 3 «невірна кваліфікація» чекає на критерій Дмитра).
     if (l.hoTo && l.q && l.q.cls && l.cls && l.q.cls !== l.cls) a.reclass++;
     if (l.mq && l.mq.bad) { a.mqBad++; for (const w of l.mq.why) { const k = w.split(':')[0].split(' «')[0]; a.mqWhy[k] = (a.mqWhy[k] || 0) + 1; } }
+    else if (l.mq && l.mq.review) a.mqWaived++; // керівник відзначив «не помилка» — у KPI 3 не рахується
     if (l.tgt && rsIsAB(l)) {
       a.tgtAB++;
       if (l.d.tgtho) { a.tgtHanded++; a.tgtHo.push(l.d.tgtho[ti]); if (l.d.tgtho[1] <= 60) a.tgtHour++; }
@@ -2195,7 +2220,7 @@ function renderResponseReport(d) {
       <span class="chip${ti === 1 ? ' active' : ''}" onclick="setRsTime('work')" title="Хвилини лише в межах графіка: ${esc(sched)}">Робочий</span>
       <span class="chip${ti === 0 ? ' active' : ''}" onclick="setRsTime('cal')" title="Календарні хвилини, разом із ніччю та вихідними">Календарний</span></span>
     <span class="sep"></span>
-    <span class="chip${state.rsBad ? ' active' : ''}" onclick="setRsBad(!state.rsBad)" title="У списку лише передані ліди з ознаками невірної кваліфікації">Невірна кваліфікація</span>
+    <span class="chip${state.rsBad ? ' active' : ''}" onclick="setRsBad(!state.rsBad)" title="У списку лише передані ліди з ознаками невірної кваліфікації — і ті, що керівник відзначив як не помилку">Невірна кваліфікація</span>
     ${curUser && curUser.roles && curUser.roles.admin ? `<span class="chip${state.rsHist ? ' active' : ''}" onclick="setRsHist(!state.rsHist)" title="Показати період до 23.09.2026. Дані неповні: журналу передач і змін полів тоді не було">Історія до 23.09</span>` : ''}
     <span class="sep"></span>
     <span class="chip" onclick="openRsHelp()" title="Як працює цей звіт">❓ Як працює</span>
@@ -2224,7 +2249,7 @@ function renderResponseReport(d) {
     <div class="kpi-card" title="Ліди, за які преміюємо лід-менеджера: без спаму, дублів, недійсних номерів і тих, хто заявку не залишав (за причиною відмови в підзадачі «Отказ»)"><div class="lbl">Лідів</div><div class="val">${fmt(t.n - nJunk)}</div><div class="sub">усього ${fmt(t.n)} · ${nJunk ? 'не рахуються: ' + junkTxt : 'виключених поки нема'}</div><div class="sub">з телефоном ${pct(t.phone, t.n)}${t.fromCall ? ` · створено після дзвінка ${fmt(t.fromCall)}` : ''}${noCall ? ` · <span style="color:var(--red)">без дзвінка ${fmt(noCall)}</span>` : ''}</div></div>
     <div class="kpi-card"><div class="lbl">KPI 1 · швидкість 1-го контакту</div><div class="val">${medTxt(t.fa)}</div><div class="sub">медіана · сер. ${avgTxt(t.fa)} · ≤15 хв — ${pct(t.fa15, t.base)}</div></div>
     <div class="kpi-card"><div class="lbl">KPI 2 · Нове → призначення МП</div><div class="val">${medTxt(t.ho)}</div><div class="sub">медіана · сер. ${avgTxt(t.ho)} · передано ${pct(t.handed, t.n)}${t.hoUnknown ? `, час відомий у ${fmt(t.handed - t.hoUnknown)}` : ''}</div></div>
-    <div class="kpi-card${t.mqBad ? ' c-fail' : ''}"><div class="lbl">KPI 3 · невірна кваліфікація</div><div class="val">${t.handed ? pct(t.mqBad, t.handed) : '—'}</div><div class="sub">${t.handed ? `${fmt(t.mqBad)} з ${fmt(t.handed)} переданих` + (t.mqBad ? ' · ' + Object.entries(t.mqWhy).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${k} ${v}`).join(' · ') : '') : 'передач ще нема'}</div></div>
+    <div class="kpi-card${t.mqBad ? ' c-fail' : ''}"><div class="lbl">KPI 3 · невірна кваліфікація</div><div class="val">${t.handed ? pct(t.mqBad, t.handed) : '—'}</div><div class="sub">${t.handed ? `${fmt(t.mqBad)} з ${fmt(t.handed)} переданих` + (t.mqBad ? ' · ' + Object.entries(t.mqWhy).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${k} ${v}`).join(' · ') : '') + (t.mqWaived ? ` · <span title="Керівник відзначив як не помилку лід-менеджера — у KPI 3 не рахуються">не помилка ${fmt(t.mqWaived)}</span>` : '') : 'передач ще нема'}</div></div>
   </div>`;
   // ── по днях: результат кваліфікації / швидкість (день появи ліда); причини відмови — одразу за ним ──
   html += rsDaysHTML(d, mine, ti);
@@ -2252,7 +2277,7 @@ function renderResponseReport(d) {
     html += `</tbody></table></div>`;
   }
   const sel = rsDaySel(d);
-  let list = state.rsBad ? mine.filter(l => l.mq && l.mq.bad) : mine;
+  let list = state.rsBad ? mine.filter(l => l.mq && (l.mq.bad || l.mq.review)) : mine; // + зняті керівником — щоб було видно і можна повернути
   if (sel) list = list.filter(l => { const x = String(l.t0).slice(0, 10); return x >= sel.lo && x <= sel.hi; });
   html += rsLeadsHTML(list, ti, sel);
   return html;
@@ -2269,6 +2294,78 @@ function rsNowCells(l) {
   const short = l.rf && l.rf.r ? rsRefusalShort(l.rf.r) : '';
   const rTitle = (l.rf && l.rf.r ? l.rf.r : 'у підзадачі «Отказ» причину не вибрано або підзадачі нема') + (by ? ' · ' + by : '');
   return now + `<td style="white-space:nowrap" title="${esc(rTitle)}">${short ? esc(short) : '<span style="color:var(--text3)">не вказано</span>'}</td>`;
+}
+// «KPI 3» (колонка лише з чіпом «Невірна кваліфікація»): ознаки невірної кваліфікації і відмітка
+// керівника «не помилка». Знімає роль reports_response_review (або admin) з обовʼязковим коментарем:
+// автоматичне правило не бачить причини — угоду, яку менеджер з продажу закрив одразу з «цільового»,
+// бо клієнт відклав рішення, воно вважає помилкою лід-менеджера (181608, 10.2026).
+const rsCanReview = () => !!(curUser && curUser.roles && (curUser.roles.admin || curUser.roles.reports_response_review));
+const rsMqKey = w => String(w).split(':')[0].split(' «')[0].trim();
+const rsMqWhen = iso => { const t = Date.parse(iso); return isNaN(t) ? '' : new Date(t).toLocaleString('uk-UA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Kyiv' }); };
+function rsMqCell(l) {
+  const mq = l.mq || {}, rv = mq.review, can = rsCanReview();
+  const rvTitle = rv ? `Не помилка: ${rv.note} — ${rv.by || ''}, ${rsMqWhen(rv.at)}` : '';
+  if (mq.bad) {
+    // коротко: «закрито з «цільового»» / назва зміненого поля; повністю («було → стало», причина) — у підказці
+    const short = (mq.why || []).map(w => w.startsWith('закрито') ? 'раннє закриття' : rsMqKey(w)).join(' · ');
+    const title = (mq.why || []).join('\n') + (rv ? '\n\nРешту знято. ' + rvTitle : '');
+    return `<td title="${esc(title)}"><div class="rs-mq"><span style="color:var(--red)">${esc(short)}</span>${can ? `<button type="button" class="rs-act" data-mq="${esc(l.id)}">не помилка</button>` : ''}</div></td>`;
+  }
+  if (!rv) return `<td>${RS_DOT}</td>`;
+  return `<td title="${esc(rvTitle + '\nЗнято: ' + (mq.waived || []).join(' · '))}"><div class="rs-mq"><span style="color:var(--text3)">не помилка · ${esc(String(rv.by || '').trim().split(/\s+/).pop())}</span>${can ? `<button type="button" class="rs-act" data-mq-undo="${esc(l.id)}">повернути</button>` : ''}</div></td>`;
+}
+let rsMqLead = null;
+const rsMqFind = id => ((state.raw && state.raw.leads) || []).find(x => String(x.id) === String(id));
+function openRsMq(id) {
+  const l = rsMqFind(id);
+  if (!l || !l.mq) return;
+  rsMqLead = l;
+  const all = [...(l.mq.waived || []), ...(l.mq.why || [])];
+  document.getElementById('rsMqInfo').innerHTML =
+    `<p><a class="tlink" href="https://solar.planfix.ua/task/${esc(l.id)}" target="_blank" rel="noopener">#${esc(l.id)}</a> · ${esc(l.name || '')}${l.hoTo ? ' · передано: ' + esc(ffShort(l.hoTo)) : ''}</p>
+     <p>Знімається з KPI 3: <span style="color:var(--red)">${esc(all.join(' · '))}</span></p>
+     <p style="color:var(--text3);font-size:12.5px">Лід перестане рахуватися невірно кваліфікованим. Якщо після відмітки зʼявиться нова ознака, він знову рахуватиметься. Відмітку з коментарем бачать усі, хто відкриває звіт.</p>`;
+  const ta = document.getElementById('rsMqNote'); ta.value = '';
+  document.getElementById('rsMqErr').textContent = '';
+  document.getElementById('rsMqModal').classList.add('open');
+  setTimeout(() => ta.focus(), 50);
+}
+function closeRsMq() { const m = document.getElementById('rsMqModal'); if (m) m.classList.remove('open'); rsMqLead = null; }
+async function rsMqPost(body) {
+  const res = await fetch(API + '?action=response_mq_review', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + Auth.getToken() },
+    body: JSON.stringify(body),
+  });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || j.error) throw new Error(j.error || 'HTTP ' + res.status);
+  return j;
+}
+async function saveRsMq() {
+  const l = rsMqLead; if (!l) return;
+  const note = document.getElementById('rsMqNote').value.trim();
+  const err = document.getElementById('rsMqErr');
+  if (note.length < 5) { err.textContent = 'Напишіть, чому це не помилка'; return; }
+  const all = [...(l.mq.waived || []), ...(l.mq.why || [])];
+  const btn = document.getElementById('rsMqSaveBtn');
+  btn.disabled = true; btn.textContent = 'Зберігаю…';
+  try {
+    await rsMqPost({ dealId: l.id, note, keys: [...new Set(all.map(rsMqKey))] });
+    // локально, як застосує бек: без перезавантаження звіту і стрибка списку вгору
+    l.mq = { bad: false, why: [], waived: all, review: { note, by: (curUser && (curUser.name || curUser.email)) || '', at: new Date().toISOString() } };
+    closeRsMq(); render();
+  } catch (e) { err.textContent = e.message || String(e); }
+  btn.disabled = false; btn.textContent = 'Зняти з KPI 3';
+}
+async function undoRsMq(id) {
+  const l = rsMqFind(id);
+  if (!l || !l.mq || !l.mq.review) return;
+  if (!confirm(`Повернути #${l.id} у KPI 3 як невірну кваліфікацію?`)) return;
+  try {
+    await rsMqPost({ dealId: l.id, remove: true });
+    l.mq = { bad: true, why: [...(l.mq.why || []), ...(l.mq.waived || [])] };
+    render();
+  } catch (e) { alert('Помилка: ' + (e.message || e)); }
 }
 function rsLeadsHTML(leads, ti, sel) {
   const arrow = c => rsSort.col === c ? (rsSort.dir === 'asc' ? ' ↑' : ' ↓') : '';
@@ -2294,7 +2391,7 @@ function rsLeadsHTML(leads, ti, sel) {
   const selTag = sel ? ` · ${esc(sel.label)} <a href="#" onclick="setRsDay(null);return false" style="color:var(--accent);text-decoration:none;margin-left:6px">✕ усі дні</a>` : '';
   let html = `<div class="section-h" id="rsLeadsHead"><h2>📋 Ліди${sel ? ' · ' + esc(sel.label) : ''} (${fmt(leads.length)})</h2><span class="hint">клік по заголовку — сортування, по # — відкрити в Planfix${leads.length > MAX ? ` · показано перші ${MAX}` : ''}${selTag}</span></div>`;
   html += `<div class="mgr-wrap"><table class="tasks-table rs-leads"><thead><tr>
-    <th>#</th>${th('t0', 'Створено')}${th('fa', 'Перша спроба', 'від появи ліда до першого вихідного дзвінка')}${th('ans', 'Дозвон', 'від появи ліда до першої розмови')}${th('ho', 'Передача', 'від появи ліда до призначення менеджера з продажу')}<th title="Клас на момент передачі менеджеру">Клас</th><th title="Тип клієнта на момент передачі менеджеру">Тип</th><th title="Канал реклами на момент передачі менеджеру">Канал</th><th title="Область на момент передачі менеджеру">Область</th><th title="Інтерес на момент передачі менеджеру">Інтерес</th><th title="Бюджет у доларах — на момент передачі менеджеру">Бюджет</th><th>Зараз</th><th title="З підзадачі «Отказ» у Planfix — лише для лідів, закритих зараз">Причина відмови</th></tr></thead><tbody>`;
+    <th>#</th>${th('t0', 'Створено')}${th('fa', 'Перша спроба', 'від появи ліда до першого вихідного дзвінка')}${th('ans', 'Дозвон', 'від появи ліда до першої розмови')}${th('ho', 'Передача', 'від появи ліда до призначення менеджера з продажу')}<th title="Клас на момент передачі менеджеру">Клас</th><th title="Тип клієнта на момент передачі менеджеру">Тип</th><th title="Канал реклами на момент передачі менеджеру">Канал</th><th title="Область на момент передачі менеджеру">Область</th><th title="Інтерес на момент передачі менеджеру">Інтерес</th><th title="Бюджет у доларах — на момент передачі менеджеру">Бюджет</th><th>Зараз</th><th title="З підзадачі «Отказ» у Planfix — лише для лідів, закритих зараз">Причина відмови</th>${state.rsBad ? '<th title="Ознаки невірної кваліфікації і відмітка керівника «не помилка»">KPI 3</th>' : ''}</tr></thead><tbody>`;
   for (const l of sorted.slice(0, MAX)) {
     const url = `https://solar.planfix.ua/task/${l.id}`;
     const inBase = rsInBase(l);
@@ -2320,9 +2417,10 @@ function rsLeadsHTML(leads, ti, sel) {
       <td style="white-space:nowrap">${hoCell}</td>
       ${qCells(l)}
       ${rsNowCells(l)}
+      ${state.rsBad ? rsMqCell(l) : ''}
     </tr>`;
   }
-  if (!sorted.length) html += `<tr><td colspan="13" class="muted" style="text-align:center;padding:14px">${state.rsBad ? 'Невірно кваліфікованих лідів у періоді нема' : 'Немає лідів'}</td></tr>`;
+  if (!sorted.length) html += `<tr><td colspan="${state.rsBad ? 14 : 13}" class="muted" style="text-align:center;padding:14px">${state.rsBad ? 'Невірно кваліфікованих лідів у періоді нема' : 'Немає лідів'}</td></tr>`;
   html += `</tbody></table></div>`;
   return html;
 }
@@ -2346,6 +2444,8 @@ function qCells(l) {
     cell(q.budget ? fmt(q.budget) : '', 'бюджет', ';text-align:right');
 }
 function attachResponseHandlers() {
+  document.querySelectorAll('[data-mq]').forEach(b => b.addEventListener('click', () => openRsMq(b.dataset.mq)));
+  document.querySelectorAll('[data-mq-undo]').forEach(b => b.addEventListener('click', () => undoRsMq(b.dataset.mqUndo)));
   // «По днях»: клік по дню / тижню — список лідів лише за ці дні; по «Разом» або вибраному рядку ще раз — усі
   document.querySelectorAll('tr[data-rsd]').forEach(tr => tr.addEventListener('click', () => {
     const [lo, hi, label] = tr.dataset.rsd.split('|');
@@ -2413,7 +2513,7 @@ function openFunnelHelp()  { document.getElementById('funnelHelpModal').classLis
 function closeFunnelHelp() { document.getElementById('funnelHelpModal').classList.remove('open'); }
 function openMgrHelp()  { document.getElementById('mgrHelpModal').classList.add('open'); }
 function closeMgrHelp() { document.getElementById('mgrHelpModal').classList.remove('open'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeHelp(); closeSla(); closeAdvHelp(); closeFunnelHelp(); closeMgrHelp(); closeRsHelp(); closeRsSet(); closeBoHelp(); ffCloseMenu(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeHelp(); closeSla(); closeAdvHelp(); closeFunnelHelp(); closeMgrHelp(); closeRsHelp(); closeRsSet(); closeRsMq(); closeBoHelp(); ffCloseMenu(); } });
 
 // ── Регламенти (SLA) — модалка нормативів класу А, admin-only ──
 function openSla() {
