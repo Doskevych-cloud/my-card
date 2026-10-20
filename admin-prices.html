@@ -170,13 +170,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .field.row{flex-direction:row;gap:10px;align-items:flex-end}
 .field.row > *{flex:1}
 
-/* segmented control (for stock status) */
-.seg{display:flex;gap:0;border:1px solid var(--border);border-radius:7px;overflow:hidden;background:var(--bg2)}
-.seg button{flex:1;padding:7px 8px;background:transparent;border:none;color:var(--text2);font:inherit;font-size:11.5px;font-weight:500;cursor:pointer;border-right:1px solid var(--border);transition:all .12s}
-.seg button:last-child{border-right:none}
-.seg button:hover{color:var(--text);background:var(--bg3)}
-.seg button.active{background:var(--accent-bg);color:var(--accent)}
-
 /* autocomplete */
 .ac-wrap{position:relative}
 .ac-list{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:7px;max-height:260px;overflow-y:auto;z-index:10;display:none;box-shadow:0 8px 20px rgba(0,0,0,.4)}
@@ -187,17 +180,49 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .ac-item .art{font-size:10.5px;color:var(--text3);margin-top:2px}
 .ac-item mark{background:var(--accent-bg);color:var(--accent);padding:0;border-radius:2px}
 .ac-item .empty-row{color:var(--text3);font-style:italic}
-.ac-chosen{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;font-size:11.5px;margin-top:6px}
-.ac-chosen .txt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ac-chosen .art{color:var(--text3);font-size:10.5px}
-.ac-chosen .clear{background:none;border:none;color:var(--text3);cursor:pointer;padding:2px 4px;font-size:14px;line-height:1}
-.ac-chosen .clear:hover{color:var(--red)}
 
-/* preview card in modal */
-.preview-card{padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:7px;margin-top:4px}
-.preview-card .lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600}
-.preview-card .pv-name{font-weight:500;font-size:13px}
-.preview-card .pv-spec{font-size:11px;color:var(--text3);margin-top:2px}
+/* ─── Модалка позиції: групи «Товар / На прайсі / Ціна / Документи» + превʼю ─── */
+.modal.im{max-width:820px;display:flex;flex-direction:column;overflow:hidden}
+.modal.im .modal-body{overflow-y:auto;padding:0 20px;gap:0}
+.im-grp{display:grid;grid-template-columns:96px minmax(0,1fr);gap:0 18px;padding:14px 0;border-top:1px solid var(--border)}
+.im-grp:first-child{border-top:none}
+.im-grp > h3{font-size:12.5px;font-weight:600;color:var(--text2);line-height:1.3;padding-top:1px}
+.im-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.im-grid--nom{grid-template-columns:minmax(0,200px) minmax(0,1fr)}
+.im-grid--name{grid-template-columns:minmax(0,200px) minmax(0,1fr)}
+.im-span{grid-column:1/-1}
+.im-grid > .hint{font-size:10.5px;color:var(--text3);margin-top:-6px}
+.im .field input, .im .field select{height:34px}
+.im .field input[type=number]{font-variant-numeric:tabular-nums}
+.im .hint .lnk, .nom-pick .lnk{background:none;border:none;padding:0;font:inherit;color:var(--accent);cursor:pointer}
+.im .hint .lnk:hover, .nom-pick .lnk:hover{text-decoration:underline}
+/* «Товар з 1С» — один контрол: обраний товар стоїть у самому полі */
+.nom-pick{display:flex;align-items:center;gap:10px;height:34px;padding:0 6px 0 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;font-size:12.5px;cursor:pointer;min-width:0}
+.nom-pick:hover{border-color:var(--border2)}
+.nom-pick[hidden]{display:none}
+.ac-anchor{position:relative}
+.ac-anchor > input{width:100%}
+.ac-anchor:has(> input[hidden]){display:none}
+.nom-pick .txt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nom-pick .art{color:var(--text3)}
+.nom-pick .lnk{font-size:11.5px;flex-shrink:0}
+.nom-pick .unlink{background:none;border:none;color:var(--text3);cursor:pointer;padding:0 4px;font-size:16px;line-height:1;flex-shrink:0}
+.nom-pick .unlink:hover{color:var(--red)}
+/* Превʼю рядка react.ink: бренд — тихий моно-капітель над назвою, як на фасаді */
+.pv-row{display:grid;grid-template-columns:minmax(0,1fr) 96px 96px 104px;gap:16px;align-items:center}
+.pv-brand{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:4px}
+.pv-name{font-size:13.5px;font-weight:600;color:var(--text);overflow-wrap:anywhere}
+.pv-spec{font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:2px;overflow-wrap:anywhere}
+.pv-price{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13.5px;font-weight:500;color:var(--text);white-space:nowrap}
+.pv-price .lbl{display:block;font-family:inherit;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);font-weight:400;margin-bottom:2px}
+.pv-price .cur{color:var(--text3);font-weight:400;margin-left:3px}
+.pv-price.is-empty .v{color:var(--text3)}
+.pv-stock{font-size:11.5px;color:var(--text2);white-space:nowrap;text-align:right}
+.pv-note{font-size:10.5px;color:var(--text3);margin-top:8px}
+.pv-note:empty{display:none}
+
+/* Бренд у рядку таблиці — тихо, перед підписом */
+.brand-tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
 
 /* Responsive */
 .cat-body{overflow-x:auto}
@@ -238,11 +263,27 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
   .modal-backdrop{padding:0;align-items:flex-end}
   .modal{max-height:94vh;border-radius:14px 14px 0 0;border-bottom:none}
   .modal.sm{max-width:none}
-  .seg button{font-size:11px;padding:6px 4px}
+  /* модалка позиції — повноекранний лист; шапка й кнопки стоять, тіло гортається */
+  #itemModal .modal.im{max-width:none;height:100%;max-height:none;border-radius:0;border:none}
+  .modal.im .modal-foot{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+  .modal.im .modal-foot .hint{display:none}
   .missing-head{flex-wrap:wrap;gap:6px}
   .missing-head .meta:last-child{display:none}
   .chip--alt{margin-left:0}
   .chip--alt::before{display:none}
+}
+
+@media (max-width: 640px) {
+  .modal.im .modal-body{padding:0 16px}
+  .im-grp{grid-template-columns:minmax(0,1fr);gap:10px 0}
+  .im-grid, .im-grid--nom, .im-grid--name{grid-template-columns:minmax(0,1fr)}
+  .im .field input, .im .field select{height:40px}
+  .nom-pick{height:40px}
+  .im .hint .lnk{padding:6px 2px;margin:-6px 0;font-size:12px}   /* палець, а не курсор */
+  .pv-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}
+  .pv-row .pv-main{grid-column:1/-1}
+  .pv-price{text-align:left}
+  .pv-stock{grid-column:1/-1;text-align:left}
 }
 
 /* ─── Semantic bg tints (broadcast result banners) — theme-aware ─── */
@@ -459,6 +500,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
       <span class="chip active" data-filter="all">Всі <span class="cnt" id="cnt_all">0</span></span>
       <span class="chip" data-filter="no1c">Без 1С <span class="cnt" id="cnt_no1c">0</span></span>
       <span class="chip" data-filter="noprice">Без ціни <span class="cnt" id="cnt_noprice">0</span></span>
+      <span class="chip" data-filter="nobrand">Без бренду <span class="cnt" id="cnt_nobrand">0</span></span>
       <span class="chip" data-filter="instock">В наявності <span class="cnt" id="cnt_instock">0</span></span>
       <span class="chip" data-filter="intransit">В дорозі <span class="cnt" id="cnt_intransit">0</span></span>
       <span class="chip" data-filter="none">Немає <span class="cnt" id="cnt_none">0</span></span>
@@ -690,69 +732,105 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 
 <!-- Item modal -->
 <div class="modal-backdrop" id="itemModal">
-  <div class="modal">
+  <div class="modal im" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-head">
       <span id="modalTitle">Нова позиція</span>
       <span class="sub" id="modalSub"></span>
       <div class="spacer"></div>
-      <button class="x" onclick="closeItemModal()" title="Esc">×</button>
+      <button class="x" onclick="closeItemModal()" title="Esc" aria-label="Закрити">×</button>
     </div>
     <div class="modal-body">
-      <div class="field">
-        <label>Категорія</label>
-        <select id="f_category"></select>
-      </div>
-      <div class="field ac-wrap">
-        <label>Товар з 1С <span class="hint" style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--text3);margin-left:4px">— для ціни і залишків</span></label>
-        <input id="f_nom1c_search" placeholder="Почніть вводити назву або артикул…" autocomplete="off">
-        <div class="ac-list" id="ac_list"></div>
-        <div id="f_nom1c_chosen"></div>
-      </div>
-      <div class="field">
-        <label>Назва на прайсі</label>
-        <input id="f_display_name" placeholder="Напр. Deye SUN-12K">
-        <div class="hint">Порожньо → візьмеметься назва з 1С</div>
-      </div>
-      <div class="field">
-        <label>Підпис (spec)</label>
-        <input id="f_display_spec" placeholder="Напр. 12 кВт · 3-фазний · низьковольтний">
-      </div>
-      <div class="field">
-        <label>Наявність</label>
-        <div class="seg" id="f_stock_seg">
-          <button type="button" data-val="в наявності">В наявності</button>
-          <button type="button" data-val="в дорозі">В дорозі</button>
-          <button type="button" data-val="під замовлення">Під замовлення</button>
+      <section class="im-grp">
+        <h3>Товар</h3>
+        <div class="im-grid im-grid--nom">
+          <div class="field">
+            <label for="f_category">Категорія</label>
+            <select id="f_category"></select>
+          </div>
+          <div class="field ac-wrap">
+            <label for="f_nom1c_search">Товар з 1С</label>
+            <div class="nom-pick" id="f_nom1c_pick" hidden onclick="startNomSearch()">
+              <span class="txt" id="f_nom1c_txt"></span>
+              <button type="button" class="lnk" onclick="event.stopPropagation(); startNomSearch()">змінити</button>
+              <button type="button" class="unlink" onclick="event.stopPropagation(); clearChosenNom()" title="Відвʼязати від 1С" aria-label="Відвʼязати від 1С">×</button>
+            </div>
+            <div class="ac-anchor">
+              <input id="f_nom1c_search" placeholder="Назва або артикул з 1С…" autocomplete="off">
+              <div class="ac-list" id="ac_list"></div>
+            </div>
+            <div class="hint" id="f_nom1c_hint">Звідси ціна і залишки</div>
+          </div>
         </div>
-        <div class="hint">Автоматично перезаписується з 1С при синхронізації залишків</div>
-      </div>
-      <div class="field">
-        <label>Своя ціна (якщо тимчасова знижка)</label>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <input id="f_override_no_vat"   type="number" step="any" min="0" placeholder="без ПДВ" style="max-width:140px">
-          <input id="f_override_with_vat" type="number" step="any" min="0" placeholder="з ПДВ"   style="max-width:140px">
+      </section>
+      <section class="im-grp">
+        <h3>На прайсі</h3>
+        <div class="im-grid im-grid--name">
+          <div class="field">
+            <label for="f_brand">Бренд</label>
+            <input id="f_brand" list="brandList" maxlength="40" autocomplete="off" placeholder="Напр. Deye">
+            <datalist id="brandList"></datalist>
+            <div class="hint" id="f_brand_hint"></div>
+          </div>
+          <div class="field">
+            <label for="f_display_name">Назва</label>
+            <input id="f_display_name" placeholder="Напр. Deye SUN-12K">
+            <div class="hint">Порожньо — назва з 1С</div>
+          </div>
+          <div class="field im-span">
+            <label for="f_display_spec">Підпис</label>
+            <input id="f_display_spec" placeholder="Напр. 12 кВт · 3-фазний · низьковольтний">
+          </div>
         </div>
-        <div class="hint" id="f_price1c"></div>
-      </div>
-      <div class="field">
-        <label>Dat (Datasheet) URL</label>
-        <input id="f_datasheet_url" placeholder="https://...">
-      </div>
-      <div class="field">
-        <label>Cert (Сертифікат) URL</label>
-        <input id="f_cert_url" placeholder="https://...">
-      </div>
-      <div class="preview-card" id="pvCard" style="display:none">
-        <div class="lbl">Так буде виглядати на прайсі</div>
-        <div class="pv-name" id="pv_name">—</div>
-        <div class="pv-spec" id="pv_spec"></div>
-      </div>
+      </section>
+      <section class="im-grp">
+        <h3>Ціна</h3>
+        <div class="im-grid">
+          <div class="field">
+            <label for="f_override_no_vat">Своя без ПДВ, <span id="f_cur_no">$</span></label>
+            <input id="f_override_no_vat" type="number" step="any" min="0" inputmode="decimal" placeholder="з 1С">
+          </div>
+          <div class="field">
+            <label for="f_override_with_vat">Своя з ПДВ, <span id="f_cur_with">$</span></label>
+            <input id="f_override_with_vat" type="number" step="any" min="0" inputmode="decimal" placeholder="з 1С">
+          </div>
+          <div class="hint im-span" id="f_price1c"></div>
+        </div>
+      </section>
+      <section class="im-grp">
+        <h3>Документи</h3>
+        <div class="im-grid">
+          <div class="field">
+            <label for="f_datasheet_url">Datasheet, URL</label>
+            <input id="f_datasheet_url" type="url" inputmode="url" placeholder="https://…">
+          </div>
+          <div class="field">
+            <label for="f_cert_url">Сертифікат, URL</label>
+            <input id="f_cert_url" type="url" inputmode="url" placeholder="https://…">
+          </div>
+        </div>
+      </section>
+      <section class="im-grp" id="pvCard">
+        <h3>На react.ink</h3>
+        <div>
+          <div class="pv-row">
+            <div class="pv-main">
+              <div class="pv-brand" id="pv_brand" hidden></div>
+              <div class="pv-name" id="pv_name">—</div>
+              <div class="pv-spec" id="pv_spec" hidden></div>
+            </div>
+            <div class="pv-price" id="pv_no"><span class="lbl">без ПДВ</span><span class="v">—</span></div>
+            <div class="pv-price" id="pv_with"><span class="lbl">з ПДВ</span><span class="v">—</span></div>
+            <div class="pv-stock" id="pv_stock"></div>
+          </div>
+          <div class="pv-note" id="pv_note"></div>
+        </div>
+      </section>
     </div>
     <div class="modal-foot">
       <span class="hint"><kbd>⌘</kbd>+<kbd>↵</kbd> — зберегти · <kbd>Esc</kbd> — закрити</span>
       <button class="btn btn--danger" id="deleteBtn" style="display:none" onclick="deleteItem()">Видалити</button>
       <button class="btn btn--ghost" onclick="closeItemModal()">Скасувати</button>
-      <button class="btn btn--primary" onclick="saveItem()">Зберегти</button>
+      <button class="btn btn--primary" id="saveItemBtn" onclick="saveItem()">Зберегти</button>
     </div>
   </div>
 </div>
@@ -784,6 +862,17 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
           <label>Порядок</label>
           <input id="cf_sort" type="number" placeholder="0" value="0">
         </div>
+      </div>
+      <div class="field">
+        <label>Знаків після коми</label>
+        <select id="cf_dec">
+          <option value="" id="cf_dec_auto">Авто</option>
+          <option value="0">0 — цілі</option>
+          <option value="1">1</option>
+          <option value="2">2 — до сотих</option>
+          <option value="3">3</option>
+        </select>
+        <div class="hint">Авто — до сотих, якщо хоч одна ціна категорії в 1С з копійками.</div>
       </div>
     </div>
     <div class="modal-foot">
@@ -818,6 +907,10 @@ let MISSING = null;              // { items: [...], as_of_date, count } — то
 let EDIT_ID = null;
 let EDIT_CAT = null;             // slug if editing existing category
 let CHOSEN_NOM = null;
+let EDIT_ITEM = null;             // позиція, відкрита в модалці (для ціни з 1С у превʼю)
+let NOM_SEARCH = false;           // «Товар з 1С»: true — відкрито пошук замість обраного товару
+let BRAND_TOUCHED = false;        // бренд правили руками → автопідказка не перезаписує поле
+let SAVING_ITEM = false;
 let FILTER = 'all';
 let SEARCH = '';
 let COLLAPSED = new Set();       // category slugs
@@ -1005,6 +1098,7 @@ function itemIssues(it) {
   const flags = {
     no1c: !it.nom1c_ref_key,
     noprice: !(it.no_vat && it.no_vat.price) && !(it.with_vat && it.with_vat.price),
+    nobrand: !String(it.brand || '').trim(),
   };
   return flags;
 }
@@ -1021,13 +1115,14 @@ function itemStockKind(it, cSlug) {
 }
 
 function renderStats() {
-  let items = 0, no1c = 0, noprice = 0, instock = 0, intransit = 0, none = 0;
+  let items = 0, no1c = 0, noprice = 0, nobrand = 0, instock = 0, intransit = 0, none = 0;
   for (const c of (STATE.categories || [])) {
     for (const it of (c.items || [])) {
       items++;
       const flags = itemIssues(it);
       if (flags.no1c) no1c++;
       if (flags.noprice) noprice++;
+      if (flags.nobrand) nobrand++;
       const k = itemStockKind(it, c.slug);
       if (k === 'instock') instock++;
       else if (k === 'intransit') intransit++;
@@ -1037,6 +1132,7 @@ function renderStats() {
   document.getElementById('cnt_all').textContent = items;
   document.getElementById('cnt_no1c').textContent = no1c;
   document.getElementById('cnt_noprice').textContent = noprice;
+  document.getElementById('cnt_nobrand').textContent = nobrand;
   document.getElementById('cnt_instock').textContent = instock;
   document.getElementById('cnt_intransit').textContent = intransit;
   document.getElementById('cnt_none').textContent = none;
@@ -1059,12 +1155,13 @@ function matchesFilter(it, cSlug) {
   const kind = itemStockKind(it, cSlug);
   if (FILTER === 'no1c' && !flags.no1c) return false;
   if (FILTER === 'noprice' && !flags.noprice) return false;
+  if (FILTER === 'nobrand' && !flags.nobrand) return false;
   if (FILTER === 'instock' && kind !== 'instock') return false;
   if (FILTER === 'intransit' && kind !== 'intransit') return false;
   if (FILTER === 'none' && kind !== 'none') return false;
   if (SEARCH) {
     const hay = [
-      it.display_name, it.display_spec, it.nom1c_description,
+      it.display_name, it.display_spec, it.nom1c_description, it.brand,
     ].filter(Boolean).join(' ').toLowerCase();
     if (!hay.includes(SEARCH)) return false;
   }
@@ -1240,9 +1337,10 @@ function renderRow(it, c) {
                   : kind === 'intransit' ? `<span class="stock-pill intransit"><span class="dot"></span>В дорозі</span>`
                   : `<span class="stock-pill none"><span class="dot"></span>Немає</span>`;
 
-  const specLine = it.display_spec ? `<div class="sub">${esc(it.display_spec)}</div>` : '';
-
-  const itemJson = JSON.stringify(it).replace(/'/g,"&#39;");
+  // Бренд — тихо на початку рядка підпису, щоб не додавати рядок у таблицю.
+  const brandTag = it.brand ? `<span class="brand-tag">${esc(it.brand)}</span>` : '';
+  const specLine = (brandTag || it.display_spec)
+    ? `<div class="sub">${brandTag}${brandTag && it.display_spec ? ' · ' : ''}${esc(it.display_spec || '')}</div>` : '';
 
   return `
     <tr class="${hidden ? 'row-hidden' : ''}" data-id="${it.id}">
@@ -1260,7 +1358,7 @@ function renderRow(it, c) {
       <td class="right">${fmtPrice(it.with_vat && it.with_vat.price)}</td>
       <td class="right">
         <div class="row-act">
-          <button onclick='openItemModal(${itemJson}, "${esc(c.slug)}")' title="Редагувати">✎</button>
+          <button onclick="openItemById(${Number(it.id)})" title="Редагувати">✎</button>
         </div>
       </td>
     </tr>`;
@@ -1324,7 +1422,8 @@ function renderMissing() {
             ${items.map(it => {
               const stockN = Math.round(Number(it.stock) || 0);
               const transitN = Math.round(Number(it.transit) || 0);
-              const nomJson = JSON.stringify({ ref_key: it.ref_key, description: it.description, article: it.article || '' }).replace(/'/g,"&#39;");
+              // esc(): сутності в назві з 1С (&quot;, &#39;) браузер розкодує в атрибуті й обірве JS-рядок.
+              const nomJson = esc(JSON.stringify({ ref_key: it.ref_key, description: it.description, article: it.article || '' }));
               return `
               <tr>
                 <td class="prod-cell"><div class="name">${esc(it.description || '—')}</div></td>
@@ -1351,25 +1450,13 @@ function addMissingToPrice(nom) {
     openCatModal();
     return;
   }
+  openItemModal(null, (STATE.categories[0] && STATE.categories[0].slug) || '');
   CHOSEN_NOM = nom;
-  EDIT_ID = null;
-  document.getElementById('modalTitle').textContent = 'Нова позиція';
-  document.getElementById('modalSub').textContent = '';
-  document.getElementById('f_category').value = (STATE.categories[0] && STATE.categories[0].slug) || '';
-  document.getElementById('f_nom1c_search').value = '';
   document.getElementById('f_display_name').value = nom.description || '';
-  document.getElementById('f_display_spec').value = '';
-  setSegStock('в наявності');
-  document.getElementById('f_datasheet_url').value = '';
-  document.getElementById('f_cert_url').value = '';
-  document.getElementById('f_override_no_vat').value = '';
-  document.getElementById('f_override_with_vat').value = '';
-  document.getElementById('deleteBtn').style.display = 'none';
   renderChosenNom();
+  updateBrandUi();
   updatePreview();
-  document.getElementById('ac_list').classList.remove('open');
-  document.getElementById('itemModal').classList.add('open');
-  setTimeout(() => document.getElementById('f_category').focus(), 50);
+  setTimeout(() => document.getElementById('f_category').focus(), 60);
 }
 
 function populateCategorySelect() {
@@ -1413,17 +1500,29 @@ function toggleAllCats() {
 }
 
 // ─── Item modal ───
+// ✎ у рядку таблиці: в onclick лише id, позицію беремо зі STATE. Текст позиції в атрибут не кладемо:
+// сутність `&quot;` у назві/бренді браузер розкодує в `"` і обірве JS-рядок (збережений XSS).
+// Копія — як раніше через JSON, щоб модалка не правила STATE до збереження.
+function openItemById(id) {
+  for (const c of STATE.categories) for (const it of (c.items || [])) {
+    if (String(it.id) === String(id)) return openItemModal(JSON.parse(JSON.stringify(it)), c.slug);
+  }
+}
+
 function openItemModal(item, preSlug) {
   EDIT_ID = (item && item.id) || null;
+  EDIT_ITEM = item || null;
   CHOSEN_NOM = item && item.nom1c_ref_key ? { ref_key: item.nom1c_ref_key, description: item.nom1c_description, article: '' } : null;
+  NOM_SEARCH = false;
+  BRAND_TOUCHED = false;
   document.getElementById('modalTitle').textContent = EDIT_ID ? 'Редагувати позицію' : 'Нова позиція';
-  const cat = (STATE.categories || []).find(c => c.slug === ((item && item.category_slug) || preSlug));
-  document.getElementById('modalSub').textContent = cat ? '· ' + cat.title : '';
   document.getElementById('f_category').value = (item && item.category_slug) || preSlug || (STATE.categories[0] && STATE.categories[0].slug) || '';
+  renderModalSub();
   document.getElementById('f_nom1c_search').value = '';
   document.getElementById('f_display_name').value = (item && item.display_name) || '';
   document.getElementById('f_display_spec').value = (item && item.display_spec) || '';
-  setSegStock((item && item.stock) || 'в наявності');
+  fillBrandList();
+  document.getElementById('f_brand').value = (item && item.brand) || '';
   document.getElementById('f_datasheet_url').value = (item && item.datasheet_url) || '';
   document.getElementById('f_cert_url').value = (item && item.cert_url) || '';
   document.getElementById('f_override_no_vat').value   = (item && item.override_price_no_vat   != null) ? item.override_price_no_vat   : '';
@@ -1431,6 +1530,7 @@ function openItemModal(item, preSlug) {
   document.getElementById('deleteBtn').style.display = EDIT_ID ? '' : 'none';
   renderPrice1c(item);
   renderChosenNom();
+  updateBrandUi();
   updatePreview();
   document.getElementById('ac_list').classList.remove('open');
   document.getElementById('itemModal').classList.add('open');
@@ -1442,15 +1542,14 @@ function openItemModal(item, preSlug) {
 function closeItemModal() {
   document.getElementById('itemModal').classList.remove('open');
   EDIT_ID = null;
+  EDIT_ITEM = null;
   CHOSEN_NOM = null;
+  NOM_SEARCH = false;
 }
-function setSegStock(val) {
-  document.querySelectorAll('#f_stock_seg button').forEach(b =>
-    b.classList.toggle('active', b.dataset.val === val));
-}
-function getSegStock() {
-  const b = document.querySelector('#f_stock_seg button.active');
-  return b ? b.dataset.val : 'в наявності';
+function catBySlug(slug) { return (STATE.categories || []).find(c => c.slug === slug) || null; }
+function renderModalSub() {
+  const cat = catBySlug(document.getElementById('f_category').value);
+  document.getElementById('modalSub').textContent = cat ? '· ' + cat.title : '';
 }
 // Ціна з 1С поруч зі «Своєю ціною»: без неї незрозуміло, від чого знижка.
 // Валюта override = валюта типу цін категорії (бек бере currency_code ціни 1С),
@@ -1466,30 +1565,226 @@ function renderPrice1c(item) {
   const fmt = v => v == null ? '—' : Number(v).toFixed(2).replace('.', ',');
   const no = item && item.no_vat, wi = item && item.with_vat;
   const cNo = curOf(no, 'no_vat'), cWi = curOf(wi, 'with_vat');
-  document.getElementById('f_override_no_vat').placeholder   = 'без ПДВ, ' + cNo;
-  document.getElementById('f_override_with_vat').placeholder = 'з ПДВ, ' + cWi;
-  if (!item || !item.id) { el.textContent = 'Порожньо — ціна з 1С'; return; }
+  document.getElementById('f_cur_no').textContent   = cNo;
+  document.getElementById('f_cur_with').textContent = cWi;
+  if (!item || !item.id) { el.textContent = 'Порожньо — ціна з 1С. Своя — лише для тимчасової знижки'; return; }
   const vNo = from1c(no, item.override_price_no_vat), vWi = from1c(wi, item.override_price_with_vat);
   el.textContent = `З 1С: без ПДВ ${fmt(vNo)}${vNo != null ? ' ' + cNo : ''} · з ПДВ ${fmt(vWi)}${vWi != null ? ' ' + cWi : ''}. Порожньо — ціна з 1С`;
 }
+// «Товар з 1С» — один контрол: обраний товар показано в самому полі, «змінити» відкриває пошук.
 function renderChosenNom() {
-  const el = document.getElementById('f_nom1c_chosen');
-  if (!CHOSEN_NOM) { el.innerHTML = ''; return; }
-  el.innerHTML = `
-    <div class="ac-chosen">
-      <span class="txt">${esc(CHOSEN_NOM.description)}${CHOSEN_NOM.article ? ` <span class="art">· ${esc(CHOSEN_NOM.article)}</span>` : ''}</span>
-      <button class="clear" onclick="clearChosenNom()" title="Прибрати">×</button>
-    </div>
-  `;
+  const pick = document.getElementById('f_nom1c_pick');
+  const inp = document.getElementById('f_nom1c_search');
+  const hint = document.getElementById('f_nom1c_hint');
+  const showPick = !!CHOSEN_NOM && !NOM_SEARCH;
+  pick.hidden = !showPick;
+  inp.hidden = showPick;
+  if (CHOSEN_NOM) {
+    document.getElementById('f_nom1c_txt').innerHTML = esc(CHOSEN_NOM.description)
+      + (CHOSEN_NOM.article ? ` <span class="art">· арт. ${esc(CHOSEN_NOM.article)}</span>` : '');
+    pick.title = CHOSEN_NOM.description || '';
+  }
+  hint.innerHTML = (CHOSEN_NOM && NOM_SEARCH)
+    ? `Звідси ціна і залишки · <button type="button" class="lnk" onclick="stopNomSearch()">лишити поточний</button>`
+    : (CHOSEN_NOM ? 'Звідси ціна і залишки' : 'Без товару з 1С не буде ні ціни, ні залишку');
 }
-function clearChosenNom() { CHOSEN_NOM = null; renderChosenNom(); updatePreview(); }
+function startNomSearch() {
+  NOM_SEARCH = true;
+  const inp = document.getElementById('f_nom1c_search');
+  inp.value = '';
+  renderChosenNom();
+  setTimeout(() => inp.focus(), 0);
+}
+function stopNomSearch() {
+  NOM_SEARCH = false;
+  document.getElementById('f_nom1c_search').value = '';
+  document.getElementById('ac_list').classList.remove('open');
+  renderChosenNom();
+}
+function clearChosenNom() {
+  CHOSEN_NOM = null;
+  NOM_SEARCH = false;
+  renderChosenNom();
+  updateBrandUi();
+  updatePreview();
+  setTimeout(() => document.getElementById('f_nom1c_search').focus(), 0);
+}
+
+// ─── Бренд ───
+// Як бренд пишуть в 1С / руками → як він стоїть на прайсі. Ключ — у нижньому регістрі.
+const BRAND_ALIASES = { 'deye': 'Deye', 'fox': 'FOX ESS', 'кве': 'KBE', 'kbe': 'KBE', 'hyundai': 'Hyundai', 'dah': 'DAH Solar' };
+// Бренди, що вже є в прайсі: lower → { name: найчастіше написання, n }.
+function knownBrands() {
+  const by = new Map();
+  for (const c of (STATE.categories || [])) for (const it of (c.items || [])) {
+    const b = String(it.brand || '').replace(/\s+/g, ' ').trim();
+    if (!b) continue;
+    const k = b.toLowerCase();
+    const e = by.get(k) || { spell: new Map(), n: 0 };
+    e.spell.set(b, (e.spell.get(b) || 0) + 1);
+    e.n++;
+    by.set(k, e);
+  }
+  const out = new Map();
+  for (const [k, e] of by) out.set(k, { name: [...e.spell].sort((x, y) => y[1] - x[1])[0][0], n: e.n });
+  return out;
+}
+function canonBrand(name, known) { const e = known.get(String(name).toLowerCase()); return e ? e.name : name; }
+// Те, що піде в body.brand: збіг з наявним без урахування регістру або аліас → наявне написання
+// (щоб не було «Fox» і «FOX ESS»); порожньо → null; ≤40 символів, як на беку.
+function normBrand(v, known = knownBrands()) {
+  const s = String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, 40).trim();
+  if (!s) return null;
+  const k = s.toLowerCase();
+  if (known.has(k)) return known.get(k).name;
+  if (BRAND_ALIASES[k]) return canonBrand(BRAND_ALIASES[k], known);
+  return s;
+}
+const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// Вгадати бренд з тексту: перший за позицією бренд / аліас цілим словом.
+// «Кабелі для Pylontech» — не бренд товару, тому слово після «для / for / під / до» пропускаємо.
+// texts — [{ t, src }] за пріоритетом; повертає { name, src } або null.
+function guessBrand(texts, known = knownBrands()) {
+  const terms = new Map();
+  for (const [k, e] of known) terms.set(k, e.name);
+  for (const [a, t] of Object.entries(BRAND_ALIASES)) if (!terms.has(a)) terms.set(a, canonBrand(t, known));
+  for (const { t, src } of texts) {
+    const str = String(t || '');
+    if (!str) continue;
+    let best = null;
+    for (const [term, name] of terms) {
+      const re = new RegExp('(?<![\\p{L}\\p{N}])' + reEsc(term).replace(/ /g, '\\s+') + '(?![\\p{L}\\p{N}])', 'giu');
+      let m;
+      while ((m = re.exec(str))) {
+        if (/(?:^|[^\p{L}])(?:для|for|під|до)\s+$/iu.test(str.slice(0, m.index))) continue;
+        if (!best || m.index < best.i || (m.index === best.i && m[0].length > best.len)) best = { i: m.index, len: m[0].length, name };
+        break;
+      }
+    }
+    if (best) return { name: best.name, src };
+  }
+  return null;
+}
+function brandTexts() {
+  const name = document.getElementById('f_display_name').value;
+  const nom = CHOSEN_NOM && CHOSEN_NOM.description;
+  return [
+    { t: name, src: nom && name.trim() === nom.trim() ? '1С' : 'назви' },   // назву підставили з 1С
+    { t: nom, src: '1С' },
+  ];
+}
+function fillBrandList() {
+  const known = knownBrands();
+  document.getElementById('brandList').innerHTML = [...known.values()]
+    .sort((a, b) => b.n - a.n || a.name.localeCompare(b.name))
+    .map(e => `<option value="${esc(e.name)}"></option>`).join('');
+}
+// Нова позиція, поки бренд не чіпали руками, — підставляємо вгаданий у саме поле.
+// Наявна без бренду — лише підказка, яку можна клікнути.
+function updateBrandUi() {
+  const inp = document.getElementById('f_brand');
+  const hint = document.getElementById('f_brand_hint');
+  const known = knownBrands();
+  if (!EDIT_ID && !BRAND_TOUCHED) {
+    const g = guessBrand(brandTexts(), known);
+    inp.value = g ? g.name : '';
+    hint.textContent = g ? `Вгадано з ${g.src} — перевірте` : 'Порожньо — без підпису бренду';
+    return;
+  }
+  const cur = inp.value.trim();
+  if (!cur) {
+    const g = guessBrand(brandTexts(), known);
+    hint.innerHTML = g
+      ? `з ${esc(g.src)}: <button type="button" class="lnk" onclick="applyBrandHint(this.textContent)">${esc(g.name)}</button>`
+      : 'Порожньо — без підпису бренду';
+    return;
+  }
+  const n = normBrand(cur, known);
+  hint.textContent = n !== cur ? `Збережеться як «${n}»` : (known.has(n.toLowerCase()) ? '' : 'Новий бренд');
+}
+function applyBrandHint(name) {
+  BRAND_TOUCHED = true;
+  document.getElementById('f_brand').value = name;
+  updateBrandUi();
+  updatePreview();
+}
+
+// ─── Превʼю рядка react.ink ───
+// Ті самі правила, що на фасаді (react-ink-public/index.html): назва = своя або з 1С,
+// $/Вт — ціна ÷ потужність з назви/підпису, знаки після коми — price_decimals категорії.
+function pvWatts(name, spec) {
+  const one = s => {
+    if (!s) return null;
+    const str = String(s);
+    const kw = str.match(/([\d]+(?:[.,][\d]+)?)\s*к[Вв]т(?![а-яА-ЯёЁіІїЇєЄґҐ])/i);
+    if (kw) return parseFloat(kw[1].replace(',', '.')) * 1000;
+    const w = str.match(/([\d]+(?:[.,][\d]+)?)\s*[Вв]т(?![а-яА-ЯёЁіІїЇєЄґҐ])/);
+    if (w) return parseFloat(w[1].replace(',', '.'));
+    const en = str.match(/([\d]+(?:[.,][\d]+)?)\s*([kK]?)[Ww]\b/);
+    if (en) return parseFloat(en[1].replace(',', '.')) * (en[2] ? 1000 : 1);
+    return null;
+  };
+  return one(name) || one(spec);
+}
+function pvFmt(v, dec) {
+  if (v == null || !isFinite(v)) return null;
+  if (dec) return v.toLocaleString('uk-UA', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  if (Math.abs(v) < 1) return v.toFixed(3).replace(/\.?0+$/, '').replace('.', ',');
+  return v.toLocaleString('uk-UA', { maximumFractionDigits: 0 });
+}
 function updatePreview() {
+  const it = EDIT_ITEM;
+  const cat = catBySlug(document.getElementById('f_category').value);
   const name = (document.getElementById('f_display_name').value || '').trim() || (CHOSEN_NOM && CHOSEN_NOM.description) || '—';
   const spec = (document.getElementById('f_display_spec').value || '').trim();
-  const pv = document.getElementById('pvCard');
-  pv.style.display = '';
+  const brand = normBrand(document.getElementById('f_brand').value);
+  const bEl = document.getElementById('pv_brand');
+  bEl.hidden = !brand; bEl.textContent = brand || '';
   document.getElementById('pv_name').textContent = name;
-  document.getElementById('pv_spec').textContent = spec;
+  const sEl = document.getElementById('pv_spec');
+  sEl.hidden = !spec; sEl.textContent = spec;
+
+  // Ціна з 1С відома лише для збереженої позиції з тим самим товаром 1С.
+  const sameNom = !!(it && it.id && CHOSEN_NOM && it.nom1c_ref_key === CHOSEN_NOM.ref_key);
+  const pt = STATE.price_types || {};
+  const curOf = (p, side) => {
+    const code = (p && p.currency_code) || (pt[side] && pt[side].currency_code);
+    return code === '978' ? '€' : code === '980' ? 'грн' : '$';
+  };
+  const w = cat && cat.unit === '$/Вт' ? pvWatts(name, spec) : null;
+  const dec = (cat && cat.price_decimals) || 0;
+  const priceOf = side => {
+    const ov = Number(document.getElementById('f_override_' + side).value);
+    if (ov > 0) return ov;
+    if (!sameNom) return null;
+    const p = it[side];
+    if (!p) return null;
+    const v = it['override_price_' + side] != null ? p.original_price : p.price;
+    return v != null && Number(v) > 0 ? Number(v) : null;
+  };
+  const shown = {};
+  for (const side of ['no_vat', 'with_vat']) {
+    const raw = priceOf(side);
+    const v = raw != null && w ? raw / w : raw;
+    const txt = pvFmt(v, dec);
+    shown[side] = txt != null;
+    const el = document.getElementById(side === 'no_vat' ? 'pv_no' : 'pv_with');
+    el.classList.toggle('is-empty', txt == null);   // не .empty — це клас порожнього стану сторінки з padding
+    const cur = cat && cat.unit === '$/Вт' ? '$/Вт' : curOf(it && it[side], side);
+    el.querySelector('.v').innerHTML = txt != null ? `${esc(txt)}<span class="cur">${esc(cur)}</span>` : '—';
+  }
+  const stock = sameNom ? (it.stock || '') : '';
+  document.getElementById('pv_stock').textContent = stock && stock !== 'немає в наявності' ? stock : '';
+
+  const notes = [];
+  if (!CHOSEN_NOM) notes.push('Без товару з 1С нема залишку — на react.ink позиція не показується');
+  else if (!sameNom) notes.push('Ціна з 1С і наявність зʼявляться після збереження');
+  else if (stock === 'немає в наявності') notes.push('Зараз на react.ink не видно: немає в наявності');
+  else if (!shown.no_vat && !shown.with_vat) notes.push('Зараз на react.ink не видно: нема ціни');
+  if (!brand && cat && (cat.items || []).some(x => x.brand && x.id !== (it && it.id))) {
+    notes.push('Без бренду — на прайсі над групами брендів, без підпису');
+  }
+  document.getElementById('pv_note').textContent = notes.join(' · ');
 }
 
 // ─── Autocomplete ───
@@ -1507,15 +1802,32 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!e.target.closest('.ac-wrap')) document.getElementById('ac_list').classList.remove('open');
   });
 
+  // «Товар з 1С»: Esc у пошуку — повернути обраний товар (або закрити список), а не всю модалку;
+  // пішли з порожнього пошуку — теж повертаємо обраний.
+  inp.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    const list = document.getElementById('ac_list');
+    if (NOM_SEARCH && CHOSEN_NOM) { e.stopPropagation(); stopNomSearch(); }
+    else if (list.classList.contains('open')) { e.stopPropagation(); list.classList.remove('open'); }
+  });
+  inp.addEventListener('blur', () => setTimeout(() => {
+    if (NOM_SEARCH && CHOSEN_NOM && !inp.value.trim() && document.activeElement !== inp) stopNomSearch();
+  }, 180));
+
   // preview live-update
-  ['f_display_name', 'f_display_spec'].forEach(id => {
+  ['f_display_name', 'f_display_spec', 'f_override_no_vat', 'f_override_with_vat'].forEach(id => {
     document.getElementById(id).addEventListener('input', updatePreview);
   });
-
-  // stock segmented
-  document.querySelectorAll('#f_stock_seg button').forEach(b => {
-    b.addEventListener('click', () => setSegStock(b.dataset.val));
+  document.getElementById('f_display_name').addEventListener('input', updateBrandUi);
+  const brandInp = document.getElementById('f_brand');
+  brandInp.addEventListener('input', () => { BRAND_TOUCHED = true; updateBrandUi(); updatePreview(); });
+  // Після введення показуємо те написання, яке реально збережеться («fox» → «FOX ESS»).
+  brandInp.addEventListener('change', () => {
+    const n = normBrand(brandInp.value) || '';
+    if (brandInp.value !== n) brandInp.value = n;
+    updateBrandUi(); updatePreview();
   });
+  document.getElementById('f_category').addEventListener('change', () => { renderModalSub(); updatePreview(); });
 
   // global search shortcut
   document.getElementById('searchInput').addEventListener('input', e => onSearch(e.target.value));
@@ -1600,25 +1912,30 @@ async function runSearch(q) {
 
 function pickNom(nom) {
   CHOSEN_NOM = nom;
+  NOM_SEARCH = false;
   renderChosenNom();
   document.getElementById('ac_list').classList.remove('open');
   const nameInp = document.getElementById('f_display_name');
   if (!nameInp.value.trim()) nameInp.value = nom.description;
   document.getElementById('f_nom1c_search').value = '';
+  updateBrandUi();
   updatePreview();
   // auto-focus display_name for further edits
   setTimeout(() => nameInp.focus(), 20);
 }
 
 async function saveItem() {
+  if (SAVING_ITEM) return;
+  // stock не шлемо: наявність бек рахує з залишків 1С (buildPriceListPayload → computedStock),
+  // колонку price_list_items.stock ніхто не читає.
   const body = {
     id: EDIT_ID || undefined,
     category_slug: document.getElementById('f_category').value,
     nom1c_ref_key: CHOSEN_NOM ? CHOSEN_NOM.ref_key : null,
     nom1c_description: CHOSEN_NOM ? CHOSEN_NOM.description : null,
+    brand: normBrand(document.getElementById('f_brand').value),
     display_name: document.getElementById('f_display_name').value.trim() || null,
     display_spec: document.getElementById('f_display_spec').value.trim() || null,
-    stock: getSegStock(),
     datasheet_url: document.getElementById('f_datasheet_url').value.trim() || null,
     cert_url: document.getElementById('f_cert_url').value.trim() || null,
     override_price_no_vat:   document.getElementById('f_override_no_vat').value.trim()   || null,
@@ -1626,12 +1943,15 @@ async function saveItem() {
     sort_order: 0,
   };
   if (!body.category_slug) { toast('Оберіть категорію', 'err'); return; }
+  const btn = document.getElementById('saveItemBtn');
+  SAVING_ITEM = true; btn.disabled = true;
   try {
     await apiCall('price_list_upsert_item', { method: 'POST', body });
     toast('Збережено', 'ok');
     closeItemModal();
     await load();
   } catch (e) { toast('Помилка: ' + e.message, 'err'); }
+  finally { SAVING_ITEM = false; btn.disabled = false; }
 }
 
 async function deleteItem() {
@@ -1657,6 +1977,11 @@ function openCatModal(slug) {
   document.getElementById('cf_slug').disabled = !!EDIT_CAT;
   document.getElementById('cf_unit').value = (cat && cat.unit) || '';
   document.getElementById('cf_sort').value = (cat && (cat.sort_order != null ? cat.sort_order : 0)) || 0;
+  const decSet = cat && cat.price_decimals_set != null ? String(cat.price_decimals_set) : '';
+  document.getElementById('cf_dec').value = decSet;
+  // В «Авто» показуємо, що воно зараз дає — щоб не гадати, чи треба ставити руками.
+  document.getElementById('cf_dec_auto').textContent = (cat && decSet === '' && cat.price_decimals != null)
+    ? `Авто (зараз ${cat.price_decimals})` : 'Авто';
   document.getElementById('catDeleteBtn').style.display = EDIT_CAT ? '' : 'none';
   document.getElementById('catModal').classList.add('open');
   setTimeout(() => document.getElementById('cf_title').focus(), 50);
@@ -1670,11 +1995,13 @@ async function saveCategory() {
   const slug = document.getElementById('cf_slug').value.trim();
   const unit = document.getElementById('cf_unit').value.trim();
   const sort = Number(document.getElementById('cf_sort').value) || 0;
+  const decVal = document.getElementById('cf_dec').value;
+  const price_decimals = decVal === '' ? null : Number(decVal);
   if (!title) { toast('Вкажіть назву', 'err'); return; }
   if (!slug) { toast('Вкажіть slug', 'err'); return; }
   if (!/^[a-z0-9-]+$/.test(slug)) { toast('Slug: лише a-z, 0-9, -', 'err'); return; }
   try {
-    await apiCall('price_list_upsert_category', { method: 'POST', body: { slug, title, unit: unit || null, sort_order: sort } });
+    await apiCall('price_list_upsert_category', { method: 'POST', body: { slug, title, unit: unit || null, sort_order: sort, price_decimals } });
     toast('Збережено', 'ok');
     closeCatModal();
     await load();
