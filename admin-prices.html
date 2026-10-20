@@ -731,8 +731,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
           <input id="f_override_no_vat"   type="number" step="any" min="0" placeholder="без ПДВ" style="max-width:140px">
           <input id="f_override_with_vat" type="number" step="any" min="0" placeholder="з ПДВ"   style="max-width:140px">
-          <span class="hint" style="margin:0">Без ПДВ = $, з ПДВ = €</span>
         </div>
+        <div class="hint" id="f_price1c"></div>
       </div>
       <div class="field">
         <label>Dat (Datasheet) URL</label>
@@ -1219,7 +1219,8 @@ function renderRow(it, c) {
   const fmtPrice = v => {
     if (v == null) return '<span class="muted">—</span>';
     const n = watts ? Number(v) / watts : Number(v);
-    return `<span class="price">${n.toFixed(n < 1 ? 3 : 0)}<span class="cur"> ${unitStr}</span></span>`;
+    const txt = c.price_decimals ? n.toFixed(c.price_decimals).replace('.', ',') : n.toFixed(n < 1 ? 3 : 0);
+    return `<span class="price">${txt}<span class="cur"> ${unitStr}</span></span>`;
   };
 
   const dsBadge = it.datasheet_url
@@ -1428,6 +1429,7 @@ function openItemModal(item, preSlug) {
   document.getElementById('f_override_no_vat').value   = (item && item.override_price_no_vat   != null) ? item.override_price_no_vat   : '';
   document.getElementById('f_override_with_vat').value = (item && item.override_price_with_vat != null) ? item.override_price_with_vat : '';
   document.getElementById('deleteBtn').style.display = EDIT_ID ? '' : 'none';
+  renderPrice1c(item);
   renderChosenNom();
   updatePreview();
   document.getElementById('ac_list').classList.remove('open');
@@ -1449,6 +1451,26 @@ function setSegStock(val) {
 function getSegStock() {
   const b = document.querySelector('#f_stock_seg button.active');
   return b ? b.dataset.val : 'в наявності';
+}
+// Ціна з 1С поруч зі «Своєю ціною»: без неї незрозуміло, від чого знижка.
+// Валюта override = валюта типу цін категорії (бек бере currency_code ціни 1С),
+// тому підпис рахуємо з даних позиції, а не хардкодом.
+function renderPrice1c(item) {
+  const el = document.getElementById('f_price1c');
+  const pt = STATE.price_types || {};
+  const curOf = (p, side) => {
+    const code = (p && p.currency_code) || (pt[side] && pt[side].currency_code);
+    return code === '978' ? '€' : code === '980' ? 'грн' : '$';
+  };
+  const from1c = (p, ov) => !p ? null : (ov != null ? p.original_price : p.price);
+  const fmt = v => v == null ? '—' : Number(v).toFixed(2).replace('.', ',');
+  const no = item && item.no_vat, wi = item && item.with_vat;
+  const cNo = curOf(no, 'no_vat'), cWi = curOf(wi, 'with_vat');
+  document.getElementById('f_override_no_vat').placeholder   = 'без ПДВ, ' + cNo;
+  document.getElementById('f_override_with_vat').placeholder = 'з ПДВ, ' + cWi;
+  if (!item || !item.id) { el.textContent = 'Порожньо — ціна з 1С'; return; }
+  const vNo = from1c(no, item.override_price_no_vat), vWi = from1c(wi, item.override_price_with_vat);
+  el.textContent = `З 1С: без ПДВ ${fmt(vNo)}${vNo != null ? ' ' + cNo : ''} · з ПДВ ${fmt(vWi)}${vWi != null ? ' ' + cWi : ''}. Порожньо — ціна з 1С`;
 }
 function renderChosenNom() {
   const el = document.getElementById('f_nom1c_chosen');
