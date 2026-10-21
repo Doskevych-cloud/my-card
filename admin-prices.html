@@ -90,6 +90,20 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .tbl thead th .sort-ico.active{color:var(--accent)}
 .tbl tbody td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top;overflow:hidden;text-overflow:ellipsis}
 .tbl tbody tr:last-child td{border-bottom:none}
+/* Групи брендів у категорії — як на react.ink; між групами лишаємо лінію під останнім рядком */
+.tbl tbody.grp:not(:last-child) tr:last-child td{border-bottom:1px solid var(--border)}
+.tbl tr.grp-head td{padding:12px 10px 4px;border-bottom:none;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
+.tbl tbody tr.grp-head:hover{background:transparent}
+.tbl tr.grp-head .gh{display:flex;align-items:center;gap:6px}
+/* Ручка ручного порядку: ледь видно завжди, яскраво на hover (на сенсорі — завжди яскраво) */
+.drag-h{display:inline-flex;align-items:center;justify-content:center;width:14px;height:18px;margin-left:-4px;flex:none;color:var(--text4);cursor:grab;touch-action:none;opacity:.45;transition:opacity .12s}
+.drag-h svg{width:10px;height:14px;display:block}
+.tbl tbody tr:hover .drag-h,.drag-h:focus-visible{opacity:1}
+.drag-h:hover{color:var(--text2)}
+@media (pointer:coarse){.drag-h{opacity:1;width:22px;height:26px}}
+.tbl tr.dragging td{background:var(--bg2)}
+.tbl tbody.dragging tr td{background:var(--bg2)}
+body.is-dragging,body.is-dragging *{cursor:grabbing!important;user-select:none!important;-webkit-user-select:none!important}
 .tbl tbody tr:hover{background:var(--bg2)}
 .tbl tbody tr.row-hidden{display:none}
 .tbl tbody tr.row-warn td:first-child{box-shadow:inset 2px 0 0 transparent}
@@ -1261,13 +1275,38 @@ function renderCatTable(c) {
         <th class="right sortable" onclick="sortBy('with_vat')">З ПДВ ${sortIco('with_vat')}</th>
         <th></th>
       </tr></thead>
-      <tbody>
-        ${sortedItems(c.items, c).map(it => renderRow(it, c)).join('')}
-      </tbody>
+      ${SORT.field
+        ? `<tbody>${sortedItems(c.items, c).map(it => renderRow(it, c)).join('')}</tbody>`
+        : brandGroupsOf(c.items).map(g => renderBrandGroup(g, c, canReorder())).join('')}
     </table>`;
 }
 
-function renderRow(it, c) {
+// Групи як на react.ink (brandRows у react-ink-public): без бренду — першими без підпису,
+// далі бренди за першою появою в порядку позицій; бренд порівнюємо без регістру.
+function brandGroupsOf(items) {
+  const none = [], groups = new Map();
+  for (const it of items) {
+    const b = String(it.brand || '').trim();
+    if (!b) { none.push(it); continue; }
+    const k = b.toLowerCase();
+    if (!groups.has(k)) groups.set(k, { brand: b, items: [] });
+    groups.get(k).items.push(it);
+  }
+  return (none.length ? [{ brand: null, items: none }] : []).concat([...groups.values()]);
+}
+// Ручний порядок — лише в звичайному вигляді: під сортуванням колонок, фільтром чи пошуком
+// видно не всі позиції або не в їхньому порядку, і перетягування збрехало б.
+function canReorder() { return !SORT.field && FILTER === 'all' && !SEARCH; }
+const DRAG_ICO = '<svg viewBox="0 0 10 14" fill="currentColor" aria-hidden="true"><circle cx="2.5" cy="2.5" r="1.3"/><circle cx="7.5" cy="2.5" r="1.3"/><circle cx="2.5" cy="7" r="1.3"/><circle cx="7.5" cy="7" r="1.3"/><circle cx="2.5" cy="11.5" r="1.3"/><circle cx="7.5" cy="11.5" r="1.3"/></svg>';
+function renderBrandGroup(g, c, reorder) {
+  const anyVisible = g.items.some(it => matchesFilter(it, c.slug));
+  const head = g.brand ? `
+    <tr class="grp-head${anyVisible ? '' : ' row-hidden'}"><td colspan="10"><div class="gh">${reorder
+      ? `<span class="drag-h" data-drag="grp" title="Перетягніть групу">${DRAG_ICO}</span>` : ''}${esc(g.brand)}</div></td></tr>` : '';
+  return `<tbody class="grp${g.brand ? ' grp-branded' : ''}">${head}${g.items.map(it => renderRow(it, c, { grouped: true, reorder })).join('')}</tbody>`;
+}
+
+function renderRow(it, c, opt = {}) {
   const st = it._stock;
   const cellN = (v) => {
     if (!st) return '—';
@@ -1337,15 +1376,16 @@ function renderRow(it, c) {
                   : kind === 'intransit' ? `<span class="stock-pill intransit"><span class="dot"></span>В дорозі</span>`
                   : `<span class="stock-pill none"><span class="dot"></span>Немає</span>`;
 
-  // Бренд — тихо на початку рядка підпису, щоб не додавати рядок у таблицю.
-  const brandTag = it.brand ? `<span class="brand-tag">${esc(it.brand)}</span>` : '';
+  // Бренд — тихо на початку рядка підпису; у вигляді з групами він уже в підписі групи.
+  const brandTag = (it.brand && !opt.grouped) ? `<span class="brand-tag">${esc(it.brand)}</span>` : '';
+  const dragH = opt.reorder ? `<span class="drag-h" data-drag="row" title="Перетягніть, щоб змінити порядок">${DRAG_ICO}</span>` : '';
   const specLine = (brandTag || it.display_spec)
     ? `<div class="sub">${brandTag}${brandTag && it.display_spec ? ' · ' : ''}${esc(it.display_spec || '')}</div>` : '';
 
   return `
     <tr class="${hidden ? 'row-hidden' : ''}" data-id="${it.id}">
       <td class="prod-cell">
-        <div class="name">${warnIco}${esc(it.display_name || '—')}${dsBadge}${certBadge}</div>
+        <div class="name">${dragH}${warnIco}${esc(it.display_name || '—')}${dsBadge}${certBadge}</div>
         ${specLine}
       </td>
       <td>${stockPill}</td>
@@ -1940,7 +1980,6 @@ async function saveItem() {
     cert_url: document.getElementById('f_cert_url').value.trim() || null,
     override_price_no_vat:   document.getElementById('f_override_no_vat').value.trim()   || null,
     override_price_with_vat: document.getElementById('f_override_with_vat').value.trim() || null,
-    sort_order: 0,
   };
   if (!body.category_slug) { toast('Оберіть категорію', 'err'); return; }
   const btn = document.getElementById('saveItemBtn');
@@ -1952,6 +1991,77 @@ async function saveItem() {
     await load();
   } catch (e) { toast('Помилка: ' + e.message, 'err'); }
   finally { SAVING_ITEM = false; btn.disabled = false; }
+}
+
+// ─── Ручний порядок: позиції в межах групи бренду, групи — в межах категорії ───
+// Порядок на react.ink / в кабінеті / PDF = sort_order (ORDER BY category, sort_order, id),
+// групи брендів там ідуть за першою появою — тож достатньо записати 1..N у порядку рядків.
+let DRAG = null;
+document.addEventListener('pointerdown', e => {
+  const h = e.target.closest && e.target.closest('.drag-h');
+  if (!h || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  const isGrp = h.dataset.drag === 'grp';
+  const el = isGrp ? h.closest('tbody') : h.closest('tr');
+  const section = h.closest('.cat-section');
+  if (!el || !section) return;
+  e.preventDefault();
+  try { h.setPointerCapture(e.pointerId); } catch (_) {}
+  DRAG = { el, box: el.parentNode, isGrp, slug: section.dataset.slug, y: e.clientY, before: catOrderIds(section) };
+  el.classList.add('dragging');
+  document.body.classList.add('is-dragging');
+  requestAnimationFrame(dragTick);
+});
+document.addEventListener('pointermove', e => { if (DRAG) { DRAG.y = e.clientY; dragPlace(); } });
+document.addEventListener('pointerup', dragEnd);
+document.addEventListener('pointercancel', dragEnd);
+function dragSiblings() {
+  // Рядок — лише серед рядків своєї групи; група — лише серед груп з брендом
+  // (позиції без бренду на прайсі завжди перші, їхню групу не рухаємо).
+  return DRAG.isGrp
+    ? [...DRAG.box.querySelectorAll(':scope > tbody.grp-branded')]
+    : [...DRAG.box.querySelectorAll(':scope > tr[data-id]')];
+}
+function dragPlace() {
+  const others = dragSiblings().filter(x => x !== DRAG.el);
+  if (!others.length) return;
+  const target = others.find(o => { const r = o.getBoundingClientRect(); return DRAG.y < r.top + r.height / 2; });
+  if (target) { if (DRAG.el.nextElementSibling !== target) DRAG.box.insertBefore(DRAG.el, target); }
+  else { const last = others[others.length - 1]; if (last.nextElementSibling !== DRAG.el) last.after(DRAG.el); }
+}
+function dragTick() {
+  if (!DRAG) return;
+  const edge = 70, y = DRAG.y, h = window.innerHeight;
+  const dy = y < edge ? -Math.ceil((edge - y) / 5) : (y > h - edge ? Math.ceil((y - (h - edge)) / 5) : 0);
+  if (dy) { window.scrollBy(0, dy); dragPlace(); }
+  requestAnimationFrame(dragTick);
+}
+function catOrderIds(section) {
+  return [...section.querySelectorAll('.tbl tbody tr[data-id]')].map(tr => Number(tr.dataset.id));
+}
+async function dragEnd() {
+  if (!DRAG) return;
+  const d = DRAG; DRAG = null;
+  d.el.classList.remove('dragging');
+  document.body.classList.remove('is-dragging');
+  const section = document.querySelector(`.cat-section[data-slug="${CSS.escape(d.slug)}"]`);
+  if (!section) return;
+  const ids = catOrderIds(section);
+  if (ids.join(',') === d.before.join(',')) return;
+  await saveCatOrder(d.slug, ids);
+}
+async function saveCatOrder(slug, ids) {
+  const c = (STATE.categories || []).find(x => x.slug === slug);
+  if (!c) return;
+  const byId = new Map(c.items.map(it => [Number(it.id), it]));
+  const order = ids.filter(id => byId.has(id)).concat(c.items.map(it => Number(it.id)).filter(id => !ids.includes(id)));
+  try {
+    await apiCall('price_list_reorder', { method: 'POST', body: { items: order.map((id, i) => ({ id, sort_order: i + 1 })) } });
+    c.items = order.map(id => byId.get(id));
+    toast('Порядок збережено — react.ink оновиться за кілька секунд', 'ok');
+  } catch (e) {
+    toast('Порядок не збережено: ' + e.message, 'err');   // DOM повертаємо з STATE нижче
+  }
+  render();
 }
 
 async function deleteItem() {
