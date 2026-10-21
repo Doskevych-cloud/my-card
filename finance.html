@@ -473,6 +473,97 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .sr-det-grid{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;font-size:12px;color:var(--text2);line-height:1.45}
 .sr-det-grid .k{color:var(--text3)}
 .sr-empty{padding:40px 20px;text-align:center;color:var(--text3);font-size:13px}
+/* режим «Артикули»: черга правок у 1С */
+.sr-sec{margin:0 0 14px;border:1px solid var(--border);border-radius:12px;background:var(--bg);overflow:hidden}
+.sr-sec-h{display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:10px 14px;background:var(--surface2);font-size:12px;font-weight:700;color:var(--text);cursor:pointer;user-select:none}
+.sr-sec-h .tri{display:inline-block;width:10px;margin-right:8px;font-size:9px;color:var(--text3);transition:transform .18s ease-out}
+.sr-sec-h[data-collapsed="true"] .tri{transform:rotate(-90deg)}
+.sr-sec-h--plain{cursor:default}
+.sr-sec-eff{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.sr-task{display:grid;grid-template-columns:minmax(0,1fr) 150px 220px;gap:6px 16px;padding:12px 14px;border-top:1px solid var(--border);font-size:12.5px;color:var(--text)}
+.sr-task--dis{opacity:.85}
+.sr-task.sr-flash{outline:2px solid var(--accent);outline-offset:-2px}
+.sr-task-main{min-width:0}
+.sr-act{font-weight:600;line-height:1.9;overflow-wrap:anywhere}
+.sr-act-card{margin-right:6px;white-space:nowrap}
+.sr-old{color:var(--text3);font-weight:400}
+.sr-q{font-weight:600}
+.sr-copy{font:inherit;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;font-weight:600;color:var(--text);background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:2px 8px;cursor:pointer;overflow-wrap:anywhere;word-break:break-all;text-align:left}
+.sr-copy:hover,.sr-copy:focus{border-color:var(--accent);outline:none}
+.sr-script{display:inline-block;margin-left:8px;font-size:11px;font-weight:400;color:var(--text3)}
+.sr-manual{font:inherit;font-size:12px;margin-left:6px;padding:2px 6px;border:1px solid var(--accent);border-radius:6px;background:var(--bg);color:var(--text)}
+.sr-keep,.sr-prod{color:var(--text2);margin-top:2px}
+.sr-ev,.sr-mark{color:var(--text3);font-size:11.5px;margin-top:3px;line-height:1.45}
+.sr-mark a,.sr-more a,.eq-note a{color:inherit;text-decoration:underline}
+.sr-worse{color:var(--red)}
+.sr-task-eff{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.sr-acts{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;align-content:flex-start}
+.sr-btn{font:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--text2);cursor:pointer}
+.sr-btn:hover,.sr-btn.active{border-color:var(--accent);color:var(--accent)}
+.sr-btn--main{color:var(--text)}
+.sr-btn:disabled{opacity:.5;cursor:default}
+.sr-form{grid-column:1/-1;display:flex;flex-direction:column;gap:8px;padding:10px 0 2px}
+.sr-form-q{font-weight:600;color:var(--text2)}
+.sr-reasons{display:flex;flex-wrap:wrap;gap:6px}
+.sr-form textarea{width:100%;box-sizing:border-box;font:inherit;font-size:12.5px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--text);resize:vertical}
+.sr-form textarea:focus{border-color:var(--accent);outline:none}
+.sr-form-act{display:flex;gap:6px}
+.sr-form-err{color:var(--red);font-size:12px}
+.sr-more{padding:9px 14px;border-top:1px solid var(--border);font-size:12px;color:var(--text2)}
+.sr-det-task{margin-top:8px;font-size:12px;color:var(--text2)}
+.sr-art #srDateIn,.sr-art #srPresetGroup,.sr-art #srToolbar .lbl,.sr-art #srToolbar .sep{display:none}
+.sr-fg{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;flex-wrap:wrap;gap:6px;padding:6px 0 10px}
+.sr-fg .chip{padding:7px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;user-select:none}
+.sr-fg .chip .n{color:var(--text3);font-weight:500;margin-left:4px}
+.sr-fg .chip.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.sr-fg .chip.active .n{color:inherit}
+.sr-fg-sub{padding:0 14px 10px;font-size:12px;color:var(--text3);line-height:1.45}
+.sr-ph{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 120px;gap:0 20px;padding:7px 14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700}
+.sr-ph span:last-child{text-align:right}
+.sr-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 120px;gap:4px 20px;padding:12px 14px;border-top:1px solid var(--border);font-size:12.5px;color:var(--text)}
+.sr-pair.sr-flash{outline:2px solid var(--accent);outline-offset:-2px}
+.sr-pair--done{display:block;padding:9px 14px}
+.sr-pc{min-width:0;overflow-wrap:anywhere}
+.sr-pc--empty{color:var(--text3);font-size:12px;padding-top:2px}
+.sr-pc-meta{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 6px;color:var(--text3);font-size:12px}
+.sr-pc-lbl{display:none;font-weight:700;color:var(--text2);width:34px}
+.sr-pc-q{margin-left:auto;color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sr-pc-name{font-size:13px;font-weight:500;line-height:1.4;margin-top:2px}
+.sr-mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--text3)}
+.sr-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--text);border-bottom:1px dashed var(--text3);cursor:copy}
+.sr-code:hover{border-bottom-color:var(--accent)}
+.sr-copied{margin-left:6px;font-size:11px;font-weight:400;color:var(--text3)}
+.sr-pair-sum{text-align:right;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sr-pair-wide{grid-column:1/-1;min-width:0}
+.sr-step{margin-top:6px;line-height:2;overflow-wrap:anywhere}
+.sr-step .sr-copy{min-height:28px}
+.sr-man{font:inherit;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);width:180px;max-width:100%}
+.sr-man:focus{border-color:var(--accent);outline:none}
+.sr-pair-acts{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin-top:8px}
+.sr-lnk{color:var(--text2);font-size:12px;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px}
+.sr-lnk:hover{color:var(--accent)}
+.sr-alt{margin:8px 0 0;padding:8px 0 0 14px;border-top:1px dashed var(--border)}
+.sr-wbar{position:sticky;bottom:0;z-index:6;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:10px;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));background:var(--surface2);border:1px solid var(--border);border-radius:12px;font-size:12.5px;font-weight:600}
+.sr-det-task a{color:inherit;text-decoration:underline}
+@media(max-width:720px){
+  .sr-task{grid-template-columns:1fr;padding:12px 10px}
+  .sr-ph{display:none}
+  .sr-pair{display:block;padding:12px 10px}
+  .sr-pc + .sr-pc{margin-top:8px}
+  .sr-pc-lbl{display:inline-block}
+  .sr-pc-name{font-size:14px;line-height:1.35}
+  .sr-pair-sum{text-align:left;margin-top:6px;font-size:12px}
+  .sr-pair-sum::before{content:'розбіжність ';font-weight:400;color:var(--text3)}
+  .sr-step .sr-copy{min-height:36px}
+  .sr-pair-acts .sr-lnk{padding:10px 0 10px 4px}
+  .sr-pair-acts .sr-btn{min-height:40px}
+  .sr-task-eff{text-align:left}
+  .sr-act-card{display:block}
+  .sr-copy{display:inline-block;max-width:100%}
+  .sr-acts{justify-content:stretch}
+  .sr-acts .sr-btn{flex:1 1 0;min-height:44px}
+  .sr-form-act .sr-btn{flex:1 1 0;min-height:44px}
+}
 @media(max-width:720px){
   .sr-filters #srSearch{margin-left:0;flex:1 1 100%}
 }
@@ -884,7 +975,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <div id="srMeta"></div>
       <div id="srSummary"></div>
       <div class="toolbar sr-filters">
+        <span class="group" id="srModeGroup">
+          <span class="chip active" data-mode="rec" onclick="srSetMode('rec')">Звірка</span>
+          <span class="chip" data-mode="art" onclick="srSetMode('art')">Артикули <span class="n" id="srArtN"></span></span>
+        </span>
         <span class="group" id="srStGroup"></span>
+        <span class="group" id="srBaseGroup" style="display:none"></span>
+        <span id="srOgChip"></span>
         <input type="text" id="srSearch" placeholder="Товар, артикул або код" autocomplete="off" oninput="srOnSearch(this.value)">
       </div>
       <div id="srBody"><div class="loading">Завантаження...</div></div>
@@ -1174,7 +1271,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <ul>
       <li>Спершу <b>за артикулом</b>: регістр і пробіли не важать; однакові на вигляд кирилиця й латиниця (С/C, Н/H, Р/P…) — та сама літера.</li>
       <li>Без артикула або якщо за артикулом пари нема — <b>за назвою</b>: назва УНФ проти «Найменування» або «Повного найменування» картки buh. Мають збігатися всі слова, числа й коди моделі.</li>
-      <li>Схожі, але не однакові назви <b>не зараховуються</b>. У рядку тоді стоїть «є схожа картка», а в розгортці — яка саме: найчастіше це той самий товар з різними артикулами в базах. Щоб звіт їх звʼязав, треба прописати однаковий артикул.</li>
+      <li>Схожі, але не однакові назви <b>не зараховуються</b>. Якщо звіт бачить, що це той самий товар з різними артикулами, у рядку стоїть «пара · закриє …» або «перевірити пару», а що й де прописати — у режимі «Артикули».</li>
     </ul>
     <h3>Одиниці виміру</h3>
     <p>Кількість buh зводиться до одиниці УНФ за назвами одиниць: км → м ×1000, «100 шт» → шт ×100, тис. шт → шт ×1000, компл / пач → шт / пак ×1. Коефіцієнт перевіряє собівартість партії: якщо ціна buh за одиницю розходиться із закупівлею в УНФ у десятки разів, береться коефіцієнт за собівартістю. Що саме перераховано — у розгортці («Одиниці»); «не перераховано» — кількості в різних одиницях, різницю перевіряти вручну.</p>
@@ -1189,6 +1286,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>В УНФ більше</b> — товар є в обох базах, але в УНФ більше; плюс <b>у buh нема</b> — у buh залишку нема зовсім: «картка є, залишку нема», «картки нема» (у buh не заведено), «картка є, залишок поза звіркою» (лежить лише на інших складах buh) або «картка є, її залишок — на іншому товарі» (у картки артикул іншої позиції, тож її залишок пішов на той рядок — див. підказку).</li>
       <li><b>У buh більше</b> — є в обох, у buh більше; плюс <b>в УНФ нема</b> — у buh є залишок, а на складах УНФ у звірці нема: «картка є, на складах звірки нема» (товар записаний на інший склад УНФ — див. розгортку) або «картки нема».</li>
       <li><b>Збіг</b> — кількості однакові. Пошук — за назвою, артикулом або кодом картки будь-якої бази.</li>
+    </ul>
+    <h3>Режим «Артикули»: пари без спільного артикула</h3>
+    <ul>
+      <li><b>Навіщо.</b> Звірка порівнює товар лише тоді, коли в картках УНФ і Бух однаковий артикул. Тут — позиції, які лежать на складі, але пари в іншій базі за артикулом не мають. Поки артикули різні, їхні залишки не порівнюються.</li>
+      <li><b>Пара.</b> Ліворуч — картка УНФ, праворуч — найсхожіша картка Бух (або навпаки, якщо без пари картка Бух). «Сума» — розбіжність у гривнях, яку дає позиція без пари.</li>
+      <li><b>Готові</b> — є доказ, що це той самий товар: однаковий код моделі в назвах, артикул однієї бази в назві чи накладній іншої, або назва з накладної + ціна сходиться. Інструкцію видно одразу: яку картку відкрити і який артикул вписати.</li>
+      <li><b>Перевірте</b> — схожа картка є, доказу нема. Червоним — числа, якими назви відрізняються, і «Різниця» (номінал, розмір, виробник…). Якщо це той самий товар — «Так, це пара», і зʼявиться інструкція. «ще N схожі» — інші кандидати.</li>
+      <li><b>Схожих нема</b> — в іншій базі такого товару, найімовірніше, не заведено. «пари нема» з причиною ховає позицію для всіх; «Повернути» — унизу.</li>
+      <li><b>Яку базу правити.</b> Бух копіює артикул УНФ. Якщо в УНФ артикула нема — спершу вписати в УНФ (інструкція з двох кроків). Код картки: НФ-… — це УНФ, 00-… — Бух; якщо код у 1С не знаходиться, ви не в тій базі.</li>
+      <li><b>Копіюйте кнопкою</b>, не набирайте: кирилична «С» і латинська «C» виглядають однаково, а для звірки це різні артикули. Код картки копіюється кліком.</li>
+      <li><b>«Вписав»</b> — позиція згортається в сірий рядок, унизу зʼявляється «↻ Перевірити в 1С». Після перевірки пара, що зійшлась, зникає зі списку («сьогодні зійшлось N»); якщо ні — рядок покаже, що в картці досі.</li>
+      <li><b>«не пара»</b> на кандидаті прибирає його з підказок для всіх. Рішення бачать усі, хто має доступ до звірки.</li>
+      <li><b>Інші помилки в артикулах</b> (згорнуто внизу) — те, що система знайшла сама: артикул на чужому товарі, один артикул на різних товарах, назва, списана з іншої картки.</li>
+      <li>ERP у 1С нічого не пише. Пари — лише на сьогодні: довідники поточні.</li>
     </ul>
     <h3>Чому цифра може здивувати</h3>
     <ul>
@@ -1346,6 +1457,8 @@ function saveStateToUrl() {
     if (st && st.on) p.set('on', st.on);
     if (st && st.org) p.set('org', st.org);
     if (tab === 'sr' && st.st && st.st !== 'diff') p.set('st', st.st);
+    if (tab === 'sr' && st.mode === 'art') p.set('srv', 'art');
+    if (tab === 'sr' && st.mode === 'art' && st.fg) p.set('fg', st.fg);
   }
   history.replaceState(null, '', '#' + p.toString());
 }
@@ -5006,7 +5119,8 @@ document.addEventListener('DOMContentLoaded', function() {
    var, не const: стан читають saveStateToUrl/_stateForTab, оголошені вище.
    ═══════════════════════════════════════════════════ */
 var SR_DATA_FROM = '2026-04-20';   // = RECON_DATA_FROM у stock-recon.js: знімки УНФ є з цієї дати
-var srState = { on: '', org: 'Генерація', st: 'diff', q: '', data: null, loadedAt: 0, open: new Set(), seq: 0, orgPicked: false };
+var srState = { on: '', org: 'Генерація', st: 'diff', q: '', data: null, loadedAt: 0, open: new Set(), seq: 0, orgPicked: false,
+  mode: 'rec', base: '', og: '', form: null, secOpen: {}, showAll: {}, fg: '', pick: {}, alts: {}, altPick: {}, manual: {} };
 var _srPicker = null;
 var _srQT = null;
 var SR_FILTERS = [
@@ -5019,7 +5133,8 @@ var SR_FILTERS = [
 ];
 var SR_ST_LABEL = { unf_more: 'в УНФ більше', buh_missing: 'у buh нема', buh_more: 'у buh більше', unf_missing: 'в УНФ нема', match: 'збіг' };
 var SR_SUB_SHORT = { 'картка в УНФ є, на складах звірки залишку нема': 'картка є, на складах звірки нема', 'картки в УНФ нема': 'картки нема',
-  'картка є, залишок — на складах поза звіркою': 'картка є, залишок поза звіркою' };
+  'картка є, залишок — на складах поза звіркою': 'картка є, залишок поза звіркою',
+  'картку в УНФ позначено на видалення': 'картку в УНФ видалено' };
 var SR_HOW = { 'артикул': 'артикулом', 'назва': 'назвою', 'назва (кілька карток УНФ)': 'назвою (кілька карток УНФ)' };
 var SR_POS = ['позиція', 'позиції', 'позицій'];
 
@@ -5045,7 +5160,9 @@ function _srFiltered() {
   var d = srState.data; if (!d) return [];
   var f = SR_FILTERS.find(function(x) { return x.k === srState.st; }) || SR_FILTERS[0];
   var terms = srState.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  return (d.rows || []).filter(f.test).filter(function(r) { return terms.every(function(t) { return _srHay(r).includes(t); }); });
+  return (d.rows || []).filter(f.test).filter(function(r) {
+    return (!srState.og || r.og === srState.og) && terms.every(function(t) { return _srHay(r).includes(t); });
+  });
 }
 function _srStatusText(r, full) {
   if (r.st === 'match') return full ? 'збіг' : '';
@@ -5082,7 +5199,7 @@ function srSetSt(el) {
 }
 function srOnSearch(v) {
   clearTimeout(_srQT);
-  _srQT = setTimeout(function() { srState.q = v || ''; srRenderTable(); }, 150);
+  _srQT = setTimeout(function() { srState.q = v || ''; if (srState.mode === 'art') srRenderTasks(); else srRenderTable(); }, 150);
 }
 
 // З іншими вкладками ділимо дату «на» і організацію. Орг сюди — лише конкретна («Всі» тут
@@ -5101,7 +5218,7 @@ function _syncSrFilters(fromSt, toSt, intoSr) {
   }
 }
 
-async function srLoad(fresh) {
+async function srLoad(fresh, quiet) {
   var tab = document.querySelector('.ptab[data-view="sr"]');
   if (tab && tab.style.display === 'none') return;   // вкладку приховано по правах — бекенд однаково дав би 403
   delete srState._noSync;
@@ -5109,12 +5226,16 @@ async function srLoad(fresh) {
   if (_srPicker) _srPicker.setDate(srState.on);
   _srMarkPreset();
   var seq = ++srState.seq;
-  srState.data = null;
-  srState.open.clear();
-  document.getElementById('srMeta').innerHTML = '';
-  document.getElementById('srSummary').innerHTML = '';
-  document.getElementById('srStGroup').innerHTML = '';
-  document.getElementById('srBody').innerHTML = '<div class="loading">' + (fresh ? 'Перечитую бухгалтерську базу…' : 'Завантаження…') + '</div>';
+  var y = window.scrollY;
+  if (!quiet) {   // тихо — після рішення в черзі: без «Завантаження…» і зі збереженням прокрутки
+    srState.data = null;
+    srState.open.clear();
+    srState.form = null;
+    document.getElementById('srMeta').innerHTML = '';
+    document.getElementById('srSummary').innerHTML = '';
+    document.getElementById('srStGroup').innerHTML = '';
+    document.getElementById('srBody').innerHTML = '<div class="loading">' + (fresh ? 'Перечитую бухгалтерську базу…' : 'Завантаження…') + '</div>';
+  }
   try {
     var q = '?action=stock_buh_recon&org=' + encodeURIComponent(srState.org) + '&date=' + srState.on + (fresh ? '&fresh=1' : '');
     var r = await fetch(API_URL + q);
@@ -5124,7 +5245,9 @@ async function srLoad(fresh) {
     (data.rows || []).forEach(function(x, i) { x._i = i; });
     srState.data = data;
     srState.loadedAt = Date.now();
+    if (!quiet) srState.free = null;
     srRender();
+    if (quiet) window.scrollTo(0, y);
   } catch (e) {
     if (seq !== srState.seq) return;
     document.getElementById('srBody').innerHTML = '<div class="error">' + esc(e.message || String(e)) + '</div>';
@@ -5158,6 +5281,21 @@ function srRender() {
       _srDmy(d.unfDate) + '. Рух товару між цими датами виглядатиме різницею.</div>';
   }
   document.getElementById('srMeta').innerHTML = html;
+
+  // ── режим: «Звірка» (таблиця розбіжностей) або «Артикули» (черга правок у 1С)
+  var art = srState.mode === 'art';
+  document.querySelectorAll('#srModeGroup .chip').forEach(function(c) { c.classList.toggle('active', c.dataset.mode === srState.mode); });
+  document.getElementById('srArtN').textContent = d.freeCount ? (d.freeCount.unf + d.freeCount.buh) : (d.taskCount != null ? d.taskCount : '');
+  document.getElementById('srStGroup').style.display = art ? 'none' : '';
+  document.getElementById('srView').classList.toggle('sr-art', art);
+  document.getElementById('srBaseGroup').style.display = art ? '' : 'none';
+  document.getElementById('srOgChip').innerHTML = !art && srState.og
+    ? '<span class="group"><span class="chip active" onclick="srSetOg(\'\')">' + esc(SR_OG[srState.og] || srState.og) + ' ×</span></span>' : '';
+  if (art) {
+    document.getElementById('srSummary').innerHTML = '';
+    srRenderTasks();
+    return;
+  }
 
   // ── картки: обидва напрямки окремо, різниця, збіги (без кольорових плашок)
   var card = function(lbl, val, sub) {
@@ -5196,7 +5334,8 @@ function srRenderTable() {
   var cls = function(s) { return s == null ? '' : (Math.abs(s) >= 100000 ? ' sr-big' : (Math.abs(s) >= 20000 ? ' sr-mid' : '')); };
   var rowsHtml = list.map(function(r) {
     var open = srState.open.has(r._i);
-    var sub = [r.art, _srStatusText(r), r.cand ? 'є схожа картка' : ''].filter(Boolean).join(' · ');
+    var mk = r.fr ? 'не об\u02bcєднано артикулом' : r.tk ? (r.tkm === 'money' && r.tke ? 'пара · закриє ' + fmt(r.tke, 0) + ' грн' : (SR_TKM[r.tkm] || 'задача')) : '';
+    var sub = [r.art, _srStatusText(r), mk].filter(Boolean).join(' · ');
     var tr = '<tr class="sr-row" data-collapsed="' + (open ? 'false' : 'true') + '" onclick="srToggle(' + r._i + ', this)">' +
       '<td><span class="tri">▾</span>' + esc(r.name || '—') + (sub ? '<span class="sr-sub">' + esc(sub) + '</span>' : '') + '</td>' +
       '<td>' + esc(r.unit || '') + '</td>' +
@@ -5213,6 +5352,573 @@ function srRenderTable() {
     '<tr class="sr-total"><td>Разом · ' + list.length + ' ' + _srPl(list.length, SR_POS) + (noPrice ? ' · без ціни ' + noPrice : '') + '</td>' +
     '<td></td><td></td><td></td><td></td><td></td><td class="col-total">' + srSigned(sum) + '</td></tr>' +
     rowsHtml + '</tbody></table></div>';
+}
+
+// ── Режим «Артикули»: черга правок у довідниках 1С (одна задача = одна картка в одній базі).
+// Задачі рахує бек (stock-recon-tasks.js), фронт лише показує; ERP у 1С не пише — править людина.
+var SR_SECS = [
+  { k: 'block', title: 'Спершу: блокує інші задачі' },
+  { k: 'money', title: 'Зведе залишок' },
+  { k: 'wrong', title: 'Артикул на чужому товарі' },
+  { k: 'link',  title: 'Лише привʼязка — гроші не зміняться', cap: 10 },
+  { k: 'check', title: 'Перевірити: той самий товар?', cap: 10 },
+  { k: 'data',  title: 'Потрібні дані — до бухгалтера / складу', closed: true },
+];
+var SR_FIELD = { art: 'Артикул', name: 'Найменування' };
+var SR_TKM = { money: 'пара', wrong: 'артикул на чужому товарі', link: 'лише привʼязка', check: 'перевірити пару', block: 'спершу правка в УНФ', data: 'до бухгалтера' };
+var SR_REASONS = [['nominal', 'інший номінал / розмір'], ['brand', 'інший виробник'], ['variant', 'інший варіант (анод., нерж., колір)'], ['warehouse', 'перевірено на складі'], ['other', 'інше']];
+var SR_DEC = { not_pair: 'не пара', keep: 'звʼязок правильний', same: 'той самий товар' };
+var SR_OG = { artok: 'артикул спільний, різниця в кількості', notwin: 'у другій базі такого товару нема', otherwh: 'залишок на складах поза звіркою', units: 'одиниці не перераховано' };
+
+function srSetMode(m) {
+  srState.mode = m === 'art' ? 'art' : 'rec';
+  srState.form = null;
+  saveStateToUrl();
+  srRender();
+}
+function srSetBase(b) { srState.base = b || ''; srRenderTasks(); }
+function srSetOg(og) {
+  srState.og = og || '';
+  if (og) { srState.mode = 'rec'; srState.st = 'diff'; }
+  saveStateToUrl();
+  srRender();
+}
+function srToggleSec(k) {
+  var sec = SR_SECS.find(function(s) { return s.k === k; });
+  var cur = srState.secOpen[k] != null ? srState.secOpen[k] : !(sec && sec.closed) && k !== 'dismissed';
+  srState.secOpen[k] = !cur;
+  srRenderTasks();
+}
+function srShowAll(k) { srState.showAll[k] = true; srRenderTasks(); }
+
+// З яких символів складається значення — щоб у 1С не потрапила кирилиця замість латиниці
+function srScriptLabel(v) {
+  v = String(v || '');
+  if (!v) return '';
+  var cyr = v.match(/[А-ЯЁІЇЄҐа-яёіїєґ]/g) || [];
+  var tail = /\s/.test(v.trim()) ? ' · є пробіл усередині' : '';
+  if (cyr.length) return 'є кирилиця: ' + cyr.filter(function(c, i) { return cyr.indexOf(c) === i; }).slice(0, 4).join(', ') + tail;
+  var lat = /[A-Za-z]/.test(v), dig = /\d/.test(v);
+  return (lat && dig ? 'латиниця й цифри' : lat ? 'лише латиниця' : dig ? 'лише цифри' : 'інші символи') + tail;
+}
+
+// Копіювання: writeText — першим і синхронно в обробнику кліку (iOS), фолбек — виділене поле
+function srCopy(btn) {
+  var v = btn.getAttribute('data-v') || '';
+  var ok = function() {
+    var n = btn.nextElementSibling;
+    if (n && n.classList.contains('sr-copied')) return;
+    btn.insertAdjacentHTML('afterend', '<span class="sr-copied">скопійовано</span>');
+    setTimeout(function() { var x = btn.nextElementSibling; if (x && x.classList.contains('sr-copied')) x.remove(); }, 1500);
+  };
+  var manual = function() {
+    var ta = document.createElement('textarea');
+    ta.value = v; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.top = '0'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    var done = false; try { done = document.execCommand('copy'); } catch (_) {}
+    document.body.removeChild(ta);
+    if (done) return ok();
+    var inp = document.createElement('input');
+    inp.className = 'sr-manual'; inp.value = v; inp.readOnly = true;
+    btn.insertAdjacentElement('afterend', inp); inp.select();
+    inp.insertAdjacentHTML('afterend', '<span class="sr-script">скопіюйте вручну: текст виділено</span>');
+  };
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(v).then(ok, manual);
+    else manual();
+  } catch (_) { manual(); }
+}
+function _srCopyBtn(v, label) {
+  return '<button type="button" class="sr-copy" data-v="' + esc(v) + '" onclick="srCopy(this)">' + esc(label != null ? label : v) + '</button>';
+}
+
+function _srTaskHay(t) {
+  if (t._hay) return t._hay;
+  var u = t.unf || {}, b = t.buh || {}, c = t.card || {};
+  return (t._hay = [u.name, u.code, u.art, b.name, b.full, b.code, b.art, c.code].join(' ').toLowerCase());
+}
+function _srTaskOpen(t, tasks) {
+  return !t.dep || !tasks.some(function(x) { return x.key === t.dep; });
+}
+function _srTaskDoable(t, tasks) {
+  return _srTaskOpen(t, tasks) && (t.fields || []).some(function(f) { return f.to != null; });
+}
+
+// ── Режим «Артикули»: позиції без пари в іншій базі (не об'єднані артикулом). Показуємо ПАРИ: УНФ ліворуч, Бух
+// праворуч, у трьох групах — «Готові» (доказ є, лишилось вписати), «Перевірте» (схожа картка без доказу),
+// «Схожих нема». Дані — part=free (buildFree у stock-recon-tasks.js); ERP у 1С не пише — вписує людина.
+var SR_FG = [
+  { k: 'r', title: 'Готові', sub: 'Доказ є — лишилось вписати в 1С. Копіюйте кнопкою, не набирайте: кирилична «Т» і латинська «T» виглядають однаково. Інших полів не чіпайте.' },
+  { k: 'c', title: 'Перевірте', sub: 'Схожа картка є, доказу нема. Червоним — чим назви відрізняються. Якщо це той самий товар — «Так, це пара».' },
+  { k: 'n', title: 'Схожих нема', sub: 'Схожої картки в іншій базі не знайдено. Якщо товар там не заведено — позначте «Пари нема» і передайте бухгалтеру / складу.' },
+];
+var SR_HARD = /номінал|модель|розмір|виробник|матеріал|колір|інший тип|ціна/i;
+var SR_NONE_RSN = {
+  unf: ['У Бух не оприбутковано', 'Не товар (послуга, ОЗ, для себе)', 'Дубль картки в УНФ'],
+  buh: ['В УНФ не заведено', 'У Бух комплектом, в УНФ частинами', 'Не товар (для себе)'],
+};
+var SR_WKEY = 'sr_written_v1';
+
+async function srLoadFree(force) {
+  var d = srState.data; if (!d) return;
+  var k = d.org + '|' + d.date;
+  if (!force && srState.free && srState.free._k === k) return srRenderTasks();
+  if (!srState.free || srState.free._k !== k) { srState.free = { _k: k, loading: true }; srRenderTasks(); }
+  try {
+    var r = await fetch(API_URL + '?action=stock_buh_recon&part=free&org=' + encodeURIComponent(d.org) + '&date=' + d.date);
+    var j = await r.json().catch(function() { return { error: 'Сервер відповів ' + r.status }; });
+    if (!srState.data || srState.data.org + '|' + srState.data.date !== k) return;   // уже інша орг / дата
+    if (j.error) throw new Error(j.error);
+    j._k = k; srState.free = j;
+    _srCheckWritten();
+  } catch (e) {
+    srState.free = { _k: k, error: e.message || String(e) };
+  }
+  if (srState.mode === 'art') { var y = window.scrollY; srRenderTasks(); window.scrollTo(0, y); }
+}
+
+// ── «Вписав»: пари, які людина вже вписала в 1С (localStorage, 3 дні); після «↻ Оновити з 1С» — зійшлось чи ні
+function _srW() { try { return JSON.parse(localStorage.getItem(SR_WKEY) || '{}'); } catch (_) { return {}; } }
+function _srWSave(w) { try { localStorage.setItem(SR_WKEY, JSON.stringify(w)); } catch (_) {} }
+function _srWOrg() { var w = _srW(), o = srState.data && srState.data.org; return (o && w[o]) || {}; }
+function srMarkWritten(pk, stepsJson) {
+  var w = _srW(), o = srState.data.org; w[o] = w[o] || {};
+  w[o][pk] = { at: Date.now(), steps: JSON.parse(stepsJson || '[]') };
+  _srWSave(w); srRenderTasks();
+}
+function srUnwrite(pk) { var w = _srW(), o = srState.data.org; if (w[o]) delete w[o][pk]; _srWSave(w); srRenderTasks(); }
+function _srCheckWritten() {
+  var w = _srW(), o = srState.data && srState.data.org; if (!o || !w[o]) return;
+  var rows = _srPairs(), live = {}; rows.forEach(function(p) { live[p.pk] = p; });
+  var today = _srToday(), done = 0;
+  Object.keys(w[o]).forEach(function(pk) {
+    var e = w[o][pk];
+    if (Date.now() - e.at > 3 * 864e5) { delete w[o][pk]; return; }
+    if (!live[pk]) { delete w[o][pk]; done++; }   // пари вже нема серед вільних — артикули зійшлись
+  });
+  if (done) { w._done = w._done || {}; w._done[today + '|' + o] = (w._done[today + '|' + o] || 0) + done; }
+  _srWSave(w);
+}
+function _srDoneToday() { var w = _srW(); return ((w._done || {})[_srToday() + '|' + (srState.data && srState.data.org)]) || 0; }
+
+// ── пари з вільних позицій: найкращий кандидат, взаємні пари — одним рядком
+function _srBest(f) {
+  var sug = f.sug || [];
+  var rec = sug.filter(function(s) { return s.rec; });
+  if (rec.length === 1) return rec[0];
+  return sug.find(function(s) { return !(s.warn && SR_HARD.test(s.warn)); }) || sug[0] || null;
+}
+function _srGroupOf(f, s) {
+  if (!s) return 'n';
+  var rec = (f.sug || []).filter(function(x) { return x.rec; });
+  var del = /ВИДАЛЕННЯ/i.test(f.name || '') || /ВИДАЛЕННЯ/i.test(s.name || '');
+  if (s.rec && rec.length === 1 && !s.stepWarn && (s.steps || []).length && !del && (s.free || !(s.pairOf && s.pairOf.q > 0))) return 'r';
+  if ((f.sug || []).some(function(x) { return !(x.warn && SR_HARD.test(x.warn)); })) return 'c';
+  return 'n';
+}
+function _srPairs() {
+  var F = srState.free, list = (F && F.free) || [];
+  if (F && F._pairs && F._pairsN === list.length) return F._pairs;
+  var byRef = {}; list.forEach(function(f) { byRef[f.ref] = f; });
+  var used = {}, out = [];
+  list.forEach(function(f) {
+    if (used[f.key]) return;
+    var s = _srBest(f), g = s && s.free ? byRef[s.ref] : null, gs = g ? _srBest(g) : null;
+    var mutual = !!(g && gs && gs.ref === f.ref && !used[g.key]);
+    if (mutual) used[g.key] = 1;
+    var grp = _srGroupOf(f, s);
+    if (mutual) { var g2 = _srGroupOf(g, gs); if ('rcn'.indexOf(g2) < 'rcn'.indexOf(grp)) grp = g2; }
+    var uRef = f.base === 'unf' ? f.ref : (s && s.ref), bRef = f.base === 'unf' ? (s && s.ref) : f.ref;
+    out.push({ f: f, s: s, g: mutual ? g : null, grp: grp, pk: (uRef || '') + '|' + (bRef || f.ref),
+      w: Math.max(Math.abs(f.sum || 0), mutual ? Math.abs(g.sum || 0) : 0), noPrice: f.sum == null && !(mutual && g.sum != null) });
+  });
+  out.sort(function(a, b) { return (a.noPrice ? 1 : 0) - (b.noPrice ? 1 : 0) || b.w - a.w; });
+  if (F) { F._pairs = out; F._pairsN = list.length; }
+  return out;
+}
+function _srFoldL(s) { return String(s || '').toLowerCase().replace(/[авекмнорстхіу]/g, function(c) { return 'abekmhopctxiy'['авекмнорстхіу'.indexOf(c)]; }); }
+function _srPairHay(p) {
+  if (p._hay) return p._hay;
+  var t = [p.f.code, p.f.art, p.f.name, p.f.full];
+  (p.f.sug || []).forEach(function(s) { t.push(s.code, s.art, s.name, s.full); });
+  return (p._hay = _srFoldL(t.join(' ')));
+}
+// числа в назві, яких нема в назвах другої сторони, — червоним (8.8 ↔ 4.8, М8х90 ↔ М8х20)
+function _srNums(s) { return (String(s || '').match(/\d+(?:[.,]\d+)?/g) || []).map(function(x) { return +x.replace(',', '.'); }); }
+function _srMarkNums(text, others) {
+  var o = {}; others.forEach(function(t) { _srNums(t).forEach(function(n) { o[n] = 1; }); });
+  return String(text || '').split(/(\s+)/).map(function(tok) {
+    var ns = _srNums(tok);
+    return ns.length && ns.some(function(n) { return !o[n]; }) ? '<span class="sr-worse">' + esc(tok) + '</span>' : esc(tok);
+  }).join('');
+}
+function _srCode(v) { return '<span class="sr-code" data-v="' + esc(v) + '" onclick="srCopy(this)" title="Копіювати">' + esc(v) + '</span>'; }
+
+function srSetFg(k) { srState.fg = k; srState.showAll.free = false; saveStateToUrl(); srRenderTasks(); window.scrollTo(0, document.getElementById('srView').offsetTop); }
+function srTogglePick(pk) { srState.pick = srState.pick || {}; srState.pick[pk] = !srState.pick[pk]; srRenderTasks(); }
+function srToggleAlts(pk) { srState.alts = srState.alts || {}; srState.alts[pk] = !srState.alts[pk]; srRenderTasks(); }
+function srChooseAlt(pk, i) { srState.altPick = srState.altPick || {}; srState.altPick[pk] = srState.altPick[pk] === i ? null : i; srRenderTasks(); }
+function srManualArt(pk, v) { srState.manual = srState.manual || {}; srState.manual[pk] = v; var el = document.getElementById('srMan_' + pk.replace(/[^a-z0-9]/gi, '')); if (el) el.innerHTML = _srManualSteps(pk); }
+
+function srRenderTasks() {
+  var d = srState.data; if (!d) return;
+  var body = document.getElementById('srBody');
+  var today = d.date === _srToday();
+  var F = srState.free;
+  if (today && (!F || F._k !== d.org + '|' + d.date)) { srLoadFree(); return; }
+  document.getElementById('srBaseGroup').innerHTML = '';
+  if (!today) {
+    body.innerHTML = '<div class="eq-note">Пари шукаємо лише на сьогодні: артикули в довідниках поточні. <a href="#" onclick="srSetPreset(\'today\');return false">Перейти на сьогодні →</a></div>';
+    return;
+  }
+  if (F && F.loading) { body.innerHTML = '<div class="loading">Шукаю пари…</div>'; return; }
+  if (F && F.error) { body.innerHTML = '<div class="error">' + esc(F.error) + '</div>'; return; }
+
+  var pairs = _srPairs(), W = _srWOrg();
+  var terms = _srFoldL(srState.q).trim().split(/\s+/).filter(Boolean);
+  var hit = pairs.filter(function(p) { return terms.every(function(x) { return _srPairHay(p).includes(x); }); });
+  var cnt = { r: 0, c: 0, n: 0 }; hit.forEach(function(p) { cnt[p.grp]++; });
+  var fg = srState.fg && cnt[srState.fg] ? srState.fg : (srState.fg && !terms.length ? srState.fg : (cnt.r ? 'r' : cnt.c ? 'c' : 'n'));
+  srState.fg = fg;
+  var totalSum = pairs.reduce(function(t, p) { return t + p.w; }, 0), done = _srDoneToday();
+
+  var html = '<div class="eq-note">Без пари в іншій базі — ' + pairs.length + ' ' + _srPl(pairs.length, SR_POS) + ' на ' + fmt(totalSum, 0) +
+    ' грн. Однаковий артикул у картках УНФ і Бух — і звірка їх порівняє.' + (done ? ' · сьогодні зійшлось ' + done : '') + '</div>';
+  if (F && F.freeError) html += '<div class="eq-note eq-bad">Не вдалося підібрати пари: ' + esc(F.freeError) + '.</div>';
+  html += '<div class="sr-fg">' + SR_FG.map(function(g) {
+    return '<span class="chip' + (fg === g.k ? ' active' : '') + '" onclick="srSetFg(\'' + g.k + '\')">' + g.title + ' <span class="n">' + cnt[g.k] + '</span></span>';
+  }).join('') + '</div>';
+  var G = SR_FG.find(function(g) { return g.k === fg; });
+  var list = hit.filter(function(p) { return p.grp === fg; });
+  var wr = list.filter(function(p) { return W[p.pk]; }), rest = list.filter(function(p) { return !W[p.pk]; });
+  list = rest.concat(wr);
+  var gsum = list.reduce(function(t, p) { return t + p.w; }, 0);
+  html += '<div class="sr-sec"><div class="sr-sec-h sr-sec-h--plain"><span>' + list.length + ' ' + _srPl(list.length, ['пара', 'пари', 'пар']) + (gsum ? ' · ' + fmt(gsum, 0) + ' грн' : '') + '</span></div>' +
+    '<div class="sr-fg-sub">' + esc(G.sub) + '</div>' +
+    '<div class="sr-ph"><span>УНФ</span><span>Бух</span><span>Сума, грн</span></div>';
+  if (!list.length) html += '<div class="sr-empty">' + (terms.length ? 'Нічого не знайдено' : 'У цій групі порожньо') + '</div>';
+  var cap = fg === 'n' && !srState.showAll.free ? 40 : Infinity;
+  html += list.slice(0, cap).map(function(p) { return srPairHtml(p, W[p.pk]); }).join('');
+  if (list.length > cap) html += '<div class="sr-more"><a href="#" onclick="srShowAll(\'free\');return false">ще ' + (list.length - cap) + '</a></div>';
+  html += '</div>';
+
+  // «Пари нема» (рішення в D1) — згорнуто
+  var dis = (F && F.freeDismissed) || [];
+  if (dis.length) {
+    var dOpen = !!srState.secOpen.freeDis;
+    html += '<div class="sr-sec"><div class="sr-sec-h" data-collapsed="' + (dOpen ? 'false' : 'true') + '" onclick="srToggleSec(\'freeDis\')"><span><span class="tri">▾</span>Позначено «пари нема» · ' + dis.length + '</span></div>';
+    if (dOpen) html += dis.map(function(x) {
+      return '<div class="sr-task sr-task--dis"><div><div class="sr-prod">' + (x.base === 'unf' ? 'УНФ' : 'Бух') + ' ' + esc(x.code) + ' · ' + esc(x.title || '') + '</div><div class="sr-ev">' +
+        esc([x.note, x.by, x.at ? _srAt(x.at) : ''].filter(Boolean).join(' · ')) + '</div></div><div></div><div class="sr-acts">' +
+        '<button type="button" class="sr-btn" onclick="srUndoDecision(\'' + esc(x.key) + '\', this)">Повернути</button></div></div>';
+    }).join('');
+    html += '</div>';
+  }
+  // інші помилки артикулів, які знайшла система (черга задач) — згорнуто
+  var tasks = d.tasks || [];
+  if (tasks.length) {
+    var tOpen = !!srState.secOpen.tasks;
+    html += '<div class="sr-sec"><div class="sr-sec-h" data-collapsed="' + (tOpen ? 'false' : 'true') + '" onclick="srToggleSec(\'tasks\')"><span><span class="tri">▾</span>Інші помилки в артикулах · ' + tasks.length + '</span></div>';
+    if (tOpen) {
+      html += '<div class="sr-fg-sub">Артикул на чужому товарі, однаковий артикул на різних товарах, назва, списана з іншої картки.</div>';
+      SR_SECS.forEach(function(sec) {
+        var ts = tasks.filter(function(t) { return t.sec === sec.k; });
+        if (!ts.length) return;
+        html += '<div class="sr-sec-h sr-sec-h--plain"><span>' + esc(sec.title) + ' · ' + ts.length + '</span></div>' + ts.map(function(t) { return srTaskHtml(t, tasks); }).join('');
+      });
+      var dis2 = d.dismissed || [];
+      if (dis2.length) html += '<div class="sr-sec-h sr-sec-h--plain"><span>Відхилені · ' + dis2.length + '</span></div>' + dis2.map(function(x) {
+        return '<div class="sr-task sr-task--dis"><div><div class="sr-prod">' + esc(x.title || x.key) + '</div><div class="sr-ev">' +
+          esc([SR_DEC[x.decision] || x.decision, x.note, x.by, x.at ? _srAt(x.at) : ''].filter(Boolean).join(' · ')) + '</div></div><div></div><div class="sr-acts">' +
+          '<button type="button" class="sr-btn" onclick="srUndoDecision(\'' + esc(x.key) + '\', this)">Повернути</button></div></div>';
+      }).join('');
+    }
+    html += '</div>';
+  }
+  var nW = Object.keys(W).length;
+  if (nW) html += '<div class="sr-wbar"><span>Вписано в 1С: ' + nW + '</span><button type="button" class="sr-btn sr-btn--main" onclick="srRefresh()">↻ Перевірити в 1С</button></div>';
+  body.innerHTML = html;
+}
+
+// картка однієї сторони пари
+function _srSide(base, c, isCand, s, others, mark) {
+  if (!c) return '<div class="sr-pc sr-pc--empty">' + (base === 'unf' ? 'В УНФ' : 'У Бух') + ' схожих нема</div>';
+  var name = mark ? _srMarkNums(c.name, others) : esc(c.name);
+  var h = '<div class="sr-pc"><div class="sr-pc-meta"><span class="sr-pc-lbl">' + (base === 'unf' ? 'УНФ' : 'Бух') + '</span>' + _srCode(c.code) +
+    ' <span class="sr-mono">· ' + (c.art ? esc(c.art) : 'без артикула') + '</span><span class="sr-pc-q">' + (c.q ? srQty(c.q) + (c.unit ? ' ' + esc(c.unit) : '') : '<span class="sr-old">0</span>') + '</span></div>' +
+    '<div class="sr-pc-name">' + name + '</div>';
+  if (c.full) h += '<div class="sr-ev">накладна: ' + (mark ? _srMarkNums(c.full, others) : esc(c.full)) + '</div>';
+  if (isCand && s && s.pairOf) h += '<div class="sr-ev">зараз у парі з ' + (base === 'unf' ? 'Бух' : 'УНФ') + ' ' + esc(s.pairOf.code) + ' «' + esc(s.pairOf.name) + '»' + (s.pairOf.q ? ', залишок ' + srQty(s.pairOf.q) : ', без залишку') + '</div>';
+  else if (isCand && s && s.free) h += '<div class="sr-ev">теж без пари</div>';
+  return h + '</div>';
+}
+function _srStepsHtml(steps, warn) {
+  var sb = function(b) { return b === 'unf' ? 'В УНФ' : 'У Бух'; };
+  var h = (steps || []).map(function(st, k) {
+    var verb = st.from ? 'замініть артикул <span class="sr-mono">' + esc(st.from) + '</span> на ' : 'впишіть артикул ';
+    var cyr = (String(st.to).match(/[А-ЯЁІЇЄҐа-яёіїєґ]/g) || []);
+    return '<div class="sr-step">' + (steps.length > 1 ? (k + 1) + '. ' : '') + sb(st.base) + ' відкрийте ' + _srCopyBtn(st.code) + ' і ' + verb + _srCopyBtn(st.to) +
+      (cyr.length ? ' <span class="sr-worse">є кирилиця: ' + esc(cyr.join(', ')) + ' — копіюйте кнопкою</span>' : '') +
+      (/\s/.test(String(st.to).trim()) ? ' <span class="sr-worse">пробіл усередині</span>' : '') + '</div>';
+  }).join('');
+  if (warn) h += '<div class="sr-ev sr-worse">' + esc(warn) + '</div>';
+  return h;
+}
+function _srManualSteps(pk) {
+  var v = ((srState.manual || {})[pk] || '').trim();
+  var p = (srState.free && srState.free._pairs || []).find(function(x) { return x.pk === pk; });
+  if (!v || !p || !p.s) return '';
+  var u = p.f.base === 'unf' ? p.f : p.s, b = p.f.base === 'unf' ? p.s : p.f;
+  return _srStepsHtml([{ base: 'unf', code: u.code, from: u.art || '', to: v }, { base: 'buh', code: b.code, from: b.art || '', to: v }]);
+}
+function _srEvid(s) {
+  var t = [];
+  if (s.why) t.push(/^Накладна/.test(s.why) ? 'назва з накладної збігається' : s.why.replace(/buh/g, 'Бух'));
+  if (s.pr != null && s.pr >= 0.7 && s.pr <= 1.4) t.push('ціна сходиться');
+  return t.join(' · ');
+}
+function _srDiff(s) {
+  if (!s.warn) return '';
+  return String(s.warn).replace(/≠/g, '↔').replace(/;\s*/g, ' · ').replace(/розміри/g, 'розмір').replace(/ціна ×([\d.]+)/, function(m, x) { return 'ціна відрізняється у ' + String(x).replace('.', ',') + ' раза'; });
+}
+
+function srPairHtml(p, written) {
+  var f = p.f, s = p.s, g = p.g;
+  var uSide = f.base === 'unf' ? f : s, bSide = f.base === 'unf' ? s : f;
+  var pk = p.pk, sid = pk.replace(/[^a-z0-9]/gi, '');
+  var mark = p.grp !== 'r';
+  var otherOf = function(c) { return c === uSide ? [bSide && bSide.name, bSide && bSide.full] : [uSide && uSide.name]; };
+  var sumHtml = p.noPrice ? '<span class="sr-old">без ціни</span>' : fmt(p.w, 0);
+  if (written) {
+    var st0 = (written.steps || [])[0];
+    var cur = st0 ? (st0.base === 'unf' ? (uSide && uSide.art) : (bSide && bSide.art)) : null;
+    var why = st0 ? (cur === st0.to ? 'у довіднику вже нове значення — зачекайте наступного оновлення'
+      : 'у картці ' + st0.code + ' досі ' + (cur ? '«' + cur + '»' : 'порожньо') + (cur && _srFoldL(cur) === _srFoldL(st0.to) ? ' — схоже, кирилиця замість латиниці' : '')) : '';
+    return '<div class="sr-pair sr-pair--done" data-pk="' + esc(pk) + '"><div class="sr-ev">Вписано · ' + esc((uSide || bSide || f).name || '') +
+      (why ? ' · <span class="sr-worse">ще не зійшлось: ' + esc(why) + '</span>' : '') + ' · <a href="#" onclick="srUnwrite(\'' + esc(pk) + '\');return false">повернути в список</a></div></div>';
+  }
+  var h = '<div class="sr-pair" data-pk="' + esc(pk) + '" data-fk="' + esc(f.key) + '">' +
+    _srSide('unf', uSide, uSide === s, s, otherOf(uSide), mark && !!uSide && !!bSide) +
+    _srSide('buh', bSide, bSide === s, s, otherOf(bSide), mark && !!uSide && !!bSide) +
+    '<div class="sr-pair-sum">' + sumHtml + '</div><div class="sr-pair-wide">';
+  if (s) {
+    var ev = _srEvid(s), df = _srDiff(s);
+    if (ev) h += '<div class="sr-ev">Збіг: ' + esc(ev) + '</div>';
+    else if (p.grp !== 'n') h += '<div class="sr-ev">Схожа лише назва</div>';
+    if (df) h += '<div class="sr-ev sr-worse">Різниця: ' + esc(df) + '</div>';
+    if (f.nameLink) h += '<div class="sr-ev">Звірка зараз зводить їх лише за назвою — артикули різні.</div>';
+  }
+  var open = p.grp === 'r' || (srState.pick && srState.pick[pk]);
+  var nAlt = Math.max(0, (f.sug || []).length - 1);
+  if (s && open) {
+    if ((s.steps || []).length) h += _srStepsHtml(s.steps, s.stepWarn);
+    else {
+      h += '<div class="sr-step">Артикула нема ні в УНФ, ні в Бух. Впишіть артикул виробника (з накладної або упаковки): ' +
+        '<input class="sr-man" placeholder="напр. 5900004" value="' + esc((srState.manual || {})[pk] || '') + '" oninput="srManualArt(\'' + esc(pk) + '\', this.value)"></div>' +
+        '<div id="srMan_' + sid + '">' + _srManualSteps(pk) + '</div>';
+      if (s.stepWarn && !/нема артикула/.test(s.stepWarn)) h += '<div class="sr-ev sr-worse">' + esc(s.stepWarn) + '</div>';
+    }
+  }
+  // дії
+  var acts = [];
+  var stepsJ = esc(JSON.stringify((s && s.steps) || []));
+  if (s && p.grp === 'r') acts.push('<button type="button" class="sr-btn sr-btn--main" onclick="srMarkWritten(\'' + esc(pk) + '\', this.dataset.st)" data-st="' + stepsJ + '">Вписав</button>');
+  else if (s && p.grp === 'c') acts.push(open ? '<button type="button" class="sr-btn sr-btn--main" onclick="srMarkWritten(\'' + esc(pk) + '\', this.dataset.st)" data-st="' + stepsJ + '">Вписав</button><a href="#" class="sr-lnk" onclick="srTogglePick(\'' + esc(pk) + '\');return false">скасувати</a>'
+    : '<button type="button" class="sr-btn sr-btn--main" onclick="srTogglePick(\'' + esc(pk) + '\')">Так, це пара</button>');
+  else if (s && p.grp === 'n') acts.push(open ? '<a href="#" class="sr-lnk" onclick="srTogglePick(\'' + esc(pk) + '\');return false">скасувати</a>'
+    : '<a href="#" class="sr-lnk" onclick="srTogglePick(\'' + esc(pk) + '\');return false">все одно пара</a>');
+  if (s && p.grp !== 'n') acts.push('<a href="#" class="sr-lnk" onclick="srNotPair(\'' + esc(f.key) + '\', \'' + esc(s.ref) + '\', this);return false">не пара</a>');
+  if (nAlt) acts.push('<a href="#" class="sr-lnk" onclick="srToggleAlts(\'' + esc(pk) + '\');return false">' + (srState.alts && srState.alts[pk] ? 'сховати схожі' : 'ще ' + nAlt + ' ' + _srPl(nAlt, ['схожа', 'схожі', 'схожих'])) + '</a>');
+  acts.push('<a href="#" class="sr-lnk" onclick="srFreeNone(\'' + esc(f.key) + '\');return false">пари нема</a>');
+  h += '<div class="sr-pair-acts">' + acts.join('') + '</div>';
+  // інші схожі кандидати
+  if (nAlt && srState.alts && srState.alts[pk]) {
+    h += (f.sug || []).filter(function(x) { return x !== s; }).map(function(x, i) {
+      var c = { code: x.code, art: x.art, name: x.name, full: x.full, q: x.q, unit: x.unit };
+      var ap = srState.altPick && srState.altPick[pk] === i;
+      return '<div class="sr-alt">' + _srSide(f.base === 'unf' ? 'buh' : 'unf', c, true, x, [f.name], true) +
+        '<div class="sr-ev">' + esc([_srEvid(x) ? 'Збіг: ' + _srEvid(x) : '', x.warn ? 'Різниця: ' + _srDiff(x) : ''].filter(Boolean).join(' · ')) + '</div>' +
+        (ap ? _srStepsHtml(x.steps, x.stepWarn) : '') +
+        '<div class="sr-pair-acts"><a href="#" class="sr-lnk" onclick="srChooseAlt(\'' + esc(pk) + '\', ' + i + ');return false">' + (ap ? 'скасувати' : 'це вона') + '</a>' +
+        '<a href="#" class="sr-lnk" onclick="srNotPair(\'' + esc(f.key) + '\', \'' + esc(x.ref) + '\', this);return false">не пара</a></div></div>';
+    }).join('');
+  }
+  // «Пари нема»: причина одним тапом
+  if (srState.form && srState.form.free && srState.form.key === f.key) {
+    var rs = SR_NONE_RSN[f.base] || [];
+    h += '<div class="sr-form"><div class="sr-reasons">' + rs.map(function(r) {
+      return '<button type="button" class="sr-btn" onclick="srSubmitFreeNone(this, this.textContent)">' + esc(r) + '</button>';
+    }).join('') + '<button type="button" class="sr-btn" onclick="srFreeOther()">Інше…</button><button type="button" class="sr-btn" onclick="srCloseForm()">Скасувати</button></div>' +
+      (srState.form.other ? '<textarea id="srFormNote" rows="2" maxlength="500" placeholder="Що з цією позицією?"></textarea><div class="sr-form-act"><button type="button" class="sr-btn sr-btn--main" onclick="srSubmitFreeNone(this)">Зберегти</button></div>' : '') +
+      (srState.form.err ? '<div class="sr-form-err">' + esc(srState.form.err) + '</div>' : '') + '</div>';
+  }
+  return h + '</div></div>';
+}
+function srFreeNone(key) { srState.form = { key: key, free: true, other: false, err: '' }; srRenderTasks(); }
+function srFreeOther() { if (srState.form) { srState.form.other = true; srRenderTasks(); var ta = document.getElementById('srFormNote'); if (ta) ta.focus(); } }
+async function srSubmitFreeNone(btn, reasonText) {
+  var f = srState.form; if (!f) return;
+  var note = reasonText || ((document.getElementById('srFormNote') || {}).value || '').trim();
+  if (!note) { f.err = 'Напишіть, що з цією позицією.'; return srRenderTasks(); }
+  if (btn) btn.disabled = true;
+  var j = await _srDecide({ key: f.key, decision: 'not_pair', note: note });
+  if (j.error) { f.err = j.error; return srRenderTasks(); }
+  srState.form = null;
+  await srLoadFree(true);
+}
+// «не пара» на конкретному кандидаті — для всіх (рішення в D1, ключ p:<УНФ>|<Бух>)
+async function srNotPair(fkey, sref, el) {
+  var f = ((srState.free && srState.free.free) || []).find(function(x) { return x.key === fkey; }); if (!f) return;
+  var key = 'p:' + (f.base === 'unf' ? f.ref + '|' + sref : sref + '|' + f.ref);
+  if (el) { el.textContent = '…'; el.style.pointerEvents = 'none'; }
+  var j = await _srDecide({ key: key, decision: 'not_pair', reason: 'other', note: 'не та картка (підказка)' });
+  if (j.error && el) { el.textContent = j.error; return; }
+  await srLoadFree(true);
+}
+
+function srTaskHtml(t, tasks) {
+  var open = _srTaskOpen(t, tasks);
+  var baseLbl = t.base === 'unf' ? 'УНФ' : 'buh';
+  var acts = (t.fields || []).map(function(fl) {
+    var to;
+    if (fl.to == null) to = '<span class="sr-q">' + esc(t.q || 'перевірити') + '</span>';
+    else if (!open) to = '<span class="sr-old">' + esc(fl.to || 'порожньо') + '</span>';
+    else if (fl.to === '') to = '<b>порожньо</b> — очистіть поле';
+    else to = _srCopyBtn(fl.to) + (fl.f === 'art' ? '<span class="sr-script">' + esc(srScriptLabel(fl.to)) + '</span>' : '');
+    return '<div class="sr-act"><span class="sr-act-card">' + baseLbl + ' · картка ' + (t.card ? _srCopyBtn(t.card.code) : '—') + '</span> ' +
+      '<span class="sr-act-f">' + (SR_FIELD[fl.f] || fl.f) + ': <span class="sr-old">' + esc(fl.from || 'порожньо') + '</span> → ' + to + '</span></div>';
+  }).join('');
+  if (!acts) acts = '<div class="sr-act">' + esc(t.q || t.why || 'Перевірити') + '</div>';
+  var u = t.unf, b = t.buh;
+  var prod = (u && u.name) || (b && (b.name || b.full)) || '';
+  var codes = [u && u.code ? 'в УНФ ' + u.code + (u.art ? ' (арт. ' + u.art + ')' : '') : '', b && b.code ? 'у buh ' + b.code + (b.art ? ' (арт. ' + b.art + ')' : '') : ''].filter(Boolean).join(' · ');
+  var html = '<div class="sr-task" data-tk="' + esc(t.key) + '"><div class="sr-task-main">' + acts;
+  if (t.keep) html += '<div class="sr-keep">Не чіпайте: ' + (t.keep.base === 'unf' ? 'УНФ' : 'buh') + ' ' + esc(t.keep.code || '') + (t.keep.art ? ' (арт. ' + esc(t.keep.art) + ')' : '') + '</div>';
+  // коди обох карток — лише коли їх не видно в рядках дії й «Не чіпайте»
+  html += '<div class="sr-prod">' + esc(prod) + (codes && !t.keep ? ' · ' + esc(codes) : '') + '</div>';
+  var ev = (t.why && (t.fields || []).length ? [t.why] : []).concat(t.ev || []);
+  if (ev.length) html += '<div class="sr-ev">' + ev.map(esc).join(' · ') + '</div>';
+  if ((t.after || []).length) {
+    html += '<div class="sr-ev">Після правки: ' + t.after.map(function(a) {
+      var worse = Math.abs(a.d1) > Math.abs(a.d0) + 1e-9;
+      var un = a.unit ? ' ' + esc(a.unit) : '';
+      return esc(a.name || '') + ': ' + srSigned(a.d0, true) + ' → ' + (worse ? '<span class="sr-worse">' + srSigned(a.d1, true) + '</span>' : srSigned(a.d1, true)) + un;
+    }).join('; ') + '</div>';
+  }
+  if (!open) html += '<div class="sr-mark">спершу: <a href="#" data-go="' + esc(t.dep) + '" onclick="srGoTask(this.dataset.go);return false">інша задача →</a></div>';
+  if (t.review) html += '<div class="sr-mark">Переглянути: картку змінили після відмітки «' + esc(SR_DEC[t.review.decision] || t.review.decision) + '» (' + esc([t.review.by, t.review.at ? _srAt(t.review.at) : ''].filter(Boolean).join(', ')) + ')</div>';
+  if (t.confirmed) html += '<div class="sr-mark">підтвердив: ' + esc([t.confirmed.by, t.confirmed.at ? _srAt(t.confirmed.at) : '', t.confirmed.note].filter(Boolean).join(', ')) + '</div>';
+  html += '</div>';
+
+  // ── ефект
+  var a0 = (t.after || [])[0];
+  var effHtml = '—';
+  if (t.eff > 0) effHtml = 'закриє ' + fmt(t.eff, 0) + ' грн';
+  else if (a0 && Math.abs(a0.d1) > Math.abs(a0.d0) + 1e-9) effHtml = '<span class="sr-worse">стане ' + srSigned(a0.d1, true) + (a0.unit ? ' ' + esc(a0.unit) : '') + '</span>';
+  else if (t.sec === 'link') effHtml = '<span class="sr-zero">лише привʼязка</span>';
+  html += '<div class="sr-task-eff">' + effHtml + '</div>';
+
+  // ── рішення (лише ховають / відкривають задачу; цифри звірки міняє тільки правка в 1С)
+  var btns = [];
+  var k = esc(t.key);
+  if (t.sec === 'check') {
+    if (t.ifSame) btns.push('<button type="button" class="sr-btn" onclick="srOpenForm(\'' + k + '\', \'same\')">Той самий товар</button>');
+    btns.push('<button type="button" class="sr-btn" onclick="srOpenForm(\'' + k + '\', \'not_pair\')">Різні товари</button>');
+  } else if (t.sec === 'wrong') {
+    btns.push('<button type="button" class="sr-btn" onclick="srOpenForm(\'' + k + '\', \'keep\')">Звʼязок правильний</button>');
+  } else if (t.sec === 'data' || t.sec === 'block') {
+    btns.push('<button type="button" class="sr-btn" onclick="srOpenForm(\'' + k + '\', \'not_pair\')">Сховати</button>');
+  } else {
+    btns.push('<button type="button" class="sr-btn" onclick="srOpenForm(\'' + k + '\', \'not_pair\')">Не пара</button>');
+  }
+  html += '<div class="sr-acts">' + btns.join('') + '</div>';
+  if (srState.form && srState.form.key === t.key) html += srFormHtml(srState.form);
+  return html + '</div>';
+}
+
+function srFormHtml(f) {
+  var reasons = f.decision === 'not_pair';
+  var ph = f.decision === 'same' ? 'Чим перевірили? Склад, накладна, постачальник — від 5 символів'
+    : f.decision === 'keep' ? 'Чому звʼязок правильний? Від 5 символів'
+    : 'Коментар для колег (для «інше» — обовʼязково)';
+  var html = '<div class="sr-form">';
+  if (reasons) html += '<div class="sr-form-q">Чому?</div><div class="sr-reasons">' + SR_REASONS.map(function(r) {
+    return '<button type="button" class="sr-btn' + (f.reason === r[0] ? ' active' : '') + '" onclick="srPickReason(\'' + r[0] + '\')">' + esc(r[1]) + '</button>';
+  }).join('') + '</div>';
+  html += '<textarea id="srFormNote" rows="2" maxlength="500" placeholder="' + esc(ph) + '">' + esc(f.note || '') + '</textarea>' +
+    '<div class="sr-form-act"><button type="button" class="sr-btn sr-btn--main" onclick="srSubmitDecision(this)">Зберегти</button>' +
+    '<button type="button" class="sr-btn" onclick="srCloseForm()">Скасувати</button></div>' +
+    (f.err ? '<div class="sr-form-err">' + esc(f.err) + '</div>' : '') + '</div>';
+  return html;
+}
+function srOpenForm(key, decision) { srState.form = { key: key, decision: decision, reason: '', note: '', err: '' }; srRenderTasks(); }
+function srCloseForm() { srState.form = null; srRenderTasks(); }
+function srPickReason(r) {
+  var f = srState.form; if (!f) return;
+  var ta = document.getElementById('srFormNote'); if (ta) f.note = ta.value;
+  f.reason = r; srRenderTasks();
+}
+async function _srDecide(payload) {
+  var r = await fetch(API_URL + '?action=stock_buh_recon_decide&org=' + encodeURIComponent(srState.org), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+  });
+  var j = await r.json().catch(function() { return { error: 'Сервер відповів ' + r.status }; });
+  if (r.status === 409 && j && j.by) j.error = 'Вже вирішено: «' + (SR_DEC[j.decision] || j.decision) + '», ' + j.by + (j.at ? ', ' + _srAt(j.at) : '') + '.';
+  if (!r.ok && !j.error) j.error = 'Сервер відповів ' + r.status;
+  return j;
+}
+async function srSubmitDecision(btn) {
+  var f = srState.form; if (!f) return;
+  var ta = document.getElementById('srFormNote'); f.note = ta ? ta.value.trim() : '';
+  if (f.decision === 'not_pair' && !f.reason) { f.err = 'Оберіть причину.'; return srRenderTasks(); }
+  if ((f.decision !== 'not_pair' || f.reason === 'other') && f.note.length < 5) { f.err = 'Коментар — від 5 символів.'; return srRenderTasks(); }
+  if (btn) btn.disabled = true;
+  var payload = { key: f.key, decision: f.decision, note: f.note };
+  if (f.decision === 'not_pair') payload.reason = f.reason;
+  var j = await _srDecide(payload);
+  if (j.error) { f.err = j.error; return srRenderTasks(); }
+  srState.form = null;
+  await srLoad(false, true);
+}
+async function srUndoDecision(key, btn) {
+  if (btn) btn.disabled = true;
+  var j = await _srDecide({ key: key, remove: true });
+  if (j.error) { if (btn) { btn.disabled = false; btn.textContent = j.error; } return; }
+  if (/^x:/.test(key)) await srLoadFree(true); else await srLoad(false, true);
+}
+
+// Перейти з рядка «Звірки» до вільної позиції в «Артикулах»
+async function srGoFree(ri) {
+  srState.mode = 'art'; srState.base = ''; srState.q = '';
+  var inp = document.getElementById('srSearch'); if (inp) inp.value = '';
+  srState.showAll.free = true;
+  saveStateToUrl();
+  srRender();
+  for (var n = 0; n < 60 && (!srState.free || srState.free.loading); n++) await new Promise(function(r) { setTimeout(r, 250); });
+  var p = _srPairs().find(function(x) { return x.f.ri === ri || (x.g && x.g.ri === ri); });
+  if (!p) return;
+  srState.fg = p.grp; saveStateToUrl(); srRenderTasks();
+  var el = Array.prototype.find.call(document.querySelectorAll('#srBody .sr-pair[data-pk]'), function(x) { return x.getAttribute('data-pk') === p.pk; });
+  if (!el) return;
+  el.scrollIntoView({ block: 'center' });
+  el.classList.add('sr-flash');
+  setTimeout(function() { el.classList.remove('sr-flash'); }, 2000);
+}
+// Перейти до задачі: розгорнути її секцію, прокрутити й коротко підсвітити
+function srGoTask(key) {
+  var d = srState.data; if (!d) return;
+  var t = (d.tasks || []).find(function(x) { return x.key === key; });
+  if (!t) return;
+  srState.mode = 'art'; srState.base = ''; srState.q = '';
+  var inp = document.getElementById('srSearch'); if (inp) inp.value = '';
+  srState.secOpen[t.sec] = true; srState.showAll[t.sec] = true; srState.secOpen.tasks = true;
+  saveStateToUrl();
+  srRender();
+  var el = Array.prototype.find.call(document.querySelectorAll('#srBody .sr-task[data-tk]'), function(x) { return x.getAttribute('data-tk') === key; });
+  if (!el) return;
+  el.scrollIntoView({ block: 'center' });
+  el.classList.add('sr-flash');
+  setTimeout(function() { el.classList.remove('sr-flash'); }, 2000);
 }
 
 function srToggle(i, tr) {
@@ -5235,8 +5941,10 @@ function srDetailRow(r) {
   if (r.st === 'buh_missing') card = r.sub === 'картки нема' ? 'картки з таким артикулом чи назвою в buh нема'
     : /іншому товарі/.test(r.sub || '') ? 'картка в buh є, але її залишок зараховано іншому товару (у неї артикул іншої позиції) — див. підказку'
     : /поза звіркою/.test(r.sub || '') ? 'картка в buh є, але залишок лише на складах buh поза звіркою — див. «buh — інші склади»'
+    : r.sub === 'одиниці не перераховано' ? 'одиниці в базах різні, а коефіцієнт визначити не вдалося — різницю перевірте вручну'
     : 'картка в buh є, але залишку на ній нема';
   else if (r.st === 'unf_missing') card = r.sub === 'картки в УНФ нема' ? 'картки з таким артикулом чи назвою в УНФ нема'
+    : r.sub === 'картку в УНФ позначено на видалення' ? 'відповідну картку в УНФ позначено на видалення — buh-картку треба привʼязати до живої картки (див. «Артикули»)'
     : 'картка в УНФ є, але на складах звірки залишку нема' + (r.unfOther ? ' — див. «УНФ — інші склади»' : '');
   var how = r.how ? 'за ' + r.how.split(', ').map(function(h) { return SR_HOW[h] || h; }).join(' і за ') : null;
   // «склад: 55695; склад2: 360» → «склад — 55 695 м; склад2 — 360 м»
@@ -5257,11 +5965,14 @@ function srDetailRow(r) {
     r.conv ? ['Одиниці', r.conv] : null,
     card ? ['Картка', card] : (how ? ['Звʼязано', how] : null),
     ['Коди', [r.ucode ? 'УНФ ' + r.ucode : '', r.bcode ? 'buh ' + r.bcode : ''].filter(Boolean).join(' · ') || '—'],
-    r.cand ? ['Підказка', r.cand] : null,
+    r.cand ? ['Підказка', r.cand] : null,   // старий кеш (до черги «Артикули»)
   ].filter(Boolean);
   return '<tr class="sr-det"><td colspan="7"><div class="sr-det-grid">' +
     items.map(function(it) { return '<span class="k">' + esc(it[0]) + '</span><span>' + esc(it[1]) + '</span>'; }).join('') +
-    '</div></td></tr>';
+    '</div>' + (r.fr ? '<div class="sr-det-task">Позиція не об\u02bcєднана артикулом з іншою базою · <a href="#" data-ri="' + r._i + '" onclick="srGoFree(+this.dataset.ri);return false">схожі картки й що вписати →</a></div>' : '') +
+    (r.tk ? '<div class="sr-det-task">Задача: ' + esc(SR_TKM[r.tkm] || 'артикул') +
+      ' · <a href="#" data-go="' + esc(r.tk) + '" onclick="srGoTask(this.dataset.go);return false">до черги «Артикули» →</a></div>' : '') +
+    '</td></tr>';
 }
 
 // Excel — усі рядки поточного фільтра й пошуку, з розгорткою в колонках
@@ -5919,6 +6630,8 @@ Auth.require('finance').then(function(user) {
       var srChip = saved.org ? document.querySelector('#srOrgGroup .chip[data-org="' + saved.org + '"]') : null;
       if (srChip && srChip.style.display !== 'none') { srState.org = saved.org; srState.orgPicked = true; }
       if (saved.st && SR_FILTERS.some(function(f) { return f.k === saved.st; })) srState.st = saved.st;
+      if (saved.srv === 'art') srState.mode = 'art';
+      if (/^[rcn]$/.test(saved.fg || '')) srState.fg = saved.fg;
       var srTabEl = document.querySelector('.ptab[data-view="sr"]');
       if (srTabEl) { srState._noSync = true; switchTab(srTabEl); }
     }
