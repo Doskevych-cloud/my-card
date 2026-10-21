@@ -455,6 +455,46 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 #eqBody .pnl-table tr.sec:not([data-is-sec]) td:first-child:hover{background:transparent}
 #eqBody .pnl-table tr.sec:not([data-is-sec]):not([data-cat]) td:first-child::before{content:'';display:inline-block;width:18px}
 
+/* ─── Склад: УНФ ↔ бух (sr) ─── */
+#srMeta .eq-note{margin-bottom:6px}
+.toolbar.sr-filters{background:transparent;border:none;padding:0;margin:0 0 10px}
+.sr-filters .chip .n{color:var(--text3);font-weight:500;font-variant-numeric:tabular-nums}
+.sr-filters .chip.active .n{color:inherit}
+.sr-filters #srSearch{margin-left:auto;min-width:240px}
+#srBody .pnl-table td:first-child{white-space:normal;min-width:360px}
+#srBody .pnl-table tr.sr-row{cursor:pointer}
+#srBody .pnl-table tr.sr-row:hover td{background:var(--surface2)}
+#srBody .pnl-table tr.sr-total td{font-weight:700;border-bottom:1px solid var(--border)}
+#srBody .pnl-table tr.sr-det td{background:var(--bg2);white-space:normal;text-align:left;padding:10px 14px 12px 32px;cursor:default}
+.sr-sub{display:block;font-size:11px;color:var(--text3);margin-top:2px;padding-left:18px}
+.sr-zero{color:var(--text3)}
+.sr-big{color:var(--red);font-weight:700}
+.sr-mid{font-weight:700}
+.sr-det-grid{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;font-size:12px;color:var(--text2);line-height:1.45}
+.sr-det-grid .k{color:var(--text3)}
+.sr-empty{padding:40px 20px;text-align:center;color:var(--text3);font-size:13px}
+@media(max-width:720px){
+  .sr-filters #srSearch{margin-left:0;flex:1 1 100%}
+}
+/* На телефоні: Товар · УНФ · buh · Сума; одиниця, різниця й ціна — у розгортці рядка.
+   Колонки стискаємо до 0, а не display:none: інакше colspan=7 розгортки додає «фантомні»
+   колонки і назва стискається до кількох літер. */
+@media(max-width:600px){
+  #srBody .pnl-table{table-layout:fixed;width:100%}
+  #srBody .pnl-table th:nth-child(2),#srBody .pnl-table td:nth-child(2),
+  #srBody .pnl-table th:nth-child(5),#srBody .pnl-table td:nth-child(5),
+  #srBody .pnl-table th:nth-child(6),#srBody .pnl-table td:nth-child(6){width:0;padding:0;border:0;overflow:hidden;font-size:0}
+  #srBody .pnl-table th:first-child,#srBody .pnl-table td:first-child{min-width:0 !important;width:auto;position:static;overflow-wrap:anywhere}
+  #srBody .pnl-table th:nth-child(3),#srBody .pnl-table td:nth-child(3),
+  #srBody .pnl-table th:nth-child(4),#srBody .pnl-table td:nth-child(4){width:56px}
+  #srBody .pnl-table th:nth-child(7),#srBody .pnl-table td:nth-child(7){width:94px}
+  #srBody .pnl-table td{padding-left:6px;padding-right:6px}
+  #srBody .pnl-table tr.sr-det td{padding:8px 10px 10px}
+  .sr-sub{padding-left:0}
+  .sr-det-grid{grid-template-columns:1fr;gap:1px}
+  .sr-det-grid .k{margin-top:6px}
+}
+
 /* ── Help-модалка «Як працює» (шаблон top_products.html) ── */
 .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
 .modal-backdrop.open{display:flex}
@@ -485,6 +525,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <span class="ptab" data-view="ar" data-perm="finance_ar" onclick="switchTab(this)">Розрахунки з покупцями</span>
       <span class="ptab" data-view="ms" data-perm="finance_ms" onclick="switchTab(this)">Взаєморозрахунки</span>
       <span class="ptab" data-view="wh" data-perm="finance_wh" onclick="switchTab(this)">Склад (вартість)</span>
+      <span class="ptab" data-view="sr" data-perm="finance_sr" onclick="switchTab(this)">Склад: УНФ ↔ бух</span>
       <span class="ptab" data-view="cb" data-perm="finance_cb" onclick="switchTab(this)">Кошти</span>
       <span class="ptab" data-view="eq" data-perm="finance_eq" onclick="switchTab(this)">Капітал</span>
       <span class="export-menu" style="margin-left:auto;position:relative">
@@ -822,6 +863,33 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <div id="whBody"><div class="loading">Завантаження...</div></div>
     </div>
 
+    <!-- ═══ Склад: УНФ ↔ бух View ═══ -->
+    <div id="srView" class="view">
+      <div class="toolbar" id="srToolbar">
+        <span class="lbl">Станом на</span>
+        <input type="text" id="srDateIn" class="date-range-input" readonly>
+        <span class="group" id="srPresetGroup">
+          <span class="chip" data-preset="today" onclick="srSetPreset('today')">Сьогодні</span>
+          <span class="chip" data-preset="prevMeom" onclick="srSetPreset('prevMeom')">Кінець попер. міс</span>
+        </span>
+        <div class="sep"></div>
+        <span class="group" id="srOrgGroup">
+          <span class="chip" data-org="Реакт" onclick="srSetOrg(this)">Реакт</span>
+          <span class="chip active" data-org="Генерація" onclick="srSetOrg(this)">Генерація</span>
+        </span>
+        <div class="sep"></div>
+        <span class="chip" id="srSyncBtn" onclick="srRefresh()" title="Перечитати залишки бухгалтерської бази наживо (не частіше разу на хвилину)">↻ Оновити з 1С</span>
+        <span class="chip" onclick="openSrHelp()" title="Як працює цей звіт">❓ Як працює</span>
+      </div>
+      <div id="srMeta"></div>
+      <div id="srSummary"></div>
+      <div class="toolbar sr-filters">
+        <span class="group" id="srStGroup"></span>
+        <input type="text" id="srSearch" placeholder="Товар, артикул або код" autocomplete="off" oninput="srOnSearch(this.value)">
+      </div>
+      <div id="srBody"><div class="loading">Завантаження...</div></div>
+    </div>
+
     <!-- ═══ Cash Balance View ═══ -->
     <div id="cbView" class="view">
       <div class="toolbar" id="cbToolbar">
@@ -1082,6 +1150,55 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
 </div>
 
+<!-- ── Довідка «Як працює Склад: УНФ ↔ бух» ── -->
+<div class="modal-backdrop" id="srHelpModal" onclick="if(event.target===this)closeSrHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт Склад: УНФ ↔ бух">
+    <button class="close" onclick="closeSrHelp()" aria-label="Закрити">✕</button>
+    <h2>Як працює звіт «Склад: УНФ ↔ бух»</h2>
+    <h3>Що порівнюємо</h3>
+    <p>Залишок товару на <b>безнал-складах УНФ</b> проти залишку в <b>бухгалтерській базі</b> (БАС Бухгалтерія) тієї ж юрособи на кінець обраного дня — у кількості й у гривнях. Рядок — один товар. Різниця = УНФ − buh: плюс — в УНФ більше, мінус — у buh більше.</p>
+    <ul>
+      <li><b>Генерація</b>: УНФ «Генерація» Одеса + Київ ↔ buh «Генерація Енерджі ТОВ». <b>Реакт</b>: УНФ «Дистрибуція РЕАКТ» ↔ buh «ТОВ «РЕАКТ»».</li>
+      <li>Чіпа «Всі» нема: це дві окремі юрособи з окремим бух-обліком, разом їх не звіряють.</li>
+    </ul>
+    <h3>Звідки дані</h3>
+    <ul>
+      <li><b>УНФ</b> — денний знімок залишків, той самий, що у вкладці «Склад (вартість)»: автосинк кожні 30 хв у робочий час, минулі дати перечитуються з 1С. Склади: «1 Одеса, Генерація, Б/Г», «Київ, Генерація, бн», «2 Одеса, Реакт, Б/Г», «Київ, Реакт, бн» — товар організації рахується на будь-якому з них.</li>
+      <li>Готівкові склади, «під звіт» і «В дорозі» у звірку <b>не входять</b>. Якщо товар лежить там, це видно в розгортці рядка: «УНФ — інші склади».</li>
+      <li>Резерв під замовлення в УНФ — частина залишку, звіряється разом із вільним.</li>
+      <li><b>buh</b> — залишки рахунків запасів (20, 22, 26, 28) організації на кінець дня по всіх її складах, наживо з бухгалтерської бази. Прочитане зберігається 10 хв (минулі дати — 6 год). «↻ Оновити з 1С» перечитує buh одразу, але не частіше разу на хвилину.</li>
+      <li>Обидві бази звіт лише читає — нічого в 1С не змінює.</li>
+    </ul>
+    <h3>Як знаходимо той самий товар</h3>
+    <ul>
+      <li>Спершу <b>за артикулом</b>: регістр і пробіли не важать; однакові на вигляд кирилиця й латиниця (С/C, Н/H, Р/P…) — та сама літера.</li>
+      <li>Без артикула або якщо за артикулом пари нема — <b>за назвою</b>: назва УНФ проти «Найменування» або «Повного найменування» картки buh. Мають збігатися всі слова, числа й коди моделі.</li>
+      <li>Схожі, але не однакові назви <b>не зараховуються</b>. У рядку тоді стоїть «є схожа картка», а в розгортці — яка саме: найчастіше це той самий товар з різними артикулами в базах. Щоб звіт їх звʼязав, треба прописати однаковий артикул.</li>
+    </ul>
+    <h3>Одиниці виміру</h3>
+    <p>Кількість buh зводиться до одиниці УНФ за назвами одиниць: км → м ×1000, «100 шт» → шт ×100, тис. шт → шт ×1000, компл / пач → шт / пак ×1. Коефіцієнт перевіряє собівартість партії: якщо ціна buh за одиницю розходиться із закупівлею в УНФ у десятки разів, береться коефіцієнт за собівартістю. Що саме перераховано — у розгортці («Одиниці»); «не перераховано» — кількості в різних одиницях, різницю перевіряти вручну.</p>
+    <h3>Ціна й сума</h3>
+    <ul>
+      <li>Ціна — <b>собівартість buh</b>: сума на рахунку ÷ кількість. Якщо товару в buh нема — середня ціна закупівлі в УНФ у доларах, переведена в гривні курсом, підібраним на товарах, де є обидві ціни. Джерело ціни — у розгортці.</li>
+      <li>Сума = різниця × ціна. Нема жодної ціни — «н/д», у суми не входить; кількість таких рядків — «без ціни».</li>
+      <li><span style="color:var(--red);font-weight:700">Червоним</span> — розбіжність від 100 000 грн, <b>жирним</b> — від 20 000 грн.</li>
+    </ul>
+    <h3>Фільтри</h3>
+    <ul>
+      <li><b>В УНФ більше</b> — товар є в обох базах, але в УНФ більше; плюс <b>у buh нема</b> — у buh залишку нема зовсім: «картка є, залишку нема», «картки нема» (у buh не заведено) або «картка є, її залишок — на іншому товарі» (у картки артикул іншої позиції, тож її залишок пішов на той рядок — див. підказку).</li>
+      <li><b>У buh більше</b> — є в обох, у buh більше; плюс <b>в УНФ нема</b> — у buh є залишок, а на безнал-складах УНФ нема: «картка є, на безналі нема» (часто лежить на готівковому складі чи під звітом) або «картки нема».</li>
+      <li><b>Збіг</b> — кількості однакові. Пошук — за назвою, артикулом або кодом картки будь-якої бази.</li>
+    </ul>
+    <h3>Чому цифра може здивувати</h3>
+    <ul>
+      <li>Сьогоднішній знімок УНФ буває до 30 хв старішим за buh: рух між ними виглядає різницею. Час обох боків — над картками.</li>
+      <li>Знімка УНФ на обрану дату нема — береться найближчий раніший (до 7 днів), над картками червоне застереження. Знімки є з 20.04.2026, раніше звірити не можна.</li>
+      <li>Один артикул на різних товарах (як і різні артикули на одному) переносить залишок не на той рядок: у розгортці — коди карток обох баз і підказка.</li>
+      <li>Картка buh з тим самим артикулом зараховується до товару УНФ навіть із дещо іншою назвою — артикул важить більше за назву.</li>
+    </ul>
+  </div>
+</div>
+
 <!-- ── Довідка «Як працює Дебіторка» ── -->
 <div class="modal-backdrop" id="arHelpModal" onclick="if(event.target===this)closeArHelp()">
   <div class="modal" role="dialog" aria-modal="true" aria-label="Як працює звіт Дебіторка">
@@ -1212,7 +1329,8 @@ function saveStateToUrl() {
   const RANGE = { pnl: pnlState, gp: gpState, ar: arState, eq: typeof eqState !== 'undefined' ? eqState : null };
   const POINT = { ms: typeof msState !== 'undefined' ? msState : null,
                   wh: typeof whState !== 'undefined' ? whState : null,
-                  cb: typeof cbState !== 'undefined' ? cbState : null };
+                  cb: typeof cbState !== 'undefined' ? cbState : null,
+                  sr: typeof srState !== 'undefined' ? srState : null };
   if (RANGE[tab]) {
     const st = RANGE[tab];
     if (st.from) p.set('from', st.from);
@@ -1226,6 +1344,7 @@ function saveStateToUrl() {
     const st = POINT[tab];
     if (st && st.on) p.set('on', st.on);
     if (st && st.org) p.set('org', st.org);
+    if (tab === 'sr' && st.st && st.st !== 'diff') p.set('st', st.st);
   }
   history.replaceState(null, '', '#' + p.toString());
 }
@@ -1277,7 +1396,8 @@ function _stateForTab(tab) {
             ms: typeof msState !== 'undefined' ? msState : null,
             wh: typeof whState !== 'undefined' ? whState : null,
             cb: typeof cbState !== 'undefined' ? cbState : null,
-            eq: typeof eqState !== 'undefined' ? eqState : null }[tab]) || null;
+            eq: typeof eqState !== 'undefined' ? eqState : null,
+            sr: typeof srState !== 'undefined' ? srState : null }[tab]) || null;
 }
 
 function switchTab(el) {
@@ -1290,7 +1410,8 @@ function switchTab(el) {
 
   // Синхронізуємо фільтри з попередньої вкладки (якщо була і відрізняється)
   if (prev && prev !== v) {
-    if (v === 'eq' || prev === 'eq') _syncEqFilters(_stateForTab(prev), _stateForTab(v), v === 'eq');
+    if (v === 'sr' || prev === 'sr') _syncSrFilters(_stateForTab(prev), _stateForTab(v), v === 'sr');
+    else if (v === 'eq' || prev === 'eq') _syncEqFilters(_stateForTab(prev), _stateForTab(v), v === 'eq');
     else _syncFiltersFromTo(_stateForTab(prev), _stateForTab(v));
   }
 
@@ -1305,6 +1426,12 @@ function switchTab(el) {
   else if (v === 'wh') { if (whState.on) whLoad(); else whSetPreset('today'); }
   else if (v === 'cb') { if (cbState.on) cbLoad(); else cbSetPreset('today'); }
   else if (v === 'eq') eqLoad();
+  else if (v === 'sr') {
+    // ті самі дата й орг і дані свіжіші за 5 хв — без нового запиту
+    var srd = srState.data;
+    if (srd && srd.org === srState.org && srd.date === _srClamp(srState.on) && Date.now() - srState.loadedAt < 300e3) srRender();
+    else srLoad();
+  }
 
   // Синхронізуємо UI-стан (date inputs, chips) для нової активної вкладки
   _refreshTabToolbar(v);
@@ -1340,6 +1467,7 @@ function _refreshTabToolbar(v) {
   else if (v === 'ms') { if (_msPicker && st.on) _msPicker.setDate(st.on); setOrgChips('msOrgGroup', st.org); }
   else if (v === 'wh') { if (_whPicker && st.on) _whPicker.setDate(st.on); setOrgChips('whOrgGroup', st.org); }
   else if (v === 'cb') { if (_cbPicker && st.on) _cbPicker.setDate(st.on); setOrgChips('cbOrgGroup', st.org); }
+  else if (v === 'sr') { if (_srPicker && st.on) _srPicker.setDate(st.on); _srMarkPreset(); setOrgChips('srOrgGroup', st.org); }
   else if (v === 'eq') {
     if (_eqPicker) _eqPicker.setDates(st.from, st.to);
     setPresetChips('eqPresetGroup', st.preset, st.from, st.to); setOrgChips('eqOrgGroup', st.org);
@@ -1377,6 +1505,7 @@ function downloadXLSX() {
   }
   const tabEl = document.querySelector('.ptab.active');
   const view  = tabEl && tabEl.dataset.view;
+  if (view === 'sr') { srDownloadXLSX(); return; }   // свій експорт: усі рядки фільтра з розгорткою
   const titles = { pnl: 'P&L звіт', gp: 'Валовий прибуток', fi: 'Фінансові показники', cf: 'Cash Flow', ar: 'Розрахунки з покупцями', eq: 'Капітал' };
   const title  = titles[view] || 'Фінансовий звіт';
   const state  = view === 'eq' ? eqState : view === 'gp' ? gpState : view === 'ar' ? arState : view === 'fi' ? fiState : (view === 'cf' ? (window.cfState || {}) : pnlState);
@@ -1478,9 +1607,9 @@ function downloadXLSX() {
 function downloadPDF() {
   const tabEl = document.querySelector('.ptab.active');
   const view  = tabEl && tabEl.dataset.view;
-  const titles = { pnl: 'P&L звіт', gp: 'Валовий прибуток', fi: 'Фінансові показники', ar: 'Розрахунки з покупцями', eq: 'Капітал' };
+  const titles = { pnl: 'P&L звіт', gp: 'Валовий прибуток', fi: 'Фінансові показники', ar: 'Розрахунки з покупцями', eq: 'Капітал', sr: 'Склад УНФ ↔ бух' };
   const title  = titles[view] || 'Фінансовий звіт';
-  const state  = view === 'eq' ? eqState : view === 'gp' ? gpState : view === 'ar' ? arState : view === 'fi' ? fiState : pnlState;
+  const state  = view === 'sr' ? { from: srState.on, to: srState.on, org: srState.org } : view === 'eq' ? eqState : view === 'gp' ? gpState : view === 'ar' ? arState : view === 'fi' ? fiState : pnlState;
   const from   = state.from || '';
   const to     = state.to   || '';
   const org    = state.org  || 'Всі організації';
@@ -1570,7 +1699,7 @@ function downloadPDF() {
     header.className = 'pnl-report-header';
     header.innerHTML = `
       <h1>${esc(title)}</h1>
-      <div class="sub">Період: <b>${esc(from)} — ${esc(to)}</b>
+      <div class="sub">${view === 'sr' ? `Станом на: <b>${esc(to)}</b>` : `Період: <b>${esc(from)} — ${esc(to)}</b>`}
         &nbsp;·&nbsp; Організація: <b>${esc(org)}</b>
         &nbsp;·&nbsp; Згенеровано: ${esc(dt)}</div>`;
     reportEl.appendChild(header);
@@ -1621,7 +1750,7 @@ function downloadPDF() {
     <div style="margin-bottom:6mm;border-bottom:1px solid #999;padding-bottom:4mm;">
       <div style="font-size:16pt;font-weight:800;margin-bottom:2mm;color:#000;">${esc(title)}</div>
       <div style="font-size:9pt;color:#555;">
-        Період: <b style="color:#000;">${esc(from)} — ${esc(to)}</b>
+        ${view === 'sr' ? `Станом на: <b style="color:#000;">${esc(to)}</b>` : `Період: <b style="color:#000;">${esc(from)} — ${esc(to)}</b>`}
         &nbsp;·&nbsp; Організація: <b style="color:#000;">${esc(org)}</b>
         &nbsp;·&nbsp; Згенеровано: ${esc(dt)}
       </div>
@@ -2686,7 +2815,9 @@ function openCfHelp()   { document.getElementById('cfHelpModal').classList.add('
 function closeCfHelp()  { document.getElementById('cfHelpModal').classList.remove('open'); }
 function openEqHelp()   { document.getElementById('eqHelpModal').classList.add('open'); }
 function closeEqHelp()  { document.getElementById('eqHelpModal').classList.remove('open'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closePnlHelp(); closeCbHelp(); closeWhHelp(); closeGpHelp(); closeCfHelp(); closeArHelp(); closeEqHelp(); } });
+function openSrHelp()   { document.getElementById('srHelpModal').classList.add('open'); }
+function closeSrHelp()  { document.getElementById('srHelpModal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closePnlHelp(); closeCbHelp(); closeWhHelp(); closeGpHelp(); closeCfHelp(); closeArHelp(); closeEqHelp(); closeSrHelp(); } });
 
 function pnlDateChanged() {
   pnlState.preset = detectPreset(pnlState.from, pnlState.to) || '';
@@ -4863,6 +4994,311 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 /* ═══════════════════════════════════════════════════
+   СКЛАД: УНФ ↔ БУХ — залишки безнал-складів УНФ проти бухгалтерської бази
+   (БАС Бухгалтерія) тієї ж юрособи на кінець дня, у кількості й гривнях.
+   Бекенд: action=stock_buh_recon (price-api/src/reports/stock-recon.js):
+   знімок УНФ з D1 (stock_balances) + Balance рахунків запасів buh наживо (KV 10 хв).
+   rows уже відсортовані за |сума|; totals — по статусах (unf_more, buh_missing,
+   buh_more, unf_missing, match). Лише конкретна орг, без «Всі»: дві юрособи
+   buh разом не звіряють.
+   var, не const: стан читають saveStateToUrl/_stateForTab, оголошені вище.
+   ═══════════════════════════════════════════════════ */
+var SR_DATA_FROM = '2026-04-20';   // = RECON_DATA_FROM у stock-recon.js: знімки УНФ є з цієї дати
+var srState = { on: '', org: 'Генерація', st: 'diff', q: '', data: null, loadedAt: 0, open: new Set(), seq: 0, orgPicked: false };
+var _srPicker = null;
+var _srQT = null;
+var SR_FILTERS = [
+  { k: 'diff',        label: 'Усі різниці',  test: function(r) { return r.st !== 'match'; } },
+  { k: 'unf',         label: 'В УНФ більше', test: function(r) { return r.st === 'unf_more' || r.st === 'buh_missing'; } },
+  { k: 'buh_missing', label: 'у buh нема',   test: function(r) { return r.st === 'buh_missing'; } },
+  { k: 'buh',         label: 'У buh більше', test: function(r) { return r.st === 'buh_more' || r.st === 'unf_missing'; } },
+  { k: 'unf_missing', label: 'в УНФ нема',   test: function(r) { return r.st === 'unf_missing'; } },
+  { k: 'match',       label: 'Збіг',         test: function(r) { return r.st === 'match'; } },
+];
+var SR_ST_LABEL = { unf_more: 'в УНФ більше', buh_missing: 'у buh нема', buh_more: 'у buh більше', unf_missing: 'в УНФ нема', match: 'збіг' };
+var SR_SUB_SHORT = { 'картка в УНФ є, на безналі залишку нема': 'картка є, на безналі нема', 'картки в УНФ нема': 'картки нема' };
+var SR_HOW = { 'артикул': 'артикулом', 'назва': 'назвою', 'назва (кілька карток УНФ)': 'назвою (кілька карток УНФ)' };
+var SR_POS = ['позиція', 'позиції', 'позицій'];
+
+function _srPl(n, f) { var a = Math.abs(n) % 100, b = a % 10; return a > 10 && a < 20 ? f[2] : b === 1 ? f[0] : (b >= 2 && b <= 4 ? f[1] : f[2]); }
+function _srToday() { return _localISO(new Date()); }
+function _srClamp(d) { return (/^\d{4}-\d{2}-\d{2}$/.test(d || '') && d >= SR_DATA_FROM && d <= _srToday()) ? d : _srToday(); }
+function _srDmy(s) { return s ? s.split('-').reverse().join('.') : '—'; }
+// Час у Києві; не сьогодні — з датою: «21.10 о 10:31»
+function _srAt(iso) {
+  if (!iso) return '—';
+  var t = new Date(iso); if (isNaN(t)) return '—';
+  var day = t.toLocaleDateString('sv-SE', { timeZone: 'Europe/Kyiv' });
+  var hm = t.toLocaleTimeString('uk-UA', { timeZone: 'Europe/Kyiv', hour: '2-digit', minute: '2-digit' });
+  return (day === _srToday() ? '' : day.slice(8, 10) + '.' + day.slice(5, 7) + ' ') + 'о ' + hm;
+}
+function srQty(v) { return Number(v).toLocaleString('uk-UA', { maximumFractionDigits: 2 }); }
+function srSigned(v, isQty) {
+  if (!v) return '0';
+  return (v > 0 ? '+' : '−') + (isQty ? srQty(Math.abs(v)) : fmt(Math.abs(v), 0));
+}
+function _srHay(r) { return r._hay || (r._hay = [r.name, r.art, r.ucode, r.bcode].join(' ').toLowerCase()); }
+function _srFiltered() {
+  var d = srState.data; if (!d) return [];
+  var f = SR_FILTERS.find(function(x) { return x.k === srState.st; }) || SR_FILTERS[0];
+  var terms = srState.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  return (d.rows || []).filter(f.test).filter(function(r) { return terms.every(function(t) { return _srHay(r).includes(t); }); });
+}
+function _srStatusText(r, full) {
+  if (r.st === 'match') return full ? 'збіг' : '';
+  var sub = r.sub ? (full ? r.sub : (SR_SUB_SHORT[r.sub] || r.sub)) : '';
+  return SR_ST_LABEL[r.st] + (sub ? (full ? ' — ' : ', ') + sub : '');
+}
+
+function srSetPreset(p) {
+  var now = new Date();
+  srState.on = _localISO(p === 'prevMeom' ? new Date(now.getFullYear(), now.getMonth(), 0) : now);
+  if (_srPicker) _srPicker.setDate(srState.on);
+  saveStateToUrl();
+  srLoad();
+}
+function _srMarkPreset() {
+  var now = new Date(), today = _localISO(now), pme = _localISO(new Date(now.getFullYear(), now.getMonth(), 0));
+  document.querySelectorAll('#srPresetGroup .chip').forEach(function(c) {
+    var p = c.dataset.preset;
+    c.classList.toggle('active', (p === 'today' && srState.on === today) || (p === 'prevMeom' && srState.on === pme));
+  });
+}
+function srSetOrg(el) {
+  srState.org = el.dataset.org;
+  srState.orgPicked = true;
+  document.querySelectorAll('#srOrgGroup .chip[data-org]').forEach(function(c) { c.classList.toggle('active', c === el); });
+  saveStateToUrl();
+  srLoad();
+}
+function srSetSt(el) {
+  srState.st = el.dataset.st;
+  document.querySelectorAll('#srStGroup .chip').forEach(function(c) { c.classList.toggle('active', c === el); });
+  saveStateToUrl();
+  srRenderTable();
+}
+function srOnSearch(v) {
+  clearTimeout(_srQT);
+  _srQT = setTimeout(function() { srState.q = v || ''; srRenderTable(); }, 150);
+}
+
+// З іншими вкладками ділимо дату «на» і організацію. Орг сюди — лише конкретна («Всі» тут
+// нема); звідси — лише та, яку обрали тут руками, а не дефолтна Генерація.
+function _syncSrFilters(fromSt, toSt, intoSr) {
+  if (!fromSt || !toSt) return;
+  if (toSt._noSync) { delete toSt._noSync; return; }   // відновлення з URL: стан уже виставлено
+  if (intoSr) {
+    var d = fromSt.on || fromSt.to;
+    if (d && /^\d{4}-\d{2}-\d{2}$/.test(d) && d >= SR_DATA_FROM && d <= _srToday()) toSt.on = d;
+    var chip = fromSt.org ? document.querySelector('#srOrgGroup .chip[data-org="' + fromSt.org + '"]') : null;
+    if (chip && chip.style.display !== 'none') toSt.org = fromSt.org;
+  } else {
+    if ('on' in toSt && fromSt.on) toSt.on = fromSt.on;
+    if (fromSt.orgPicked && fromSt.org) toSt.org = fromSt.org;
+  }
+}
+
+async function srLoad(fresh) {
+  var tab = document.querySelector('.ptab[data-view="sr"]');
+  if (tab && tab.style.display === 'none') return;   // вкладку приховано по правах — бекенд однаково дав би 403
+  delete srState._noSync;
+  srState.on = _srClamp(srState.on);
+  if (_srPicker) _srPicker.setDate(srState.on);
+  _srMarkPreset();
+  var seq = ++srState.seq;
+  srState.data = null;
+  srState.open.clear();
+  document.getElementById('srMeta').innerHTML = '';
+  document.getElementById('srSummary').innerHTML = '';
+  document.getElementById('srStGroup').innerHTML = '';
+  document.getElementById('srBody').innerHTML = '<div class="loading">' + (fresh ? 'Перечитую бухгалтерську базу…' : 'Завантаження…') + '</div>';
+  try {
+    var q = '?action=stock_buh_recon&org=' + encodeURIComponent(srState.org) + '&date=' + srState.on + (fresh ? '&fresh=1' : '');
+    var r = await fetch(API_URL + q);
+    var data = await r.json().catch(function() { return { error: 'Сервер відповів ' + r.status }; });
+    if (seq !== srState.seq) return;   // уже летить новіший запит (швидко клацали фільтри)
+    if (data.error) throw new Error(data.error);
+    (data.rows || []).forEach(function(x, i) { x._i = i; });
+    srState.data = data;
+    srState.loadedAt = Date.now();
+    srRender();
+  } catch (e) {
+    if (seq !== srState.seq) return;
+    document.getElementById('srBody').innerHTML = '<div class="error">' + esc(e.message || String(e)) + '</div>';
+  }
+}
+async function srRefresh() {
+  var btn = document.getElementById('srSyncBtn');
+  if (btn) { btn.style.pointerEvents = 'none'; btn.style.opacity = '.6'; }
+  try { await srLoad(true); } finally { if (btn) { btn.style.pointerEvents = ''; btn.style.opacity = ''; } }
+}
+
+function srRender() {
+  var d = srState.data;
+  if (!d) return;
+  var rows = d.rows || [];
+  var T = function(k) { return (d.totals && d.totals[k]) || { n: 0, sum: 0, noPrice: 0 }; };
+  var unfMore = T('unf_more'), buhMiss = T('buh_missing'), buhMore = T('buh_more'), unfMiss = T('unf_missing'), match = T('match');
+  var unfSum = unfMore.sum + buhMiss.sum, buhSum = -(buhMore.sum + unfMiss.sum);
+  var unfN = unfMore.n + buhMiss.n, buhN = buhMore.n + unfMiss.n;
+  var unfNoPrice = unfMore.noPrice + buhMiss.noPrice, buhNoPrice = buhMore.noPrice + unfMiss.noPrice;
+
+  // ── свіжість обох боків + застереження, якщо знімка УНФ на дату нема
+  var meta = 'УНФ — знімок на ' + _srDmy(d.unfDate) + ', оновлено ' + _srAt(d.unfSynced) +
+    ' · buh' + (d.buhOrgName ? ', ' + esc(d.buhOrgName) : '') + ' — прочитано ' + _srAt(d.buhFetchedAt) +
+    (d.throttled ? ' · перечитували менше хвилини тому' : '');
+  var html = '<div class="eq-note">' + meta + '</div>';
+  if (d.unfDate && d.unfDate !== d.date) {
+    html += '<div class="eq-note eq-bad">Знімка залишків УНФ на ' + _srDmy(d.date) + ' нема — порівнюємо зі знімком на ' +
+      _srDmy(d.unfDate) + '. Рух товару між цими датами виглядатиме різницею.</div>';
+  }
+  document.getElementById('srMeta').innerHTML = html;
+
+  // ── картки: обидва напрямки окремо, різниця, збіги (без кольорових плашок)
+  var card = function(lbl, val, sub) {
+    return '<div class="pnl-card"><span class="cl">' + esc(lbl) + '</span><span class="cv">' + val + '</span>' +
+      (sub ? '<span class="cs">' + esc(sub) + '</span>' : '') + '</div>';
+  };
+  var noPr = function(n) { return n ? ' · без ціни ' + n : ''; };
+  document.getElementById('srSummary').innerHTML = '<div class="pnl-summary">' +
+    card('В УНФ більше, ніж у buh', fmt(unfSum, 0) + ' грн', unfN + ' ' + _srPl(unfN, SR_POS) + ' · у buh нема ' + buhMiss.n + noPr(unfNoPrice)) +
+    card('У buh більше, ніж в УНФ', fmt(buhSum, 0) + ' грн', buhN + ' ' + _srPl(buhN, SR_POS) + ' · в УНФ нема ' + unfMiss.n + noPr(buhNoPrice)) +
+    card('Різниця УНФ − buh', srSigned(unfSum - buhSum) + ' грн', 'у цінах собівартості') +
+    card('Збігається', fmt(match.n, 0), 'з ' + rows.length + ' ' + (rows.length % 10 === 1 && rows.length % 100 !== 11 ? 'позиції' : 'позицій')) +
+  '</div>';
+
+  // ── чіпи-фільтри з кількістю (по всьому зрізу, без урахування пошуку)
+  document.getElementById('srStGroup').innerHTML = SR_FILTERS.map(function(f) {
+    return '<span class="chip' + (srState.st === f.k ? ' active' : '') + '" data-st="' + f.k + '" onclick="srSetSt(this)">' +
+      esc(f.label) + ' <span class="n">' + rows.filter(f.test).length + '</span></span>';
+  }).join('');
+  srRenderTable();
+}
+
+function srRenderTable() {
+  var d = srState.data; if (!d) return;
+  var list = _srFiltered();
+  var body = document.getElementById('srBody');
+  if (!list.length) {
+    var empty = srState.q.trim() ? 'Нічого не знайдено' : (srState.st === 'diff' ? 'Розбіжностей нема — залишки збігаються' : 'Таких позицій нема');
+    body.innerHTML = '<div class="sr-empty">' + empty + '</div>';
+    return;
+  }
+  var sum = 0, noPrice = 0;
+  list.forEach(function(r) { if (r.sum == null) noPrice++; else sum += r.sum; });
+  var nd = '<span class="sr-zero">н/д</span>';
+  var qty = function(v) { return v ? srQty(v) : '<span class="sr-zero">0</span>'; };
+  var cls = function(s) { return s == null ? '' : (Math.abs(s) >= 100000 ? ' sr-big' : (Math.abs(s) >= 20000 ? ' sr-mid' : '')); };
+  var rowsHtml = list.map(function(r) {
+    var open = srState.open.has(r._i);
+    var sub = [r.art, _srStatusText(r), r.cand ? 'є схожа картка' : ''].filter(Boolean).join(' · ');
+    var tr = '<tr class="sr-row" data-collapsed="' + (open ? 'false' : 'true') + '" onclick="srToggle(' + r._i + ', this)">' +
+      '<td><span class="tri">▾</span>' + esc(r.name || '—') + (sub ? '<span class="sr-sub">' + esc(sub) + '</span>' : '') + '</td>' +
+      '<td>' + esc(r.unit || '') + '</td>' +
+      '<td>' + qty(r.unf) + '</td>' +
+      '<td>' + qty(r.buh) + '</td>' +
+      '<td>' + srSigned(r.d, true) + '</td>' +
+      '<td>' + (r.price == null ? nd : fmt(r.price, r.price < 100 ? 2 : 0)) + '</td>' +
+      '<td class="col-total' + cls(r.sum) + '">' + (r.sum == null ? nd : srSigned(r.sum)) + '</td></tr>';
+    return open ? tr + srDetailRow(r) : tr;
+  }).join('');
+  body.innerHTML = '<div class="pnl-wrap"><table class="pnl-table sr-table"><thead><tr>' +
+    '<th>Товар</th><th>Од.</th><th title="Безнал-склади УНФ">УНФ</th><th title="Усі склади організації в бухгалтерській базі">buh</th>' +
+    '<th title="УНФ − buh">Різниця</th><th>Ціна, грн</th><th class="col-total" title="Різниця × ціна">Сума, грн</th></tr></thead><tbody>' +
+    '<tr class="sr-total"><td>Разом · ' + list.length + ' ' + _srPl(list.length, SR_POS) + (noPrice ? ' · без ціни ' + noPrice : '') + '</td>' +
+    '<td></td><td></td><td></td><td></td><td></td><td class="col-total">' + srSigned(sum) + '</td></tr>' +
+    rowsHtml + '</tbody></table></div>';
+}
+
+function srToggle(i, tr) {
+  var r = srState.data && srState.data.rows[i];
+  if (!r || !tr) return;
+  var open = !srState.open.has(i);
+  if (open) srState.open.add(i); else srState.open.delete(i);
+  tr.setAttribute('data-collapsed', open ? 'false' : 'true');
+  var next = tr.nextElementSibling;
+  if (next && next.classList.contains('sr-det')) next.remove();
+  if (open) tr.insertAdjacentHTML('afterend', srDetailRow(r));
+}
+
+function srDetailRow(r) {
+  var d = srState.data || {};
+  var u = r.unit ? ' ' + r.unit : '';
+  var price = r.src ? r.src + (/^закупівля/.test(r.src) && d.K ? ': $ × ' + fmt(d.K, 1) + ' грн/$ (' + (d.kSrc || 'курс') + ')' : '')
+                    : 'нема ні собівартості в buh, ні закупівлі в УНФ — у суми не входить';
+  var card = null;
+  if (r.st === 'buh_missing') card = r.sub === 'картки нема' ? 'картки з таким артикулом чи назвою в buh нема'
+    : /іншому товарі/.test(r.sub || '') ? 'картка в buh є, але її залишок зараховано іншому товару (у неї артикул іншої позиції) — див. підказку'
+    : 'картка в buh є, але залишку на ній нема';
+  else if (r.st === 'unf_missing') card = r.sub === 'картки в УНФ нема' ? 'картки з таким артикулом чи назвою в УНФ нема' : 'картка в УНФ є, але на безнал-складах залишку нема';
+  var how = r.how ? 'за ' + r.how.split(', ').map(function(h) { return SR_HOW[h] || h; }).join(' і за ') : null;
+  // «склад: 55695; склад2: 360» → «склад — 55 695 м; склад2 — 360 м»
+  var wh = function(s) {
+    return s.split('; ').map(function(x) {
+      var k = x.lastIndexOf(': ');
+      return k < 0 ? x : x.slice(0, k) + ' — ' + srQty(+x.slice(k + 2)) + u;
+    }).join('; ');
+  };
+  var items = [
+    ['buh — склади', r.buhWh ? wh(r.buhWh) : 'залишку нема'],
+    ['УНФ — безнал', r.unfWh ? wh(r.unfWh) : 'залишку нема'],
+    r.unfOther ? ['УНФ — інші склади', wh(r.unfOther) + ' (у звірку не входять)'] : null,
+    r.unfRes ? ['УНФ — резерв', srQty(r.unfRes) + u + ' під замовлення (входить у залишок)'] : null,
+    ['Різниця', srSigned(r.d, true) + u + (r.sum != null ? ' × ' + fmt(r.price, 2) + ' грн = ' + srSigned(r.sum) + ' грн' : '')],
+    ['Ціна', price],
+    r.conv ? ['Одиниці', r.conv] : null,
+    card ? ['Картка', card] : (how ? ['Звʼязано', how] : null),
+    ['Коди', [r.ucode ? 'УНФ ' + r.ucode : '', r.bcode ? 'buh ' + r.bcode : ''].filter(Boolean).join(' · ') || '—'],
+    r.cand ? ['Підказка', r.cand] : null,
+  ].filter(Boolean);
+  return '<tr class="sr-det"><td colspan="7"><div class="sr-det-grid">' +
+    items.map(function(it) { return '<span class="k">' + esc(it[0]) + '</span><span>' + esc(it[1]) + '</span>'; }).join('') +
+    '</div></td></tr>';
+}
+
+// Excel — усі рядки поточного фільтра й пошуку, з розгорткою в колонках
+function srDownloadXLSX() {
+  var d = srState.data;
+  if (!d || !d.rows) { alert('Немає даних для експорту'); return; }
+  var list = _srFiltered();
+  var f = SR_FILTERS.find(function(x) { return x.k === srState.st; }) || SR_FILTERS[0];
+  var head = ['Статус', 'Товар', 'Артикул', 'Код УНФ', 'Код buh', 'Од.', 'УНФ (безнал)', 'з них резерв', 'buh', 'Різниця', 'Ціна, грн', 'Сума, грн',
+    'Ціна з', 'Звʼязано', 'Одиниці', 'buh — склади', 'УНФ — безнал', 'УНФ — інші склади', 'Підказка'];
+  var aoa = [head].concat(list.map(function(r) {
+    return [_srStatusText(r, true), r.name, r.art, r.ucode, r.bcode, r.unit, r.unf, r.unfRes, r.buh, r.d, r.price, r.sum,
+      r.src, r.how, r.conv, r.buhWh, r.unfWh, r.unfOther, r.cand || ''];
+  }));
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [24, 60, 18, 14, 14, 6, 11, 11, 11, 11, 11, 13, 22, 14, 18, 40, 30, 40, 60].map(function(w) { return { wch: w }; });
+  ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: aoa.length - 1, c: head.length - 1 } }) };
+  var meta = [
+    ['Склад: УНФ ↔ бух'], [],
+    ['Станом на', _srDmy(d.date)],
+    ['Організація', d.org + (d.buhOrgName ? ' (buh: ' + d.buhOrgName + ')' : '')],
+    ['Фільтр', f.label + (srState.q.trim() ? ' · пошук «' + srState.q.trim() + '»' : '')],
+    ['УНФ', 'знімок на ' + _srDmy(d.unfDate) + ', оновлено ' + _srAt(d.unfSynced)],
+    ['buh', 'прочитано ' + _srAt(d.buhFetchedAt)],
+    ['Різниця', 'УНФ − buh; сума = різниця × ціна (собівартість buh, інакше закупівля УНФ × курс)'],
+    ['Згенеровано', new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' })],
+  ];
+  var metaWs = XLSX.utils.aoa_to_sheet(meta);
+  metaWs['!cols'] = [{ wch: 16 }, { wch: 80 }];
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, metaWs, 'Звіт');
+  XLSX.utils.book_append_sheet(wb, ws, 'Позиції');
+  XLSX.writeFile(wb, 'Склад УНФ-бух · ' + d.org + ' · ' + d.date + '.xlsx');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  _srPicker = initDateSingle({ inputId: 'srDateIn', date: srState.on || _localISO(new Date()), onChange: function(d) { srState.on = d; saveStateToUrl(); srLoad(); } });
+  if (_srPicker && _srPicker.instance) {
+    // Date, не рядок: flatpickr з dateFormat d.m.Y парсить '2026-04-20' у сміття
+    _srPicker.instance.set('minDate', new Date(+SR_DATA_FROM.slice(0, 4), +SR_DATA_FROM.slice(5, 7) - 1, +SR_DATA_FROM.slice(8, 10)));
+    _srPicker.instance.set('maxDate', new Date());
+  }
+});
+
+/* ═══════════════════════════════════════════════════
    КАПІТАЛ — власний капітал = активи − зобовʼязання
    Бекенд: action=equity_report (price-api/src/reports/equity.js, D1
    mgmt_postings — дзеркало бух-проводок 1С). Відповідь: open (залишки до from)
@@ -5318,6 +5754,17 @@ Auth.require('finance').then(function(user) {
     });
   }
 
+  // «Склад: УНФ ↔ бух» — лише конкретна орг (без «Всі»): чіпи по гранту,
+  // дефолт — Генерація, якщо доступна. Окремо від ORG_GROUPS: там дефолт '' = «Всі».
+  var srOrgs = allowedOrgs.length ? allowedOrgs : ['Реакт', 'Генерація'];
+  document.querySelectorAll('#srOrgGroup .chip[data-org]').forEach(function(c) {
+    if (srOrgs.indexOf(c.dataset.org) < 0) c.style.display = 'none';
+  });
+  srState.org = srOrgs.indexOf('Генерація') >= 0 ? 'Генерація' : srOrgs[0];
+  document.querySelectorAll('#srOrgGroup .chip[data-org]').forEach(function(c) {
+    c.classList.toggle('active', c.dataset.org === srState.org);
+  });
+
   // Чарти монтуємо ДО switchTab: load вкладки робить _mc*.reload({org}) лише
   // якщо чарт уже існує.
   _initFinanceCharts();
@@ -5458,6 +5905,13 @@ Auth.require('finance').then(function(user) {
       }
       var whTabEl = document.querySelector('.ptab[data-view="wh"]');
       if (whTabEl) switchTab(whTabEl);
+    } else if (chosenTab === 'sr') {
+      if (saved.on) srState.on = _srClamp(saved.on);
+      var srChip = saved.org ? document.querySelector('#srOrgGroup .chip[data-org="' + saved.org + '"]') : null;
+      if (srChip && srChip.style.display !== 'none') { srState.org = saved.org; srState.orgPicked = true; }
+      if (saved.st && SR_FILTERS.some(function(f) { return f.k === saved.st; })) srState.st = saved.st;
+      var srTabEl = document.querySelector('.ptab[data-view="sr"]');
+      if (srTabEl) { srState._noSync = true; switchTab(srTabEl); }
     }
     pnlLoad();
   } else {
@@ -5500,6 +5954,7 @@ Auth.require('finance').then(function(user) {
     else if (forcedTab === 'ms') { var t = document.querySelector('.ptab[data-view="ms"]'); if (t) switchTab(t); }
     else if (forcedTab === 'wh') { var t = document.querySelector('.ptab[data-view="wh"]'); if (t) switchTab(t); }
     else if (forcedTab === 'eq') { var t = document.querySelector('.ptab[data-view="eq"]'); if (t) switchTab(t); }
+    else if (forcedTab === 'sr') { var t = document.querySelector('.ptab[data-view="sr"]'); if (t) switchTab(t); }
   }
 });
 </script>
