@@ -8,8 +8,8 @@
 <script>
   try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light'); } catch(e){ document.documentElement.setAttribute('data-theme','light'); }
 </script>
-<script src="auth.js?v=execnew20260430"></script>
-<script src="header.js?v=home20261006"></script>
+<script src="auth.js?v=20261022b"></script>
+<script src="header.js?v=20261022"></script>
 <script>
 // Без доступу до дашборда — одразу у свій розділ, ще до рендеру сторінки.
 // Інакше дашборд мигає, поки Auth.require ходить по auth_me (06.10.2026).
@@ -348,8 +348,7 @@ Auth.require('dashboard', { redirectHome: true }).then(user => {
 function canRole(r) {
   const R = (USER && USER.roles) || {};
   if (R.admin) return true;
-  if (R[r]) return true;
-  return Object.keys(R).some(k => k.startsWith(r + '_') && R[k]);
+  return Auth.hasModule ? Auth.hasModule(R, r) : !!R[r];
 }
 function applyRoleVisibility() {
   const orgs = (USER && USER.orgs) || {};

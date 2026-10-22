@@ -242,6 +242,17 @@
     // Адміністрування бота без повного admin — веде одразу на вкладку «Бот».
     { role: 'admin_bot',     href: 'admin.html#bot' },
   ];
+  // Ключі з чужим префіксом: «Порівняння цін» і «Розсилка» — вкладки модуля «Прайс»,
+  // хоч і звуться sales_*. Без винятку startsWith('sales_') відкривав юзеру з ними
+  // порожній модуль «Продажі» (роль «Закупівельник», 22.10.2026).
+  const FOREIGN_SUBS = { sales_prices: 'prices', sales_broadcast: 'prices' };
+  // Модуль відкрито: його роль або будь-яка його суб-роль (module_*). Єдине правило
+  // для require / homeHref / canOpen і шапки (header.js can()).
+  function hasModule(roles, module) {
+    roles = roles || {};
+    if (roles[module]) return true;
+    return Object.keys(roles).some(k => roles[k] && k.startsWith(module + '_') && !FOREIGN_SUBS[k]);
+  }
   function homeHref(user) {
     const u = user || cachedUser();
     if (!u) return 'login.html';
@@ -253,9 +264,7 @@
     for (const p of HOME_PAGES) if (roles[p.role]) return p.href;
     // Прохід 2: суб-ролі модуля (finance_pnl, sales_osp, …) — те саме правило,
     // що і hasSub у require().
-    for (const p of HOME_PAGES) {
-      if (Object.keys(roles).some(k => k.startsWith(p.role + '_') && roles[k])) return p.href;
-    }
+    for (const p of HOME_PAGES) if (hasModule(roles, p.role)) return p.href;
     return 'login.html'; // жодної ролі — кидаємо на логін
   }
 
@@ -285,8 +294,7 @@
     const file = String(path || '').split(/[?#]/)[0].split('/').pop().replace(/\.html$/, '') || 'index';
     const role = PAGE_ROLES[file];
     if (!role) return true;
-    if (roles[role]) return true;
-    return Object.keys(roles).some(k => k.startsWith(role + '_') && roles[k]);
+    return hasModule(roles, role);
   }
 
   // HTML escape (used by showDenyScreen). Tiny duplicate of header.js/esc().
@@ -389,7 +397,7 @@
     // Admin bypasses all per-module role checks — except special DEV gates below.
     const isAdmin = !!roles.admin;
     if (!isAdmin && !roles[role]) {
-      var hasSub = Object.keys(roles).some(function(k) { return k.startsWith(role + '_') && roles[k]; });
+      var hasSub = hasModule(roles, role);
       if (!hasSub) {
         if (opts.redirectHome) {
           const home = homeHref(user);
@@ -427,7 +435,7 @@
 
   global.Auth = {
     API,
-    homeHref, canOpen,
+    homeHref, canOpen, hasModule,
     getToken, setToken, clearToken,
     fetchMe, loginWithIdToken, logout,
     apiFetch,

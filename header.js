@@ -409,6 +409,7 @@
     } catch (e) {}
     const can = (r) => {
       if (isAdmin) return true;
+      if (global.Auth && global.Auth.hasModule) return global.Auth.hasModule(roles, r);
       if (roles[r]) return true;
       return Object.keys(roles).some(k => k.startsWith(r + '_') && roles[k]);
     };
@@ -437,6 +438,8 @@
     const navItems = [
       { role: 'dashboard',     active: 'dashboard',     href: '/',                  label: '🧭 Дашборд' },
       { role: 'prices',        active: 'prices-admin',  href: '/admin-prices.html', label: '🔧 Прайс', orgRequired: 'Реакт' },
+      // Лише «Порівняння цін» без самого Прайсу (закупівельник) — одразу на сторінку порівняння.
+      { role: 'sales_prices',  active: 'prices-admin',  href: '/prices.html',       label: '🔧 Прайс', orgRequired: 'Реакт', unless: 'prices' },
       { role: 'forecast',      active: 'forecast',      href: '/forecast.html',     label: '📊 Закупівлі', orgRequired: 'Реакт' },
       { role: 'warehouses',    active: 'warehouses',    href: '/warehouses.html',   label: '📦 Склад' },
       { role: 'brigades',      active: 'brigades',      href: '/brigades.html',     label: '👷 Бригади' },
@@ -450,6 +453,7 @@
     const userOrgs = (user && user.orgs) || {};
     const visibleItems = navItems.filter(it => {
       if (!can(it.role)) return false;
+      if (it.unless && can(it.unless)) return false;
       if (it.orgRequired && (!isAdmin || impersonating) && !userOrgs[it.orgRequired]) return false;
       return true;
     });
