@@ -69,7 +69,14 @@ tbody tr:hover { background: rgba(154,180,255,.04); }
 .wh-modal .wh-search { margin: 10px 18px 0; padding: 8px 12px; width: calc(100% - 36px); background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; outline: none; }
 .wh-modal .wh-search:focus { border-color: var(--accent); }
 .wh-modal .wh-hint { padding: 8px 18px 0; font-size: 11.5px; color: var(--text3); }
-.btn.wh-warn { border-color: var(--accent); color: var(--accent); }
+.role-cell { max-width: 280px; }
+.role-box label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.last-login { text-align: center; color: var(--text2); font-size: 12px; }
+.row-actions { text-align: right; white-space: nowrap; }
+.m-only { display: none; }
+.wh-link { display: block; margin-top: 5px; padding: 0; border: 0; background: none; font: inherit; font-size: 12px; line-height: 1.35; color: var(--text2); text-align: left; cursor: pointer; }
+.wh-link:hover { color: var(--accent); }
+.wh-link.wh-warn { color: var(--accent); }
 .perm-note { font-size: 11px; color: var(--text3); margin: 2px 0 4px; }
 
 /* buttons unified via header.js (.btn + .btn--primary/--secondary/--ghost/--danger/--sm) */
@@ -144,6 +151,23 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
   /* 6 табів у рядок не влазять у 375px і зрізались правим краєм — переносимо */
   .tab-bar{flex-wrap:wrap}
   .tab{padding:8px 12px;font-size:13px}
+  /* Користувачі: рядок = компактна картка (імʼя → вхід → роль/склади → орг + дії),
+     шапка — пошук на всю ширину. Без цього пошук і «+ Додати» вилазили за картку,
+     а чекбокси Реакт/Генерація стояли стовпчиком без підписів (22.10.2026). */
+  #tab-users .card-head{flex-wrap:wrap}
+  #tab-users .card-head .toolbar{flex:1 0 100%}
+  #tab-users .card-head input{flex:1;width:auto;min-width:0}
+  #tab-users tbody tr{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:12px 14px}
+  #tab-users tbody td{padding:0}
+  #tab-users tbody td:first-child,#tab-users .role-cell{flex:1 0 100%;max-width:none}
+  #tab-users .role-select{width:100%}
+  #tab-users .last-login{order:1;flex:1 0 100%;text-align:left;padding-left:42px;margin-top:-6px}
+  #tab-users .last-login:empty{display:none}
+  #tab-users .role-cell{order:2}
+  #tab-users .role-box{order:3;font-size:13px;color:var(--text2)}
+  #tab-users .row-actions{order:4;margin-left:auto}
+  #tab-users tbody td[colspan]{flex:1 0 100%}
+  #tab-users .m-only{display:inline}
 }
 </style>
 </head>
@@ -178,7 +202,7 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
       <table>
         <thead>
           <tr>
-            <th style="width: 35%">Користувач</th>
+            <th>Користувач</th>
             <th>Роль</th>
             <th style="text-align:center">Реакт</th>
             <th style="text-align:center">Генерація</th>
@@ -938,10 +962,16 @@ function userRow(u) {
   const isBrigRole = !!rp.brigades && !rp.admin && !rp.warehouses && !rp.brigades_all;
   const whRefs = u.warehouses || [];
   const whNames = _brigadeWh ? whRefs.map(ref => { const w = _brigadeWh.find(x => x.ref_key === ref); return w ? brigName(w.name) : null; }).filter(Boolean) : [];
-  const whLabel = whRefs.length
-    ? '🧰 ' + (whNames.length ? escapeHtml(whNames.slice(0, 2).join(', ')) + (whNames.length > 2 ? ' +' + (whNames.length - 2) : '') : whRefs.length)
-    : (isBrigRole ? '🧰 обрати склад' : '🧰');
-  const whWarn = isBrigRole && !whRefs.length ? ' wh-warn' : '';
+  // Склади — уточнення бригадної ролі, тож живуть під селектом ролі, а не в діях:
+  // повні назви («Олександр Труфкакі, Інструменти/…») у nowrap-колонці дій
+  // розпирали таблицю за картку і ховали «Як» / «✕» (22.10.2026).
+  const whText = whRefs.length
+    ? 'Склади: ' + (whNames.length ? whNames.slice(0, 2).join(', ') + (whNames.length > 2 ? ' +' + (whNames.length - 2) : '') : whRefs.length)
+    : 'Обрати склад бригади';
+  const whTitle = 'Склади бригади — бригадир бачить лише свої' + (whNames.length ? ':\n' + whNames.join('\n') : '');
+  const whLink = (isBrigRole || whRefs.length)
+    ? `<button class="wh-link${isBrigRole && !whRefs.length ? ' wh-warn' : ''}" title="${escapeHtml(whTitle)}" data-act="warehouses">${escapeHtml(String(whText))}</button>`
+    : '';
   return `
     <tr data-email="${escapeHtml(u.email)}">
       <td>
@@ -953,13 +983,12 @@ function userRow(u) {
           </div>
         </div>
       </td>
-      <td><select class="role-select" data-act="assign-role">${roleOptions(u.role)}</select></td>
+      <td class="role-cell"><select class="role-select" data-act="assign-role">${roleOptions(u.role)}</select>${whLink}</td>
       ${['Реакт','Генерація'].map(o => `
-        <td class="role-box"><input type="checkbox" ${u.orgs && u.orgs[o] ? 'checked' : ''} data-act="org" data-key="${escapeHtml(o)}"></td>
+        <td class="role-box"><label><input type="checkbox" ${u.orgs && u.orgs[o] ? 'checked' : ''} data-act="org" data-key="${escapeHtml(o)}"><span class="m-only">${escapeHtml(o)}</span></label></td>
       `).join('')}
-      <td style="text-align:center;color:var(--text2);font-size:12px">${fmtDate(u.lastLogin)}</td>
-      <td style="text-align:right;white-space:nowrap">
-        <button class="btn btn--ghost btn--sm${whWarn}" title="Прив'язати склади бригади — бригадир бачить лише свої" data-act="warehouses">${whLabel}</button>
+      <td class="last-login"><span class="m-only">Вхід </span>${fmtDate(u.lastLogin)}</td>
+      <td class="row-actions">
         <button class="btn btn--ghost btn--sm" ${disableDelete ? 'disabled title="Це ваш акаунт"' : 'title="Зайти як цей користувач — побачите систему його очима"'} data-act="impersonate">👤 Як</button>
         <button class="btn btn--danger btn--sm" ${disableDelete ? 'disabled title="Ви не можете видалити власний акаунт"' : ''} data-act="delete">✕</button>
       </td>
@@ -1010,11 +1039,11 @@ function renderTable() {
     html += `
       <tr class="invite-row">
         <td><input id="inviteEmail" placeholder="name@gmail.com" autofocus></td>
-        <td><select id="inviteRole" class="role-select">${roleOptions('')}</select></td>
-        <td class="role-box"><input type="checkbox" id="inv_org_react" checked></td>
-        <td class="role-box"><input type="checkbox" id="inv_org_gen"></td>
-        <td></td>
-        <td style="text-align:right">
+        <td class="role-cell"><select id="inviteRole" class="role-select">${roleOptions('')}</select></td>
+        <td class="role-box"><label><input type="checkbox" id="inv_org_react" checked><span class="m-only">Реакт</span></label></td>
+        <td class="role-box"><label><input type="checkbox" id="inv_org_gen"><span class="m-only">Генерація</span></label></td>
+        <td class="last-login"></td>
+        <td class="row-actions">
           <button class="btn btn--primary btn--sm" onclick="saveInvite()">✓</button>
           <button class="btn btn--ghost btn--sm" onclick="toggleInvite()">✕</button>
         </td>
