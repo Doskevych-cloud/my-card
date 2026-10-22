@@ -259,6 +259,36 @@
     return 'login.html'; // жодної ролі — кидаємо на логін
   }
 
+  // Роль, якої вимагає Auth.require на сторінці (тримати в синхроні з викликами
+  // Auth.require у *.html). Потрібна логіну: ?return= на сторінку без доступу
+  // (сесія протухла на чужій вкладці, закладка, переслане посилання) інакше
+  // одразу після входу показує deny-екран (Лариса → /warehouses, 22.10.2026).
+  const PAGE_ROLES = {
+    'index': 'dashboard', 'executive-details': 'dashboard',
+    'sales': 'sales', 'prices': 'sales_prices', 'osp': 'sales_osp',
+    'top_products': 'sales_top_products', 'inventory': 'sales_inventory',
+    'motivation': 'sales_motivation', 'sla': 'sales_sla',
+    'active_clients': 'sales_active_clients', 'ar_aging': 'sales_ar_aging',
+    'forecast': 'forecast', 'warehouses': 'warehouses',
+    'brigades': 'brigades', 'brigade-report': 'brigades',
+    'counterparties': 'counterparties', 'finance': 'finance',
+    'reports': 'reports', 'archive': 'archive',
+    'admin-prices': 'prices', 'admin': 'admin',
+  };
+  // Чи пустить Auth.require юзера на path (те саме правило: admin / роль / суб-роль).
+  // Невідома сторінка — пускаємо: там гейту нема або він свій.
+  function canOpen(path, user) {
+    const u = user || cachedUser();
+    if (!u) return false;
+    const roles = u.roles || {};
+    if (roles.admin) return true;
+    const file = String(path || '').split(/[?#]/)[0].split('/').pop().replace(/\.html$/, '') || 'index';
+    const role = PAGE_ROLES[file];
+    if (!role) return true;
+    if (roles[role]) return true;
+    return Object.keys(roles).some(k => k.startsWith(role + '_') && roles[k]);
+  }
+
   // HTML escape (used by showDenyScreen). Tiny duplicate of header.js/esc().
   function _dEsc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -397,7 +427,7 @@
 
   global.Auth = {
     API,
-    homeHref,
+    homeHref, canOpen,
     getToken, setToken, clearToken,
     fetchMe, loginWithIdToken, logout,
     apiFetch,

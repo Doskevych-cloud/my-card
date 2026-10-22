@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Вхід · RE:ACT</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="auth.js"></script>
+<script src="auth.js?v=20261022"></script>
 <link rel="stylesheet" href="theme.css">
 <style>
 * { box-sizing: border-box }
@@ -96,7 +96,8 @@ function returnTo(u) {
   // and any absolute external URL. The 2nd char must exist and must NOT be /
   // or \ (protocol-relative bypass), and the path must not contain a colon
   // (scheme smuggling via `/%3A`, though URL decoding is limited here).
-  if (/^\/[^\/\\:]/.test(p) && !p.includes(':')) return p;
+  // Сторінка, куди доступу нема, — не повертаємо туди, інакше після входу одразу deny.
+  if (/^\/[^\/\\:]/.test(p) && !p.includes(':') && (!Auth.canOpen || Auth.canOpen(p, u))) return p;
   // Без return — у домашній розділ юзера, а не на дашборд, до якого доступу може не бути
   const h = u && Auth.homeHref ? Auth.homeHref(u) : '';
   return h && h !== 'login.html' ? h : 'index.html';
