@@ -476,6 +476,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .sr-det-grid{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;font-size:12px;color:var(--text2);line-height:1.45}
 .sr-det-grid .k{color:var(--text3)}
 .sr-empty{padding:40px 20px;text-align:center;color:var(--text3);font-size:13px}
+.sr-also{padding:0 2px 8px;color:var(--text3);font-size:12px}
+.sr-also a,.sr-empty a{color:var(--text2);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.sr-also a:hover,.sr-empty a:hover{color:var(--accent)}
 /* режим «Артикули»: черга правок у 1С */
 .sr-sec{margin:0 0 14px;border:1px solid var(--border);border-radius:12px;background:var(--bg);overflow:hidden}
 .sr-sec-h{display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:10px 14px;background:var(--surface2);font-size:12px;font-weight:700;color:var(--text);cursor:pointer;user-select:none}
@@ -5195,7 +5198,22 @@ function srSetOrg(el) {
   saveStateToUrl();
   srLoad();
 }
+// пошук знайшов позиції поза активним фільтром (напр. «80K» — у «Збіг», а відкрито «Усі різниці»): куди перейти
+var SR_ST_CHIP = { unf_more: 'unf', buh_missing: 'buh_missing', buh_more: 'buh', unf_missing: 'unf_missing', match: 'match' };
+function _srElsewhere() {
+  var d = srState.data, terms = srState.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (!d || !terms.length) return '';
+  var f = SR_FILTERS.find(function(x) { return x.k === srState.st; }) || SR_FILTERS[0], by = {};
+  (d.rows || []).forEach(function(r) {
+    if (f.test(r) || (srState.og && r.og !== srState.og) || !terms.every(function(t) { return _srHay(r).includes(t); })) return;
+    var k = SR_ST_CHIP[r.st]; if (k) by[k] = (by[k] || 0) + 1;
+  });
+  return SR_FILTERS.filter(function(x) { return by[x.k]; }).map(function(x) {
+    return '<a onclick="srSetSt(document.querySelector(\'#srStGroup .chip[data-st=&quot;' + x.k + '&quot;]\'))">«' + esc(x.label) + '» ' + by[x.k] + '</a>';
+  }).join(' · ');
+}
 function srSetSt(el) {
+  if (!el) return;
   srState.st = el.dataset.st;
   document.querySelectorAll('#srStGroup .chip').forEach(function(c) { c.classList.toggle('active', c === el); });
   saveStateToUrl();
@@ -5326,8 +5344,11 @@ function srRenderTable() {
   var d = srState.data; if (!d) return;
   var list = _srFiltered();
   var body = document.getElementById('srBody');
+  var also = _srElsewhere();
   if (!list.length) {
-    var empty = srState.q.trim() ? 'Нічого не знайдено' : (srState.st === 'diff' ? 'Розбіжностей нема — залишки збігаються' : 'Таких позицій нема');
+    var curLbl = (SR_FILTERS.find(function(x) { return x.k === srState.st; }) || SR_FILTERS[0]).label;
+    var empty = srState.q.trim() ? (also ? 'У «' + esc(curLbl) + '» не знайдено. Є в ' + also : 'Нічого не знайдено')
+      : (srState.st === 'diff' ? 'Розбіжностей нема — залишки збігаються' : 'Таких позицій нема');
     body.innerHTML = '<div class="sr-empty">' + empty + '</div>';
     return;
   }
@@ -5371,7 +5392,7 @@ function srRenderTable() {
       '<td class="col-total' + cls(r.sum) + '">' + (r.sum == null ? nd : srSigned(r.sum)) + '</td></tr>';
     return open ? tr + srDetailRow(r) : tr;
   }).join('');
-  body.innerHTML = '<div class="pnl-wrap"><table class="pnl-table sr-table"><thead><tr>' +
+  body.innerHTML = (also ? '<div class="sr-also">Ще знайдено в ' + also + '</div>' : '') + '<div class="pnl-wrap"><table class="pnl-table sr-table"><thead><tr>' +
     '<th>Товар</th><th>Од.</th><th title="Склад УНФ у звірці">УНФ</th><th title="Склади buh у звірці">buh</th>' +
     '<th title="УНФ − buh">Різниця</th><th>Ціна, грн</th><th class="col-total" title="Різниця × ціна">Сума, грн</th></tr></thead><tbody>' +
     '<tr class="sr-total"><td>Разом · ' + list.length + ' ' + _srPl(list.length, SR_POS) + (noPrice ? ' · без ціни ' + noPrice : '') + '</td>' +
@@ -5619,7 +5640,12 @@ function srRenderTasks() {
   html += '<div class="sr-sec"><div class="sr-sec-h sr-sec-h--plain"><span>' + list.length + ' ' + _srPl(list.length, ['пара', 'пари', 'пар']) + (gsum ? ' · ' + fmt(gsum, 0) + ' грн' : '') + '</span></div>' +
     '<div class="sr-fg-sub">' + esc(G.sub) + '</div>' +
     '<div class="sr-ph"><span>Бух</span><span>Пара в УНФ</span><span>Сума, грн</span></div>';
-  if (!list.length) html += '<div class="sr-empty">' + (terms.length ? 'Нічого не знайдено' : 'У цій групі порожньо') + '</div>';
+  if (!list.length) {
+    // шукали позицію, у якої пара вже є (напр. SUN-80K: 3 = 3) — її тут нема, вона в «Звірці»
+    var inRec = terms.length && !hit.length ? ((srState.data && srState.data.rows) || []).filter(function(r) { return terms.every(function(t) { return _srHay(r).includes(t); }); }).length : 0;
+    html += '<div class="sr-empty">' + (inRec ? 'Серед позицій Бух без пари не знайдено — пара за артикулом уже є. У «Звірці» ' + inRec + ' ' + _srPl(inRec, SR_POS) + ': <a onclick="srSetMode(\'rec\')">відкрити</a>'
+      : terms.length ? 'Нічого не знайдено' : !pairs.length ? 'Усі позиції Бух на складах звірки мають пару в УНФ' : 'У цій групі порожньо') + '</div>';
+  }
   var cap = fg === 'n' && !srState.showAll.free ? 40 : Infinity;
   html += list.slice(0, cap).map(function(p) { return srPairHtml(p, W[p.pk]); }).join('');
   if (list.length > cap) html += '<div class="sr-more"><a href="#" onclick="srShowAll(\'free\');return false">ще ' + (list.length - cap) + '</a></div>';
