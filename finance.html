@@ -1463,7 +1463,7 @@ function saveStateToUrl() {
     const st = POINT[tab];
     if (st && st.on) p.set('on', st.on);
     if (st && st.org) p.set('org', st.org);
-    if (tab === 'sr' && st.st && st.st !== 'diff') p.set('st', st.st);
+    if (tab === 'sr' && st.st && st.st !== 'all') p.set('st', st.st);
     if (tab === 'sr' && st.mode === 'art') p.set('srv', 'art');
     if (tab === 'sr' && st.mode === 'art' && st.fg) p.set('fg', st.fg);
   }
@@ -5126,12 +5126,13 @@ document.addEventListener('DOMContentLoaded', function() {
    var, не const: стан читають saveStateToUrl/_stateForTab, оголошені вище.
    ═══════════════════════════════════════════════════ */
 var SR_DATA_FROM = '2026-04-20';   // = RECON_DATA_FROM у stock-recon.js: знімки УНФ є з цієї дати
-var srState = { on: '', org: 'Генерація', st: 'diff', q: '', data: null, loadedAt: 0, open: new Set(), seq: 0, orgPicked: false,
+var srState = { on: '', org: 'Генерація', st: 'all', q: '', data: null, loadedAt: 0, open: new Set(), seq: 0, orgPicked: false,
   mode: 'rec', base: '', og: '', form: null, secOpen: {}, showAll: {}, fg: '', pick: {}, alts: {}, altPick: {}, manual: {} };
 var _srPicker = null;
 var _srQT = null;
 var SR_FILTERS = [
-  { k: 'diff',        label: 'Усі різниці',  test: function(r) { return r.st !== 'match'; } },
+  { k: 'all',         label: 'Усі',          test: function() { return true; } },
+  { k: 'diff',        label: 'Різниці',      test: function(r) { return r.st !== 'match'; } },
   { k: 'unf',         label: 'В УНФ більше', test: function(r) { return r.st === 'unf_more' || r.st === 'buh_missing'; } },
   { k: 'buh_missing', label: 'у buh нема',   test: function(r) { return r.st === 'buh_missing'; } },
   { k: 'buh',         label: 'У buh більше', test: function(r) { return r.st === 'buh_more' || r.st === 'unf_missing'; } },
@@ -5198,7 +5199,7 @@ function srSetOrg(el) {
   saveStateToUrl();
   srLoad();
 }
-// пошук знайшов позиції поза активним фільтром (напр. «80K» — у «Збіг», а відкрито «Усі різниці»): куди перейти
+// пошук знайшов позиції поза активним фільтром (напр. «80K» — у «Збіг», а відкрито «Різниці»): куди перейти
 var SR_ST_CHIP = { unf_more: 'unf', buh_missing: 'buh_missing', buh_more: 'buh', unf_missing: 'unf_missing', match: 'match' };
 function _srElsewhere() {
   var d = srState.data, terms = srState.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
@@ -5348,7 +5349,7 @@ function srRenderTable() {
   if (!list.length) {
     var curLbl = (SR_FILTERS.find(function(x) { return x.k === srState.st; }) || SR_FILTERS[0]).label;
     var empty = srState.q.trim() ? (also ? 'У «' + esc(curLbl) + '» не знайдено. Є в ' + also : 'Нічого не знайдено')
-      : (srState.st === 'diff' ? 'Розбіжностей нема — залишки збігаються' : 'Таких позицій нема');
+      : (srState.st === 'diff' ? 'Розбіжностей нема — залишки збігаються' : srState.st === 'all' ? 'На складах звірки залишку нема' : 'Таких позицій нема');
     body.innerHTML = '<div class="sr-empty">' + empty + '</div>';
     return;
   }
@@ -5425,7 +5426,7 @@ function srSetMode(m) {
 function srSetBase(b) { srState.base = b || ''; srRenderTasks(); }
 function srSetOg(og) {
   srState.og = og || '';
-  if (og) { srState.mode = 'rec'; srState.st = 'diff'; }
+  if (og) { srState.mode = 'rec'; srState.st = 'all'; }
   saveStateToUrl();
   srRender();
 }
