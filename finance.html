@@ -1302,7 +1302,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>«Вписав»</b> — позиція згортається в сірий рядок, унизу зʼявляється «↻ Перевірити в 1С». Після перевірки пара, що зійшлась, зникає зі списку («сьогодні зійшлось N»); якщо ні — рядок покаже, що в картці досі.</li>
       <li><b>«не пара»</b> на кандидаті прибирає його з підказок для всіх. Рішення бачать усі, хто має доступ до звірки.</li>
       <li><b>Інші помилки в артикулах</b> (згорнуто внизу) — те, що система знайшла сама: артикул на чужому товарі, один артикул на різних товарах, назва, списана з іншої картки.</li>
-      <li>ERP у 1С нічого не пише. Пари — лише на сьогодні: довідники поточні.</li>
+      <li>ERP у 1С нічого не пише. Пари рахуються на будь-яку дату: картки й артикули — поточні, залишок — на обрану дату.</li>
     </ul>
     <h3>Чому цифра може здивувати</h3>
     <ul>
@@ -5581,14 +5581,9 @@ function srManualArt(pk, v) { srState.manual = srState.manual || {}; srState.man
 function srRenderTasks() {
   var d = srState.data; if (!d) return;
   var body = document.getElementById('srBody');
-  var today = d.date === _srToday();
   var F = srState.free;
-  if (today && (!F || F._k !== d.org + '|' + d.date)) { srLoadFree(); return; }
+  if (!F || F._k !== d.org + '|' + d.date) { srLoadFree(); return; }
   document.getElementById('srBaseGroup').innerHTML = '';
-  if (!today) {
-    body.innerHTML = '<div class="eq-note">Пари шукаємо лише на сьогодні: артикули в довідниках поточні. <a href="#" onclick="srSetPreset(\'today\');return false">Перейти на сьогодні →</a></div>';
-    return;
-  }
   if (F && F.loading) { body.innerHTML = '<div class="loading">Шукаю пари…</div>'; return; }
   if (F && F.error) { body.innerHTML = '<div class="error">' + esc(F.error) + '</div>'; return; }
 
