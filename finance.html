@@ -1290,17 +1290,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>У buh більше</b> — є в обох, у buh більше; плюс <b>в УНФ нема</b> — у buh є залишок, а на складах УНФ у звірці нема: «картка є, на складах звірки нема» (товар записаний на інший склад УНФ — див. розгортку) або «картки нема».</li>
       <li><b>Збіг</b> — кількості однакові. Пошук — за назвою, артикулом або кодом картки будь-якої бази.</li>
     </ul>
-    <h3>Режим «Артикули»: пари без спільного артикула</h3>
+    <h3>Режим «Артикули»: пара в УНФ для кожної позиції Бух</h3>
     <ul>
-      <li><b>Навіщо.</b> Звірка порівнює товар лише тоді, коли в картках УНФ і Бух однаковий артикул. Тут — позиції, які лежать на складі, але пари в іншій базі за артикулом не мають. Поки артикули різні, їхні залишки не порівнюються.</li>
-      <li><b>Пара.</b> Ліворуч — картка УНФ, праворуч — найсхожіша картка Бух (або навпаки, якщо без пари картка Бух). «Сума» — розбіжність у гривнях, яку дає позиція без пари.</li>
-      <li><b>Готові</b> — є доказ, що це той самий товар: однаковий код моделі в назвах, артикул однієї бази в назві чи накладній іншої, або назва з накладної + ціна сходиться. Інструкцію видно одразу: яку картку відкрити і який артикул вписати.</li>
-      <li><b>Перевірте</b> — схожа картка є, доказу нема. Червоним — числа, якими назви відрізняються, і «Різниця» (номінал, розмір, виробник…). Якщо це той самий товар — «Так, це пара», і зʼявиться інструкція. «ще N схожі» — інші кандидати.</li>
-      <li><b>Схожих нема</b> — в іншій базі такого товару, найімовірніше, не заведено. «пари нема» з причиною ховає позицію для всіх; «Повернути» — унизу.</li>
-      <li><b>Яку базу правити.</b> Бух копіює артикул УНФ. Якщо в УНФ артикула нема — спершу вписати в УНФ (інструкція з двох кроків). Код картки: НФ-… — це УНФ, 00-… — Бух; якщо код у 1С не знаходиться, ви не в тій базі.</li>
+      <li><b>Навіщо.</b> Звірка порівнює товар лише тоді, коли в картках Бух і УНФ однаковий артикул. Тут — позиції, які лежать на складах Бух, але пари в УНФ за артикулом не мають. Напрям один: <b>з Бух в УНФ</b> — для кожної позиції Бух шукаємо таку саму картку в УНФ. В ідеалі пара в УНФ є в кожної позиції Бух.</li>
+      <li><b>Кілька позицій Бух → одна в УНФ</b> — нормально (у Бух товар буває заведено кількома картками). Якщо картка УНФ уже в парі з іншою карткою Бух, так і написано — це не перешкода.</li>
+      <li><b>Пара.</b> Ліворуч — позиція Бух, праворуч — найсхожіша картка УНФ. «Сума» — розбіжність у гривнях, яку дає позиція без пари.</li>
+      <li><b>Готові</b> — є доказ: однаковий код моделі в назвах, артикул однієї бази в назві чи накладній іншої, або назва з накладної + ціна сходиться. Інструкцію видно одразу: яку картку відкрити і який артикул вписати.</li>
+      <li><b>Перевірте</b> — схожа картка в УНФ є, доказу нема. Червоним — числа, якими назви відрізняються, і «Різниця» (номінал, розмір, виробник…). Якщо це той самий товар — «Так, це пара». «ще N схожі» — інші кандидати.</li>
+      <li><b>Схожих нема</b> — в УНФ такого товару, найімовірніше, не заведено. «пари нема» з причиною ховає позицію для всіх; «Повернути» — унизу.</li>
+      <li><b>Що вписувати.</b> Бух копіює артикул УНФ. Якщо в УНФ артикула нема — спершу вписати в УНФ (інструкція з двох кроків). Код картки: 00-… — це Бух, НФ-… — УНФ; якщо код у 1С не знаходиться, ви не в тій базі.</li>
       <li><b>Копіюйте кнопкою</b>, не набирайте: кирилична «С» і латинська «C» виглядають однаково, а для звірки це різні артикули. Код картки копіюється кліком.</li>
-      <li><b>«Вписав»</b> — позиція згортається в сірий рядок, унизу зʼявляється «↻ Перевірити в 1С». Після перевірки пара, що зійшлась, зникає зі списку («сьогодні зійшлось N»); якщо ні — рядок покаже, що в картці досі.</li>
-      <li><b>«не пара»</b> на кандидаті прибирає його з підказок для всіх. Рішення бачать усі, хто має доступ до звірки.</li>
+      <li><b>«Вписав»</b> — позиція згортається в сірий рядок, унизу зʼявляється «↻ Перевірити в 1С». Після перевірки пара, що зійшлась, зникає зі списку; якщо ні — рядок покаже, що в картці досі.</li>
+      <li><b>«не пара»</b> на кандидаті прибирає його з підказок для всіх.</li>
       <li><b>Інші помилки в артикулах</b> (згорнуто внизу) — те, що система знайшла сама: артикул на чужому товарі, один артикул на різних товарах, назва, списана з іншої картки.</li>
       <li>ERP у 1С нічого не пише. Пари рахуються на будь-яку дату: картки й артикули — поточні, залишок — на обрану дату.</li>
     </ul>
@@ -5335,25 +5336,32 @@ function srRenderTable() {
   var nd = '<span class="sr-zero">н/д</span>';
   var qty = function(v) { return v ? srQty(v) : '<span class="sr-zero">0</span>'; };
   var cls = function(s) { return s == null ? '' : (Math.abs(s) >= 100000 ? ' sr-big' : (Math.abs(s) >= 20000 ? ' sr-mid' : '')); };
-  // той самий товар під різними артикулами: рядок «в УНФ нема» і рядок «у Бух нема» — поруч, з сумою пари
+  // той самий товар під різними артикулами: рядки Бух («в УНФ нема») і їхня пара в УНФ — поруч, з сумою групи.
+  // Підказка пари є лише на рядку Бух (напрям Бух → УНФ); кілька рядків Бух можуть вказувати на одну картку УНФ.
   var byI = {}; (d.rows || []).forEach(function(r) { byI[r._i] = r; });
   var inList = {}; list.forEach(function(r) { inList[r._i] = 1; });
+  var pairTo = function(r) { return r.fp && !r.fp.w && r.fp.pri != null && inList[r.fp.pri] ? r.fp.pri : null; };
+  var tgt = {}; list.forEach(function(r) { var pi = pairTo(r); if (pi != null) (tgt[pi] = tgt[pi] || []).push(r); });
   var seen = {}, ordered = [];
   list.forEach(function(r) {
     if (seen[r._i]) return;
-    seen[r._i] = 1; ordered.push({ r: r });
-    var p = r.fp && !r.fp.w && r.fp.pri != null ? byI[r.fp.pri] : null;
-    if (p && inList[p._i] && !seen[p._i]) { seen[p._i] = 1; ordered[ordered.length - 1].p = p; ordered.push({ r: p, second: true }); }
+    var ui = pairTo(r) != null ? pairTo(r) : (tgt[r._i] ? r._i : null);
+    var grp = ui != null && !seen[ui] ? (tgt[ui] || []).filter(function(b) { return !seen[b._i]; }) : [];
+    if (!grp.length) { seen[r._i] = 1; ordered.push({ r: r }); return; }
+    var g = grp.concat([byI[ui]]);
+    g.forEach(function(x, k) { seen[x._i] = 1; ordered.push({ r: x, g: k === 0 ? g : null, second: k > 0, last: k === g.length - 1, n: g.length }); });
   });
   var rowsHtml = ordered.map(function(o) {
     var r = o.r, open = srState.open.has(r._i);
-    var mk = r.fp && !r.fp.w ? (r.fp.rec ? 'той самий товар, що й ' : 'схоже на ') + (r.fp.b === 'buh' ? 'Бух ' : 'УНФ ') + r.fp.c + ' «' + r.fp.n + '» — не об\u02bcєднано артикулом'
+    var mk = o.second && !r.fp ? (o.n > 2 ? 'пара до ' + (o.n - 1) + ' рядків Бух вище: той самий товар під іншими артикулами' : 'пара до рядка вище: той самий товар під іншим артикулом')
+      : r.fp && !r.fp.w ? (r.fp.rec ? 'той самий товар, що й ' : 'схоже на ') + (r.fp.b === 'buh' ? 'Бух ' : 'УНФ ') + r.fp.c + ' «' + r.fp.n + '» — не об\u02bcєднано артикулом'
       : r.fr ? 'не об\u02bcєднано артикулом' : r.tk ? (r.tkm === 'money' && r.tke ? 'пара · закриє ' + fmt(r.tke, 0) + ' грн' : (SR_TKM[r.tkm] || 'задача')) : '';
     // при підказці пари «картки нема» вводить в оману (картка є — під іншим артикулом), тож лише напрям
-    var stTxt = r.fp && !r.fp.w ? (SR_ST_LABEL[r.st] || '') : _srStatusText(r);
+    var stTxt = (r.fp && !r.fp.w) || (o.second && !r.fp) ? (SR_ST_LABEL[r.st] || '') : _srStatusText(r);
     var sub = [r.art, stTxt, mk].filter(Boolean).join(' · ');
-    var pairSum = o.p && r.sum != null && o.p.sum != null ? '<span class="sr-sub sr-pairsum">разом з парою нижче: ' + srSigned(r.sum + o.p.sum) + ' грн</span>' : '';
-    var tr = '<tr class="sr-row' + (o.p ? ' sr-row--pair1' : '') + (o.second ? ' sr-row--pair2' : '') + '" data-collapsed="' + (open ? 'false' : 'true') + '" onclick="srToggle(' + r._i + ', this)">' +
+    var gSum = o.g && o.g.every(function(x) { return x.sum != null; }) ? o.g.reduce(function(a, x) { return a + x.sum; }, 0) : null;
+    var pairSum = gSum != null ? '<span class="sr-sub sr-pairsum">' + (o.n > 2 ? 'разом з рядками нижче' : 'разом з парою нижче') + ': ' + srSigned(gSum) + ' грн</span>' : '';
+    var tr = '<tr class="sr-row' + (o.n && !o.last ? ' sr-row--pair1' : '') + (o.second ? ' sr-row--pair2' : '') + '" data-collapsed="' + (open ? 'false' : 'true') + '" onclick="srToggle(' + r._i + ', this)">' +
       '<td><span class="tri">▾</span>' + esc(r.name || '—') + (sub ? '<span class="sr-sub">' + esc(sub) + '</span>' : '') + pairSum + '</td>' +
       '<td>' + esc(r.unit || '') + '</td>' +
       '<td>' + qty(r.unf) + '</td>' +
@@ -5465,9 +5473,9 @@ function _srTaskDoable(t, tasks) {
 // праворуч, у трьох групах — «Готові» (доказ є, лишилось вписати), «Перевірте» (схожа картка без доказу),
 // «Схожих нема». Дані — part=free (buildFree у stock-recon-tasks.js); ERP у 1С не пише — вписує людина.
 var SR_FG = [
-  { k: 'r', title: 'Готові', sub: 'Доказ є — лишилось вписати в 1С. Копіюйте кнопкою, не набирайте: кирилична «Т» і латинська «T» виглядають однаково. Інших полів не чіпайте.' },
-  { k: 'c', title: 'Перевірте', sub: 'Схожа картка є, доказу нема. Червоним — чим назви відрізняються. Якщо це той самий товар — «Так, це пара».' },
-  { k: 'n', title: 'Схожих нема', sub: 'Схожої картки в іншій базі не знайдено. Якщо товар там не заведено — позначте «Пари нема» і передайте бухгалтеру / складу.' },
+  { k: 'r', title: 'Готові', sub: 'Пару в УНФ знайдено, доказ є — лишилось вписати артикул у 1С. Копіюйте кнопкою, не набирайте: кирилична «Т» і латинська «T» виглядають однаково. Інших полів не чіпайте.' },
+  { k: 'c', title: 'Перевірте', sub: 'Схожа картка в УНФ є, доказу нема. Червоним — чим назви відрізняються. Якщо це той самий товар — «Так, це пара».' },
+  { k: 'n', title: 'Схожих нема', sub: 'Схожої картки в УНФ не знайдено. Якщо товар в УНФ не заведено — позначте «Пари нема» і передайте менеджеру УНФ.' },
 ];
 var SR_HARD = /номінал|модель|розмір|виробник|матеріал|колір|інший тип|ціна/i;
 var SR_NONE_RSN = {
@@ -5529,7 +5537,8 @@ function _srGroupOf(f, s) {
   if (!s) return 'n';
   var rec = (f.sug || []).filter(function(x) { return x.rec; });
   var del = /ВИДАЛЕННЯ/i.test(f.name || '') || /ВИДАЛЕННЯ/i.test(s.name || '');
-  if (s.rec && rec.length === 1 && !s.stepWarn && (s.steps || []).length && !del && (s.free || !(s.pairOf && s.pairOf.q > 0))) return 'r';
+  // картка УНФ уже в парі з іншою карткою Бух — не перешкода: кілька карток Бух можуть мати одну пару в УНФ
+  if (s.rec && rec.length === 1 && !s.stepWarn && (s.steps || []).length && !del) return 'r';
   if ((f.sug || []).some(function(x) { return !(x.warn && SR_HARD.test(x.warn)); })) return 'c';
   return 'n';
 }
@@ -5550,6 +5559,8 @@ function _srPairs() {
       w: Math.max(Math.abs(f.sum || 0), mutual ? Math.abs(g.sum || 0) : 0), noPrice: f.sum == null && !(mutual && g.sum != null) });
   });
   out.sort(function(a, b) { return (a.noPrice ? 1 : 0) - (b.noPrice ? 1 : 0) || b.w - a.w; });
+  var byCand = {}; out.forEach(function(p) { if (p.s) byCand[p.s.ref] = (byCand[p.s.ref] || 0) + 1; });
+  out.forEach(function(p) { p.share = p.s ? byCand[p.s.ref] - 1 : 0; });
   if (F) { F._pairs = out; F._pairsN = list.length; }
   return out;
 }
@@ -5594,8 +5605,8 @@ function srRenderTasks() {
   srState.fg = fg;
   var totalSum = pairs.reduce(function(t, p) { return t + p.w; }, 0), done = _srDoneToday();
 
-  var html = '<div class="eq-note">Без пари в іншій базі — ' + pairs.length + ' ' + _srPl(pairs.length, SR_POS) + ' на ' + fmt(totalSum, 0) +
-    ' грн. Однаковий артикул у картках УНФ і Бух — і звірка їх порівняє.' + (done ? ' · сьогодні зійшлось ' + done : '') + '</div>';
+  var html = '<div class="eq-note">Позиції Бух без пари в УНФ — ' + pairs.length + ' на ' + fmt(totalSum, 0) +
+    ' грн. Кожній шукаємо таку саму картку в УНФ: з однаковим артикулом звірка їх порівняє. Кілька позицій Бух можуть мати одну пару в УНФ.' + (done ? ' · сьогодні зійшлось ' + done : '') + '</div>';
   if (F && F.freeError) html += '<div class="eq-note eq-bad">Не вдалося підібрати пари: ' + esc(F.freeError) + '.</div>';
   html += '<div class="sr-fg">' + SR_FG.map(function(g) {
     return '<span class="chip' + (fg === g.k ? ' active' : '') + '" onclick="srSetFg(\'' + g.k + '\')">' + g.title + ' <span class="n">' + cnt[g.k] + '</span></span>';
@@ -5607,7 +5618,7 @@ function srRenderTasks() {
   var gsum = list.reduce(function(t, p) { return t + p.w; }, 0);
   html += '<div class="sr-sec"><div class="sr-sec-h sr-sec-h--plain"><span>' + list.length + ' ' + _srPl(list.length, ['пара', 'пари', 'пар']) + (gsum ? ' · ' + fmt(gsum, 0) + ' грн' : '') + '</span></div>' +
     '<div class="sr-fg-sub">' + esc(G.sub) + '</div>' +
-    '<div class="sr-ph"><span>УНФ</span><span>Бух</span><span>Сума, грн</span></div>';
+    '<div class="sr-ph"><span>Бух</span><span>Пара в УНФ</span><span>Сума, грн</span></div>';
   if (!list.length) html += '<div class="sr-empty">' + (terms.length ? 'Нічого не знайдено' : 'У цій групі порожньо') + '</div>';
   var cap = fg === 'n' && !srState.showAll.free ? 40 : Infinity;
   html += list.slice(0, cap).map(function(p) { return srPairHtml(p, W[p.pk]); }).join('');
@@ -5660,8 +5671,8 @@ function _srSide(base, c, isCand, s, others, mark) {
     ' <span class="sr-mono">· ' + (c.art ? esc(c.art) : 'без артикула') + '</span><span class="sr-pc-q">' + (c.q ? srQty(c.q) + (c.unit ? ' ' + esc(c.unit) : '') : '<span class="sr-old">0</span>') + '</span></div>' +
     '<div class="sr-pc-name">' + name + '</div>';
   if (c.full) h += '<div class="sr-ev">накладна: ' + (mark ? _srMarkNums(c.full, others) : esc(c.full)) + '</div>';
-  if (isCand && s && s.pairOf) h += '<div class="sr-ev">зараз у парі з ' + (base === 'unf' ? 'Бух' : 'УНФ') + ' ' + esc(s.pairOf.code) + ' «' + esc(s.pairOf.name) + '»' + (s.pairOf.q ? ', залишок ' + srQty(s.pairOf.q) : ', без залишку') + '</div>';
-  else if (isCand && s && s.free) h += '<div class="sr-ev">теж без пари</div>';
+  if (isCand && s && s.pairOf) h += '<div class="sr-ev">уже в парі з Бух ' + esc(s.pairOf.code) + ' «' + esc(s.pairOf.name) + '» — так можна: кілька карток Бух → одна в УНФ</div>';
+  else if (isCand && s && s.free) h += '<div class="sr-ev">в УНФ теж без пари</div>';
   return h + '</div>';
 }
 function _srStepsHtml(steps, warn) {
@@ -5710,8 +5721,8 @@ function srPairHtml(p, written) {
       (why ? ' · <span class="sr-worse">ще не зійшлось: ' + esc(why) + '</span>' : '') + ' · <a href="#" onclick="srUnwrite(\'' + esc(pk) + '\');return false">повернути в список</a></div></div>';
   }
   var h = '<div class="sr-pair" data-pk="' + esc(pk) + '" data-fk="' + esc(f.key) + '">' +
-    _srSide('unf', uSide, uSide === s, s, otherOf(uSide), mark && !!uSide && !!bSide) +
     _srSide('buh', bSide, bSide === s, s, otherOf(bSide), mark && !!uSide && !!bSide) +
+    _srSide('unf', uSide, uSide === s, s, otherOf(uSide), mark && !!uSide && !!bSide) +
     '<div class="sr-pair-sum">' + sumHtml + '</div><div class="sr-pair-wide">';
   if (s) {
     var ev = _srEvid(s), df = _srDiff(s);
@@ -5719,6 +5730,7 @@ function srPairHtml(p, written) {
     else if (p.grp !== 'n') h += '<div class="sr-ev">Схожа лише назва</div>';
     if (df) h += '<div class="sr-ev sr-worse">Різниця: ' + esc(df) + '</div>';
     if (f.nameLink) h += '<div class="sr-ev">Звірка зараз зводить їх лише за назвою — артикули різні.</div>';
+    if (p.share) h += '<div class="sr-ev">Цю картку УНФ пропонуємо ще для ' + p.share + ' ' + _srPl(p.share, ['позиції', 'позицій', 'позицій']) + ' Бух — так буває, коли в Бух товар заведено кількома картками.</div>';
   }
   var open = p.grp === 'r' || (srState.pick && srState.pick[pk]);
   var nAlt = Math.max(0, (f.sug || []).length - 1);
