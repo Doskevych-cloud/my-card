@@ -1082,6 +1082,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <h3>Структура рядків</h3>
     <ul>
       <li><b>Виторг / Собівартість</b> — розбивка по підрозділах (напрямках) з виміру «Структурна одиниця» проводки.</li>
+      <li><b>Валовий прибуток</b> = Виторг від продажів − Собівартість продажів, у кожній колонці динаміки — з цифр свого місяця/кварталу. Розгортається по підрозділах (виторг підрозділу − його собівартість). <b>Інші непрямі доходи</b> (суборенда, відсотки, курсові різниці…) у ВП не входять — вони потрапляють у «Прибуток до оподаткування». Тому картка «Доходи» мінус собівартість ≠ ВП, а <b>ВП − Непрямі (накладні) витрати = Операційний прибуток</b>. Цифра збігається з вкладкою «Валовий прибуток» (там джерело — регістр «Продажі»; звірено 26.10.2026 по Реакту й Генерації за січень–вересень).</li>
       <li><b>Витрати і інші доходи</b> — рядок = рахунок управлінського плану рахунків. Секцію визначає код рахунку: 70 — виторг, 74 — інші доходи, 90 — собівартість, 92 — адміністративні, 93 — комерційні, 94/96/97 — інші, 98 і ПДВ/ЄСВ/ПДФО за описом — податки.</li>
       <li><b>Період</b> — за датою проводки; <b>Організація</b>: «Всі» = Реакт + Генерація (Одеса). Ген.Київ у P&L навмисно не включено.</li>
       <li><b>Низ звіту</b>: «Прибуток до оподаткування» → «Податок на прибуток» (нарахування з 44.02) → «Чистий прибуток». Чиста рентабельність рахується від прибутку <b>після</b> податку.</li>
@@ -2720,6 +2721,34 @@ function renderPnlAccrual(data) {
     if (Math.abs(d.cogs.total || 0) < 0.5) return;
     rows += `<tr class="itm" data-sec="cost"${drillDep(d,'cogs')}><td>${d.key ? drillTri : ''}${esc(cleanDepName(d.name))}</td>${cells(d.cogs.byMonth, d.cogs.total)}</tr>`;
   });
+  // Валовий прибуток = Виторг від продажів − Собівартість. Інші непрямі доходи
+  // сюди не входять (вони йдуть у прибуток до оподаткування), тому
+  // ВП − непрямі витрати = операційний прибуток. Розгортається по підрозділах;
+  // проводки без підрозділу бекенд кладе лише в підсумок — для них окремий рядок.
+  const grossBM = {};
+  mlist.forEach(m => { grossBM[m] = ((revenue.byMonth || {})[m] || 0) - ((cogs.byMonth || {})[m] || 0); });
+  const depGpRows = [];
+  const depGpBM = {};
+  let depGpTotal = 0;
+  deps.forEach(d => {
+    const bm = {};
+    mlist.forEach(m => { bm[m] = ((d.revenue.byMonth || {})[m] || 0) - ((d.cogs.byMonth || {})[m] || 0); depGpBM[m] = (depGpBM[m] || 0) + bm[m]; });
+    const t = (d.revenue.total || 0) - (d.cogs.total || 0);
+    depGpTotal += t;
+    if (Math.abs(d.revenue.total || 0) < 0.5 && Math.abs(d.cogs.total || 0) < 0.5) return;
+    depGpRows.push(`<tr class="itm" data-sec="gp"><td>${esc(cleanDepName(d.name))}</td>${cells(bm, t)}</tr>`);
+  });
+  if (depGpRows.length) {
+    const restBM = {};
+    mlist.forEach(m => { restBM[m] = grossBM[m] - (depGpBM[m] || 0); });
+    const restTotal = grossTotal - depGpTotal;
+    if (Math.abs(restTotal) >= 0.5 || mlist.some(m => Math.abs(restBM[m]) >= 0.5)) {
+      depGpRows.push(`<tr class="itm" data-sec="gp"><td>Без підрозділу</td>${cells(restBM, restTotal)}</tr>`);
+    }
+    rows += `<tr class="grd" data-sec="gp" data-is-sec="1" data-is-grd-head="1"><td><span class="tri">▾</span>Валовий прибуток</td>${cells(grossBM, grossTotal)}</tr>` + depGpRows.join('');
+  } else {
+    rows += `<tr class="grd"><td>Валовий прибуток</td>${cells(grossBM, grossTotal)}</tr>`;
+  }
   // Всього витрати (OPEX + tax + other)
   const totalAllExp = opexTotal + taxTotal + otherExp;
   rows += `<tr class="cat" data-cat="_allExp" data-is-cat="1"><td><span class="tri">▾</span>Всього витрати</td>${cells(totalExpenses.byMonth, totalAllExp)}</tr>`;
