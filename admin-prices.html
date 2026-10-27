@@ -209,6 +209,17 @@ body.is-dragging,body.is-dragging *{cursor:grabbing!important;user-select:none!i
 .im .field input, .im .field select{height:34px}
 .im .field input[type=number]{font-variant-numeric:tabular-nums}
 .im .hint .lnk, .nom-pick .lnk{background:none;border:none;padding:0;font:inherit;color:var(--accent);cursor:pointer}
+/* ціни від обсягу (бачить лише бот) */
+.tier-row{display:grid;grid-template-columns:auto 96px 22px auto minmax(0,1fr) auto minmax(0,1fr) 24px;grid-template-areas:"lbl from unit lw with ln no x";gap:8px;align-items:center;margin-bottom:8px}
+.tier-row .t-lbl{grid-area:lbl} .tier-row .t-from{grid-area:from} .tier-row .t-unit{grid-area:unit}
+.tier-row .t-lw{grid-area:lw} .tier-row .t-with{grid-area:with} .tier-row .t-ln{grid-area:ln} .tier-row .t-no{grid-area:no} .tier-row .x{grid-area:x}
+.tier-row input{height:34px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font:inherit;font-size:12.5px;font-variant-numeric:tabular-nums;outline:none;min-width:0}
+.tier-row input:focus{border-color:var(--accent)}
+.tier-row .t-lbl, .tier-row .t-unit, .tier-row .t-lw, .tier-row .t-ln{font-size:12px;color:var(--text3);white-space:nowrap}
+.tier-row .x{background:none;border:none;color:var(--text3);font-size:18px;line-height:1;cursor:pointer;padding:0}
+.tier-row .x:hover{color:var(--text)}
+.tier-add{background:none;border:none;padding:0;font:inherit;font-size:12px;color:var(--accent);cursor:pointer}
+.tiers-hint{font-size:10.5px;color:var(--text3);margin-top:6px}
 .im .hint .lnk:hover, .nom-pick .lnk:hover{text-decoration:underline}
 /* «Товар з 1С» — один контрол: обраний товар стоїть у самому полі */
 .nom-pick{display:flex;align-items:center;gap:10px;height:34px;padding:0 6px 0 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;font-size:12.5px;cursor:pointer;min-width:0}
@@ -291,6 +302,7 @@ body.is-dragging,body.is-dragging *{cursor:grabbing!important;user-select:none!i
   .modal.im .modal-body{padding:0 16px}
   .im-grp{grid-template-columns:minmax(0,1fr);gap:10px 0}
   .im-grid, .im-grid--nom, .im-grid--name{grid-template-columns:minmax(0,1fr)}
+  .tier-row{grid-template-columns:auto minmax(0,1fr) 22px 24px;grid-template-areas:"lbl from unit x" "lw with with with" "ln no no no";margin-bottom:16px}
   .im .field input, .im .field select{height:40px}
   .nom-pick{height:40px}
   .im .hint .lnk{padding:6px 2px;margin:-6px 0;font-size:12px}   /* палець, а не курсор */
@@ -808,6 +820,15 @@ body.is-dragging,body.is-dragging *{cursor:grabbing!important;user-select:none!i
             <input id="f_override_with_vat" type="number" step="any" min="0" inputmode="decimal" placeholder="з 1С">
           </div>
           <div class="hint im-span" id="f_price1c"></div>
+        </div>
+      </section>
+      <section class="im-grp">
+        <h3>Від обсягу</h3>
+        <div>
+          <div class="field"><label>Ціни від кількості</label></div>
+          <div id="f_tiers"></div>
+          <button type="button" class="tier-add" onclick="addTierRow()">+ сходинка</button>
+          <div class="tiers-hint">Бачить лише бот Степан, на react.ink і в кабінеті не показується. Кількість — у метрах для кабелю, у штуках для решти; ціна — за ту саму одиницю, що й основна.</div>
         </div>
       </section>
       <section class="im-grp">
@@ -1549,6 +1570,50 @@ function openItemById(id) {
   }
 }
 
+// ─── Ціни від обсягу (volume_tiers): бачить лише бот Степан ───
+function tierUnit() { return document.getElementById('f_category').value === 'cable' ? 'м' : 'шт'; }
+function addTierRow(t) {
+  const row = document.createElement('div');
+  row.className = 'tier-row';
+  row.innerHTML =
+    '<span class="t-lbl">від</span>' +
+    '<input class="t-from" type="number" min="1" step="1" inputmode="numeric" aria-label="Від кількості">' +
+    '<span class="t-unit"></span>' +
+    '<span class="t-lw">з ПДВ</span>' +
+    '<input class="t-with" type="number" step="any" min="0" inputmode="decimal" aria-label="Ціна з ПДВ">' +
+    '<span class="t-ln">без ПДВ</span>' +
+    '<input class="t-no" type="number" step="any" min="0" inputmode="decimal" aria-label="Ціна без ПДВ">' +
+    '<button type="button" class="x" aria-label="Прибрати сходинку">×</button>';
+  row.querySelector('.t-unit').textContent = tierUnit();
+  if (t) {
+    row.querySelector('.t-from').value = t.from != null ? t.from : '';
+    row.querySelector('.t-with').value = t.with_vat != null ? t.with_vat : '';
+    row.querySelector('.t-no').value = t.no_vat != null ? t.no_vat : '';
+  }
+  row.querySelector('.x').addEventListener('click', () => row.remove());
+  document.getElementById('f_tiers').appendChild(row);
+  if (!t) row.querySelector('.t-from').focus();
+}
+function renderTiers(tiers) {
+  document.getElementById('f_tiers').innerHTML = '';
+  (tiers || []).forEach(addTierRow);
+}
+function syncTierUnits() {
+  document.querySelectorAll('#f_tiers .t-unit').forEach(el => { el.textContent = tierUnit(); });
+}
+// Рядки модалки → масив для бека. Порожній рядок пропускаємо; решту валідує бек (normPriceListTiers).
+function collectTiers() {
+  const out = [];
+  document.querySelectorAll('#f_tiers .tier-row').forEach(row => {
+    const from = row.querySelector('.t-from').value.trim();
+    const withVat = row.querySelector('.t-with').value.trim();
+    const noVat = row.querySelector('.t-no').value.trim();
+    if (!from && !withVat && !noVat) return;
+    out.push({ from: from === '' ? null : Number(from), with_vat: withVat || null, no_vat: noVat || null });
+  });
+  return out;
+}
+
 function openItemModal(item, preSlug) {
   EDIT_ID = (item && item.id) || null;
   EDIT_ITEM = item || null;
@@ -1567,6 +1632,7 @@ function openItemModal(item, preSlug) {
   document.getElementById('f_cert_url').value = (item && item.cert_url) || '';
   document.getElementById('f_override_no_vat').value   = (item && item.override_price_no_vat   != null) ? item.override_price_no_vat   : '';
   document.getElementById('f_override_with_vat').value = (item && item.override_price_with_vat != null) ? item.override_price_with_vat : '';
+  renderTiers(item && item.volume_tiers);
   document.getElementById('deleteBtn').style.display = EDIT_ID ? '' : 'none';
   renderPrice1c(item);
   renderChosenNom();
@@ -1867,7 +1933,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (brandInp.value !== n) brandInp.value = n;
     updateBrandUi(); updatePreview();
   });
-  document.getElementById('f_category').addEventListener('change', () => { renderModalSub(); updatePreview(); });
+  document.getElementById('f_category').addEventListener('change', () => { renderModalSub(); updatePreview(); syncTierUnits(); });
 
   // global search shortcut
   document.getElementById('searchInput').addEventListener('input', e => onSearch(e.target.value));
@@ -1980,6 +2046,7 @@ async function saveItem() {
     cert_url: document.getElementById('f_cert_url').value.trim() || null,
     override_price_no_vat:   document.getElementById('f_override_no_vat').value.trim()   || null,
     override_price_with_vat: document.getElementById('f_override_with_vat').value.trim() || null,
+    volume_tiers: collectTiers(),
   };
   if (!body.category_slug) { toast('Оберіть категорію', 'err'); return; }
   const btn = document.getElementById('saveItemBtn');
