@@ -4703,7 +4703,9 @@ async function cbToggleAccount(ref, hostId) {
   try {
     const onTo = cbState.on || new Date().toISOString().slice(0,10);
     // Auth-токен auto-attach у всі fetch через auth.js (interceptor).
-    const u = API_URL + '?action=cash_movements_by_account&ref=' + encodeURIComponent(ref) + '&to=' + onTo;
+    // org обовʼязковий для юзера з однією org: без нього бек трактує запит як «Всі» → 403.
+    const u = API_URL + '?action=cash_movements_by_account&ref=' + encodeURIComponent(ref) + '&to=' + onTo +
+              (cbState.org ? '&org=' + encodeURIComponent(cbState.org) : '');
     const r = await fetch(u).then(x => x.json());
     if (r.error) throw new Error(r.error);
     const rows = r.rows || [];
