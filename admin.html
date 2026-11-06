@@ -1641,7 +1641,7 @@ function botSettingRow(s) {
   const inputStyle = 'padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;width:100%';
   const isToggle = s.value === '1' || s.value === '0';
   // Довгі значення (списки слів, шаблони, промпти класифікаторів) — textarea.
-  const isLong = String(s.value || '').length > 60;
+  const isLong = String(s.value || '').length > 60 || /_autoreply$/.test(s.key); // текст дилеру — завжди велике поле
   if (isToggle && String(s.value).length === 1 && /_(enabled|mark)$|^bot_enabled$/.test(s.key)) {
     return `<label style="font-size:13px;color:var(--text2)">${escapeHtml(s.label || s.key)}</label>` +
       `<select data-setting="${escapeHtml(s.key)}" style="${inputStyle}"><option value="1"${s.value==='1'?' selected':''}>Увімкнено</option><option value="0"${s.value==='0'?' selected':''}>Вимкнено</option></select>`;
