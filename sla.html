@@ -122,6 +122,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .mgr-detail .md-evt .md-evt-val{font-weight:600}
 .mgr-detail .md-evt.excluded .md-evt-val{color:var(--text3)!important;text-decoration:line-through}
 .md-ex-tag{font-size:10px;color:var(--text3)}
+.md-pz{font-size:10px;color:var(--text3);white-space:nowrap}
 .md-x{font-size:10px;color:var(--text3);border:1px solid var(--border);border-radius:5px;padding:1px 7px;cursor:pointer;transition:all .12s;white-space:nowrap}
 .md-x:hover{color:var(--text);border-color:var(--border2)}
 
@@ -234,6 +235,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li>Час реакції рахується <b>тільки в межах робочого вікна</b>: 09:00–18:00 Київ, Пн–Пт, без свят.</li>
       <li>Запит о 17:50, відповідь наступного дня о 09:05 → 15 хв, а не 15 годин.</li>
       <li>Запит поза робочим вікном → відлік стартує з початку наступного робочого дня.</li>
+      <li><b>Пауза.</b> Менеджер може стати на паузу кнопкою «Пауза» в особистому чаті зі Степаном, сумарно до 60 хв на день. Час паузи того, хто відповів, у ВО не рахується; біля такого заміру сірим «пауза N хв». Поки менеджер на паузі, дилер на новий запит отримує від бота автовідповідь, що менеджер відповість трохи згодом. Замір вона не закриває: його закриває лише відповідь менеджера.</li>
     </ul>
     <h3>Показники</h3>
     <ul>
@@ -441,7 +443,7 @@ function renderRanking(data) {
           : (ev.excluded ? '<span class="md-ex-tag">виключено</span>' : '');
         html += `<div class="md-evt${ev.excluded ? ' excluded' : ''}" onclick="event.stopPropagation();toggleEvtMsgs(this,${ea})">
           <span class="md-evt-time"><span class="md-caret">▸</span>${fmtFull(ev.request_at)} → ${fmtTime(ev.response_at)}</span>
-          <span style="display:inline-flex;align-items:center;gap:8px">${xCtl}<span class="md-evt-val" style="color:${rColor(ev.reaction_min)}">${fmtR(ev.reaction_min)}</span></span>
+          <span style="display:inline-flex;align-items:center;gap:8px">${xCtl}${ev.pause_min >= 1 ? `<span class="md-pz">пауза ${Math.round(ev.pause_min)} хв</span>` : ''}<span class="md-evt-val" style="color:${rColor(ev.reaction_min)}">${fmtR(ev.reaction_min)}</span></span>
         </div><div class="md-msgs"></div>`;
       }
       html += '</div></div>';
@@ -516,6 +518,8 @@ function renderPending(data) {
 // Тут підмінюємо його на ВО (09:00–18:00, Пн–Пт, без свят) і перераховуємо середні.
 function applyVO(report) {
   if (typeof SlaVO === 'undefined') return report; // модуль не завантажився — лишаємо як є
+  // Паузи менеджерів (кнопка в DM зі Степаном): робочі хвилини паузи ТОГО, ХТО ВІДПОВІВ, у ВО не йдуть.
+  const pauses = (report.pauses || []).map(p => ({ tg: p.tg, a: Date.parse(p.from), b: Date.parse(p.to) }));
   let totalSum = 0, totalCnt = 0;
   for (const mgr of report.managers || []) {
     let mSum = 0, mCnt = 0;
@@ -523,7 +527,15 @@ function applyVO(report) {
       let cpSum = 0, cpCnt = 0;
       for (const ev of cp.events || []) {
         if (ev.wall_min == null) ev.wall_min = ev.reaction_min; // зберігаємо старе для довідки
-        ev.reaction_min = SlaVO.businessMinutes(ev.request_at, ev.response_at);
+        const reqMs = Date.parse(ev.request_at), resMs = Date.parse(ev.response_at);
+        let pz = 0;
+        for (const p of pauses) {
+          if (p.tg !== ev.mgr_tg) continue;
+          const a = Math.max(reqMs, p.a), b = Math.min(resMs, p.b);
+          if (b > a) pz += SlaVO.businessMinutes(a, b);
+        }
+        ev.pause_min = Math.round(pz * 100) / 100;
+        ev.reaction_min = Math.max(0, Math.round((SlaVO.businessMinutes(ev.request_at, ev.response_at) - pz) * 100) / 100);
         if (!ev.excluded) { cpSum += ev.reaction_min; cpCnt++; }  // виключені (КВП) не рахуємо
       }
       cp.avg_min = cpCnt ? Math.round((cpSum / cpCnt) * 100) / 100 : null;
