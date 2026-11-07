@@ -123,6 +123,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .mgr-detail .md-evt.excluded .md-evt-val{color:var(--text3)!important;text-decoration:line-through}
 .md-ex-tag{font-size:10px;color:var(--text3)}
 .md-pz{font-size:10px;color:var(--text3);white-space:nowrap}
+.md-abs{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:11px;color:var(--text3)}
+.md-abs-day{white-space:nowrap;color:var(--text2)}
+.md-abs-x{margin-left:4px;cursor:pointer;color:var(--text3)}
+.md-abs-x:hover{color:var(--text)}
+.md-abs-in{padding:2px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:11px;font-family:inherit}
 .md-x{font-size:10px;color:var(--text3);border:1px solid var(--border);border-radius:5px;padding:1px 7px;cursor:pointer;transition:all .12s;white-space:nowrap}
 .md-x:hover{color:var(--text);border-color:var(--border2)}
 
@@ -236,6 +241,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li>Запит о 17:50, відповідь наступного дня о 09:05 → 15 хв, а не 15 годин.</li>
       <li>Запит поза робочим вікном → відлік стартує з початку наступного робочого дня.</li>
       <li><b>Пауза.</b> Менеджер може стати на паузу кнопкою «Пауза» в особистому чаті зі Степаном, сумарно до 60 хв на день. Час паузи того, хто відповів, у ВО не рахується; біля такого заміру сірим «пауза N хв». Поки менеджер на паузі, дилер на новий запит отримує від бота автовідповідь, що менеджер відповість трохи згодом. Замір вона не закриває: його закриває лише відповідь менеджера.</li>
+      <li><b>Дні відсутності.</b> Якщо менеджера не було (лікарняний, вихідний), людина з правом виключати заміри ставить у розгорнутій картці менеджера день відсутності: SLA на цей день вимикається. Заміри, що почались у цей день, у середнє не йдуть (позначка «день відсутності»). Із замірів, що захоплюють цей день, його робочі хвилини віднімаються (позначка «відсутність ДД.ММ»). Рахується лише для того, хто відповів: якщо за нього відповів колега, замір колеги рахується як звичайно.</li>
     </ul>
     <h3>Показники</h3>
     <ul>
@@ -340,7 +346,7 @@ function calcDistrib(managers) {
   for (const mgr of managers)
     for (const cp of mgr.counterparties)
       for (const ev of cp.events) {
-        if (ev.excluded) continue;
+        if (ev.excluded || ev.absent) continue;
         const m = ev.reaction_min;
         for (const b of buckets) if (m >= b.min && m < b.max) { b.count++; break; }
         total++;
@@ -427,6 +433,7 @@ function renderRanking(data) {
     </div>`;
 
     html += `<div class="mgr-detail" id="${id}" data-mgr="${escapeHtml(mgr.name)}">`;
+    html += absenceLine(mgr, data.absences);
     mgr.counterparties.forEach((cp, j) => {
       // id за індексом: кирилиця в назві під \W давала однакові id для різних контрагентів
       const cpId = id + '_cp_' + j;
@@ -438,12 +445,16 @@ function renderRanking(data) {
         <div class="md-evts" id="${cpId}" data-cp="${escapeHtml(mgr.name)}|${escapeHtml(cp.name)}">`;
       for (const ev of cp.events) {
         const ea = `${Number(ev.chat_id) || 0},'${encodeURIComponent(ev.request_at)}','${encodeURIComponent(ev.response_at)}'`;
-        const xCtl = canExclude
+        const xCtl = ev.absent
+          ? '<span class="md-ex-tag">день відсутності</span>'
+          : canExclude
           ? `<span class="md-x" onclick="event.stopPropagation();toggleExclude(${Number(ev.id) || 0},${ev.excluded ? 0 : 1},this)">${ev.excluded ? 'повернути' : 'виключити'}</span>`
           : (ev.excluded ? '<span class="md-ex-tag">виключено</span>' : '');
-        html += `<div class="md-evt${ev.excluded ? ' excluded' : ''}" onclick="event.stopPropagation();toggleEvtMsgs(this,${ea})">
+        const tags = (ev.pause_min >= 1 ? `<span class="md-pz">пауза ${Math.round(ev.pause_min)} хв</span>` : '')
+          + (!ev.absent && ev.absent_days && ev.absent_days.length ? `<span class="md-pz">відсутність ${ev.absent_days.map(fmtDay).join(', ')}</span>` : '');
+        html += `<div class="md-evt${ev.excluded || ev.absent ? ' excluded' : ''}" onclick="event.stopPropagation();toggleEvtMsgs(this,${ea})">
           <span class="md-evt-time"><span class="md-caret">▸</span>${fmtFull(ev.request_at)} → ${fmtTime(ev.response_at)}</span>
-          <span style="display:inline-flex;align-items:center;gap:8px">${xCtl}${ev.pause_min >= 1 ? `<span class="md-pz">пауза ${Math.round(ev.pause_min)} хв</span>` : ''}<span class="md-evt-val" style="color:${rColor(ev.reaction_min)}">${fmtR(ev.reaction_min)}</span></span>
+          <span style="display:inline-flex;align-items:center;gap:8px">${xCtl}${tags}<span class="md-evt-val" style="color:${rColor(ev.reaction_min)}">${fmtR(ev.reaction_min)}</span></span>
         </div><div class="md-msgs"></div>`;
       }
       html += '</div></div>';
@@ -513,13 +524,67 @@ function renderPending(data) {
   ).join('');
 }
 
+// Київська дата 'YYYY-MM-DD' моменту ISO і коротке ДД.ММ.
+const _KYIV_DAY = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Kyiv', year: 'numeric', month: '2-digit', day: '2-digit' });
+function kyivDay(iso) {
+  const p = {};
+  for (const x of _KYIV_DAY.formatToParts(new Date(iso))) p[x.type] = x.value;
+  return `${p.year}-${p.month}-${p.day}`;
+}
+function fmtDay(day) { return day.slice(8, 10) + '.' + day.slice(5, 7); }
+
+// «SLA вимкнено на день» (чек-лист PF 186491): дні відсутності менеджера в його картці.
+// Ставить і прибирає людина з правом виключати заміри (КВП) або admin; решта лише бачить.
+function absenceLine(mgr, absences) {
+  if (mgr.tg == null) return '';
+  const tg = Number(mgr.tg);
+  const days = (absences || []).filter(x => x.tg === tg).map(x => x.day).sort();
+  if (!canExclude && !days.length) return '';
+  const list = days.map(d => canExclude
+    ? `<span class="md-abs-day">${fmtDay(d)}<span class="md-abs-x" title="Прибрати" onclick="event.stopPropagation();setAbsence(${tg},'${d}',0,this)">×</span></span>`
+    : `<span class="md-abs-day">${fmtDay(d)}</span>`).join('');
+  const add = canExclude
+    ? `<input type="date" class="md-abs-in" onclick="event.stopPropagation()"><span class="md-x" onclick="event.stopPropagation();addAbsence(${tg},this)">додати день</span>`
+    : '';
+  return `<div class="md-abs"><span>Дні відсутності:</span>${list || '<span class="md-abs-day">немає</span>'}${add}</div>`;
+}
+async function addAbsence(tg, btn) {
+  const inp = btn.previousElementSibling;
+  if (!inp || !inp.value) { if (inp) inp.focus(); return; }
+  await setAbsence(tg, inp.value, 1, btn);
+}
+async function setAbsence(tg, day, absent, el) {
+  const prev = el.textContent;
+  el.textContent = '…';
+  try {
+    const r = await fetch(API + '?action=sla_absence_set', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tg, day, absent })
+    }).then(x => x.json());
+    if (r.error) throw new Error(r.error);
+    const list = (_report.absences || []).filter(x => !(x.tg === tg && x.day === day));
+    if (absent) list.push({ tg, day, by: r.by });
+    _report.absences = list;
+    applyVO(_report);   // перерахунок середніх локально, без перезавантаження
+    reRender();
+  } catch (e) {
+    el.textContent = prev;
+    alert('Не збереглось: ' + e.message);
+  }
+}
+
 // ── ВО: перерахунок часу реакції на РОБОЧІ хвилини (алгоритм таймера) ──
 // API віддає request_at/response_at; reaction_min з бекенду — наївний wall-clock.
 // Тут підмінюємо його на ВО (09:00–18:00, Пн–Пт, без свят) і перераховуємо середні.
 function applyVO(report) {
   if (typeof SlaVO === 'undefined') return report; // модуль не завантажився — лишаємо як є
-  // Паузи менеджерів (кнопка в DM зі Степаном): робочі хвилини паузи ТОГО, ХТО ВІДПОВІВ, у ВО не йдуть.
+  // Паузи (кнопка в DM зі Степаном) і дні відсутності («SLA вимкнено на день») — того, ХТО ВІДПОВІВ:
+  //  • запит у день відсутності → замір не рахується (ev.absent), як виключений;
+  //  • робочі хвилини пауз і днів відсутності всередині заміру у ВО не йдуть (перетини злито — без подвійного віднімання).
+  // День відсутності = доба UTC [00:00, 24:00): вміщує все робоче вікно київської доби (07–16 / 06–15 UTC) і нічого з сусідніх.
   const pauses = (report.pauses || []).map(p => ({ tg: p.tg, a: Date.parse(p.from), b: Date.parse(p.to) }));
+  const absent = (report.absences || []).map(x => { const a = Date.parse(x.day + 'T00:00:00Z'); return { tg: x.tg, day: x.day, a, b: a + 864e5 }; });
+  const absKey = new Set(absent.map(x => x.tg + '|' + x.day));
   let totalSum = 0, totalCnt = 0;
   for (const mgr of report.managers || []) {
     let mSum = 0, mCnt = 0;
@@ -528,15 +593,30 @@ function applyVO(report) {
       for (const ev of cp.events || []) {
         if (ev.wall_min == null) ev.wall_min = ev.reaction_min; // зберігаємо старе для довідки
         const reqMs = Date.parse(ev.request_at), resMs = Date.parse(ev.response_at);
+        const iv = [];
         let pz = 0;
         for (const p of pauses) {
           if (p.tg !== ev.mgr_tg) continue;
           const a = Math.max(reqMs, p.a), b = Math.min(resMs, p.b);
-          if (b > a) pz += SlaVO.businessMinutes(a, b);
+          if (b > a) { pz += SlaVO.businessMinutes(a, b); iv.push([a, b]); }
         }
+        ev.absent = absKey.has(ev.mgr_tg + '|' + kyivDay(ev.request_at));
+        ev.absent_days = [];
+        for (const x of absent) {
+          if (x.tg !== ev.mgr_tg) continue;
+          const a = Math.max(reqMs, x.a), b = Math.min(resMs, x.b);
+          if (b > a && SlaVO.businessMinutes(a, b) > 0) { iv.push([a, b]); ev.absent_days.push(x.day); }
+        }
+        iv.sort((u, v) => u[0] - v[0]);
+        let sub = 0, cur = null;
+        for (const [a, b] of iv) {
+          if (cur && a <= cur[1]) cur[1] = Math.max(cur[1], b);
+          else { if (cur) sub += SlaVO.businessMinutes(cur[0], cur[1]); cur = [a, b]; }
+        }
+        if (cur) sub += SlaVO.businessMinutes(cur[0], cur[1]);
         ev.pause_min = Math.round(pz * 100) / 100;
-        ev.reaction_min = Math.max(0, Math.round((SlaVO.businessMinutes(ev.request_at, ev.response_at) - pz) * 100) / 100);
-        if (!ev.excluded) { cpSum += ev.reaction_min; cpCnt++; }  // виключені (КВП) не рахуємо
+        ev.reaction_min = Math.max(0, Math.round((SlaVO.businessMinutes(ev.request_at, ev.response_at) - sub) * 100) / 100);
+        if (!ev.excluded && !ev.absent) { cpSum += ev.reaction_min; cpCnt++; }  // виключені (КВП) і дні відсутності не рахуємо
       }
       cp.avg_min = cpCnt ? Math.round((cpSum / cpCnt) * 100) / 100 : null;
       cp.count = cpCnt;
