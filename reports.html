@@ -335,6 +335,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <span class="chip" data-mode="cohort" title="Ліди створені у вибрані дні + куди дійшли">Когорта</span>
     </span>
 
+    <!-- Когорта «станом на»: лише коли звіт = когорта і період уже скінчився (syncCutGroup) -->
+    <span class="lbl" id="cutLbl" style="display:none">Стан</span>
+    <span class="group" id="cutGroup" style="display:none">
+      <span class="chip active" data-cut="" onclick="setCohortCut(false)" title="Куди ліди дійшли на сьогодні — цифри минулого періоду ще ростуть, поки ліди дозрівають">на сьогодні</span>
+      <span class="chip" data-cut="1" id="cutEndChip" onclick="setCohortCut(true)" title="Лише переходи до кінця періоду — звіт за минулий місяць не змінюється, коли б його не відкрили">на кінець</span>
+    </span>
+
     <!-- Тип клієнта / клас ліда — фільтри угод; на «Бек-офісі» ховаються (syncModeGroupsVisibility) -->
     <span id="leadFilters" style="display:contents">
     <span class="sep"></span>
@@ -437,6 +444,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>За період</b> — скільки угод зайшло в кожну стадію саме у вибрані дні (за датою переходу). Одна угода може бути в кількох стадіях.</li>
       <li><b>Pipeline</b> — угоди з активністю в періоді; для кожної стадії — скільки з них хоч раз дійшли до неї або далі (за всю історію).</li>
       <li><b>Когорта</b> — угоди, створені у вибрані дні, і куди вони дійшли за всю історію.</li>
+      <li><b>Когорта · Стан</b> (лише для періоду, що вже скінчився): <b>на сьогодні</b> — куди ліди дійшли до сьогодні, тож звіт за минулий місяць ще росте, поки ліди дозрівають (лід 27.10 з авансом 05.11 — аванс жовтневої когорти); <b>на кінець періоду</b> (напр. «на 31.10») — лише переходи до останнього дня періоду включно, звіт не змінюється, коли б його не відкрили. Ліди ті самі, етапи й аванси — станом на кінець періоду. Не заморожені: менеджер, канал, клас, бюджет та інтерес — поточні з картки угоди (історії цих полів до 22.09.2026 немає); тип клієнта — з подій, тож із фільтром «Приватні» / «Бізнес» лідів може бути на 1–2% менше, ніж «на сьогодні» (тип змінили після кінця періоду). Ліди з кінця місяця на кінець періоду ще не встигли пройти воронку — конверсія за такий зріз нижча, ніж за той самий місяць пізніше.</li>
     </ul>
     <h3>Етапи</h3>
     <ul>
@@ -450,7 +458,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>Менеджер</b> — поточний виконавець угоди з найсвіжішого джерела: картки Planfix (відкриті угоди звіряються щопівгодини в робочий час, закриті з рухом за останні 200 днів — поступово, раз на кілька днів) або останньої зміни статусу, якщо вона новіша. Для старіших закритих угод — виконавець на момент останньої зміни статусу. Угоду, яку кваліфікатор передав менеджеру, воронка менеджера показує всю — разом з етапами до передачі. У режимі «Когорта» «Лідів» і «Аванс» збігаються з рядком менеджера на вкладці «Менеджери».</li>
       <li>Конверсію менеджера дивіться в «Когорті». У «За період» «Лідів» — ті самі угоди, створені в період, а етапи й Win — заходи у вибрані дні угод будь-якого місяця створення (напр. аванс по ліду минулого місяця), тож частки «від лідів» не про самі ліди й можуть бути понад 100%.</li>
       <li><b>Канал</b> — актуальний канал реклами з картки угоди; «— без каналу» — поле не заповнене. У «Когорті» збігається з вкладкою «Канали».</li>
-      <li><b>Інтерес</b> — групи, як у «Підписаних»: Модернізація СЕС / Товари / Проєктування — за значенням поля «Інтерес»; усе інше заповнене (Автономність, Під власне споживання, Пасивний дохід…) = СЕС. «Не заповнено» — поле порожнє.</li>
+      <li><b>Інтерес</b> — групи, як у «Підписаних»: Модернізація СЕС / Товари / Проєктування — за значенням поля «Інтерес»; усе інше заповнене (Автономність, Під власне споживання, Пасивний дохід…) = СЕС. «Не заповнено» — поле порожнє. Можна обрати кілька груп одразу (напр. СЕС + Модернізація СЕС) — воронка рахує угоди будь-якої з обраних груп.</li>
       <li><b>Інтерес заповнюють після кваліфікації</b>: у лідів, які не дійшли до «Визначено як цільовий», його майже немає. Тому з фільтром інтересу етапи 1–2 неповні, а «% від №1» і «% з попереднього» на етапі 3 завищені — дивіться «% з попереднього» з етапу 4.</li>
       <li><b>Стабільно інтерес заповнюють з червня 2026</b> (91–100% цільових угод). Раніше — лише 3–55% цільових, зате виграним угодам його дозаповнили для «Підписаних»: у старих періодах фільтр за інтересом перекошує всю воронку й конверсію. Під KPI звіт показує покриття вибірки й прямо попереджає, коли воронці з цим фільтром вірити не можна.</li>
       <li>У меню менеджерів і каналів — лише ті, що є серед угод періоду.</li>
@@ -472,7 +480,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <ul>
       <li>Два і більше загублених переходи поспіль у даних до 09.10.2026 відновити неможливо — лише останній. Тому середні етапи (цільовий, потреба, ТЗ) там можуть бути на кілька відсотків нижчими, ніж у Planfix. З 09.10.2026 такі ланцюжки бачить звірка, якщо між переходами минуло понад пів години; угоду, що встигла «туди й назад» між двома звірками, не бачить ніхто.</li>
       <li>Дані до 03.05.2026 — з Google-таблиці, яку заповнював той самий сценарій; частини угод лютого–квітня 2026, закритих одразу після створення, у ній немає.</li>
-      <li>Для свіжих періодів когорта «недозріла»: нові угоди ще не встигли пройти воронку.</li>
+      <li>Для свіжих періодів когорта «недозріла»: нові угоди ще не встигли пройти воронку. Зафіксувати когорту на кінець періоду — «Стан: на 31.10» (див. «Режими»).</li>
     </ul>
   </div>
 </div>
@@ -486,6 +494,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <h3>Що рахуємо</h3>
     <ul>
       <li><b>Когорта</b> — ліди, <b>створені</b> у вибрані дні (+ чіпи «тип клієнта» і «клас»). Куди вони дійшли — за всю історію угоди.</li>
+      <li><b>Стан</b> (для періоду, що вже скінчився): <b>на сьогодні</b> — куди ліди дійшли до сьогодні, цифри минулого місяця ще ростуть; <b>на кінець періоду</b> — лише переходи до останнього дня періоду, звіт не змінюється, коли б його не відкрили. Менеджер — поточний в обох станах: угоду, передану після кінця періоду, звіт показує в нового менеджера. «Воронка · Когорта» з тим самим станом збігається з рядком менеджера.</li>
       <li><b>Менеджер</b> — <b>поточний</b> виконавець угоди з найсвіжішого джерела: картки Planfix (відкриті угоди — щопівгодини в робочий час; закриті з рухом за останні 200 днів — поступово) або останньої зміни статусу, якщо вона новіша; для старіших закритих угод — виконавець на момент останньої зміни статусу. Угоду, яку кваліфікатор передав менеджеру, рахуємо за тим, у кого вона зараз, — разом з етапами до передачі.</li>
       <li><b>Цільових</b> — дійшли до «Визначено як цільовий» або далі; <b>Цільових А</b> — з них клас А.</li>
       <li><b>Аванс отримано</b> — виграні угоди (поле Planfix «Статус угоди» = «Успешно»), <b>Аванс А</b> — з них клас А. <b>Конверсія</b> = Аванс / Всього; <b>Конверсія А</b> = Аванс А / Цільових А — конверсія всередині класу А. Клас ставлять на кваліфікації, тож майже всі ліди класу А — цільові; ті, що до «Визначено як цільовий» не дійшли (закриті одразу або ще нові), у знаменник не входять — тому рядків класу А в розшифровці може бути трохи більше, ніж «Цільових А». «—», коли цільових А немає.</li>
@@ -704,8 +713,9 @@ const state = {
   advInterest: '',      // звіт «Підписані»: фільтр по групі інтересу ('' = всі)
   // Воронка: фільтри угоди — по ПОТОЧНОМУ значенню угоди, рахує бекенд
   fMgr: '',             // '' | ключ менеджера (як рядок вкладки «Менеджери»)
-  fInterest: '',        // '' | ses | modern | goods | design | none (не заповнено)
+  fInterest: '',        // '' | групи через кому: ses,modern,goods,design,none (не заповнено) — можна кілька
   fChannel: '',         // '' | ключ каналу (як рядок вкладки «Канали»)
+  cohortCut: false,     // когорта «станом на кінець періоду» (hash cut=1): Воронка·Когорта, «Канали», «Менеджери»
   managerFilter: null,  // null | '<менеджер>' — drilldown на вкладці «Менеджери»
   mgrView: '',          // «Менеджери»: '' = результати когорти | 'load' = навантаження (поточні етапи)
   // «Навантаження»: зміни відносно дефолту (усі робочі етапи, без закритих/відкладених) — саме
@@ -786,6 +796,7 @@ function saveStateToUrl() {
   if (state.fMgr) h.set('fm', state.fMgr);
   if (state.fInterest) h.set('fi', state.fInterest);
   if (state.fChannel) h.set('fc', state.fChannel);
+  if (state.cohortCut) h.set('cut', '1');
   if (state.mgrView) h.set('mv', state.mgrView);
   const ls = [...state.loadOff.map(s => '-' + s), ...state.loadOn.map(s => '+' + s)];
   if (ls.length) h.set('ls', ls.join('|'));
@@ -814,6 +825,7 @@ function hydrateFromHash() {
   if (h.get('fm'))     state.fMgr = h.get('fm');
   if (h.get('fi'))     state.fInterest = h.get('fi');
   if (h.get('fc'))     state.fChannel = h.get('fc');
+  if (h.get('cut') === '1') state.cohortCut = true;
   if (h.get('mv'))     state.mgrView = h.get('mv');
   if (h.get('lst') === '1') state.loadStale = true;
   if (h.get('rt') === 'cal') state.rsTime = 'cal';
@@ -912,6 +924,40 @@ function setMode(m) {
   state.mode = m || 'period';
   syncModeChips(); saveStateToUrl(); load();
 }
+// ─── Когорта «станом на кінець періоду» ───
+// Когорта за минулий місяць росте, поки ліди дозрівають (лід 27.10 з авансом 05.11 — аванс
+// жовтневої когорти). «на 31.10» — лише переходи до кінця періоду (бек: cut=1), звіт стоїть.
+// Є там, де звіт = когорта: Воронка в режимі «Когорта», «Канали», «Менеджери» (результати).
+// Період, що ще не скінчився, зрізати нічим — групу ховаємо.
+function kyivTodayIso() { return new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Kyiv' }); }
+function fmtDayMonth(iso) { return iso ? iso.slice(8, 10) + '.' + iso.slice(5, 7) : ''; }
+function cohortCutAvailable() {
+  const cohortView = (state.report === 'funnel' && state.mode === 'cohort')
+    || state.report === 'channels' || (state.report === 'managers' && state.mgrView !== 'load');
+  return cohortView && !!state.to && state.to < kyivTodayIso();
+}
+function cohortCutOn() { return state.cohortCut && cohortCutAvailable(); }
+function syncCutGroup() {
+  const show = cohortCutAvailable() ? '' : 'none';
+  ['cutGroup', 'cutLbl'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = show; });
+  const end = document.getElementById('cutEndChip');
+  if (end) end.textContent = 'на ' + fmtDayMonth(state.to);
+  const on = cohortCutOn();
+  document.querySelectorAll('.chip[data-cut]').forEach(c => c.classList.toggle('active', !!c.dataset.cut === on));
+}
+function setCohortCut(v) {
+  if (state.cohortCut === !!v) return;
+  state.cohortCut = !!v;
+  saveStateToUrl(); load();
+}
+// Рядок під заголовком звіту-когорти: що означають цифри зараз
+function cutNoteHTML() {
+  if (!cohortCutAvailable()) return '';
+  const d = state.to.split('-').reverse().join('.');
+  return cohortCutOn()
+    ? `<div style="margin-top:6px;color:var(--text3)">Станом на <b>${d}</b>: переходи після цієї дати не враховано — звіт не змінюється, коли б його не відкрили. Менеджер, канал, клас, бюджет та інтерес — поточні з картки угоди.</div>`
+    : `<div style="margin-top:6px;color:var(--text3)">Куди ліди дійшли <b>на сьогодні</b>: цифри цього періоду ще ростуть. Зафіксувати на кінець періоду — «Стан: на ${fmtDayMonth(state.to)}».</div>`;
+}
 function attachEvents() {
   _picker = initDateRange({
     inputId: 'dateRange',
@@ -979,7 +1025,7 @@ function renderFunnelFilters() {
     <span class="sep"></span>
     <span class="lbl">Інтерес</span>
     ${chip(!state.fInterest, 'Всі', "setFunnelFilter('fInterest','')")}
-    ${groups.map(g => chip(state.fInterest === g.key, esc(g.label), `setFunnelFilter('fInterest','${esc(g.key)}')`)).join('')}
+    ${groups.map(g => chip(fInterestKeys().includes(g.key), esc(g.label), `toggleFunnelInterest('${esc(g.key)}')`, 'Можна обрати кілька')).join('')}
     <span class="sep"></span>
     <span class="lbl">Канал</span>
     ${chip(!!state.fChannel, esc(ffShort(state.fChannel || 'Всі')) + ' ▾', "ffOpenMenu(event,'ch')", state.fChannel)}
@@ -1037,6 +1083,17 @@ function setFunnelFilter(key, val) {
   state[key] = val;
   saveStateToUrl(); renderFunnelFilters(); load();
 }
+// «Інтерес» — кілька груп одразу: клік додає/знімає групу, «Всі» — скидає.
+// Порядок ключів — як у меню (бек нормалізує так само); обрані всі = «Всі».
+function fInterestKeys() { return (state.fInterest || '').split(',').filter(Boolean); }
+function toggleFunnelInterest(key) {
+  const opt = (state.raw && state.raw.filterOptions && state.raw.filterOptions.interests) || [];
+  const order = [...opt.map(g => g.key), 'none'];
+  const cur = new Set(fInterestKeys());
+  if (cur.has(key)) cur.delete(key); else cur.add(key);
+  const keys = order.filter(k => cur.has(k));
+  setFunnelFilter('fInterest', keys.length === order.length ? '' : keys.join(','));
+}
 function resetFunnelFilters() {
   state.fMgr = ''; state.fInterest = ''; state.fChannel = '';
   saveStateToUrl(); renderFunnelFilters(); load();
@@ -1051,6 +1108,7 @@ let _loadCtl = null;
 let _loadSeq = 0;
 async function load(force = false) {
   rsClampPeriod(); // «Кваліфікація лідів» — не раніше RS_DATA_FROM; інші вкладки — без обмеження
+  syncCutGroup();  // «Стан» когорти — залежить від вкладки, режиму і періоду
   const seq = ++_loadSeq;
   if (_loadCtl) _loadCtl.abort();
   _loadCtl = new AbortController();
@@ -1069,6 +1127,7 @@ async function load(force = false) {
     if (state.report === 'funnel' && state.mode && state.mode !== 'period') {
       params.set('mode', state.mode);
     }
+    if (cohortCutOn()) params.set('cut', '1');  // когорта станом на кінець періоду
     // Фільтри угоди — лише воронка (інші вкладки їх не знають)
     if (state.report === 'funnel') {
       if (state.fMgr) params.set('manager', state.fMgr);
@@ -1226,7 +1285,7 @@ function updateInfoBanner() {
       </div>
       <div style="margin-top:6px;color:var(--text3)">
         Воронка <b>звужується</b>. Для свіжих періодів win буде маленький — нові ліди ще не встигли пройти всю воронку. Краще дивитись за минулі квартали.
-      </div>`;
+      </div>${cutNoteHTML()}`;
   }
   el.innerHTML = html;
   el.style.display = html ? 'block' : 'none';
@@ -1256,6 +1315,7 @@ function renderChannelsReport(d) {
     <b>Аванс отримано</b> = виграна угода (поле Planfix «Статус угоди» = «Успешно»).
     Конверсія = Аванс / Всього; <b>Конверсія А</b> = Аванс А / Цільових А — конверсія всередині класу А.
     Канали розбито на два підрозділи: <b>маркетингові</b> (Google / Meta / TikTok / Organic / Direct / AI — ті самі, що входять у ROMI на вкладці «Маркетинг») і <b>поза маркетингом</b> (база / сарафан / партнери). Дані ті самі, що в «Маркетинг».
+    ${cutNoteHTML()}
   </div>
   <div class="kpi">
     <div class="kpi-card"><div class="lbl">Всього лідів</div><div class="val">${fmt(t.leads)}</div></div>
@@ -1568,6 +1628,7 @@ function renderManagersReport(d) {
     <b>Цільових</b> = дійшли до стадії «Визначено як цільовий». <b>Аванс отримано</b> = виграна угода (поле Planfix «Статус угоди» = «Успешно»).
     Конверсія = Аванс / Всього; <b>Конверсія А</b> = Аванс А / Цільових А — конверсія всередині класу А.
     <span class="chip" style="margin-left:10px" onclick="openMgrHelp()" title="Як працює цей звіт">❓ Як працює</span>
+    ${cutNoteHTML()}
   </div>
   <div class="kpi">
     <div class="kpi-card"><div class="lbl">Всього лідів</div><div class="val">${fmt(t.leads)}</div></div>
@@ -2816,9 +2877,12 @@ function attachManagerDrilldown(d) {
 // виграним його дозаповнили для «Підписаних» (2025: 67–100%) — там перекошено все.
 function interestCoverageNoteHTML(a) {
   const c = a.interestCoverage;
-  if (!state.fInterest || !c || !c.leads) return '';
+  const keys = fInterestKeys();
+  if (!keys.length || !c || !c.leads) return '';
+  // «Не заповнено» разом з групами — ліди без кваліфікації у вибірці є, етапи 1–2 не урізані
+  if (keys.includes('none') && keys.length > 1) return '';
   const note = h => `<div class="muted" style="margin:-4px 2px 12px">${h}</div>`;
-  if (state.fInterest === 'none') {
+  if (keys[0] === 'none') {
     return note(c.target
       ? `Інтерес заповнюють після кваліфікації, тож «не заповнено» — переважно ліди, які до неї не дійшли: серед цільових вибірки без інтересу ${fmt(c.target - c.targetFilled)} з ${fmt(c.target)}.`
       : `Інтерес заповнюють після кваліфікації, а цільових угод у вибірці ще немає — тут усі ліди без кваліфікації.`);
