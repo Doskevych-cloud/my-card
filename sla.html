@@ -14,7 +14,7 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/uk.js"></script>
 <script src="date-range.js?v=20260522"></script>
-<script src="sla-vo.js?v=vo20260627"></script>
+<script src="sla-vo.js?v=vo20261110"></script>
 <link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="base.css?v=20260712">
 <style>
@@ -103,6 +103,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .mgr-detail .md-evts.open{display:block}
 .mgr-detail .md-evt{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 6px;margin:0 -6px;border-radius:6px;font-size:11px;color:var(--text3);cursor:pointer;transition:background .12s}
 .mgr-detail .md-evt:hover{background:var(--bg3)}
+.mgr-detail .md-evt.focus{background:var(--bg3);box-shadow:inset 0 0 0 1px var(--accent)}
+.ev-miss{font-size:12px;color:var(--text3);margin-bottom:10px}
 .mgr-detail .md-evt-time{font-variant-numeric:tabular-nums}
 .mgr-detail .md-evt .md-caret{color:var(--text3);transition:transform .15s;display:inline-block;margin-right:4px}
 .mgr-detail .md-evt.open .md-caret{transform:rotate(90deg)}
@@ -249,6 +251,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>Розподіл</b>: швидко ≤3 хв, прийнятно 3–10 хв, повільно >10 хв.</li>
       <li>У менеджера/контрагента — середнє і кількість замірів; клік розгортає окремі заміри, клік по заміру — повідомлення, по яких він рахувався.</li>
       <li>Банер «без відповіді» — відкриті запити, час очікування теж у робочих хвилинах.</li>
+      <li>Посилання на замір зі щоденного звіту Степана по переписках відкриває цей замір одразу: розгортає менеджера й контрагента, підсвічує рядок і показує повідомлення. Цифри у звіті Степана рахуються тим самим алгоритмом, що й тут.</li>
     </ul>
     <h3>Виключення замірів (КВП)</h3>
     <ul>
@@ -262,7 +265,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <script>
 const API = 'https://react-bot.doskevich.workers.dev/';
 let _picker = null;
-const state = { from: '', to: '', org: 'Реакт', preset: 'month' };
+const state = { from: '', to: '', org: 'Реакт', preset: 'month', ev: 0 };   // ev — замір із посилання (#…&ev=<id>)
 const SLA_THRESHOLD = 10;
 let canExclude = false;      // роль sales_sla_exclude (КВП) або admin
 let _report = null;          // останній звіт — для локального перерахунку після виключення
@@ -325,12 +328,14 @@ function detectPreset(from, to) {
 
 // ── Hash state ──
 function saveHash() {
+  state.ev = 0;   // період змінили руками — посилання на замір більше не діє
   location.hash = `from=${state.from}&to=${state.to}`;
 }
 function loadHash() {
   const h = location.hash.slice(1), p = new URLSearchParams(h);
   if (p.get('from')) state.from = p.get('from');
   if (p.get('to')) state.to = p.get('to');
+  state.ev = Number(p.get('ev')) || 0;
 }
 
 // ── Distribution buckets ──
@@ -452,7 +457,7 @@ function renderRanking(data) {
           : (ev.excluded ? '<span class="md-ex-tag">виключено</span>' : '');
         const tags = (ev.pause_min >= 1 ? `<span class="md-pz">пауза ${Math.round(ev.pause_min)} хв</span>` : '')
           + (!ev.absent && ev.absent_days && ev.absent_days.length ? `<span class="md-pz">відсутність ${ev.absent_days.map(fmtDay).join(', ')}</span>` : '');
-        html += `<div class="md-evt${ev.excluded || ev.absent ? ' excluded' : ''}" onclick="event.stopPropagation();toggleEvtMsgs(this,${ea})">
+        html += `<div class="md-evt${ev.excluded || ev.absent ? ' excluded' : ''}${state.ev && Number(ev.id) === state.ev ? ' focus' : ''}" data-ev="${Number(ev.id) || 0}" onclick="event.stopPropagation();toggleEvtMsgs(this,${ea})">
           <span class="md-evt-time"><span class="md-caret">▸</span>${fmtFull(ev.request_at)} → ${fmtTime(ev.response_at)}</span>
           <span style="display:inline-flex;align-items:center;gap:8px">${xCtl}${tags}<span class="md-evt-val" style="color:${rColor(ev.reaction_min)}">${fmtR(ev.reaction_min)}</span></span>
         </div><div class="md-msgs"></div>`;
@@ -524,13 +529,7 @@ function renderPending(data) {
   ).join('');
 }
 
-// Київська дата 'YYYY-MM-DD' моменту ISO і коротке ДД.ММ.
-const _KYIV_DAY = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Kyiv', year: 'numeric', month: '2-digit', day: '2-digit' });
-function kyivDay(iso) {
-  const p = {};
-  for (const x of _KYIV_DAY.formatToParts(new Date(iso))) p[x.type] = x.value;
-  return `${p.year}-${p.month}-${p.day}`;
-}
+// Коротке ДД.ММ з 'YYYY-MM-DD'.
 function fmtDay(day) { return day.slice(8, 10) + '.' + day.slice(5, 7); }
 
 // «SLA вимкнено на день» (чек-лист PF 186491): дні відсутності менеджера в його картці.
@@ -575,60 +574,29 @@ async function setAbsence(tg, day, absent, el) {
 
 // ── ВО: перерахунок часу реакції на РОБОЧІ хвилини (алгоритм таймера) ──
 // API віддає request_at/response_at; reaction_min з бекенду — наївний wall-clock.
-// Тут підмінюємо його на ВО (09:00–18:00, Пн–Пт, без свят) і перераховуємо середні.
+// SlaVO.applyVO (sla-vo.js) підмінює його на ВО (09:00–18:00, Пн–Пт, без свят), віднімає паузи
+// й дні відсутності того, хто відповів, і перераховує середні. Та сама функція рахує денне
+// зведення бота для звіту Степана (react-bot, _admin_sla_digest) — тому цифри збігаються.
 function applyVO(report) {
-  if (typeof SlaVO === 'undefined') return report; // модуль не завантажився — лишаємо як є
-  // Паузи (кнопка в DM зі Степаном) і дні відсутності («SLA вимкнено на день») — того, ХТО ВІДПОВІВ:
-  //  • запит у день відсутності → замір не рахується (ev.absent), як виключений;
-  //  • робочі хвилини пауз і днів відсутності всередині заміру у ВО не йдуть (перетини злито — без подвійного віднімання).
-  // День відсутності = доба UTC [00:00, 24:00): вміщує все робоче вікно київської доби (07–16 / 06–15 UTC) і нічого з сусідніх.
-  const pauses = (report.pauses || []).map(p => ({ tg: p.tg, a: Date.parse(p.from), b: Date.parse(p.to) }));
-  const absent = (report.absences || []).map(x => { const a = Date.parse(x.day + 'T00:00:00Z'); return { tg: x.tg, day: x.day, a, b: a + 864e5 }; });
-  const absKey = new Set(absent.map(x => x.tg + '|' + x.day));
-  let totalSum = 0, totalCnt = 0;
-  for (const mgr of report.managers || []) {
-    let mSum = 0, mCnt = 0;
-    for (const cp of mgr.counterparties || []) {
-      let cpSum = 0, cpCnt = 0;
-      for (const ev of cp.events || []) {
-        if (ev.wall_min == null) ev.wall_min = ev.reaction_min; // зберігаємо старе для довідки
-        const reqMs = Date.parse(ev.request_at), resMs = Date.parse(ev.response_at);
-        const iv = [];
-        let pz = 0;
-        for (const p of pauses) {
-          if (p.tg !== ev.mgr_tg) continue;
-          const a = Math.max(reqMs, p.a), b = Math.min(resMs, p.b);
-          if (b > a) { pz += SlaVO.businessMinutes(a, b); iv.push([a, b]); }
-        }
-        ev.absent = absKey.has(ev.mgr_tg + '|' + kyivDay(ev.request_at));
-        ev.absent_days = [];
-        for (const x of absent) {
-          if (x.tg !== ev.mgr_tg) continue;
-          const a = Math.max(reqMs, x.a), b = Math.min(resMs, x.b);
-          if (b > a && SlaVO.businessMinutes(a, b) > 0) { iv.push([a, b]); ev.absent_days.push(x.day); }
-        }
-        iv.sort((u, v) => u[0] - v[0]);
-        let sub = 0, cur = null;
-        for (const [a, b] of iv) {
-          if (cur && a <= cur[1]) cur[1] = Math.max(cur[1], b);
-          else { if (cur) sub += SlaVO.businessMinutes(cur[0], cur[1]); cur = [a, b]; }
-        }
-        if (cur) sub += SlaVO.businessMinutes(cur[0], cur[1]);
-        ev.pause_min = Math.round(pz * 100) / 100;
-        ev.reaction_min = Math.max(0, Math.round((SlaVO.businessMinutes(ev.request_at, ev.response_at) - sub) * 100) / 100);
-        if (!ev.excluded && !ev.absent) { cpSum += ev.reaction_min; cpCnt++; }  // виключені (КВП) і дні відсутності не рахуємо
-      }
-      cp.avg_min = cpCnt ? Math.round((cpSum / cpCnt) * 100) / 100 : null;
-      cp.count = cpCnt;
-      mSum += cpSum; mCnt += cpCnt;
-    }
-    mgr.avg_min = mCnt ? Math.round((mSum / mCnt) * 100) / 100 : null;
-    mgr.count = mCnt;
-    totalSum += mSum; totalCnt += mCnt;
+  if (typeof SlaVO === 'undefined' || !SlaVO.applyVO) return report; // модуль не завантажився — лишаємо як є
+  return SlaVO.applyVO(report);
+}
+
+// Посилання на конкретний замір (#from=…&to=…&ev=<id>, з щоденного звіту Степана): розкриваємо
+// менеджера й контрагента, підсвічуємо замір і показуємо його повідомлення.
+function focusEvent() {
+  if (!state.ev) return;
+  const el = document.querySelector(`.md-evt[data-ev="${state.ev}"]`);
+  if (!el) {
+    document.getElementById('rankingWrap').insertAdjacentHTML('afterbegin',
+      `<div class="ev-miss">Заміру з посилання (№ ${state.ev}) у цьому періоді немає: його могли видалити, або він більше не потребує відповіді.</div>`);
+    return;
   }
-  report.overall_avg_min = totalCnt ? Math.round((totalSum / totalCnt) * 100) / 100 : 0;
-  report.total_events = totalCnt;
-  return report;
+  const evts = el.closest('.md-evts'), detail = el.closest('.mgr-detail');
+  if (evts) evts.classList.add('open');
+  if (detail && !detail.classList.contains('open')) toggleMgr(detail.id);
+  if (!el.classList.contains('open')) el.click();   // повідомлення, по яких рахувався замір
+  el.scrollIntoView({ block: 'center' });
 }
 
 // ── КВП: враховувати/не враховувати замір ──
@@ -714,6 +682,7 @@ async function load() {
     renderDistrib(report.managers);
     renderRanking(report);
     renderPending(pending);
+    focusEvent();
   } catch (e) {
     loader.textContent = 'Помилка: ' + e.message;
     loader.style.display = '';

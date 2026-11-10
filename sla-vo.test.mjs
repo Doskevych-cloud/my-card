@@ -4,7 +4,7 @@
  */
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const { businessMinutes, isWithinWorkWindow, _localParts } = require('./sla-vo.js');
+const { businessMinutes, isWithinWorkWindow, applyVO, _localParts } = require('./sla-vo.js');
 
 // київський wall-clock → UTC ISO (червень, +3)
 const K = (d, hh, mm) => {
@@ -59,6 +59,41 @@ eq('запит і відповідь поза вікном (ніч) → 0', busi
 eq('window: 10:00 робочий → 1', isWithinWorkWindow(K('26', 10, 0)) ? 1 : 0, 1);
 eq('window: 07:30 → 0', isWithinWorkWindow(K('26', 7, 30)) ? 1 : 0, 0);
 eq('window: Сб 12:00 → 0', isWithinWorkWindow(K('27', 12, 0)) ? 1 : 0, 0);
+
+// ── applyVO: ВО всього звіту з паузами й днями відсутності (спільний для sla.html і бота) ──
+// Пт 26.06: A — Олександра (tg 1), запит 10:00 → відповідь 10:24, її пауза 10:01–10:20 → 24 − 19 = 5;
+//           B — Дарʼя (tg 2), 10:00 → 10:25, пауза Олександри її не стосується → 25;
+//           C — Дарʼя, виключений КВП → не в середніх;
+//           D — Дарʼя, Чт 25.06 17:30 → Пн 29.06 09:20 через її відсутню пʼятницю: 30 + 540 + 20 − 540 = 50,
+//               а її пауза в ту ж пʼятницю (09:00–10:00) двічі не віднімається.
+const mk = () => ({
+  managers: [
+    { name: 'О', tg: 1, counterparties: [{ name: 'A', events: [
+      { id: 1, mgr_tg: 1, request_at: K('26', 10, 0), response_at: K('26', 10, 24), reaction_min: 24, excluded: 0 }] }] },
+    { name: 'Д', tg: 2, counterparties: [{ name: 'B', events: [
+      { id: 2, mgr_tg: 2, request_at: K('26', 10, 0), response_at: K('26', 10, 25), reaction_min: 25, excluded: 0 },
+      { id: 3, mgr_tg: 2, request_at: K('26', 11, 0), response_at: K('26', 12, 0), reaction_min: 60, excluded: 1 }] },
+      { name: 'D', events: [
+      { id: 4, mgr_tg: 2, request_at: K('25', 17, 30), response_at: K('29', 9, 20), reaction_min: 5270, excluded: 0 }] }] },
+  ],
+  pauses: [{ tg: 1, from: K('26', 10, 1), to: K('26', 10, 20) }],
+  absences: [],
+});
+const evOf = (r, id) => r.managers.flatMap(m => m.counterparties.flatMap(c => c.events)).find(e => e.id === id);
+let r = applyVO(mk());
+eq('applyVO: пауза того, хто відповів, віднімається (24 − 19)', evOf(r, 1).reaction_min, 5);
+eq('applyVO: pause_min = 19, wall_min збережено', evOf(r, 1).pause_min + evOf(r, 1).wall_min, 19 + 24);
+eq('applyVO: чужа пауза не чіпає замір', evOf(r, 2).reaction_min, 25);
+eq('applyVO: без відсутності — 590 роб. хв через пʼятницю', evOf(r, 4).reaction_min, 590);
+eq('applyVO: середнє менеджера без виключеного ((25 + 590) / 2)', r.managers[1].avg_min, 307.5);
+eq('applyVO: загальне середнє і кількість', r.overall_avg_min + r.total_events, Math.round((5 + 25 + 590) / 3 * 100) / 100 + 3);
+r = mk(); r.absences = [{ tg: 2, day: '2026-06-26' }]; r.pauses.push({ tg: 2, from: K('26', 9, 0), to: K('26', 10, 0) });
+applyVO(r);
+eq('applyVO: запит у день відсутності — замір не рахується', evOf(r, 2).absent ? 1 : 0, 1);
+eq('applyVO: замір через день відсутності: 590 − 540 = 50, пауза того дня двічі не віднімається', evOf(r, 4).reaction_min, 50);
+eq('applyVO: середнє Дарʼї — лише замір 50', r.managers[1].avg_min + r.managers[1].count, 51);
+applyVO(r);
+eq('applyVO: повторний виклик ідемпотентний', evOf(r, 4).reaction_min + evOf(r, 1).reaction_min, 55);
 
 console.log(`\n${pass} pass, ${fail} fail`);
 process.exit(fail ? 1 : 0);

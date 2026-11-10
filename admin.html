@@ -182,7 +182,7 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
     <button class="tab active" data-tab="users">Користувачі</button>
     <button class="tab" data-tab="roles">Ролі</button>
     <button class="tab" data-tab="sync">Синхронізація</button>
-    <button class="tab" data-tab="calls">Дзвінки</button>
+    <button class="tab" data-tab="calls">Дзвінки й переписки</button>
     <button class="tab" data-tab="motivation">Мотивації</button>
     <button class="tab" data-tab="bot">Бот</button>
   </div>
@@ -397,6 +397,25 @@ td .role-select { background:var(--card2); border:1px solid var(--border); color
           Статус останнього запуску — вкладка «Синхронізація», блок «Щоденні аналізи».
         </div>
         <div id="callsReportWrap" style="font-size:13px;color:var(--text3)">Завантаження…</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Звіт по переписках МзС у Telegram</h2>
+        <div class="spacer"></div>
+        <span style="font-size:12px;color:var(--text3)">бот Степан · щодня о 08:10 за попередній робочий день</span>
+      </div>
+      <div style="padding:14px">
+        <div style="font-size:12px;color:var(--text3);line-height:1.6;margin-bottom:16px">
+          По кожному менеджеру зі списку Степан надсилає: швидкість відповіді (ті самі цифри, що на сторінці SLA),
+          затримки від 10 хв із посиланням на замір, використану паузу, застосування алгоритму допродажу,
+          помилки й помарки. Алгоритм допродажу — текст інструкції для МзС: за ним перевіряється кожне звернення дилера;
+          поки поле порожнє, блоку «Допродаж» у звіті нема. Скрипт <code>chat_review.py</code> на Mac читає ці налаштування
+          перед кожним запуском, тож правка діє з наступного ранку.
+          Статус останнього запуску — вкладка «Синхронізація», блок «Щоденні аналізи».
+        </div>
+        <div id="chatReviewWrap" style="font-size:13px;color:var(--text3)">Завантаження…</div>
       </div>
     </div>
   </div>
@@ -632,6 +651,7 @@ Auth.require('admin').then(user => {
     loadAutosyncStatus();
     loadJobHealth();
     loadCallsReport();
+    loadChatReview();
     loadOdataPassStatus();
     loadCatchupMode();
     loadMotivation();
@@ -919,6 +939,38 @@ async function saveCallsReport() {
     status.textContent = d.ok ? 'Збережено ✓' : (d.error || 'Помилка');
     status.style.color = d.ok ? 'var(--green)' : 'var(--red)';
     setTimeout(() => { status.textContent = ''; }, 3000);
+  } catch (e) { status.textContent = e.message; status.style.color = 'var(--red)'; }
+}
+
+// ── Налаштування звіту Степана по переписках МзС (D1 report_settings, chat-review) ──
+// Канон — D1: тут правимо, chat_review.py на Mac читає перед кожним запуском.
+async function loadChatReview() {
+  const wrap = document.getElementById('chatReviewWrap');
+  if (!wrap) return;
+  try {
+    const d = await Auth.apiFetch('_admin_chat_review_get');
+    if (d.error) { wrap.innerHTML = `<div style="color:var(--red)">${jobEsc(d.error)}</div>`; return; }
+    const inputStyle = 'padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;width:100%';
+    const heights = { chat_review_upsell_algorithm: 260, chat_review_errors_rule: 130 };
+    const rows = (d.settings || []).map(s => `<div style="margin-bottom:14px">
+        <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px">${jobEsc(s.label || s.key)}</label>
+        <textarea data-chatrev="${jobEsc(s.key)}" style="${inputStyle};min-height:${heights[s.key] || 60}px;resize:vertical;font-family:monospace;font-size:12px;line-height:1.5">${jobEsc(s.value)}</textarea>
+      </div>`).join('');
+    wrap.innerHTML = rows + `<div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn--primary" onclick="saveChatReview()">Зберегти</button>
+      <span id="chatReviewStatus" style="font-size:12px;color:var(--text3)"></span>
+    </div>`;
+  } catch (e) { wrap.innerHTML = `<div style="color:var(--red)">Помилка: ${jobEsc(e.message || e)}</div>`; }
+}
+async function saveChatReview() {
+  const settings = {};
+  document.querySelectorAll('[data-chatrev]').forEach(el => { settings[el.dataset.chatrev] = el.value; });
+  const status = document.getElementById('chatReviewStatus');
+  try {
+    const d = await Auth.apiFetch('_admin_chat_review_set', { method: 'POST', body: { settings } });
+    status.textContent = d.ok ? 'Збережено ✓' : (d.error || 'Помилка');
+    status.style.color = d.ok ? 'var(--green)' : 'var(--red)';
+    if (d.ok) setTimeout(() => { status.textContent = ''; }, 3000);
   } catch (e) { status.textContent = e.message; status.style.color = 'var(--red)'; }
 }
 

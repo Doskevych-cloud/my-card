@@ -131,9 +131,78 @@
     return minOfDay >= cfg.workStartMin && minOfDay < cfg.workEndMin;
   }
 
+  // ── ВО всього звіту: wall-clock → робочі хвилини, мінус паузи й дні відсутності ──
+  // Одна реалізація для сторінки SLA (sla.html) і денного зведення бота
+  // (react-bot/src/sla-vo.js — копія цього файла, action _admin_sla_digest), щоб цифри
+  // в ERP і в щоденному звіті Степана не розходились.
+  // report — відповідь sla_report: { managers: [{ counterparties: [{ events }] }], pauses, absences }.
+  // Паузи (кнопка в DM зі Степаном) і дні відсутності («SLA вимкнено на день») — того, ХТО ВІДПОВІВ:
+  //  • запит у день відсутності → замір не рахується (ev.absent), як виключений;
+  //  • робочі хвилини пауз і днів відсутності всередині заміру у ВО не йдуть
+  //    (перетини злито — без подвійного віднімання).
+  // День відсутності = доба UTC [00:00, 24:00): вміщує все робоче вікно київської доби
+  // (07–16 / 06–15 UTC) і нічого з сусідніх.
+  // Мутує report: ev.reaction_min = ВО, ev.wall_min (значення з бекенду), ev.pause_min, ev.absent,
+  // ev.absent_days; середні й кількості — без виключених (КВП) і замірів у день відсутності.
+  function applyVO(report, config) {
+    var cfg = Object.assign({}, DEFAULT_CONFIG, config || {});
+    var pauses = (report.pauses || []).map(function (p) {
+      return { tg: p.tg, a: Date.parse(p.from), b: Date.parse(p.to) };
+    });
+    var absent = (report.absences || []).map(function (x) {
+      var a = Date.parse(x.day + 'T00:00:00Z');
+      return { tg: x.tg, day: x.day, a: a, b: a + 864e5 };
+    });
+    var absKey = new Set(absent.map(function (x) { return x.tg + '|' + x.day; }));
+    var totalSum = 0, totalCnt = 0;
+    (report.managers || []).forEach(function (mgr) {
+      var mSum = 0, mCnt = 0;
+      (mgr.counterparties || []).forEach(function (cp) {
+        var cpSum = 0, cpCnt = 0;
+        (cp.events || []).forEach(function (ev) {
+          if (ev.wall_min == null) ev.wall_min = ev.reaction_min; // значення з бекенду — для довідки
+          var reqMs = Date.parse(ev.request_at), resMs = Date.parse(ev.response_at);
+          var iv = [], pz = 0;
+          pauses.forEach(function (p) {
+            if (p.tg !== ev.mgr_tg) return;
+            var a = Math.max(reqMs, p.a), b = Math.min(resMs, p.b);
+            if (b > a) { pz += businessMinutes(a, b, cfg); iv.push([a, b]); }
+          });
+          ev.absent = absKey.has(ev.mgr_tg + '|' + dateKey(localParts(new Date(reqMs), cfg.tz)));
+          ev.absent_days = [];
+          absent.forEach(function (x) {
+            if (x.tg !== ev.mgr_tg) return;
+            var a = Math.max(reqMs, x.a), b = Math.min(resMs, x.b);
+            if (b > a && businessMinutes(a, b, cfg) > 0) { iv.push([a, b]); ev.absent_days.push(x.day); }
+          });
+          iv.sort(function (u, v) { return u[0] - v[0]; });
+          var sub = 0, cur = null;
+          iv.forEach(function (r) {
+            if (cur && r[0] <= cur[1]) cur[1] = Math.max(cur[1], r[1]);
+            else { if (cur) sub += businessMinutes(cur[0], cur[1], cfg); cur = [r[0], r[1]]; }
+          });
+          if (cur) sub += businessMinutes(cur[0], cur[1], cfg);
+          ev.pause_min = Math.round(pz * 100) / 100;
+          ev.reaction_min = Math.max(0, Math.round((businessMinutes(ev.request_at, ev.response_at, cfg) - sub) * 100) / 100);
+          if (!ev.excluded && !ev.absent) { cpSum += ev.reaction_min; cpCnt++; } // виключені (КВП) і дні відсутності не рахуємо
+        });
+        cp.avg_min = cpCnt ? Math.round((cpSum / cpCnt) * 100) / 100 : null;
+        cp.count = cpCnt;
+        mSum += cpSum; mCnt += cpCnt;
+      });
+      mgr.avg_min = mCnt ? Math.round((mSum / mCnt) * 100) / 100 : null;
+      mgr.count = mCnt;
+      totalSum += mSum; totalCnt += mCnt;
+    });
+    report.overall_avg_min = totalCnt ? Math.round((totalSum / totalCnt) * 100) / 100 : 0;
+    report.total_events = totalCnt;
+    return report;
+  }
+
   var api = {
     DEFAULT_CONFIG: DEFAULT_CONFIG,
     businessMinutes: businessMinutes, // ← ВО (сценарії 1–7)
+    applyVO: applyVO,                 // ← ВО всього звіту з паузами й днями відсутності
     isWithinWorkWindow: isWithinWorkWindow,
     _localParts: localParts,
     _wallToUTC: wallToUTC
