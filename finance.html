@@ -494,8 +494,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 #srBody .pnl-table tr.sr-row{cursor:pointer}
 #srBody .pnl-table tr.sr-row:hover td{background:var(--surface2)}
 #srBody .pnl-table tr.sr-total td{font-weight:700;border-bottom:1px solid var(--border)}
-#srBody .pnl-table tr.sr-row--pair1 td{border-bottom-color:transparent}
-.sr-pairsum{color:var(--text2)}
 #srBody .pnl-table tr.sr-det td{background:var(--bg2);white-space:normal;text-align:left;padding:10px 14px 12px 32px;cursor:default}
 .sr-sub{display:block;font-size:11px;color:var(--text3);margin-top:2px}
 .sr-zero{color:var(--text3)}
@@ -538,7 +536,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   #srBody .sr-table,#srBody .sr-table tbody{display:block;min-width:0}
   #srBody .sr-table thead{display:none}
   #srBody .sr-table tr.sr-row,#srBody .sr-table tr.sr-total{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n s";border-bottom:1px solid var(--border)}
-  #srBody .sr-table tr.sr-row--pair1{border-bottom-color:transparent}
   #srBody .sr-table td{border:0;padding:8px 6px}
   #srBody .sr-table td.c-n{grid-area:n}
   #srBody .sr-table td.c-un,#srBody .sr-table td.c-q,#srBody .sr-table td.c-d{display:none}
@@ -960,6 +957,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
           <span class="chip" data-mode="art" onclick="srSetMode('art')">Артикули <span class="n" id="srArtN"></span></span>
         </span>
         <span class="group" id="srStGroup"></span>
+        <span class="group" id="srNpGroup"></span>
         <span id="srOgChip"></span>
         <input type="text" id="srSearch" placeholder="Товар, артикул або код" autocomplete="off" oninput="srOnSearch(this.value)">
       </div>
@@ -1234,7 +1232,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <h2>Як працює звіт «Склад: УНФ ↔ бух»</h2>
     <h3>Що порівнюємо</h3>
     <p>Залишок товару на <b>безнал-складах УНФ</b> проти залишку на <b>складах бухгалтерської бази</b> (БАС Бухгалтерія) тієї ж юрособи на кінець обраного дня — у кількості й у гривнях. Рядок — один товар. Різниця = УНФ − buh: плюс — в УНФ більше, мінус — у buh більше.</p>
-    <p>Звіряються <b>лише товари зі спільним артикулом</b> — картка з тим самим артикулом є в обох базах. Решта (у другій базі картки нема, пара лише за назвою, різні артикули) у таблицю й підсумки не входить: скільки їх і на яку суму — сірим рядком над таблицею, список — за посиланням «показати». Позиціям Бух артикул вписують у режимі «Артикули», після цього вони потрапляють у звірку.</p>
+    <p>Звіряються <b>лише товари зі спільним артикулом</b> — картка з тим самим артикулом є в обох базах. Решта (у другій базі картки нема, пара лише за назвою, різні артикули) у «Усі» й картки зверху не входить: позиції УНФ — окремий фільтр «Без пари в Бух», позиції Бух — режим «Артикули» (артикул вписують там, після цього позиція потрапляє у звірку). Скільки їх і на яку суму — сірим рядком над таблицею.</p>
     <ul>
       <li><b>Генерація</b>: УНФ «1 Одеса, Генерація, Б/Г» + «Київ, Генерація, бн» + «Склад НОВИЙ ОФИС» (організація «Генерація Енерджі» Одеса + Київ) ↔ buh «Генерація Енерджі ТОВ», склади «м. Одеса, вул. Чигиринська, 21» + «м. Одеса, вул. Велика Арнаутська, 15» + «Київська обл., м. Вишневе, вул. Промислова, 10» + «склад НОВИЙ ОФІС (офіс)» + «Склад (Резерв)». З офісу в обох базах звіряємо лише інвертори й сонячні панелі; решта офісу (основні засоби, МШП, зразки, автомати, кріплення) — лише в розгортці рядка. У Бух категорій нема: категорію картки беремо з картки УНФ з тим самим артикулом чи назвою, а якщо такої нема — за назвою («інвертор», «сонячна батарея / панель / модуль»).</li>
       <li><b>Реакт</b>: УНФ «2 Одеса, Реакт, Б/Г» + «Київ, Реакт, бн» (організація «Дистрибуція РЕАКТ») ↔ buh «ТОВ «РЕАКТ»», склади «м. Одеса, вул. Чигиринська, 21» + «Київська обл., м. Вишневе, вул. Промислова, 10» + «Склад (Резерв)».</li>
@@ -1246,7 +1244,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>0</b> — картка в цій базі є, але на складах звірки залишку нема. Якщо залишок лежить на інших складах — під назвою «залишок лише на складах поза звіркою».</li>
       <li>«у Бух: …» під назвою — картка Бух з тим самим артикулом названа інакше (кілька карток — через «;»). Назви, що відрізняються лише пробілами чи комами, не показуємо.</li>
       <li>Розгортка рядка (клік) — УНФ і Бух пліч-о-пліч: склади звірки, склади поза звіркою, резерв, картки; нижче — ціна, одиниці, як звʼязано.</li>
-      <li>У списку «Без спільного артикулу» «—» — картки в цій базі нема; поруч написано, чому позиція не звіряється.</li>
+      <li>У фільтрі «Без пари в Бух» «—» — картки в Бух нема, «0» — картка є, але з іншим артикулом або без нього; під назвою — чому позиція не звіряється і, якщо знайшлась, схожа картка Бух під іншим артикулом.</li>
     </ul>
     <h3>Звідки дані</h3>
     <ul>
@@ -1260,7 +1258,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <ul>
       <li>Спершу <b>за артикулом</b>: регістр і пробіли не важать; однакові на вигляд кирилиця й латиниця (С/C, Н/H, Р/P…) — та сама літера.</li>
       <li>Без артикула або якщо за артикулом пари нема — <b>за назвою</b>: назва УНФ проти «Найменування» або «Повного найменування» картки buh. Мають збігатися всі слова, числа й коди моделі.</li>
-      <li>У звірку йдуть лише пари <b>за артикулом</b>. Пари лише за назвою (артикула нема в жодній базі) і схожі товари з різними артикулами — у списку «Без спільного артикулу»: там схожу картку з іншим артикулом звіт ставить поруч і пише «той самий товар під іншим артикулом» або «схоже»; «з парою» під сумою — скільки розходиться, якщо їх обʼєднати. Назви й артикули обох баз поруч — у режимі «Артикули».</li>
+      <li>У звірку йдуть лише пари <b>за артикулом</b>. Позиції УНФ, звʼязані з Бух лише за назвою (артикула нема) чи з карткою з іншим артикулом, — у фільтрі «Без пари в Бух»; якщо в Бух є схожа картка під іншим артикулом, під назвою написано «той самий товар під іншим артикулом» або «схоже». Назви й артикули обох баз поруч — у режимі «Артикули».</li>
     </ul>
     <h3>Одиниці виміру</h3>
     <p>Кількість buh зводиться до одиниці УНФ за назвами одиниць: км → м ×1000, «100 шт» → шт ×100, тис. шт → шт ×1000, компл / пач → шт / пак ×1. Коефіцієнт перевіряє собівартість партії: якщо ціна buh за одиницю розходиться із закупівлею в УНФ у десятки разів, береться коефіцієнт за собівартістю. Що саме перераховано — у розгортці («Одиниці»); «не перераховано» — кількості в різних одиницях, різницю перевіряти вручну.</p>
@@ -1275,7 +1273,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><b>Розходяться</b> — усі товари, де кількості різні.</li>
       <li><b>В УНФ більше</b> — в УНФ більше, ніж у Бух (зокрема в Бух 0); <b>У Бух більше</b> — навпаки (зокрема в УНФ 0).</li>
       <li><b>Збігається</b> — кількості однакові.</li>
-      <li>Пошук — за назвою, артикулом або кодом картки будь-якої бази. Якщо знайдене є в іншому фільтрі чи в «Без спільного артикулу» — під пошуком посилання туди.</li>
+      <li><b>Без пари в Бух</b> — позиції УНФ, для яких у Бух нема картки з тим самим артикулом. У «Усі» й картки зверху не входять.</li>
+      <li>Пошук — за назвою, артикулом або кодом картки будь-якої бази. Якщо знайдене є в іншому фільтрі чи в режимі «Артикули» — під пошуком посилання туди.</li>
       <li>Картки зверху рахують лише товари зі спільним артикулом — те, що в таблиці.</li>
     </ul>
     <h3>Режим «Артикули»</h3>
@@ -5137,15 +5136,15 @@ var srState = { on: '', org: 'Генерація', st: 'all', q: '', data: null,
 var _srPicker = null;
 var _srQT = null;
 // «Звірка» порівнює лише позиції зі спільним артикулом (r._sa): картка з тим самим артикулом є в обох базах.
-// Решта (нема картки в другій базі, звʼязані лише назвою, інший артикул) — «Без спільного артикулу»,
-// лише за посиланням: пару їм ставлять у режимі «Артикули».
+// Решта (нема картки в другій базі, звʼязані лише назвою, інший артикул): позиції УНФ — окремий фільтр
+// «Без пари в Бух» (у «Усі» й картки не входить), позиції Бух — режим «Артикули».
 var SR_FILTERS = [
   { k: 'all',   label: 'Усі',          test: function(r) { return r._sa; } },
   { k: 'diff',  label: 'Розходяться',  test: function(r) { return r._sa && r.st !== 'match'; } },
   { k: 'unf',   label: 'В УНФ більше', test: function(r) { return r._sa && (r.st === 'unf_more' || r.st === 'buh_missing'); } },
   { k: 'buh',   label: 'У Бух більше', test: function(r) { return r._sa && (r.st === 'buh_more' || r.st === 'unf_missing'); } },
   { k: 'match', label: 'Збігається',   test: function(r) { return r._sa && r.st === 'match'; } },
-  { k: 'noart', label: 'Без спільного артикулу', hidden: true, test: function(r) { return !r._sa; } },
+  { k: 'nopair', label: 'Без пари в Бух', np: true, test: function(r) { return !r._sa && r.side !== 'buh'; } },
 ];
 // Артикул як на беку (stock-recon.js fold): без пробілів, верхній регістр, кирилиця = латиниця
 var SR_HG = { 'А':'A','В':'B','Е':'E','К':'K','М':'M','Н':'H','О':'O','Р':'P','С':'C','Т':'T','Х':'X','І':'I','У':'Y' };
@@ -5240,11 +5239,11 @@ function _srElsewhere() {
   var f = SR_FILTERS.find(function(x) { return x.k === srState.st; }) || SR_FILTERS[0], by = {};
   (d.rows || []).forEach(function(r) {
     if (f.test(r) || (srState.og && r.og !== srState.og) || !terms.every(function(t) { return _srHay(r).includes(t); })) return;
-    var k = r._sa ? SR_ST_CHIP[r.st] : 'noart'; if (k) by[k] = (by[k] || 0) + 1;
+    var k = r._sa ? SR_ST_CHIP[r.st] : (r.side === 'buh' ? 'art' : 'nopair'); if (k) by[k] = (by[k] || 0) + 1;
   });
   return SR_FILTERS.filter(function(x) { return by[x.k]; }).map(function(x) {
     return '<a onclick="srSetStK(\'' + x.k + '\')">«' + esc(x.label) + '» ' + by[x.k] + '</a>';
-  }).join(' · ');
+  }).concat(by.art ? ['<a onclick="srSetMode(\'art\')">«Артикулах» ' + by.art + '</a>'] : []).join(' · ');
 }
 function srSetSt(el) { if (el) srSetStK(el.dataset.st); }
 function srSetStK(k) {
@@ -5336,6 +5335,7 @@ function srRender() {
   document.querySelectorAll('#srModeGroup .chip').forEach(function(c) { c.classList.toggle('active', c.dataset.mode === srState.mode); });
   document.getElementById('srArtN').textContent = d.freeCount ? (d.freeCount.unf + d.freeCount.buh) : (d.taskCount != null ? d.taskCount : '');
   document.getElementById('srStGroup').style.display = art ? 'none' : '';
+  document.getElementById('srNpGroup').style.display = art ? 'none' : '';
   document.getElementById('srView').classList.toggle('sr-art', art);
   document.getElementById('srOgChip').innerHTML = !art && srState.og
     ? '<span class="group"><span class="chip active" onclick="srSetOg(\'\')">' + esc(SR_OG[srState.og] || srState.og) + ' ×</span></span>' : '';
@@ -5358,17 +5358,17 @@ function srRender() {
       (sub ? '<span class="cs">' + esc(sub) + '</span>' : '') + '</div>';
   };
   var noPr = function(n) { return n ? ' · без ціни ' + n : ''; };
-  // поза звіркою: без спільного артикулу (Бух — пару ставлять в «Артикулах»; УНФ — у Бух такого товару нема)
+  // не звіряються, бо нема спільного артикулу: позиції УНФ — фільтр «Без пари в Бух», позиції Бух — режим «Артикули»
   var NU = agg(function(r) { return !r._sa && r.side !== 'buh'; }), NB = agg(function(r) { return !r._sa && r.side === 'buh'; });
   var noart = '';
   if (NU.n || NB.n) {
     var part = function(a, who) {
       return a.n + ' ' + _srPl(a.n, SR_POS) + ' ' + who + (a.sum ? ' (' + srSigned(a.sum) + ' грн' + noPr(a.noPrice) + ')' : (a.noPrice ? ' (без ціни ' + a.noPrice + ')' : ''));
     };
-    noart = '<div class="eq-note sr-noart">Не звіряються — без спільного артикулу: ' + [
-      NB.n ? part(NB, 'Бух') + ', артикул їм вписують в <a href="#" onclick="srSetMode(\'art\');return false">«Артикулах»</a>' : '',
-      NU.n ? part(NU, 'УНФ, яких у Бух за артикулом нема') : '',
-    ].filter(Boolean).join('; ') + ' · <a href="#" onclick="srSetStK(\'noart\');return false">показати</a></div>';
+    noart = '<div class="eq-note sr-noart">Не звіряються, бо нема спільного артикулу: ' + [
+      NU.n ? part(NU, 'УНФ') + ' — фільтр <a href="#" onclick="srSetStK(\'nopair\');return false">«Без пари в Бух»</a>' : '',
+      NB.n ? part(NB, 'Бух') + ' — режим <a href="#" onclick="srSetMode(\'art\');return false">«Артикули»</a>' : '',
+    ].filter(Boolean).join('; ') + '</div>';
   }
   document.getElementById('srSummary').innerHTML = '<div class="pnl-summary">' +
     card('В УНФ більше, ніж у Бух', fmt(U.sum, 0) + ' грн', U.n + ' ' + _srPl(U.n, SR_POS) + noPr(U.noPrice)) +
@@ -5377,12 +5377,16 @@ function srRender() {
     card('Збігається', fmt(M.n, 0), 'з ' + A.n + ' ' + (A.n % 10 === 1 && A.n % 100 !== 11 ? 'позиції' : 'позицій') + ' зі спільним артикулом') +
   '</div>' + noart;
 
-  // ── чіпи-фільтри з кількістю (по всьому зрізу, без урахування пошуку); «Без спільного артикулу» — лише коли відкрили
-  document.getElementById('srStGroup').innerHTML = SR_FILTERS.map(function(f) {
-    if (f.hidden && srState.st !== f.k) return '';
-    return '<span class="chip' + (srState.st === f.k ? ' active' : '') + '" data-st="' + f.k + '" onclick="' + (f.hidden ? 'srSetStK(\'all\')' : 'srSetSt(this)') + '">' +
-      esc(f.label) + ' <span class="n">' + rows.filter(f.test).length + '</span>' + (f.hidden ? ' ×' : '') + '</span>';
-  }).join('');
+  // ── чіпи-фільтри з кількістю (по всьому зрізу, без урахування пошуку); «Без пари в Бух» — окремою групою:
+  // у «Усі» не входить
+  var chip = function(f) {
+    return '<span class="chip' + (srState.st === f.k ? ' active' : '') + '" data-st="' + f.k + '" onclick="srSetSt(this)">' +
+      esc(f.label) + ' <span class="n">' + rows.filter(f.test).length + '</span></span>';
+  };
+  document.getElementById('srStGroup').innerHTML = SR_FILTERS.filter(function(f) { return !f.np; }).map(chip).join('');
+  var npf = SR_FILTERS.filter(function(f) { return f.np && (srState.st === f.k || rows.some(f.test)); });
+  document.getElementById('srNpGroup').innerHTML = npf.map(chip).join('');
+  document.getElementById('srNpGroup').style.display = npf.length ? '' : 'none';
   srRenderTable();
 }
 
@@ -5394,29 +5398,19 @@ function srRenderTable() {
   if (!list.length) {
     var curLbl = (SR_FILTERS.find(function(x) { return x.k === srState.st; }) || SR_FILTERS[0]).label;
     var empty = srState.q.trim() ? (also ? 'У «' + esc(curLbl) + '» не знайдено. Є в ' + also : 'Нічого не знайдено')
-      : (srState.st === 'diff' ? 'Розбіжностей нема — залишки збігаються' : srState.st === 'all' ? 'Позицій зі спільним артикулом на складах звірки нема' : 'Таких позицій нема');
+      : (srState.st === 'diff' ? 'Розбіжностей нема — залишки збігаються' : srState.st === 'all' ? 'Позицій зі спільним артикулом на складах звірки нема'
+        : srState.st === 'nopair' ? 'Усі позиції УНФ мають пару в Бух за артикулом' : 'Таких позицій нема');
     body.innerHTML = '<div class="sr-empty">' + empty + '</div>';
     return;
   }
   var sum = 0, noPrice = 0;
   list.forEach(function(r) { if (r.sum == null) noPrice++; else sum += r.sum; });
   var nd = '<span class="sr-zero">н/д</span>';
-  var qty = function(v) { return v ? srQty(v) : '<span class="sr-zero">0</span>'; };
   var cls = function(s) { return s == null ? '' : (Math.abs(s) >= 100000 ? ' sr-big' : (Math.abs(s) >= 20000 ? ' sr-mid' : '')); };
-  // той самий товар під різними артикулами: рядки Бух («в УНФ нема») і їхня пара в УНФ — поруч, з сумою групи.
-  // Підказка пари є лише на рядку Бух (напрям Бух → УНФ); кілька рядків Бух можуть вказувати на одну картку УНФ.
-  var byI = {}; (d.rows || []).forEach(function(r) { byI[r._i] = r; });
-  var inList = {}; list.forEach(function(r) { inList[r._i] = 1; });
-  var pairTo = function(r) { return r.fp && !r.fp.w && r.fp.pri != null && inList[r.fp.pri] ? r.fp.pri : null; };
-  var tgt = {}; list.forEach(function(r) { var pi = pairTo(r); if (pi != null) (tgt[pi] = tgt[pi] || []).push(r); });
-  var seen = {}, ordered = [];
-  list.forEach(function(r) {
-    if (seen[r._i]) return;
-    var ui = pairTo(r) != null ? pairTo(r) : (tgt[r._i] ? r._i : null);
-    var grp = ui != null && !seen[ui] ? (tgt[ui] || []).filter(function(b) { return !seen[b._i]; }) : [];
-    if (!grp.length) { seen[r._i] = 1; ordered.push({ r: r }); return; }
-    var g = grp.concat([byI[ui]]);
-    g.forEach(function(x, k) { seen[x._i] = 1; ordered.push({ r: x, g: k === 0 ? g : null, second: k > 0, last: k === g.length - 1, n: g.length }); });
+  // підказка до позиції УНФ без пари: рядок Бух, схожий на неї під іншим артикулом (напрям Бух → УНФ)
+  var hintOf = {};
+  (d.rows || []).forEach(function(r) {
+    if (r.side === 'buh' && r.fp && !r.fp.w && r.fp.pri != null && !hintOf[r.fp.pri]) hintOf[r.fp.pri] = { c: r.bcode, n: r.name, rec: r.fp.rec };
   });
   // Одна назва товару, кількості УНФ | Бух | Різниця — поруч. Чого бракує в другій базі — сірим рядком під назвою:
   // «—» = картки там нема, «0» = картка є, на складах звірки залишку нема.
@@ -5431,32 +5425,39 @@ function srRenderTable() {
   };
   var Z = '<span class="sr-zero">0</span>', DASH = '<span class="sr-zero">—</span>';
   var q = function(v) { return v ? srQty(v) : Z; };
-  var rowsHtml = ordered.map(function(o) {
-    var r = o.r, open = srState.open.has(r._i), isU = r.side !== 'buh';
+  // чому позиція УНФ без пари в Бух, хоча картка там є: артикул інший або його нема
+  var artWhy = function(aU, aB) {
+    return !aU && !aB ? 'артикула нема ні в УНФ, ні в Бух — пара лише за назвою'
+      : !aB ? 'у Бух картка без артикула' : !aU ? 'в УНФ артикула нема, у Бух: ' + aB : 'у Бух інший артикул: ' + aB;
+  };
+  var rowsHtml = list.map(function(r) {
+    var open = srState.open.has(r._i), isU = r.side !== 'buh';
     var why = '', uQ, bQ, sub = r.sub || '';
     if (isU) {
+      // «—» — картки Бух нема; «0» — картка є (звʼязана або знайдена), на складах звірки залишку нема
+      var linked = !!r.bn, cardB = linked || /^картка є/.test(sub), w = [];
       uQ = q(r.unf);
-      if (r.bn) {
-        bQ = q(r.buh);
-        why = sub === 'одиниці не перераховано' ? 'одиниці в базах різні, коефіцієнт не визначено — кількість Бух перевірте вручну'
-          : alsoName(r.name, r.bn, 'у Бух');
+      bQ = linked ? q(r.buh) : (cardB ? Z : DASH);
+      if (!r._sa && cardB) w.push(artWhy(r.art || '', r.ba || ''));
+      if (sub === 'одиниці не перераховано') w.push('одиниці в базах різні, коефіцієнт не визначено — кількість Бух перевірте вручну');
+      else if (linked) w.push(alsoName(r.name, r.bn, 'у Бух'));
+      else if (/іншому товарі/.test(sub)) w.push('у Бух залишок цієї картки зараховано іншому товару');
+      else if (/поза звіркою/.test(sub)) w.push('у Бух залишок лише на складах поза звіркою');
+      else if (!cardB) {
+        var h = hintOf[r._i];
+        w.push('у Бух картки нема' + (h ? '; ' + (h.rec ? 'той самий товар' : 'схоже') + ' під іншим артикулом: ' + h.c + ' «' + h.n + '»' : ''));
       }
-      else if (o.second) { bQ = DASH; why = 'у Бух — під іншим артикулом, ' + (o.n > 2 ? 'рядки вище' : 'рядок вище'); }
-      else if (/іншому товарі/.test(sub)) { bQ = Z; why = 'у Бух залишок цієї картки зараховано іншому товару'; }
-      else if (/поза звіркою/.test(sub)) { bQ = Z; why = 'у Бух залишок лише на складах поза звіркою'; }
-      else if (/залишку нема/.test(sub)) { bQ = Z; }
-      else { bQ = DASH; why = 'у Бух картки нема'; }
+      why = w.filter(Boolean).join(' · ');
     } else {
       bQ = q(r.buh);
-      if (r.fp && !r.fp.w) { uQ = DASH; why = 'в УНФ ' + (r.fp.rec ? 'той самий товар' : 'схоже') + ' під іншим артикулом: ' + r.fp.c + ' «' + r.fp.n + '»' + (o.g ? ', рядок нижче' : ''); }
+      if (r.fp && !r.fp.w) { uQ = DASH; why = 'в УНФ ' + (r.fp.rec ? 'той самий товар' : 'схоже') + ' під іншим артикулом: ' + r.fp.c + ' «' + r.fp.n + '»'; }
       else if (/видален/.test(sub)) { uQ = DASH; why = 'в УНФ картку ' + (r.ucode || '') + ' видалено'; }
       else if (r.un) { uQ = Z; why = alsoName(r.name, r.un, 'в УНФ'); }
       else { uQ = DASH; why = 'в УНФ картки нема'; }
     }
     var codes = [r.art ? 'арт. ' + r.art : '', r.ucode && !/видален/.test(sub) ? 'УНФ ' + r.ucode : '', r.bcode ? 'Бух ' + r.bcode : ''].filter(Boolean).join(' · ');
     var unit = r.unit ? esc(r.unit) : '';
-    var gSum = o.g && o.g.every(function(x) { return x.sum != null; }) ? o.g.reduce(function(a, x) { return a + x.sum; }, 0) : null;
-    var tr = '<tr class="sr-row' + (o.n && !o.last ? ' sr-row--pair1' : '') + '" data-collapsed="' + (open ? 'false' : 'true') + '" onclick="srToggle(' + r._i + ', this)">' +
+    var tr = '<tr class="sr-row" data-collapsed="' + (open ? 'false' : 'true') + '" onclick="srToggle(' + r._i + ', this)">' +
       '<td class="c-n"><div class="sr-cell"><span class="tri">▾</span><div class="sr-nm">' + esc(r.name || '—') +
         '<span class="sr-mq"><span class="p"><span class="l">УНФ</span> ' + uQ + '</span> · <span class="p"><span class="l">Бух</span> ' + bQ +
           '</span> · <span class="p"><span class="l">різниця</span> ' + srSigned(r.d, true) + (unit ? ' <span class="l">' + unit + '</span>' : '') + '</span></span>' +
@@ -5466,8 +5467,7 @@ function srRenderTable() {
       '<td class="c-q c-uq">' + uQ + '</td>' +
       '<td class="c-q c-bq">' + bQ + '</td>' +
       '<td class="c-d">' + srSigned(r.d, true) + '</td>' +
-      '<td class="col-total' + cls(r.sum) + '">' + (r.sum == null ? nd : srSigned(r.sum)) +
-        (gSum != null ? '<span class="sr-sub sr-pairsum">з парою ' + srSigned(gSum) + '</span>' : '') + '</td></tr>';
+      '<td class="col-total' + cls(r.sum) + '">' + (r.sum == null ? nd : srSigned(r.sum)) + '</td></tr>';
     return open ? tr + srDetailRow(r) : tr;
   }).join('');
   body.innerHTML = (also ? '<div class="sr-also">Ще знайдено в ' + also + '</div>' : '') + '<div class="pnl-wrap"><table class="pnl-table sr-table"><thead><tr>' +
