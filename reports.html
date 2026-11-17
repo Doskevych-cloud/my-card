@@ -192,7 +192,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   .toolbar .sep{display:none}
   /* фільтри воронки: без підписів чіпи «Всі ▾» неоднозначні (менеджер це чи канал) */
   #funnelFilters .lbl{display:inline}
-  .toolbar .rs-int-lbl{display:inline} /* «Кваліфікація лідів»: «Всі» без підпису «Інтерес» — незрозуміло, що це */
   /* матриця «Навантаження» широка — імʼя менеджера лишається видимим при горизонтальному скролі */
   .load-matrix th:first-child,.load-matrix td:first-child{position:sticky;left:0;z-index:1;background:var(--surface2)}
   .rs-table th:first-child,.rs-table td:first-child{position:sticky;left:0;z-index:1;background:var(--surface2)}
@@ -368,7 +367,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <span class="meta" id="freshness">—</span>
   </div>
 
-  <!-- Воронка: фільтри угоди (менеджер / інтерес / канал) — renderFunnelFilters() -->
+  <!-- Воронка: фільтри угоди (менеджер / інтерес / канал); «Кваліфікація лідів» — лише інтерес — renderFunnelFilters() -->
   <div class="toolbar" id="funnelFilters" style="display:none"></div>
 
   <div class="info-banner" id="infoBanner"></div>
@@ -1021,10 +1020,19 @@ function renderFunnelFilters() {
   const el = document.getElementById('funnelFilters');
   if (!el) return;
   ffCloseMenu();  // чіпи перемальовуються — меню від старого чіпа не лишаємо
-  const opt = state.report === 'funnel' && state.raw && state.raw.filterOptions;
-  if (!opt) { el.style.display = 'none'; return; }
   const chip = (on, label, onclick, title) =>
     `<span class="chip${on ? ' active' : ''}" onclick="${onclick}"${title ? ` title="${esc(title)}"` : ''}>${label}</span>`;
+  // «Кваліфікація лідів»: лише «Інтерес» — тут, а не в тулбарі звіту (там він ламав рядок на ≤1440 px)
+  if (state.report === 'response' && state.raw && state.raw.interestGroups) {
+    const keys = rsIntKeys();
+    el.innerHTML = `<span class="lbl">Інтерес</span>
+    ${chip(!keys.length, 'Всі', "setRsInt('')")}
+    ${[...state.raw.interestGroups, { key: 'none', label: 'Не заповнено' }].map(g => chip(keys.includes(g.key), esc(g.label), `toggleRsInt('${esc(g.key)}')`, 'Можна обрати кілька')).join('')}`;
+    el.style.display = '';
+    return;
+  }
+  const opt = state.report === 'funnel' && state.raw && state.raw.filterOptions;
+  if (!opt) { el.style.display = 'none'; return; }
   const groups = [...(opt.interests || []), { key: 'none', label: 'Не заповнено' }];
   el.innerHTML = `
     <span class="lbl">Менеджер</span>
@@ -2296,9 +2304,6 @@ function renderResponseReport(d) {
   let html = `<div class="toolbar" style="margin-bottom:10px"><span class="lbl">Час</span><span class="group">
       <span class="chip${ti === 1 ? ' active' : ''}" onclick="setRsTime('work')" title="Хвилини лише в межах графіка: ${esc(sched)}">Робочий</span>
       <span class="chip${ti === 0 ? ' active' : ''}" onclick="setRsTime('cal')" title="Календарні хвилини, разом із ніччю та вихідними">Календарний</span></span>
-    ${d.interestGroups ? `<span class="sep"></span><span class="lbl rs-int-lbl">Інтерес</span>
-    <span class="chip${intKeys.length ? '' : ' active'}" onclick="setRsInt('')">Всі</span>
-    ${[...d.interestGroups, { key: 'none', label: 'Не заповнено' }].map(g => `<span class="chip${intKeys.includes(g.key) ? ' active' : ''}" onclick="toggleRsInt('${esc(g.key)}')" title="Можна обрати кілька">${esc(g.label)}</span>`).join('')}` : ''}
     <span class="sep"></span>
     <span class="chip${state.rsBad ? ' active' : ''}" onclick="setRsBad(!state.rsBad)" title="У списку лише передані ліди з ознаками невірної кваліфікації — і ті, що керівник відзначив як не помилку">Невірна кваліфікація</span>
     ${curUser && curUser.roles && curUser.roles.admin ? `<span class="chip${state.rsHist ? ' active' : ''}" onclick="setRsHist(!state.rsHist)" title="Показати період до 23.09.2026. Дані неповні: журналу передач і змін полів тоді не було">Історія до 23.09</span>` : ''}
