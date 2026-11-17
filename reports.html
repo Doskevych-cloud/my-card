@@ -192,6 +192,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   .toolbar .sep{display:none}
   /* фільтри воронки: без підписів чіпи «Всі ▾» неоднозначні (менеджер це чи канал) */
   #funnelFilters .lbl{display:inline}
+  .toolbar .rs-int-lbl{display:inline} /* «Кваліфікація лідів»: «Всі» без підпису «Інтерес» — незрозуміло, що це */
   /* матриця «Навантаження» широка — імʼя менеджера лишається видимим при горизонтальному скролі */
   .load-matrix th:first-child,.load-matrix td:first-child{position:sticky;left:0;z-index:1;background:var(--surface2)}
   .rs-table th:first-child,.rs-table td:first-child{position:sticky;left:0;z-index:1;background:var(--surface2)}
@@ -530,7 +531,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <p>Звіт про роботу <b>відділу лідогенерації</b>: беруться лише ліди, які отримав лід-менеджер (зараз Ангеліна Заболотна). Менеджери з продажу тут не оцінюються — їхня зона починається після передачі. Три плитки KPI — це три бонусні показники лід-менеджера.</p>
     <h3>Джерела даних</h3>
     <ul>
-      <li><b>Ліди</b> — CRM-події Planfix: подія «Нове» = момент появи ліда. Когорта: створені у вибраний період, шаблон «Продажі станцій», без каналу «Тест» і видалених; фільтри «тип клієнта» і «клас» діють.</li>
+      <li><b>Ліди</b> — CRM-події Planfix: подія «Нове» = момент появи ліда. Когорта: створені у вибраний період, шаблон «Продажі станцій», без каналу «Тест» і видалених; фільтри «тип клієнта», «клас» та «інтерес» діють.</li>
       <li><b>Дзвінки</b> — Binotel, обидва напрямки, усі результати (зайнято, скинуто, не відповіли — теж спроба). Синк кожні 30 хв; кнопка «Оновити» дотягує дзвінки за сьогодні одразу.</li>
       <li><b>Телефон ліда</b> — з назви угоди, інакше з контакту Planfix. Матч із дзвінком — по останніх 9 цифрах.</li>
       <li><b>Передача і зміни полів</b> — вебхуки Planfix: при зміні виконавця, класу, бюджету, типу клієнта, каналу, області сценарій одразу шле в ERP нове значення, час і статус угоди в цей момент. Працює з 22.09.2026; для лідів до цієї дати передача відновлюється з подій (час ≈ наступного переходу, позначка ≈), а зміни полів — порівнянням «при передачі» з «зараз».</li>
@@ -559,6 +560,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <p>Коли угоду закривають як «Закрито та не реалізовано», Planfix створює в ній підзадачу «Отказ», і той, хто закриває, вибирає «Причину відмови» з довідника. Таблиця — ліди періоду, закриті <b>зараз</b>. Групи — як «відсіяно»: <b>Сміття</b> (дублі, спам, «не цікавились або помилились», недійсний номер — не рахуються в бонус), <b>Інший регіон</b>, <b>Інші причини</b>. Колонка «відсіяно» дорівнює «відсіяно» в «По днях»; «після цільового» — ліди, що дійшли до цільового і втрачені пізніше, зазвичай уже менеджером з продажу. Частка — від своєї колонки. У списку лідів причина — в окремій колонці (коротко; повний текст і хто закрив — у підказці), у KPI 3 — біля «закрито з цільового». «Причину не вказано» — у підзадачі не вибрали значення або підзадачі нема.</p>
     <h3>Куди йдуть ліди класу C (або A, B — перемикач)</h3>
     <p>Усі ліди, яким лід-менеджер поставила цей клас (зафіксований при передачі, для непереданих — поточний), розкладені за двома осями. Рядок — що стало з класом: лишився таким самим, або менеджер перекласифікував у інший. Колонка — результат угоди зараз: в роботі, відкладено, закрито, аванс, реалізовано. Відсотки — від усіх лідів цього класу. Це дзеркало KPI 3: якщо ліди C регулярно переходять у B чи A і доходять до авансу, кваліфікацію занижено; якщо ліди A масово закривають, завищено.</p>
+    <h3>Фільтр «Інтерес»</h3>
+    <p>Групи — як у «Воронці»: <b>Модернізація СЕС</b> / <b>Товари</b> / <b>Проєктування</b> — за значенням поля «Інтерес»; усе інше заповнене (Під власне споживання, Автономність, Пасивний дохід…) = <b>СЕС</b>; «Не заповнено» — поле порожнє. Можна обрати кілька груп. Береться інтерес лід-менеджера — той, що в колонці «Інтерес» списку: зафіксований при передачі, у непереданих — поточний. Фільтр діє на весь звіт: плитки, «По днях», причини відмови, «Куди йдуть», список.</p>
+    <p>Інтерес ставлять при кваліфікації: з 23.09.2026 він є в 99% цільових і лише в ~11% решти лідів. Тому з фільтром за групою лишаються переважно цільові: «відсіяно» неповне, а частка класу A «від усіх лідів» близька до «від цільових» — порівнюйте частку «від цільових». Скільки лідів періоду з інтересом — написано під тулбаром, коли фільтр увімкнено.</p>
     <h3>Поля кваліфікації — заморожені на момент передачі</h3>
     <p>Тип клієнта, Канал реклами, Область, Інтерес, Клас, Бюджет — це поля лід-менеджера. У звіті вони показуються такими, якими були <b>в момент передачі менеджеру</b>: усе, що правлять у Planfix пізніше, цих колонок не змінює (саме різниця між «тоді» і «зараз» і є ознакою невірної кваліфікації). Для лідів, переданих до 22.09.2026, значення відновлені з останньої події перед передачею; інтересу й області в подіях не було, тому там вони поточні. Сірим — лід ще не передано, значення поточні й ще зміняться.</p>
     <h3>Решта показників (усі — від появи ліда)</h3>
@@ -729,6 +733,7 @@ const state = {
   rsBad: false,         // «Кваліфікація лідів»: у списку лише ліди з невірною кваліфікацією (hash rb=1)
   rsConvCls: 'C',       // «Кваліфікація лідів»: клас у таблиці «куди йдуть ліди» (hash cc)
   rsLens: 'res',        // «Кваліфікація лідів» → «По днях»: res = результат кваліфікації | cls = клас A | speed = швидкість (hash rl)
+  rsInt: '',            // «Кваліфікація лідів»: фільтр «Інтерес» — групи через кому (ses,modern,goods,design,none), '' = всі (hash ri)
   rsHist: false,        // «Кваліфікація лідів»: показати історію до RS_DATA_FROM — admin, дані неповні (hash rh=1)
   boSort: 'd',          // «Бек-офіс»: список зданого — d за датою здачі | wm за часом (лише в памʼяті)
   boKind: '',           // «Бек-офіс»: список зданого — '' усе | kp | contract | invoice (hash bk)
@@ -805,6 +810,7 @@ function saveStateToUrl() {
   if (state.rsBad) h.set('rb', '1');
   if (state.rsConvCls && state.rsConvCls !== 'C') h.set('cc', state.rsConvCls);
   if (state.rsLens !== 'res') h.set('rl', state.rsLens);
+  if (state.rsInt) h.set('ri', state.rsInt);
   if (state.rsHist) h.set('rh', '1');
   if (state.boKind) h.set('bk', state.boKind);
   history.replaceState(null, '', '#' + h.toString());
@@ -832,6 +838,7 @@ function hydrateFromHash() {
   if (h.get('rb') === '1') state.rsBad = true;
   if (h.get('cc'))     state.rsConvCls = h.get('cc');
   if (['cls', 'speed'].includes(h.get('rl'))) state.rsLens = h.get('rl');
+  if (h.get('ri'))     state.rsInt = h.get('ri');
   if (h.get('rh') === '1') state.rsHist = true;
   if (['kp', 'contract', 'invoice'].includes(h.get('bk'))) state.boKind = h.get('bk');
   if (h.get('ls'))     for (const t of h.get('ls').split('|')) {
@@ -2280,7 +2287,8 @@ const RS_HEAD = `<tr><th rowspan="2">%LBL%</th><th rowspan="2">лідів</th><t
 function renderResponseReport(d) {
   const ti = rsTi();
   const all = (d.leads || []).filter(rsIsLeadMgr);
-  const mine = all;
+  const intKeys = rsIntKeys();
+  const mine = intKeys.length ? all.filter(l => intKeys.includes(l.ig || 'none')) : all;
   const isAdmin = !!(curUser && curUser.roles && curUser.roles.admin);
   const w = d.work || {};
   const dayNames = ['', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'нд'];
@@ -2288,6 +2296,9 @@ function renderResponseReport(d) {
   let html = `<div class="toolbar" style="margin-bottom:10px"><span class="lbl">Час</span><span class="group">
       <span class="chip${ti === 1 ? ' active' : ''}" onclick="setRsTime('work')" title="Хвилини лише в межах графіка: ${esc(sched)}">Робочий</span>
       <span class="chip${ti === 0 ? ' active' : ''}" onclick="setRsTime('cal')" title="Календарні хвилини, разом із ніччю та вихідними">Календарний</span></span>
+    ${d.interestGroups ? `<span class="sep"></span><span class="lbl rs-int-lbl">Інтерес</span>
+    <span class="chip${intKeys.length ? '' : ' active'}" onclick="setRsInt('')">Всі</span>
+    ${[...d.interestGroups, { key: 'none', label: 'Не заповнено' }].map(g => `<span class="chip${intKeys.includes(g.key) ? ' active' : ''}" onclick="toggleRsInt('${esc(g.key)}')" title="Можна обрати кілька">${esc(g.label)}</span>`).join('')}` : ''}
     <span class="sep"></span>
     <span class="chip${state.rsBad ? ' active' : ''}" onclick="setRsBad(!state.rsBad)" title="У списку лише передані ліди з ознаками невірної кваліфікації — і ті, що керівник відзначив як не помилку">Невірна кваліфікація</span>
     ${curUser && curUser.roles && curUser.roles.admin ? `<span class="chip${state.rsHist ? ' active' : ''}" onclick="setRsHist(!state.rsHist)" title="Показати період до 23.09.2026. Дані неповні: журналу передач і змін полів тоді не було">Історія до 23.09</span>` : ''}
@@ -2303,6 +2314,8 @@ function renderResponseReport(d) {
   if (!all.length) {
     return html + `<div class="info-banner"><span class="ib-tag">КВАЛІФІКАЦІЯ</span> Лідів у вибраному періоді ще нема. Дані ведуться з 23.09.2026: раніші періоди не показуються, бо для них немає точних даних про передачу і зміни кваліфікації${d.counts && d.counts.excluded ? ` (виключено тестових/видалених: ${fmt(d.counts.excluded)})` : ''}.</div>`;
   }
+  html += rsIntNoteHTML(all, intKeys);
+  if (!mine.length) return html + `<div class="empty">Лідів з таким інтересом у періоді нема.</div>`;
   const t = rsAgg(mine, ti);
   const pct = (n, dd) => dd ? Math.round(n * 100 / dd) + '%' : '—';
   const medTxt = arr => { const m = rsMedian(arr); return m == null ? '—' : rsDur(m); };
@@ -2532,6 +2545,39 @@ function setRsTime(v) { state.rsTime = v === 'cal' ? 'cal' : 'work'; saveStateTo
 function setRsBad(v) { state.rsBad = !!v; saveStateToUrl(); render(); }
 function setRsConvCls(v) { state.rsConvCls = ['A', 'B', 'C'].includes(v) ? v : 'C'; saveStateToUrl(); render(); }
 function setRsLens(v) { state.rsLens = ['cls', 'speed'].includes(v) ? v : 'res'; saveStateToUrl(); render(); }
+// «Інтерес» (PF 185048, Лєбєдєв): групи — з бека (d.interestGroups, ті самі, що у «Воронці»), ключ ліда — l.ig
+// ('' = не заповнено). Інтерес лід-менеджера, як у колонці: заморожений при передачі, у непереданих — поточний.
+// Кілька груп одразу; обрані всі = «Всі». Фільтрує фронт — увесь звіт, без нового запиту.
+function rsIntKeys() {
+  const g = state.raw && state.raw.interestGroups;
+  if (!g) return []; // бек ще без груп — фільтр вимкнено, а не «усі ліди без інтересу»
+  const ok = [...g.map(x => x.key), 'none'];
+  const want = new Set((state.rsInt || '').split(','));
+  return ok.filter(k => want.has(k));
+}
+function setRsInt(v) { state.rsInt = v || ''; saveStateToUrl(); render(); }
+function toggleRsInt(key) {
+  const order = [...((state.raw && state.raw.interestGroups) || []).map(g => g.key), 'none'];
+  const cur = new Set(rsIntKeys());
+  if (cur.has(key)) cur.delete(key); else cur.add(key);
+  const keys = order.filter(k => cur.has(k));
+  setRsInt(keys.length === order.length ? '' : keys.join(','));
+}
+// Інтерес ставлять при кваліфікації: у цільових він є майже завжди, у решти — рідко (23.09–17.11.2026: 152 з 154
+// і 28 з 245). Тож із фільтром за групою лишаються переважно цільові — кажемо прямо, скільки лідів з інтересом.
+function rsIntNoteHTML(all, keys) {
+  if (!keys.length || (keys.includes('none') && keys.length > 1)) return '';
+  const tg = all.filter(l => l.tg);
+  const filled = all.filter(l => l.ig).length, tgFilled = tg.filter(l => l.ig).length;
+  const note = h => `<div class="muted" style="margin:-4px 2px 12px">${h}</div>`;
+  if (keys[0] === 'none') {
+    return note(tg.length
+      ? `Інтерес ставлять при кваліфікації, тож «не заповнено» — переважно ліди, які до неї не дійшли: серед цільових періоду без інтересу ${fmt(tg.length - tgFilled)} з ${fmt(tg.length)}.`
+      : 'Інтерес ставлять при кваліфікації, а цільових у періоді ще нема — тут усі ліди без кваліфікації.');
+  }
+  if (filled >= all.length) return '';
+  return note(`Інтерес ставлять при кваліфікації: він є в ${fmt(filled)} з ${fmt(all.length)} лідів періоду, у цільових — у ${fmt(tgFilled)} з ${fmt(tg.length)}. Тому з фільтром лишаються переважно цільові: «відсіяно» неповне, а клас A «від усіх лідів» близький до «від цільових».`);
+}
 function setRsDay(v, scroll) {
   rsDayFilter = v; render();
   if (v && scroll) { const h = document.getElementById('rsLeadsHead'); if (h) h.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
