@@ -477,7 +477,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 #srBody .pnl-table td.c-un{font-size:12px}
 #srBody .pnl-table td.c-q,#srBody .pnl-table td.c-d,#srBody .pnl-table td.col-total{vertical-align:top}
 .sr-cell{display:flex;gap:6px}
-.sr-pn{display:block;white-space:nowrap}
 .sr-why{display:block;font-size:12px;color:var(--text2);margin-top:3px;line-height:1.4}
 .sr-mq{display:none}
 #srBody .sr-table .sr-cell .tri{flex:none}
@@ -487,7 +486,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .sr-u{color:var(--text3);font-size:11px}
 #srBody .pnl-table tr.sr-row{cursor:pointer}
 #srBody .pnl-table tr.sr-row:hover td{background:var(--surface2)}
-#srBody .pnl-table tr.sr-total td{font-weight:700;border-bottom:1px solid var(--border)}
 #srBody .pnl-table tr.sr-det td{background:var(--bg2);white-space:normal;text-align:left;padding:10px 14px 12px 32px;cursor:default}
 .sr-sub{display:block;font-size:11px;color:var(--text3);margin-top:2px}
 .sr-zero{color:var(--text3)}
@@ -530,7 +528,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   #srBody .pnl-wrap{overflow:visible}
   #srBody .sr-table,#srBody .sr-table tbody{display:block;min-width:0}
   #srBody .sr-table thead{display:none}
-  #srBody .sr-table tr.sr-row,#srBody .sr-table tr.sr-total{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n s";border-bottom:1px solid var(--border)}
+  #srBody .sr-table tr.sr-row{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n s";border-bottom:1px solid var(--border)}
   #srBody .sr-table td{border:0;padding:8px 6px}
   #srBody .sr-table td.c-n{grid-area:n}
   #srBody .sr-table td.c-un,#srBody .sr-table td.c-q,#srBody .sr-table td.c-d{display:none}
@@ -553,7 +551,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   #srBody .sr-np tr.sr-nprow{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n s" "c c";border-bottom:1px solid var(--border)}
   #srBody .sr-np tr.sr-nprow td.c-cand{grid-area:c;padding-top:0}
   #srBody .sr-np tr.sr-nprow td.c-cand::before{content:"Схожі в УНФ";display:block;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);margin-bottom:3px}
-  #srBody .sr-np tr.sr-total td.c-cand{display:none}
 }
 
 /* ── Help-модалка «Як працює» (шаблон top_products.html) ── */
@@ -1256,18 +1253,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <ul>
       <li>Ціна — <b>собівартість buh</b>: сума на рахунку ÷ кількість. Якщо товару в buh нема — середня ціна закупівлі в УНФ у доларах, переведена в гривні курсом, підібраним на товарах, де є обидві ціни. Джерело ціни — у розгортці.</li>
       <li>Сума = різниця × ціна. Нема жодної ціни — «н/д», у суми не входить; кількість таких рядків — «без ціни».</li>
-      <li>У рядку «Разом» плюс і мінус не згортаються в одну різницю: окремо сума, де в УНФ більше (+), і де в Бух більше (−). Картки зверху — так само окремо.</li>
+      <li>Підсумки — у плитках зверху, окремо, без згортання в одну різницю: у Бух більше (−), в УНФ більше (+) і «Без пари» (−). Рядка «Разом» у таблицях нема.</li>
       <li><span style="color:var(--red);font-weight:700">Червоним</span> — розбіжність від 100 000 грн, <b>жирним</b> — від 20 000 грн.</li>
     </ul>
     <h3>Фільтри</h3>
     <ul>
       <li><b>У Бух більше</b> — у Бух більше, ніж в УНФ (зокрема в УНФ 0); <b>В УНФ більше</b> — навпаки (зокрема в Бух 0); <b>Збігається</b> — кількості однакові.</li>
       <li>Пошук — за назвою, артикулом або кодом картки будь-якої бази. Якщо знайдене є в іншому фільтрі чи в «Без пари» — під пошуком посилання туди.</li>
-      <li>Картки зверху рахують лише товари зі спільним артикулом — те, що в таблиці.</li>
     </ul>
     <h3>Розділ «Без пари»</h3>
     <ul>
-      <li><b>Що це.</b> Усе, що лежить у Бух на складах звірки, але чийого артикула нема на жодній картці УНФ (або в картки Бух артикула нема зовсім). У «Звірку» й картки зверху ці позиції не входять.</li>
+      <li><b>Що це.</b> Усе, що лежить у Бух на складах звірки, але чийого артикула нема на жодній картці УНФ (або в картки Бух артикула нема зовсім). У «Звірку» ці позиції не входять; кількість і сума — у плитці «Без пари».</li>
       <li><b>Рядок</b>: назва Бух, повна назва (якщо інша), артикул і код картки, кількість у Бух і сума. Праворуч — до трьох найсхожіших карток УНФ з назвою, артикулом і кодом; «схожої картки не знайдено» — схожої нема.</li>
       <li>Чи це той самий товар і який артикул вписати, вирішуєте ви. Коли артикул у Бух і в УНФ стане однаковим, позиція зникне звідси й перейде у «Звірку» (після «↻ Оновити з 1С»). Артикул копіюється кліком.</li>
       <li>Порядок — від більшої суми. ERP у 1С нічого не пише. Картки й артикули — поточні, залишок — на обрану дату.</li>
@@ -5177,13 +5173,6 @@ function _srAt(iso) {
   return (day === _srToday() ? '' : day.slice(8, 10) + '.' + day.slice(5, 7) + ' ') + 'о ' + hm;
 }
 function srQty(v) { return Number(v).toLocaleString('uk-UA', { maximumFractionDigits: 2 }); }
-// «Разом» за сумою: плюс (в УНФ більше) і мінус (у Бух більше) — окремими рядками, не згортаємо в одну різницю
-function _srSumPN(p, n) {
-  var out = [];
-  if (p) out.push('<span class="sr-pn">' + srSigned(p) + '</span>');
-  if (n) out.push('<span class="sr-pn">' + srSigned(n) + '</span>');
-  return out.length ? out.join('') : '0';
-}
 function srSigned(v, isQty) {
   if (!v) return '0';
   return (v > 0 ? '+' : '−') + (isQty ? srQty(Math.abs(v)) : fmt(Math.abs(v), 0));
@@ -5332,30 +5321,27 @@ function srRender() {
   document.getElementById('srView').classList.toggle('sr-art', art);
   document.getElementById('srOgChip').innerHTML = !art && srState.og
     ? '<span class="group"><span class="chip active" onclick="srSetOg(\'\')">' + esc(SR_OG[srState.og] || srState.og) + ' ×</span></span>' : '';
-  if (art) {
-    document.getElementById('srSummary').innerHTML = '';
-    srRenderTasks();
-    return;
-  }
-
-  // ── картки — лише по позиціях зі спільним артикулом (те, що показує таблиця «Звірки»)
+  // ── плитки (в обох розділах) — підсумки замість рядка «Разом»: у Бух більше (−), в УНФ більше (+), «Без пари» (−);
+  // плюс і мінус не згортаються в одну різницю (Дмитро 17.11.2026)
   _srMarkSa(d);
   var agg = function(pred) {
     var a = { n: 0, sum: 0, noPrice: 0 };
     rows.forEach(function(r) { if (!pred(r)) return; a.n++; if (r.sum == null) a.noPrice++; else a.sum += r.sum; });
     return a;
   };
-  var U = agg(_srF('unf')), B = agg(_srF('buh')), M = agg(_srF('match')), A = agg(_srF('all'));
+  var U = agg(_srF('unf')), B = agg(_srF('buh')), NP = agg(function(r) { return !r._sa && r.side === 'buh'; });
   var card = function(lbl, val, sub) {
     return '<div class="pnl-card"><span class="cl">' + esc(lbl) + '</span><span class="cv">' + val + '</span>' +
       (sub ? '<span class="cs">' + esc(sub) + '</span>' : '') + '</div>';
   };
   var noPr = function(n) { return n ? ' · без ціни ' + n : ''; };
+  var money = function(v) { return srSigned(v) + ' грн'; };
   document.getElementById('srSummary').innerHTML = '<div class="pnl-summary">' +
-    card('У Бух більше, ніж в УНФ', fmt(-B.sum, 0) + ' грн', B.n + ' ' + _srPl(B.n, SR_POS) + noPr(B.noPrice)) +
-    card('В УНФ більше, ніж у Бух', fmt(U.sum, 0) + ' грн', U.n + ' ' + _srPl(U.n, SR_POS) + noPr(U.noPrice)) +
-    card('Збігається', fmt(M.n, 0), 'з ' + A.n + ' ' + (A.n % 10 === 1 && A.n % 100 !== 11 ? 'позиції' : 'позицій') + ' зі спільним артикулом') +
+    card('У Бух більше, ніж в УНФ', money(B.sum), B.n + ' ' + _srPl(B.n, SR_POS) + noPr(B.noPrice)) +
+    card('В УНФ більше, ніж у Бух', money(U.sum), U.n + ' ' + _srPl(U.n, SR_POS) + noPr(U.noPrice)) +
+    card('Без пари', money(NP.sum), NP.n + ' ' + _srPl(NP.n, SR_POS) + noPr(NP.noPrice)) +
   '</div>';
+  if (art) { srRenderTasks(); return; }
 
   // ── чіпи-фільтри з кількістю (по всьому зрізу, без урахування пошуку)
   document.getElementById('srStGroup').innerHTML = SR_FILTERS.map(function(f) {
@@ -5377,8 +5363,6 @@ function srRenderTable() {
     body.innerHTML = '<div class="sr-empty">' + empty + '</div>';
     return;
   }
-  var sumP = 0, sumN = 0, noPrice = 0;
-  list.forEach(function(r) { if (r.sum == null) noPrice++; else if (r.sum > 0) sumP += r.sum; else sumN += r.sum; });
   var nd = '<span class="sr-zero">н/д</span>';
   var cls = function(s) { return s == null ? '' : (Math.abs(s) >= 100000 ? ' sr-big' : (Math.abs(s) >= 20000 ? ' sr-mid' : '')); };
   // Одна назва товару, кількості УНФ | Бух | Різниця — поруч. Чого бракує в другій базі — сірим рядком під назвою:
@@ -5441,8 +5425,6 @@ function srRenderTable() {
     '<th class="c-n">Товар</th><th class="c-un">Од.</th>' +
     '<th class="c-q" title="Залишок на складах звірки УНФ">УНФ</th><th class="c-q" title="Залишок на складах звірки Бух, в одиницях УНФ">Бух</th>' +
     '<th class="c-d" title="УНФ − Бух">Різниця</th><th class="col-total" title="Різниця × ціна (ціна — у розгортці рядка)">Сума, грн</th></tr></thead><tbody>' +
-    '<tr class="sr-total"><td class="c-n">Разом · ' + list.length + ' ' + _srPl(list.length, SR_POS) + (noPrice ? ' · без ціни ' + noPrice : '') + '</td>' +
-    '<td class="c-un"></td><td class="c-q"></td><td class="c-q"></td><td class="c-d"></td><td class="col-total">' + _srSumPN(sumP, sumN) + '</td></tr>' +
     rowsHtml + '</tbody></table></div>';
 }
 
@@ -5555,8 +5537,6 @@ function srRenderTasks() {
     body.innerHTML = html + '<div class="sr-empty">' + (inRec ? 'Серед позицій без пари не знайдено — пара за артикулом уже є. У «Звірці» ' + inRec + ' ' + _srPl(inRec, SR_POS) + ': <a onclick="srSetMode(\'rec\')">відкрити</a>' : 'Нічого не знайдено') + '</div>';
     return;
   }
-  var sumP = 0, sumN = 0, noPrice = 0;
-  list.forEach(function(r) { if (r.sum == null) noPrice++; else if (r.sum > 0) sumP += r.sum; else sumN += r.sum; });
   var cls = function(v) { return v == null ? '' : (Math.abs(v) >= 100000 ? ' sr-big' : (Math.abs(v) >= 20000 ? ' sr-mid' : '')); };
   var row = function(r) {
     var x = info[r._i] || { full: [], sug: [] };
@@ -5580,8 +5560,6 @@ function srRenderTasks() {
   body.innerHTML = html + '<div class="pnl-wrap"><table class="pnl-table sr-table sr-np"><thead><tr>' +
     '<th class="c-n">Товар у Бух</th><th class="c-un">Од.</th><th class="c-q" title="Залишок на складах звірки Бух">Бух</th>' +
     '<th class="c-cand">Схожі картки в УНФ</th><th class="col-total" title="Залишок Бух × ціна (зі знаком УНФ − Бух)">Сума, грн</th></tr></thead><tbody>' +
-    '<tr class="sr-total"><td class="c-n">Разом · ' + list.length + ' ' + _srPl(list.length, SR_POS) + (noPrice ? ' · без ціни ' + noPrice : '') + '</td>' +
-    '<td class="c-un"></td><td class="c-q"></td><td class="c-cand"></td><td class="col-total">' + _srSumPN(sumP, sumN) + '</td></tr>' +
     list.map(row).join('') + '</tbody></table></div>';
 }
 
