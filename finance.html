@@ -1232,7 +1232,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li>Рядок — товар: назва, під нею артикул і коди карток (НФ-… — УНФ, 00-… — Бух). Праворуч поруч — кількість <b>УНФ</b>, кількість <b>Бух</b> (уже в одиницях УНФ) і <b>різниця</b>, далі сума в гривнях.</li>
       <li><b>0</b> — картка в цій базі є, але на складах звірки залишку нема. Якщо залишок лежить на інших складах — під назвою «залишок лише на складах поза звіркою».</li>
       <li>«у Бух: …» під назвою — картка Бух з тим самим артикулом названа інакше (кілька карток — через «;»). Назви, що відрізняються лише пробілами чи комами, не показуємо.</li>
-      <li>Розгортка рядка (клік) — УНФ і Бух пліч-о-пліч: склади звірки, склади поза звіркою, резерв, картки; нижче — ціна, одиниці, як звʼязано.</li>
+      <li>Розгортка рядка (клік) — УНФ і Бух пліч-о-пліч: склади звірки, склади поза звіркою, резерв, картки; нижче — ціна, одиниці, як звʼязано. Кілька карток з одним артикулом в одній базі (у Бух буває до 5 на один товар УНФ) зводяться в один рядок, а в розгортці кожна картка — окремо зі своєю кількістю.</li>
     </ul>
     <h3>Звідки дані</h3>
     <ul>
@@ -5616,11 +5616,23 @@ function srDetailRow(r) {
   };
   var isB = r.side === 'buh', deleted = /видален/.test(r.sub || '');
   var cardOf = function(code, art) { return code ? esc([code, art].filter(Boolean).join(' · ')) : 'нема'; };
+  // кілька карток з одним артикулом в одній базі — кожна окремим рядком з кількістю на складах звірки
+  // (бек віддає bcards / ucards лише коли карток кілька); назву картки пишемо, лише якщо вона інша, ніж у рядка
+  var nm = function(x) { return String(x || '').toLowerCase().replace(/[^\p{L}\p{N}]/gu, ''); };
+  var cardsQ = function(list) {
+    return list.map(function(c) {
+      var q = c.q != null ? srQty(c.q) + u : srQty(c.qr) + ' ' + (c.u || '') + ', без перерахунку';
+      var lbl = [c.c, c.a].filter(Boolean).join(' · ') + (c.n && nm(c.n) !== nm(r.name) ? ' «' + c.n + '»' : '');
+      return '<span class="wl"><span>' + esc(lbl) + '</span><b>' + esc(q) + '</b></span>';
+    }).join('');
+  };
   var lines = [
     ['Склади звірки', whl(r.unfWh), whl(r.buhWh)],
     (r.unfOther || r.buhOther) ? ['Поза звіркою', whl(r.unfOther), whl(r.buhOther)] : null,
     r.unfRes ? ['Резерв', esc(srQty(r.unfRes) + u) + ' під замовлення, у залишку', ''] : null,
-    ['Картка', deleted ? 'видалено ' + esc(r.ucode || '') : cardOf(r.ucode, isB ? r.ua : r.art), cardOf(r.bcode, isB ? r.art : r.ba)],
+    [r.ucards || r.bcards ? 'Картки' : 'Картка',
+      r.ucards ? cardsQ(r.ucards) : deleted ? 'видалено ' + esc(r.ucode || '') : cardOf(r.ucode, isB ? r.ua : r.art),
+      r.bcards ? cardsQ(r.bcards) : cardOf(r.bcode, isB ? r.art : r.ba)],
   ].filter(Boolean);
   var foot = [
     'Різниця ' + srSigned(r.d, true) + u + (r.sum != null ? ' × ' + fmt(r.price, 2) + ' грн = ' + srSigned(r.sum) + ' грн' : ''),
